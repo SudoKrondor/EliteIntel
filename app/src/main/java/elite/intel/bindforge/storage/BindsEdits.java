@@ -4,7 +4,6 @@ import elite.intel.bindforge.io.BindingSaveResult;
 import elite.intel.bindforge.io.EditedBinds;
 import elite.intel.bindforge.io.StartPresetSections;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +22,6 @@ public final class BindsEdits {
 
     /** {@code <name>.<major>.<minor>.binds}, the version captured. */
     private static final Pattern VERSIONED = Pattern.compile("(.+)\\.(\\d+)\\.(\\d+)\\.binds");
-    /** {@code StartPreset.<N>.start}, N captured. */
-    private static final Pattern START_PRESET = Pattern.compile("StartPreset\\.(\\d+)\\.start");
 
     private BindsEdits() {
     }
@@ -48,17 +45,12 @@ public final class BindsEdits {
     }
 
     /**
-     * The binds file the set's {@code StartPreset.N.start} names on its General line, when the set holds one by that
-     * name - the newest version of it, since a game update leaves the older one behind. Empty when the set has no
-     * preset file, its General line is blank, or no binds file has that name.
+     * The binds file the set's preset file ({@link PresetEdits#presetFile}) names on its General line, when the set
+     * holds one by that name - the newest version of it, since a game update leaves the older one behind. Empty when
+     * the set has no preset file, its General line is blank, or no binds file has that name.
      */
     public static Optional<String> generalFile(ConfigurationFiles files) {
-        Optional<String> preset = files.bindings().keySet().stream()
-                .filter(name -> START_PRESET.matcher(name).matches())
-                .max(Comparator.comparingLong(BindsEdits::presetGeneration));
-        if (preset.isEmpty()) return Optional.empty();
-        String text = new String(files.bindings().get(preset.get()), StandardCharsets.UTF_8);
-        String general = StartPresetSections.parse(text).general();
+        String general = PresetEdits.sections(files).map(StartPresetSections::general).orElse("");
         if (general.isEmpty()) return Optional.empty();
         return bindsFiles(files).stream()
                 .filter(name -> bindNameOf(name).filter(general::equals).isPresent())
@@ -111,11 +103,6 @@ public final class BindsEdits {
         if (!matcher.matches()) return -1;
         // WHY: both numbers bounded so neither overflows into the other.
         return parse(matcher.group(2)) * 1_000_000L + parse(matcher.group(3));
-    }
-
-    private static long presetGeneration(String presetFile) {
-        Matcher matcher = START_PRESET.matcher(presetFile);
-        return matcher.matches() ? parse(matcher.group(1)) : -1;
     }
 
     private static long parse(String digits) {

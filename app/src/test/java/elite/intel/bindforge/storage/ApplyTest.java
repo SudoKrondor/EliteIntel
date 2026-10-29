@@ -1,5 +1,9 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.model.BindingSection;
+import elite.intel.bindforge.preseteditor.BindNameEntry;
+import elite.intel.bindforge.preseteditor.BindNameList;
+import elite.intel.bindforge.preseteditor.BindsFileOrigin;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -16,13 +20,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * APPLY (storage.md rules 7-8; Storage S4a): the edits and the default labels, through the write path with a
- * before-APPLY backup, leaving alone an installation whose device files differ from the working copy.
+ * before-APPLY backup, leaving alone an installation whose device files differ from the working copy - and, first of
+ * all, refusing a preset file that names a binds file nobody can find (Storage S6).
  */
 class ApplyTest {
 
     private static final String LVWAP = "<Root><LVWAP><PID>83F4</PID><VID>3344</VID></LVWAP></Root>";
     private static final Map<String, byte[]> LVWAP_DEFAULTS =
             Map.of("LVWAP.buttonMap", bytes("<Root><Joy_1>Button 1</Joy_1></Root>"));
+    private static final String ALL_CUSTOM = "Custom\r\nCustom\r\nCustom\r\nCustom";
+    /** The BindName list: the player's Custom, and the factory KeyboardMouseOnly. */
+    private static final Apply.BindNames OFFERED = files -> new BindNameList(List.of(
+            new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds"))),
+            new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.FACTORY,
+                    List.of(Path.of("Steam/ControlSchemes/KeyboardMouseOnly.binds")))), List.of());
 
     private final AtomicReference<ConfigurationFiles> workingCopy = new AtomicReference<>(set("<applied/>", LVWAP));
     private final Edits edits = new Edits(workingCopy::get, () -> {
@@ -139,11 +150,84 @@ class ApplyTest {
             return null;
         }, sources -> {
             throw new IOException("the backup folder cannot be written");
-        }, installation -> live(LVWAP));
+        }, installation -> live(LVWAP), OFFERED);
 
         assertThrows(IOException.class, apply::apply);
         assertTrue(edits.hasEdits());
         assertFalse(edits.writing());
+    }
+
+    /**
+     * A line naming a binds file nobody can find is refused before anything is backed up or written, naming the
+     * section (preset-editor.md, What APPLY checks and writes for the preset file).
+     */
+    @Test
+    void aPresetLineNamingNothingStopsApplyBeforeTheBackup() throws IOException {
+        edits.change(current -> current.withBindingsFile("StartPreset.4.start",
+                bytes("Custom\r\nGone\r\nCustom\r\nCustom")));
+
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class,
+                apply(installation -> live(LVWAP))::apply);
+
+        assertEquals(List.of(BindingSection.SHIP), refused.sections());
+        assertEquals(List.of(), backedUp);
+        assertEquals(List.of(), written);
+        assertTrue(edits.hasEdits(), "the edits are still on screen");
+        assertFalse(edits.writing());
+    }
+
+    /** Every APPLY checks the preset file, whatever the edits are - a device edit alone included (Alan, 2026-10-28). */
+    @Test
+    void thePresetFileIsCheckedWhenOnlyADeviceIsEdited() throws IOException {
+        workingCopy.set(set("<applied/>", LVWAP)
+                .withBindingsFile("StartPreset.4.start", bytes("Custom\r\n\r\nGone\r\n")));
+        edits.change(current -> current.withButtonMaps(Map.of("LVWAP.buttonMap", bytes("<Root/>"))));
+
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class,
+                apply(installation -> live(LVWAP))::apply);
+
+        assertEquals(List.of(BindingSection.SHIP, BindingSection.SRV, BindingSection.ON_FOOT), refused.sections(),
+                "an empty line is refused too, and a missing one is empty");
+        assertEquals(List.of(), backedUp);
+    }
+
+    @Test
+    void aSetWithNoPresetFileIsRefusedForAllFourSections() throws IOException {
+        workingCopy.set(new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes("<applied/>")), bytes(LVWAP), Map.of()));
+        edits.change(current -> current.withBindingsFile("Custom.4.2.binds", bytes("<edited/>")));
+
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class,
+                apply(installation -> live(LVWAP))::apply);
+
+        assertEquals(PresetEdits.SECTIONS, refused.sections());
+        assertEquals(List.of(), backedUp);
+    }
+
+    /** The list is built from the set APPLY writes - the edits, not the working copy. */
+    @Test
+    void theBindNameListIsBuiltFromTheEdits() throws IOException {
+        edits.change(current -> set("<edited/>", LVWAP));
+        List<String> seen = new ArrayList<>();
+
+        new Apply(edits, (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
+                files -> {
+                    seen.add(text(files.bindings().get("Custom.4.2.binds")));
+                    return OFFERED.of(files);
+                }).apply();
+
+        assertEquals(List.of("<edited/>"), seen);
+    }
+
+    /** A split preset file - General on a factory binds file - is applied like any other. */
+    @Test
+    void aPresetLineOnAFactoryBindsFileIsApplied() throws IOException {
+        edits.change(current -> current.withBindingsFile("StartPreset.4.start",
+                bytes("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom")));
+
+        apply(installation -> live(LVWAP)).apply();
+
+        assertEquals(1, written.size());
+        assertEquals(List.of("APPLY"), backedUp);
     }
 
     private Apply apply(Apply.Reader reader) {
@@ -151,20 +235,25 @@ class ApplyTest {
     }
 
     private Apply apply(Apply.DefaultLabels defaults, Apply.Reader reader) {
-        return new Apply(edits, defaults, (files, backUp, leaveAlone) -> {
-            BackupSources sources = sources();
-            backUp.take(sources);
-            written.add(files);
-            for (BackupSources.Installation installation : sources.installations()) {
-                if (leaveAlone.leaveAlone(installation)) leftAlone.add(installation.storefront());
-            }
-            return new WriteReport(new WriteReport.Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
-                    List.of(), List.of(), List.of(), List.of()), List.of());
-        }, sources -> {
-            backedUp.add("APPLY");
-            return new Backup(Path.of("BeforeChanges/2026-10-26_10-00-00.zip"), LocalDateTime.now(),
-                    Backups.Kind.BEFORE_CHANGES, Backups.Before.APPLY, true, List.of());
-        }, reader);
+        return new Apply(edits, defaults, this::write, this::backUp, reader, OFFERED);
+    }
+
+    private WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone)
+            throws IOException {
+        BackupSources sources = sources();
+        backUp.take(sources);
+        written.add(files);
+        for (BackupSources.Installation installation : sources.installations()) {
+            if (leaveAlone.leaveAlone(installation)) leftAlone.add(installation.storefront());
+        }
+        return new WriteReport(new WriteReport.Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
+                List.of(), List.of(), List.of(), List.of()), List.of());
+    }
+
+    private Backup backUp(BackupSources sources) {
+        backedUp.add("APPLY");
+        return new Backup(Path.of("BeforeChanges/2026-10-26_10-00-00.zip"), LocalDateTime.now(),
+                Backups.Kind.BEFORE_CHANGES, Backups.Before.APPLY, true, List.of());
     }
 
     private static BackupSources sources() {
@@ -176,7 +265,9 @@ class ApplyTest {
         return new DeviceFiles(bytes(deviceMappings), Map.of());
     }
 
+    /** A binds file, a preset file naming it on all four lines, and a {@code DeviceMappings.xml}. */
     private static ConfigurationFiles set(String binds, String deviceMappings) {
-        return new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds)), bytes(deviceMappings), Map.of());
+        return new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds), "StartPreset.4.start", bytes(ALL_CUSTOM)),
+                bytes(deviceMappings), Map.of());
     }
 }

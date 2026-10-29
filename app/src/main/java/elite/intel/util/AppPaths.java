@@ -55,20 +55,8 @@ public final class AppPaths {
     }
 
     /**
-     * Returns the directory for timestamped game-file copies, creating it if needed - only the preset file's own
-     * history uses it now, until Storage S6 removes that (the Bind Editor's went in Storage S5).
-     */
-    public static Path getBindingsBackupDir() throws IOException {
-        Path dir = getAppDataBase().resolve("elite-intel/bindings/backups");
-        Files.createDirectories(dir);
-        return dir;
-    }
-
-    /**
      * Returns the directory for user-facing, on-demand player backups (bindings/preset
-     * snapshots, and later other profile data), creating it if needed. Deliberately separate
-     * from {@link #getBindingsBackupDir()}, which is an internal safety net tied to the
-     * apply-pipeline rather than a user-triggered feature.
+     * snapshots, and later other profile data), creating it if needed.
      */
     public static Path getPlayerBackupsDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/playerbackups");

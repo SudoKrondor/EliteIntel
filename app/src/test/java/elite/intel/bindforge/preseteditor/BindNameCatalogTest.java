@@ -8,59 +8,63 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The list the four dropdowns offer: the player's binds files, the factory ones, and the files that are neither. */
+/**
+ * The list the four dropdowns offer: the player's binds files, from the set APPLY writes (Storage S6), the factory ones,
+ * and the files that are neither.
+ */
 class BindNameCatalogTest {
 
     @TempDir
     Path root;
 
-    private final BindNameCatalog catalog = new BindNameCatalog();
+    /** The player's files, as the set holds them - by file name. */
+    private final Map<String, byte[]> set = new LinkedHashMap<>();
 
     @Test
     void thePlayersBindsFilesAreOfferedAndTheRestAreNamed() throws IOException {
-        Path bindings = folder("Bindings");
-        copySpecimen(bindings, "Custom.4.2.binds");
-        copySpecimen(bindings, "DualVirpilDawnTreader.4.1.binds");
-        copySpecimen(bindings, "Custom.4.2 (2).binds");
-        copySpecimen(bindings, "20250624_003828_DualVirpilDawnTreader.4.2.binds.backup");
-        write(bindings, "StartPreset.binds", "KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom");
-        write(bindings, "StartPreset.4.start", "Custom\r\nCustom\r\nCustom\r\nCustom");
+        specimen("Custom.4.2.binds");
+        specimen("DualVirpilDawnTreader.4.1.binds");
+        specimen("Custom.4.2 (2).binds");
+        specimen("20250624_003828_DualVirpilDawnTreader.4.2.binds.backup");
+        set.put("StartPreset.binds", bytes("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom"));
+        set.put("StartPreset.4.start", bytes("Custom\r\nCustom\r\nCustom\r\nCustom"));
 
-        BindNameList list = catalog.list(bindings, List.of());
+        BindNameList list = BindNameCatalog.list(set, List.of());
 
         assertEquals(List.of(
-                        new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(bindings.resolve("Custom.4.2.binds"))),
+                        new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds"))),
                         new BindNameEntry("DualVirpilDawnTreader", BindsFileOrigin.USER,
-                                List.of(bindings.resolve("DualVirpilDawnTreader.4.1.binds")))),
+                                List.of(Path.of("DualVirpilDawnTreader.4.1.binds")))),
                 list.entries());
-        // The backup is not a .binds name at all, so it is neither offered nor explained.
+        // The backup and the preset file are not .binds names at all, so they are neither offered nor explained.
         assertEquals(List.of(
-                        new NotOfferedFile(bindings.resolve("Custom.4.2 (2).binds"), BindsFileOrigin.USER,
+                        new NotOfferedFile(Path.of("Custom.4.2 (2).binds"), BindsFileOrigin.USER,
                                 NotOfferedReason.NAME_MISMATCH, "Custom"),
-                        new NotOfferedFile(bindings.resolve("StartPreset.binds"), BindsFileOrigin.USER,
+                        new NotOfferedFile(Path.of("StartPreset.binds"), BindsFileOrigin.USER,
                                 NotOfferedReason.PRESET_FILE, "KeyboardMouseOnly\nCustom\nCustom\nCustom")),
                 list.notOffered());
     }
 
     @Test
     void theFactoryBindsFilesAreOfferedOnceWithAFileFromEachInstallation() throws IOException {
-        Path bindings = folder("Bindings");
-        copySpecimen(bindings, "Custom.4.2.binds");
+        specimen("Custom.4.2.binds");
         Path steam = folder("Steam/ControlSchemes");
         Path epic = folder("Epic/ControlSchemes");
         factory(steam, "KeyboardMouseOnly");
         factory(epic, "KeyboardMouseOnly");
         factory(epic, "SaitekX56");
 
-        BindNameList list = catalog.list(bindings, List.of(steam, epic));
+        BindNameList list = BindNameCatalog.list(set, List.of(steam, epic));
 
         assertEquals(List.of(
-                        new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(bindings.resolve("Custom.4.2.binds"))),
+                        new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds"))),
                         new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.FACTORY,
                                 List.of(steam.resolve("KeyboardMouseOnly.binds"), epic.resolve("KeyboardMouseOnly.binds"))),
                         new BindNameEntry("SaitekX56", BindsFileOrigin.FACTORY, List.of(epic.resolve("SaitekX56.binds")))),
@@ -70,12 +74,11 @@ class BindNameCatalogTest {
     /** The specimen StartPreset.4.start: General on a factory binds file, the rest on the player's. */
     @Test
     void everyLineOfTheSplitSpecimenFindsItsBindName() throws IOException {
-        Path bindings = folder("Bindings");
-        copySpecimen(bindings, "Custom.4.2.binds");
+        specimen("Custom.4.2.binds");
         Path controlSchemes = folder("Steam/ControlSchemes");
         factory(controlSchemes, "KeyboardMouseOnly");
 
-        BindNameList list = catalog.list(bindings, List.of(controlSchemes));
+        BindNameList list = BindNameCatalog.list(set, List.of(controlSchemes));
 
         assertEquals(BindsFileOrigin.FACTORY, list.find("KeyboardMouseOnly").orElseThrow().origin());
         assertEquals(BindsFileOrigin.USER, list.find("Custom").orElseThrow().origin());
@@ -84,38 +87,35 @@ class BindNameCatalogTest {
 
     @Test
     void aPlayersBindsFileShadowsAFactoryOneOfTheSameName() throws IOException {
-        Path bindings = folder("Bindings");
-        write(bindings, "KeyboardMouseOnly.4.2.binds", binds("KeyboardMouseOnly"));
+        set.put("KeyboardMouseOnly.4.2.binds", bytes(binds("KeyboardMouseOnly")));
         Path controlSchemes = folder("Steam/ControlSchemes");
         factory(controlSchemes, "KeyboardMouseOnly");
 
-        BindNameList list = catalog.list(bindings, List.of(controlSchemes));
+        BindNameList list = BindNameCatalog.list(set, List.of(controlSchemes));
 
         assertEquals(List.of(new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.USER,
-                List.of(bindings.resolve("KeyboardMouseOnly.4.2.binds")))), list.entries());
+                List.of(Path.of("KeyboardMouseOnly.4.2.binds")))), list.entries());
     }
 
-    /** Cannot happen in a live folder - the game upgrades the old one in place - but is not silently halved if it does. */
+    /** Not expected - the game upgrades the old one in place - but not silently halved if it happens. */
     @Test
     void twoOfThePlayersFilesForOneNameAreBothKept() throws IOException {
-        Path bindings = folder("Bindings");
-        copySpecimen(bindings, "Custom.3.0.binds");
-        copySpecimen(bindings, "Custom.4.2.binds");
+        specimen("Custom.4.2.binds");
+        specimen("Custom.3.0.binds");
 
-        BindNameList list = catalog.list(bindings, List.of());
+        BindNameList list = BindNameCatalog.list(set, List.of());
 
         assertEquals(List.of(new BindNameEntry("Custom", BindsFileOrigin.USER,
-                        List.of(bindings.resolve("Custom.3.0.binds"), bindings.resolve("Custom.4.2.binds")))),
+                        List.of(Path.of("Custom.3.0.binds"), Path.of("Custom.4.2.binds")))),
                 list.entries());
     }
 
     @Test
     void anInstallationThatCannotBeListedIsSkipped() throws IOException {
-        Path bindings = folder("Bindings");
-        copySpecimen(bindings, "Custom.4.2.binds");
+        specimen("Custom.4.2.binds");
         Path unplugged = root.resolve("Unplugged/ControlSchemes");
 
-        BindNameList list = catalog.list(bindings, List.of(unplugged));
+        BindNameList list = BindNameCatalog.list(set, List.of(unplugged));
 
         assertEquals(List.of("Custom"), list.entries().stream().map(BindNameEntry::bindName).toList());
         assertEquals(List.of(), list.notOffered());
@@ -123,19 +123,13 @@ class BindNameCatalogTest {
 
     @Test
     void aFactoryFileThatIsNotABindsFileIsNamedAsFactory() throws IOException {
-        Path bindings = folder("Bindings");
         Path controlSchemes = folder("Steam/ControlSchemes");
         write(controlSchemes, "Broken.binds", "");
 
-        BindNameList list = catalog.list(bindings, List.of(controlSchemes));
+        BindNameList list = BindNameCatalog.list(set, List.of(controlSchemes));
 
         assertEquals(List.of(new NotOfferedFile(controlSchemes.resolve("Broken.binds"), BindsFileOrigin.FACTORY,
                 NotOfferedReason.EMPTY, "")), list.notOffered());
-    }
-
-    @Test
-    void aBindingsFolderThatCannotBeListedFails() {
-        assertThrows(IOException.class, () -> catalog.list(root.resolve("NoSuchFolder"), List.of()));
     }
 
     @Test
@@ -151,8 +145,8 @@ class BindNameCatalogTest {
         return Files.createDirectories(root.resolve(relative));
     }
 
-    private static void copySpecimen(Path folder, String name) throws IOException {
-        Files.copy(Specimens.bindsSpecimen(name), folder.resolve(name));
+    private void specimen(String name) throws IOException {
+        set.put(name, Files.readAllBytes(Specimens.bindsSpecimen(name)));
     }
 
     private static void factory(Path controlSchemes, String name) throws IOException {
@@ -162,6 +156,10 @@ class BindNameCatalogTest {
     private static String binds(String bindName) {
         return "<Root PresetName=\"" + bindName + "\" MajorVersion=\"4\" MinorVersion=\"2\">"
                 + "<YawLeftButton><Primary Device=\"Keyboard\" Key=\"Key_A\" /></YawLeftButton></Root>";
+    }
+
+    private static byte[] bytes(String text) {
+        return text.getBytes(StandardCharsets.UTF_8);
     }
 
     private static void write(Path folder, String name, String content) throws IOException {

@@ -26,14 +26,12 @@ class BindForgeSettingsManagerTest {
         settings.setBackupDestination(null);
         settings.setDailyBackupRetentionDays(30);
         settings.setBeforeChangesBackupsKept(100);
-        settings.setEditHistoryRetention(10);
     }
 
     @Test
     void defaultsAreWhatTheMigrationDeclares() {
         assertEquals(30, settings.getDailyBackupRetentionDays(), "daily backups are kept for 30 days by default");
         assertEquals(100, settings.getBeforeChangesBackupsKept(), "the newest 100 before-changes backups by default");
-        assertEquals(10, settings.getEditHistoryRetention(), "Edit History keeps 10 versions by default");
         assertNull(settings.getBackupDestination(), "no folder chosen means no stored destination");
     }
 
@@ -46,19 +44,16 @@ class BindForgeSettingsManagerTest {
         settings.setBackupDestination("D:\\EliteBackups");
         settings.setDailyBackupRetentionDays(90);
         settings.setBeforeChangesBackupsKept(250);
-        settings.setEditHistoryRetention(25);
 
         assertEquals("D:\\EliteBackups", settings.getBackupDestination());
         assertEquals(90, settings.getDailyBackupRetentionDays());
         assertEquals(250, settings.getBeforeChangesBackupsKept());
-        assertEquals(25, settings.getEditHistoryRetention());
 
-        settings.setEditHistoryRetention(3);
+        settings.setBeforeChangesBackupsKept(40);
 
         assertEquals("D:\\EliteBackups", settings.getBackupDestination(), "still set after an unrelated save");
         assertEquals(90, settings.getDailyBackupRetentionDays(), "still set after an unrelated save");
-        assertEquals(250, settings.getBeforeChangesBackupsKept(), "still set after an unrelated save");
-        assertEquals(3, settings.getEditHistoryRetention());
+        assertEquals(40, settings.getBeforeChangesBackupsKept());
     }
 
     @Test
@@ -67,18 +62,6 @@ class BindForgeSettingsManagerTest {
         settings.setBackupDestination(null);
 
         assertNull(settings.getBackupDestination());
-    }
-
-    @Test
-    void retentionOutsideItsRangeIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> settings.setEditHistoryRetention(0));
-        assertThrows(IllegalArgumentException.class, () -> settings.setEditHistoryRetention(31));
-
-        settings.setEditHistoryRetention(BindForgeSettingsManager.MIN_EDIT_HISTORY_RETENTION);
-        assertEquals(1, settings.getEditHistoryRetention(), "the bottom of the range is accepted");
-
-        settings.setEditHistoryRetention(BindForgeSettingsManager.MAX_EDIT_HISTORY_RETENTION);
-        assertEquals(30, settings.getEditHistoryRetention(), "the top of the range is accepted");
     }
 
     /** Daily backups are kept for 30, 60, 90 or 180 days - nothing else (file-manager.md, Settings). */

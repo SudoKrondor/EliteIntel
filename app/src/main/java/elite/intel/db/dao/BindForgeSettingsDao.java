@@ -28,13 +28,11 @@ public interface BindForgeSettingsDao {
             INSERT OR REPLACE INTO bindforge_settings (id,
                                                        backup_destination,
                                                        daily_backup_retention_days,
-                                                       before_changes_backups_kept,
-                                                       edit_history_retention)
+                                                       before_changes_backups_kept)
             VALUES (1,
                     :backupDestination,
                     :dailyBackupRetentionDays,
-                    :beforeChangesBackupsKept,
-                    :editHistoryRetention)
+                    :beforeChangesBackupsKept)
             """)
     void save(@BindBean BindForgeSettings settings);
 
@@ -46,7 +44,6 @@ public interface BindForgeSettingsDao {
             entity.setBackupDestination(rs.getString("backup_destination"));
             entity.setDailyBackupRetentionDays(rs.getInt("daily_backup_retention_days"));
             entity.setBeforeChangesBackupsKept(rs.getInt("before_changes_backups_kept"));
-            entity.setEditHistoryRetention(rs.getInt("edit_history_retention"));
             return entity;
         }
     }
@@ -56,7 +53,6 @@ public interface BindForgeSettingsDao {
         String backupDestination;
         int dailyBackupRetentionDays;
         int beforeChangesBackupsKept;
-        int editHistoryRetention;
 
         /**
          * Where backups are written, or {@code null} to use Elite-Intel's default backup path.
@@ -89,14 +85,6 @@ public interface BindForgeSettingsDao {
 
         public void setBeforeChangesBackupsKept(int beforeChangesBackupsKept) {
             this.beforeChangesBackupsKept = beforeChangesBackupsKept;
-        }
-
-        public int getEditHistoryRetention() {
-            return editHistoryRetention;
-        }
-
-        public void setEditHistoryRetention(int editHistoryRetention) {
-            this.editHistoryRetention = editHistoryRetention;
         }
     }
 }

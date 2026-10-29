@@ -192,7 +192,7 @@ What exists instead is BindForge-shaped already, and since 2026-10-03 it lives u
 | `io.BindingsLoader`, `io.KeyBindingsParser` | read and parse `.binds` |
 | `io.BindingsWriter` | edit a `.binds` held in memory - reads and writes no file since Storage S5 (2026-10-28) |
 | ~~`io.BindingsWorkingCopyRepository`~~ | ~~the working copy concept~~ — removed in Storage S5 (2026-10-28): the working copy is `bindforge.storage.WorkingCopy`, and the edits not applied are `bindforge.storage.Edits` |
-| `elite.intel.io.TimestampedBackups` | timestamped backups — **moved out of BindForge 2026-10-03**, replacing `io.BindingsBackupService`, because it knows nothing about `.binds` and StarVizion will want it too. See [the shared write path](#the-shared-write-path-is-eliteintelio--built-2026-10-03) |
+| ~~`elite.intel.io.TimestampedBackups`~~ | ~~timestamped backups~~ — removed in Storage S6 (2026-10-28) with its last caller, the preset file's own history: every backup is `bindforge.storage.Backups`' |
 | `elite.intel.io.AtomicFiles` | safe replace: temp file, flush, rename over the target |
 | ~~`io.BindingsApplyService`, `io.BindingsApplyException`~~ | ~~apply-to-game with typed failure~~ — removed in Storage S5 (2026-10-28): APPLY is `bindforge.storage.Apply`, through `WritePath` |
 | `io.BindingSaveResult`, `io.EditedBinds` | the outcome of one binding edit, and the file's bytes after it |
@@ -244,15 +244,15 @@ stop-detection is a timeout inference), or poll `ProcessHandle.allProcesses()` f
 ```
 elite-intel/db                       getDatabasePath()
 elite-intel/bindings                 getBindingsWorkingDir()
-elite-intel/bindings/backups         getBindingsBackupDir()
 elite-intel/custom-commands          getCustomCommandsFilePath()
 elite-intel/custom-commands/backups  getCustomCommandsBackupDir()
 elite-intel/playerbackups            getPlayerBackupsDir()
 elite-intel/diagnostics              getDiagnosticsDir()
 ```
 
-Note that `getBindingsWorkingDir()` and `getBindingsBackupDir()` already exist — the working-copy and backup
-locations BindForge's specs describe are provisioned.
+Note that `getBindingsWorkingDir()` already exists — the working-copy location BindForge's specs describe is
+provisioned. *`getBindingsBackupDir()` was removed in Storage S6 (2026-10-28): backups go where
+`bindforge.storage.BackupDestination` says.*
 
 **Gap:** `AppPaths` resolves Elite-Intel's *own* folders. It does not do game-installation discovery across
 storefronts (Steam / Epic / Frontier / Oculus), which the StellarCore Path Service did and which BindForge
@@ -625,7 +625,8 @@ without exception.
 
 ### The shared write path is `elite.intel.io` — built 2026-10-03
 
-**Two classes, and nothing above them knows what a `.binds` file is:**
+**Two classes, and nothing above them knows what a `.binds` file is** (*`TimestampedBackups` was removed in Storage
+S6, 2026-10-28, with its last caller*):
 
 | Class | What it does |
 |---|---|

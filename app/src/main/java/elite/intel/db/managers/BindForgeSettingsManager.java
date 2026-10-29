@@ -16,12 +16,6 @@ import java.util.function.Consumer;
  */
 public class BindForgeSettingsManager {
 
-    /**
-     * The range the Edit History retention setting accepts, per the File Manager specification.
-     */
-    public static final int MIN_EDIT_HISTORY_RETENTION = 1;
-    public static final int MAX_EDIT_HISTORY_RETENTION = 30;
-
     /** The days a daily backup can be kept for (file-manager.md, <em>Settings</em>; Alan, 2026-10-24). */
     public static final List<Integer> DAILY_BACKUP_RETENTION_CHOICES = List.of(30, 60, 90, 180);
 
@@ -104,23 +98,6 @@ public class BindForgeSettingsManager {
                     + MIN_BEFORE_CHANGES_BACKUPS_KEPT + " and " + MAX_BEFORE_CHANGES_BACKUPS_KEPT + ", was " + kept);
         }
         update(settings -> settings.setBeforeChangesBackupsKept(kept));
-    }
-
-    public int getEditHistoryRetention() {
-        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getEditHistoryRetention());
-    }
-
-    /**
-     * @param editHistoryRetention how many versions Edit History keeps per file, 1 to 30
-     * @throws IllegalArgumentException if the value is outside that range
-     */
-    public void setEditHistoryRetention(int editHistoryRetention) {
-        if (editHistoryRetention < MIN_EDIT_HISTORY_RETENTION || editHistoryRetention > MAX_EDIT_HISTORY_RETENTION) {
-            throw new IllegalArgumentException("Edit History retention must be between "
-                    + MIN_EDIT_HISTORY_RETENTION + " and " + MAX_EDIT_HISTORY_RETENTION
-                    + ", was " + editHistoryRetention);
-        }
-        update(settings -> settings.setEditHistoryRetention(editHistoryRetention));
     }
 
     // WHY: rejected here rather than where it is read. The value is persisted, so an unparseable path stored

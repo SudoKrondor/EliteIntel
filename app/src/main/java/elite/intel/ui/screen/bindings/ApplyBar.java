@@ -1,6 +1,7 @@
 package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.storage.*;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.eventbus.UiBus;
@@ -18,6 +19,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.makeButton;
@@ -30,8 +32,9 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * alone do not light them.
  * <p>
  * APPLY asks first, with rule 13's warning and, on Linux with several installations, that bindings move only in the
- * one Elite-Intel uses; then backs up, saves the edits into the working copy and writes it out ({@link Apply}), and
- * reports per place. DISCARD asks, then throws every edit away; no file is touched.
+ * one Elite-Intel uses; then checks the preset file, naming the sections it refuses for; then backs up, saves the
+ * edits into the working copy and writes it out ({@link Apply}), and reports per place. DISCARD asks, then throws
+ * every edit away; no file is touched.
  */
 public final class ApplyBar extends JPanel {
 
@@ -100,6 +103,11 @@ public final class ApplyBar extends JPanel {
                 // WHY: RESTORE or first-time startup is writing - nothing was written, and the edits are still on screen.
                 log.info("APPLY not run: {}", e.getMessage());
                 message = getText("bindings.writeRunning");
+            } catch (PresetRefusedException e) {
+                // WHY: refused before anything was backed up or written - a line naming nothing real fails silently in
+                // the game (preset-editor.md, What APPLY checks and writes for the preset file).
+                log.warn("APPLY refused: {}", e.getMessage());
+                message = getText("bindings.applyBar.presetRefused", sectionNames(e.sections()));
             } catch (IOException e) {
                 // WHY: each of these stops before any live copy is written - the working copy unreadable, the backup
                 // or the working copy's save failed - so the edits are still on screen.
@@ -118,6 +126,11 @@ public final class ApplyBar extends JPanel {
                 HudConfirmDialog.info(this, title, told, getText("bindings.aliasDesigner.firstSetup.close"));
             });
         }, "BindForge-Apply").start();
+    }
+
+    /** The sections in the user's language, in the file's order - <em>"Ship controls, SRV controls"</em>. */
+    static String sectionNames(List<BindingSection> sections) {
+        return sections.stream().map(section -> getText(section.getLabelKey())).collect(Collectors.joining(", "));
     }
 
     /** <em>"Updated 2 of 3"</em>, the backup, and each place that did not take everything (storage.md rule 8). */

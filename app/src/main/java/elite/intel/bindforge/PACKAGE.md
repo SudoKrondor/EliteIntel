@@ -4,14 +4,14 @@ BindForge owns the game's `.binds` file and the rules about what is in it. The k
 
 | Package | Holds |
 |---|---|
-| `bindforge.io` | Finding, parsing, watching, editing, applying and backing up `.binds` files (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`, `BindingsWorkingCopyRepository`, `BindingsApplyService`) and their request/result types. The generic file mechanics they share (atomic replace, timestamped backups) live in `elite.intel.io`, outside BindForge |
+| `bindforge.io` | Finding, parsing, watching, editing, applying and backing up `.binds` files (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`, `BindingsWorkingCopyRepository`, `BindingsApplyService`) and their request/result types. The generic file mechanics they share (atomic replace) live in `elite.intel.io`, outside BindForge |
 | `bindforge.model` | The shared vocabulary: modifiers, slot types, the game's control sections and row labels (`BindingDisplayNames`), the assignable key list (`EliteKeyboardKeys`) |
 | `bindforge.rules` | Judging a file: conflict detection and its context rules, reserved chords, key availability, the missing-binding auto-assigner and its safe key pool, and the startup check that speaks the results (`KeyBindCheck`) |
 | `bindforge.devicefiles` | V1.2: reading and making `DeviceMappings.xml` and `.buttonMap` files as bytes - reading (`DeviceMappingsParser`, `ButtonMapReader`, `ButtonMapAudit`), Frontier's shipped list (`FrontierStockDevices`, `FrontierStockButtonMaps`), what the binds files name (`BindsDeviceReferences`), and changing them (`DeviceMappingsMerge`, `ButtonMapWriter`, `ButtonMapLabels`). Also first setup's decision (`FirstSetupPlan`, `FirstSetupReader`, `LabelMerge` - the flow itself is `bindforge.storage.FirstTimeStartup`). Nothing here writes a game file: every write is `bindforge.storage`'s |
 | `bindforge.devices` | V1.2: the user's controllers as BindForge lists them - live hardware from `elite.intel.devices` matched to the entries in those files (`MyDeviceList`, `MyDevice`, `DeviceIdentities`, `BuiltInDeviceList`); naming one (`DeviceNames`, `Onboarding`); the Device Editor's rules (`DeviceEditorInputs`, `DeviceEditorMiddle`, `DeviceEditorLights`); and the missing-controller warning (`MissingControllers`, `MissingControllerWarning`) |
-| `bindforge.storage` | V1.2: back up, edit, apply ([storage.md](../../../../../../../docs/02-features/bindforge/storage.md)) - the one backup system (`Backups`, `Backup`, `BackupSources`, `BackupDestination`, `StartupBackup`), the working copy and the one write path (`WorkingCopy`, `LiveCopies`, `WritePath`, `ConfigurationFiles`, `WriteReport`, `Written`, and `ReadOnlyFlag`, which keeps a protected live file protected, and `FileNames`, the one "a file name, not a path" test), first-time startup (`FirstTimeStartup`, `FirstSetupReading`, `InstallationFiles`, `FirstSetupFiles`), RESTORE (`Restore`, `BackupContents`), the edits not applied and what each Alias Designer action does to them (`Edits`, `DeviceEdits`, `BindsFiles`), the controllers' names and labels as the Bind Editor reads them (`SavedDeviceLabels`), and APPLY (`Apply`, leaving alone an installation that differs - `DeviceFilesComparison`) |
+| `bindforge.storage` | V1.2: back up, edit, apply ([storage.md](../../../../../../../docs/02-features/bindforge/storage.md)) - the one backup system (`Backups`, `Backup`, `BackupSources`, `BackupDestination`, `StartupBackup`), the working copy and the one write path (`WorkingCopy`, `LiveCopies`, `WritePath`, `ConfigurationFiles`, `WriteReport`, `Written`, and `ReadOnlyFlag`, which keeps a protected live file protected, and `FileNames`, the one "a file name, not a path" test), first-time startup (`FirstTimeStartup`, `FirstSetupReading`, `InstallationFiles`, `FirstSetupFiles`), RESTORE (`Restore`, `BackupContents`), the edits not applied and what each Alias Designer action does to them (`Edits`, `DeviceEdits`, `BindsFiles`), what the Bind Editor and the Preset Editor do to them (`BindsEdits`, `PresetEdits`), the controllers' names and labels as the Bind Editor reads them (`SavedDeviceLabels`), and APPLY (`Apply`, refusing first a preset file that names no binds file it can find - `PresetRefusedException` - and leaving alone an installation that differs - `DeviceFilesComparison`) |
 | `bindforge.install` | V1.2: finding game installations (`InstallationRegistry`, `GameInstallationProvider` and its `forThisPlatform`: `WindowsGameInstallationProvider`, `LinuxGameInstallationProvider`, both reading Steam's index through `SteamLibraries`) |
-| `bindforge.preseteditor` | V1.2: the preset file, `StartPreset.4.start` - the BindNames a line of it can hold, read from the binds files in the bindings folder and each installation's `ControlSchemes` (`BindNameCatalog`, `BindNameList`, `BindNameEntry`, `BindName`, `BindsFileOrigin`), the check of what is in a file with a `.binds` name (`BindsContent`, `NotOfferedFile`, `NotOfferedReason`), and Elite-Intel's master and draft of the preset file and the per-line compare against the game's (`StartPresetStore`, `StartPresetComparison`, `StartPresetLines`) |
+| `bindforge.preseteditor` | V1.2: the preset file, `StartPreset.4.start` - the BindNames a line of it can hold, read from the binds files in the set APPLY writes and each installation's `ControlSchemes` (`BindNameCatalog`, `BindNameList`, `BindNameEntry`, `BindName`, `BindsFileOrigin`), and the check of what is in a file with a `.binds` name (`BindsContent`, `NotOfferedFile`, `NotOfferedReason`). Editing and writing the preset file is `bindforge.storage`'s (`PresetEdits`, since Storage S6) |
 
 **Three packages with "device" in the name, three different things:**
 
@@ -51,13 +51,11 @@ Reads `StartPreset.*.start` in the game's bindings directory to find the active 
 `<presetName>.<version>.binds`. Falls back to the most recently modified
 `.binds` file if the preset file is absent or the name cannot be resolved.
 
-That one name is the first non-empty line, which is the right answer for the assistant. `readStartPresetSections`
-reads all four lines (General, Ship, SRV and On Foot) into a `StartPresetSections`, for a caller that needs
-each section's preset, such as a split preset with General on a different file. It reads the file the live game
-uses (`findLiveStartPresetFile`: the highest `StartPreset.N.start`, else `StartPreset.start`), and the
-pre-Odyssey single-line form counts as one preset for all four sections. In a folder holding both generations,
-`findStartPresetFile` (and so the assistant's single name) can still pick the other file, because it takes
-whichever the listing yields first; it is left that way for its V1.1 callers.
+That one name is the first non-empty line, which is the right answer for the assistant. In a folder holding both
+generations, `findStartPresetFile` (and so the assistant's single name) can pick either, because it takes whichever
+the listing yields first; it is left that way for its V1.1 callers. BindForge reads all four lines (General, Ship, SRV
+and On Foot) as a `StartPresetSections`, from the working copy's highest `StartPreset.N.start`
+(`bindforge.storage.PresetEdits`, Storage S6).
 
 ### `BindingsMonitor` (singleton)
 

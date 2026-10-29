@@ -214,7 +214,7 @@ VocalisationRequestEvent → TTS (Kokoro / Supertonic 3 / Google Cloud) → spea
 | `elite.intel.ai.embed`  | Shared ONNX embedding model (reflex and semantic reducer)                                 |
 | `elite.intel.bindforge` | The `.binds` file: parse, watch, edit, back up; conflict and auto-assign rules            |
 | `elite.intel.devices`   | Game controller / HOTAS polling (push-to-talk, BindForge)                                 |
-| `elite.intel.io`        | Generic file mechanics: `AtomicFiles`, `TimestampedBackups`, `FilePoller`                 |
+| `elite.intel.io`        | Generic file mechanics: `AtomicFiles`, `FilePoller`                                       |
 | `elite.intel.ui`        | Swing MVC (`AppView`, `AppController`) and the native HUD overlay (`ui.overlay`)          |
 | `elite.intel.db`        | SQLite via JDBI 3 + HikariCP; DAOs and managers                                           |
 | `elite.intel.session`   | In-memory game/app state (`PlayerSession`, `SystemSession`, `Status`)                     |

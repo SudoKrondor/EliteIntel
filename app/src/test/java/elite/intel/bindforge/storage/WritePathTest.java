@@ -76,6 +76,22 @@ class WritePathTest {
         assertEquals("<live/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
     }
 
+    /** The preset file too (P3 review, finding 5): a backup that fails leaves the game's file as it was. */
+    @Test
+    void aBackupThatFailsLeavesThePresetFileAsItWas() throws IOException {
+        write(bindings.resolve("StartPreset.4.start"), "KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom");
+        ConfigurationFiles changed = set().withBindingsFile("StartPreset.4.start",
+                bytes("Custom\r\nCustom\r\nCustom\r\nCustom"));
+
+        assertThrows(IOException.class, () -> applyWrite(writePath(), changed, sources -> {
+            throw new IOException("the backup folder cannot be written");
+        }));
+
+        assertFalse(workingCopy.exists());
+        assertEquals("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom",
+                Files.readString(bindings.resolve("StartPreset.4.start")));
+    }
+
     @Test
     void aWorkingCopyThatCannotBeSavedStopsTheWriteBeforeAnyLiveCopy() throws IOException {
         // WHY: a file where the working copy's folder goes, so it cannot be saved.

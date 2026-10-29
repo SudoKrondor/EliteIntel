@@ -38,11 +38,11 @@ change. The slice that moves them rewrites the *Built* note.
 | **Done in S4b:** the identity question reads the edits and its retarget is an edit; the Bind Editor's controller names (the working copy's) and labels (the edits'); the device master, draft, pending removals, per-installation rows, hardware-id moves and `missed_write` dropped (migration `12013`) | `bindforge.storage.SavedDeviceLabels`, `DeviceEdits.retarget`, `DeviceMappingsMerge.retarget`; `bindforge.devices.IdentityQuestions`, `CaptureControllers`; `ui.screen.bindings.AliasDesignerReader`, `AliasDesignerController` | - |
 | **Done in S5:** the Bind Editor on the edits - any binds file loads (LOAD), the General line's file first; capture SAVE (all or none), the Clear column and Auto-Assign are edits; the writer edits bytes in memory; the capture tab names a controller as the edits do; the AI tab's counts from the live bindings | `bindforge.storage.BindsEdits`, `SavedDeviceLabels`; `bindforge.io.BindingsWriter`, `EditedBinds`; `ui.screen.bindings.BindingProfilePanel`, `ui.dialog.ClearKeyboardBindingDialog` | - |
 | ~~Device Apply and per-installation push, Edit History, catch-up~~ **removed in S4a**; `missed_write` dropped in S4b | - | - |
-| `bindforge_settings.edit_history_retention` - read only by the preset file's own history | `StartPresetApply`, `BindForgeSettingsManager.getEditHistoryRetention` | S6 (Alan, 2026-10-28) |
+| **Done in S6:** the preset file on the edits; APPLY refuses first, naming the sections, a preset line that is empty or names no binds file the BindName list offers (the list read from the edits and each installation's factory files); the preset file's master, draft, merge and history, `TimestampedBackups`, `getBindingsBackupDir` and `edit_history_retention` removed (migration `12014`) | `bindforge.storage.PresetEdits`, `PresetRefusedException`, `Apply`; `bindforge.preseteditor.BindNameCatalog`; `ui.screen.bindings.ApplyBar` | - |
 | ~~Divergence list, ways out, installation markers, the 2-second poll~~ **removed in S4a**, with `io.FilePoller` | - | S9 (the new check) |
 | ~~`.buttonMap` written at every connect~~ removed in S2b; **default labels written at APPLY since S4a**, worked out as it runs since the S4a review | `AliasDesignerReader.defaultLabels`, `Apply.DefaultLabels` | - |
 | ~~`.binds`: a copy of the **active** file, a checksum, its own APPLY / REVERT and close prompt~~ **removed in S5** | - | - |
-| Preset file: master and draft files, per-line merge, its own Apply | `bindforge.preseteditor.StartPresetStore`, `StartPresetComparison`, `StartPresetApply` | S6 |
+| ~~Preset file: master and draft files, per-line merge, its own Apply, `edit_history_retention`~~ **removed in S6** | - | - |
 | ~~The Vega tab's KEYMAP readout~~ **removed in S5** | - | - |
 | Installations found; the stored list | `bindforge.install.*`, `InstallationRegistry`, migrations `12001`, `12012`; `GameInstallLocationsPanel` (no match states yet) | S9 |
 
@@ -84,11 +84,17 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 - **Edits not applied are lost when Elite-Intel closes**, without a word, until S7's leave prompt (Alan, 2026-10-26,
   accepted under no interim compatibility).
 
-- **Tabs break until their slice moves them, and that is accepted** (Alan, 2026-10-24). A tab not yet moved - the Bind
-  Editor (S5), the preset file (S6) - still edits and applies the old way, and its writes do not reach the working copy.
-  Run first-time startup again after S6 to start clean.
-- **Until S6:** the preset file still edits and applies the old way (`StartPresetApply`), and its own history keeps
-  `AppPaths.getBindingsBackupDir()` and `TimestampedBackups` alive.
+- **Until P4 nothing in BindForge can fix a refused preset file** (Alan, 2026-10-28, accepted under no interim
+  compatibility). The Preset Editor screen is not built, so a working-copy preset file whose line names a binds file
+  BindForge cannot find blocks every APPLY until P4, RESTORE or Run first-time startup again. Unlikely, since the file
+  came from the game.
+- **Testers set up before S6** should run first-time startup again, so the working copy holds the live preset file
+  rather than one the old Preset Editor left in its own store.
+- **The old preset store's files** (`elite-intel/bindings/master\`, `draft\`) and the old copies in
+  `elite-intel/bindings/backups\` stay on disk; nothing reads them (Alan, 2026-10-28).
+- **`bindforge/PACKAGE.md` still describes S5's removed classes** - `BindingsApplyService`, `BindingsWorkingCopyRepository`
+  and their pipeline, in *Architecture* and *Bindings File Management*. S6 fixed only the rows it touched; rewrite those
+  sections when the next slice is in that file.
 - **The old Bind Editor's loose files** (`<name>.binds`, `.bak`, `.sha256`) stay at the top of the working copy folder;
   nothing reads them (Alan, 2026-10-28; overview.md *Where the working copy lives*).
 - **Until S9:** an installation that missed a write differs from the working copy, so APPLY leaves it alone and nothing
@@ -129,8 +135,8 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 | S4R | **Krondor's storage review** (Alan, 2026-10-27): the findings in [Krondor's review](#krondors-review--2026-10-27). He reviewed the storage code up to S3 and the `V1.2-i18n-IT` merge, so **check each finding against today's code first** - S3's follow-ups and S4a may have fixed some - and fix only those still true; say which were already fixed. Findings 2, 3 and 14 are in Andrea's Supertonic and gamepad work, merged into this branch: they are fixed here like the rest (Alan, 2026-10-27). **Then narrowed by Krondor, the same day: only BindForge changes, by package** - 14 (`devices.model.DeviceDescription`) and 15 (`CLAUDE.md`) are dropped; 2 and 3 stay (`bindforge.devices`) | - | **done 2026-10-27** |
 | S4b | **The identity question on the bar, and the old tables gone** (Alan, 2026-10-26). The identity retarget becomes an edit, and the questions read the working copy. **Removes:** the master / draft / pending-removal / old-name / id-move tables, `missed_write` and `edit_history_retention` (a new migration drops them), their managers and DAOs. The Bind Editor's label readers (`SavedDeviceLabels`, `CaptureControllers`, `InputSettingsPanel`) read the working copy and the edits. **Rewrites** [device-provenance.md](../03-data-models/device-provenance.md) to what is left | 6, 7 | **done 2026-10-28** |
 | S5 | **Bind Editor on the bar.** Load opens any binds file from the working copy, not only the active one; capture SAVE and the inline toggles become edits. **Removes:** the launch-time copy of the active `.binds` (`loadOrImportFromGame`), its APPLY / REVERT, `promptCloseWithDraft`, the checksum in `BindingsWorkingCopyRepository` and the `.bak` beside it, `BindingsApplyService`'s own backup folder, the KEYMAP readout. **Then the capture tab names a controller as the edits do** - `SavedDeviceLabels.names()` and `nameOf` read the applied set only because the Bind Editor writes the live `.binds` until this slice | 6, 7 | **done 2026-10-28** |
-| S6 | **The preset file on the bar.** The working copy's `StartPreset.4.start`; **APPLY refuses first**, naming the sections, when any of the four lines is empty or names no binds file the BindName list offers — before any backup or write. Written as four lines, CRLF, no final newline. **P3 review finding 2:** the live file is found once and that file is read and written. **Finding 5:** a test that nothing is written when the backup fails. **Removes:** `StartPresetStore`'s master and draft, `StartPresetComparison`, `StartPresetApply`'s merge and its own history, and `bindforge_settings.edit_history_retention` with `BindForgeSettingsManager`'s getter and setter (a migration drops the column - Alan, 2026-10-28, from S4b). Then [P4](preset-editor.md#slices), the screen, resumes | 7 | **next** |
-| S7 | **Leaving with edits not applied** — another Elite-Intel tab, or closing Elite-Intel: **Go back**, **Discard**, **Apply**; nothing selected, Enter chooses nothing, Esc and the close glyph are Go back | 9 | pending |
+| S6 | **The preset file on the bar.** The working copy's `StartPreset.4.start`; **APPLY refuses first**, naming the sections, when any of the four lines is empty or names no binds file the BindName list offers — before any backup or write. Written as four lines, CRLF, no final newline. **P3 review finding 2:** the live file is found once and that file is read and written. **Finding 5:** a test that nothing is written when the backup fails. **Removes:** `StartPresetStore`'s master and draft, `StartPresetComparison`, `StartPresetApply`'s merge and its own history, and `bindforge_settings.edit_history_retention` with `BindForgeSettingsManager`'s getter and setter (a migration drops the column - Alan, 2026-10-28, from S4b). Then [P4](preset-editor.md#slices), the screen, resumes | 7 | **done 2026-10-28** |
+| S7 | **Leaving with edits not applied** — another Elite-Intel tab, or closing Elite-Intel: **Go back**, **Discard**, **Apply**; nothing selected, Enter chooses nothing, Esc and the close glyph are Go back | 9 | **next** |
 | S8 | **The check: binds and preset files.** The first BindForge click in a session and every APPLY; compared by value. Warn, then: overwrite the live copy, **merge** (every differing line item a row, nothing pre-selected, Keep all mine / Keep all in-game, merge grain per slot), or overwrite the working copy. A live copy matching Frontier's factory file is named a reset, putting the working copy back offered first, *"Are you sure?"* before it replaces the working copy. At APPLY with edits on screen the check settles the working copy first. **At Elite-Intel start**, read only: one spoken and logged line when anything differs | 5, 13, 14, 15 | pending |
 | S9 | **The check: device files.** An installation that no longer matches is reconciled as in first setup, the working copy one side — keep it, keep the installation's, or merge — then written to every installation after the backup. A missing or factory `DeviceMappings.xml` named as a reset. Game Install Locations shows *matches* / *differs* / *not found* from the same comparison | 14 | pending |
 | S10 | **A newer game version.** `.4.2.binds` → `.4.3.binds`, or a newer XML root version: never overwritten. All bindings carried over → approve it becoming the working copy under its new name; otherwise new slots inserted, the rest decided line by line, the working copy renamed. The new slots are listed | 14 | pending |
@@ -142,7 +148,7 @@ S2 makes the working copy, which everything else reads and writes. S3 is File Ma
 only S1 and S2. S4–S6 move each tab onto the bar, S4 first because it carries the most old machinery. S7 closes the
 edit model. S8–S10 are the check, which APPLY then runs. S11 and S12 are new features on top.
 
-**After these:** Preset Editor P4 (after S6); Bind Editor E2–E6 (after S5); Alias Designer A19, CLEAR moving bindings
+**After these:** Preset Editor P4 (S6 done 2026-10-28); Bind Editor E2–E6 (after S5); Alias Designer A19, CLEAR moving bindings
 to a hardware ID (after S4b); A18 and E7 stay blocked on [testing item 27](../00-overview/testing-required.md#bindforge).
 
 ## Krondor's review — 2026-10-27
@@ -193,6 +199,20 @@ failures reported per place, tests in the matching package, migrations `12010`�
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
+
+- **2026-10-28 — S6 done: the preset file on the bar.** **Decided (Alan, all seven):** the check runs on every APPLY,
+  a set with no preset file refused for all four; the BindName list from the edits plus each installation's factory
+  files; the four-line form written only when a line changes; lines put back restore the working copy's bytes; the
+  live-folder preset reads, `TimestampedBackups` and `getBindingsBackupDir` removed with their last caller; a refused
+  preset file blocks APPLY until P4 (*Known issues*). Recorded in preset-editor.md *What APPLY checks and writes* and
+  *How the four lines are read*, and file-manager.md *Settings*. **Built:** `PresetEdits` (`presetFile`, `sections`,
+  `change`, `gameForm`, `check`, `bindsFiles`), `PresetRefusedException`, `Apply.BindNames`; `BindsEdits.generalFile`
+  picks the preset file through `PresetEdits`; `BindNameCatalog.list` takes the set's binds files (a player's file is a
+  `Path` of its name alone); migration `12014`; `bindings.applyBar.presetRefused` in seven bundles. **Found / left:**
+  `CLAUDE.md`'s `elite.intel.io` row updated, but the file is gitignored; `PACKAGE.md` stale from S5 (*Known issues*).
+  **P4 needs:** `PresetEdits.sections` for the dropdowns, `Edits.change(EditFromApplied)` with `PresetEdits.change`,
+  and `BindNameCatalog.list(PresetEdits.bindsFiles(current), controlSchemesOf(...))` for what they offer. **S7 needs:**
+  nothing new from this slice.
 
 - **2026-10-28 — S5 done: the Bind Editor on the bar.** **Decided (Alan):** LOAD offers every binds file in the edits,
   the General line's newest first; Bindings Directory stays on the screen for now; the AI tab counts the live bindings;

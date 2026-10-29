@@ -1,7 +1,6 @@
 package elite.intel.bindforge.preseteditor;
 
 import elite.intel.bindforge.install.GameInstallation;
-import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,49 +14,46 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * The BindNames a line of {@code StartPreset.4.start} can hold: the player's own binds files, from the bindings
- * folder, and the ones Frontier ships, from each installation's {@code ControlSchemes} (Alan, 2026-10-17 - a section
- * can sit on a factory binds file, and switching back to one is an ordinary edit).
+ * The BindNames a line of {@code StartPreset.4.start} can hold: the player's own binds files, from the set APPLY writes,
+ * and the ones Frontier ships, from each installation's {@code ControlSchemes} (Alan, 2026-10-17 - a section can sit on
+ * a factory binds file, and switching back to one is an ordinary edit).
  * <p>
- * Read-only, and read fresh on every call: the folder is the record, and the game changes it.
+ * <strong>The player's binds files come from the edits, not the bindings folder</strong> (Storage S6, Alan,
+ * 2026-10-28): the edits are what APPLY writes, so a binds file renamed or created there is one a line can name before
+ * it reaches the game. The factory ones are read fresh from disk on every call, since the game changes them.
  */
-public class BindNameCatalog {
+public final class BindNameCatalog {
 
     private static final Logger log = LogManager.getLogger(BindNameCatalog.class);
 
     private static final Comparator<Path> BY_FILE_NAME = Comparator.comparing(path -> path.getFileName().toString());
 
-    private final BindingsLoader bindingsLoader;
-
-    public BindNameCatalog() {
-        this(new BindingsLoader());
-    }
-
-    BindNameCatalog(BindingsLoader bindingsLoader) {
-        this.bindingsLoader = bindingsLoader;
+    private BindNameCatalog() {
     }
 
     /**
-     * Every binds file in the bindings folder and the given {@code ControlSchemes} folders, by BindName.
+     * Every binds file in {@code userFiles} and the given {@code ControlSchemes} folders, by BindName.
      * <p>
      * <strong>A BindName is offered once.</strong> The same factory binds file in several installations is one
      * entry with a file from each. A player's binds file with the BindName of a factory one shadows it, with a
      * warning - no factory binds file has a version suffix, so the case is not expected.
      *
-     * @param bindingsDir           the player's bindings folder
+     * @param userFiles             the player's binds files, by file name - each is listed as a {@link Path} of its
+     *                              name alone, since it is in the set, not yet necessarily on disk
      * @param controlSchemesFolders each installation's {@code ControlSchemes}; one that cannot be listed is
      *                              skipped with a warning, because an unplugged drive must not empty the list
-     * @throws IOException if the bindings folder cannot be listed
      */
-    public BindNameList list(Path bindingsDir, Collection<Path> controlSchemesFolders) throws IOException {
+    public static BindNameList list(Map<String, byte[]> userFiles, Collection<Path> controlSchemesFolders) {
         Map<String, Gathered> byName = new LinkedHashMap<>();
         List<NotOfferedFile> notOffered = new ArrayList<>();
 
-        List<Path> userFiles = new ArrayList<>(bindingsLoader.listAllBindsFiles(bindingsDir));
-        userFiles.sort(BY_FILE_NAME);
-        gather(userFiles, BindsFileOrigin.USER, byName, notOffered);
+        new TreeMap<>(userFiles).forEach((name, content) -> {
+            if (!name.endsWith(BindName.BINDS_EXTENSION)) return;
+            judged(Path.of(name), BindsContent.judge(name, content), BindsFileOrigin.USER, byName, notOffered);
+        });
 
         for (Path controlSchemes : controlSchemesFolders) {
             List<Path> factoryFiles;
@@ -67,7 +63,9 @@ public class BindNameCatalog {
                 log.warn("Could not list the factory binds files in {}: {}", controlSchemes, e.getMessage());
                 continue;
             }
-            gather(factoryFiles, BindsFileOrigin.FACTORY, byName, notOffered);
+            for (Path file : factoryFiles) {
+                judged(file, BindsContent.judge(file), BindsFileOrigin.FACTORY, byName, notOffered);
+            }
         }
 
         List<BindNameEntry> entries = byName.values().stream()
@@ -89,14 +87,12 @@ public class BindNameCatalog {
                 .toList();
     }
 
-    private static void gather(List<Path> files, BindsFileOrigin origin, Map<String, Gathered> byName,
-                               List<NotOfferedFile> notOffered) {
-        for (Path file : files) {
-            switch (BindsContent.judge(file)) {
-                case BindsContent.NotOffered(NotOfferedReason reason, String detail) ->
-                        notOffered.add(new NotOfferedFile(file, origin, reason, detail));
-                case BindsContent.Offered(String bindName) -> add(byName, bindName, origin, file);
-            }
+    private static void judged(Path file, BindsContent.Judgement judgement, BindsFileOrigin origin,
+                               Map<String, Gathered> byName, List<NotOfferedFile> notOffered) {
+        switch (judgement) {
+            case BindsContent.NotOffered(NotOfferedReason reason, String detail) ->
+                    notOffered.add(new NotOfferedFile(file, origin, reason, detail));
+            case BindsContent.Offered(String bindName) -> add(byName, bindName, origin, file);
         }
     }
 
@@ -107,8 +103,8 @@ public class BindNameCatalog {
         } else if (existing.origin == origin) {
             if (origin == BindsFileOrigin.USER) {
                 // WHY: kept, not dropped - the game upgrades an old version in place, so two files for one BindName
-                // in a live folder is a folder something other than the game has been at.
-                log.warn("Two files in the bindings folder answer to BindName '{}': {} and {}",
+                // is a set something other than the game has been at.
+                log.warn("Two of the player's binds files answer to BindName '{}': {} and {}",
                         name, existing.files.getFirst(), file);
             }
             existing.files.add(file);

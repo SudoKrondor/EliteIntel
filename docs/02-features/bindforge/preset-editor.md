@@ -108,17 +108,31 @@ decides ([storage.md](storage.md) rule 14).
 *Until 2026-10-24 the preset file had its own master and draft files, a three-way per-line compare and merge, and Edit
 History copies (P2, P3); [storage.md](storage.md) replaced them. Kept from P1 and P3 (Alan, 2026-10-21):*
 
+**Built 2026-10-28 (Storage S6; Alan approved):** `bindforge.storage.PresetEdits` reads, changes and checks the preset
+file in the edits, and `Apply` runs the check first, refusing with `PresetRefusedException`; the APPLY bar names the
+sections. The master, draft, merge and Edit History copies (`StartPresetStore`, `StartPresetComparison`,
+`StartPresetApply`) are removed.
+
 - **Every one of the four lines must name a binds file the [BindName list](#the-bindname-list--settled-2026-10-17-alan-p1)
   offers** — unchanged lines included, and an empty line is refused too. A line that names nothing real fails
   silently in the game, so **APPLY checks this first and refuses as a whole, naming the sections, before anything is
   backed up or written** (2026-10-24, Alan).
+- **The check runs on every APPLY, whatever the edits are** — a device edit alone included — and a set with no preset
+  file is refused for all four sections (2026-10-28, Alan, Storage S6).
+- **The BindName list comes from the set APPLY writes**, not the live bindings folder: the player's binds files from
+  the edits, and the factory ones from each installation's `ControlSchemes` (2026-10-28, Alan, Storage S6). A binds
+  file created or renamed in the edits can be named before it reaches the game.
 - **The form written: always four lines, CRLF between them, no newline after the last** — the specimen byte for byte.
   A single-line file is written as four lines; the single-line form is pre-Odyssey and only the Live game is
-  supported.
+  supported. **The form is written when the Preset Editor changes a line** (2026-10-28, Alan, Storage S6): a preset
+  file nobody edited goes out byte for byte, so APPLY never rewrites a file the user did not touch.
+- **Lines put back to what the working copy holds put back its bytes**, so the edits are the working copy again and
+  the APPLY bar goes dark (2026-10-28, Alan, Storage S6).
 - **Values are compared, never bytes** ([Freshness Checks](overview.md#freshness-checks)): the single-line form equals
   four identical lines, and a line ending or byte-order mark changes nothing.
-- **APPLY reads and writes the one file it found** — the file `findLiveStartPresetFile` names, looked up once (P3
-  review, finding 2).
+- **APPLY reads and writes the one file it found** — the set's highest-numbered `StartPreset.N.start`, picked by
+  `PresetEdits.presetFile` alone, so the file read, changed and checked are one file (P3 review, finding 2; Storage S6
+  — until then `findLiveStartPresetFile` found it in the live folder). A set with none gets `StartPreset.4.start`.
 - **Not done by APPLY: telling the assistant.** `BindingsMonitor` reacts only to `.binds` names, so the assistant does
   not reload the newly active General binds file after APPLY — nor after the game changes the preset file. That is a
   V1.1 defect and is fixed on `V1.1-Release`, not here.
@@ -144,7 +158,7 @@ as edits not applied, so the Preset Editor shows them pointing there and the APP
 |---|---|
 | `BindingsLoader.findStartPresetFile(Path)` | **exists** — finds `StartPreset.*.start` by prefix and extension, so it copes with the version suffix. ~~Reusable as-is.~~ **Not for this screen** (2026-10-20): it takes whichever file the listing yields first, so with both generations present it can name the old one. Use `findLiveStartPresetFile` — see [How the four lines are read](#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1). |
 | `BindingsLoader.getActivePresetName()` | **exists, and reads one line** — see below |
-| Writing the file | ~~**does not exist.**~~ **Built 2026-10-20 (P3)** as `preseteditor.StartPresetApply` — see [Apply](#what-apply-checks-and-writes-for-the-preset-file--2026-10-24). The only writer of the game's `StartPreset.*.start` — to be reworked: APPLY writes the preset file from the working copy ([storage.md](storage.md)). |
+| Writing the file | ~~**does not exist.**~~ ~~**Built 2026-10-20 (P3)** as `preseteditor.StartPresetApply`~~ **Since Storage S6 (2026-10-28)** the preset file is an edit (`bindforge.storage.PresetEdits`) written by the one APPLY through the write path, like every file — see [Apply](#what-apply-checks-and-writes-for-the-preset-file--2026-10-24). |
 | Backup coverage | `bindforge.storage.Backups` includes the file in every backup, and RESTORE puts it back (Storage S3); `SetupCheck` reads it. |
 
 **`getActivePresetName()` collapses the four sections into one.** It takes the first non-empty line, and its
@@ -161,6 +175,11 @@ same shape as [the Missing scan's two questions](bind-editor.md#missing-has-two-
 where one caller wants a summary and another wants the truth per slot.
 
 ### How the four lines are read — settled 2026-10-12 (Alan, Foundation F1)
+
+*Since Storage S6 (2026-10-28) BindForge reads the preset file from the working copy, not the live folder:
+`PresetEdits.sections` parses the set's highest `StartPreset.N.start` with `StartPresetSections.parse`, whose rules
+below still hold. `BindingsLoader.readStartPresetSections` and `findLiveStartPresetFile` lost their last caller and
+were removed; the bullets about which file the live folder yields are history.*
 
 `BindingsLoader.readStartPresetSections(Path)` returns a `StartPresetSections` (General, Ship, SRV, On Foot),
 built on the [foundation branch](../../05-build-plan/foundation.md) because `BindingsLoader` is a file V1.1 ships.
