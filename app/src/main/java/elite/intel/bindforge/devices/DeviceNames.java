@@ -16,8 +16,8 @@ import java.util.Set;
  * and SDL-style names such as {@code Virpil Controls 20220720} are neither. A name the game cannot read is
  * worse than no name, because nothing reports it: the entry is simply not there for the game.
  * <p>
- * Pure functions over their inputs. The caller gathers the names already taken - the master's, every
- * installation's entries, Frontier's - so the rule can be tested without a database or a game installation.
+ * Pure functions over their inputs. The caller gathers the names already taken - the edits', the working copy's,
+ * Frontier's - so the rule can be tested without a database or a game installation.
  * The rule is "The default-name rule" in {@code docs/02-features/bindforge/alias-designer.md}.
  */
 public final class DeviceNames {
@@ -71,7 +71,7 @@ public final class DeviceNames {
      *
      * @param reported the name the device reports through the Device Service; {@code null} is treated as
      *                 empty
-     * @param taken    every name already in use - the master's, the installations' entries, Frontier's
+     * @param taken    every name already in use - the edits', the working copy's, Frontier's
      */
     public static String defaultName(String reported, Collection<String> taken) {
         String name = lettersAndDigits(reported == null ? "" : reported);
@@ -132,8 +132,8 @@ public final class DeviceNames {
     }
 
     /**
-     * The controllers onboarding asks about: attached, not one of Frontier's, and named nowhere - no entry in
-     * any installation and no record in the master.
+     * The controllers onboarding asks about: attached, not one of Frontier's, and named nowhere - no element in the
+     * working copy or the edits.
      * <p>
      * A controller that already has a name is never asked, whether Frontier's or the user's: there is no
      * decision to put to them. One that is not attached is not asked either, because a name with nothing

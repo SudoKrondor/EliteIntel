@@ -171,8 +171,9 @@ public record DeviceEditorInputs(boolean attached, boolean axesKnown, int axesWi
     /**
      * The labels SAVE writes for the device - its whole set.
      * <ul>
-     *     <li><strong>Every box</strong>, defaults included: once the master holds labels for a device, startup
-     *     generation skips it, so a default not written would never reach the game, which would show a raw
+     *     <li><strong>Every box</strong>, defaults included: once a device has a {@code .buttonMap}, APPLY's default
+     *     labels skip it ({@code Apply.DefaultLabels}), so a default not written would never reach the game, which
+     *     would show a raw
      *     {@code Joy_14} (Alan, 2026-10-10).</li>
      *     <li><strong>Except on a device the game draws itself</strong> - {@code <SupportsIcons>}, {@code <GamePad>}
      *     - where a box is written only when it already had a saved label or was changed from the default, so a

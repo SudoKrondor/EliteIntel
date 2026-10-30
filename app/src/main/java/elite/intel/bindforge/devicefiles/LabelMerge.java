@@ -19,8 +19,8 @@ import java.util.TreeMap;
  *     label only one side holds is taken without a question.</li>
  *     <li>Overwrite stays available for the whole file - {@link #answersFavouring(String)}.</li>
  * </ul>
- * A side is named by the caller: an installation's id at first setup. The same view serves a later re-merge, where
- * the master is one of the sides.
+ * A side is named by the caller: an installation's id at first setup. The check is to use the same view, with the
+ * working copy as one of the sides (storage.md rule 14, Storage S9).
  */
 public final class LabelMerge {
 

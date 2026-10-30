@@ -79,7 +79,7 @@ public class InstallationRegistry {
         }
         refreshMissingFlags();
         // WHY: a full detection has run, so the run's startup detection has nothing left to do - the startup backup's
-        // detection serves the screens' first refresh and catch-up too (review, 2026-10-24).
+        // detection serves the screens' first refresh too (review, 2026-10-24).
         DETECTED_THIS_RUN.set(true);
         return installations.findAll();
     }
@@ -126,7 +126,7 @@ public class InstallationRegistry {
      * <p>
      * <strong>A caller that arrives while that detection runs waits for it</strong> (review, 2026-10-15, A14). It
      * used to get the list straight away, before the detection had marked a folder that came back as present - so
-     * catch-up's startup line, and a screen's first refresh, read it as still missing.
+     * a screen's first refresh read it as still missing.
      */
     public List<InstallationRow> currentWithStartupScan() {
         if (DETECTED_THIS_RUN.get()) return current();

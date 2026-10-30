@@ -69,7 +69,7 @@ class InstallationRegistryTest {
 
     /**
      * Review, 2026-10-15 (A14): a second reader arriving while the run's detection is still going waits for it - or it
-     * reads a folder that came back as still missing, and catch-up's startup line never speaks.
+     * reads a folder that came back as still missing.
      */
     @Test
     void aReaderArrivingDuringDetectionWaitsForIt() throws Exception {

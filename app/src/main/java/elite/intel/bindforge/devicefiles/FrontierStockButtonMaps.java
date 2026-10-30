@@ -12,9 +12,10 @@ import java.util.Optional;
  * The {@code .buttonMap} files Frontier ships - {@code VPCPanel} and {@code VPCThrottle}, the only two against 51
  * device entries ({@code reference-data/FrontierStock-README.md}).
  * <p>
- * First setup must not take one into the master: it is Frontier's file, not the user's, and a master copy of it
- * would make Apply rewrite a file BindForge never owned. The files travel in the jar, as the stock
- * {@code DeviceMappings.xml} does, so a game update cannot change what they are compared against.
+ * First setup does not put one as shipped to the user as a question: it is Frontier's file, not the user's labels.
+ * It is kept in the working copy as found ({@code bindforge.storage.FirstSetupFiles}, Alan, 2026-10-25), and the write
+ * never removes one. The files travel in the jar, as the stock {@code DeviceMappings.xml} does, so a game update
+ * cannot change what they are compared against.
  * <p>
  * They are also what RESET LABELS puts back on those two devices: Frontier's map is restored rather than removed,
  * because a {@code .buttonMap} Frontier shipped is never removed (Alan, 2026-10-11, A10).
@@ -75,7 +76,7 @@ public final class FrontierStockButtonMaps {
     }
 
     // WHY: a missing resource throws, as FrontierStockDevices does. Without it, Frontier's two maps would read as
-    // the user's, and first setup would master files BindForge must never rewrite.
+    // the user's labels, and first setup would ask the user about Frontier's own files.
     private static FrontierStockButtonMaps load() {
         Map<String, Map<String, String>> labels = new LinkedHashMap<>();
         Map<String, byte[]> content = new LinkedHashMap<>();

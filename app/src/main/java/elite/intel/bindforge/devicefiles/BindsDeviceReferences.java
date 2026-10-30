@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 /**
  * Which device entries the bindings actually name.
  * <p>
- * This is what separates a divergence that breaks something from one that is merely untidy: an entry missing
- * from an installation only costs the user anything when a binding names that device.
+ * This is what separates a difference between installations that breaks something from one that is merely untidy:
+ * an entry missing from an installation only costs the user anything when a binding names that device.
  * <p>
  * Read from <strong>every</strong> {@code .binds} in the folder rather than the active preset alone, because
  * the game validates all of them - measured 2026-09-22, where one unresolvable name in any file had the whole
@@ -244,7 +244,7 @@ public final class BindsDeviceReferences {
      * A {@code .binds} names a device by its element name when an entry matches it, and <strong>falls back to
      * raw VID+PID hex when none does</strong> - eight hex characters, vendor then product. Those are not entry
      * names: nothing in {@code DeviceMappings.xml} is called {@code 334403F3}, and a binding using one is
-     * telling us the device has no entry at all, which is a different problem from a divergent one.
+     * telling us the device has no entry at all, which is a different problem from an entry that differs.
      */
     private static boolean isAnEntryName(String device) {
         if (NOT_AN_ENTRY.contains(device.toLowerCase(Locale.ROOT))) return false;

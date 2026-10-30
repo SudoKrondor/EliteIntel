@@ -19,7 +19,7 @@ import java.util.Set;
  * hardware sold years ago would otherwise be announced on every run.
  * <p>
  * <strong>The user's names only.</strong> A row whose name is one of Frontier's is left out, by name rather than by
- * {@link MyDevice#builtIn()}: that flag is decided by VID/PID for anything the master does not hold, so it would also
+ * {@link MyDevice#builtIn()}: that flag is decided by VID/PID for anything the edits do not name, so it would also
  * hide a user's own element shadowing a built-in from before first setup.
  * <p>
  * A pure function over its inputs, so the rule is testable without hardware, files or a voice.
@@ -72,8 +72,8 @@ public final class MissingControllers {
     }
 
     /**
-     * The master's name when it has one, the installation's entry name before first setup. The master is the record
-     * Apply writes everywhere, so where an installation still lags behind it, the master's name is the one meant.
+     * The edits' name when they give one, else the working copy's. The edits are what the next APPLY writes, so
+     * where the working copy still has the old name, the edits' name is the one meant.
      */
     private static String nameOf(MyDevice device) {
         return device.alias() != null ? device.alias() : device.entryName();

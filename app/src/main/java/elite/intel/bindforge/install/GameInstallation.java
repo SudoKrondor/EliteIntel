@@ -14,7 +14,7 @@ import java.util.Objects;
  * either way and never ask which operating system they are on.
  * <p>
  * There is deliberately no {@code primary} flag. No installation is authoritative - any file inside a game
- * folder can be wiped by a patch, which is why the master lives in Elite-Intel's own folder.
+ * folder can be wiped by a patch, which is why the working copy lives in Elite-Intel's own folder.
  *
  * @param storefront       where it came from; a label, never a key
  * @param root             the installation root, the folder holding {@code Products}

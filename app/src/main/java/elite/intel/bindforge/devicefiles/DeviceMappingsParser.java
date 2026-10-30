@@ -84,7 +84,8 @@ public final class DeviceMappingsParser {
      * name, in document order.
      * <p>
      * {@link DeviceEntry} holds an element's pairs as a set, so which one is primary is lost there. The primary
-     * pair is the one Apply writes and the one the master holds, so comparing a file against the master needs it.
+     * pair is the one APPLY writes and the one the working copy holds, so comparing a file against the working copy
+     * needs it.
      * An element named twice keeps its first, because the game resolves to the first match.
      *
      * @return an element with neither child maps to an empty pair rather than being left out, since the element

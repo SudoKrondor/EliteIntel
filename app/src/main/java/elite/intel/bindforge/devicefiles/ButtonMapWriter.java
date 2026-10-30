@@ -9,10 +9,10 @@ import java.util.Map;
 /**
  * Writes a device's button and axis labels as a {@code .buttonMap}.
  * <p>
- * <strong>The whole file comes from the master</strong> (Alan, 2026-10-04). The master's label set is the
- * device's labels, so a label it no longer holds - after RESET LABELS, or for an axis the device stopped
- * reporting - is gone from the file too. Labels a user wrote by hand in one installation are gathered into the
- * master at first setup, before anything is pushed, and the file being replaced is kept in Edit History.
+ * <strong>The whole file comes from the device's label set</strong> (Alan, 2026-10-04), so a label the set no
+ * longer holds - after RESET LABELS, or for an axis the device stopped reporting - is gone from the file too. Labels
+ * a user wrote by hand in one installation are gathered into the working copy at first setup, and the files as they
+ * were are in first setup's backup.
  */
 public final class ButtonMapWriter {
 

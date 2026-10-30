@@ -136,7 +136,7 @@ class DeviceMappingsParserTest {
         assertTrue(thrown.getMessage().contains("DeviceMappings.xml"), "the message names the file");
     }
 
-    /** The primary pair is what Apply writes and the master holds; alternatives are not it. */
+    /** The primary pair is what APPLY writes and the working copy holds; alternatives are not it. */
     @Test
     void primariesAreEachElementsOwnPairInDocumentOrderWithoutItsAlternatives() throws IOException {
         byte[] xml = """

@@ -12,9 +12,9 @@ import java.util.*;
  * Plans safe keyboard assignments for controls that have no keyboard binding.
  * <p>
  * This class is pure and file-free: it works from the parsed read-only slot map
- * and produces a list of intended edits plus a list of skips with reasons. The
- * caller is responsible for actually writing the edits (via {@link BindingsWriter})
- * and applying the draft.
+ * and produces a list of intended changes plus a list of skips with reasons. The
+ * caller turns them into edits not applied (via {@link BindingsWriter}), and APPLY
+ * writes them like every other edit.
  * <p>
  * Three invariants drive the design:
  * <ul>

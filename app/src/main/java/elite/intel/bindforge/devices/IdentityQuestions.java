@@ -91,8 +91,8 @@ public final class IdentityQuestions {
 
         /**
          * What an answer to the question is stored under, and what it is put once per run under. The name, or the old
-         * id as {@code VID:PID} (Alan, 2026-10-17, A17). No name BindForge accepts holds a colon. A name first setup or
-         * adopt took from an installation is not checked, and XML allows a colon in an element name - but it would have
+         * id as {@code VID:PID} (Alan, 2026-10-17, A17). No name BindForge accepts holds a colon. A name first setup
+         * took from an installation is not checked, and XML allows a colon in an element name - but it would have
          * to be exactly {@code VID:PID} to meet one. Eight hex characters alone could be a device name -
          * {@code ABCDEF12}.
          */

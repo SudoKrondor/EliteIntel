@@ -57,9 +57,9 @@ class MissingControllersTest {
         assertEquals(List.of(new Missing("RVWAP", 12)), missing);
     }
 
-    /** The master is what Apply writes everywhere, so its name wins over an installation that lags behind it. */
+    /** The edits are what the next APPLY writes, so their name wins over the working copy's old one. */
     @Test
-    void theMastersNameWinsOverTheEntryName() {
+    void theEditsNameWinsOverTheEntryName() {
         List<Missing> missing = MissingControllers.of(
                 List.of(absent("Lvwap", "3344", "83F4", "LVWAP")),
                 Map.of("LVWAP", 3, "Lvwap", 4), frontier);

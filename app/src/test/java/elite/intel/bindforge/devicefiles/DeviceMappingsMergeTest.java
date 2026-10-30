@@ -18,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Merging the user's elements into a {@code DeviceMappings.xml}: everything already there survives, and the
- * user's elements lead the file, because the first element claiming a VID/PID is the one the game uses.
+ * Changing the user's elements in a {@code DeviceMappings.xml}: everything else already there survives, and the user's
+ * elements lead the file, because the first element claiming a VID/PID is the one the game uses.
  */
 class DeviceMappingsMergeTest {
 
@@ -43,24 +43,12 @@ class DeviceMappingsMergeTest {
 
     private static final UserEntry RVWAP = new UserEntry("RVWAP", "3344", "43F4");
 
-    @Test
-    void theUsersElementLeadsTheFileAndEverythingElseIsKept() throws IOException {
-        Result result = DeviceMappingsMerge.merge(bytes(SPECIMEN), List.of(RVWAP));
-
-        assertTrue(result.changed());
-        assertEquals(List.of("RVWAP", "GamePad", "SaitekX52", "T-Rudder"), names(result));
-        String written = text(result);
-        assertTrue(written.contains("<!-- XB1 Controller -->"), written);
-        assertTrue(written.contains("<SupportsIcons>SaitekX52</SupportsIcons>"), written);
-        assertEquals(2, entry(result, "GamePad").hardware().size(), "the <Alternative> pair survives");
-    }
-
     /** All 51 of Frontier's entries and every pair they claim come through, with the user's on top. */
     @Test
     void frontiersStockFileLosesNothing() throws IOException {
         byte[] stock = stockFile();
 
-        Result result = DeviceMappingsMerge.merge(stock, List.of(RVWAP));
+        Result result = DeviceMappingsMerge.insert(stock, List.of(RVWAP), List.of("RVWAP"));
 
         List<DeviceEntry> before = DeviceMappingsParser.parse(new ByteArrayInputStream(stock), "stock");
         List<DeviceEntry> after = DeviceMappingsParser.parse(new ByteArrayInputStream(result.content()), "merged");
@@ -70,26 +58,14 @@ class DeviceMappingsMergeTest {
         assertEquals(supportsIconsIn(new String(stock, StandardCharsets.UTF_8)), supportsIconsIn(text(result)));
     }
 
-    /** The case measured on 2026-10-03: an entry below Frontier's for the same pedals was ignored by the game. */
+    /** The identity question's yes: only the element's own pair changes (Storage S4b). */
     @Test
-    void aUserElementBelowFrontiersEntryForTheSameHardwareMovesToTheTop() throws IOException {
-        String userBelow = SPECIMEN.replace("</Root>",
-                "\t<MyRudder><PID>B679</PID><VID>044F</VID></MyRudder>\n</Root>");
-
-        Result result = DeviceMappingsMerge.merge(bytes(userBelow),
-                List.of(new UserEntry("MyRudder", "044F", "B679")));
-
-        assertTrue(result.changed());
-        assertEquals(List.of("MyRudder", "GamePad", "SaitekX52", "T-Rudder"), names(result));
-    }
-
-    @Test
-    void anExistingElementGetsTheMastersHardwareAndKeepsItsOtherChildren() throws IOException {
+    void aRetargetGivesTheElementNewHardwareAndKeepsItsOtherChildren() throws IOException {
         String handEdited = SPECIMEN.replace("<Root>", """
                 <Root>
                 \t<RVWAP><PID>1111</PID><VID>3344</VID><Alternative><PID>2222</PID><VID>3344</VID></Alternative><Undocumented>x</Undocumented></RVWAP>""");
 
-        Result result = DeviceMappingsMerge.merge(bytes(handEdited), List.of(RVWAP));
+        Result result = DeviceMappingsMerge.retarget(bytes(handEdited), "RVWAP", "3344", "43F4");
 
         String written = text(result);
         assertTrue(written.contains("<PID>43F4</PID>"), written);
@@ -99,23 +75,23 @@ class DeviceMappingsMergeTest {
     }
 
     /**
-     * A file already saying what the master says is handed back byte for byte - not re-laid-out, which would
-     * cost a write and an Edit History entry for nothing the game could see. Hex case is not a difference:
-     * Frontier's own file has no case convention.
+     * A retarget to the hardware the element already claims hands the file back byte for byte - not re-laid-out,
+     * which would change its bytes for nothing the game could see. Hex case is not a difference: Frontier's own file
+     * has no case convention.
      */
     @Test
-    void aFileThatAlreadyMatchesIsReturnedUntouched() throws IOException {
-        byte[] alreadyMerged = bytes(SPECIMEN.replace("<Root>", "<Root>\n\t<RVWAP><PID>43f4</PID><VID>3344</VID></RVWAP>"));
+    void aRetargetToTheSameHardwareReturnsTheFileUntouched() throws IOException {
+        byte[] already = bytes(SPECIMEN.replace("<Root>", "<Root>\n\t<RVWAP><PID>43f4</PID><VID>3344</VID></RVWAP>"));
 
-        Result result = DeviceMappingsMerge.merge(alreadyMerged, List.of(RVWAP));
+        Result result = DeviceMappingsMerge.retarget(already, "RVWAP", "3344", "43F4");
 
         assertFalse(result.changed());
-        assertArrayEquals(alreadyMerged, result.content());
+        assertArrayEquals(already, result.content());
     }
 
     @Test
     void theFileIsWrittenWithCrlfAndFourSpaces() throws IOException {
-        String written = text(DeviceMappingsMerge.merge(bytes(SPECIMEN), List.of(RVWAP)));
+        String written = text(DeviceMappingsMerge.insert(bytes(SPECIMEN), List.of(RVWAP), List.of("RVWAP")));
 
         assertTrue(written.startsWith("""
                 <?xml version="1.0" encoding="UTF-8"?>\r
@@ -132,7 +108,7 @@ class DeviceMappingsMergeTest {
     @Test
     void aFileWhoseRootIsNotRootIsRefused() {
         IOException refused = assertThrows(IOException.class,
-                () -> DeviceMappingsMerge.merge(bytes("<DeviceMappings/>"), List.of(RVWAP)));
+                () -> DeviceMappingsMerge.insert(bytes("<DeviceMappings/>"), List.of(RVWAP), List.of("RVWAP")));
 
         assertTrue(refused.getMessage().contains("<DeviceMappings>"), refused.getMessage());
     }
@@ -140,15 +116,16 @@ class DeviceMappingsMergeTest {
     @Test
     void aNameXmlCannotHoldIsRefusedRatherThanWritten() {
         assertThrows(IOException.class,
-                () -> DeviceMappingsMerge.merge(bytes(SPECIMEN), List.of(new UserEntry("Left Stick", "3344", "83F4"))));
+                () -> DeviceMappingsMerge.insert(bytes(SPECIMEN), List.of(new UserEntry("Left Stick", "3344", "83F4")),
+                        List.of("Left Stick")));
     }
 
     /** CLEAR, applied: the user's element goes, and every other element, comment and child is kept. */
     @Test
     void removingTheUsersElementKeepsEverythingElse() throws IOException {
-        Result merged = DeviceMappingsMerge.merge(bytes(SPECIMEN), List.of(RVWAP));
+        Result inserted = DeviceMappingsMerge.insert(bytes(SPECIMEN), List.of(RVWAP), List.of("RVWAP"));
 
-        Result result = DeviceMappingsMerge.remove(merged.content(), List.of("RVWAP"));
+        Result result = DeviceMappingsMerge.remove(inserted.content(), List.of("RVWAP"));
 
         assertTrue(result.changed());
         assertEquals(List.of("GamePad", "SaitekX52", "T-Rudder"), names(result));
@@ -186,23 +163,29 @@ class DeviceMappingsMergeTest {
                 () -> DeviceMappingsMerge.remove(bytes("<Bindings><RVWAP/></Bindings>"), List.of("RVWAP")));
     }
 
-    /** Onboarding's insert: with no user element leading the file, the new one goes at the very top (A6b). */
+    /**
+     * Onboarding's insert: with no user element leading the file, the new one goes at the very top (A6b), and
+     * everything else in the file is kept.
+     */
     @Test
     void anInsertedElementLeadsAFileWithNoUserElements() throws IOException {
         Result result = DeviceMappingsMerge.insert(bytes(SPECIMEN), List.of(RVWAP), List.of("RVWAP"));
 
         assertTrue(result.changed());
         assertEquals(List.of("RVWAP", "GamePad", "SaitekX52", "T-Rudder"), names(result));
-        assertTrue(text(result).contains("<!-- XB1 Controller -->"));
+        String written = text(result);
+        assertTrue(written.contains("<!-- XB1 Controller -->"), written);
+        assertTrue(written.contains("<SupportsIcons>SaitekX52</SupportsIcons>"), written);
+        assertEquals(2, entry(result, "GamePad").hardware().size(), "the <Alternative> pair survives");
     }
 
     /**
-     * An insert goes where the push would put it - in master order among the user's leading elements - and leaves
-     * every other element as it is, a user element whose PID differs from the master's included: bringing it into
-     * line would be a revert nobody asked for.
+     * An insert goes at its place in the given order among the user's leading elements, and leaves every other
+     * element as it is, a user element with a different PID included: bringing it into line would be a change nobody
+     * asked for.
      */
     @Test
-    void anInsertTakesItsPlaceInMasterOrderAndChangesNothingElse() throws IOException {
+    void anInsertTakesItsPlaceInTheOrderAndChangesNothingElse() throws IOException {
         String file = """
                 <?xml version="1.0" encoding="UTF-8" ?>
                 <Root>

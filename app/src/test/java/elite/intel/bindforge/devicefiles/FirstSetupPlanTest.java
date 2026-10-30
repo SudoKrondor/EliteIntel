@@ -222,7 +222,7 @@ class FirstSetupPlanTest {
 
         assertEquals(Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_4", "PINKY"),
                 plan.resolve(answers).devices().getFirst().labels(), "use Steam's labels for this device");
-        assertEquals(answers, plan.answersFavouring(STEAM), "using Steam as the master answers the same way");
+        assertEquals(answers, plan.answersFavouring(STEAM), "using Steam's file for all answers the same way");
     }
 
     @Test

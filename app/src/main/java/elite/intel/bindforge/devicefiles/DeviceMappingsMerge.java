@@ -10,18 +10,19 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Merges the user's device elements into one installation's {@code DeviceMappings.xml}.
+ * Changes the user's device elements in a {@code DeviceMappings.xml}: add, give other hardware, rename, remove, put
+ * back, and first-time startup's assembly of the working copy's one file.
  * <p>
- * <strong>Merge, never regenerate.</strong> The master holds only the user's elements, so everything else in
- * the file - Frontier's entries, comments, {@code <SupportsIcons>}, any child nobody has documented - is kept
- * exactly as it is. A user element already in the file keeps every child it has; only its {@code <PID>} and
- * {@code <VID>} are brought into line with the master. <em>The first attempt at writing this file emitted only
+ * <strong>Change, never regenerate.</strong> Each method touches only the user's elements it is given, so everything
+ * else in the file - Frontier's entries, comments, {@code <SupportsIcons>}, any child nobody has documented - is kept
+ * exactly as it is. A user element already in the file keeps every child it has; at most its {@code <PID>} and
+ * {@code <VID>} are brought into line with its entry. <em>The first attempt at writing this file emitted only
  * the tags it knew and silently dropped all five {@code <SupportsIcons>}.</em>
  * <p>
  * <strong>The user's elements go first.</strong> When two elements claim one VID/PID the game uses the first
  * in the file (measured 2026-10-03, domain doc §1.2d), so an entry of the user's written below Frontier's would
- * be silently ignored. Each one is placed at the top of {@code <Root>}, in master order, moving it up if it is
- * already further down.
+ * be silently ignored. Each one is placed among the user's elements at the top of {@code <Root>}, in the order the
+ * caller gives.
  * <p>
  * Bytes in, bytes out: nothing here reads or writes a file. Since Storage S4a the edits on screen change the working
  * copy's file with it ({@code bindforge.storage.DeviceEdits}).
@@ -36,7 +37,7 @@ public final class DeviceMappingsMerge {
     }
 
     /**
-     * One of the user's device elements, as the master holds it.
+     * One of the user's device elements: its tag and its own VID/PID.
      *
      * @param name the element tag, which {@code .binds} names the device by
      */
@@ -56,43 +57,9 @@ public final class DeviceMappingsMerge {
     }
 
     /**
-     * @param existing the installation's current file, or Frontier's stock file when it has none
-     * @param entries  the user's elements, in the order they should lead the file
-     * @throws IOException if {@code existing} is not a {@code DeviceMappings.xml}, or a name cannot be an
-     *                     element tag
-     */
-    public static Result merge(byte[] existing, List<UserEntry> entries) throws IOException {
-        Document document = DeviceFileXml.parse(existing);
-        Element root = rootOf(document);
-
-        boolean changed = false;
-        List<Element> leading = new ArrayList<>();
-        for (UserEntry entry : entries) {
-            Element element = firstChildNamed(root, entry.name());
-            if (element == null) {
-                element = newEntry(document, entry);
-                changed = true;
-            } else {
-                changed |= matchHardware(document, element, entry);
-            }
-            leading.add(element);
-        }
-
-        // WHY: a file that already says what the master says is returned untouched rather than re-laid-out.
-        // Rewriting it would cost a write, an Edit History entry and a changed timestamp for no difference
-        // the game could see.
-        if (!changed && alreadyLeads(root, leading)) return new Result(existing, false);
-
-        for (int i = leading.size() - 1; i >= 0; i--) {
-            root.insertBefore(leading.get(i), root.getFirstChild());
-        }
-        return new Result(DeviceFileXml.write(document), true);
-    }
-
-    /**
      * One element given other hardware - the identity question's yes (A12; Storage S4b, 2026-10-28). The element keeps
      * its name, its place in the file and every other child; only its own {@code <VID>} and {@code <PID>} change.
-     * Nothing else moves, unlike {@link #merge}, which would lead the file with the entries it is given.
+     * Nothing else moves.
      *
      * @param name the element's tag, exactly as the file spells it
      * @throws IOException if {@code existing} is not a {@code DeviceMappings.xml}, or holds no element {@code name}
@@ -108,18 +75,18 @@ public final class DeviceMappingsMerge {
     /**
      * Adds new elements to the file and changes nothing else - onboarding's write (Alan, 2026-10-14, A6b).
      * <p>
-     * Unlike {@link #merge}, an element already in the file is not brought into line or moved: onboarding names a
-     * controller, and bringing some other device's {@code <PID>} back to the master's would be a revert nobody asked
-     * for. Each new element goes where the push would put it - among the user's elements that lead the file, at its
-     * place in {@code masterOrder} - so a file that matched the master before still matches it after. An element
-     * whose tag is already in the file is left alone, and is not counted as added.
+     * An element already in the file is not brought into line or moved: onboarding names a
+     * controller, and bringing some other device's {@code <PID>} into line would be a change nobody asked for. Each
+     * new element goes among the user's elements that lead the file, at its place in {@code order}, and every element
+     * already there is left as it is. An element whose tag is already in the file is left alone, and is not counted
+     * as added.
      *
      * @param existing    the installation's current file, or Frontier's stock file when it has none
      * @param entries     the elements to add
-     * @param masterOrder every name in the master, new ones included, in the order the push leads the file with
+     * @param order    every user's name leading the file, the new ones included, in the order they should lead it
      * @throws IOException if {@code existing} is not a {@code DeviceMappings.xml}, or a name cannot be an element tag
      */
-    public static Result insert(byte[] existing, List<UserEntry> entries, List<String> masterOrder)
+    public static Result insert(byte[] existing, List<UserEntry> entries, List<String> order)
             throws IOException {
         Document document = DeviceFileXml.parse(existing);
         Element root = rootOf(document);
@@ -127,12 +94,12 @@ public final class DeviceMappingsMerge {
         boolean changed = false;
         for (UserEntry entry : entries) {
             if (firstChildNamed(root, entry.name()) != null) continue;
-            int place = masterOrder.indexOf(entry.name());
+            int place = order.indexOf(entry.name());
             if (place < 0) {
-                throw new IllegalArgumentException(entry.name() + " is not in the master order it is placed by");
+                throw new IllegalArgumentException(entry.name() + " is not in the order it is placed by");
             }
             Element element = newEntry(document, entry);
-            Node before = insertionPoint(root, masterOrder, place);
+            Node before = insertionPoint(root, order, place);
             root.insertBefore(element, before);
             changed = true;
         }
@@ -162,19 +129,19 @@ public final class DeviceMappingsMerge {
     }
 
     /**
-     * Where an element at {@code place} in the master order goes: just after the last of the leading user elements
-     * that comes before it, or at the very top when none does. The leading run is the root's first elements while
-     * they are names the master holds - the run the push and the check both read.
+     * Where an element at {@code place} in {@code order} goes: just after the last of the leading user elements that
+     * comes before it, or at the very top when none does. The leading run is the root's first elements while they are
+     * names in {@code order}.
      *
      * @return the node to insert before, or {@code null} to append
      */
-    private static Node insertionPoint(Element root, List<String> masterOrder, int place) {
+    private static Node insertionPoint(Element root, List<String> order, int place) {
         Node after = null;
         NodeList children = root.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node child = children.item(i);
             if (child.getNodeType() != Node.ELEMENT_NODE) continue;
-            int index = masterOrder.indexOf(child.getNodeName());
+            int index = order.indexOf(child.getNodeName());
             if (index < 0) break;
             if (index < place) after = child;
         }
@@ -191,7 +158,7 @@ public final class DeviceMappingsMerge {
      * before - every old copy is removed instead, and the element already under the new name is kept.
      * <p>
      * <strong>The old tag is matched ignoring case</strong>, as the game finds an element (format §4.3, measured
-     * 2026-10-14): an installation adopted or hand-edited as {@code <lvwap>} is still the device whose old name is
+     * 2026-10-14): a file hand-edited to {@code <lvwap>} is still the device whose old name is
      * {@code LVWAP}, and left alone it would keep leading the file for that VID/PID (review, 2026-10-15). The element
      * already spelled exactly as the new name is never an old copy - that is a case-only rename already taken.
      *
@@ -245,7 +212,7 @@ public final class DeviceMappingsMerge {
     /**
      * Takes the named elements out of the file - CLEAR, applied (Alan, 2026-10-11, A10). Every element with one of
      * those tags goes, a second copy further down included: the name has left the user's set, so no copy of it is
-     * the master's to keep.
+     * kept.
      * <p>
      * The caller passes only the user's names. Frontier's elements are never removed - on a built-in, RESET LABELS
      * removes a {@code .buttonMap}, never the entry.
@@ -264,7 +231,7 @@ public final class DeviceMappingsMerge {
             Node child = children.item(i);
             if (child.getNodeType() == Node.ELEMENT_NODE && names.contains(child.getNodeName())) gone.add(child);
         }
-        // WHY: untouched when nothing matched, as merge does - no write, no Edit History entry, no new timestamp.
+        // WHY: untouched when nothing matched - the same bytes back, so nothing is written.
         if (gone.isEmpty()) return new Result(existing, false);
         gone.forEach(root::removeChild);
         return new Result(DeviceFileXml.write(document), true);
@@ -352,10 +319,10 @@ public final class DeviceMappingsMerge {
     }
 
     /**
-     * Brings an existing element's own {@code <PID>} and {@code <VID>} into line with the master, leaving every
+     * Brings an existing element's own {@code <PID>} and {@code <VID>} into line with its entry, leaving every
      * other child - {@code <Alternative>} blocks included - alone.
      * <p>
-     * A value equal to the master's ignoring case is left as written: Frontier's file has no case convention,
+     * A value equal to the entry's ignoring case is left as written: Frontier's file has no case convention,
      * and rewriting {@code 05c4} as {@code 05C4} would be a change with no meaning.
      *
      * @return whether anything changed
@@ -385,23 +352,10 @@ public final class DeviceMappingsMerge {
         return element;
     }
 
-    /** Whether {@code leading} are already the root's first elements, in that order. */
-    private static boolean alreadyLeads(Element root, List<Element> leading) {
-        int index = 0;
-        NodeList children = root.getChildNodes();
-        for (int i = 0; i < children.getLength() && index < leading.size(); i++) {
-            Node child = children.item(i);
-            if (child.getNodeType() != Node.ELEMENT_NODE) continue;
-            if (child != leading.get(index)) return false;
-            index++;
-        }
-        return index == leading.size();
-    }
-
     /**
      * The first child element with exactly this tag. Matched exactly because the tag is what the game reads
-     * and XML tags are case-sensitive. A second element with the same tag is left where it is: it is not the
-     * one the game resolves, and it is not the master's to remove.
+     * and XML tags are case-sensitive. A second element with the same tag is not looked at: it is not the one the
+     * game resolves.
      */
     private static Element firstChildNamed(Element parent, String tag) {
         NodeList children = parent.getChildNodes();

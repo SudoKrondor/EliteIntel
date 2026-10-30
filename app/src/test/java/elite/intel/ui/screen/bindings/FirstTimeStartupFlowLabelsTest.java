@@ -16,7 +16,7 @@ class FirstTimeStartupFlowLabelsTest {
 
     /**
      * The defect this pins: keyed by storefront, the second of two Frontier copies replaced the first and was
-     * silently left out of the comparison, so a divergence on it never appeared.
+     * silently left out of the comparison, so a difference on it was never shown.
      */
     @Test
     void twoInstallationsFromOneStorefrontKeepSeparateIdentities() {

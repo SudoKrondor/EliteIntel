@@ -18,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * What the bindings name is the difference between a divergence that breaks the game and one that is only
- * untidy, so the reading of it has to be exact about which values are entry names and which are not.
+ * What the bindings name decides whether a difference between installations breaks the game or is only untidy, so
+ * the reading of it has to be exact about which values are entry names and which are not.
  */
 class BindsDeviceReferencesTest {
 
@@ -56,7 +56,7 @@ class BindsDeviceReferencesTest {
 
     /**
      * A binding falls back to raw VID+PID hex when no entry matches. That is a device with no entry at all -
-     * a different problem from a divergent one - so it is not counted as an entry name.
+     * a different problem from an entry that differs - so it is not counted as an entry name.
      */
     @Test
     void rawHardwareIdsAreNotEntryNames() throws IOException {
