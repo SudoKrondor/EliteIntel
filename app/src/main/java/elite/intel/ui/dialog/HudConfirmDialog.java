@@ -7,6 +7,8 @@ import elite.intel.ui.widget.HudModalSpec;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /**
  * Reusable HUD modal confirm dialog (section 10/section 10.1) - the canon replacement for raw
@@ -14,6 +16,8 @@ import java.awt.event.KeyEvent;
  * (primary right, optional extra left of primary, optional dismiss left) and reports which the user
  * chose; {@link #info} is the single-button message variant.
  * Built on {@link AppTheme#hudModalScaffold(HudModalSpec)}; ESC and the close glyph map to DISMISS.
+ * {@link #showWithoutDefault} is the variant where Enter chooses nothing, for a choice that must never be made by
+ * accident.
  */
 public final class HudConfirmDialog extends JDialog {
 
@@ -23,13 +27,13 @@ public final class HudConfirmDialog extends JDialog {
     private Result result = Result.DISMISS;
 
     private HudConfirmDialog(Component parent, String title, String message,
-                             String primaryLabel, String extraLabel, String dismissLabel) {
+                             String primaryLabel, String extraLabel, String dismissLabel, boolean enterChooses) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
-        buildUi(title, message, primaryLabel, extraLabel, dismissLabel);
+        buildUi(title, message, primaryLabel, extraLabel, dismissLabel, enterChooses);
     }
 
     private void buildUi(String title, String message, String primaryLabel,
-                         String extraLabel, String dismissLabel) {
+                         String extraLabel, String dismissLabel, boolean enterChooses) {
         setUndecorated(true);
 
         JTextArea msg = new JTextArea(message == null ? "" : message);
@@ -83,7 +87,19 @@ public final class HudConfirmDialog extends JDialog {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        getRootPane().setDefaultButton(primary);
+        if (enterChooses) {
+            getRootPane().setDefaultButton(primary);
+        } else {
+            // WHY: no default button, and the focus on the message rather than a button, so neither Enter nor Space
+            // chooses anything - the user clicks one (storage.md rule 9).
+            body.setFocusable(true);
+            addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowOpened(WindowEvent e) {
+                    body.requestFocusInWindow();
+                }
+            });
+        }
         pack();
         setLocationRelativeTo(getOwner());
     }
@@ -100,8 +116,22 @@ public final class HudConfirmDialog extends JDialog {
      */
     public static Result show(Component parent, String title, String message,
                               String primaryLabel, String extraLabel, String dismissLabel) {
+        return show(parent, title, message, primaryLabel, extraLabel, dismissLabel, true);
+    }
+
+    /**
+     * {@link #show} with nothing selected: no default button and no button focused, so Enter chooses nothing. ESC and
+     * the close glyph are still DISMISS.
+     */
+    public static Result showWithoutDefault(Component parent, String title, String message,
+                                            String primaryLabel, String extraLabel, String dismissLabel) {
+        return show(parent, title, message, primaryLabel, extraLabel, dismissLabel, false);
+    }
+
+    private static Result show(Component parent, String title, String message,
+                               String primaryLabel, String extraLabel, String dismissLabel, boolean enterChooses) {
         HudConfirmDialog dlg = new HudConfirmDialog(parent, title, message,
-                primaryLabel, extraLabel, dismissLabel);
+                primaryLabel, extraLabel, dismissLabel, enterChooses);
         // Dim the parent for the modal's lifetime (canon 10 / 10.1); the scrim is removed on close.
         AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(parent), () -> dlg.setVisible(true));
         return dlg.result;

@@ -111,6 +111,21 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    are reminded, and choose **Go back**, **Discard** or **Apply** (Apply with its usual confirmation and backup).
    Nothing is selected and Enter chooses nothing; Esc and the close glyph are Go back (2026-10-23, Alan).
 
+   **Settled with Storage S7's sources (Alan, 2026-10-30):**
+
+   - **Apply leaves only once the edits are gone.** It is the bar's APPLY, confirmation and report included; after
+     the report the user leaves. If APPLY is cancelled, refused or fails before writing, the user stays, with the
+     edits on screen - otherwise a refused preset file would close Elite-Intel and lose them.
+   - **Discard asks nothing more.** The leave question is its confirmation.
+   - **While a write runs** (APPLY, RESTORE, first-time startup), **closing Elite-Intel is refused** and the user is
+     told the files are being written; switching to another tab is let through, since the edits are already being
+     written. Closing part way would leave installations unwritten until the check.
+   - **Update and restart** (`HudUpdateButton`) closes Elite-Intel without asking - the user asked for it, and it is
+     not BindForge's screen. Left out of S7.
+
+   Built in Storage S7 as `ui.screen.bindings.LeavePrompt`, asked from the main tabs' selection and the window close
+   in `AppView`; `HudConfirmDialog.showWithoutDefault` is the dialog with no default button.
+
 ## How the files are written — 2026-10-24
 
 Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.storage.WritePath`, `WorkingCopy` and

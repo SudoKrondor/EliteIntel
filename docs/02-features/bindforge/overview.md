@@ -512,6 +512,9 @@ altogether. *Until 2026-10-23 the choices were Save and Discard, Save keeping th
 on screen there is nothing to save to. The 2026-10-12 ruling (Core C6) that saved-but-not-applied work needs no
 prompt went with the draft.*
 
+**How Apply, Discard and a running write behave on leaving** was settled with Storage S7's sources (Alan, 2026-10-30)
+and is in [storage.md rule 9](storage.md#editing-and-applying).
+
 ## Document Map
 
 - [Alias Designer](alias-designer.md)

@@ -6,6 +6,7 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.AiTabController;
 import elite.intel.ui.event.*;
 import elite.intel.ui.inputmonitor.InputMonitorTabPanel;
+import elite.intel.ui.screen.bindings.LeavePrompt;
 import elite.intel.ui.support.GameClockWarning;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
@@ -67,9 +68,9 @@ public class AppView extends JFrame implements AppViewInterface {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                // WHY no prompt: BindForge's edits not applied are lost on close until Storage S7's leave prompt
-                // (Alan, 2026-10-26, accepted under no interim compatibility).
-                System.exit(0);
+                // WHY: closing with BindForge's edits not applied asks first; Go back cancels the close (storage.md
+                // rule 9, Storage S7).
+                bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> System.exit(0));
             }
         });
         setMinimumSize(new Dimension(1280, 720));
@@ -94,6 +95,7 @@ public class AppView extends JFrame implements AppViewInterface {
         setContentPane(root);
 
         JTabbedPane tabs = AppTheme.makeMainNavTabs();
+        tabs.setModel(new LeavingBindForge(tabs));
 
         ImageIcon aiIcon = scaledIcon(ICON_AI);
         ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
@@ -134,6 +136,33 @@ public class AppView extends JFrame implements AppViewInterface {
         AppTheme.applyDarkPalette(getContentPane());
 
         aiTabController = new AiTabController(aiTabPanel);
+    }
+
+    /**
+     * The main tabs' selection, asking before it leaves the BindForge tab with edits not applied (storage.md rule 9,
+     * Storage S7). A switch the user turns down is not made; one agreed to later - after Apply - is made then.
+     */
+    private final class LeavingBindForge extends DefaultSingleSelectionModel {
+
+        private final JTabbedPane tabs;
+
+        LeavingBindForge(JTabbedPane tabs) {
+            this.tabs = tabs;
+        }
+
+        @Override
+        public void setSelectedIndex(int index) {
+            int from = getSelectedIndex();
+            if (from == index || from < 0 || bindingsTabPanel == null
+                    || from != tabs.indexOfComponent(bindingsTabPanel)) {
+                super.setSelectedIndex(index);
+                return;
+            }
+            bindingsTabPanel.leave(LeavePrompt.Leaving.TAB, () -> {
+                // WHY: Apply ran in between - the tab asked for must still be there.
+                if (index < tabs.getTabCount()) super.setSelectedIndex(index);
+            });
+        }
     }
 
     private JComponent buildTopShell(TopStatusBar statusBar) {

@@ -35,6 +35,9 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * one Elite-Intel uses; then checks the preset file, naming the sections it refuses for; then backs up, saves the
  * edits into the working copy and writes it out ({@link Apply}), and reports per place. DISCARD asks, then throws
  * every edit away; no file is touched.
+ * <p>
+ * The leave prompt's Apply ({@link LeavePrompt}, storage.md rule 9) is this APPLY, with its confirmation and report,
+ * told when it has finished so it can leave once the edits are gone.
  */
 public final class ApplyBar extends JPanel {
 
@@ -47,7 +50,8 @@ public final class ApplyBar extends JPanel {
     public ApplyBar() {
         super(new BorderLayout());
         setOpaque(false);
-        apply.addActionListener(e -> apply());
+        apply.addActionListener(e -> apply(() -> {
+        }));
         discard.addActionListener(e -> discard());
         add(HudFooter.build(false, null, status, List.of(discard, apply)), BorderLayout.CENTER);
         refresh();
@@ -76,8 +80,33 @@ public final class ApplyBar extends JPanel {
                 : lit ? getText("bindings.applyBar.pending") : " ");
     }
 
-    private void apply() {
-        if (!Edits.stored().hasEdits()) return;
+    /** The leave prompt, asking over {@code parent}, whose Apply is this bar's APPLY. */
+    public LeavePrompt leavePrompt(Component parent) {
+        String title = getText("bindings.leave.title");
+        String close = getText("bindings.aliasDesigner.firstSetup.close");
+        return new LeavePrompt(LeavePrompt.EditsState.of(Edits.stored()),
+                leaving -> switch (HudConfirmDialog.showWithoutDefault(parent, title, getText("bindings.leave.message"),
+                        getText("bindings.applyBar.apply"), getText("bindings.applyBar.discard"),
+                        getText("bindings.leave.goBack"))) {
+                    case PRIMARY -> LeavePrompt.Choice.APPLY;
+                    case EXTRA -> LeavePrompt.Choice.DISCARD;
+                    case DISMISS -> LeavePrompt.Choice.GO_BACK;
+                },
+                this::apply,
+                leaving -> HudConfirmDialog.info(parent, title, getText("bindings.writeRunning"), close));
+    }
+
+    /**
+     * APPLY: the confirmation, then the write on its own thread, then the report.
+     *
+     * @param finished run on the EDT once it is over - the confirmation cancelled, or the report closed - whether or
+     *                 not anything was written
+     */
+    void apply(Runnable finished) {
+        if (!Edits.stored().hasEdits()) {
+            finished.run();
+            return;
+        }
         String question = getText("bindings.applyBar.confirm");
         // WHY: told, not fixed (Alan, 2026-10-14, A11). On Linux each installation has its own bindings folder, and
         // BindForge moves bindings in the one Elite-Intel uses.
@@ -88,6 +117,7 @@ public final class ApplyBar extends JPanel {
         String title = getText("bindings.applyBar.title");
         if (!HudConfirmDialog.confirm(this, title, question, getText("bindings.applyBar.apply"),
                 getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+            finished.run();
             return;
         }
         apply.setEnabled(false);
@@ -124,6 +154,7 @@ public final class ApplyBar extends JPanel {
             SwingUtilities.invokeLater(() -> {
                 refresh();
                 HudConfirmDialog.info(this, title, told, getText("bindings.aliasDesigner.firstSetup.close"));
+                finished.run();
             });
         }, "BindForge-Apply").start();
     }

@@ -5,6 +5,7 @@ import elite.intel.ui.screen.bindings.ApplyBar;
 import elite.intel.ui.screen.bindings.BindingManagementPanel;
 import elite.intel.ui.screen.bindings.BindingProfilePanel;
 import elite.intel.ui.screen.bindings.FirstTimeStartupFlow;
+import elite.intel.ui.screen.bindings.LeavePrompt;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 
@@ -20,7 +21,8 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * {@link ActionsTabPanel} and {@link SettingsTabPanel}.
  * <p>
  * <strong>The one APPLY / DISCARD bar sits above the sub-tabs</strong>, beneath Elite-Intel's main tabs, where the mouse
- * goes to leave BindForge (overview.md, <em>APPLY and DISCARD - one pair</em>; Storage S4a).
+ * goes to leave BindForge (overview.md, <em>APPLY and DISCARD - one pair</em>; Storage S4a). Leaving it with edits not
+ * applied asks first ({@link #leave}; Storage S7).
  */
 public class BindingsTabPanel extends JPanel {
 
@@ -29,6 +31,7 @@ public class BindingsTabPanel extends JPanel {
     private final AliasDesignerPanel aliasDesignerPanel = new AliasDesignerPanel();
     private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this);
     private final ApplyBar applyBar = new ApplyBar();
+    private final LeavePrompt leavePrompt = applyBar.leavePrompt(this);
 
     public BindingsTabPanel() {
         buildUi();
@@ -57,6 +60,14 @@ public class BindingsTabPanel extends JPanel {
 
         add(applyBar, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
+    }
+
+    /**
+     * Leaving BindForge - another main tab, or closing Elite-Intel: runs {@code leave} now, later or never, as the user
+     * chooses when there are edits not applied (storage.md rule 9). On the EDT.
+     */
+    public void leave(LeavePrompt.Leaving leaving, Runnable leave) {
+        leavePrompt.request(leaving, leave);
     }
 
     public void dispose() {
