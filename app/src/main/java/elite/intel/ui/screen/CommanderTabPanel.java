@@ -401,7 +401,8 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        String[] voiceOptions = SystemSession.getInstance().getTtsProvider().voiceRoster().toArray(String[]::new);
+        TtsProvider provider = SystemSession.getInstance().getTtsProvider();
+        String[] voiceOptions = byGenderThenName(provider, provider.voiceRoster()).toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -448,7 +449,24 @@ public class CommanderTabPanel extends JPanel {
      * Every voice the engine that speaks radio may transmit in, by enum name - its ship-only voices left out.
      */
     private static Stream<String> radioVoiceRoster() {
-        return RadioVoicing.engine().radioVoiceRoster();
+        TtsProvider engine = RadioVoicing.engine();
+        return byGenderThenName(engine, engine.radioVoiceRoster());
+    }
+
+    /**
+     * A roster in the order a voice dropdown lists it: female voices, then male, each alphabetical by the name
+     * the commander reads. The engines declare their voices in no order a person can scan.
+     */
+    private static Stream<String> byGenderThenName(TtsProvider engine, Stream<String> roster) {
+        return roster.sorted(Comparator.comparing(engine::voiceGender)
+                .thenComparing(voice -> voiceDisplayName(engine, voice), String.CASE_INSENSITIVE_ORDER));
+    }
+
+    private static String voiceDisplayName(TtsProvider engine, String voice) {
+        return switch (engine) {
+            case SUPERTONIC -> SupertonicVoices.valueOf(voice).getDisplayName();
+            case GOOGLE -> GoogleVoices.valueOf(voice).getDisplayName();
+        };
     }
 
     /**
