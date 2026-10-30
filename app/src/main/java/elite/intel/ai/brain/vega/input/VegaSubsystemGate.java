@@ -107,6 +107,11 @@ public final class VegaSubsystemGate implements ManagedService {
         }
     }
 
+    boolean hasPendingDangerousConfirmation() {
+        VegaRuntimeGraph runtimeGraph = activeGraph;
+        return runtimeGraph != null && runtimeGraph.confirmationCoordinator().isPending();
+    }
+
     @Override
     public synchronized void start() {
         if (activeGraph != null) {

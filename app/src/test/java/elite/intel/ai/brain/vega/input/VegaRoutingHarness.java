@@ -54,7 +54,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  * null-override), but execution is a recording gateway so game COMMANDS are captured, never executed (no
  * keystrokes), while QUERIES and system functions run for real (read-only) so a turn settles the production
  * way. Every dispatched tool name - reflex or LLM-selected - is captured, since {@code Thought.execute} routes
- * all game actions through this gateway.
+ * all game actions through this gateway. When a dangerous command opens a confirmation, the harness answers
+ * "yes" through the normal commander-input path before recording the command.
  */
 public final class VegaRoutingHarness {
 
@@ -261,7 +262,12 @@ public final class VegaRoutingHarness {
         }
         // Then wait for it to finish.
         long deadline = System.currentTimeMillis() + TURN_TIMEOUT_MS;
+        boolean confirmationAnswered = false;
         while (!dispatcher.isIdle() && System.currentTimeMillis() < deadline) {
+            if (!confirmationAnswered && gate.hasPendingDangerousConfirmation()) {
+                confirmationAnswered = true;
+                GameEventBus.publish(new UserInputEvent("yes"));
+            }
             Thread.sleep(POLL_MS);
         }
         long firstToolAtNanos = firstToolNanos.get();
