@@ -19,8 +19,10 @@ import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.bindforge.rules.KeyBindCheck;
+import elite.intel.bindforge.storage.StartupCheck;
 import elite.intel.devices.DeviceService;
 import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
@@ -351,6 +353,9 @@ public class AppController {
                 // Setup first: it speaks about what is missing entirely, and the checks below assume a
                 // configured app (KeyBindCheck reads a bindings profile; LocalLlmModelCheck judges a model).
                 SetupCheck.getInstance().check();
+                // WHY: read only, on its own thread - the files compared are a few megabytes at most, but startup
+                // never waits on the disk for a hint (storage.md rule 15).
+                StartupCheck.stored().runInBackground(AppController::sayControlFilesChangedOutside);
                 KeyBindCheck.getInstance().check();
                 CustomCommandLoadAnnouncement.getInstance().announce();
                 LocalLlmModelCheck.getInstance().check();
@@ -363,6 +368,16 @@ public class AppController {
                 throw e;
             }
         }
+    }
+
+    /**
+     * The check when Elite-Intel starts found a live control file changed outside BindForge: said once, straight to TTS
+     * as {@code SetupCheck} says its warnings, and to the app log (storage.md rule 15).
+     */
+    private static void sayControlFilesChangedOutside() {
+        GameEventBus.publish(new VocalisationRequestEvent(StringUtls.localizedSpeech(StartupCheck.SPEECH_KEY),
+                MissionCriticalAnnouncementEvent.class, false));
+        UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech(StartupCheck.SPEECH_KEY)));
     }
 
     /**

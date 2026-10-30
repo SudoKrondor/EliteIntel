@@ -22,6 +22,8 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -59,6 +61,8 @@ public final class Backups {
     static final String BINDINGS = "Bindings";
     static final String INSTALLATIONS = "Installations";
     static final String CONTROL_SCHEMES = "ControlSchemes";
+    /** Where a before-the-check backup holds the working copy (Storage S8). */
+    static final String WORKING_COPY = "WorkingCopy";
     private static final String ZIP = ".zip";
     /** Zip entry names always use a forward slash, whatever the platform. */
     private static final char ENTRY_SEPARATOR = '/';
@@ -203,7 +207,19 @@ public final class Backups {
      */
     public Backup backUpBeforeChange(Before before, BackupSources from) throws IOException {
         if (before == null) throw new IllegalArgumentException("a before-changes backup says what it is taken before");
-        return take(Kind.BEFORE_CHANGES, before, from);
+        return take(Kind.BEFORE_CHANGES, before, from, null);
+    }
+
+    /**
+     * The before-changes backup the check takes before it writes: every live copy, as every backup holds, and the
+     * working copy as it is, under {@value #WORKING_COPY} - since the check may replace it with a live copy (storage.md
+     * rule 12; Alan, 2026-10-30, Storage S8). RESTORE does not read that folder.
+     *
+     * @param workingCopy the working copy before the check changes it
+     * @throws IOException if the backup folder cannot be written
+     */
+    public Backup backUpBeforeCheck(BackupSources from, ConfigurationFiles workingCopy) throws IOException {
+        return take(Kind.BEFORE_CHANGES, Before.CHECK, from, Objects.requireNonNull(workingCopy, "workingCopy"));
     }
 
     /**
@@ -225,7 +241,7 @@ public final class Backups {
         if (kind == Kind.BEFORE_CHANGES) {
             throw new IllegalArgumentException("a before-changes backup is taken with backUpBeforeChange");
         }
-        return take(kind, null, from);
+        return take(kind, null, from, null);
     }
 
     /**
@@ -328,7 +344,9 @@ public final class Backups {
 
     // ---- taking
 
-    private Backup take(Kind kind, Before before, BackupSources from) throws IOException {
+    /** @param workingCopy the working copy to hold under {@value #WORKING_COPY} as well, or {@code null} */
+    private Backup take(Kind kind, Before before, BackupSources from, ConfigurationFiles workingCopy)
+            throws IOException {
         synchronized (WRITING) {
             Path folder = root.get().resolve(kind.folder);
             LocalDateTime now = LocalDateTime.now(clock).withNano(0);
@@ -342,6 +360,7 @@ public final class Backups {
                 for (int i = 0; i < installations.size(); i++) {
                     copyInstallation(copy, i + 1, installations.get(i), from.bindingsFolder());
                 }
+                if (workingCopy != null) copyWorkingCopy(copy, workingCopy);
                 if (copy.copied == 0) {
                     throw new NothingToBackUpException(copy.notRead);
                 }
@@ -394,6 +413,25 @@ public final class Backups {
             zip.putNextEntry(entry);
             zip.write(content);
             zip.closeEntry();
+        }
+    }
+
+    /** The working copy's files, laid out as the working copy is, under {@value #WORKING_COPY}. */
+    private static void copyWorkingCopy(Copy copy, ConfigurationFiles workingCopy) throws IOException {
+        String bindings = WORKING_COPY + ENTRY_SEPARATOR + BINDINGS + ENTRY_SEPARATOR;
+        String schemes = WORKING_COPY + ENTRY_SEPARATOR + CONTROL_SCHEMES + ENTRY_SEPARATOR;
+        for (Map.Entry<String, byte[]> file : workingCopy.bindings().entrySet()) {
+            copy.entry(bindings + file.getKey(), file.getValue(), null);
+            copy.copied++;
+        }
+        if (workingCopy.hasDeviceMappings()) {
+            copy.entry(schemes + GameInstallation.DEVICE_MAPPINGS, workingCopy.deviceMappings(), null);
+            copy.copied++;
+        }
+        for (Map.Entry<String, byte[]> file : workingCopy.buttonMaps().entrySet()) {
+            copy.entry(schemes + GameInstallation.DEVICE_BUTTON_MAPS + ENTRY_SEPARATOR + file.getKey(), file.getValue(),
+                    null);
+            copy.copied++;
         }
     }
 

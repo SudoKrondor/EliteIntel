@@ -306,6 +306,35 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     user knows to bind them. See [overview](overview.md#when-a-game-update-brings-a-newer-version--2026-10-23).
 
     Large changes Frontier makes to anything other than `.binds` would need a BindForge code fix.
+
+    **Settled with Storage S8's sources (Alan, 2026-10-30)** - the check for the binds and preset files; device
+    files are Storage S9, a newer version S10:
+
+    - **S8 is two slices.** S8a: the comparison, the check at the first BindForge click with its three choices, merge
+      and the reset, and the line at Elite-Intel start. S8b: the check at APPLY, the edits put on top of the settled
+      working copy. The first click never has edits on screen - they start empty each run.
+    - **A binds file on one side only is a difference.** Keeping the working copy's side removes a live-only file
+      from the bindings folder, after the backup, which holds it; keeping the game's side adds it to the working copy.
+      A file the live folder lacks is the same the other way round. Either way the two match afterwards, so nobody is
+      asked about it again - it is how the game's own new `Custom.4.2.binds` reaches the working copy. This is the one
+      write that removes a `.binds`, besides a rename's (rule 7), and only when the user chose it.
+    - **Until S10, a newer version of a working-copy binds file is left out of the check** and logged - a live
+      `X.4.3.binds` beside the working copy's `X.4.2.binds`. Keeping the working copy's side would delete the game's
+      new file.
+    - **A reset, for these files:** a live binds file whose every element, and its root apart from `PresetName`,
+      equals by value one of the factory binds files of a reachable installation; a live preset file whose four lines
+      all name factory binds files while the working copy's name one of the user's own.
+    - **The dialog does not watch the files.** Just before the write the live files are compared again; if they
+      changed since the dialog opened, the user is told and the merge opens again, the answers kept on every row that
+      did not change (overview.md, *Reconciling BindForge Edits With In-Game Rebinds*).
+    - **The working copy is backed up inside the before-the-check backup:** one zip holding the live copies, as every
+      backup does, and the working copy's files under `WorkingCopy\`, which RESTORE does not read
+      ([file-manager.md](file-manager.md#how-the-backup-folder-is-laid-out)).
+    - **One warning for the whole set.** It names every file that differs, and each one that looks reset; the three
+      choices act on all of them, and the merge's rows are grouped by file. Taking a reset file into the working copy
+      - overwriting it, or a merge row answered with the game's side - asks *"Are you sure?"* first.
+    - **Closing the warning is Not now** (Esc, or the close glyph): nothing is written, and it is not shown again in
+      that session. The check at APPLY still runs (principle 5).
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

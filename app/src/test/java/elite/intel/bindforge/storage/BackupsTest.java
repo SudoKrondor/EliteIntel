@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -125,6 +126,27 @@ class BackupsTest {
         List<Backups.Before> listed = backups.list().stream().map(Backup::before).toList();
         assertEquals(List.of(Backups.Before.CHECK, Backups.Before.RESTORE, Backups.Before.APPLY), listed,
                 "read back from backup-info.txt");
+    }
+
+    /**
+     * The check's backup holds the working copy too, under {@code WorkingCopy/}, since the check may replace it - and
+     * RESTORE does not read that folder (Alan, 2026-10-30, Storage S8).
+     */
+    @Test
+    void theChecksBackupHoldsTheWorkingCopyWhichRestoreDoesNotRead() throws IOException {
+        ConfigurationFiles workingCopy = new ConfigurationFiles(
+                Map.of("Mine.4.2.binds", WorkingCopyTest.bytes("<Mine/>")), WorkingCopyTest.bytes("<Mappings/>"),
+                Map.of("LVWAP.buttonMap", WorkingCopyTest.bytes("<LVWAP/>")));
+
+        Backup backup = backups("2026-10-30T18:30:00Z", sources()).backUpBeforeCheck(sources(), workingCopy);
+
+        assertEquals(Backups.Before.CHECK, backup.before());
+        assertEquals("<Mine/>", entry(backup, "WorkingCopy/Bindings/Mine.4.2.binds"));
+        assertEquals("<Mappings/>", entry(backup, "WorkingCopy/ControlSchemes/DeviceMappings.xml"));
+        assertEquals("<LVWAP/>", entry(backup, "WorkingCopy/ControlSchemes/DeviceButtonMaps/LVWAP.buttonMap"));
+        assertNotNull(entry(backup, "Bindings/Custom.4.2.binds"), "the live copies, as in every backup");
+        assertFalse(BackupContents.read(backup.zip()).bindings().containsKey("Mine.4.2.binds"),
+                "RESTORE puts back the live copies, never the working copy's");
     }
 
     @Test

@@ -14,6 +14,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static elite.intel.bindforge.storage.WorkingCopyTest.bytes;
@@ -222,6 +223,45 @@ class LiveCopiesTest {
         assertEquals(List.of("Old.buttonMap"), place.keptReadOnly());
         assertTrue(place.failures().isEmpty(), place.failures().toString());
         assertFalse(place.updated(), "the installation does not match the set");
+    }
+
+    /**
+     * The check removes a live-only binds file the user kept the working copy's side of; nothing else the set lacks is
+     * touched (Alan, 2026-10-30, Storage S8).
+     */
+    @Test
+    void aBindsFileNamedForRemovalIsRemovedAndOthersTheSetLacksStay() throws IOException {
+        write(bindings.resolve("Spare.4.2.binds"), "<Spare/>");
+        write(bindings.resolve("Other.4.2.binds"), "<Other/>");
+
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("Spare.4.2.binds"));
+
+        assertFalse(Files.exists(bindings.resolve("Spare.4.2.binds")));
+        assertTrue(Files.exists(bindings.resolve("Other.4.2.binds")), "APPLY's rule: a .binds the set lacks stays");
+        assertEquals(List.of("Spare.4.2.binds"), report.bindings().removed());
+        assertTrue(report.bindings().updated());
+    }
+
+    @Test
+    void aReadOnlyBindsFileNamedForRemovalIsKeptAndReported() throws IOException {
+        Path spare = bindings.resolve("Spare.4.2.binds");
+        write(spare, "<Spare/>");
+        protect(spare);
+
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("Spare.4.2.binds"));
+
+        assertTrue(Files.exists(spare));
+        assertEquals(List.of("Spare.4.2.binds"), report.bindings().keptReadOnly());
+        assertFalse(report.bindings().updated());
+    }
+
+    /** A name that is not a binds or preset file's is refused - the removal never leaves the bindings folder. */
+    @Test
+    void aRemovalThatIsNotABindsFileNameIsRefused() {
+        assertThrows(IllegalArgumentException.class,
+                () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("..\\Custom.4.2.binds")));
+        assertThrows(IllegalArgumentException.class,
+                () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("notes.txt")));
     }
 
     /**

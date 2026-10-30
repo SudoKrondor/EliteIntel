@@ -92,7 +92,13 @@ inside every zip:
   Bindings\                               every <name>.<major>.<minor>.binds and StartPreset.N.start
   Installations\1-STEAM\ControlSchemes\   DeviceMappings.xml and DeviceButtonMaps\*.buttonMap
   Installations\2-EPIC\ControlSchemes\
+  WorkingCopy\Bindings\, WorkingCopy\ControlSchemes\   before the check only: the working copy as it was
 ```
+
+**A before-the-check backup also holds the working copy** (Alan, 2026-10-30, Storage S8), under `WorkingCopy\`, laid
+out like the working copy itself, since the check may replace it with a live copy (storage.md rule 12). RESTORE does not
+read that folder - it puts back the live copies, as from any backup; the working copy's files are there for the user,
+or support, to take by hand.
 
 **One list, newest first**, with a *Taken* column — Daily, before APPLY, before RESTORE, before the check, User, First
 setup — read from each zip's `backup-info.txt`; the date stamp in the name orders it, and file dates are never read. A

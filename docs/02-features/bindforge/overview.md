@@ -327,7 +327,9 @@ user to think like a programmer about their joystick.
 either default silently destroys work in the case the user does not read the dialog. **Keep all mine** and **Keep
 all in-game** set every row at once; pressing one is itself the decision. **Cancel resolves nothing.** **If the game
 changes the file again** while the dialog is open, the comparison re-runs; answers on rows that did not change again
-are kept.
+are kept. *Nothing watches the file meanwhile* (Alan, 2026-10-30, Storage S8): the live files are compared again just
+before the write, and if they changed the user is told and the merge opens again with those answers kept
+([storage.md](storage.md#when-a-live-copy-differs), *Settled with Storage S8's sources*).
 
 **The result** becomes the working copy and is written to the live copies, backup first (rules 7 and 12).
 

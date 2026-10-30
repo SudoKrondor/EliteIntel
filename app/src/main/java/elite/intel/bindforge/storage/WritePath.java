@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -77,7 +78,7 @@ public final class WritePath {
      */
     public WriteReport write(ConfigurationFiles files, BackupSources places, BackUpFirst backUp) throws IOException {
         synchronized (WRITING) {
-            return write(files, places, backUp, LiveCopies.LeaveAlone.NONE);
+            return write(files, places, backUp, LiveCopies.LeaveAlone.NONE, Set.of());
         }
     }
 
@@ -88,21 +89,30 @@ public final class WritePath {
      */
     WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone)
             throws IOException {
+        return write(files, backUp, leaveAlone, Set.of());
+    }
+
+    /**
+     * The check's write: as APPLY's, and removing from the bindings folder the binds and preset files named - a
+     * live-only file the user kept the working copy's side of (Alan, 2026-10-30, Storage S8), after the backup.
+     */
+    WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
+                      Set<String> removeFromBindings) throws IOException {
         synchronized (WRITING) {
             // WHY: found once, for the backup and the write alike. Found twice, an installation found only the second
             // time - a drive plugged in between - would be written with no backup of it (principle 3; review,
             // 2026-10-24).
-            return write(files, sources.get(), backUp, leaveAlone);
+            return write(files, sources.get(), backUp, leaveAlone, removeFromBindings);
         }
     }
 
     /** Holds {@code WRITING}. */
     private WriteReport write(ConfigurationFiles files, BackupSources places, BackUpFirst backUp,
-                              LiveCopies.LeaveAlone leaveAlone) throws IOException {
+                              LiveCopies.LeaveAlone leaveAlone, Set<String> removeFromBindings) throws IOException {
         Backup backup = backUp.take(places);
         workingCopy.write(files);
         written.accept(files);
-        WriteReport report = new LiveCopies(places).write(files, leaveAlone);
+        WriteReport report = new LiveCopies(places).write(files, leaveAlone, removeFromBindings);
         log(backup, report);
         return report;
     }

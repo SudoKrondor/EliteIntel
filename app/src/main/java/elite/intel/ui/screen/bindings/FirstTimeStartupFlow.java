@@ -36,9 +36,11 @@ public final class FirstTimeStartupFlow {
 
     private final Component parent;
     private final AtomicBoolean running = new AtomicBoolean();
+    private final CheckFlow check;
 
     public FirstTimeStartupFlow(Component parent) {
         this.parent = parent;
+        this.check = new CheckFlow(parent);
     }
 
     /**
@@ -98,15 +100,14 @@ public final class FirstTimeStartupFlow {
     }
 
     /**
-     * Nothing to do when the working copy reads; otherwise the step that says so and offers the newest backup - or,
-     * with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3 review), the
+     * The check when the working copy reads (Storage S8a); otherwise the step that says so and offers the newest
+     * backup - or, with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3 review), the
      * one way out once Run first-time startup again is gone. A working copy that is missing while first-time startup is
      * complete counts as one that cannot be read.
      */
     private Runnable workingCopyCheck(FirstTimeStartup startup) {
         try {
             WorkingCopy.stored().read();
-            return null;
         } catch (IOException e) {
             log.error("The working copy could not be read", e);
             String why = e instanceof NoSuchFileException ? getText("bindings.restore.unreadable.missing")
@@ -115,6 +116,8 @@ public final class FirstTimeStartupFlow {
             if (newest == null) return () -> offerSetUpAgain(startup, why);
             return () -> new RestoreFlow(parent).offerNewest(why, newest, this::finish);
         }
+        // WHY: once the working copy reads, the check runs - at the first click in a session only (storage.md rule 5).
+        return check.firstClick(this::finish);
     }
 
     /** No backup to restore the working copy from: first-time startup again, from the live files, if the user agrees. */
@@ -227,6 +230,12 @@ public final class FirstTimeStartupFlow {
                     String.join("; ", report.bindings().failures())));
             text.append('\n').append(getText("bindings.firstTimeStartup.result.nextApply"));
         }
+        return text + installationFailures(report);
+    }
+
+    /** Each installation that did not take everything, a line each - the check words the bindings folder its own way. */
+    static String installationFailures(WriteReport report) {
+        StringBuilder text = new StringBuilder();
         for (WriteReport.Place place : report.installations()) {
             if (place.updated()) continue;
             String name = getText("bindings.firstTimeStartup.place.installation", place.storefront(), place.folder());

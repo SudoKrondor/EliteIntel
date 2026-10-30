@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -67,7 +68,16 @@ final class LiveCopies {
      * {@code leaveAlone} picks - asked only of one that is there; a missing one is reported as not found.
      */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone) {
-        Place bindings = writeBindings(files);
+        return write(files, leaveAlone, Set.of());
+    }
+
+    /**
+     * As {@link #write(ConfigurationFiles, LeaveAlone)}, removing from the bindings folder the binds and preset files
+     * named - the check's, for a live-only file the user kept the working copy's side of (Alan, 2026-10-30, Storage S8).
+     * A read-only one is kept, and reported, as a {@code .buttonMap} is.
+     */
+    WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings) {
+        Place bindings = writeBindings(files, removeFromBindings);
         List<Place> installations = sources.installations().stream()
                 .map(installation -> {
                     boolean present = installation.reachable();
@@ -81,7 +91,7 @@ final class LiveCopies {
         return new WriteReport(bindings, installations);
     }
 
-    private Place writeBindings(ConfigurationFiles files) {
+    private Place writeBindings(ConfigurationFiles files, Set<String> remove) {
         Path folder = sources.bindingsFolder();
         Writing writing = new Writing();
         // WHY: not created. The game makes this folder; one that is not there is a wrong setting or an unplugged
@@ -93,6 +103,13 @@ final class LiveCopies {
         // WHY: the one folder Elite-Intel is set to, on Linux too, where each installation has its own - every .binds
         // read and write in BindForge uses it (input-environment.md section 7; storage brief, Known issues).
         writing.writeAll(folder, files.bindings());
+        for (String name : remove) {
+            if (files.bindings().containsKey(name)) continue;
+            if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
+                throw new IllegalArgumentException("not a binds or preset file name: " + name);
+            }
+            writing.remove(folder.resolve(name));
+        }
         return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
     }
 
@@ -202,6 +219,31 @@ final class LiveCopies {
                 } catch (IOException e) {
                     fail(file, e);
                 }
+            }
+        }
+
+        /** Removes one binds or preset file; a read-only one is kept and reported, never unprotected to delete it. */
+        void remove(Path file) {
+            if (!Files.isRegularFile(file)) return;
+            String name = file.getFileName().toString();
+            boolean readOnly;
+            try {
+                readOnly = ReadOnlyFlag.isSet(file);
+            } catch (IOException e) {
+                failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " (" + reason(e) + ")");
+                log.warn("Did not remove {}: whether it is read-only could not be read", file, e);
+                return;
+            }
+            if (readOnly) {
+                keptReadOnly.add(name);
+                log.warn("Did not remove {}: it is read-only", file);
+                return;
+            }
+            try {
+                Files.delete(file);
+                removed.add(name);
+            } catch (IOException e) {
+                fail(file, e);
             }
         }
 

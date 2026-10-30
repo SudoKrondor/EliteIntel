@@ -38,7 +38,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * factory binds files come only from the installations that are reachable ({@link BackupSources.Installation#reachable});
  * when one is not, the refusal names it, since its files may be what a line names (Storage S6R, 2026-10-29).
  * <p>
- * <em>Until Storage S8 APPLY runs without the check</em> (Alan, 2026-10-24); the backup before it is the safety net.
+ * <em>Until Storage S8b APPLY runs without the check</em> (Alan, 2026-10-24; S8 split 2026-10-30); the backup before it
+ * is the safety net. The check at the first BindForge click is {@link BindingsCheck} (S8a).
  * Publishes no {@code BindingsUpdatedEvent} - {@code BindingsMonitor} sees the bindings folder change. Touches the disk
  * - not for the EDT.
  */
@@ -165,7 +166,7 @@ public final class Apply {
                 Backup backup = beforeApply.take(sources);
                 taken.set(backup);
                 return backup;
-            }, installation -> differs(comparison, installation));
+            }, leavingAloneWhereDifferent(comparison, reader));
             log.info("Applied: {} binds and preset files, {} button maps; installations updated {} of {}",
                     files.bindings().size(), files.buttonMaps().size(), report.installationsUpdated(),
                     report.installations().size());
@@ -201,7 +202,16 @@ public final class Apply {
         return files.withButtonMaps(new TreeMap<>(maps));
     }
 
-    private boolean differs(DeviceFilesComparison comparison, BackupSources.Installation installation) {
+    /**
+     * Leaves alone each installation whose device files differ from the working copy - APPLY's, and the check's, until
+     * Storage S9 reconciles them (Alan, 2026-10-26).
+     */
+    static LiveCopies.LeaveAlone leavingAloneWhereDifferent(DeviceFilesComparison comparison, Reader reader) {
+        return installation -> differs(comparison, reader, installation);
+    }
+
+    private static boolean differs(DeviceFilesComparison comparison, Reader reader,
+                                   BackupSources.Installation installation) {
         try {
             return comparison.differs(reader.read(installation));
         } catch (IOException e) {
