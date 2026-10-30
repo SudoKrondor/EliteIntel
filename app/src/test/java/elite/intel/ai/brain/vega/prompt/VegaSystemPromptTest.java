@@ -312,6 +312,22 @@ class VegaSystemPromptTest {
     }
 
     /**
+     * A line VEGA transmits to an NPC - the retort to a pirate scanning the hold - must not carry the commander's
+     * address clauses. Told only in its event instructions to answer the pirate, the model obeyed the persona and
+     * called the commander "Admiral", so the rules themselves are swapped, not contradicted.
+     */
+    @Test
+    void narrationToSomeoneElseDropsTheCommanderAddress() {
+        String normalized = prompt.narrationRulesTo("RayRay").replaceAll("\\s+", " ");
+        assertTrue(normalized.contains("speak directly to RayRay over comms"), normalized);
+        assertTrue(normalized.contains("Never address or name the commander."), normalized);
+        assertFalse(normalized.contains("address the commander directly"), normalized);
+        assertFalse(normalized.contains("When addressing the commander"), normalized);
+        assertTrue(prompt.staticRules(ThoughtSource.EVENT).replaceAll("\\s+", " ")
+                .contains("address the commander directly"), "the ordinary narration still speaks to the commander");
+    }
+
+    /**
      * Seeds a ship carrying {@code voice} and makes it the ship the commander is flying.
      */
     private static void flyShipWithVoice(int shipId, String voice) {

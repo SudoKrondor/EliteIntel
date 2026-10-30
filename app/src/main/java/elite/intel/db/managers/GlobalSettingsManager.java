@@ -215,4 +215,30 @@ public class GlobalSettingsManager {
     public boolean getAnnounceFuelAvailable() {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceFuelAvailable());
     }
+
+    public void setAiRespondsToPirateScan(boolean aiRespondsToPirateScan) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAiRespondsToPirateScan(aiRespondsToPirateScan);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAiRespondsToPirateScan() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAiRespondsToPirateScan());
+    }
+
+    public void setAiBountyKillGloat(boolean aiBountyKillGloat) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAiBountyKillGloat(aiBountyKillGloat);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAiBountyKillGloat() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAiBountyKillGloat());
+    }
 }

@@ -1,9 +1,11 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
+import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.StationName;
 import elite.intel.gameapi.carrier.OurCarriers;
@@ -91,8 +93,24 @@ public class TransmissionReceivedSubscriber {
                 } else {
                     GameEventBus.publish(new RadioTransmissionEvent(
                             event.getMessageLocalised(), source, voice, reserved, pilot));
+                    if (event.isPirateCargoScan() && GlobalSettingsManager.getInstance().getAiRespondsToPirateScan()) {
+                        retortToPirateScan(source, event.getMessageLocalised());
+                    }
                 }
             }
         });
+    }
+
+    /**
+     * VEGA's own answer to a pirate's cargo scan, phrased fresh by the LLM each time. A dependent of the radio
+     * toggle in the Announcements tree, so it is only reached with the radio on - the hail it answers has just
+     * been heard. Spoken to the pirate, not the commander: the narration rules otherwise address the commander,
+     * and no wording in the instructions alone turned the model away from that.
+     */
+    private static void retortToPirateScan(String pirate, String hail) {
+        VegaRuntime.narrator().narrateTo(pirate,
+                "Pirate " + pirate + " is scanning our cargo hold and radioed us: \"" + hail + "\"",
+                "One short, sarcastic and vitriolic retort to " + pirate + " about their scan of our hold. "
+                        + "One sentence, no profanity.");
     }
 }

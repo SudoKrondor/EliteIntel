@@ -200,10 +200,17 @@ public final class ThoughtDispatcher implements ManagedService {
      * bounded narration request, and the spoken line is not stored.
      */
     public void submitEventReaction(String stimulus, String instructions, Urgency urgency) {
+        submitEventReaction(stimulus, instructions, null, urgency);
+    }
+
+    /**
+     * As above, for a line spoken to {@code addressee} rather than the commander; {@code null} is the commander.
+     */
+    public void submitEventReaction(String stimulus, String instructions, String addressee, Urgency urgency) {
         if (stimulus == null || stimulus.isBlank()) {
             return;
         }
-        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, dependencies);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, addressee, dependencies);
         VegaDiagnostics.debug(thought.trace(), "event", "reaction");
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }

@@ -62,10 +62,28 @@ public final class PromptComposer {
             List<Fact> factCandidates,
             PendingClarification pendingClarification
     ) {
+        return compose(source, currentInput, gameTools, systemTools, recentRecords, factCandidates,
+                pendingClarification, null);
+    }
+
+    /**
+     * As above, with the addressee of an event line: someone other than the commander gets narration rules that
+     * speak to them, {@code null} keeps the commander. Ignored for a commander turn.
+     */
+    public ComposedPrompt compose(
+            ThoughtSource source,
+            String currentInput,
+            List<LlmToolDefinition> gameTools,
+            List<LlmToolDefinition> systemTools,
+            List<MemoryRecord> recentRecords,
+            List<Fact> factCandidates,
+            PendingClarification pendingClarification,
+            String addressee
+    ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
                     gameTools, systemTools, recentRecords, factCandidates, pendingClarification);
-            case EVENT -> composeNarration(source, currentInput, systemTools);
+            case EVENT -> composeNarration(source, currentInput, systemTools, addressee);
         };
     }
 
@@ -91,9 +109,10 @@ public final class PromptComposer {
     /** Assembles the lean narration prompt without commander game tools. */
     private ComposedPrompt composeNarration(
             ThoughtSource source, String currentInput,
-            List<LlmToolDefinition> systemTools) {
+            List<LlmToolDefinition> systemTools, String addressee) {
         List<LlmMessage> messages = new ArrayList<>();
-        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, systemPrompt.staticRules(source)));
+        String rules = addressee == null ? systemPrompt.staticRules(source) : systemPrompt.narrationRulesTo(addressee);
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, rules));
         messages.add(LlmMessage.of(LlmMessageRole.USER, currentInput == null ? "" : currentInput));
 
         return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);

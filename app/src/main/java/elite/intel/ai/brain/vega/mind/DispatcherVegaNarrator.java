@@ -50,6 +50,13 @@ public final class DispatcherVegaNarrator implements VegaNarrator {
     }
 
     @Override
+    public void narrateTo(String addressee, String data, String instructions) {
+        if (runtimeGeneration.isActive()) {
+            dispatcher.submitEventReaction(data, instructions, addressee, Urgency.NORMAL);
+        }
+    }
+
+    @Override
     public void announce(String phrase, boolean urgent) {
         if (runtimeGeneration.isActive()) {
             dispatcher.submitEventVerbatim(phrase, urgency(urgent));
