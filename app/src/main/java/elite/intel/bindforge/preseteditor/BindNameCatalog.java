@@ -39,9 +39,10 @@ public final class BindNameCatalog {
      * entry with a file from each. A player's binds file with the BindName of a factory one shadows it, with a
      * warning - no factory binds file has a version suffix, so the case is not expected.
      *
-     * @param userFiles             the player's binds files, by file name - binds files already, as
-     *                              {@code PresetEdits.bindsFiles} gives them. Each is listed as a {@link Path} of its
-     *                              name alone, since it is in the set, not yet necessarily on disk
+     * @param userFiles             the player's binds files from the set, by file name - every name of the form
+     *                              {@code <name>.<major>.<minor>.binds}, since the set holds no other (Storage S6R2).
+     *                              Each is listed as a {@link Path} of its name alone, since it is in the set, not yet
+     *                              necessarily on disk
      * @param controlSchemesFolders each installation's {@code ControlSchemes}; one that cannot be listed is
      *                              skipped with a warning, because an unplugged drive must not empty the list
      */

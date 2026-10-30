@@ -1,6 +1,7 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.preseteditor.BindNameCatalog;
 import elite.intel.bindforge.preseteditor.BindNameList;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -171,15 +173,24 @@ public final class Apply {
         });
     }
 
-    /** {@link PresetEdits#check}, naming the installations that could not be reached when it refuses. */
+    /**
+     * {@link PresetEdits#check}, naming the installations that could not be reached when it refuses - only when a
+     * refused line names something, since no drive explains an empty line (Storage S6R2, the S4R-S6R review, D2).
+     */
     private void checkPresetFile(ConfigurationFiles current) throws IOException {
         Offered offered = bindNames.of(current);
         try {
             PresetEdits.check(current, offered.list());
         } catch (PresetRefusedException e) {
-            if (offered.unreachable().isEmpty()) throw e;
+            if (offered.unreachable().isEmpty() || everyRefusedLineIsEmpty(current, e)) throw e;
             throw e.withUnreachable(offered.unreachable());
         }
+    }
+
+    private static boolean everyRefusedLineIsEmpty(ConfigurationFiles current, PresetRefusedException refused) {
+        Optional<StartPresetSections> lines = PresetEdits.sections(current);
+        return lines.isEmpty() || refused.sections().stream()
+                .allMatch(section -> lines.get().forSection(section).isEmpty());
     }
 
     /** The edits, with the default labels for every device that has no {@code .buttonMap} - one in any spelling wins. */

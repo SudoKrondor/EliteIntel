@@ -37,15 +37,20 @@ Built as `elite.intel.bindforge.preseteditor.BindNameCatalog`.
   `Custom.3.0.binds` to `Custom.4.2.binds` in place). If the list meets it anyway, it keeps both files under
   the one BindName and logs a warning, rather than letting one silently replace the other.
 - **What is a binds file:** a `<Root>` element with at least one child holding a `<Primary>`, `<Secondary>` or
-  `<Binding>`. Settings alone (`<KeyboardLayout>`, `<MouseXMode>`) do not count. Every other file with a
-  `.binds` name comes back with a reason the screen turns into a sentence: a preset file (*"a preset file, not a binds file"*), another kind of
+  `<Binding>`. Settings alone (`<KeyboardLayout>`, `<MouseXMode>`) do not count. Every other file the list is
+  given comes back with a reason the screen turns into a sentence: a preset file (*"a preset file, not a binds file"*), another kind of
   XML (named by its root element), a `<Root>` with no bindings, no `PresetName`, a name mismatch (below), not
-  XML, empty, or unreadable. A file whose name does not end `.binds` — the `.binds.backup` specimen — is not
-  looked at.
-- **A file whose `PresetName` does not match its file name is not offered.** `Custom.4.2 (2).binds` says
-  `PresetName="Custom"`: offered as `Custom` it would claim a BindName `Custom.4.2.binds` already answers to, and
-  offered as `Custom.4.2 (2)` it would write a line no file's `PresetName` matches. It is reported, never
-  offered.
+  XML, empty, or unreadable.
+- **The list judges only the set's binds files** (Alan, 2026-10-30, Storage S6R2, from the S4R-S6R review, D1):
+  the player's files come from the set APPLY writes, and the set holds only the
+  [game input configuration files](principles.md#words) - every `<name>.<major>.<minor>.binds`. A file with any
+  other name - `Custom.4.2 (2).binds`, a preset file copied as `StartPreset.binds`, the `.binds.backup` specimen - is
+  not in the set, so it is **not listed at all**, neither offered nor reported. *Until 2026-10-30 this page said such
+  files were reported with a reason; since Storage S6 they never reach the list, and principles.md wins.*
+- **A file whose `PresetName` does not match its file name is not offered.** A `Spare.4.2.binds` saying
+  `PresetName="Custom"` would claim a BindName `Custom.4.2.binds` already answers to, offered as `Custom`, and would
+  write a line no file's `PresetName` matches, offered as `Spare`. It is reported, never offered. *(The case was
+  found in `Custom.4.2 (2).binds`, which is not in the set - above.)*
 
 ## What a line actually holds — the BindName, not the file name
 
@@ -82,7 +87,7 @@ in `StartPreset.4.start` identifies exactly one file. The dropdowns still offer 
 the file stores and what the list on the game's Controls screen shows.
 
 **And the suffix is not guaranteed.** `Custom.4.2 (2).binds` — a real file, from a download that de-duplicated
-by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the BindName it gives — and since its `PresetName` is `Custom`, it is [not offered](#the-bindname-list--settled-2026-10-17-alan-p1) (2026-10-17). A transform that
+by adding ` (2)` — does not fit `name.major.minor.binds`, so its whole basename is the BindName it gives — and since its `PresetName` is `Custom`, it is [not offered](#the-bindname-list--settled-2026-10-17-alan-p1) (2026-10-17). *Since 2026-10-30 it is not a game input configuration file at all, so it never reaches the list ([the BindName list](#the-bindname-list--settled-2026-10-17-alan-p1)); the rule below still holds for any name a reader meets.* A transform that
 assumes a version suffix would mangle it. Strip a suffix **only when one is there**.
 
 *The `(2)` file is in the shipped specimens rather than hypothetical, which is why it is written down here
@@ -125,10 +130,13 @@ sections. The master, draft, merge and Edit History copies (`StartPresetStore`, 
 - **The factory binds files come only from installations that are reachable** - the one test, `BackupSources`'
   ([storage.md, Settled from Krondor's review](storage.md#first-time-startup)): not marked missing, and its
   `ControlSchemes` folder there. **When a line is refused while an installation could not be reached, APPLY names that
-  installation** - *"BindForge could not reach … Plug in the drive it is on, or Remove it in Game Install Locations"* -
-  instead of blaming the preset file alone, since its factory files may be what the line names. **APPLY is still
-  refused**: the line cannot be checked, and an unchecked line fails silently in the game (Alan, 2026-10-29, Storage
-  S6R, from the S5/S6 review; `Apply.offered`, `PresetRefusedException.unreachable`).
+  installation** - *"BindForge could not reach … Plug the drive back in, or Remove the installation in Game Install
+  Locations"*, worded for one installation or several (2026-10-30, Storage S6R2) - instead of blaming the preset file
+  alone, since its factory files may be what the line names. **APPLY is still refused**: the line cannot be checked,
+  and an unchecked line fails silently in the game (Alan, 2026-10-29, Storage S6R, from the S5/S6 review;
+  `Apply.offered`, `PresetRefusedException.unreachable`). **Only when a refused line names something** (Alan,
+  2026-10-30, Storage S6R2, from the S4R-S6R review, D2): when every refused line is empty, no drive explains it, so
+  the refusal blames the preset file alone and names no installation.
 - **The form written: always four lines, CRLF between them, no newline after the last** — the specimen byte for byte.
   A single-line file is written as four lines; the single-line form is pre-Odyssey and only the Live game is
   supported. **The form is written when the Preset Editor changes a line** (2026-10-28, Alan, Storage S6): a preset

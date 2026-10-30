@@ -273,7 +273,7 @@ public class BindingsWriter {
             return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
         } catch (Exception e) {
             // WHY: the occupancy check parses the whole file; a file it cannot parse is not rewritten.
-            log.warn("Could not edit keyboard slot {} {}: {}", edit.bindingId(), edit.slotType(), e.getMessage());
+            log.warn("Could not edit keyboard slot {} {}", edit.bindingId(), edit.slotType(), e);
             return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
         }
     }

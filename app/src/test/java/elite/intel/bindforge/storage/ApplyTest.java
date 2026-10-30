@@ -246,6 +246,23 @@ class ApplyTest {
         assertEquals(List.of(), written);
     }
 
+    /** No drive explains an empty line, so the refusal blames the preset file alone (Storage S6R2, 2026-10-30). */
+    @Test
+    void anEmptyLineIsRefusedWithoutNamingTheInstallationsThatCouldNotBeReached() throws IOException {
+        edits.change(current -> current.withBindingsFile("StartPreset.4.start",
+                bytes("\r\nCustom\r\nCustom\r\nCustom")));
+        InstallationRow unplugged = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
+
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Apply(edits,
+                (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
+                files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)))::apply);
+
+        assertEquals(List.of(BindingSection.GENERAL), refused.sections());
+        assertEquals(List.of(), refused.unreachable());
+        assertEquals(List.of(), backedUp);
+        assertEquals(List.of(), written);
+    }
+
     /**
      * The factory binds files come only from installations that pass the one reachable test - not marked missing, and
      * their ControlSchemes folder there; the others are returned as unreachable (Storage S6R, 2026-10-29).

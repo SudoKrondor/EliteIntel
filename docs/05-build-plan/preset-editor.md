@@ -50,8 +50,9 @@ below follow the rest of that order.
 - **The four lines are four independent entities** — a game change to one line and a draft change to another
   merge with nothing to ask. [Same section](../02-features/bindforge/preset-editor.md#the-four-lines-are-four-independent-entities)
 - **A line holds the file's `PresetName`** — its BindName — which must match the filename less its version suffix and extension,
-  the suffix stripped only when there is one; a file where they disagree (`Custom.4.2 (2).binds`) is not offered
-  (Alan, 2026-10-17). [What a line holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-bindname-not-the-file-name)
+  the suffix stripped only when there is one; a file where they disagree is not offered
+  (Alan, 2026-10-17). A `Custom.4.2 (2).binds` is not in the set, so it is not listed at all (Alan, 2026-10-30,
+  Storage S6R2). [What a line holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-bindname-not-the-file-name)
 - **The list includes the factory binds files**, one entry per BindName across installations; a player's binds file
   shadows a factory one of the same BindName. [The BindName list](../02-features/bindforge/preset-editor.md#the-bindname-list--settled-2026-10-17-alan-p1)
 - **A BindName identifies exactly one file** in a live folder. [A name does not identify a file](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file)

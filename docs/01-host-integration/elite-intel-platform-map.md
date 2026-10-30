@@ -625,13 +625,13 @@ without exception.
 
 ### The shared write path is `elite.intel.io` — built 2026-10-03
 
-**Two classes, and nothing above them knows what a `.binds` file is** (*`TimestampedBackups` was removed in Storage
+**One class, and nothing above it knows what a `.binds` file is** (*`TimestampedBackups` was removed in Storage
 S6, 2026-10-28, with its last caller*):
 
 | Class | What it does |
 |---|---|
 | `io.AtomicFiles` | `write(target, bytes)` and `copy(source, target)`. The content goes to a uniquely named hidden temp file beside the target, is flushed to disk, then renamed over it. The temp file is removed if any step fails. |
-| `io.TimestampedBackups` | Keeps `<name>.<yyyyMMdd-HHmmss>.bak` copies before a file is replaced, with `-1`, `-2`… when two land in the same second, and pruning to a kept count. Every name ends `.bak`, so a copy is never mistaken for a loadable file. |
+| ~~`io.TimestampedBackups`~~ | ~~Keeps `<name>.<yyyyMMdd-HHmmss>.bak` copies before a file is replaced, with `-1`, `-2`… when two land in the same second, and pruning to a kept count~~ — removed in Storage S6 (2026-10-28) with its last caller |
 
 *This replaces an earlier note here saying "there is one write path, not a BindForge one — `BindingsBackupService`
 and `BindingsWriter` are already it". Neither was: the same temp-then-rename was written out by hand in six

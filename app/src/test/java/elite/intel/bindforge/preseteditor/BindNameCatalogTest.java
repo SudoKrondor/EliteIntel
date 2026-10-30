@@ -30,8 +30,9 @@ class BindNameCatalogTest {
     void thePlayersBindsFilesAreOfferedAndTheRestAreNamed() throws IOException {
         specimen("Custom.4.2.binds");
         specimen("DualVirpilDawnTreader.4.1.binds");
-        specimen("Custom.4.2 (2).binds");
-        set.put("StartPreset.binds", bytes("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom"));
+        // WHY: the set holds only <name>.<major>.<minor>.binds names, so a name mismatch is a correctly named file
+        // whose PresetName is another's - the case Custom.4.2 (2).binds showed, under a name the set can hold.
+        set.put("Spare.4.2.binds", bytes(binds("Custom")));
 
         BindNameList list = BindNameCatalog.list(set, List.of());
 
@@ -40,12 +41,8 @@ class BindNameCatalogTest {
                         new BindNameEntry("DualVirpilDawnTreader", BindsFileOrigin.USER,
                                 List.of(Path.of("DualVirpilDawnTreader.4.1.binds")))),
                 list.entries());
-        // WHY: the caller hands in binds files only (PresetEdits.bindsFiles); whatever it hands in is judged by content.
-        assertEquals(List.of(
-                        new NotOfferedFile(Path.of("Custom.4.2 (2).binds"), BindsFileOrigin.USER,
-                                NotOfferedReason.NAME_MISMATCH, "Custom"),
-                        new NotOfferedFile(Path.of("StartPreset.binds"), BindsFileOrigin.USER,
-                                NotOfferedReason.PRESET_FILE, "KeyboardMouseOnly\nCustom\nCustom\nCustom")),
+        assertEquals(List.of(new NotOfferedFile(Path.of("Spare.4.2.binds"), BindsFileOrigin.USER,
+                        NotOfferedReason.NAME_MISMATCH, "Custom")),
                 list.notOffered());
     }
 

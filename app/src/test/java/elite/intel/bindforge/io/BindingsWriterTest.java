@@ -16,9 +16,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The writer's keyboard path and the keyboard availability it checks against. The writer edits a binds file's bytes in
- * memory (Storage S5); a temporary file stands in for the edits that hold them, and the file-stamp tests went with the
- * file the writer used to write.
+ * The writer's keyboard path, and the keyboard availability check beside it where a test pairs the two. The writer
+ * edits a binds file's bytes in memory (Storage S5); a temporary file stands in for the edits that hold them, and the
+ * file-stamp tests went with the file the writer used to write. The availability check alone is tested in
+ * {@code KeyboardKeyAvailabilityServiceTest} (Storage S6R2).
  */
 class BindingsWriterTest {
     @TempDir
@@ -30,58 +31,6 @@ class BindingsWriterTest {
     /** Whether the chord is used by another binding, as the edits hold the file - its bytes. */
     private boolean occupied(Path file, String bindingId, String key, List<BindingModifier> modifiers) throws Exception {
         return availabilityService.isKeyOccupiedByOtherSlot(Files.readAllBytes(file), bindingId, key, modifiers);
-    }
-
-    @Test
-    void occupiedKeysAreCollectedFromEntireFileIncludingUnusedActions() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <GalaxyMapOpen>
-                        <Primary Device="{NoDevice}" Key="" />
-                        <Secondary Device="{NoDevice}" Key="" />
-                    </GalaxyMapOpen>
-                    <UnusedByEliteIntel>
-                        <Primary Device="Keyboard" Key="Key_L" />
-                    </UnusedByEliteIntel>
-                </Root>
-                """);
-
-        assertTrue(occupied(file, "GalaxyMapOpen", "Key_L", List.of()));
-    }
-
-    @Test
-    void joystickHotasMouseAssignmentsDoNotOccupyKeyboardKeys() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <JoystickAction>
-                        <Primary Device="044F0404" Key="Key_L" />
-                        <Secondary Device="Mouse" Key="Key_M" />
-                    </JoystickAction>
-                </Root>
-                """);
-
-        assertFalse(occupied(file, "GalaxyMapOpen", "Key_L", List.of()));
-        assertFalse(occupied(file, "GalaxyMapOpen", "Key_M", List.of()));
-    }
-
-    @Test
-    void noDeviceBlankAndKeyPlaceholderDoNotOccupyKeys() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <EmptyAction>
-                        <Primary Device="{NoDevice}" Key="Key_L" />
-                        <Secondary Device="Keyboard" Key="" />
-                    </EmptyAction>
-                    <PlaceholderAction>
-                        <Primary Device="Keyboard" Key="Key_" />
-                        <Secondary Device="Keyboard" Key="{NoDevice}" />
-                    </PlaceholderAction>
-                </Root>
-                """);
-
-        assertFalse(occupied(file, "GalaxyMapOpen", "Key_L", List.of()));
-        assertFalse(occupied(file, "GalaxyMapOpen", "Key_", List.of()));
-        assertFalse(occupied(file, "GalaxyMapOpen", "{NoDevice}", List.of()));
     }
 
     @Test
@@ -159,40 +108,6 @@ class BindingsWriterTest {
 
         assertTrue(taken);
         assertEquals(BindingSaveResult.KEY_OCCUPIED, result);
-    }
-
-    @Test
-    void sameMainKeyConflictsOnlyWhenTheFullModifierSetMatches() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <GalaxyMapOpen>
-                        <Primary Device="{NoDevice}" Key="" />
-                        <Secondary Device="{NoDevice}" Key="" />
-                    </GalaxyMapOpen>
-                    <CtrlShiftAction>
-                        <Primary Device="Keyboard" Key="Key_J">
-                            <Modifier Device="Keyboard" Key="Key_LeftControl" />
-                            <Modifier Device="Keyboard" Key="Key_LeftShift" />
-                        </Primary>
-                    </CtrlShiftAction>
-                </Root>
-                """);
-
-        List<BindingModifier> ctrlShift = List.of(
-                new BindingModifier("Keyboard", "Key_LeftControl"),
-                new BindingModifier("Keyboard", "Key_LeftShift")
-        );
-        List<BindingModifier> ctrlOnly = List.of(new BindingModifier("Keyboard", "Key_LeftControl"));
-
-        // Order within the set must not matter.
-        List<BindingModifier> shiftCtrl = List.of(
-                new BindingModifier("Keyboard", "Key_LeftShift"),
-                new BindingModifier("Keyboard", "Key_LeftControl")
-        );
-
-        assertTrue(occupied(file, "GalaxyMapOpen", "Key_J", ctrlShift));
-        assertTrue(occupied(file, "GalaxyMapOpen", "Key_J", shiftCtrl));
-        assertFalse(occupied(file, "GalaxyMapOpen", "Key_J", ctrlOnly));
     }
 
     @Test
