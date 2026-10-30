@@ -105,7 +105,7 @@ public enum SupertonicVoices {
      * know (see {@link #voiceOrDefault(String)}). It is female because that is what every existing fleet
      * already sounds like; the commander may pick any voice here, male or female.
      */
-    public static final SupertonicVoices DEFAULT_VOICE = FR_SIWIS;
+    public static final SupertonicVoices DEFAULT_VOICE = LILY;
 
     /**
      * A voice for the next radio transmission: any speaker in the cast other than the commander's own. The
