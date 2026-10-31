@@ -26,11 +26,14 @@ makes them cheap to build when they come back — each mode's own section below 
   changed."* and is logged as an error; a read that fails shows the empty grid either way, with no dialog, since a read
   runs at every refresh, and a bug is logged as an error there too. The screen's own
   APPLY, REVERT, its draft badge and its close prompt are gone, with the launch-time copy of the active `.binds` and
-  its checksum; until [Storage S7](../../05-build-plan/storage.md#slices), edits are lost on close. **Elite-Intel's
+  its checksum; leaving BindForge or closing Elite-Intel with edits not applied asks first ([Storage S7](../../05-build-plan/storage.md#slices),
+  [storage.md rule 9](storage.md#editing-and-applying)). **Elite-Intel's
   Bindings Directory row stays on this screen for now**, though [principle 12](principles.md) puts folders in File
   Manager only: it is Elite-Intel's setting for Vega, not the editor's, and moving it is a slice of its own. **The AI
   tab's Missing / Found counts come from the live bindings** `BindingsMonitor` reads — what Vega presses — not from
-  this screen's edits; the AI tab's KEYMAP readout is removed.
+  this screen's edits; the AI tab's KEYMAP readout is removed. **They are published on their own thread at every
+  read, whether the read works or not** (Alan, 2026-10-31, Storage S8R3): a read that fails does not skip them, and a
+  failure in them does not blank a read that worked.
 - **A Name box beside the Bindings File dropdown — renaming a binds file (2026-10-24, Alan).** It shows the selected
   file's BindName, editable, with the game's version and extension after it as fixed text — `DualVirpilDawnTreader`
   `.4.2.binds`. A name the user types is held to the same rules as a controller name: letters, digits, `-` and `_`,

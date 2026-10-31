@@ -136,7 +136,8 @@ merged into `V1.2-BindForge` the bundle (`ui.support.SupportBundle.previousBindi
 takes the active preset's file out of the newest before-changes backup that holds it, read through `BackupContents`,
 and carries it as `<preset>.before-changes-<stamp>`. A backup that cannot be read is skipped for the one before it;
 daily, user and first setup backups are not used, since they were not taken before a write. With none, the bundle says
-*none - Elite Intel has never written* the file; a folder that cannot be listed is said too. `ui.screen.AiTabPanel`
+*none - no before-changes backup holds* the file (Alan, 2026-10-31, Storage S8R3: no APPLY or RESTORE wrote it, or
+it was made after the last one - *"never written"* claimed more than the backups show); a folder that cannot be listed is said too. `ui.screen.AiTabPanel`
 passes `BackupDestination.stored()`'s folder, or nothing when that cannot be resolved.
 
 ### Old folder backups — V1.1's, and the old BindForge ones (settled 2026-10-24, Alan)

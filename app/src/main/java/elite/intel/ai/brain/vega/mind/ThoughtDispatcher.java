@@ -196,8 +196,9 @@ public final class ThoughtDispatcher implements ManagedService {
 
     /**
      * Accepts a gameplay subscriber's request to <b>react out loud</b> (made through
-     * {@link elite.intel.ai.brain.vega.VegaNarrator}) and queues a reactive {@link EventThought} on the EVENT lane. Event data and instructions exist only in the
-     * bounded narration request, and the spoken line is not stored.
+     * {@link elite.intel.ai.brain.vega.VegaNarrator}) and queues a reactive {@link EventThought}
+     * on the EVENT lane. Event data and instructions exist only in the bounded narration request, and the spoken
+     * line is not stored.
      */
     public void submitEventReaction(String stimulus, String instructions, Urgency urgency) {
         submitEventReaction(stimulus, instructions, null, urgency);

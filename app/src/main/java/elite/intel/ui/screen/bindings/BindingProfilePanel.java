@@ -302,9 +302,11 @@ public class BindingProfilePanel extends JPanel {
         // before first-time startup there is no working copy, and the BindForge tab says so; a damaged one is offered a
         // restore there too. A bug is logged as an error (Krondor's branch review, 2026-10-31). Neither is a dialog: a
         // read runs at every refresh.
+        // WHY: the AI tab's counts read the live bindings, not the edits, so they run on their own thread - a read
+        // that fails does not skip them, and a failure in them does not blank a read that worked (Storage S8R3).
+        new Thread(this::publishLiveSummary, "BindForge-BindingsSummary").start();
         FlowSteps.inBackground("BindForge-BindEditorRead", log, "The Bind Editor's read", () -> {
                     Loaded read = read(wanted);
-                    publishLiveSummary();
                     return () -> shown(read);
                 }, reason -> () -> shown(Loaded.nothing(wanted)), reason -> () -> shown(Loaded.nothing(wanted)),
                 FlowSteps.NOTHING);

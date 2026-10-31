@@ -536,20 +536,22 @@ final class AliasDesignerController {
      */
     private <T> void offEdt(String title, Work<T> work, Consumer<T> onEdt) {
         actionRunning = true;
-        Function<String, Runnable> failed = reason -> () -> {
+        Function<String, Runnable> told = message -> () -> {
             actionRunning = false;
-            HudConfirmDialog.info(view, title, getText("bindings.aliasDesigner.editor.actionFailed", reason),
-                    getText("button.close"));
+            HudConfirmDialog.info(view, title, message, getText("button.close"));
             refresh();
         };
+        Function<String, Runnable> failed =
+                reason -> told.apply(getText("bindings.aliasDesigner.editor.actionFailed", reason));
         FlowSteps.inBackground("BindForge-AliasDesignerChange", log, title, () -> {
             T result;
             try {
                 result = work.call();
             } catch (Edits.WriteRunningException e) {
-                // WHY: a write is running - said in the user's language, not the exception's.
+                // WHY: a write is running - said in the user's language, not the exception's, and shown alone, as the
+                // Device Editor does: wrapped in actionFailed it would say "could not be done" twice.
                 log.info("{} not done: {}", title, e.getMessage());
-                return failed.apply(getText("bindings.writeRunning"));
+                return told.apply(getText("bindings.writeRunning"));
             }
             return () -> {
                 actionRunning = false;

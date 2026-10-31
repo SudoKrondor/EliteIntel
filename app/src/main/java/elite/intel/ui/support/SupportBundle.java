@@ -481,11 +481,12 @@ public final class SupportBundle {
      * WHY: "the app changed my gamepad binds" is a report the current file alone cannot answer, because it shows
      * the result and not what it replaced. A bundle of 2026-10-27 turned on exactly that question, and the
      * answer sat in this backup on the commander's disk, in a folder they had no reason to know about. Diffed
-     * against the active file, it shows every change the last apply made, and nothing the game itself made later.
+     * against the active file, it shows every change since that backup: the last apply's, and anything the game
+     * changed since.
      * <p>
-     * No backup at all is worth a line of its own: it means Elite Intel has never written this preset, which
-     * answers the report by itself. Nothing is said when the active preset is unknown, since the bindings entry
-     * has already said why, or when the caller has no backup folder to point at.
+     * No backup holding it is worth a line of its own: no APPLY or RESTORE has written this preset, or it was made
+     * after the last one, which answers the report by itself. Nothing is said when the active preset is unknown,
+     * since the bindings entry has already said why, or when the caller has no backup folder to point at.
      */
     private static Collected previousBindings(@Nullable Path backupDir, Collected activeBindings) {
         if (backupDir == null || activeBindings.path() == null) return Collected.absent();
@@ -505,7 +506,7 @@ public final class SupportBundle {
                 log.warn("Diagnostics bundle: skipped the backup {}: {}", backup.zip(), e.toString());
             }
         }
-        return Collected.missing("none - Elite Intel has never written " + presetFile);
+        return Collected.missing("none - no before-changes backup holds " + presetFile);
     }
 
     private static String stemOf(Path zip) {

@@ -447,10 +447,11 @@ class SupportBundleTest {
     }
 
     /**
-     * No backup means Elite Intel never wrote the preset, which is the answer to the report - so it is said.
+     * No before-changes backup holding the preset means no APPLY or RESTORE wrote it, which is the answer to the
+     * report - so it is said.
      */
     @Test
-    void aPresetEliteIntelNeverWroteIsSaidSo(@TempDir Path tmp) throws IOException {
+    void aPresetNoBackupHoldsIsSaidSo(@TempDir Path tmp) throws IOException {
         Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
         Path backupDir = Files.createDirectory(tmp.resolve("backups"));
         write(bindingsDir, "Custom.4.2.binds", "<Root/>");
@@ -461,7 +462,8 @@ class SupportBundleTest {
         SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
                 null, null, bindingsDir, null, null, null, backupDir));
 
-        assertTrue(result.omitted().contains("bindings backup - none - Elite Intel has never written Custom.4.2.binds"),
+        assertTrue(result.omitted().contains(
+                "bindings backup - none - no before-changes backup holds Custom.4.2.binds"),
                 result.omitted().toString());
     }
 
