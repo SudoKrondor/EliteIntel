@@ -418,8 +418,8 @@ names it: the word the principles use, in the style of the folders beside it (`c
 `getBindingsWorkingDir()`.* **The old folder is left on disk untouched**, with everything in it - no move is written,
 since `V1.2-BindForge` has no users. A tester set up before the rename finds the new folder empty, which BindForge
 reads as a working copy that cannot be read, and is offered RESTORE of the newest backup ([storage.md](storage.md)
-rule 10). **Backup Settings & Data carries `working-copy`, not `bindings`** (`AppDataArchive.FOLDERS`; Alan,
-2026-10-31, Storage S9R): until then it archived the folder left behind and missed the working copy.
+rule 10). **Backup Settings & Data never carries the working
+copy** (`AppDataArchive.FOLDERS`; Alan, 2026-10-31, superseding Storage S9R's D1): it is BindForge's master, the side it judges the game's live files against, so a restore that put back an older one would make BindForge reconcile the newer live files toward it. BindForge keeps its own backups of it. An older zip that carries `working-copy` or `bindings` restores without either.
 
 **The old Bind Editor's loose files are left where they are** (Alan, 2026-10-28, Storage S5): its copy of the active
 `.binds`, the `.bak` beside it and the `.sha256` checksum sat at the top of that folder, beside `Bindings\` and

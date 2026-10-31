@@ -82,22 +82,6 @@ class AppDataBackupRestoreTest {
         assertArrayEquals(NEW_KEY, Files.readAllBytes(safetyFolder(newDir).resolve("secret.key")));
     }
 
-    /** BindForge's working copy is carried, and the old folder it left in Storage S8R4 is not (Storage S9R). */
-    @Test
-    void theWorkingCopyIsCarriedAndTheOldBindingsFolderIsNot() throws Exception {
-        Files.createDirectories(oldDir.resolve("working-copy/Bindings"));
-        Files.writeString(oldDir.resolve("working-copy/Bindings/Custom.4.2.binds"), "<Root/>");
-        Files.createDirectories(oldDir.resolve("bindings"));
-        Files.writeString(oldDir.resolve("bindings/Custom.4.2.binds"), "<Old/>");
-        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
-
-        AppDataRestore.stage(zip, newDir).commit(newKey);
-        PendingRestore.applyIfPresent(newDir, newKey);
-
-        assertEquals("<Root/>", Files.readString(newDir.resolve("working-copy/Bindings/Custom.4.2.binds")));
-        assertFalse(Files.exists(newDir.resolve("bindings")));
-    }
-
     @Test
     void withoutAPasswordAnotherComputerLosesTheApiKeys() throws Exception {
         try (Handle live = open(oldDir.resolve("db/database.db"))) {
@@ -116,29 +100,31 @@ class AppDataBackupRestoreTest {
 
     /**
      * BindForge's working copy is its master: a restore over it would put back files older than the game's live
-     * ones. It is not backed up, a restore leaves this computer's alone, and an older zip carrying one restores
-     * without it.
+     * ones. It is not backed up, a restore leaves this computer's alone, and an older zip carrying one - in
+     * {@code working-copy}, or in {@code bindings} before Storage S8R4 - restores without it.
      */
     @Test
     void bindForgesWorkingCopyIsNeitherBackedUpNorRestoredOver() throws Exception {
-        Path oldBinds = oldDir.resolve("bindings/Bindings/Custom.4.2.binds");
+        Path oldBinds = oldDir.resolve("working-copy/Bindings/Custom.4.2.binds");
         Files.createDirectories(oldBinds.getParent());
         Files.writeString(oldBinds, "older");
-        Path newBinds = newDir.resolve("bindings/Bindings/Custom.4.2.binds");
+        Path newBinds = newDir.resolve("working-copy/Bindings/Custom.4.2.binds");
         Files.createDirectories(newBinds.getParent());
         Files.writeString(newBinds, "newer");
 
         AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
         try (ZipFile backup = new ZipFile(zip.toFile())) {
-            assertTrue(backup.stream().noneMatch(entry -> entry.getName().startsWith("bindings/")),
+            assertTrue(backup.stream().noneMatch(entry -> entry.getName().startsWith("working-copy/")),
                     "the working copy is not in the backup");
         }
         AppDataRestore.stage(zip, newDir).commit(newKey);
         PendingRestore.applyIfPresent(newDir, newKey);
 
         assertEquals("newer", Files.readString(newBinds));
-        assertFalse(AppDataArchive.isBackupEntry("bindings/Bindings/Custom.4.2.binds"),
+        assertFalse(AppDataArchive.isBackupEntry("working-copy/Bindings/Custom.4.2.binds"),
                 "an older zip's working copy is not unpacked");
+        assertFalse(AppDataArchive.isBackupEntry("bindings/Bindings/Custom.4.2.binds"),
+                "nor one from before the folder was renamed");
     }
 
     @Test
