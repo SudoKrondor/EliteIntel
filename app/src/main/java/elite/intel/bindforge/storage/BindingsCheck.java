@@ -35,8 +35,11 @@ import java.util.stream.Stream;
  * <p>
  * <strong>Nothing watches the files</strong>: just before the write the bindings folder is compared again, and if a
  * row changed meanwhile nothing is written ({@link ChangedMeanwhileException}, carrying what is found now). An
- * installation whose device files differ is left alone, as APPLY leaves it, until Storage S9. Touches the disk - not
- * for the EDT.
+ * installation whose device files differ is left alone, as APPLY leaves it, until Storage S9.
+ * <p>
+ * <strong>At APPLY</strong> (Storage S8b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes the
+ * settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
+ * screen. Touches the disk - not for the EDT.
  */
 public final class BindingsCheck {
 
@@ -72,8 +75,11 @@ public final class BindingsCheck {
      *
      * @param workingCopy the working copy, as compared
      * @param live        the bindings folder's binds and preset files, as compared
+     * @param differences the rows to ask about - every one that differs, but those the edits change
+     * @param edited      how many rows that differ are not asked about because the edits change them - at APPLY, where
+     *                    the edits go on top (Storage S8b); none at the first click, which has no edits
      */
-    public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences) {
+    public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited) {
         public Found {
             Objects.requireNonNull(workingCopy, "workingCopy");
             live = Map.copyOf(live);
@@ -137,27 +143,57 @@ public final class BindingsCheck {
     }
 
     /**
-     * Compares the bindings folder with the working copy. Reads only.
+     * Compares the bindings folder with the working copy, leaving out the rows the edits on screen change - at APPLY
+     * the edits go on top of whichever side is kept, so nobody is asked about them (Alan, 2026-10-30, Storage S8b).
+     * Reads only.
      *
      * @throws NoSuchFileException if there is no working copy, or no bindings folder - nothing can be compared
      * @throws IOException         if either cannot be read
      */
     public Found find() throws IOException {
-        ConfigurationFiles workingCopy = edits.snapshot().applied();
-        return find(workingCopy, liveReader.read(bindingsFolder.get()));
+        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()));
     }
 
-    private Found find(ConfigurationFiles workingCopy, Map<String, byte[]> live) throws IOException {
-        Differences differences = BindingsComparison.compare(workingCopy.bindings(), live, Factory.NONE);
+    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live) throws IOException {
+        ConfigurationFiles workingCopy = snapshot.applied();
+        Differences all = BindingsComparison.compare(workingCopy.bindings(), live, Factory.NONE);
         // WHY: the factory binds files are read only when something differs - most first clicks find nothing.
-        if (!differences.none()) {
-            differences = BindingsComparison.compare(workingCopy.bindings(), live, factory.of(workingCopy));
+        if (!all.none()) {
+            all = BindingsComparison.compare(workingCopy.bindings(), live, factory.of(workingCopy));
         }
-        if (!differences.leftOut().isEmpty()) {
+        if (!all.leftOut().isEmpty()) {
             log.info("The check left out until a newer game version is reconciled (Storage S10): {}",
-                    String.join(", ", differences.leftOut()));
+                    String.join(", ", all.leftOut()));
         }
-        return new Found(workingCopy, live, differences);
+        Differences asked = BindingsComparison.without(all, edited(snapshot));
+        return new Found(workingCopy, live, asked, all.items().size() - asked.items().size());
+    }
+
+    private static List<BindingsComparison.LineItem> edited(Edits.Snapshot snapshot) {
+        return BindingsComparison.edited(snapshot.applied().bindings(), snapshot.current().bindings());
+    }
+
+    /**
+     * The binds and preset files the user settled on - after reading the bindings folder again, since nothing watched
+     * it while the warning was open. Run inside the write's {@link Edits#whileWriting}: the check's own at the first
+     * click, APPLY's at APPLY (Storage S8b).
+     *
+     * @param snapshot the edits and the working copy, read inside the write
+     * @param found    what the warning showed - nothing, when it showed none
+     * @param answers  the side each of its rows keeps
+     * @throws ChangedMeanwhileException if a row, the working copy or the edits changed since {@code found} - nothing
+     *                                   is written
+     * @throws IOException               if the bindings folder cannot be read, or a merge cannot be made
+     */
+    BindingsComparison.Settled settled(Edits.Snapshot snapshot, Found found, Map<String, Side> answers)
+            throws IOException {
+        Map<String, byte[]> live = liveReader.read(bindingsFolder.get());
+        Differences now = BindingsComparison.without(
+                BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE), edited(snapshot));
+        if (!snapshot.applied().sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())) {
+            throw new ChangedMeanwhileException(find(snapshot, live));
+        }
+        return BindingsComparison.settle(snapshot.applied().bindings(), live, now, answers);
     }
 
     /**
@@ -178,15 +214,10 @@ public final class BindingsCheck {
         return edits.whileWriting(() -> {
             // WHY: the write hands its set to the edits, which would drop them unseen.
             if (edits.hasEdits()) throw new EditsNotAppliedException();
-            ConfigurationFiles workingCopy = edits.snapshot().applied();
-            Map<String, byte[]> live = liveReader.read(bindingsFolder.get());
-            Differences now = BindingsComparison.compare(workingCopy.bindings(), live, Factory.NONE);
-            if (!workingCopy.sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())) {
-                throw new ChangedMeanwhileException(find(workingCopy, live));
-            }
-            BindingsComparison.Settled settled = BindingsComparison.settle(workingCopy.bindings(), live, now, answers);
-            ConfigurationFiles files = new ConfigurationFiles(settled.bindings(),
-                    workingCopy.hasDeviceMappings() ? workingCopy.deviceMappings() : null, workingCopy.buttonMaps());
+            Edits.Snapshot snapshot = edits.snapshot();
+            ConfigurationFiles workingCopy = snapshot.applied();
+            BindingsComparison.Settled settled = settled(snapshot, found, answers);
+            ConfigurationFiles files = workingCopy.withBindings(settled.bindings());
             DeviceFilesComparison comparison = DeviceFilesComparison.of(workingCopy);
             AtomicReference<Backup> taken = new AtomicReference<>();
             WriteReport report = writer.write(files, sources -> {
@@ -195,7 +226,7 @@ public final class BindingsCheck {
                 return backup;
             }, Apply.leavingAloneWhereDifferent(comparison, deviceFiles), settled.removeFromLive());
             log.info("The check settled {} files: {} rows; removed from the bindings folder: {}",
-                    now.files().size(), now.items().size(), settled.removeFromLive());
+                    found.differences().files().size(), found.differences().items().size(), settled.removeFromLive());
             return new Written(report, taken.get());
         });
     }

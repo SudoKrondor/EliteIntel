@@ -223,6 +223,18 @@ public final class Backups {
     }
 
     /**
+     * The before-APPLY backup when the check at APPLY settled something: every live copy, and the working copy as it
+     * was under {@value #WORKING_COPY}, since the check may have replaced part of it with a live copy (Alan,
+     * 2026-10-30, Storage S8b). Otherwise APPLY takes {@link #backUpBeforeChange(Before, BackupSources)}.
+     *
+     * @param workingCopy the working copy before the check changed it
+     * @throws IOException if the backup folder cannot be written
+     */
+    public Backup backUpBeforeApply(BackupSources from, ConfigurationFiles workingCopy) throws IOException {
+        return take(Kind.BEFORE_CHANGES, Before.APPLY, from, Objects.requireNonNull(workingCopy, "workingCopy"));
+    }
+
+    /**
      * Backs up everything as a daily, user or first setup backup. A before-changes backup is
      * {@link #backUpBeforeChange(Before, BackupSources)}, which says what it is taken before.
      *

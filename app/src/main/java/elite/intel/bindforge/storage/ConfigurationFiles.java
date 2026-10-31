@@ -97,6 +97,11 @@ public final class ConfigurationFiles {
         return new ConfigurationFiles(changed, deviceMappings, buttonMaps);
     }
 
+    /** These files with {@code bindings} - every binds and preset file - in place of this set's. */
+    public ConfigurationFiles withBindings(Map<String, byte[]> bindings) {
+        return new ConfigurationFiles(bindings, deviceMappings, buttonMaps);
+    }
+
     /** These files with {@code buttonMaps} in place of this set's. */
     public ConfigurationFiles withButtonMaps(Map<String, byte[]> buttonMaps) {
         return new ConfigurationFiles(bindings, deviceMappings, buttonMaps);

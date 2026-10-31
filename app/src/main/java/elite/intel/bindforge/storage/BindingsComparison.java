@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -411,6 +412,76 @@ public final class BindingsComparison {
 
     private static IOException notMerged(String file) {
         return new IOException(file + " could not be merged");
+    }
+
+    // ---- the edits, at APPLY
+
+    /**
+     * The line items the edits change: the working copy against the working copy with the edits on it.
+     *
+     * @param applied the working copy's binds and preset files
+     * @param current the same with the edits on them
+     */
+    public static List<LineItem> edited(Map<String, byte[]> applied, Map<String, byte[]> current) {
+        return compare(applied, current, Factory.NONE).items();
+    }
+
+    /**
+     * Whether an edit covers a row - the same line item, or one of a coarser grain holding it. A whole file covers every
+     * row of it; an element covers each of its slots, and a slot the whole element it is in, so where the two meet at a
+     * different grain the edit's whole element wins (Alan, 2026-10-30, Storage S8b).
+     */
+    static boolean covers(LineItem edit, LineItem row) {
+        if (!edit.file().equals(row.file())) return false;
+        if (edit.kind() == Kind.FILE || row.kind() == Kind.FILE) return true;
+        if (edit.kind() == Kind.DETAILS || row.kind() == Kind.DETAILS) return edit.kind() == row.kind();
+        if (edit.kind() == Kind.PRESET_LINE || row.kind() == Kind.PRESET_LINE) return edit.section() == row.section();
+        if (!edit.element().equals(row.element())) return false;
+        return edit.part() == null || row.part() == null || edit.part().equals(row.part());
+    }
+
+    /**
+     * The differences without the rows an edit covers - at APPLY the edit goes on top of whichever side is kept, so the
+     * user is not asked about them (Alan, 2026-10-30, Storage S8b). A file left with no row is left out.
+     */
+    public static Differences without(Differences differences, List<LineItem> edits) {
+        if (edits.isEmpty()) return differences;
+        List<FileDifference> files = new ArrayList<>();
+        for (FileDifference file : differences.files()) {
+            List<LineItem> asked = file.items().stream()
+                    .filter(row -> edits.stream().noneMatch(edit -> covers(edit, row)))
+                    .toList();
+            if (!asked.isEmpty()) files.add(new FileDifference(file.file(), file.presence(), file.reset(), asked));
+        }
+        return new Differences(files, differences.leftOut());
+    }
+
+    /**
+     * The edits put on top of the settled files (storage.md rule 14, <em>At APPLY</em>): on every line item the edits
+     * change, the edits' side; everywhere else, the settled side.
+     *
+     * @param settled the binds and preset files the check settled on
+     * @param applied the working copy's, which the edits started from
+     * @param current the working copy's with the edits on them
+     * @throws IOException if a file could not be merged, or the edits are on a binds file whose newer version the
+     *                     check left out - the message names it
+     */
+    public static Map<String, byte[]> withEditsOnTop(Map<String, byte[]> settled, Map<String, byte[]> applied,
+                                                     Map<String, byte[]> current) throws IOException {
+        List<LineItem> edits = edited(applied, current);
+        if (edits.isEmpty()) return settled;
+        Differences between = compare(settled, current, Factory.NONE);
+        // WHY: a row left out is never merged, so an edit on it would be dropped unseen. Edits never make a newer
+        // version, so this is a broken invariant rather than something the user did.
+        if (!between.leftOut().isEmpty()) {
+            throw new IOException("the edits cannot be put on top of " + String.join(", ", between.leftOut()));
+        }
+        Map<String, Side> answers = new HashMap<>();
+        for (LineItem row : between.items()) {
+            boolean edited = edits.stream().anyMatch(edit -> covers(edit, row));
+            answers.put(row.id(), edited ? Side.LIVE : Side.WORKING_COPY);
+        }
+        return settle(settled, current, between, answers).bindings();
     }
 
     // ---- reading and describing

@@ -335,6 +335,24 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       - overwriting it, or a merge row answered with the game's side - asks *"Are you sure?"* first.
     - **Closing the warning is Not now** (Esc, or the close glyph): nothing is written, and it is not shown again in
       that session. The check at APPLY still runs (principle 5).
+
+    **Settled with Storage S8b's sources (Alan, 2026-10-30)** - the check at APPLY:
+
+    - **The check runs after APPLY's confirmation** - rule 7's order: confirm, check, back up, write. The warning shows
+      only when something differs.
+    - **A line the edits change is not asked about.** The edit goes on top of whichever side is kept, so the warning
+      and the merge leave those rows out and say how many; *Mine* there would show the working copy, not the edit. When
+      every row that differs is one of them, no warning is shown.
+    - **Not now at APPLY cancels the APPLY**: nothing is written, and the edits stay on screen - so the leave prompt's
+      Apply leaves the user where they are.
+    - **If the check cannot read the game's files, APPLY stops** before the backup, says why, and keeps the edits.
+    - **One backup**, before APPLY. When the check settled anything it also holds the working copy under
+      `WorkingCopy\`, as the before-the-check backup does.
+    - **The preset file is checked twice**: on the edits before the warning, so a refusal comes before any merge, and
+      on the set APPLY will write, since a merge can take the game's preset line.
+    - **An edit wins on every line item it changed.** Where the edit and the game's change meet on one element at a
+      different grain - an edited `Primary` on a button whose shape the game changed - the edit's whole element wins;
+      the backup holds the game's.
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

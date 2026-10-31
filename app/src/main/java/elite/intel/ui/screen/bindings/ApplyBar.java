@@ -19,6 +19,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -32,9 +33,10 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * alone do not light them.
  * <p>
  * APPLY asks first, with rule 13's warning and, on Linux with several installations, that bindings move only in the
- * one Elite-Intel uses; then checks the preset file, naming the sections it refuses for; then backs up, saves the
- * edits into the working copy and writes it out ({@link Apply}), and reports per place. DISCARD asks, then throws
- * every edit away; no file is touched.
+ * one Elite-Intel uses; then checks the preset file, naming the sections it refuses for; then runs the check for the
+ * binds and preset files, warning when the game's differ ({@link CheckFlow}, Storage S8b); then backs up, saves the
+ * edits on top of what the check settled into the working copy and writes it out ({@link Apply}), and reports per
+ * place. DISCARD asks, then throws every edit away; no file is touched.
  * <p>
  * The leave prompt's Apply ({@link LeavePrompt}, storage.md rule 9) is this APPLY, with its confirmation and report,
  * told when it has finished so it can leave once the edits are gone.
@@ -122,41 +124,81 @@ public final class ApplyBar extends JPanel {
         }
         apply.setEnabled(false);
         discard.setEnabled(false);
-        new Thread(() -> {
-            String message;
+        Apply applying = Apply.stored(AliasDesignerReader::defaultLabels);
+        ApplyWriting writing = new ApplyWriting(applying);
+        CheckFlow check = new CheckFlow(this, writing, true);
+        Runnable done = () -> {
+            refresh();
+            finished.run();
+        };
+        // WHY: the check runs after the confirmation - rule 7's order (Alan, 2026-10-30, Storage S8b) - and before
+        // anything is backed up. With nothing to ask it writes straight away; otherwise the warning comes first.
+        // A failure here is the write's (the check's own read is caught inside): nothing promised for a bug, which can
+        // strike after some live copies were written - the log says what was (review, 2026-10-27).
+        FlowSteps.inBackground("BindForge-Apply", log, "APPLY", () -> {
+            BindingsCheck.Found found;
             try {
-                message = reportText(Apply.stored(AliasDesignerReader::defaultLabels).apply());
+                found = applying.check();
+            } catch (PresetRefusedException e) {
+                log.warn("APPLY refused: {}", e.getMessage());
+                return () -> tell(presetRefusedText(e), done);
+            } catch (IOException e) {
+                // WHY: a file the check cannot read could hold the user's work, so nothing is written over it unseen
+                // (Alan, 2026-10-30, Storage S8b). The edits are still on screen.
+                log.warn("APPLY stopped: the check could not read the control files", e);
+                return () -> tell(getText("bindings.applyBar.checkFailed", StringUtls.messageOf(e)), done);
+            }
+            return check.atApply(found, done);
+        }, reason -> () -> tell(writing.failed(reason), done), reason -> () -> tell(writing.stopped(reason), done), done);
+    }
+
+    private void tell(String message, Runnable then) {
+        HudConfirmDialog.info(this, getText("bindings.applyBar.title"), message,
+                getText("bindings.aliasDesigner.firstSetup.close"));
+        then.run();
+    }
+
+    /** APPLY's write, once the check has what the user settled on. Off the EDT. */
+    private record ApplyWriting(Apply applying) implements CheckFlow.Writing {
+        @Override
+        public String title() {
+            return getText("bindings.applyBar.title");
+        }
+
+        @Override
+        public String write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers)
+                throws IOException {
+            try {
+                return reportText(applying.apply(found, answers));
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("APPLY wrote nothing: there was nothing to back up");
-                message = getText(Backups.NothingToBackUpException.ADVICE_KEY);
+                return getText(Backups.NothingToBackUpException.ADVICE_KEY);
             } catch (Edits.WriteRunningException e) {
                 // WHY: RESTORE or first-time startup is writing - nothing was written, and the edits are still on screen.
                 log.info("APPLY not run: {}", e.getMessage());
-                message = getText("bindings.writeRunning");
+                return getText("bindings.writeRunning");
             } catch (PresetRefusedException e) {
                 // WHY: refused before anything was backed up or written - a line naming nothing real fails silently in
-                // the game (preset-editor.md, What APPLY checks and writes for the preset file).
+                // the game (preset-editor.md, What APPLY checks and writes for the preset file). Checked again on the
+                // set written, since a merge can take the game's preset line.
                 log.warn("APPLY refused: {}", e.getMessage());
-                message = presetRefusedText(e);
-            } catch (IOException e) {
-                // WHY: each of these stops before any live copy is written - the working copy unreadable, the backup
-                // or the working copy's save failed - so the edits are still on screen.
-                log.error("APPLY stopped before writing the game files", e);
-                message = getText("bindings.applyBar.failed", StringUtls.messageOf(e));
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. A bug can strike after the working copy was saved and the
-                // edits handed over, with some live copies written, so nothing is promised either way: the log says
-                // what was written (review, 2026-10-27).
-                log.error("APPLY stopped part way", e);
-                message = getText("bindings.applyBar.stopped", StringUtls.messageOf(e));
+                return presetRefusedText(e);
             }
-            String told = message;
-            SwingUtilities.invokeLater(() -> {
-                refresh();
-                HudConfirmDialog.info(this, title, told, getText("bindings.aliasDesigner.firstSetup.close"));
-                finished.run();
-            });
-        }, "BindForge-Apply").start();
+        }
+
+        /**
+         * Each of these stops before any live copy is written - the game's files or the working copy unreadable, a
+         * merge, the backup or the working copy's save failed - so the edits are still on screen.
+         */
+        @Override
+        public String failed(String reason) {
+            return getText("bindings.applyBar.failed", reason);
+        }
+
+        @Override
+        public String stopped(String reason) {
+            return getText("bindings.applyBar.stopped", reason);
+        }
     }
 
     /**
@@ -182,7 +224,8 @@ public final class ApplyBar extends JPanel {
     static String reportText(Written written) {
         WriteReport report = written.report();
         return getText("bindings.applyBar.result", written.backup().zip().toString(), report.installationsUpdated(),
-                report.installations().size()) + FirstTimeStartupFlow.placeFailures(report);
+                report.installations().size()) + FirstTimeStartupFlow.placeFailures(report)
+                + CheckFlow.keptReadOnly(report);
     }
 
     private void discard() {

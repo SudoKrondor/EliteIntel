@@ -4,6 +4,7 @@ import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
 import elite.intel.bindforge.preseteditor.BindNameList;
 import elite.intel.bindforge.preseteditor.BindsFileOrigin;
+import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -13,10 +14,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static elite.intel.bindforge.storage.BindingsComparisonTest.binds;
 import static elite.intel.bindforge.storage.WorkingCopyTest.bytes;
 import static elite.intel.bindforge.storage.WorkingCopyTest.text;
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,13 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * APPLY (storage.md rules 7-8; Storage S4a): the edits and the default labels, through the write path with a
  * before-APPLY backup, leaving alone an installation whose device files differ from the working copy - and, first of
- * all, refusing a preset file that names a binds file nobody can find (Storage S6).
+ * all, refusing a preset file that names a binds file nobody can find (Storage S6). Every APPLY runs the check
+ * first, and the edits go on top of what it settled (Storage S8b).
  */
 class ApplyTest {
 
     private static final String LVWAP = "<Root><LVWAP><PID>83F4</PID><VID>3344</VID></LVWAP></Root>";
     private static final Map<String, byte[]> LVWAP_DEFAULTS =
             Map.of("LVWAP.buttonMap", bytes("<Root><Joy_1>Button 1</Joy_1></Root>"));
+    private static final String CUSTOM_BINDS = "Custom.4.2.binds";
     private static final String ALL_CUSTOM = "Custom\r\nCustom\r\nCustom\r\nCustom";
     private static final BindNameEntry CUSTOM =
             new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds")));
@@ -48,6 +54,13 @@ class ApplyTest {
     private final List<ConfigurationFiles> written = new ArrayList<>();
     private final List<String> leftAlone = new ArrayList<>();
     private final List<String> backedUp = new ArrayList<>();
+    /** The working copy each backup held as well - {@code null} where the check settled nothing. */
+    private final List<ConfigurationFiles> heldWorkingCopies = new ArrayList<>();
+    private final List<Set<String>> removed = new ArrayList<>();
+    /** The bindings folder the check reads; {@code null} for the working copy's own files. */
+    private Map<String, byte[]> liveBindings;
+    /** Thrown when the check reads the bindings folder, when set. */
+    private IOException unreadable;
 
     @Test
     void theEditsAndTheDefaultLabelsAreWrittenAfterTheBackup() throws IOException {
@@ -152,12 +165,12 @@ class ApplyTest {
     @Test
     void aBackupThatFailsStopsApplyWithTheEditsStillOnScreen() throws IOException {
         edits.change(current -> set("<edited/>", LVWAP));
-        Apply apply = new Apply(edits, (current, applied) -> Map.of(), (files, backUp, leaveAlone) -> {
+        Run apply = new Run(new Apply(edits, (current, applied) -> Map.of(), (files, backUp, leaveAlone, remove) -> {
             backUp.take(sources());
             return null;
-        }, sources -> {
+        }, (sources, held) -> {
             throw new IOException("the backup folder cannot be written");
-        }, installation -> live(LVWAP), OFFERED);
+        }, installation -> live(LVWAP), OFFERED, check()));
 
         assertThrows(IOException.class, apply::apply);
         assertTrue(edits.hasEdits());
@@ -217,13 +230,14 @@ class ApplyTest {
         edits.change(current -> set("<edited/>", LVWAP));
         List<String> seen = new ArrayList<>();
 
-        new Apply(edits, (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
-                files -> {
+        new Run(new Apply(edits, (current, applied) -> Map.of(), this::write, this::backUp,
+                installation -> live(LVWAP), files -> {
                     seen.add(text(files.bindings().get("Custom.4.2.binds")));
                     return OFFERED.of(files);
-                }).apply();
+                }, check())).apply();
 
-        assertEquals(List.of("<edited/>"), seen);
+        assertEquals(List.of("<edited/>", "<edited/>"), seen,
+                "checked before the warning, and again on the set written (Storage S8b)");
     }
 
     /**
@@ -236,9 +250,10 @@ class ApplyTest {
                 bytes("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom")));
         InstallationRow unplugged = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
 
-        PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Apply(edits,
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Run(new Apply(edits,
                 (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
-                files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)))::apply);
+                files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)),
+                check()))::apply);
 
         assertEquals(List.of(BindingSection.GENERAL), refused.sections());
         assertEquals(List.of(unplugged), refused.unreachable());
@@ -253,9 +268,10 @@ class ApplyTest {
                 bytes("\r\nCustom\r\nCustom\r\nCustom")));
         InstallationRow unplugged = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
 
-        PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Apply(edits,
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Run(new Apply(edits,
                 (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
-                files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)))::apply);
+                files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)),
+                check()))::apply);
 
         assertEquals(List.of(BindingSection.GENERAL), refused.sections());
         assertEquals(List.of(), refused.unreachable());
@@ -297,19 +313,162 @@ class ApplyTest {
         assertEquals(List.of("APPLY"), backedUp);
     }
 
-    private Apply apply(Apply.Reader reader) {
+    // ---- the check at APPLY (Storage S8b)
+
+    /**
+     * The check settles the working copy first - here the game's change kept - and the edits go on top, in one backup
+     * and one write; the backup holds the working copy too, since the check changed it (Alan, 2026-10-30).
+     */
+    @Test
+    void theGamesChangeIsSettledAndTheEditsGoOnTopInOneWrite() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        liveBindings = bindsSet(binds("Custom", "Key_Q", "Joy_XAxis", "")).bindings();
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+
+        BindingsCheck.Found found = apply.check();
+        Written result = apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE));
+
+        assertEquals(1, found.differences().items().size(), "the game's line only - the edit's is not asked");
+        assertEquals(1, written.size());
+        assertEquals(binds("Custom", "Key_Q", "Joy_YAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
+        assertTrue(heldWorkingCopies.getFirst().sameAs(workingCopy.get()), "the working copy, before the check");
+        assertEquals(Backups.Before.APPLY, result.backup().before());
+    }
+
+    /**
+     * A line the edits change is not asked about, and the edit wins on it. With nothing else to ask the check settled
+     * nothing, so the backup holds no working copy.
+     */
+    @Test
+    void aLineTheEditsChangeIsNotAskedAndTheEditWins() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_W", "Joy_XAxis", ""))));
+        liveBindings = bindsSet(binds("Custom", "Key_Q", "Joy_XAxis", "")).bindings();
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+
+        BindingsCheck.Found found = apply.check();
+        apply.apply(found, Map.of());
+
+        assertTrue(found.differences().none());
+        assertEquals(1, found.edited());
+        assertEquals(binds("Custom", "Key_W", "Joy_XAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
+        assertNull(heldWorkingCopies.getFirst());
+    }
+
+    /** Putting mine back at APPLY removes a live-only binds file, after the backup, as the check does. */
+    @Test
+    void keepingMineAtApplyRemovesTheLiveOnlyFile() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        Map<String, byte[]> live = new HashMap<>(workingCopy.get().bindings());
+        live.put("Spare.4.2.binds", bytes(binds("Spare", "Key_A", "Joy_XAxis", "")));
+        liveBindings = live;
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+
+        BindingsCheck.Found found = apply.check();
+        apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.WORKING_COPY));
+
+        assertEquals(List.of(Set.of("Spare.4.2.binds")), removed);
+        assertFalse(written.getFirst().bindings().containsKey("Spare.4.2.binds"));
+        assertEquals(binds("Custom", "Key_A", "Joy_YAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
+    }
+
+    /** Nothing watches the files: a change after the warning opened stops APPLY, nothing written, the edits kept. */
+    @Test
+    void aFileChangedAfterTheCheckStopsApplyWithNothingWritten() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        liveBindings = bindsSet(binds("Custom", "Key_Q", "Joy_XAxis", "")).bindings();
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+        BindingsCheck.Found found = apply.check();
+        liveBindings = bindsSet(binds("Custom", "Key_E", "Joy_XAxis", "")).bindings();
+
+        BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
+                () -> apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE)));
+
+        assertEquals("Key_E", changed.now().differences().items().getFirst().live());
+        assertEquals(List.of(), backedUp);
+        assertEquals(List.of(), written);
+        assertTrue(edits.hasEdits());
+        assertFalse(edits.writing());
+    }
+
+    /** The preset file is checked again on the set written: a merge can take the game's line, naming nothing. */
+    @Test
+    void aPresetLineTakenFromTheGameIsCheckedAgainBeforeTheBackup() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        liveBindings = workingCopy.get().withBindingsFile("StartPreset.4.start",
+                bytes("Custom\r\nGone\r\nCustom\r\nCustom")).bindings();
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+
+        BindingsCheck.Found found = apply.check();
+        PresetRefusedException refused = assertThrows(PresetRefusedException.class,
+                () -> apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE)));
+
+        assertEquals(List.of(BindingSection.SHIP), refused.sections());
+        assertEquals(List.of(), backedUp);
+        assertTrue(edits.hasEdits());
+    }
+
+    /** A game file the check cannot read could hold the user's work: APPLY stops before the backup (Alan, 2026-10-30). */
+    @Test
+    void theCheckThatCannotReadTheGamesFilesStopsApply() throws IOException {
+        edits.change(current -> set("<edited/>", LVWAP));
+        unreadable = new IOException("locked");
+
+        assertThrows(IOException.class, apply(installation -> live(LVWAP))::apply);
+
+        assertEquals(List.of(), backedUp);
+        assertEquals(List.of(), written);
+        assertTrue(edits.hasEdits());
+    }
+
+    /** APPLY as the bar runs it: the check, then the write - with nothing to answer unless a test answers. */
+    private record Run(Apply applying) {
+        Written apply() throws IOException {
+            return applying.apply(applying.check(), Map.of());
+        }
+    }
+
+    private Run apply(Apply.Reader reader) {
         return apply((current, applied) -> Map.of(), reader);
     }
 
-    private Apply apply(Apply.DefaultLabels defaults, Apply.Reader reader) {
-        return new Apply(edits, defaults, this::write, this::backUp, reader, OFFERED);
+    private Run apply(Apply.DefaultLabels defaults, Apply.Reader reader) {
+        return new Run(applying(defaults, reader));
     }
 
-    private WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone)
-            throws IOException {
+    private Apply applying(Apply.DefaultLabels defaults, Apply.Reader reader) {
+        return new Apply(edits, defaults, this::write, this::backUp, reader, OFFERED, check());
+    }
+
+    /** The check, reading {@link #liveBindings} as the bindings folder - the working copy's files until a test sets it. */
+    private BindingsCheck check() {
+        return new BindingsCheck(edits, () -> Path.of("Bindings"), folder -> {
+            if (unreadable != null) throw unreadable;
+            return liveBindings != null ? liveBindings : workingCopy.get().bindings();
+        }, files -> BindingsComparison.Factory.NONE, (files, backUp, leaveAlone, remove) -> {
+            throw new AssertionError("APPLY writes through its own writer");
+        }, (sources, files) -> {
+            throw new AssertionError("APPLY takes its own backup");
+        }, installation -> {
+            throw new AssertionError("APPLY reads the installations through its own reader");
+        });
+    }
+
+    private WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
+                              Set<String> remove) throws IOException {
         BackupSources sources = sources();
         backUp.take(sources);
         written.add(files);
+        removed.add(remove);
         for (BackupSources.Installation installation : sources.installations()) {
             if (leaveAlone.leaveAlone(installation)) leftAlone.add(installation.storefront());
         }
@@ -317,8 +476,9 @@ class ApplyTest {
                 List.of(), List.of(), List.of(), List.of()), List.of());
     }
 
-    private Backup backUp(BackupSources sources) {
+    private Backup backUp(BackupSources sources, ConfigurationFiles held) {
         backedUp.add("APPLY");
+        heldWorkingCopies.add(held);
         return new Backup(Path.of("BeforeChanges/2026-10-26_10-00-00.zip"), LocalDateTime.now(),
                 Backups.Kind.BEFORE_CHANGES, Backups.Before.APPLY, true, List.of());
     }
@@ -330,6 +490,12 @@ class ApplyTest {
 
     private static DeviceFiles live(String deviceMappings) {
         return new DeviceFiles(bytes(deviceMappings), Map.of());
+    }
+
+    /** A real binds file as {@code Custom}, the preset file naming it on all four lines, and LVWAP's device file. */
+    private static ConfigurationFiles bindsSet(String custom) {
+        return new ConfigurationFiles(Map.of(CUSTOM_BINDS, bytes(custom), "StartPreset.4.start", bytes(ALL_CUSTOM)),
+                bytes(LVWAP), Map.of());
     }
 
     /** A binds file, a preset file naming it on all four lines, and a {@code DeviceMappings.xml}. */

@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The check's comparison for the binds and preset files (storage.md rule 14; Storage S8a): by value, a row per slot,
- * a file on one side only, a newer version left out, a reset named - and the files a set of answers settles on.
+ * a file on one side only, a newer version left out, a reset named - and the files a set of answers settles on. At
+ * APPLY (Storage S8b): the rows the edits change left out of what is asked, and the edits put on top.
  */
 class BindingsComparisonTest {
 
@@ -289,6 +290,94 @@ class BindingsComparisonTest {
 
         assertThrows(IllegalArgumentException.class, () -> BindingsComparison.settle(workingCopy, live, differences,
                 Map.of(YAW_PRIMARY, Side.LIVE)));
+    }
+
+    // ---- the edits, at APPLY (Storage S8b)
+
+    /** The game's change the check settled on stays; the edit on another line goes on top of it. */
+    @Test
+    void theEditsGoOnTopOfTheSettledFile() throws IOException {
+        Map<String, byte[]> applied = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> current = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_YAxis", "")));
+        Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
+
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, applied, current);
+
+        assertEquals(binds("Custom", "Key_Q", "Joy_YAxis", ""), text(onTop.get(CUSTOM)));
+    }
+
+    /** An edit wins on every line item it changed, whatever the check settled there. */
+    @Test
+    void anEditWinsOnALineTheSettledFileAlsoChanged() throws IOException {
+        Map<String, byte[]> applied = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> current = files(Map.of(CUSTOM, binds("Custom", "Key_W", "Joy_XAxis", "")));
+        Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
+
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, applied, current);
+
+        assertEquals(binds("Custom", "Key_W", "Joy_XAxis", ""), text(onTop.get(CUSTOM)));
+    }
+
+    /** A file the edits add - a binds file the user has made - is added to the settled set. */
+    @Test
+    void aFileTheEditsAddIsAddedOnTop() throws IOException {
+        Map<String, byte[]> applied = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> current = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""),
+                "Spare.4.2.binds", binds("Spare", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
+
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, applied, current);
+
+        assertEquals(Set.of(CUSTOM, "Spare.4.2.binds"), onTop.keySet());
+        assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", ""), text(onTop.get(CUSTOM)));
+    }
+
+    @Test
+    void withNoEditsTheSettledFilesAreWrittenAsTheyAre() throws IOException {
+        Map<String, byte[]> applied = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
+
+        assertSame(settled, BindingsComparison.withEditsOnTop(settled, applied, applied));
+    }
+
+    /** At APPLY a row the edits change is not asked about; the others are, and a file left with none is left out. */
+    @Test
+    void theRowsTheEditsChangeAreLeftOutOfWhatIsAsked() {
+        Map<String, String> workingCopy = Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""),
+                PRESET, "Custom\r\nCustom\r\nCustom\r\nCustom");
+        Map<String, String> live = Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_YAxis", ""),
+                PRESET, "Custom\r\nSpare\r\nCustom\r\nCustom");
+        Map<String, String> edited = Map.of(CUSTOM, binds("Custom", "Key_W", "Joy_XAxis", ""),
+                PRESET, "Custom\r\nOther\r\nCustom\r\nCustom");
+        Differences differences = compare(workingCopy, live);
+        List<LineItem> edits = BindingsComparison.edited(files(workingCopy), files(edited));
+
+        Differences asked = BindingsComparison.without(differences, edits);
+
+        assertEquals(List.of(AXIS), asked.items().stream().map(LineItem::id).toList());
+    }
+
+    /**
+     * Where an edit and a row meet at a different grain, the edit covers it: a slot covers its whole element and an
+     * element each of its slots, so the edit's element wins (Alan, 2026-10-30, Storage S8b). Another slot of the same
+     * button is not covered.
+     */
+    @Test
+    void anEditCoversItsElementAtEitherGrainButNotTheOtherSlot() {
+        LineItem primary = new LineItem(CUSTOM, "YawLeftButton/Primary", Kind.SLOT, "YawLeftButton", "Primary", null,
+                "Key_A", "Key_W");
+        LineItem secondary = new LineItem(CUSTOM, "YawLeftButton/Secondary", Kind.SLOT, "YawLeftButton", "Secondary",
+                null, "", "Key_E");
+        LineItem element = new LineItem(CUSTOM, "YawLeftButton", Kind.ELEMENT, "YawLeftButton", null, null, "a", "b");
+        LineItem wholeFile = new LineItem(CUSTOM, "#file", Kind.FILE, null, null, null, "a", "b");
+        LineItem otherFile = new LineItem("Spare.4.2.binds", "YawLeftButton/Primary", Kind.SLOT, "YawLeftButton",
+                "Primary", null, "Key_A", "Key_W");
+
+        assertTrue(BindingsComparison.covers(primary, element));
+        assertTrue(BindingsComparison.covers(element, primary));
+        assertTrue(BindingsComparison.covers(wholeFile, primary));
+        assertFalse(BindingsComparison.covers(primary, secondary));
+        assertFalse(BindingsComparison.covers(primary, otherFile));
     }
 
     // ---- helpers
