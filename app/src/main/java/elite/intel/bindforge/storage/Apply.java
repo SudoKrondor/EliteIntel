@@ -62,15 +62,18 @@ public final class Apply {
                           Set<String> removeFromBindings) throws IOException;
     }
 
-    /** APPLY's before-changes backup. */
-    @FunctionalInterface
+    /** APPLY's before-changes backup, of the bindings folder and installations the write is about to write. */
     interface BackUp {
+        /** When the check settled nothing. */
+        Backup take(BackupSources sources) throws IOException;
+
         /**
-         * @param sources     the bindings folder and installations the write is about to write
-         * @param workingCopy the working copy, to hold as well when the check settled something (Alan, 2026-10-30,
-         *                    Storage S8b) - {@code null} when it settled nothing
+         * When the check settled something: the working copy is held as well, since the check may have replaced part
+         * of it with a live copy (Alan, 2026-10-30, Storage S8b).
+         *
+         * @param workingCopy the working copy before the check changed it
          */
-        Backup take(BackupSources sources, ConfigurationFiles workingCopy) throws IOException;
+        Backup takeWithWorkingCopy(BackupSources sources, ConfigurationFiles workingCopy) throws IOException;
     }
 
     /** Reads one installation's device files as they are now. */
@@ -127,9 +130,18 @@ public final class Apply {
     public static Apply stored(DefaultLabels defaults) {
         return new Apply(Edits.stored(), defaults,
                 (files, backUp, leaveAlone, remove) -> WritePath.stored().write(files, backUp, leaveAlone, remove),
-                (sources, workingCopy) -> workingCopy == null
-                        ? Backups.stored().backUpBeforeChange(Backups.Before.APPLY, sources)
-                        : Backups.stored().backUpBeforeApply(sources, workingCopy),
+                new BackUp() {
+                    @Override
+                    public Backup take(BackupSources sources) throws IOException {
+                        return Backups.stored().backUpBeforeChange(Backups.Before.APPLY, sources);
+                    }
+
+                    @Override
+                    public Backup takeWithWorkingCopy(BackupSources sources, ConfigurationFiles workingCopy)
+                            throws IOException {
+                        return Backups.stored().backUpBeforeChange(Backups.Before.APPLY, sources, workingCopy);
+                    }
+                },
                 installation -> DeviceFiles.read(installation.root()),
                 files -> offered(files, BindForgeInstallationsManager.getInstance().findAll()),
                 BindingsCheck.stored());
@@ -218,7 +230,8 @@ public final class Apply {
             remove.removeAll(files.bindings().keySet());
             AtomicReference<Backup> taken = new AtomicReference<>();
             WriteReport report = writer.write(files, sources -> {
-                Backup backup = backUp.take(sources, checkSettled ? snapshot.applied() : null);
+                Backup backup = checkSettled ? backUp.takeWithWorkingCopy(sources, snapshot.applied())
+                        : backUp.take(sources);
                 taken.set(backup);
                 return backup;
             }, leavingAloneWhereDifferent(comparison, reader), remove);

@@ -3,8 +3,10 @@ package elite.intel.bindforge.storage;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import javax.xml.XMLConstants;
@@ -246,11 +248,11 @@ final class BindsElements {
         value.append('>');
         NodeList nodes = element.getChildNodes();
         for (int i = 0; i < nodes.getLength(); i++) {
-            org.w3c.dom.Node node = nodes.item(i);
+            Node node = nodes.item(i);
             if (node instanceof Element child) {
                 value.append(value(child));
-            } else if (node.getNodeType() == org.w3c.dom.Node.TEXT_NODE
-                    || node.getNodeType() == org.w3c.dom.Node.CDATA_SECTION_NODE) {
+            } else if (node.getNodeType() == Node.TEXT_NODE
+                    || node.getNodeType() == Node.CDATA_SECTION_NODE) {
                 String text = node.getNodeValue().strip();
                 if (!text.isEmpty()) value.append('"').append(text).append('"');
             }
@@ -291,7 +293,7 @@ final class BindsElements {
         DocumentBuilder builder = factory.newDocumentBuilder();
         builder.setErrorHandler(new DefaultHandler() {
             @Override
-            public void error(org.xml.sax.SAXParseException e) throws SAXException {
+            public void error(SAXParseException e) throws SAXException {
                 throw e;
             }
         });

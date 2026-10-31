@@ -211,27 +211,18 @@ public final class Backups {
     }
 
     /**
-     * The before-changes backup the check takes before it writes: every live copy, as every backup holds, and the
-     * working copy as it is, under {@value #WORKING_COPY} - since the check may replace it with a live copy (storage.md
-     * rule 12; Alan, 2026-10-30, Storage S8). RESTORE does not read that folder.
+     * As {@link #backUpBeforeChange(Before, BackupSources)}, holding the working copy as well, under
+     * {@value #WORKING_COPY}: the check's write, and APPLY's when the check settled something - either may replace part
+     * of the working copy with a live copy (storage.md rule 12; Alan, 2026-10-30, Storage S8a and S8b). RESTORE does not
+     * read that folder.
      *
-     * @param workingCopy the working copy before the check changes it
+     * @param workingCopy the working copy before the write changes it
      * @throws IOException if the backup folder cannot be written
      */
-    public Backup backUpBeforeCheck(BackupSources from, ConfigurationFiles workingCopy) throws IOException {
-        return take(Kind.BEFORE_CHANGES, Before.CHECK, from, Objects.requireNonNull(workingCopy, "workingCopy"));
-    }
-
-    /**
-     * The before-APPLY backup when the check at APPLY settled something: every live copy, and the working copy as it
-     * was under {@value #WORKING_COPY}, since the check may have replaced part of it with a live copy (Alan,
-     * 2026-10-30, Storage S8b). Otherwise APPLY takes {@link #backUpBeforeChange(Before, BackupSources)}.
-     *
-     * @param workingCopy the working copy before the check changed it
-     * @throws IOException if the backup folder cannot be written
-     */
-    public Backup backUpBeforeApply(BackupSources from, ConfigurationFiles workingCopy) throws IOException {
-        return take(Kind.BEFORE_CHANGES, Before.APPLY, from, Objects.requireNonNull(workingCopy, "workingCopy"));
+    public Backup backUpBeforeChange(Before before, BackupSources from, ConfigurationFiles workingCopy)
+            throws IOException {
+        if (before == null) throw new IllegalArgumentException("a before-changes backup says what it is taken before");
+        return take(Kind.BEFORE_CHANGES, before, from, Objects.requireNonNull(workingCopy, "workingCopy"));
     }
 
     /**

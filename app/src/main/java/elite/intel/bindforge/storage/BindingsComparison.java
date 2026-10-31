@@ -3,14 +3,15 @@ package elite.intel.bindforge.storage;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.model.BindingSection;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +31,7 @@ import java.util.TreeSet;
  *   <li><strong>A file on one side only is a difference</strong>, one row (Alan, 2026-10-30): keeping the working
  *       copy's side of a live-only file removes it from the bindings folder.</li>
  *   <li><strong>A newer version is left out until Storage S10</strong>: a live {@code X.4.3.binds} beside the working
- *       copy's {@code X.4.2.binds}, both of them.</li>
+ *       copy's {@code X.4.2.binds}, always; the {@code X.4.2.binds} too unless the live folder still holds it.</li>
  *   <li><strong>A reset is named</strong>: a live binds file equal by value to a factory one but for its
  *       {@code PresetName}, or a preset file whose four lines all name factory binds files where the working copy's
  *       name one of the user's own.</li>
@@ -107,11 +108,13 @@ public final class BindingsComparison {
      * One file that differs.
      *
      * @param reset whether the live copy looks reset by a game update
-     * @param items its rows, at least one
+     * @param items its rows, at least one - an empty list is refused, since a file that differs always has something
+     *              to answer
      */
     public record FileDifference(String file, Presence presence, boolean reset, List<LineItem> items) {
         public FileDifference {
             items = List.copyOf(items);
+            if (items.isEmpty()) throw new IllegalArgumentException(file + " differs with no row");
         }
     }
 
@@ -200,7 +203,11 @@ public final class BindingsComparison {
         return new Differences(files, List.copyOf(leftOut));
     }
 
-    /** A newer version beside an older one of the same BindName, on opposite sides - both left for Storage S10. */
+    /**
+     * A live binds file newer than one of the working copy's with the same BindName - left for Storage S10, always, so
+     * no answer deletes it. The older one is left out too only when the live folder lacks it; one the live folder still
+     * holds is compared as usual (Alan, 2026-10-31, Storage S8R).
+     */
     private static Set<String> leftOut(Set<String> workingCopy, Set<String> live) {
         Set<String> leftOut = new TreeSet<>();
         for (String newer : live) {
@@ -208,10 +215,9 @@ public final class BindingsComparison {
             Optional<String> bindName = FileNames.bindName(newer);
             if (bindName.isEmpty()) continue;
             for (String older : workingCopy) {
-                if (live.contains(older)) continue;
                 if (bindName.equals(FileNames.bindName(older)) && FileNames.version(older) < FileNames.version(newer)) {
                     leftOut.add(newer);
-                    leftOut.add(older);
+                    if (!live.contains(older)) leftOut.add(older);
                 }
             }
         }
@@ -262,7 +268,7 @@ public final class BindingsComparison {
             items.add(new LineItem(name, DETAILS, Kind.DETAILS, null, null, null,
                     describeAttributes(a.get().rootAttributes()), describeAttributes(b.get().rootAttributes())));
         }
-        Set<String> elements = new java.util.LinkedHashSet<>(a.get().elements().keySet());
+        Set<String> elements = new LinkedHashSet<>(a.get().elements().keySet());
         elements.addAll(b.get().elements().keySet());
         for (String element : elements) {
             items.addAll(elementItems(name, a.get().elements().get(element), b.get().elements().get(element)));
@@ -270,7 +276,11 @@ public final class BindingsComparison {
         return Optional.of(new FileDifference(name, Presence.BOTH, isReset(b.get(), factory), items));
     }
 
-    /** The rows one element gives: none when it is the same, a row per slot for a button of one shape, else one. */
+    /**
+     * The rows one element gives: none when it is the same, a row per slot for a button of one shape, else one. A button
+     * whose value differs with no slot differing - its slots in another order, or text of its own - is one row for the
+     * whole element, so a file that differs always has a row (Storage S8R, the S7-S8b review).
+     */
     private static List<LineItem> elementItems(String file, BindsElements.Top mine, BindsElements.Top theirs) {
         String element = mine != null ? mine.name() : theirs.name();
         if (mine != null && theirs != null && mine.value().equals(theirs.value())) return List.of();
@@ -282,7 +292,7 @@ public final class BindingsComparison {
                 items.add(new LineItem(file, element + "/" + child.name(), Kind.SLOT, element, child.name(), null,
                         describe(child.node()), describe(other.node())));
             }
-            return items;
+            if (!items.isEmpty()) return items;
         }
         return List.of(new LineItem(file, element, Kind.ELEMENT, element, null, null,
                 mine == null ? null : describe(mine.node()), theirs == null ? null : describe(theirs.node())));
@@ -302,7 +312,7 @@ public final class BindingsComparison {
     private static Map<String, String> ownAttributes(Element element) {
         Map<String, String> attributes = new TreeMap<>();
         for (int i = 0; i < element.getAttributes().getLength(); i++) {
-            org.w3c.dom.Node attribute = element.getAttributes().item(i);
+            Node attribute = element.getAttributes().item(i);
             attributes.put(attribute.getNodeName(), attribute.getNodeValue());
         }
         return attributes;
@@ -492,7 +502,7 @@ public final class BindingsComparison {
 
     /** Whether two files hold the same text but for a byte-order mark, line endings and trailing whitespace. */
     private static boolean sameText(byte[] a, byte[] b) {
-        return normal(a).equals(normal(b)) || Arrays.equals(a, b);
+        return normal(a).equals(normal(b));
     }
 
     private static String normal(byte[] content) {

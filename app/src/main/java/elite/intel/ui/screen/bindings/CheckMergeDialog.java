@@ -80,7 +80,7 @@ final class CheckMergeDialog extends JDialog {
             result = Map.copyOf(answers);
             dispose();
         });
-        JButton cancel = makeButtonSubtle(getText("bindings.aliasDesigner.firstSetup.cancel"));
+        JButton cancel = makeButtonSubtle(getText("button.cancel"));
         cancel.addActionListener(e -> dispose());
 
         HudModalSpec spec = HudModalSpec.builder()
@@ -102,7 +102,7 @@ final class CheckMergeDialog extends JDialog {
     private JTable buildTable() {
         Object[] columns = {getText("bindings.check.merge.column.file"), getText("bindings.check.merge.column.control"),
                 getText("bindings.check.merge.column.mine"), getText("bindings.check.merge.column.inGame"),
-                getText("bindings.aliasDesigner.labelMerge.column.keep")};
+                getText("bindings.check.merge.column.keep")};
         model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -142,7 +142,7 @@ final class CheckMergeDialog extends JDialog {
             String file = item.file().equals(previousFile) ? "" : item.file();
             previousFile = item.file();
             Side answer = answers.get(item.id());
-            String keep = answer == null ? getText("bindings.aliasDesigner.firstSetup.answer.choose")
+            String keep = answer == null ? getText("bindings.check.merge.choose")
                     : answer == Side.WORKING_COPY ? getText("bindings.check.merge.column.mine")
                     : getText("bindings.check.merge.column.inGame");
             model.addRow(new Object[]{file, controlOf(item), value(item.workingCopy()), value(item.live()), keep});

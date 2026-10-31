@@ -168,8 +168,16 @@ class ApplyTest {
         Run apply = new Run(new Apply(edits, (current, applied) -> Map.of(), (files, backUp, leaveAlone, remove) -> {
             backUp.take(sources());
             return null;
-        }, (sources, held) -> {
-            throw new IOException("the backup folder cannot be written");
+        }, new Apply.BackUp() {
+            @Override
+            public Backup take(BackupSources sources) throws IOException {
+                throw new IOException("the backup folder cannot be written");
+            }
+
+            @Override
+            public Backup takeWithWorkingCopy(BackupSources sources, ConfigurationFiles held) throws IOException {
+                throw new IOException("the backup folder cannot be written");
+            }
         }, installation -> live(LVWAP), OFFERED, check()));
 
         assertThrows(IOException.class, apply::apply);
@@ -230,7 +238,7 @@ class ApplyTest {
         edits.change(current -> set("<edited/>", LVWAP));
         List<String> seen = new ArrayList<>();
 
-        new Run(new Apply(edits, (current, applied) -> Map.of(), this::write, this::backUp,
+        new Run(new Apply(edits, (current, applied) -> Map.of(), this::write, backUp,
                 installation -> live(LVWAP), files -> {
                     seen.add(text(files.bindings().get("Custom.4.2.binds")));
                     return OFFERED.of(files);
@@ -251,7 +259,7 @@ class ApplyTest {
         InstallationRow unplugged = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
 
         PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Run(new Apply(edits,
-                (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
+                (current, applied) -> Map.of(), this::write, backUp, installation -> live(LVWAP),
                 files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)),
                 check()))::apply);
 
@@ -269,7 +277,7 @@ class ApplyTest {
         InstallationRow unplugged = new InstallationRow(2, "EPIC", root.resolve("Epic").toString(), false, false);
 
         PresetRefusedException refused = assertThrows(PresetRefusedException.class, new Run(new Apply(edits,
-                (current, applied) -> Map.of(), this::write, this::backUp, installation -> live(LVWAP),
+                (current, applied) -> Map.of(), this::write, backUp, installation -> live(LVWAP),
                 files -> new Apply.Offered(new BindNameList(List.of(CUSTOM), List.of()), List.of(unplugged)),
                 check()))::apply);
 
@@ -333,6 +341,7 @@ class ApplyTest {
         assertEquals(1, found.differences().items().size(), "the game's line only - the edit's is not asked");
         assertEquals(1, written.size());
         assertEquals(binds("Custom", "Key_Q", "Joy_YAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
+        assertEquals(List.of("APPLY with the working copy"), backedUp);
         assertTrue(heldWorkingCopies.getFirst().sameAs(workingCopy.get()), "the working copy, before the check");
         assertEquals(Backups.Before.APPLY, result.backup().before());
     }
@@ -355,7 +364,8 @@ class ApplyTest {
         assertTrue(found.differences().none());
         assertEquals(1, found.edited());
         assertEquals(binds("Custom", "Key_W", "Joy_XAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
-        assertNull(heldWorkingCopies.getFirst());
+        assertEquals(List.of("APPLY"), backedUp);
+        assertEquals(List.of(), heldWorkingCopies);
     }
 
     /** Putting mine back at APPLY removes a live-only binds file, after the backup, as the check does. */
@@ -446,7 +456,7 @@ class ApplyTest {
     }
 
     private Apply applying(Apply.DefaultLabels defaults, Apply.Reader reader) {
-        return new Apply(edits, defaults, this::write, this::backUp, reader, OFFERED, check());
+        return new Apply(edits, defaults, this::write, backUp, reader, OFFERED, check());
     }
 
     /** The check, reading {@link #liveBindings} as the bindings folder - the working copy's files until a test sets it. */
@@ -476,9 +486,23 @@ class ApplyTest {
                 List.of(), List.of(), List.of(), List.of()), List.of());
     }
 
-    private Backup backUp(BackupSources sources, ConfigurationFiles held) {
-        backedUp.add("APPLY");
-        heldWorkingCopies.add(held);
+    /** Records the backup APPLY takes - plain, or holding the working copy as well. */
+    private final Apply.BackUp backUp = new Apply.BackUp() {
+        @Override
+        public Backup take(BackupSources sources) {
+            backedUp.add("APPLY");
+            return backup();
+        }
+
+        @Override
+        public Backup takeWithWorkingCopy(BackupSources sources, ConfigurationFiles held) {
+            backedUp.add("APPLY with the working copy");
+            heldWorkingCopies.add(held);
+            return backup();
+        }
+    };
+
+    private static Backup backup() {
         return new Backup(Path.of("BeforeChanges/2026-10-26_10-00-00.zip"), LocalDateTime.now(),
                 Backups.Kind.BEFORE_CHANGES, Backups.Before.APPLY, true, List.of());
     }

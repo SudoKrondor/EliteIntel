@@ -52,7 +52,7 @@ class LiveCopiesTest {
     void theSetGoesToTheBindingsFolderAndWholeToEveryInstallation() throws IOException {
         write(buttonMap(steam, "Old.buttonMap"), "<a device the set no longer has/>");
 
-        WriteReport report = liveCopies(steam, epic).write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies(steam, epic).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertEquals("<Custom/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
         assertEquals("Custom", Files.readString(bindings.resolve("StartPreset.4.start")));
@@ -78,7 +78,7 @@ class LiveCopiesTest {
         write(bindings.resolve("Custom.4.2.binds"), "<Custom/>");
         Files.setLastModifiedTime(bindings.resolve("Custom.4.2.binds"), LONG_AGO);
 
-        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertEquals(LONG_AGO, Files.getLastModifiedTime(bindings.resolve("Custom.4.2.binds")));
         assertEquals(List.of("StartPreset.4.start"), report.bindings().written());
@@ -93,7 +93,7 @@ class LiveCopiesTest {
         write(controlSchemes(steam).resolve("KeyboardMouseOnly.binds"), "<factory/>");
         write(bindings.resolve("Testing.4.2.binds"), "<not in the set/>");
 
-        liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
+        liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertTrue(Files.exists(buttonMap(steam, "VPCThrottle.buttonMap")));
         assertTrue(Files.exists(buttonMap(steam, "readme.txt")));
@@ -106,7 +106,7 @@ class LiveCopiesTest {
     void anOldSpellingOfAKeptButtonMapEndsAsTheOneNewFile() throws IOException {
         write(buttonMap(steam, "lvwap.buttonMap"), "<old/>");
 
-        liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
+        liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         // WHY: holds whether or not the file system ignores case - on one that does, the old spelling is the new
         // file and must not be deleted; on one that heeds it, the old spelling is a file of its own and goes.
@@ -120,7 +120,7 @@ class LiveCopiesTest {
     void anInstallationThatCannotBeWrittenIsReportedAndTheOthersAreStillWritten() {
         Path gone = temp.resolve("Unplugged/EliteDangerous");
 
-        WriteReport report = liveCopies(steam, gone, epic).write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies(steam, gone, epic).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertEquals(2, report.installationsUpdated(), "updated 2 of 3");
         assertEquals(3, report.installations().size());
@@ -143,7 +143,7 @@ class LiveCopiesTest {
         WriteReport report = liveCopies(steam, gone).write(set(), installation -> {
             asked.add(installation.root());
             return true;
-        });
+        }, Set.of());
 
         assertEquals(List.of(steam), asked);
         WriteReport.Place leftAlone = report.installations().getFirst();
@@ -159,7 +159,7 @@ class LiveCopiesTest {
     void aMissingBindingsFolderIsReportedNotCreated() throws IOException {
         Files.delete(bindings);
 
-        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertEquals(List.of(LiveCopies.FOLDER_NOT_FOUND), report.bindings().failures());
         assertFalse(Files.exists(bindings), "creating it would put the files where the game never reads them");
@@ -170,7 +170,7 @@ class LiveCopiesTest {
     void aSetWithNoDeviceMappingsLeavesTheLiveOneAlone() throws IOException {
         write(GameInstallation.deviceMappingsIn(controlSchemes(steam)), "<Theirs/>");
 
-        liveCopies(steam).write(new ConfigurationFiles(Map.of(), null, Map.of()), LiveCopies.LeaveAlone.NONE);
+        liveCopies(steam).write(new ConfigurationFiles(Map.of(), null, Map.of()), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertEquals("<Theirs/>", Files.readString(GameInstallation.deviceMappingsIn(controlSchemes(steam))));
     }
@@ -186,7 +186,7 @@ class LiveCopiesTest {
         write(binds, "<Old/>");
         protect(binds);
 
-        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertTrue(report.bindings().updated(), report.bindings().failures().toString());
         assertEquals("<Custom/>", Files.readString(binds));
@@ -200,7 +200,7 @@ class LiveCopiesTest {
         write(binds, "<Custom/>");
         protect(binds);
 
-        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertFalse(report.bindings().written().contains("Custom.4.2.binds"));
         assertFalse(Files.isWritable(binds));
@@ -216,7 +216,7 @@ class LiveCopiesTest {
         write(old, "<a device the set no longer has/>");
         protect(old);
 
-        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE);
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
         assertTrue(Files.exists(old));
         WriteReport.Place place = report.installations().getFirst();

@@ -30,9 +30,10 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * the whole set, then the three choices - put the working copy back, merge, or take the game's files - and the write,
  * backed up first. It runs at two moments:
  * <ul>
- *   <li><strong>The first click on the BindForge tab in a session</strong> (Storage S8a): a session flag, set once the
- *       check has read the files, stops it running again until Elite-Intel restarts; Not now leaves it set (Alan,
- *       2026-10-30). Edits on screen put it off to the next click, since its write would throw them away.</li>
+ *   <li><strong>The first click on the BindForge tab in a session</strong> (Storage S8a): a session flag, set when the
+ *       check starts, stops it running again until Elite-Intel restarts; Not now leaves it set (Alan, 2026-10-30). A
+ *       read that fails is told, and not tried again this session - APPLY still runs the check (Storage S8R, the
+ *       S7-S8b review). Edits on screen put it off to the next click, since its write would throw them away.</li>
  *   <li><strong>APPLY</strong> (Storage S8b; {@link ApplyBar}): after the confirmation; the write is APPLY's, the edits
  *       on top. The rows the edits change are not asked about, and the warning says how many. Not now cancels the
  *       APPLY, leaving the edits on screen (Alan, 2026-10-30).</li>
@@ -204,7 +205,7 @@ final class CheckFlow {
     /** <em>"Are you sure?"</em> before a reset file replaces the working copy (storage.md rule 14). */
     private boolean sure() {
         return HudConfirmDialog.confirm(parent, getText("bindings.check.title"), getText("bindings.check.resetSure"),
-                getText("bindings.check.takeTheGames"), getText("bindings.aliasDesigner.firstSetup.cancel"));
+                getText("bindings.check.takeTheGames"), getText("button.cancel"));
     }
 
     private static Map<String, Side> everyRow(BindingsCheck.Found found, Side side) {

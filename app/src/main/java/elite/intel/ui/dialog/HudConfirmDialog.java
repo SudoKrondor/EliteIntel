@@ -90,18 +90,28 @@ public final class HudConfirmDialog extends JDialog {
         if (enterChooses) {
             getRootPane().setDefaultButton(primary);
         } else {
-            // WHY: no default button, and the focus on the message rather than a button, so neither Enter nor Space
-            // chooses anything - the user clicks one (storage.md rule 9).
-            body.setFocusable(true);
-            addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowOpened(WindowEvent e) {
-                    body.requestFocusInWindow();
-                }
-            });
+            chooseByClickOnly(this, body);
         }
         pack();
         setLocationRelativeTo(getOwner());
+    }
+
+    /**
+     * Makes {@code dialog} one the user answers by clicking: no default button, and the focus on {@code body} rather than
+     * a button, so neither Enter nor Space chooses anything (storage.md rules 9 and 14) - the leave prompt and the
+     * check's warning. Call before the dialog is shown; Esc and the close glyph stay the dialog's own.
+     *
+     * @param body the dialog's message, which takes the focus when it opens
+     */
+    public static void chooseByClickOnly(JDialog dialog, JComponent body) {
+        dialog.getRootPane().setDefaultButton(null);
+        body.setFocusable(true);
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                body.requestFocusInWindow();
+            }
+        });
     }
 
     private void finish(Result r) {

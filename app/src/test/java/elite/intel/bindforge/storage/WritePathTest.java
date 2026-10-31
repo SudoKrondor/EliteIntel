@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -178,7 +179,7 @@ class WritePathTest {
      */
     @Test
     void anInstallationLeftAloneIsNotWrittenAndIsReportedAsDiffering() throws IOException {
-        WriteReport report = writePath().write(set(), sources -> backup(), installation -> true);
+        WriteReport report = writePath().write(set(), sources -> backup(), installation -> true, Set.of());
 
         WriteReport.Place place = report.installations().getFirst();
         assertTrue(place.differs());
@@ -252,7 +253,7 @@ class WritePathTest {
     /** APPLY's write - the one that finds the places itself - leaving no installation alone. */
     private static WriteReport applyWrite(WritePath writePath, ConfigurationFiles files, WritePath.BackUpFirst backUp)
             throws IOException {
-        return writePath.write(files, backUp, LiveCopies.LeaveAlone.NONE);
+        return writePath.write(files, backUp, LiveCopies.LeaveAlone.NONE, Set.of());
     }
 
     private WritePath writePath() {

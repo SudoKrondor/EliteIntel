@@ -57,9 +57,9 @@ public final class StartupCheck {
      */
     public void runInBackground(Runnable say) {
         if (!STARTED.compareAndSet(false, true)) return;
-        Thread.ofVirtual().name("bindforge-startup-check").start(() -> {
+        new Thread(() -> {
             if (changedOutside()) say.run();
-        });
+        }, "BindForge-StartupCheck").start();
     }
 
     /** Whether a live binds or preset file differs from the working copy. On the caller's thread; touches the disk. */

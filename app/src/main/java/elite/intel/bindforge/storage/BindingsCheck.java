@@ -127,7 +127,7 @@ public final class BindingsCheck {
         return new BindingsCheck(Edits.stored(), () -> PlayerSession.getInstance().getBindingsDir(),
                 BindingsCheck::readBindingsFolder, BindingsCheck::factoryOf,
                 (files, backUp, leaveAlone, remove) -> WritePath.stored().write(files, backUp, leaveAlone, remove),
-                (sources, workingCopy) -> Backups.stored().backUpBeforeCheck(sources, workingCopy),
+                (sources, workingCopy) -> Backups.stored().backUpBeforeChange(Backups.Before.CHECK, sources, workingCopy),
                 installation -> DeviceFiles.read(installation.root()));
     }
 

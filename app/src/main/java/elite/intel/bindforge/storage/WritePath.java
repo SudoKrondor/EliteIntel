@@ -83,18 +83,11 @@ public final class WritePath {
     }
 
     /**
-     * APPLY's write: finds the places itself, then as {@link #write(ConfigurationFiles, BackupSources, BackUpFirst)},
-     * leaving alone each installation {@code leaveAlone} picks - asked just before that installation would be written,
-     * after the backup and the working copy.
-     */
-    WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone)
-            throws IOException {
-        return write(files, backUp, leaveAlone, Set.of());
-    }
-
-    /**
-     * The check's write: as APPLY's, and removing from the bindings folder the binds and preset files named - a
-     * live-only file the user kept the working copy's side of (Alan, 2026-10-30, Storage S8), after the backup.
+     * APPLY's write, and the check's: finds the places itself, then as
+     * {@link #write(ConfigurationFiles, BackupSources, BackUpFirst)}, leaving alone each installation {@code leaveAlone}
+     * picks - asked just before that installation would be written, after the backup and the working copy - and
+     * removing from the bindings folder the binds and preset files named: a live-only file the user kept the working
+     * copy's side of (Alan, 2026-10-30, Storage S8), after the backup.
      */
     WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
                       Set<String> removeFromBindings) throws IOException {

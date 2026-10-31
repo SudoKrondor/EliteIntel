@@ -4,7 +4,7 @@ import elite.intel.bindforge.storage.Edits;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Leaving BindForge with edits not applied - another Elite-Intel tab, or closing Elite-Intel - asks first: <strong>Go
@@ -65,12 +65,6 @@ public final class LeavePrompt {
         }
     }
 
-    /** Asks Go back, Discard or Apply. */
-    @FunctionalInterface
-    interface Question {
-        Choice ask(Leaving leaving);
-    }
-
     /** The bar's APPLY; runs {@code finished} on the EDT once it is over, written or not. */
     @FunctionalInterface
     interface Applying {
@@ -78,14 +72,15 @@ public final class LeavePrompt {
     }
 
     private final EditsState edits;
-    private final Question question;
+    private final Supplier<Choice> question;
     private final Applying applying;
-    private final Consumer<Leaving> writeRunning;
+    private final Runnable writeRunning;
 
     /**
+     * @param question     asks Go back, Discard or Apply - one question for a tab switch and for closing
      * @param writeRunning tells the user a write is running, so they cannot leave yet
      */
-    LeavePrompt(EditsState edits, Question question, Applying applying, Consumer<Leaving> writeRunning) {
+    LeavePrompt(EditsState edits, Supplier<Choice> question, Applying applying, Runnable writeRunning) {
         this.edits = edits;
         this.question = question;
         this.applying = applying;
@@ -102,7 +97,7 @@ public final class LeavePrompt {
             if (leaving == Leaving.CLOSE) {
                 // WHY: closing part way through would leave installations unwritten until the check (S9).
                 log.info("Close refused: BindForge is writing the control files");
-                writeRunning.accept(leaving);
+                writeRunning.run();
                 return;
             }
             leave.run();
@@ -112,7 +107,7 @@ public final class LeavePrompt {
             leave.run();
             return;
         }
-        Choice choice = question.ask(leaving);
+        Choice choice = question.get();
         log.info("Leaving BindForge ({}) with edits not applied: {}", leaving, choice);
         switch (choice) {
             case GO_BACK -> {
@@ -120,7 +115,7 @@ public final class LeavePrompt {
             case DISCARD -> {
                 if (!edits.discard()) {
                     // WHY: a write started while the question was open - the edits are being written, not thrown away.
-                    writeRunning.accept(leaving);
+                    writeRunning.run();
                     return;
                 }
                 leave.run();

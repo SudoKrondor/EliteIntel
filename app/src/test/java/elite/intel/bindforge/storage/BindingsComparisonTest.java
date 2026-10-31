@@ -61,6 +61,35 @@ class BindingsComparisonTest {
         assertEquals("Key_Q", row.live());
     }
 
+    /**
+     * A button whose slots are only in another order differs by value with no slot differing - one row for the whole
+     * element, never a file with nothing to answer (Storage S8R, the S7-S8b review); taking the game's side takes its
+     * order.
+     */
+    @Test
+    void aButtonWhoseSlotsAreReorderedIsOneRowForTheWholeElement() throws IOException {
+        String mine = binds("Custom", "Key_A", "Joy_XAxis", "");
+        String reordered = mine.replace(
+                "\t\t<Primary Device=\"Keyboard\" Key=\"Key_A\" />\r\n\t\t<Secondary Device=\"{NoDevice}\" Key=\"\" />\r\n",
+                "\t\t<Secondary Device=\"{NoDevice}\" Key=\"\" />\r\n\t\t<Primary Device=\"Keyboard\" Key=\"Key_A\" />\r\n");
+        assertNotEquals(mine, reordered);
+        Differences differences = compare(Map.of(CUSTOM, mine), Map.of(CUSTOM, reordered));
+
+        LineItem row = only(differences);
+        assertEquals(CUSTOM + "|YawLeftButton", row.id());
+        assertEquals(Kind.ELEMENT, row.kind());
+
+        BindingsComparison.Settled settled = BindingsComparison.settle(files(Map.of(CUSTOM, mine)),
+                files(Map.of(CUSTOM, reordered)), differences, every(differences, Side.LIVE));
+        assertEquals(reordered, text(settled.bindings().get(CUSTOM)));
+    }
+
+    @Test
+    void aFileDifferenceHasAtLeastOneRow() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new FileDifference(CUSTOM, Presence.BOTH, false, List.of()));
+    }
+
     /** An axis is one row: its binding, Inverted and Deadzone together. */
     @Test
     void aChangedAxisIsOneRowForTheWholeElement() {
@@ -121,6 +150,20 @@ class BindingsComparisonTest {
 
         assertTrue(differences.none());
         assertEquals(List.of(CUSTOM, "Custom.4.3.binds"), differences.leftOut());
+    }
+
+    /**
+     * With both versions in the game's folder, the newer is still left out - otherwise it is a live-only row, and
+     * keeping the working copy's side deletes it - and the older is compared as usual (Alan, 2026-10-31, Storage S8R).
+     */
+    @Test
+    void aNewerVersionIsLeftOutWhenTheGamesFolderStillHoldsTheOlderOne() {
+        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
+                Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""),
+                        "Custom.4.3.binds", binds("Custom", "Key_A", "Joy_XAxis", "")));
+
+        assertEquals(List.of("Custom.4.3.binds"), differences.leftOut());
+        assertEquals(YAW_PRIMARY, only(differences).id());
     }
 
     @Test

@@ -138,7 +138,8 @@ class BackupsTest {
                 Map.of("Mine.4.2.binds", WorkingCopyTest.bytes("<Mine/>")), WorkingCopyTest.bytes("<Mappings/>"),
                 Map.of("LVWAP.buttonMap", WorkingCopyTest.bytes("<LVWAP/>")));
 
-        Backup backup = backups("2026-10-30T18:30:00Z", sources()).backUpBeforeCheck(sources(), workingCopy);
+        Backup backup = backups("2026-10-30T18:30:00Z", sources()).backUpBeforeChange(Backups.Before.CHECK, sources(),
+                workingCopy);
 
         assertEquals(Backups.Before.CHECK, backup.before());
         assertEquals("<Mine/>", entry(backup, "WorkingCopy/Bindings/Mine.4.2.binds"));

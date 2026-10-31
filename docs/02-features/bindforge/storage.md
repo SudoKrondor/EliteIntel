@@ -320,7 +320,10 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       write that removes a `.binds`, besides a rename's (rule 7), and only when the user chose it.
     - **Until S10, a newer version of a working-copy binds file is left out of the check** and logged - a live
       `X.4.3.binds` beside the working copy's `X.4.2.binds`. Keeping the working copy's side would delete the game's
-      new file.
+      new file. **The newer one is always left out; the older one too only when the live folder lacks it** (Alan,
+      2026-10-31, from the S7-S8b review): a live folder still holding `X.4.2.binds` beside `X.4.3.binds` has its
+      `X.4.2.binds` compared as usual, and the newer is still never offered for removal. A newer version on the XML
+      root under the same file name is not left out before S10 - it is an ordinary details row.
     - **A reset, for these files:** a live binds file whose every element, and its root apart from `PresetName`,
       equals by value one of the factory binds files of a reachable installation; a live preset file whose four lines
       all name factory binds files while the working copy's name one of the user's own.

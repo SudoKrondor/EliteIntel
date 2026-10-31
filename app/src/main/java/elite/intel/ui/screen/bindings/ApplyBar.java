@@ -85,9 +85,8 @@ public final class ApplyBar extends JPanel {
     /** The leave prompt, asking over {@code parent}, whose Apply is this bar's APPLY. */
     public LeavePrompt leavePrompt(Component parent) {
         String title = getText("bindings.leave.title");
-        String close = getText("bindings.aliasDesigner.firstSetup.close");
         return new LeavePrompt(LeavePrompt.EditsState.of(Edits.stored()),
-                leaving -> switch (HudConfirmDialog.showWithoutDefault(parent, title, getText("bindings.leave.message"),
+                () -> switch (HudConfirmDialog.showWithoutDefault(parent, title, getText("bindings.leave.message"),
                         getText("bindings.applyBar.apply"), getText("bindings.applyBar.discard"),
                         getText("bindings.leave.goBack"))) {
                     case PRIMARY -> LeavePrompt.Choice.APPLY;
@@ -95,7 +94,7 @@ public final class ApplyBar extends JPanel {
                     case DISMISS -> LeavePrompt.Choice.GO_BACK;
                 },
                 this::apply,
-                leaving -> HudConfirmDialog.info(parent, title, getText("bindings.writeRunning"), close));
+                () -> HudConfirmDialog.info(parent, title, getText("bindings.writeRunning"), getText("button.close")));
     }
 
     /**
@@ -118,7 +117,7 @@ public final class ApplyBar extends JPanel {
         }
         String title = getText("bindings.applyBar.title");
         if (!HudConfirmDialog.confirm(this, title, question, getText("bindings.applyBar.apply"),
-                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+                getText("button.cancel"))) {
             finished.run();
             return;
         }
@@ -141,21 +140,17 @@ public final class ApplyBar extends JPanel {
                 found = applying.check();
             } catch (PresetRefusedException e) {
                 log.warn("APPLY refused: {}", e.getMessage());
-                return () -> tell(presetRefusedText(e), done);
+                return () -> FlowSteps.tell(this, title, presetRefusedText(e), done);
             } catch (IOException e) {
                 // WHY: a file the check cannot read could hold the user's work, so nothing is written over it unseen
                 // (Alan, 2026-10-30, Storage S8b). The edits are still on screen.
                 log.warn("APPLY stopped: the check could not read the control files", e);
-                return () -> tell(getText("bindings.applyBar.checkFailed", StringUtls.messageOf(e)), done);
+                return () -> FlowSteps.tell(this, title,
+                        getText("bindings.applyBar.checkFailed", StringUtls.messageOf(e)), done);
             }
             return check.atApply(found, done);
-        }, reason -> () -> tell(writing.failed(reason), done), reason -> () -> tell(writing.stopped(reason), done), done);
-    }
-
-    private void tell(String message, Runnable then) {
-        HudConfirmDialog.info(this, getText("bindings.applyBar.title"), message,
-                getText("bindings.aliasDesigner.firstSetup.close"));
-        then.run();
+        }, reason -> () -> FlowSteps.tell(this, title, writing.failed(reason), done),
+                reason -> () -> FlowSteps.tell(this, title, writing.stopped(reason), done), done);
     }
 
     /** APPLY's write, once the check has what the user settled on. Off the EDT. */
@@ -232,7 +227,7 @@ public final class ApplyBar extends JPanel {
         if (!Edits.stored().hasEdits()) return;
         if (!HudConfirmDialog.confirm(this, getText("bindings.applyBar.discard.title"),
                 getText("bindings.applyBar.discard.confirm"), getText("bindings.applyBar.discard"),
-                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+                getText("button.cancel"))) {
             return;
         }
         try {

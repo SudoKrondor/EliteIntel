@@ -42,14 +42,14 @@ class LeavePromptTest {
             hasEdits = false;
             return true;
         }
-    }, leaving -> {
-        happened.add("asked " + leaving);
+    }, () -> {
+        happened.add("asked");
         return answer;
     }, finished -> {
         happened.add("applied");
         if (applyWrites) hasEdits = false;
         finished.run();
-    }, leaving -> happened.add("told write running"));
+    }, () -> happened.add("told write running"));
 
     private void leave(Leaving leaving) {
         prompt.request(leaving, () -> happened.add("left"));
@@ -66,7 +66,7 @@ class LeavePromptTest {
     @Test
     void goBackStaysWithTheEdits() {
         leave(Leaving.CLOSE);
-        assertEquals(List.of("asked CLOSE"), happened);
+        assertEquals(List.of("asked"), happened);
         assertTrue(hasEdits);
     }
 
@@ -74,14 +74,14 @@ class LeavePromptTest {
     void discardThrowsTheEditsAwayAndLeavesWithoutAskingAgain() {
         answer = Choice.DISCARD;
         leave(Leaving.TAB);
-        assertEquals(List.of("asked TAB", "discarded", "left"), happened);
+        assertEquals(List.of("asked", "discarded", "left"), happened);
     }
 
     @Test
     void applyLeavesOnceTheEditsAreWritten() {
         answer = Choice.APPLY;
         leave(Leaving.CLOSE);
-        assertEquals(List.of("asked CLOSE", "applied", "left"), happened);
+        assertEquals(List.of("asked", "applied", "left"), happened);
     }
 
     @Test
@@ -89,7 +89,7 @@ class LeavePromptTest {
         answer = Choice.APPLY;
         applyWrites = false;
         leave(Leaving.CLOSE);
-        assertEquals(List.of("asked CLOSE", "applied"), happened);
+        assertEquals(List.of("asked", "applied"), happened);
         assertTrue(hasEdits);
     }
 
@@ -112,7 +112,7 @@ class LeavePromptTest {
         answer = Choice.DISCARD;
         writeStartsOnDiscard = true;
         leave(Leaving.TAB);
-        assertEquals(List.of("asked TAB", "told write running"), happened);
+        assertEquals(List.of("asked", "told write running"), happened);
         assertTrue(hasEdits);
     }
 }

@@ -1,5 +1,6 @@
 package elite.intel.ui.screen.bindings;
 
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudModalSpec;
@@ -8,8 +9,6 @@ import elite.intel.ui.widget.StatusBadge;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.makeButton;
@@ -61,16 +60,8 @@ final class CheckWarningDialog extends JDialog {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         getRootPane().registerKeyboardAction(e -> finish(Choice.NOT_NOW), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
-        // WHY: no default button, and the focus on the message rather than a button, so neither Enter nor Space chooses
-        // anything - the user clicks one (Alan, 2026-10-30), as the leave prompt does.
-        getRootPane().setDefaultButton(null);
-        body.setFocusable(true);
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowOpened(WindowEvent e) {
-                body.requestFocusInWindow();
-            }
-        });
+        // WHY: nothing selected, so the user clicks one (Alan, 2026-10-30), as the leave prompt does.
+        HudConfirmDialog.chooseByClickOnly(this, body);
         pack();
         setSize(Math.max(getWidth(), 620), getHeight());
         setLocationRelativeTo(getOwner());

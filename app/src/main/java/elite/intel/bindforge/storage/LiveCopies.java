@@ -65,16 +65,10 @@ final class LiveCopies {
 
     /**
      * The bindings folder first, then each installation in the stored list's order, leaving alone the installations
-     * {@code leaveAlone} picks - asked only of one that is there; a missing one is reported as not found.
-     */
-    WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone) {
-        return write(files, leaveAlone, Set.of());
-    }
-
-    /**
-     * As {@link #write(ConfigurationFiles, LeaveAlone)}, removing from the bindings folder the binds and preset files
-     * named - the check's, for a live-only file the user kept the working copy's side of (Alan, 2026-10-30, Storage S8).
-     * A read-only one is kept, and reported, as a {@code .buttonMap} is.
+     * {@code leaveAlone} picks - asked only of one that is there; a missing one is reported as not found. Removes from
+     * the bindings folder the binds and preset files named - the check's, for a live-only file the user kept the
+     * working copy's side of (Alan, 2026-10-30, Storage S8); a read-only one is kept, and reported, as a
+     * {@code .buttonMap} is.
      */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings) {
         Place bindings = writeBindings(files, removeFromBindings);
