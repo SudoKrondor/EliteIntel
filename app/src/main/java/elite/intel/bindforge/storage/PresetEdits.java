@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
  * APPLY.
  * <p>
  * <strong>The preset file is the set's highest-numbered {@code StartPreset.N.start}</strong>, found by
- * {@link #presetFile} alone, so the file read, the file changed and the file checked are one file (P3 review, finding
- * 2). {@code StartPreset.start}, the pre-Odyssey name, is not a file of the set.
+ * {@link #presetFile} alone, so the file read, the file changed and the file checked are one file (Storage S6).
+ * {@code StartPreset.start}, the pre-Odyssey name, is not a file of the set.
  */
 public final class PresetEdits {
 

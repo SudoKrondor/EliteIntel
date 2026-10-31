@@ -31,7 +31,7 @@ class PresetEditsTest {
             new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.FACTORY,
                     List.of(Path.of("Steam/ControlSchemes/KeyboardMouseOnly.binds")))), List.of());
 
-    /** P3 review, finding 2: one file is the preset file, the highest N, whatever else the set holds. */
+    /** Storage S6: one file is the preset file, the highest N, whatever else the set holds. */
     @Test
     void thePresetFileIsTheHighestNumberedOne() {
         ConfigurationFiles files = set(Map.of("StartPreset.4.start", SPLIT, "StartPreset.10.start", "Custom",

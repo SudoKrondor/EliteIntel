@@ -77,7 +77,7 @@ class WritePathTest {
         assertEquals("<live/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
     }
 
-    /** The preset file too (P3 review, finding 5): a backup that fails leaves the game's file as it was. */
+    /** The preset file too (Storage S6): a backup that fails leaves the game's file as it was. */
     @Test
     void aBackupThatFailsLeavesThePresetFileAsItWas() throws IOException {
         write(bindings.resolve("StartPreset.4.start"), "KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom");

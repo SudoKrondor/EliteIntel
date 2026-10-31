@@ -254,7 +254,7 @@ public final class DeviceCheck {
          * @param reconciled what the reconcile made - only its device files are used; the binds files are settled
          *                   by the binds check, and {@code moves} rewritten in them at the write
          */
-        static Reconciled reconciled(ConfigurationFiles reconciled, Map<String, String> moves) {
+        public static Reconciled reconciled(ConfigurationFiles reconciled, Map<String, String> moves) {
             return new Reconciled(reconciled.hasDeviceMappings() ? reconciled.deviceMappings() : null,
                     reconciled.buttonMaps(), moves);
         }

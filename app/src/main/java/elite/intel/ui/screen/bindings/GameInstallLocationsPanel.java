@@ -171,7 +171,7 @@ public class GameInstallLocationsPanel extends JPanel {
             List<InstallationRow> rows = source.get();
             Optional<Map<Long, DeviceCheck.State>> states = matchStates();
             List<Object[]> cells = rows.stream().map(row -> cellsOf(row,
-                    states.map(judged -> statusOf(row, judged)).orElseGet(() -> listedStatus(row)))).toList();
+                    states.map(stateById -> statusOf(row, stateById)).orElseGet(() -> listedStatus(row)))).toList();
             Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
             return () -> loaded(rows, cells, bindingsDir);
         }, empty, empty, FlowSteps.NOTHING);
@@ -260,8 +260,8 @@ public class GameInstallLocationsPanel extends JPanel {
      * nothing to compare with: before first-time startup, or a working copy that cannot be read. Off the EDT.
      * <p>
      * <em>Read twice:</em> {@link #describeDeviceFiles} reads each installation's files again for its own cell. Few
-     * installations and off the EDT, so it costs nothing today; it is two readers of the same files (S9a review,
-     * finding 9 - left as it is).
+     * installations and off the EDT, so it costs nothing today; it is two readers of the same files (Storage S9R,
+     * D7 - left as it is).
      */
     private static Optional<Map<Long, DeviceCheck.State>> matchStates() {
         try {
