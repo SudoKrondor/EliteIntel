@@ -403,16 +403,24 @@ catch that, because it governs atomicity *within* an operation, not ownership *a
 
 #### Where the working copy lives — 2026-10-23
 
-The working copy is Elite-Intel's existing working folder, `AppPaths.getBindingsWorkingDir()`, grown to hold every
+The working copy is Elite-Intel's existing working folder, `AppPaths.getWorkingCopyDir()`, grown to hold every
 file — not a new folder beside it ([one writer](#there-is-one-writer-and-it-already-exists)). Inside, it matches the
 game's own layout, so a user browsing to it recognises what they see: `Bindings\` holds every `.binds` and
 `StartPreset.4.start`; `ControlSchemes\` holds the one `DeviceMappings.xml`, with every `.buttonMap` in
 `ControlSchemes\DeviceButtonMaps\` (2026-10-23, Alan). *Until 2026-10-23 this section placed a separate master, its
 Edit History and a Revert method; [storage.md](storage.md) replaced them.*
 
+**The folder is `elite-intel/working-copy`** (Alan, 2026-10-31, Storage S8R4), and `AppPaths.getWorkingCopyDir()`
+names it: the word the principles use, in the style of the folders beside it (`custom-commands`, `playerbackups`).
+*Until then it was `elite-intel/bindings`, named for the old Bind Editor's copy of the active `.binds`, and the method
+`getBindingsWorkingDir()`.* **The old folder is left on disk untouched**, with everything in it - no move is written,
+since `V1.2-BindForge` has no users. A tester set up before the rename finds the new folder empty, which BindForge
+reads as a working copy that cannot be read, and is offered RESTORE of the newest backup ([storage.md](storage.md)
+rule 10).
+
 **The old Bind Editor's loose files are left where they are** (Alan, 2026-10-28, Storage S5): its copy of the active
-`.binds`, the `.bak` beside it and the `.sha256` checksum sit at the top of that folder, beside `Bindings\` and
-`ControlSchemes\`. Nothing reads them since Storage S5, nothing deletes them, and a tester may delete them by hand —
+`.binds`, the `.bak` beside it and the `.sha256` checksum sat at the top of that folder, beside `Bindings\` and
+`ControlSchemes\`, and stay in the old `elite-intel/bindings` folder since the rename. Nothing reads them since Storage S5, nothing deletes them, and a tester may delete them by hand —
 `V1.2-BindForge` has no users, so no clean-up is written for them.
 
 ### APPLY and DISCARD — one pair, above BindForge's tabs (2026-10-24, Alan)

@@ -243,15 +243,15 @@ stop-detection is a timeout inference), or poll `ProcessHandle.allProcesses()` f
 
 ```
 elite-intel/db                       getDatabasePath()
-elite-intel/bindings                 getBindingsWorkingDir()
+elite-intel/working-copy             getWorkingCopyDir()
 elite-intel/custom-commands          getCustomCommandsFilePath()
 elite-intel/custom-commands/backups  getCustomCommandsBackupDir()
 elite-intel/playerbackups            getPlayerBackupsDir()
 elite-intel/diagnostics              getDiagnosticsDir()
 ```
 
-Note that `getBindingsWorkingDir()` already exists — the working-copy location BindForge's specs describe is
-provisioned. *`getBindingsBackupDir()` was removed in Storage S6 (2026-10-28): backups go where
+Note that `getWorkingCopyDir()` already exists — the working-copy location BindForge's specs describe is
+provisioned. *It was `elite-intel/bindings` and `getBindingsWorkingDir()` until Storage S8R4 (2026-10-31).* *`getBindingsBackupDir()` was removed in Storage S6 (2026-10-28): backups go where
 `bindforge.storage.BackupDestination` says.*
 
 **Gap:** `AppPaths` resolves Elite-Intel's *own* folders. It does not do game-installation discovery across

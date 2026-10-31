@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * setup is complete (principle 7; storage.md rule 4). Laid out like the game's, so a user browsing to it recognises
  * what they see (overview.md, <em>Where the working copy lives</em>):
  * <pre>
- * {@link AppPaths#getBindingsWorkingDir()}\
+ * {@link AppPaths#getWorkingCopyDir()}\
  *   Bindings\                        every .binds and StartPreset.N.start
  *   ControlSchemes\DeviceMappings.xml
  *   ControlSchemes\DeviceButtonMaps\ every .buttonMap
@@ -56,9 +56,9 @@ public final class WorkingCopy {
 
     private final Path root;
 
-    /** The working copy in {@link AppPaths#getBindingsWorkingDir()}. */
+    /** The working copy in {@link AppPaths#getWorkingCopyDir()}. */
     public static WorkingCopy stored() throws IOException {
-        return new WorkingCopy(AppPaths.getBindingsWorkingDir());
+        return new WorkingCopy(AppPaths.getWorkingCopyDir());
     }
 
     WorkingCopy(Path root) {

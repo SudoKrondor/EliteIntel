@@ -58,8 +58,8 @@ public final class AppPaths {
     }
 
     /** Returns BindForge's working copy folder ({@code bindforge.storage.WorkingCopy}), creating it if needed. */
-    public static Path getBindingsWorkingDir() throws IOException {
-        Path dir = getAppDataBase().resolve("elite-intel/bindings");
+    public static Path getWorkingCopyDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/working-copy");
         Files.createDirectories(dir);
         return dir;
     }
