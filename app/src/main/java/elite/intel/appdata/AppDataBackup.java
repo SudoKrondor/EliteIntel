@@ -18,8 +18,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Backup Settings and Data: the commander's settings, databases, custom commands and bindings work, in one zip they
- * can carry to another computer and restore there ({@link AppDataRestore}).
+ * Backup Settings and Data: the commander's settings, databases, custom commands and player backups, in one zip they
+ * can carry to another computer and restore there ({@link AppDataRestore}). BindForge's working copy is not in it
+ * ({@link AppDataArchive#FOLDERS} says why).
  * <p>
  * Runs while the app does. Touches the disk - not for the EDT.
  */

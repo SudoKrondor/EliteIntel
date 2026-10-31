@@ -15,8 +15,8 @@ import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
 import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.ConfigurationFiles;
-import elite.intel.bindforge.storage.Edits;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
+import elite.intel.bindforge.storage.Edits;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -325,11 +325,6 @@ public class BindingProfilePanel extends JPanel {
         wantedFile = chosen.toString();
         initData();
     }
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
-                    parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
-            Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(slots);
-            conflicts = computeConflicts(slots);
-            recommendationsByBinding = computeRecommendations(parsedSlots);
 
     /**
      * What one read found. {@code file} is {@code null} when nothing could be shown - the log says why.
@@ -385,9 +380,8 @@ public class BindingProfilePanel extends JPanel {
             fixAllButton.setEnabled(false);
             return;
         }
-        Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(currentSlots);
-        conflicts = computeConflicts(parsedSlots);
-        recommendationsByBinding = computeRecommendations(parsedSlots);
+        conflicts = computeConflicts(currentSlots);
+        recommendationsByBinding = computeRecommendations(parser.toExecutableSlots(currentSlots));
         renderBindingTables();
     }
 
