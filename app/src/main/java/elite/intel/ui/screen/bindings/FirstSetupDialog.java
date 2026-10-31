@@ -15,14 +15,12 @@ import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudTable;
 import elite.intel.ui.widget.StatusBadge;
-import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +133,7 @@ final class FirstSetupDialog extends JDialog {
 
         JButton merge = makeButton(getText("bindings.firstTimeStartup.reconcile.merge"));
         merge.addActionListener(e -> onMerge());
-        JButton cancel = makeButtonSubtle(getText("bindings.aliasDesigner.firstSetup.cancel"));
+        JButton cancel = makeButtonSubtle(getText("button.cancel"));
         cancel.addActionListener(e -> dispose());
 
         JPanel bottom = transparentPanel(new GridLayout(0, 1, 0, 6));
@@ -330,7 +328,7 @@ final class FirstSetupDialog extends JDialog {
         }
         text.append("\n\n").append(wording.trailer());
         if (!HudConfirmDialog.confirm(this, wording.summaryTitle(), text.toString(), wording.confirm(),
-                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+                getText("button.cancel"))) {
             return;
         }
         choice = new Choice(FirstSetupFiles.useOne(reading, installation.installId()), 0);
@@ -343,7 +341,7 @@ final class FirstSetupDialog extends JDialog {
         if (!missing.isEmpty()) {
             HudConfirmDialog.info(this, wording.title(),
                     getText("bindings.aliasDesigner.firstSetup.unanswered", missing.size()),
-                    getText("bindings.aliasDesigner.firstSetup.close"));
+                    getText("button.close"));
             return;
         }
         if (merging) return;
@@ -352,25 +350,16 @@ final class FirstSetupDialog extends JDialog {
         Map<String, String> given = Map.copyOf(answers);
         // WHY: the merge parses and rewrites every device file and binds file, so it runs off the EDT, with the
         // dialog greyed until it is done (Krondor's review, 2026-10-27).
-        new Thread(() -> {
-            FirstSetupFiles.Merged merged = null;
-            String failure = null;
-            try {
-                merged = FirstSetupFiles.merge(reading, given);
-            } catch (IOException e) {
+        FlowSteps.inBackground("BindForge-FirstSetupMerge", log, "First-time startup's merge of the installations",
+                () -> {
+                    FirstSetupFiles.Merged merged = FirstSetupFiles.merge(reading, given);
+                    return () -> merged(merged, null);
+                },
                 // WHY: nothing was written - the working copy could not be made from these files, and the file is
                 // named.
-                log.warn("First-time startup could not merge the installations", e);
-                failure = getText("bindings.firstTimeStartup.mergeFailed", StringUtls.messageOf(e));
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary; escaping, it would leave the dialog greyed for good.
-                log.error("First-time startup stopped while merging the installations", e);
-                failure = getText("bindings.firstTimeStartup.stopped", StringUtls.messageOf(e));
-            }
-            FirstSetupFiles.Merged result = merged;
-            String failed = failure;
-            SwingUtilities.invokeLater(() -> merged(result, failed));
-        }, "BindForge-FirstSetupMerge").start();
+                reason -> () -> merged(null, getText("bindings.firstTimeStartup.mergeFailed", reason)),
+                reason -> () -> merged(null, getText("bindings.firstTimeStartup.stopped", reason)),
+                FlowSteps.NOTHING);
     }
 
     /** On the EDT, once the merge is made: its failure, or the summary to confirm. */
@@ -379,7 +368,7 @@ final class FirstSetupDialog extends JDialog {
         if (!isDisplayable()) return;
         setContentEnabled(true);
         if (failure != null) {
-            HudConfirmDialog.info(this, wording.title(), failure, getText("bindings.aliasDesigner.firstSetup.close"));
+            HudConfirmDialog.info(this, wording.title(), failure, getText("button.close"));
             return;
         }
         StringBuilder summary = new StringBuilder(getText("bindings.firstTimeStartup.summary.merge",
@@ -388,7 +377,7 @@ final class FirstSetupDialog extends JDialog {
                 .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
         summary.append("\n\n").append(wording.trailer());
         if (!HudConfirmDialog.confirm(this, wording.summaryTitle(), summary.toString(), wording.confirm(),
-                getText("bindings.aliasDesigner.firstSetup.cancel"))) {
+                getText("button.cancel"))) {
             return;
         }
         choice = new Choice(merged.files(), merged.bindingsMoved());

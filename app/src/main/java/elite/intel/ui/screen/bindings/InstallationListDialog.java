@@ -72,7 +72,7 @@ final class InstallationListDialog extends JDialog {
         });
         JButton addMissing = makeButtonSubtle(getText("bindings.installLocations.button.addMissing"));
         addMissing.addActionListener(e -> addMissing());
-        JButton cancel = makeButtonSubtle(getText("bindings.aliasDesigner.firstSetup.cancel"));
+        JButton cancel = makeButtonSubtle(getText("button.cancel"));
         cancel.addActionListener(e -> dispose());
 
         HudModalSpec spec = HudModalSpec.builder()

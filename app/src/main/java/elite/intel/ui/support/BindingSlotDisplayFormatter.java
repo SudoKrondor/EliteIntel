@@ -3,7 +3,7 @@ package elite.intel.ui.support;
 
 import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.model.BindingModifier;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,16 +24,16 @@ public class BindingSlotDisplayFormatter {
 
     private static final String KEYBOARD = "Keyboard";
 
-    private final SavedDeviceLabels deviceLabels;
+    private final EditedDeviceLabels deviceLabels;
 
     /**
      * Shows controller inputs by number - for text that never names a controller input.
      */
     public BindingSlotDisplayFormatter() {
-        this(SavedDeviceLabels.NONE);
+        this(EditedDeviceLabels.NONE);
     }
 
-    public BindingSlotDisplayFormatter(SavedDeviceLabels deviceLabels) {
+    public BindingSlotDisplayFormatter(EditedDeviceLabels deviceLabels) {
         this.deviceLabels = deviceLabels;
     }
 

@@ -13,7 +13,6 @@ import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudStepper;
 import elite.intel.ui.widget.HudTable;
-import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -215,47 +215,36 @@ public class BindingManagementPanel extends JPanel {
             return;
         }
         setOperationBusy(true);
-        new Thread(() -> {
-            Backup taken = null;
-            IOException failure = null;
-            boolean nothingYet = false;
+        // WHY: a database fault, as much as a file, is told and frees the screen - escaping, it left Player Backups
+        // busy until restart (Krondor's review, 2026-10-27).
+        Function<String, Runnable> failed = reason -> () -> backedUp(() -> showError(
+                "bindings.bindingManagement.backup.dialogTitle", "bindings.bindingManagement.backup.error", reason));
+        FlowSteps.inBackground("PlayerBackup-Thread", log, "Backup Now", () -> {
+            Backup taken;
             try {
                 taken = backups.backUpEverything(Backups.Kind.USER);
             } catch (Backups.NothingToBackUpException e) {
                 log.info("Backup Now found nothing to back up: {}", e.getMessage());
-                nothingYet = true;
-            } catch (IOException e) {
-                log.warn("Backup Now failed", e);
-                failure = e;
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary. The backup reads the stored installations, and a database
-                // fault escaping here left Player Backups busy until restart (Krondor's review, 2026-10-27).
-                log.error("Backup Now stopped", e);
-                failure = new IOException(StringUtls.messageOf(e), e);
+                // WHY: not a fault - a new player has no files yet, and is told how the game makes them. The same
+                // string the startup setup check speaks, so the two can never say different things (Alan, 2026-10-24).
+                return () -> backedUp(() -> HudConfirmDialog.info(this,
+                        getText("bindings.bindingManagement.backup.nothingYet.title"),
+                        getText(Backups.NothingToBackUpException.ADVICE_KEY), getText("button.ok")));
             }
-            Backup result = taken;
-            IOException resultFailure = failure;
-            boolean resultNothingYet = nothingYet;
-            SwingUtilities.invokeLater(() -> {
-                setOperationBusy(false);
-                if (resultNothingYet) {
-                    // WHY: not a fault - a new player has no files yet, and is told how the game makes them. The same
-                    // string the startup setup check speaks, so the two can never say different things (Alan,
-                    // 2026-10-24).
-                    HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.nothingYet.title"),
-                            getText(Backups.NothingToBackUpException.ADVICE_KEY), getText("button.ok"));
-                } else if (resultFailure != null) {
-                    showError("bindings.bindingManagement.backup.dialogTitle", "bindings.bindingManagement.backup.error",
-                            resultFailure.getMessage());
-                } else if (!result.full()) {
-                    // WHY: Partial is named, with what could not be read, so the user knows the backup is incomplete.
-                    HudConfirmDialog.info(this, getText("bindings.bindingManagement.backup.partial.title"),
-                            getText("bindings.bindingManagement.backup.partial.text", String.join("\n", result.notRead())),
-                            getText("button.ok"));
-                }
-                refreshBackups();
-            });
-        }, "PlayerBackup-Thread").start();
+            if (taken.full()) return () -> backedUp(FlowSteps.NOTHING);
+            // WHY: Partial is named, with what could not be read, so the user knows the backup is incomplete.
+            return () -> backedUp(() -> HudConfirmDialog.info(this,
+                    getText("bindings.bindingManagement.backup.partial.title"),
+                    getText("bindings.bindingManagement.backup.partial.text", String.join("\n", taken.notRead())),
+                    getText("button.ok")));
+        }, failed, failed, FlowSteps.NOTHING);
+    }
+
+    /** After Backup Now: the screen freed, {@code told} shown, the list read again. On the EDT. */
+    private void backedUp(Runnable told) {
+        setOperationBusy(false);
+        told.run();
+        refreshBackups();
     }
 
     /** Deletes the selected user backup, after asking (file-manager.md, <em>Retention</em>). */
@@ -272,24 +261,20 @@ public class BindingManagementPanel extends JPanel {
             return;
         }
         setOperationBusy(true);
-        new Thread(() -> {
-            IOException failure = null;
-            try {
-                backups.delete(backup);
-            } catch (IOException e) {
-                log.warn("Could not delete backup {}", backup.zip(), e);
-                failure = e;
-            }
-            IOException result = failure;
-            SwingUtilities.invokeLater(() -> {
-                setOperationBusy(false);
-                if (result != null) {
-                    showError("bindings.bindingManagement.delete.error.dialogTitle",
-                            "bindings.bindingManagement.delete.error", result.getMessage());
-                }
-                refreshBackups();
-            });
-        }, "PlayerBackupDelete-Thread").start();
+        Function<String, Runnable> failed = reason -> () -> deleted(() -> showError(
+                "bindings.bindingManagement.delete.error.dialogTitle", "bindings.bindingManagement.delete.error",
+                reason));
+        FlowSteps.inBackground("PlayerBackupDelete-Thread", log, "Deleting backup " + backup.zip(), () -> {
+            backups.delete(backup);
+            return () -> deleted(FlowSteps.NOTHING);
+        }, failed, failed, FlowSteps.NOTHING);
+    }
+
+    /** After Delete: the screen freed, {@code told} shown, the list read again. On the EDT. */
+    private void deleted(Runnable told) {
+        setOperationBusy(false);
+        told.run();
+        refreshBackups();
     }
 
     /** RESTORE: the whole selected backup goes back (storage.md rule 10). */
@@ -475,20 +460,16 @@ public class BindingManagementPanel extends JPanel {
      */
     private void refreshBackups() {
         int request = ++latestRefresh;
-        new Thread(() -> {
-            List<Backup> listed;
-            try {
-                listed = backups.list();
-            } catch (IOException | RuntimeException e) {
-                // Leave the table empty; the user can still retry via Backup Now.
-                log.warn("Could not list backups", e);
-                listed = List.of();
-            }
-            List<Backup> result = listed;
-            SwingUtilities.invokeLater(() -> {
-                if (request == latestRefresh) showBackups(result);
-            });
-        }, "PlayerBackupList-Thread").start();
+        // WHY: a list that cannot be read leaves the table empty; the user can still retry via Backup Now.
+        Function<String, Runnable> empty = reason -> () -> {
+            if (request == latestRefresh) showBackups(List.of());
+        };
+        FlowSteps.inBackground("PlayerBackupList-Thread", log, "Listing the backups", () -> {
+            List<Backup> listed = backups.list();
+            return () -> {
+                if (request == latestRefresh) showBackups(listed);
+            };
+        }, empty, empty, FlowSteps.NOTHING);
     }
 
     private void showBackups(List<Backup> listed) {

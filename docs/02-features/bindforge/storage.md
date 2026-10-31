@@ -356,6 +356,10 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **An edit wins on every line item it changed.** Where the edit and the game's change meet on one element at a
       different grain - an edited `Primary` on a button whose shape the game changed - the edit's whole element wins;
       the backup holds the game's.
+
+    **Settled from Krondor's branch review (Alan, 2026-10-31; Storage S8R2):** elements the game added that a merge
+    keeps go into the working copy's file in the order the live copy has them - until then two or more came out
+    reversed, harmless to the comparison but a drift in the file's layout.
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

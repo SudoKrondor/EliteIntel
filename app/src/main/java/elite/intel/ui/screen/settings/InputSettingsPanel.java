@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.PushToTalkService;
 import elite.intel.bindforge.devicefiles.ButtonMapLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -325,7 +325,7 @@ public class InputSettingsPanel extends JPanel {
      */
     private static Map<String, String> savedLabelsOf(Device device) {
         try {
-            SavedDeviceLabels labels = SavedDeviceLabels.load();
+            EditedDeviceLabels labels = EditedDeviceLabels.load();
             return CaptureControllers.nameOf(device, labels).map(labels::labelsOf).orElse(Map.of());
         } catch (RuntimeException e) {
             // WHY: broad on purpose - a thread boundary, and a label read must never break the PTT picker; it falls

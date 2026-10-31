@@ -9,7 +9,7 @@ import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.ReservedKeyChords;
 import elite.intel.bindforge.rules.SlotInputConflicts;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.events.DeviceAxisEvent;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -193,7 +193,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         }
     }
 
-    private final SavedDeviceLabels labels;
+    private final EditedDeviceLabels labels;
     private final BindingSlotDisplayFormatter slotFormatter;
     /** The binds file being edited, as the edits not applied hold it (Storage S5). */
     private final byte[] binds;
@@ -245,7 +245,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> readOnlySlots,
             Map<BindingSlotType, ExistingConflict> existingConflicts,
             List<CaptureControllers.Controller> controllers,
-            SavedDeviceLabels labels,
+            EditedDeviceLabels labels,
             boolean vegaUsesIt
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
@@ -260,7 +260,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 : ReservedKeyChords.gameMenuKeysFromExecutableSlots(this.existingSlots);
         this.controllers = controllers == null ? List.of() : List.copyOf(controllers);
         // WHY: read once by the caller, for the controllers' tabs and every label here (review, 2026-10-28).
-        this.labels = labels == null ? SavedDeviceLabels.NONE : labels;
+        this.labels = labels == null ? EditedDeviceLabels.NONE : labels;
         this.slotFormatter = new BindingSlotDisplayFormatter(this.labels);
         this.vegaUsesIt = vegaUsesIt;
         Map<BindingSlotType, ExistingConflict> conflicts = existingConflicts == null ? Map.of() : existingConflicts;

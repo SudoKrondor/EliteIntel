@@ -1,6 +1,7 @@
 package elite.intel.bindforge.rules;
 
 import elite.intel.ai.hands.Bindings;
+import elite.intel.bindforge.io.SafeXml;
 import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.model.BindingSlotType;
 
@@ -9,9 +10,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -158,16 +156,9 @@ public class KeyboardKeyAvailabilityService {
     }
 
     private Document parse(byte[] binds) throws Exception {
-        Document doc = documentBuilder().parse(new ByteArrayInputStream(binds));
+        Document doc = SafeXml.documentBuilder().parse(new ByteArrayInputStream(binds));
         doc.getDocumentElement().normalize();
         return doc;
-    }
-
-    private static DocumentBuilder documentBuilder() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        return factory.newDocumentBuilder();
     }
 
     private record SlotAssignment(String bindingId, String key, Set<BindingModifier> modifiers) {

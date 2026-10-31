@@ -5,6 +5,10 @@
 > Edit History described below are gone, and Storage's slices remove the code. This brief is the record of C1–C6;
 > do not start a Core session. C4 (`.binds` whole-file master) and C7 (first-time startup) were never built —
 > Storage S2 and S11 cover what is left of them.
+>
+> **What is in the code now** is the *Built* table in [Storage](storage.md#built-today--what-the-slices-replace-checked-2026-10-26).
+> Below, the *Built* table, *Known issues* and C4's row mark what Storage removed, and in which slice (Storage S8R2,
+> 2026-10-31, from Krondor's branch review); the C1 detail and the hand-off notes are kept as they were written.
 
 **Not a tab.** The master and the draft, Apply, Edit History filling, the startup check, change detection,
 unsaved work on exit and first-time startup. Every tab edits a draft and every tab applies through this — built
@@ -24,22 +28,23 @@ once here so no tab builds its own.
 
 | What | Where |
 |---|---|
-| Safe replace, timestamped copies, pruning | `elite.intel.io.AtomicFiles`, `elite.intel.io.TimestampedBackups` (`create`, `prune`) — Krondor's, tested. **Never write a game file any other way.** |
-| Device master store | migration `12002`; `db.managers.BindForgeDeviceMasterManager` (devices and their labels), `BindForgeDeviceInstallsManager` (`FoundDevice`, transactional `replaceForInstall`) |
-| What each installation holds | `bindforge.devicefiles.InstallationDeviceScanner`, run on every Alias Designer refresh |
-| Who owns an entry | `bindforge.devicefiles.Provenance`, `ProvenanceRule` — a read only ever yields `FRONTIER` or `UNKNOWN` |
+| Safe replace, timestamped copies, pruning | `elite.intel.io.AtomicFiles` — Krondor's, tested. **Never write a game file any other way.** ~~`elite.intel.io.TimestampedBackups` (`create`, `prune`)~~ — removed in Storage S6 |
+| Device master store | ~~migration `12002`; `db.managers.BindForgeDeviceMasterManager` (devices and their labels), `BindForgeDeviceInstallsManager` (`FoundDevice`, transactional `replaceForInstall`)~~ — removed in Storage S4b, the tables dropped by migration `12019` |
+| What each installation holds | ~~`bindforge.devicefiles.InstallationDeviceScanner`, run on every Alias Designer refresh~~ — removed in Storage S4a |
+| Who owns an entry | ~~`bindforge.devicefiles.Provenance`, `ProvenanceRule` — a read only ever yields `FRONTIER` or `UNKNOWN`~~ — removed in Storage S4b, with the installs table |
 | Installations | migration `12001`; `bindforge.install.InstallationRegistry` |
-| Settings | migration `12000`; `BindForgeSettingsManager` — `getEditHistoryRetention()` (1–30, default 10), backup destination, backup retention days |
+| Settings | migration `12000`; `BindForgeSettingsManager` — backup destination. ~~`getEditHistoryRetention()` (1–30, default 10)~~ removed in Storage S6 (migration `12020`); ~~backup retention days~~ replaced by the daily and before-changes retention in Storage S1b |
 | Reading device files | `bindforge.devicefiles.DeviceMappingsParser` (path or stream, keeps `<Alternative>`), `FrontierStockDevices` (`ships`, `covering`), `ButtonMapAudit` |
-| Device-file write (C1) | `bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`; `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). **No caller yet** |
-| Device draft and Apply (C2) | migrations `12003`, `12004`; `db.managers.BindForgeDeviceDraftManager` — `start()` copies the whole master in (a started draft may hold no edits, so `isStarted()` is not "changed"); `promote()` makes it the master and stores what it removed as pending removals (`BindForgeDeviceMasterManager.pendingRemovals()`, `clearPendingRemoval`); `revert(masterId)`, `discard()`. Master ids change on every promote. `bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push(Set)` with the pending removals `.binds` does not name; called by APPLY on the Alias Designer screen (A10). `DraftChanges` tells a draft with edits from one only started |
-| Startup check, adopt, revert (C3) | `bindforge.devicefiles.DeviceFilesCheck` — each installation against the saved master: `UNCHANGED`, `WIPED`, `EDITED` (with element and label changes), `MISSING`, `UNREADABLE`; an empty master reports *not set up*. `DeviceFilesAdopt` — the installation into the master (and the draft, three-way) through `BindForgeDeviceDraftManager.adopt()`, one transaction. Revert is `DeviceFilesPush.push(installId)`. Helpers: `ButtonMapReader`, `DeviceMappingsParser.primaries()`. **No caller yet** |
+| Device-file write (C1) | `DeviceMappingsMerge`, `ButtonMapWriter`, `DeviceFileXml` (the layout). ~~`bindforge.devicefiles.DeviceFilesPush` — Apply for `DeviceMappings.xml` and `.buttonMap`, per installation, with Edit History in `elite-intel/bindings/history/<installId>/`~~ — removed in Storage S4a; the working copy is written by `bindforge.storage.WritePath` |
+| Device draft and Apply (C2) | ~~migrations `12003`, `12004`; `db.managers.BindForgeDeviceDraftManager` — `start()` copies the whole master in (a started draft may hold no edits, so `isStarted()` is not "changed"); `promote()` makes it the master and stores what it removed as pending removals (`BindForgeDeviceMasterManager.pendingRemovals()`, `clearPendingRemoval`); `revert(masterId)`, `discard()`. Master ids change on every promote; `DraftChanges` tells a draft with edits from one only started~~ — removed in Storage S4b (migration `12019`). ~~`bindforge.devicefiles.DeviceApply` — promote, then `DeviceFilesPush.push(Set)` with the pending removals `.binds` does not name; called by APPLY on the Alias Designer screen (A10)~~ — removed in Storage S4a; the edits are `bindforge.storage.Edits`, written by `Apply` |
+| Startup check, adopt, revert (C3) | Helpers kept: `ButtonMapReader`, `DeviceMappingsParser.primaries()`. ~~`bindforge.devicefiles.DeviceFilesCheck` — each installation against the saved master: `UNCHANGED`, `WIPED`, `EDITED` (with element and label changes), `MISSING`, `UNREADABLE`; an empty master reports *not set up*. `DeviceFilesAdopt` — the installation into the master (and the draft, three-way) through `BindForgeDeviceDraftManager.adopt()`, one transaction. Revert is `DeviceFilesPush.push(installId)`~~ — removed in Storage S4a; the device files' check is Storage S9 |
 | Device-file monitor (C5) | ~~`elite.intel.io.FilePoller` (which files changed since the last look - stamp only, no thread); `bindforge.devicefiles.DeviceFilesMonitor` (polls every installation's `DeviceMappings.xml` and `.buttonMap`s every 2 s, started as `DEVICE_FILES_MONITOR` in `AppController`) publishes `ui.event.DeviceFilesChangedEvent`; `AliasDesignerPanel` refreshes on it~~ — removed in Storage S4a (2026-10-26): BindForge does not watch the files. Kept: a request made mid-refresh is never dropped (`ui.screen.bindings.RefreshCoalescer`) |
-| `.binds` draft and apply | `bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`, `BindingsMonitor` |
+| `.binds` draft and apply | `BindingsMonitor` (not BindForge's - it reloads the assistant's keys). ~~`bindforge.io.BindingsWorkingCopyRepository` (drafts in `elite-intel/bindings/`), `BindingsApplyService`~~ — removed in Storage S5; the Bind Editor changes `bindforge.storage.BindsEdits` |
 
-**The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
+~~**The `.binds` master is only a hash today.** `BindingsWorkingCopyRepository` records a baseline fingerprint
 (`recordGameFileBaseline`, `gameFileMatchesBaseline`, `markApplied`). The spec wants a **whole-file master**.
-Growing it touches `bindforge.io` — see C4.
+Growing it touches `bindforge.io` — see C4.~~ Gone with it in Storage S5: the working copy holds every binds file
+whole.
 
 ## Settled — and where it is recorded
 
@@ -48,8 +53,8 @@ Growing it touches `bindforge.io` — see C4.
 - **The game parses `DeviceMappings.xml` as XML and leaves the layout alone.** Formatting is ours to choose;
   content is not — preserve every child element. [Domain doc §1.2c and §1.3](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12c-the-game-parses-it-as-xml-and-does-not-reformat-it--measured-2026-10-03)
 - **Shared code is changed on `V1.2-BindForge`** (Krondor, 2026-10-20). [CLAUDE.md](../../CLAUDE.md#branching-model).
-- **A read never claims an entry is the user's.** `ProvenanceRule`'s javadoc;
-  [device-provenance.md](../03-data-models/device-provenance.md)
+- **A read never claims an entry is the user's.** [device-provenance.md](../03-data-models/device-provenance.md)
+  (`ProvenanceRule`, whose javadoc said so too, removed in Storage S4b)
 - **Never push a master over a game file of a higher version.** [overview.md](../02-features/bindforge/overview.md#when-a-game-update-brings-a-newer-version--2026-10-23)
 - **One write per apply, and never publish `BindingsUpdatedEvent`** — the watcher does.
   [overview.md](../02-features/bindforge/overview.md#bindforge-must-not-publish-bindingsupdatedevent)
@@ -65,18 +70,20 @@ Growing it touches `bindforge.io` — see C4.
 
 ## Known issues
 
-- **The `.binds` close prompt breaks [Unsaved Work on Exit](../02-features/bindforge/overview.md#unsaved-work-on-exit).**
+- ~~**The `.binds` close prompt breaks [Unsaved Work on Exit](../02-features/bindforge/overview.md#unsaved-work-on-exit).**
   `BindingProfilePanel.promptCloseWithDraft()`, called from `AppView.windowClosing`, is the three-option dialog
   replaced on 2026-09-06: **Apply to Game** first, then Keep Draft and Discard, in a `JOptionPane`. It fires on an
   *unapplied* draft, which the spec does not treat as unsaved work. Shipped in V1.1, in files Krondor maintains on
   `V1.1-Release` — not fixed on this branch. Not settled: whether it goes, or becomes Keep Draft / Discard. Raise
-  with Alan and Krondor; it does not wait on C6.
+  with Alan and Krondor; it does not wait on C6.~~ **Closed:** `promptCloseWithDraft` removed in Storage S5; leaving
+  with edits not applied is Storage S7's prompt.
 
-- **Generated `.buttonMap`s will show in the startup check** once it runs at startup. An element an installation
+- ~~**Generated `.buttonMap`s will show in the startup check** once it runs at startup. An element an installation
   added gets one from [A8](alias-designer.md#slices), and `DeviceFilesCheck.labelChanges` lists its 30–40 generic
   labels as `ADDED`, which adopting would take into the master. Settle with the slice that wires the check:
   whether a file byte-identical to a generated one counts as user content, and whether generation or the check
-  runs first.
+  runs first.~~ **Closed:** `DeviceFilesCheck` removed in Storage S4a, and no `.buttonMap` is generated at startup since
+  Storage S2b; default labels are written at APPLY. The device files' check is Storage S9.
 
 ## Boundaries
 
@@ -93,7 +100,7 @@ Growing it touches `bindforge.io` — see C4.
 | C1 | **Device-file write** — merge the master's elements into each installation's `DeviceMappings.xml` and `.buttonMap`; keep unique prior content; atomic replace; prune; per installation, reported | **done 2026-10-04** |
 | C2 | **Device draft** — where unapplied device edits live; SAVE writes the draft, APPLY promotes it | **done 2026-10-04** |
 | C3 | **Startup check for device files** — each installation against the master: unchanged, wiped (matches the stock reference), or edited; adopt or revert | **done 2026-10-05** |
-| C4 | **`.binds` and `StartPreset.4.start`** — whole-file master, Edit History on apply, the version-bump merge | ready — scoped 2026-10-12 ([the split](../02-features/bindforge/overview.md#where-the-working-copy-lives--2026-10-23)); its one V1.1 change, `BindingsApplyService.applyFrom`, merged up 2026-10-13. The rest is new V1.2 classes. **The `StartPreset.4.start` master was built by Preset Editor P2** (2026-10-18, `bindforge.preseteditor.StartPresetStore`), so C4 is the `.binds` half only |
+| C4 | **`.binds` and `StartPreset.4.start`** — whole-file master, Edit History on apply, the version-bump merge | ready — scoped 2026-10-12 ([the split](../02-features/bindforge/overview.md#where-the-working-copy-lives--2026-10-23)); its one V1.1 change, `BindingsApplyService.applyFrom`, merged up 2026-10-13 (`BindingsApplyService` removed in Storage S5). The rest is new V1.2 classes. **The `StartPreset.4.start` master was built by Preset Editor P2** (2026-10-18, `bindforge.preseteditor.StartPresetStore`, removed in Storage S6), so C4 is the `.binds` half only. **Never built** - replaced by Storage |
 | C5 | **Change detection for the install folders** | **done 2026-10-11** |
 | C6 | **Unsaved work on exit** — Save or Discard, never Apply | **done 2026-10-12** — a ruling, no code |
 | C7 | **First-time startup** | after Preset Editor can read all four `StartPreset.4.start` lines |

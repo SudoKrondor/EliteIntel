@@ -9,12 +9,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -192,7 +192,7 @@ public class KeyBindingsParser {
      * executable.
      */
     public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(File file) throws Exception {
-        return readOnlyBindingSlots(documentBuilder().parse(file), file.getName());
+        return readOnlyBindingSlots(SafeXml.documentBuilder().parse(file), file.getName());
     }
 
     /**
@@ -200,20 +200,16 @@ public class KeyBindingsParser {
      * applied (Storage S5). It reads exactly what the file version reads: nothing here widens what is executable.
      *
      * @param binds the binds file's bytes
+     * @throws IOException if the bytes are not a binds file that can be parsed - the file's fault, not a bug, so the
+     *                     Bind Editor can tell the two apart (Krondor's branch review, 2026-10-31)
      */
-    public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(byte[] binds) throws Exception {
-        return readOnlyBindingSlots(documentBuilder().parse(new ByteArrayInputStream(binds)), "the edits not applied");
-    }
-
-    /**
-     * A builder that refuses a DOCTYPE and limits entity expansion, as {@code KeyboardKeyAvailabilityService} does for
-     * the same bytes (review, 2026-10-29). A binds file never has a DOCTYPE.
-     */
-    private static DocumentBuilder documentBuilder() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        return factory.newDocumentBuilder();
+    public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(byte[] binds) throws IOException {
+        try {
+            return readOnlyBindingSlots(SafeXml.documentBuilder().parse(new ByteArrayInputStream(binds)),
+                    "the edits not applied");
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException("The binds file could not be parsed: " + e.getMessage(), e);
+        }
     }
 
     private Map<String, ReadOnlyBindingSlots> readOnlyBindingSlots(Document doc, String source) {

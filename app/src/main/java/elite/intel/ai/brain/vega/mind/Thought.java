@@ -113,8 +113,8 @@ public abstract class Thought {
     }
 
     /**
-     * Creates a reactive thought from a gameplay subscriber's {@link VegaNarrator} call: VEGA
-     * phrases the supplied event data and speaks it. Data and instructions exist only in this LLM request; after a
+     * Creates a reactive thought from a gameplay subscriber's {@link elite.intel.ai.brain.vega.VegaNarrator} call:
+     * VEGA phrases the supplied event data and speaks it. Data and instructions exist only in this LLM request; after a
      * successful round the narration is voiced and not stored.
      */
     public static Thought eventReaction(Urgency urgency, String stimulus, String instructions,

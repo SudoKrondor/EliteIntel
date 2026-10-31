@@ -20,7 +20,11 @@ makes them cheap to build when they come back — each mode's own section below 
   ([storage.md](storage.md) rule 6). **One SAVE is all or none** — when the writer refuses one changed slot, the
   other is not kept either, and the reason is shown (until then the first slot stayed written). **A change the edits
   could not take at all** - SAVE, the Clear column or Auto-Assign - says *"The change could not be made; nothing was
-  changed."*, not that a file could not be written: nothing on this screen writes one (Alan, 2026-10-29, Storage S6R). The screen's own
+  changed."*, not that a file could not be written: nothing on this screen writes one (Alan, 2026-10-29, Storage S6R).
+  **A bug is told apart from a file** (Alan, 2026-10-31, Storage S8R2, from Krondor's branch review): a change that
+  stops on a bug rather than on a file it could not use says *"The change stopped unexpectedly: {reason}. Nothing was
+  changed."* and is logged as an error; a read that fails shows the empty grid either way, with no dialog, since a read
+  runs at every refresh, and a bug is logged as an error there too. The screen's own
   APPLY, REVERT, its draft badge and its close prompt are gone, with the launch-time copy of the active `.binds` and
   its checksum; until [Storage S7](../../05-build-plan/storage.md#slices), edits are lost on close. **Elite-Intel's
   Bindings Directory row stays on this screen for now**, though [principle 12](principles.md) puts folders in File
@@ -515,7 +519,7 @@ had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is gre
 #### Which name a controller's tab writes — settled 2026-10-15 (Alan, E1)
 
 **The
-edits'** — the name the working copy will hold once applied — and Frontier's for a built-in the edits do not hold (`CaptureControllers`). **Since Storage S5 (2026-10-28)** the Bind Editor writes the edits, not the live `.binds`, and a rename in the Alias Designer moves every binding in the edits' binds files with it (Storage S4a), so the edits' name is the one their binds files hold. A device renamed on screen shows its new name on the tab at once, with its labels under it (`bindforge.storage.SavedDeviceLabels`).
+edits'** — the name the working copy will hold once applied — and Frontier's for a built-in the edits do not hold (`CaptureControllers`). **Since Storage S5 (2026-10-28)** the Bind Editor writes the edits, not the live `.binds`, and a rename in the Alias Designer moves every binding in the edits' binds files with it (Storage S4a), so the edits' name is the one their binds files hold. A device renamed on screen shows its new name on the tab at once, with its labels under it (`bindforge.storage.EditedDeviceLabels`; named `SavedDeviceLabels` until 2026-10-31, when Storage S8R2 renamed it for what it reads - the edits, not what was saved - from Krondor's branch review).
 *From Storage S4b until S5 (2026-10-28) the name was the working copy's and the labels the edits', because the Bind
 Editor still wrote the live `.binds`, where a name not applied would have named a device no installation had; before
 S4b both came from the database master.*

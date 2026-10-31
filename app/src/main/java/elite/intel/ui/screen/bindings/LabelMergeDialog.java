@@ -81,7 +81,7 @@ final class LabelMergeDialog extends JDialog {
             result = Map.copyOf(answers);
             dispose();
         });
-        JButton cancel = makeButtonSubtle(getText("bindings.aliasDesigner.firstSetup.cancel"));
+        JButton cancel = makeButtonSubtle(getText("button.cancel"));
         cancel.addActionListener(e -> dispose());
 
         HudModalSpec spec = HudModalSpec.builder()

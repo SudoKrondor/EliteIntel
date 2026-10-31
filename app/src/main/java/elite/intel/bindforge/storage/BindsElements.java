@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.SafeXml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -9,9 +10,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -221,10 +220,16 @@ final class BindsElements {
     record Splice(Range range, String replacement) {
     }
 
-    /** The file with every splice made, encoded as it was read - its byte-order mark kept. */
+    /**
+     * The file with every splice made, encoded as it was read - its byte-order mark kept. Splices inserted at one place
+     * land there in the order given.
+     */
     byte[] with(List<Splice> splices) {
         List<Splice> fromTheEnd = new ArrayList<>(splices);
-        // WHY: from the end backwards, so an earlier range is not moved by a later change.
+        // WHY: from the end backwards, so an earlier range is not moved by a later change. Splices at one place are made
+        // last-given first: each lands in front of the one made before it, so they read in the order given - the game's
+        // elements kept by a merge stay in the live file's order (Krondor's branch review, 2026-10-31).
+        Collections.reverse(fromTheEnd);
         fromTheEnd.sort((a, b) -> Integer.compare(b.range().start(), a.range().start()));
         StringBuilder changed = new StringBuilder(text);
         for (Splice splice : fromTheEnd) {
@@ -282,15 +287,9 @@ final class BindsElements {
         return content.length >= BOM.length && content[0] == BOM[0] && content[1] == BOM[1] && content[2] == BOM[2];
     }
 
-    /**
-     * A builder that refuses a DOCTYPE and limits entity expansion, as {@code KeyBindingsParser} does for the same
-     * bytes. A binds file never has a DOCTYPE. Its own error handler, so a bad file is not printed to the console.
-     */
+    /** {@link SafeXml}'s builder, with its own error handler, so a bad file is not printed to the console. */
     private static DocumentBuilder documentBuilder() throws ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        DocumentBuilder builder = SafeXml.documentBuilder();
         builder.setErrorHandler(new DefaultHandler() {
             @Override
             public void error(SAXParseException e) throws SAXException {

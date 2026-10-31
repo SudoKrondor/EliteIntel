@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.io.SafeXml;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
@@ -7,9 +8,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -183,7 +181,8 @@ public final class BindsDeviceReferences {
     public static Map<String, Integer> referenceCountsIn(byte[] bindsFile) throws IOException {
         Map<String, Integer> counts = new LinkedHashMap<>();
         try {
-            collectInto(newDocumentBuilder().parse(new ByteArrayInputStream(bindsFile)), counts, new LinkedHashMap<>());
+            collectInto(SafeXml.documentBuilder().parse(new ByteArrayInputStream(bindsFile)), counts,
+                    new LinkedHashMap<>());
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException(e.getMessage(), e);
         }
@@ -207,7 +206,7 @@ public final class BindsDeviceReferences {
             if (!file.getKey().endsWith(BINDS_SUFFIX)) continue;
             binds++;
             try {
-                collectInto(newDocumentBuilder().parse(new ByteArrayInputStream(file.getValue())), counts,
+                collectInto(SafeXml.documentBuilder().parse(new ByteArrayInputStream(file.getValue())), counts,
                         hardwareIds);
                 parsed++;
             } catch (SAXException | ParserConfigurationException | IOException e) {
@@ -221,7 +220,7 @@ public final class BindsDeviceReferences {
 
     private static void collectInto(Path bindsFile,Map<String, Integer> counts, Map<String, Integer> hardwareIds)
             throws IOException, SAXException, ParserConfigurationException {
-        collectInto(newDocumentBuilder().parse(bindsFile.toFile()), counts, hardwareIds);
+        collectInto(SafeXml.documentBuilder().parse(bindsFile.toFile()), counts, hardwareIds);
     }
 
     private static void collectInto(Document document, Map<String, Integer> counts, Map<String, Integer> hardwareIds) {
@@ -267,15 +266,5 @@ public final class BindsDeviceReferences {
                     .sorted()
                     .toList();
         }
-    }
-
-    // WHY: the same hardening as DeviceMappingsParser, and for the same reason - these files are shared
-    // between players often enough that turning off what we never use costs nothing.
-    private static DocumentBuilder newDocumentBuilder() throws ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setExpandEntityReferences(false);
-        return factory.newDocumentBuilder();
     }
 }

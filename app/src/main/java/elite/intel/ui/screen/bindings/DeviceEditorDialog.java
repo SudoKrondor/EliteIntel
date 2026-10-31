@@ -19,7 +19,6 @@ import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudTextField;
 import elite.intel.ui.widget.HudUnsavedHint;
-import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,6 +37,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -540,7 +540,7 @@ final class DeviceEditorDialog extends JDialog {
         String refused = nameRefusal();
         if (refused != null) {
             HudConfirmDialog.info(this, getText("bindings.aliasDesigner.editor.heading"),
-                    refused, getText("bindings.aliasDesigner.firstSetup.close"));
+                    refused, getText("button.close"));
             return;
         }
         Map<String, String> labels =
@@ -653,34 +653,33 @@ final class DeviceEditorDialog extends JDialog {
         busy = true;
         middle.setEnabled(false);
         refreshDirty();
-        new Thread(() -> {
-            String message = null;
+        // WHY: the user pressed the button and must be told, a file the change could not use and a bug alike.
+        Function<String, Runnable> failed = reason -> () -> notChanged(getText(failedKey, reason));
+        String what = "The Device Editor's change of " + opening.deviceName();
+        FlowSteps.inBackground("BindForge-DeviceEditorAction", log, what, () -> {
             try {
                 Edits.stored().change(edit);
             } catch (Stale e) {
-                message = getText("bindings.aliasDesigner.editor.stale", opening.deviceName());
+                return () -> notChanged(getText("bindings.aliasDesigner.editor.stale", opening.deviceName()));
             } catch (Edits.WriteRunningException e) {
                 // WHY: shown alone, like a stale device - wrapped in failedKey it would say "could not be done" twice.
                 log.info("The Device Editor did not change {}: {}", opening.deviceName(), e.getMessage());
-                message = getText("bindings.writeRunning");
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary, and the user pressed the button and must be told.
-                log.warn("The Device Editor could not change {}", opening.deviceName(), e);
-                message = getText(failedKey, StringUtls.messageOf(e));
+                return () -> notChanged(getText("bindings.writeRunning"));
             }
-            String loadedMessage = message;
-            SwingUtilities.invokeLater(() -> {
+            return () -> {
                 busy = false;
-                if (loadedMessage != null) {
-                    middle.setEnabled(opening.middle().enabled());
-                    refreshDirty();
-                    HudConfirmDialog.info(this, getText("bindings.aliasDesigner.editor.heading"),
-                            loadedMessage, getText("bindings.aliasDesigner.firstSetup.close"));
-                    return;
-                }
                 dispose();
-            });
-        }, "BindForge-DeviceEditorAction").start();
+            };
+        }, failed, failed, FlowSteps.NOTHING);
+    }
+
+    /** After {@link #runAndClose}: the dialog stays, with {@code message} shown. On the EDT. */
+    private void notChanged(String message) {
+        busy = false;
+        middle.setEnabled(opening.middle().enabled());
+        refreshDirty();
+        HudConfirmDialog.info(this, getText("bindings.aliasDesigner.editor.heading"), message,
+                getText("button.close"));
     }
 
     // ------------------------------------------------------------------ live highlighting

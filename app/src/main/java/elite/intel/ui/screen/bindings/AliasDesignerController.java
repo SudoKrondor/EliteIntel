@@ -23,13 +23,12 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.util.StringUtls.messageOf;
 
 /**
  * The Alias Designer screen's flows: the refresh, the identity question (A12), onboarding, controllers plugged in or out
@@ -383,7 +382,7 @@ final class AliasDesignerController {
         if (lines.isEmpty()) return;
         if (result.moved().isEmpty()) {
             HudConfirmDialog.info(view, title, String.join("\n\n", lines),
-                    getText("bindings.aliasDesigner.firstSetup.close"));
+                    getText("button.close"));
             return;
         }
         lines.add(getText("bindings.aliasDesigner.identity.layoutWarning"));
@@ -456,14 +455,14 @@ final class AliasDesignerController {
             hotPlug.offered(reading.pages().stream().map(page -> page.device().hardware()).toList());
             if (reading.problem() != null) {
                 HudConfirmDialog.info(view, title, reading.problem(),
-                        getText("bindings.aliasDesigner.firstSetup.close"));
+                        getText("button.close"));
                 if (refreshAfter) refresh();
                 return;
             }
             if (reading.pages().isEmpty()) {
                 if (sayNobody) {
                     HudConfirmDialog.info(view, title, getText("bindings.aliasDesigner.onboarding.nobody"),
-                            getText("bindings.aliasDesigner.firstSetup.close"));
+                            getText("button.close"));
                 }
                 if (refreshAfter) refresh();
                 return;
@@ -472,7 +471,7 @@ final class AliasDesignerController {
             new OnboardingDialog(view, reading.pages(), reading.taken(), names -> {
                 finished[0] = true;
                 offEdt(title, () -> nameAll(reading.pages(), names), message ->
-                        HudConfirmDialog.info(view, title, message, getText("bindings.aliasDesigner.firstSetup.close")));
+                        HudConfirmDialog.info(view, title, message, getText("button.close")));
             }).showDialog();
             // WHY: the dialog is modal, so this runs once it is closed - FINISH's edit has the screen read again.
             if (refreshAfter && !finished[0]) refresh();
@@ -515,31 +514,18 @@ final class AliasDesignerController {
         if (!activated()) {
             HudConfirmDialog.info(view, getText("bindings.aliasDesigner.editor.heading"),
                     getText("bindings.aliasDesigner.editor.beforeSetUp.message"),
-                    getText("bindings.aliasDesigner.firstSetup.close"));
+                    getText("button.close"));
             return;
         }
-        new Thread(() -> {
-            DeviceEditorDialog.Opening opening = null;
-            String failure = null;
-            try {
-                opening = reader.openingFor(device);
-            } catch (IOException | RuntimeException e) {
-                // WHY: broad on purpose - a thread boundary, and the user pressed the gear and must be told.
-                log.warn("The Device Editor could not read {}", device.label(), e);
-                failure = messageOf(e);
-            }
-            DeviceEditorDialog.Opening loaded = opening;
-            String loadedFailure = failure;
-            SwingUtilities.invokeLater(() -> {
-                if (loaded == null) {
-                    HudConfirmDialog.info(view, getText("bindings.aliasDesigner.editor.heading"),
-                            getText("bindings.aliasDesigner.editor.loadFailed", loadedFailure),
-                            getText("bindings.aliasDesigner.firstSetup.close"));
-                    return;
-                }
-                new DeviceEditorDialog(view, loaded, () -> openOnboarding(device)).showDialog();
-            });
-        }, "BindForge-DeviceEditorRead").start();
+        // WHY: the user pressed the gear and must be told, a file the read could not use and a bug alike.
+        Function<String, Runnable> notOpened = reason -> () -> HudConfirmDialog.info(view,
+                getText("bindings.aliasDesigner.editor.heading"),
+                getText("bindings.aliasDesigner.editor.loadFailed", reason), getText("button.close"));
+        String what = "The Device Editor's read of " + device.label();
+        FlowSteps.inBackground("BindForge-DeviceEditorRead", log, what, () -> {
+            DeviceEditorDialog.Opening opening = reader.openingFor(device);
+            return () -> new DeviceEditorDialog(view, opening, () -> openOnboarding(device)).showDialog();
+        }, notOpened, notOpened, FlowSteps.NOTHING);
     }
 
     // ------------------------------------------------------------------ running a change
@@ -548,35 +534,33 @@ final class AliasDesignerController {
      * Reads or changes the edits off the EDT, with no second change started meanwhile, then hands the result back on
      * it. A failure is shown under {@code title}, not only logged - the user pressed a button and must be told.
      */
-    private <T> void offEdt(String title, Callable<T> work, Consumer<T> onEdt) {
+    private <T> void offEdt(String title, Work<T> work, Consumer<T> onEdt) {
         actionRunning = true;
-        new Thread(() -> {
-            T result = null;
-            String failure = null;
+        Function<String, Runnable> failed = reason -> () -> {
+            actionRunning = false;
+            HudConfirmDialog.info(view, title, getText("bindings.aliasDesigner.editor.actionFailed", reason),
+                    getText("button.close"));
+            refresh();
+        };
+        FlowSteps.inBackground("BindForge-AliasDesignerChange", log, title, () -> {
+            T result;
             try {
                 result = work.call();
             } catch (Edits.WriteRunningException e) {
                 // WHY: a write is running - said in the user's language, not the exception's.
                 log.info("{} not done: {}", title, e.getMessage());
-                failure = getText("bindings.writeRunning");
-            } catch (Exception e) {
-                // WHY: broad on purpose - a thread boundary, and anything escaping it would leave the screen waiting
-                // with no word of why.
-                log.warn("{} failed", title, e);
-                failure = messageOf(e);
+                return failed.apply(getText("bindings.writeRunning"));
             }
-            T loaded = result;
-            String loadedFailure = failure;
-            SwingUtilities.invokeLater(() -> {
+            return () -> {
                 actionRunning = false;
-                if (loadedFailure != null) {
-                    HudConfirmDialog.info(view, title, getText("bindings.aliasDesigner.editor.actionFailed",
-                            loadedFailure), getText("bindings.aliasDesigner.firstSetup.close"));
-                    refresh();
-                    return;
-                }
-                onEdt.accept(loaded);
-            });
-        }, "BindForge-AliasDesignerChange").start();
+                onEdt.accept(result);
+            };
+        }, failed, failed, FlowSteps.NOTHING);
+    }
+
+    /** A read or change of the edits, run by {@link #offEdt}. */
+    @FunctionalInterface
+    private interface Work<T> {
+        T call() throws IOException;
     }
 }

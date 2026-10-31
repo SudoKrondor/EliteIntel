@@ -3,7 +3,7 @@ package elite.intel.ui.dialog;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.devices.ControllerCapture;
 import elite.intel.bindforge.devices.DeviceEditorInputs;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.model.GameAxis;
 import elite.intel.ui.theme.AppTheme;
 
@@ -72,7 +72,7 @@ final class ControllerInputsPanel extends JPanel {
      * @param inUse  whether another control already holds this token pressed on its own, for the slot being edited
      * @param onPick the token clicked
      */
-    ControllerInputsPanel(CaptureControllers.Controller controller, SavedDeviceLabels labels,
+    ControllerInputsPanel(CaptureControllers.Controller controller, EditedDeviceLabels labels,
                           Predicate<String> inUse, Consumer<String> onPick) {
         super(new BorderLayout());
         setOpaque(false);
@@ -160,7 +160,7 @@ final class ControllerInputsPanel extends JPanel {
         }
     }
 
-    private JComponent page(List<String> tokens, SavedDeviceLabels labels, Consumer<String> onPick) {
+    private JComponent page(List<String> tokens, EditedDeviceLabels labels, Consumer<String> onPick) {
         if (tokens.size() <= INPUTS_PER_GROUP) return group(tokens, labels, onPick);
         JTabbedPane groups = AppTheme.makeCompactTabs();
         for (int from = 0; from < tokens.size(); from += INPUTS_PER_GROUP) {
@@ -178,7 +178,7 @@ final class ControllerInputsPanel extends JPanel {
     /**
      * @param onPick the token clicked, or {@code null} for a page that only shows
      */
-    private JComponent group(List<String> tokens, SavedDeviceLabels labels, Consumer<String> onPick) {
+    private JComponent group(List<String> tokens, EditedDeviceLabels labels, Consumer<String> onPick) {
         JPanel grid = new JPanel(new GridLayout(0, COLUMNS, 4, 4));
         grid.setOpaque(false);
         for (String token : tokens) {

@@ -12,10 +12,17 @@ import java.util.function.Function;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * What first-time startup and RESTORE share on screen (Krondor's review, 2026-10-27): disk work on its own thread that
- * hands the next step back to the EDT, and the one message box each flow ends with.
+ * What the BindForge screens share on screen: disk work on its own thread that hands the next step back to the EDT, and
+ * the one message box a flow ends with. First-time startup and RESTORE first (Krondor's review, 2026-10-27); since
+ * Storage S8R2 every background read or change on these screens runs through {@link #inBackground}, so a file the work
+ * could not use and a bug are told apart in one place (Krondor's branch review, 2026-10-31). A failure a screen says in
+ * its own words - a write running, a device gone stale - is caught in its step, which hands back what to show.
  */
 final class FlowSteps {
+
+    /** No step: for {@code whenNoNextStep} when the step always hands one back. */
+    static final Runnable NOTHING = () -> {
+    };
 
     private FlowSteps() {
     }
@@ -36,7 +43,7 @@ final class FlowSteps {
      * @param failed         the step for an {@link IOException}, given its reason - a file the step could not use
      * @param stopped        the step for a {@link RuntimeException}, given its reason - a bug, logged as an error and
      *                       said to have stopped unexpectedly rather than blamed on a file (review, 2026-10-25)
-     * @param whenNoNextStep run on the EDT when the step hands back none
+     * @param whenNoNextStep run on the EDT when the step hands back none - {@link #NOTHING} when it always hands one
      */
     static void inBackground(String threadName, Logger log, String what, Step step,
                              Function<String, Runnable> failed, Function<String, Runnable> stopped,

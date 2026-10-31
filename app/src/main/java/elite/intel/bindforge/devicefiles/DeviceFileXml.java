@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.io.SafeXml;
 import org.w3c.dom.Attr;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -9,9 +10,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,7 +38,7 @@ final class DeviceFileXml {
      */
     static Document parse(byte[] xml) throws IOException {
         try {
-            return newDocumentBuilder().parse(new ByteArrayInputStream(xml));
+            return SafeXml.documentBuilder().parse(new ByteArrayInputStream(xml));
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException("Not well-formed XML: " + e.getMessage(), e);
         }
@@ -48,7 +46,7 @@ final class DeviceFileXml {
 
     static Document newDocument() {
         try {
-            return newDocumentBuilder().newDocument();
+            return SafeXml.documentBuilder().newDocument();
         } catch (ParserConfigurationException e) {
             throw new IllegalStateException("The platform XML parser cannot be configured", e);
         }
@@ -67,17 +65,6 @@ final class DeviceFileXml {
         } catch (DOMException e) {
             throw new IOException("\"" + name + "\" cannot be written as an XML element name", e);
         }
-    }
-
-    // WHY: external entities are switched off. These files come from a game folder rather than the network,
-    // but a DeviceMappings.xml is also something a user can be talked into pasting in from a forum, and
-    // turning off what we never use costs nothing.
-    static DocumentBuilder newDocumentBuilder() throws ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setExpandEntityReferences(false);
-        return factory.newDocumentBuilder();
     }
 
     /** The document in the house layout, as UTF-8. */

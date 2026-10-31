@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * The Bind Editor names a controller and shows its labels as the edits do, so a rename or a SAVE in the Alias Designer
  * shows at once (Storage S5, 2026-10-28; names were the working copy's from S4b until then).
  */
-class SavedDeviceLabelsTest {
+class EditedDeviceLabelsTest {
 
     private static final String DEVICE_MAPPINGS = "<Root>"
             + "<RightStick><PID>0200</PID><VID>231D</VID></RightStick>"
@@ -25,7 +25,7 @@ class SavedDeviceLabelsTest {
 
     @Test
     void aDevicesLabelsAreItsButtonMapsFoundIgnoringCase() throws IOException {
-        SavedDeviceLabels labels = SavedDeviceLabels.of(set());
+        EditedDeviceLabels labels = EditedDeviceLabels.of(set());
 
         assertEquals(Map.of("Joy_6", "Gear", "Joy_7", ""), labels.labelsOf("RightStick"), "trimmed, as read");
         assertEquals(Optional.of("Gear"), labels.label("rightstick", "Joy_6"), "the game finds an element ignoring case");
@@ -33,19 +33,19 @@ class SavedDeviceLabelsTest {
 
     @Test
     void aBlankNameOrAnUnknownInputOrDeviceHasNoLabel() throws IOException {
-        SavedDeviceLabels labels = SavedDeviceLabels.of(set());
+        EditedDeviceLabels labels = EditedDeviceLabels.of(set());
 
         assertEquals(Optional.empty(), labels.label("RightStick", "Joy_7"));
         assertEquals(Optional.empty(), labels.label("RightStick", "Joy_9"));
         assertEquals(Optional.empty(), labels.label("VPCThrottle", "Joy_6"));
         assertEquals(Optional.empty(), labels.label(null, "Joy_6"));
-        assertEquals(Map.of(), SavedDeviceLabels.NONE.labelsOf("RightStick"));
+        assertEquals(Map.of(), EditedDeviceLabels.NONE.labelsOf("RightStick"));
     }
 
     /** As the game resolves hardware: the first element claiming it, primary or alternative. */
     @Test
     void hardwareIsNamedByTheFirstElementClaimingIt() throws IOException {
-        SavedDeviceLabels labels = SavedDeviceLabels.of(set());
+        EditedDeviceLabels labels = EditedDeviceLabels.of(set());
 
         assertEquals(Optional.of("RightStick"), labels.nameOf("231d", "0200"), "the first, not the shadowed one");
         assertEquals(Optional.of("T-Rudder"), labels.nameOf("044F", "B678"), "an alternative pair counts");
@@ -62,7 +62,7 @@ class SavedDeviceLabelsTest {
         ConfigurationFiles renamed = DeviceEdits.rename(set(), "RightStick", "MainStick",
                 Map.of("Joy_6", "Gear up")).files();
 
-        SavedDeviceLabels labels = SavedDeviceLabels.of(renamed);
+        EditedDeviceLabels labels = EditedDeviceLabels.of(renamed);
 
         assertEquals(Optional.of("MainStick"), labels.nameOf("231D", "0200"));
         assertEquals(Optional.of("Gear up"), labels.label("MainStick", "Joy_6"));

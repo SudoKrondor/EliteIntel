@@ -313,6 +313,28 @@ class BindingsComparisonTest {
         assertEquals(binds("Custom", "Key_A", "Joy_XAxis", "\t<NewThing Value=\"1\" />\r\n"), text(merged));
     }
 
+    /**
+     * Every element the game added goes in at one place, before {@code </Root>} - kept by a merge, they stay in the
+     * live file's order, not reversed (Krondor's branch review, 2026-10-31).
+     */
+    @Test
+    void elementsTheGameAddedKeepTheirOrderWhenMerged() throws IOException {
+        String added = "\t<First Value=\"1\" />\r\n\t<Second Value=\"2\" />\r\n\t<Third Value=\"3\" />\r\n";
+        String mine = binds("Custom", "Key_A", "Joy_XAxis", "");
+        String theirs = binds("Custom", "Key_Q", "Joy_XAxis", added);
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, mine));
+        Map<String, byte[]> live = files(Map.of(CUSTOM, theirs));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
+        assertEquals(4, differences.items().size(), differences.items().toString());
+        // WHY: one row kept as mine, so the file is spliced rather than taken whole from the game.
+        Map<String, Side> answers = every(differences, Side.LIVE);
+        answers.put(YAW_PRIMARY, Side.WORKING_COPY);
+
+        byte[] merged = BindingsComparison.settle(workingCopy, live, differences, answers).bindings().get(CUSTOM);
+
+        assertEquals(binds("Custom", "Key_A", "Joy_XAxis", added), text(merged));
+    }
+
     @Test
     void aMergedPresetFileIsWrittenInTheGamesForm() throws IOException {
         Map<String, byte[]> workingCopy = files(Map.of(PRESET, "Custom\r\nCustom\r\nCustom\r\nCustom"));

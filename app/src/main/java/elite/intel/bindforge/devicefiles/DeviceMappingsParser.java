@@ -1,5 +1,6 @@
 package elite.intel.bindforge.devicefiles;
 
+import elite.intel.bindforge.io.SafeXml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -47,7 +48,7 @@ public final class DeviceMappingsParser {
      */
     public static List<DeviceEntry> parse(Path deviceMappings) throws IOException {
         try {
-            Document document = DeviceFileXml.newDocumentBuilder().parse(deviceMappings.toFile());
+            Document document = SafeXml.documentBuilder().parse(deviceMappings.toFile());
             return entriesOf(document);
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException("Could not read " + deviceMappings + ": " + e.getMessage(), e);
@@ -73,7 +74,7 @@ public final class DeviceMappingsParser {
      */
     public static List<DeviceEntry> parse(InputStream xml, String what) throws IOException {
         try {
-            return entriesOf(DeviceFileXml.newDocumentBuilder().parse(xml));
+            return entriesOf(SafeXml.documentBuilder().parse(xml));
         } catch (SAXException | ParserConfigurationException e) {
             throw new IOException("Could not read " + what + ": " + e.getMessage(), e);
         }

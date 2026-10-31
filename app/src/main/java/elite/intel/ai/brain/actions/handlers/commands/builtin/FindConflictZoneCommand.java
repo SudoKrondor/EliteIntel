@@ -24,7 +24,7 @@ import java.util.List;
  * contract to take: the commander flies there, drops into a zone, picks a side and is paid a bond
  * per kill. Within the range the commander named, the war sighted most recently (by day) is offered
  * first, then the hardest intensity present, then the nearest - see
- * {@link ConflictZoneManager#bestWarZones} for why recency leads.
+ * {@link ConflictZoneManager#bestWarZones(Coordinates, int)} for why recency leads.
  * <p>
  * Answered from wars sighted in the last week, by the commander's own FSS or by anyone on the
  * EDDN relay - a war older than that is over.

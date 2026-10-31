@@ -16,7 +16,7 @@ import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
 import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.Edits;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -39,6 +39,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -82,7 +83,7 @@ public class BindingProfilePanel extends JPanel {
      */
     private BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
     /** The names and labels {@link #slotFormatter} reads, for the capture dialog's controller tabs. */
-    private SavedDeviceLabels labels = SavedDeviceLabels.NONE;
+    private EditedDeviceLabels labels = EditedDeviceLabels.NONE;
     private final BindingsSelectionController selectionController;
     private final BindingsGroupTableFactory tableFactory;
     private final MissingBindingAutoAssigner autoAssigner = new MissingBindingAutoAssigner();
@@ -297,14 +298,22 @@ public class BindingProfilePanel extends JPanel {
         bindingsDirField.setText(playerSession.getBindingsDir().toString());
         if (!refreshes.tryStart()) return;
         String wanted = wantedFile != null ? wantedFile : loadedFile;
-        new Thread(() -> {
-            Loaded read = read(wanted);
-            SwingUtilities.invokeLater(() -> {
-                show(read);
-                if (refreshes.finish()) initData();
-            });
-            publishLiveSummary();
-        }, "BindForge-BindEditorRead").start();
+        // WHY: the grid shows nothing when the read fails. A file the read could not use is logged as a warning -
+        // before first-time startup there is no working copy, and the BindForge tab says so; a damaged one is offered a
+        // restore there too. A bug is logged as an error (Krondor's branch review, 2026-10-31). Neither is a dialog: a
+        // read runs at every refresh.
+        FlowSteps.inBackground("BindForge-BindEditorRead", log, "The Bind Editor's read", () -> {
+                    Loaded read = read(wanted);
+                    publishLiveSummary();
+                    return () -> shown(read);
+                }, reason -> () -> shown(Loaded.nothing(wanted)), reason -> () -> shown(Loaded.nothing(wanted)),
+                FlowSteps.NOTHING);
+    }
+
+    /** {@link #show} what a read found, then the read asked for while it ran, if any. On the EDT. */
+    private void shown(Loaded read) {
+        show(read);
+        if (refreshes.finish()) initData();
     }
 
     /** LOAD: the file chosen in the list. */
@@ -321,30 +330,27 @@ public class BindingProfilePanel extends JPanel {
      * @param asked the file this read was asked for, LOAD's or the one shown - {@code null} for neither
      */
     private record Loaded(String asked, List<String> files, String file, byte[] content,
-                          Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, SavedDeviceLabels labels) {
+                          Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, EditedDeviceLabels labels) {
         static Loaded nothing(String asked) {
-            return new Loaded(asked, List.of(), null, null, Map.of(), SavedDeviceLabels.NONE);
+            return new Loaded(asked, List.of(), null, null, Map.of(), EditedDeviceLabels.NONE);
         }
     }
 
-    /** Reads the edits and parses the file to show. Off the EDT. */
-    private Loaded read(String asked) {
-        try {
-            ConfigurationFiles current = Edits.stored().snapshot().current();
-            List<String> files = BindsEdits.bindsFiles(current);
-            if (files.isEmpty()) return Loaded.nothing(asked);
-            String file = asked != null && files.contains(asked)
-                    ? asked
-                    : BindsEdits.generalFile(current).orElse(files.getFirst());
-            byte[] content = current.bindings().get(file);
-            return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
-                    SavedDeviceLabels.of(current));
-        } catch (Exception e) {
-            // WHY: broad on purpose - a thread boundary. Before first-time startup there is no working copy, and the
-            // BindForge tab says so; a damaged one is offered a restore there too. The grid shows nothing.
-            log.warn("The Bind Editor could not read the edits", e);
-            return Loaded.nothing(asked);
-        }
+    /**
+     * Reads the edits and parses the file to show. Off the EDT.
+     *
+     * @throws IOException if the edits, the file or the device files cannot be read
+     */
+    private Loaded read(String asked) throws IOException {
+        ConfigurationFiles current = Edits.stored().snapshot().current();
+        List<String> files = BindsEdits.bindsFiles(current);
+        if (files.isEmpty()) return Loaded.nothing(asked);
+        String file = asked != null && files.contains(asked)
+                ? asked
+                : BindsEdits.generalFile(current).orElse(files.getFirst());
+        byte[] content = current.bindings().get(file);
+        return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
+                EditedDeviceLabels.of(current));
     }
 
     /** Shows what {@link #read} found. On the EDT. */
@@ -1290,44 +1296,43 @@ public class BindingProfilePanel extends JPanel {
     /** A change to the edits, run by {@link #offEdt}. */
     @FunctionalInterface
     private interface Change {
-        void run() throws Exception;
+        void run() throws IOException;
     }
 
     /**
      * Changes the edits off the EDT, one change at a time, then runs {@code onEdt} on it. A failure is shown under
      * {@code title}, not only logged - the user pressed a button and must be told - and {@code afterFailure} runs
-     * instead. The screen reads the edits again either way.
+     * instead. A file the change could not use is {@code bindings.change.failed}; a bug is logged as an error and said
+     * to have stopped unexpectedly (Krondor's branch review, 2026-10-31). The screen reads the edits again either way.
      */
     private void offEdt(String title, Change change, Runnable onEdt, Runnable afterFailure) {
         changeRunning = true;
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         fixAllButton.setEnabled(false);
-        new Thread(() -> {
-            String failure = null;
-            try {
-                change.run();
-            } catch (Edits.WriteRunningException e) {
-                // WHY: a write is running - said in the user's language, not the exception's.
-                log.info("{} not done: {}", title, e.getMessage());
-                failure = getText("bindings.writeRunning");
-            } catch (Exception e) {
-                // WHY: broad on purpose - a thread boundary, and anything escaping it would leave the screen waiting
-                // with no word of why.
-                log.warn("{} failed", title, e);
-                failure = getText("bindings.change.failed");
-            }
-            String shown = failure;
-            SwingUtilities.invokeLater(() -> {
-                changeRunning = false;
-                setCursor(Cursor.getDefaultCursor());
-                initData();
-                if (shown != null) {
-                    info(this, title, shown, getText("button.close"));
-                    afterFailure.run();
-                    return;
-                }
-                onEdt.run();
-            });
-        }, "BindForge-BindEditorChange").start();
+        FlowSteps.inBackground("BindForge-BindEditorChange", log, title, () -> {
+                    try {
+                        change.run();
+                    } catch (Edits.WriteRunningException e) {
+                        // WHY: a write is running - said in the user's language, not the exception's.
+                        log.info("{} not done: {}", title, e.getMessage());
+                        return () -> changed(title, getText("bindings.writeRunning"), onEdt, afterFailure);
+                    }
+                    return () -> changed(title, null, onEdt, afterFailure);
+                }, reason -> () -> changed(title, getText("bindings.change.failed"), onEdt, afterFailure),
+                reason -> () -> changed(title, getText("bindings.change.stopped", reason), onEdt, afterFailure),
+                FlowSteps.NOTHING);
+    }
+
+    /** After {@link #offEdt}: {@code failure} shown, or {@code onEdt} run. On the EDT. */
+    private void changed(String title, String failure, Runnable onEdt, Runnable afterFailure) {
+        changeRunning = false;
+        setCursor(Cursor.getDefaultCursor());
+        initData();
+        if (failure != null) {
+            info(this, title, failure, getText("button.close"));
+            afterFailure.run();
+            return;
+        }
+        onEdt.run();
     }
 }

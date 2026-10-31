@@ -1,5 +1,6 @@
 package elite.intel.bindforge.preseteditor;
 
+import elite.intel.bindforge.io.SafeXml;
 import elite.intel.bindforge.io.StartPresetSections;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -7,9 +8,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -130,14 +129,9 @@ final class BindsContent {
         return false;
     }
 
-    // WHY: the same settings as DeviceFileXml - external entities and DOCTYPEs off. Every file in the folder is
-    // read, including ones that are not ours, and a .binds can be something downloaded from a forum.
+    /** {@link SafeXml}'s builder: every file in the folder is read, ones that are not ours included. */
     private static DocumentBuilder newDocumentBuilder() throws ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setExpandEntityReferences(false);
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        DocumentBuilder builder = SafeXml.documentBuilder();
         // WHY: the default handler prints "[Fatal Error]" to stderr for every file that is not XML, and here
         // that is an expected answer, carried in the judgement.
         builder.setErrorHandler(new DefaultHandler());

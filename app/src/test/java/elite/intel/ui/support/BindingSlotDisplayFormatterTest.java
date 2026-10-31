@@ -4,7 +4,7 @@ import elite.intel.bindforge.io.KeyBindingsParser.BindingSlotType;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlot;
 import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.storage.ConfigurationFiles;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ class BindingSlotDisplayFormatterTest {
                 "<Root><VKB-Stick><PID>0200</PID><VID>231D</VID></VKB-Stick></Root>".getBytes(StandardCharsets.UTF_8),
                 Map.of("VKB-Stick.buttonMap", ("<Root><Joy_6>1st Hat Up</Joy_6><Joy_14>2nd Hat Left</Joy_14></Root>")
                         .getBytes(StandardCharsets.UTF_8)));
-        formatter = new BindingSlotDisplayFormatter(SavedDeviceLabels.of(files));
+        formatter = new BindingSlotDisplayFormatter(EditedDeviceLabels.of(files));
     }
 
     @Test

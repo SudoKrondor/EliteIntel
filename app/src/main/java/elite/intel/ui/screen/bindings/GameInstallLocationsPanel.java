@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -149,32 +150,25 @@ public class GameInstallLocationsPanel extends JPanel {
 
     private void loadInBackground(Supplier<List<InstallationRow>> source) {
         if (!refreshInProgress.compareAndSet(false, true)) return;
-        new Thread(() -> {
-            List<InstallationRow> rows = List.of();
-            List<Object[]> cells = List.of();
-            Path bindingsDir = null;
-            try {
-                rows = source.get();
-                cells = rows.stream().map(this::cellsOf).toList();
-                bindingsDir = PlayerSession.getInstance().getBindingsDir();
-            } catch (RuntimeException e) {
-                // WHY: broad on purpose. This is a thread boundary; an exception escaping it would kill the
-                // thread silently and leave the table as it was, with nothing to explain why.
-                log.warn("Could not refresh the installation list", e);
-            }
-            List<InstallationRow> loadedRows = rows;
-            List<Object[]> loadedCells = cells;
-            Path loadedBindingsDir = bindingsDir;
-            SwingUtilities.invokeLater(() -> {
-                showConfigFolder(loadedBindingsDir);
-                showRows(loadedRows, loadedCells);
-                if (pendingSelection != null) {
-                    selectRow(pendingSelection);
-                    pendingSelection = null;
-                }
-                refreshInProgress.set(false);
-            });
-        }, "BindForge-Installations").start();
+        // WHY: a list that cannot be read shows empty rather than as it was, with the log saying why.
+        Function<String, Runnable> empty = reason -> () -> loaded(List.of(), List.of(), null);
+        FlowSteps.inBackground("BindForge-Installations", log, "Refreshing the installation list", () -> {
+            List<InstallationRow> rows = source.get();
+            List<Object[]> cells = rows.stream().map(this::cellsOf).toList();
+            Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
+            return () -> loaded(rows, cells, bindingsDir);
+        }, empty, empty, FlowSteps.NOTHING);
+    }
+
+    /** Shows what {@link #loadInBackground} read, then the row asked to be selected. On the EDT. */
+    private void loaded(List<InstallationRow> rows, List<Object[]> cells, Path bindingsDir) {
+        showConfigFolder(bindingsDir);
+        showRows(rows, cells);
+        if (pendingSelection != null) {
+            selectRow(pendingSelection);
+            pendingSelection = null;
+        }
+        refreshInProgress.set(false);
     }
 
     private void performAdd() {

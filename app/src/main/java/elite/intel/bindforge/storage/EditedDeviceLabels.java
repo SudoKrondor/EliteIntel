@@ -22,19 +22,19 @@ import java.util.*;
  * A device is found by its hardware as the game resolves it: the first element claiming the VID/PID. Names are found
  * ignoring case, as the game finds an element.
  */
-public final class SavedDeviceLabels {
+public final class EditedDeviceLabels {
 
-    private static final Logger log = LogManager.getLogger(SavedDeviceLabels.class);
+    private static final Logger log = LogManager.getLogger(EditedDeviceLabels.class);
 
     /**
      * No devices and no labels: every input reads as its token.
      */
-    public static final SavedDeviceLabels NONE = new SavedDeviceLabels(List.of(), Map.of());
+    public static final EditedDeviceLabels NONE = new EditedDeviceLabels(List.of(), Map.of());
 
     private final List<DeviceEntry> elements;
     private final Map<String, Map<String, String>> byDevice;
 
-    private SavedDeviceLabels(List<DeviceEntry> elements, Map<String, Map<String, String>> byDevice) {
+    private EditedDeviceLabels(List<DeviceEntry> elements, Map<String, Map<String, String>> byDevice) {
         this.elements = List.copyOf(elements);
         this.byDevice = byDevice;
     }
@@ -43,7 +43,7 @@ public final class SavedDeviceLabels {
      * The edits as they are now - {@link #NONE} when they cannot be read. Touches the disk when there are no edits: not
      * for the EDT.
      */
-    public static SavedDeviceLabels load() {
+    public static EditedDeviceLabels load() {
         try {
             return of(Edits.stored().snapshot().current());
         } catch (IOException e) {
@@ -58,13 +58,13 @@ public final class SavedDeviceLabels {
      * @param edited the working copy with the edits on it
      * @throws IOException if its {@code DeviceMappings.xml} or a {@code .buttonMap} cannot be read
      */
-    public static SavedDeviceLabels of(ConfigurationFiles edited) throws IOException {
+    public static EditedDeviceLabels of(ConfigurationFiles edited) throws IOException {
         Map<String, Map<String, String>> byDevice = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String file : edited.buttonMaps().keySet()) {
             String device = file.substring(0, file.length() - GameInstallation.BUTTON_MAP_SUFFIX.length());
             byDevice.putIfAbsent(device, DeviceEdits.labels(edited, device));
         }
-        return new SavedDeviceLabels(DeviceEdits.elements(edited), byDevice);
+        return new EditedDeviceLabels(DeviceEdits.elements(edited), byDevice);
     }
 
     /**

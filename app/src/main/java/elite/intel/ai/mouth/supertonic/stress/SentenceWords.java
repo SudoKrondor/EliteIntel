@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * <p>
  * RUAccent's own pipeline deletes every character it does not know ({@code %}, {@code /}, {@code ’}, ...) and
  * reflows the spacing around punctuation. We hand its models the same view of the sentence, but the commander
- * hears our text, so here those characters become spaces in the {@link #context()} copy and stay in the original.
+ * hears our text, so here those characters become spaces in the {@code context} copy and stay in the original.
  * Every replacement keeps the length, so a word's offsets are the same in both.
  */
 final class SentenceWords {

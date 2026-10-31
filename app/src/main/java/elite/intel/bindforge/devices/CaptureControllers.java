@@ -7,7 +7,7 @@ import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlot;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlots;
 import elite.intel.bindforge.model.BindingInput;
-import elite.intel.bindforge.storage.SavedDeviceLabels;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.devices.model.DeviceDescription;
@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * working copy since Storage S4b, 2026-10-28): the first element in its {@code DeviceMappings.xml} claiming the
  * controller, as the game resolves it, and Frontier's when the working copy holds none. A device renamed on screen and
  * not yet applied is still under its old name in the working copy and in {@code .binds}, so a binding written under
- * that name moves with all the others at APPLY. Labels are the edits' ({@link SavedDeviceLabels}).
+ * that name moves with all the others at APPLY. Labels are the edits' ({@link EditedDeviceLabels}).
  * <p>
  * <strong>A connected controller with no name gets no capture</strong>: {@code .binds} would have to name it by
  * hardware id, which BindForge moves to a name at APPLY anyway. Its tab is shown and greyed, saying where to name it.
@@ -80,9 +80,9 @@ public final class CaptureControllers {
      * each group in name order.
      *
      * @param bindings the bindings being edited, for the controllers they name and the inputs they use
-     * @param labels   the edits' names and labels, as {@link SavedDeviceLabels#load()} read them
+     * @param labels   the edits' names and labels, as {@link EditedDeviceLabels#load()} read them
      */
-    public static List<Controller> all(Map<String, ReadOnlyBindingSlots> bindings, SavedDeviceLabels labels) {
+    public static List<Controller> all(Map<String, ReadOnlyBindingSlots> bindings, EditedDeviceLabels labels) {
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         List<Controller> controllers = new ArrayList<>(connected(labels));
         Set<String> present = new HashSet<>();
@@ -111,10 +111,10 @@ public final class CaptureControllers {
      * Every connected controller, named ones first, each group in name order. Empty when the service is down.
      */
     public static List<Controller> connected() {
-        return connected(SavedDeviceLabels.load());
+        return connected(EditedDeviceLabels.load());
     }
 
-    private static List<Controller> connected(SavedDeviceLabels labels) {
+    private static List<Controller> connected(EditedDeviceLabels labels) {
         DeviceService service = DeviceService.getInstance();
         if (!service.isAvailable()) return List.of();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
@@ -143,10 +143,10 @@ public final class CaptureControllers {
      * The {@code .binds} name of one connected controller, as {@link #connected()} names it - for a caller that needs
      * one controller, not all of them (review, 2026-10-17).
      *
-     * @param labels the edits, as {@link SavedDeviceLabels#load()} read them - off the EDT
+     * @param labels the edits, as {@link EditedDeviceLabels#load()} read them - off the EDT
      * @return empty when the controller has no name yet, or its GUID could not be read
      */
-    public static Optional<String> nameOf(Device device, SavedDeviceLabels labels) {
+    public static Optional<String> nameOf(Device device, EditedDeviceLabels labels) {
         return DeviceIdentities.of(device).map(id -> nameOf(id, labels, FrontierStockDevices.getInstance()));
     }
 
@@ -190,7 +190,7 @@ public final class CaptureControllers {
         byDevice.computeIfAbsent(device, d -> new HashSet<>()).add(token);
     }
 
-    private static String nameOf(DeviceIdentity identity, SavedDeviceLabels labels, FrontierStockDevices stock) {
+    private static String nameOf(DeviceIdentity identity, EditedDeviceLabels labels, FrontierStockDevices stock) {
         return labels.nameOf(identity.vid(), identity.pid())
                 .or(() -> stock.covering(identity.vid(), identity.pid()).map(DeviceEntry::name))
                 .orElse(null);
