@@ -178,6 +178,14 @@ public final class VegaSubsystemGate implements ManagedService {
         return runtimeGraph == null ? null : runtimeGraph.thoughtDispatcher();
     }
 
+    /**
+     * Test access: whether a dangerous action is waiting on the commander's answer; {@code false} while stopped.
+     */
+    boolean hasPendingDangerousConfirmation() {
+        VegaRuntimeGraph runtimeGraph = activeGraph;
+        return runtimeGraph != null && runtimeGraph.confirmationCoordinator().isPending();
+    }
+
     private void unregisterAfterFailedStart(
             Throwable startupFailure,
             VegaRuntimeGraph runtimeGraph,
