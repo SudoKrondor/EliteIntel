@@ -156,7 +156,9 @@ Safe overlaps are not flagged:
 
 - Different vehicle states (ship / buggy / humanoid) - mutually exclusive in-game, so one control bound the same way in every vehicle (trigger, fire groups, cargo scoop, panels, maps, lamps, night vision) is a layout, not a clash. The vehicle comes from `BindingDisplayNames` (the game's own controls screen), not from the tag: the SRV drive and fire controls are spelled `Buggy*` and
   `SteerLeftButton`, with no `_Buggy` suffix.
-- Sub-state overlays (FreeCam, FSS, SAA, GalnetAudio, the map camera incl. `GalaxyMapHome`) - only active inside a specific UI mode.
+- Sub-state overlays (FreeCam, GalnetAudio, the map camera incl. `GalaxyMapHome`, and the FSS and Detailed Surface Scanner screens) - only active inside a specific UI mode. The two scanner screens go by the group the game's controls screen lists a control under, not the `ExplorationFSS`/`ExplorationSAA` prefix: `ExplorationFSSEnter` sits under Mode Switches and is pressed in normal flight (FP-3).
+
+What is scanned: both slots of every action. The spoken startup warning reads the execution view (`BindingsMonitor.getBindingSlots()`, keyboard-only slots); the Bindings tab reads every slot whose main key is on the keyboard, a modifier held on a controller included (`BindingConflictScanner.scanReadOnlySlots`, FN-6), with that modifier named by its device. A slot whose main key is on a controller is never compared.
 
 Dangerous pairs have curated descriptions; unknown conflicts get a generic humanized description. Results are diffed against the DB state so only newly-appearing conflicts are announced.
 

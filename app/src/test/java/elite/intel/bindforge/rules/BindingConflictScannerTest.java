@@ -93,6 +93,33 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void enteringTheFssIsAShipControlThatClashes() {
+        // FP-3, confirmed in the game: Enter FSS Mode sits under Mode Switches and is pressed in normal flight, so
+        // on the hardpoints' key one press opens the scanner and deploys the hardpoints. The FSS prefix it carries
+        // used to clear it as a scanner-screen control.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ExplorationFSSEnter", Set.of("Key_U"),
+                "DeployHardpointToggle", Set.of("Key_U")));
+
+        assertEquals(1, conflicts.size(), conflicts.toString());
+        assertEquals("DeployHardpointToggle", conflicts.getFirst().actionA());
+        assertEquals("ExplorationFSSEnter", conflicts.getFirst().actionB());
+    }
+
+    @Test
+    void scannerScreenControlsStillDoNotConflictWithShipActions() {
+        // Inside the FSS or the Detailed Surface Scanner nothing else fires, so their own controls - the DSS's
+        // third-person camera included, which drops the Exploration prefix - stay clear of the ship's.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ExplorationFSSDiscoveryScan", Set.of("Key_U"),
+                "ExplorationSAANextGenus", Set.of("Key_U"),
+                "SAAThirdPersonYawLeftButton", Set.of("Key_U"),
+                "DeployHardpointToggle", Set.of("Key_U")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
+    }
+
+    @Test
     void uiNavigationNeverConflictsWithShipAction() {
         // The panel that has focus is reading that key, so the ship binding on it does not also fire.
         // CycleNextSubsystem (ship) vs UI_Right (interface) is safe.
