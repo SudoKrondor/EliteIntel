@@ -2,6 +2,8 @@ package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.storage.BindingsComparison.Factory;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
+import elite.intel.bindforge.storage.DeviceCheck.State;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -26,7 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * The check for the binds and preset files (storage.md rule 14; Storage S8a): it reads and compares, then writes what
  * the user settled on through the write path - backed up first with the working copy inside - and writes nothing when
- * the files changed meanwhile or edits are on screen.
+ * the files changed meanwhile or edits are on screen. At the first click it judges the device files too, and writes
+ * what the user settled for them in the same write (Storage S9a).
  */
 class BindingsCheckTest {
 
@@ -45,6 +48,8 @@ class BindingsCheckTest {
     private final List<Set<String>> removed = new ArrayList<>();
     private final List<ConfigurationFiles> backedUpWorkingCopies = new ArrayList<>();
     private final AtomicInteger factoryReads = new AtomicInteger();
+    /** What the device files' check finds - every installation matching, until a test says otherwise. */
+    private DeviceCheck.Found devices = new DeviceCheck.Found(true, List.of());
 
     @BeforeEach
     void aBindingsFolder() throws IOException {
@@ -90,7 +95,7 @@ class BindingsCheckTest {
         BindingsCheck check = check();
         BindingsCheck.Found found = check.find();
 
-        Written result = check.settle(found, every(found, Side.WORKING_COPY));
+        Written result = check.settle(found, every(found, Side.WORKING_COPY), DeviceCheck.Answer.WORKING_COPY);
 
         assertEquals(text(workingCopy.bindings().get(CUSTOM)), text(written.getFirst().bindings().get(CUSTOM)));
         assertEquals(Set.of(CUSTOM), written.getFirst().bindings().keySet());
@@ -106,7 +111,7 @@ class BindingsCheckTest {
         BindingsCheck check = check();
         BindingsCheck.Found found = check.find();
 
-        check.settle(found, every(found, Side.LIVE));
+        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.WORKING_COPY);
 
         ConfigurationFiles files = written.getFirst();
         assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", ""), text(files.bindings().get(CUSTOM)));
@@ -123,7 +128,7 @@ class BindingsCheckTest {
         live(CUSTOM, binds("Custom", "Key_W", "Joy_XAxis", ""));
 
         BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
-                () -> check.settle(found, every(found, Side.LIVE)));
+                () -> check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.WORKING_COPY));
 
         assertEquals(List.of(), written);
         assertEquals("Key_W", changed.now().differences().items().getFirst().live());
@@ -137,7 +142,7 @@ class BindingsCheckTest {
         BindingsCheck.Found found = check.find();
         live(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "").replace("\r\n", "\n"));
 
-        check.settle(found, every(found, Side.LIVE));
+        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.WORKING_COPY);
 
         assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", "").replace("\r\n", "\n"),
                 text(written.getFirst().bindings().get(CUSTOM)), "the game's file as it is now");
@@ -152,11 +157,83 @@ class BindingsCheckTest {
         edits.change(current -> current.withBindingsFile(SPARE, bytes("<edited/>")));
 
         assertThrows(BindingsCheck.EditsNotAppliedException.class,
-                () -> check.settle(found, every(found, Side.WORKING_COPY)));
+                () -> check.settle(found, every(found, Side.WORKING_COPY), DeviceCheck.Answer.WORKING_COPY));
         assertEquals(List.of(), written);
     }
 
+    // ---- the device files, at the first click (Storage S9a)
+
+    @Test
+    void theFirstClickJudgesTheDeviceFilesAndAPPLYsCheckDoesNot() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(true, List.of(judged(State.RESET_MISSING)));
+
+        BindingsCheck.Found atFirstClick = check().findWithDeviceFiles();
+        BindingsCheck.Found atApply = check().find();
+
+        assertTrue(atFirstClick.differences().none());
+        assertFalse(atFirstClick.none(), "an installation that differs is something to say");
+        assertTrue(atFirstClick.anythingToAsk());
+        assertFalse(atApply.devices().checked(), "APPLY's check judges no device files until Storage S9b");
+        assertTrue(atApply.none());
+    }
+
+    /** One the check could not read at all is said, but there is nothing to ask about it (Alan, 2026-10-31). */
+    @Test
+    void anInstallationThatCannotBeReadIsNothingToAsk() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(true, List.of(judged(State.UNREADABLE)));
+
+        BindingsCheck.Found found = check().findWithDeviceFiles();
+
+        assertFalse(found.none());
+        assertFalse(found.anythingToAsk());
+    }
+
+    /** One backup and one write: the settled binds files and the reconciled device files together (principle 1). */
+    @Test
+    void theReconciledDeviceFilesGoInTheSameWriteAsTheBindsFiles() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(true, List.of(judged(State.DIFFERS)));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.findWithDeviceFiles();
+        ConfigurationFiles reconciled = new ConfigurationFiles(Map.of(), bytes("<Root><LVWAP/></Root>"),
+                Map.of("LVWAP.buttonMap", bytes("<Root/>")));
+
+        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.reconciled(reconciled, Map.of()));
+
+        assertEquals(1, written.size());
+        assertEquals(1, backedUpWorkingCopies.size());
+        ConfigurationFiles files = written.getFirst();
+        assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", ""), text(files.bindings().get(CUSTOM)));
+        assertEquals("<Root><LVWAP/></Root>", text(files.deviceMappings()));
+        assertEquals(Set.of("LVWAP.buttonMap"), files.buttonMaps().keySet());
+    }
+
+    /** Nothing watches the installations either: one whose device files changed meanwhile stops the write. */
+    @Test
+    void anInstallationChangedAfterTheWarningOpenedStopsTheWrite() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(true, List.of(judged(State.RESET_MISSING)));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.findWithDeviceFiles();
+        devices = new DeviceCheck.Found(true, List.of(judged(State.DIFFERS)));
+
+        BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
+                () -> check.settle(found, Map.of(), DeviceCheck.Answer.WORKING_COPY));
+
+        assertEquals(List.of(), written);
+        assertEquals(State.DIFFERS, changed.now().devices().installations().getFirst().state());
+    }
+
     // ---- helpers
+
+    /** Steam, judged {@code state}, with files to match. */
+    private DeviceCheck.Judged judged(State state) {
+        InstallationRow row = new InstallationRow(1, "STEAM", temp.resolve("Steam").toString(), false, false);
+        if (state == State.UNREADABLE) return new DeviceCheck.Judged(row, state, null, "locked");
+        return new DeviceCheck.Judged(row, state, new DeviceFiles(null, Map.of()), null);
+    }
 
     private BindingsCheck check() {
         return new BindingsCheck(edits, () -> bindings, BindingsCheck::readBindingsFolder,
@@ -179,8 +256,9 @@ class BindingsCheckTest {
                             Backups.Kind.BEFORE_CHANGES, Backups.Before.CHECK, true, List.of());
                 },
                 installation -> {
-                    throw new AssertionError("no installation is read: the fake write leaves none alone");
-                });
+                    throw new AssertionError("no installation is read: the fake write asks none");
+                },
+                files -> devices);
     }
 
     private void live(String name, String content) throws IOException {

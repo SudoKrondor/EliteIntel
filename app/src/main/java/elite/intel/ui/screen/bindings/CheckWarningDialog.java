@@ -35,7 +35,7 @@ final class CheckWarningDialog extends JDialog {
 
     private Choice choice = Choice.NOT_NOW;
 
-    private CheckWarningDialog(Component parent, String message) {
+    private CheckWarningDialog(Component parent, String message, boolean choices) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         JPanel body = transparentPanel(new BorderLayout());
@@ -48,14 +48,13 @@ final class CheckWarningDialog extends JDialog {
         JButton takeTheGames = makeButtonSubtle(getText("bindings.check.takeTheGames"));
         takeTheGames.addActionListener(e -> finish(Choice.TAKE_THE_GAMES));
 
-        HudModalSpec spec = HudModalSpec.builder()
+        HudModalSpec.Builder builder = HudModalSpec.builder()
                 .title(getText("bindings.check.title"))
                 .onClose(() -> finish(Choice.NOT_NOW))
                 .body(body)
-                .primary(keepMine)
-                .middle(merge)
-                .extra(takeTheGames)
-                .build();
+                .primary(keepMine);
+        if (choices) builder.middle(merge).extra(takeTheGames);
+        HudModalSpec spec = builder.build();
         setContentPane(AppTheme.hudModalScaffold(spec));
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         getRootPane().registerKeyboardAction(e -> finish(Choice.NOT_NOW), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
@@ -67,9 +66,14 @@ final class CheckWarningDialog extends JDialog {
         setLocationRelativeTo(getOwner());
     }
 
-    /** Shows the warning and waits. On the EDT. */
-    static Choice show(Component parent, String message) {
-        CheckWarningDialog dialog = new CheckWarningDialog(parent, message);
+    /**
+     * Shows the warning and waits. On the EDT.
+     *
+     * @param choices whether Merge and Use the game's files are offered - not when only a missing or unparseable device
+     *                file differs, which is offered putting the working copy back alone (Storage S9a)
+     */
+    static Choice show(Component parent, String message, boolean choices) {
+        CheckWarningDialog dialog = new CheckWarningDialog(parent, message, choices);
         AppTheme.runWithModalScrim(dialog.getOwner(), () -> dialog.setVisible(true));
         return dialog.choice;
     }

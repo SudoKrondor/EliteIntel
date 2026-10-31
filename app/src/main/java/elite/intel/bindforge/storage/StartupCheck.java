@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -17,8 +18,9 @@ import java.util.function.Supplier;
  * so once - <em>"Your control files were changed outside BindForge. Open BindForge to check them."</em> Nothing is
  * written, no backup is made, and nothing is decided until the user opens BindForge.
  * <p>
- * The binds and preset files only until Storage S9 adds the device files. Anything that stops it is logged and it says
- * nothing: it is a hint, and the check at the first BindForge click runs anyway.
+ * Every reachable installation's device files are compared too, since Storage S9a ({@link DeviceCheck}); one it cannot
+ * read at all is logged, not said - the first click names it. Anything that stops it is logged and it says nothing: it
+ * is a hint, and the check at the first BindForge click runs anyway.
  */
 public final class StartupCheck {
 
@@ -38,17 +40,22 @@ public final class StartupCheck {
     private final BooleanSupplier setUp;
     private final Source workingCopy;
     private final Supplier<Path> bindingsFolder;
+    private final DeviceCheck.Source devices;
 
-    /** First-time startup's flag, the stored working copy and the bindings folder Elite-Intel is set to. */
+    /**
+     * First-time startup's flag, the stored working copy, the bindings folder Elite-Intel is set to and the stored
+     * installations.
+     */
     public static StartupCheck stored() {
         return new StartupCheck(() -> !FirstTimeStartup.stored().needed(), () -> WorkingCopy.stored().read(),
-                () -> PlayerSession.getInstance().getBindingsDir());
+                () -> PlayerSession.getInstance().getBindingsDir(), DeviceCheck.stored());
     }
 
-    StartupCheck(BooleanSupplier setUp, Source workingCopy, Supplier<Path> bindingsFolder) {
+    StartupCheck(BooleanSupplier setUp, Source workingCopy, Supplier<Path> bindingsFolder, DeviceCheck.Source devices) {
         this.setUp = setUp;
         this.workingCopy = workingCopy;
         this.bindingsFolder = bindingsFolder;
+        this.devices = devices;
     }
 
     /**
@@ -62,7 +69,10 @@ public final class StartupCheck {
         }, "BindForge-StartupCheck").start();
     }
 
-    /** Whether a live binds or preset file differs from the working copy. On the caller's thread; touches the disk. */
+    /**
+     * Whether a live binds or preset file, or an installation's device files, differ from the working copy. On the
+     * caller's thread; touches the disk.
+     */
     boolean changedOutside() {
         try {
             if (!setUp.getAsBoolean()) return false;
@@ -70,9 +80,12 @@ public final class StartupCheck {
             Map<String, byte[]> live = BindingsCheck.readBindingsFolder(bindingsFolder.get());
             BindingsComparison.Differences differences =
                     BindingsComparison.compare(files.bindings(), live, BindingsComparison.Factory.NONE);
-            if (differences.none()) return false;
-            log.info("Your control files were changed outside BindForge: {}", differences.files().stream()
-                    .map(BindingsComparison.FileDifference::file).toList());
+            List<DeviceCheck.Judged> installations = devices.find(files).asked();
+            if (differences.none() && installations.isEmpty()) return false;
+            log.info("Your control files were changed outside BindForge: {}; installations: {}",
+                    differences.files().stream().map(BindingsComparison.FileDifference::file).toList(),
+                    installations.stream().map(judged -> judged.row().storefront() + " (" + judged.row().rootPath()
+                            + "): " + judged.state()).toList());
             return true;
         } catch (IOException | RuntimeException e) {
             // WHY: broad on purpose - a thread of its own at startup. A hint only; the check at the first BindForge

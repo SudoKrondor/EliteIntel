@@ -204,11 +204,12 @@ public final class FirstSetupFiles {
     }
 
     /**
-     * Moves every losing name's bindings to its winner in each binds file, rewriting only the files a move changes.
+     * Moves every losing name's bindings to its winner in each binds file, rewriting only the files a move changes -
+     * first setup's merge, and the check's ({@link DeviceCheck#withDevices}).
      *
      * @return how many bindings moved
      */
-    private static int moveBindings(Map<String, byte[]> bindings, Map<String, String> moves) throws IOException {
+    static int moveBindings(Map<String, byte[]> bindings, Map<String, String> moves) throws IOException {
         if (moves.isEmpty()) return 0;
         Map<String, Set<String>> losersByWinner = new LinkedHashMap<>();
         moves.forEach((loser, winner) -> losersByWinner.computeIfAbsent(winner, w -> new LinkedHashSet<>()).add(loser));

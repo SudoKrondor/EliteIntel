@@ -163,7 +163,7 @@ public final class FirstTimeStartupFlow {
             choice = HudConfirmDialog.confirm(parent, getText("bindings.firstTimeStartup.summary.title"), summary,
                     getText("bindings.firstTimeStartup.summary.create"),
                     getText("button.cancel"))
-                    ? Optional.of(new FirstSetupDialog.Choice(identical, 0))
+                    ? Optional.of(FirstSetupDialog.Choice.whole(identical))
                     : Optional.empty();
         } else {
             choice = new FirstSetupDialog(parent, reading, names).showDialog();

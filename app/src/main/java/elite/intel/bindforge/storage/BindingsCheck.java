@@ -34,12 +34,17 @@ import java.util.stream.Stream;
  * of each, overwriting the working copy keeps the game's, and a merge answers row by row (Alan, 2026-10-30).
  * <p>
  * <strong>Nothing watches the files</strong>: just before the write the bindings folder is compared again, and if a
- * row changed meanwhile nothing is written ({@link ChangedMeanwhileException}, carrying what is found now). An
- * installation whose device files differ is left alone, as APPLY leaves it, until Storage S9.
+ * row changed meanwhile nothing is written ({@link ChangedMeanwhileException}, carrying what is found now).
+ * <p>
+ * <strong>At the first click the device files are checked too</strong> (Storage S9a; {@link DeviceCheck}): every
+ * reachable installation judged against the working copy, in the same warning, backup and write - the device files the
+ * user settled on go to every installation the check read, and an installation whose device files changed meanwhile
+ * stops the write as a row does.
  * <p>
  * <strong>At APPLY</strong> (Storage S8b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes the
  * settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
- * screen. Touches the disk - not for the EDT.
+ * screen. APPLY's check does not judge the device files until Storage S9b: APPLY leaves an installation that differs
+ * alone. Touches the disk - not for the EDT.
  */
 public final class BindingsCheck {
 
@@ -78,12 +83,31 @@ public final class BindingsCheck {
      * @param differences the rows to ask about - every one that differs, but those the edits change
      * @param edited      how many rows that differ are not asked about because the edits change them - at APPLY, where
      *                    the edits go on top (Storage S8b); none at the first click, which has no edits
+     * @param devices     every reachable installation's device files, judged - at the first click (Storage S9a);
+     *                    {@link DeviceCheck.Found#NOT_CHECKED} at APPLY until Storage S9b
      */
-    public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited) {
+    public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited,
+                        DeviceCheck.Found devices) {
         public Found {
             Objects.requireNonNull(workingCopy, "workingCopy");
             live = Map.copyOf(live);
             Objects.requireNonNull(differences, "differences");
+            Objects.requireNonNull(devices, "devices");
+        }
+
+        /** What the binds and preset files' check found, with the device files not judged. */
+        public Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited) {
+            this(workingCopy, live, differences, edited, DeviceCheck.Found.NOT_CHECKED);
+        }
+
+        /** Whether nothing differs - no binds or preset file, and no installation. */
+        public boolean none() {
+            return differences.none() && devices.none();
+        }
+
+        /** Whether there is anything to ask: a row, or an installation the working copy can be put back to. */
+        public boolean anythingToAsk() {
+            return !differences.none() || !devices.asked().isEmpty();
         }
     }
 
@@ -121,18 +145,22 @@ public final class BindingsCheck {
     private final Writer writer;
     private final BackUp backUp;
     private final Apply.Reader deviceFiles;
+    private final DeviceCheck.Source devices;
 
-    /** The shared edits, the bindings folder Elite-Intel is set to, the backup folder and the write path. */
+    /**
+     * The shared edits, the bindings folder Elite-Intel is set to, the backup folder, the write path and the stored
+     * installations.
+     */
     public static BindingsCheck stored() {
         return new BindingsCheck(Edits.stored(), () -> PlayerSession.getInstance().getBindingsDir(),
                 BindingsCheck::readBindingsFolder, BindingsCheck::factoryOf,
                 (files, backUp, leaveAlone, remove) -> WritePath.stored().write(files, backUp, leaveAlone, remove),
                 (sources, workingCopy) -> Backups.stored().backUpBeforeChange(Backups.Before.CHECK, sources, workingCopy),
-                installation -> DeviceFiles.read(installation.root()));
+                installation -> DeviceFiles.read(installation.root()), DeviceCheck.stored());
     }
 
     BindingsCheck(Edits edits, Supplier<Path> bindingsFolder, LiveReader liveReader, FactorySource factory,
-                  Writer writer, BackUp backUp, Apply.Reader deviceFiles) {
+                  Writer writer, BackUp backUp, Apply.Reader deviceFiles, DeviceCheck.Source devices) {
         this.edits = edits;
         this.bindingsFolder = bindingsFolder;
         this.liveReader = liveReader;
@@ -140,6 +168,7 @@ public final class BindingsCheck {
         this.writer = writer;
         this.backUp = backUp;
         this.deviceFiles = deviceFiles;
+        this.devices = devices;
     }
 
     /**
@@ -151,10 +180,21 @@ public final class BindingsCheck {
      * @throws IOException         if either cannot be read
      */
     public Found find() throws IOException {
-        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()));
+        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()), false);
     }
 
-    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live) throws IOException {
+    /**
+     * {@link #find()}, and every reachable installation's device files judged against the working copy - the first
+     * click's check (Storage S9a). Reads only.
+     *
+     * @throws IOException if the bindings folder or the working copy cannot be read, or the working copy's own device
+     *                     files cannot be parsed. An installation that cannot be read is judged so, not thrown
+     */
+    public Found findWithDeviceFiles() throws IOException {
+        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()), true);
+    }
+
+    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live, boolean withDevices) throws IOException {
         ConfigurationFiles workingCopy = snapshot.applied();
         Differences all = BindingsComparison.compare(workingCopy.bindings(), live, Factory.NONE);
         // WHY: the factory binds files are read only when something differs - most first clicks find nothing.
@@ -166,7 +206,8 @@ public final class BindingsCheck {
                     String.join(", ", all.leftOut()));
         }
         Differences asked = BindingsComparison.without(all, edited(snapshot));
-        return new Found(workingCopy, live, asked, all.items().size() - asked.items().size());
+        DeviceCheck.Found judged = withDevices ? devices.find(workingCopy) : DeviceCheck.Found.NOT_CHECKED;
+        return new Found(workingCopy, live, asked, all.items().size() - asked.items().size(), judged);
     }
 
     private static List<BindingsComparison.LineItem> edited(Edits.Snapshot snapshot) {
@@ -181,8 +222,8 @@ public final class BindingsCheck {
      * @param snapshot the edits and the working copy, read inside the write
      * @param found    what the warning showed - nothing, when it showed none
      * @param answers  the side each of its rows keeps
-     * @throws ChangedMeanwhileException if a row, the working copy or the edits changed since {@code found} - nothing
-     *                                   is written
+     * @throws ChangedMeanwhileException if a row, the working copy, the edits or - when they were judged - an
+     *                                   installation's device files changed since {@code found} - nothing is written
      * @throws IOException               if the bindings folder cannot be read, or a merge cannot be made
      */
     BindingsComparison.Settled settled(Edits.Snapshot snapshot, Found found, Map<String, Side> answers)
@@ -190,8 +231,10 @@ public final class BindingsCheck {
         Map<String, byte[]> live = liveReader.read(bindingsFolder.get());
         Differences now = BindingsComparison.without(
                 BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE), edited(snapshot));
-        if (!snapshot.applied().sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())) {
-            throw new ChangedMeanwhileException(find(snapshot, live));
+        boolean withDevices = found.devices().checked();
+        if (!snapshot.applied().sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())
+                || withDevices && !devices.find(snapshot.applied()).sameAs(found.devices())) {
+            throw new ChangedMeanwhileException(find(snapshot, live, withDevices));
         }
         return BindingsComparison.settle(snapshot.applied().bindings(), live, now, answers);
     }
@@ -199,34 +242,39 @@ public final class BindingsCheck {
     /**
      * Writes what the user settled on: backs up the live copies and the working copy, saves the settled files as the
      * working copy, and writes them to the bindings folder - removing each live-only file the user kept the working
-     * copy's side of. The device files are written as the working copy holds them, leaving alone an installation whose
-     * own differ.
+     * copy's side of - and the device files settled on to every installation the check read (Storage S9a). One it
+     * could not read at all is left alone, as is one it never read whose device files differ (storage.md rule 1).
      *
      * @param found   what the warning showed
      * @param answers the side each of its rows keeps, by {@link BindingsComparison.LineItem#id()}
-     * @throws ChangedMeanwhileException if a row, or the working copy, changed since {@code found} - nothing written
+     * @param devices the device files settled on - {@link DeviceCheck.Answer#WORKING_COPY} when no installation was
+     *                asked about, or the user put the working copy back
+     * @throws ChangedMeanwhileException if a row, the working copy or an installation changed since {@code found} -
+     *                                   nothing written
      * @throws EditsNotAppliedException  if there are edits not applied - nothing written
      * @throws Edits.WriteRunningException if another write is running
      * @throws IOException               if the files cannot be read again, a merge cannot be made, the backup cannot
      *                                   be taken or the working copy cannot be saved - no live copy was written
      */
-    public Written settle(Found found, Map<String, Side> answers) throws IOException {
+    public Written settle(Found found, Map<String, Side> answers, DeviceCheck.Answer devices) throws IOException {
         return edits.whileWriting(() -> {
             // WHY: the write hands its set to the edits, which would drop them unseen.
             if (edits.hasEdits()) throw new EditsNotAppliedException();
             Edits.Snapshot snapshot = edits.snapshot();
             ConfigurationFiles workingCopy = snapshot.applied();
             BindingsComparison.Settled settled = settled(snapshot, found, answers);
-            ConfigurationFiles files = workingCopy.withBindings(settled.bindings());
+            ConfigurationFiles files = DeviceCheck.withDevices(workingCopy.withBindings(settled.bindings()), devices);
             DeviceFilesComparison comparison = DeviceFilesComparison.of(workingCopy);
             AtomicReference<Backup> taken = new AtomicReference<>();
             WriteReport report = writer.write(files, sources -> {
                 Backup backup = backUp.take(sources, workingCopy);
                 taken.set(backup);
                 return backup;
-            }, Apply.leavingAloneWhereDifferent(comparison, deviceFiles), settled.removeFromLive());
-            log.info("The check settled {} files: {} rows; removed from the bindings folder: {}",
-                    found.differences().files().size(), found.differences().items().size(), settled.removeFromLive());
+            }, found.devices().leavingAlone(comparison, deviceFiles), settled.removeFromLive());
+            log.info("The check settled {} files: {} rows; removed from the bindings folder: {}; installations that "
+                            + "differed: {}, their device files {}", found.differences().files().size(),
+                    found.differences().items().size(), settled.removeFromLive(), found.devices().differing().size(),
+                    devices.workingCopys() ? "the working copy's" : "reconciled");
             return new Written(report, taken.get());
         });
     }

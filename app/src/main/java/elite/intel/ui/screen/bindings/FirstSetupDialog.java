@@ -52,10 +52,21 @@ final class FirstSetupDialog extends JDialog {
     /**
      * The working copy the user confirmed.
      *
-     * @param files the working copy to write
-     * @param moved how many bindings a merge moved off a losing name; 0 for "use one installation for all"
+     * @param files   the working copy to write
+     * @param moved   how many bindings a merge moved off a losing name; 0 for "use one installation for all"
+     * @param moves   each losing name, by the name its bindings moved to - a merge's; the check makes them again in the
+     *                binds files it settles (Storage S9a)
+     * @param usedOne the installation "use one installation for all" took, or {@code null} for a merge
      */
-    record Choice(ConfigurationFiles files, int moved) {
+    record Choice(ConfigurationFiles files, int moved, Map<String, String> moves, Long usedOne) {
+        Choice {
+            moves = Map.copyOf(moves);
+        }
+
+        /** Files that needed no reconcile - identical installations, or a backup whose installations agree. */
+        static Choice whole(ConfigurationFiles files) {
+            return new Choice(files, 0, Map.of(), null);
+        }
     }
 
     /**
@@ -317,8 +328,23 @@ final class FirstSetupDialog extends JDialog {
      * binds files and the counts (alias-designer.md, <em>Reconciliation is per device element</em>).
      */
     private void onUseOne(InstallationFiles installation, String name) {
+        if (!confirmUseOne(this, reading, installation.installId(), name, wording)) return;
+        choice = new Choice(FirstSetupFiles.useOne(reading, installation.installId()), 0, Map.of(),
+                installation.installId());
+        dispose();
+    }
+
+    /**
+     * "Use one installation for all"'s confirmation, naming the entries it would remove that the bindings use - also the
+     * check's, when one installation differs and the user takes the game's files (Storage S9a). On the EDT.
+     *
+     * @param name what the installation is called on screen
+     * @return whether the user confirmed
+     */
+    static boolean confirmUseOne(Component parent, FirstSetupReading reading, long installId, String name,
+                                 Wording wording) {
         StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.reconcile.useOne.confirm", name));
-        for (FirstSetupFiles.Loss loss : FirstSetupFiles.lossesUsingOne(reading, installation.installId())) {
+        for (FirstSetupFiles.Loss loss : FirstSetupFiles.lossesUsingOne(reading, installId)) {
             String files = loss.bindings().entrySet().stream()
                     .map(file -> getText("bindings.firstTimeStartup.reconcile.useOne.inFile", file.getValue(),
                             file.getKey()))
@@ -327,12 +353,8 @@ final class FirstSetupDialog extends JDialog {
                     String.join(", ", loss.holders()), name, loss.name(), files));
         }
         text.append("\n\n").append(wording.trailer());
-        if (!HudConfirmDialog.confirm(this, wording.summaryTitle(), text.toString(), wording.confirm(),
-                getText("button.cancel"))) {
-            return;
-        }
-        choice = new Choice(FirstSetupFiles.useOne(reading, installation.installId()), 0);
-        dispose();
+        return HudConfirmDialog.confirm(parent, wording.summaryTitle(), text.toString(), wording.confirm(),
+                getText("button.cancel"));
     }
 
     /** Merge: every question answered, then a summary of what the working copy will hold, then the choice. */
@@ -380,7 +402,7 @@ final class FirstSetupDialog extends JDialog {
                 getText("button.cancel"))) {
             return;
         }
-        choice = new Choice(merged.files(), merged.bindingsMoved());
+        choice = new Choice(merged.files(), merged.bindingsMoved(), merged.moves(), null);
         dispose();
     }
 

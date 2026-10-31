@@ -5,15 +5,17 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 
 import static elite.intel.bindforge.storage.WorkingCopyTest.bytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Whether an installation's device files hold what the working copy holds, by value (Alan, 2026-10-26): APPLY leaves
- * one that differs alone, for the check to reconcile.
+ * one that differs alone, for the check to reconcile - and how it differs, which the check names (Storage S9a).
  */
 class DeviceFilesComparisonTest {
 
@@ -92,6 +94,57 @@ class DeviceFilesComparisonTest {
     @Test
     void aWorkingCopyThatCannotBeParsedIsThrown() {
         assertThrows(IOException.class, () -> DeviceFilesComparison.of(workingCopy("not xml at all", Map.of())));
+    }
+
+    // ---- the check's verdict (Storage S9a)
+
+    /** Frontier ships T-Rudder in these tests; LVWAP is the user's. */
+    private static final Predicate<String> SHIPS = "T-Rudder"::equals;
+
+    @Test
+    void theSameValuesAreAMatch() throws IOException {
+        assertEquals(DeviceFilesComparison.Verdict.MATCHES, judge(workingCopy("<Root>" + LVWAP + RUDDER + "</Root>",
+                Map.of()), live("<Root>\r\n" + LVWAP + RUDDER + "</Root>\r\n", Map.of())));
+    }
+
+    @Test
+    void anotherEntryOfTheUsersDiffers() throws IOException {
+        String lvwapMoved = "<LVWAP><PID>83F5</PID><VID>3344</VID></LVWAP>";
+
+        assertEquals(DeviceFilesComparison.Verdict.DIFFERS, judge(workingCopy("<Root>" + LVWAP + RUDDER + "</Root>",
+                Map.of()), live("<Root>" + lvwapMoved + RUDDER + "</Root>", Map.of())));
+    }
+
+    /** Unlike APPLY's test, a missing DeviceMappings.xml is a difference at the check: a reset (Alan, 2026-10-31). */
+    @Test
+    void aMissingDeviceMappingsIsAReset() throws IOException {
+        DeviceFilesComparison.Verdict verdict = judge(workingCopy("<Root>" + LVWAP + "</Root>", Map.of()),
+                live(null, Map.of()));
+
+        assertEquals(DeviceFilesComparison.Verdict.RESET_MISSING, verdict);
+        assertTrue(verdict.reset());
+    }
+
+    /** None of the user's elements left, while the working copy holds one: a factory file, a reset. */
+    @Test
+    void aFileHoldingOnlyFrontiersEntriesIsAReset() throws IOException {
+        assertEquals(DeviceFilesComparison.Verdict.RESET_FACTORY, judge(
+                workingCopy("<Root>" + LVWAP + RUDDER + "</Root>", Map.of()), live("<Root>" + RUDDER + "</Root>",
+                        Map.of())));
+    }
+
+    /** A working copy that holds nothing of the user's cannot be reset back to Frontier's: it is a difference. */
+    @Test
+    void frontiersEntriesAloneOnBothSidesAreNoReset() throws IOException {
+        String rudderMoved = "<T-Rudder><PID>B67A</PID><VID>044F</VID></T-Rudder>";
+
+        assertEquals(DeviceFilesComparison.Verdict.DIFFERS, judge(workingCopy("<Root>" + RUDDER + "</Root>",
+                Map.of()), live("<Root>" + rudderMoved + "</Root>", Map.of())));
+    }
+
+    private static DeviceFilesComparison.Verdict judge(ConfigurationFiles workingCopy, DeviceFiles live)
+            throws IOException {
+        return DeviceFilesComparison.of(workingCopy, SHIPS).judge(live);
     }
 
     private static boolean differs(ConfigurationFiles workingCopy, DeviceFiles live) throws IOException {

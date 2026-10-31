@@ -470,6 +470,8 @@ class ApplyTest {
             throw new AssertionError("APPLY takes its own backup");
         }, installation -> {
             throw new AssertionError("APPLY reads the installations through its own reader");
+        }, files -> {
+            throw new AssertionError("APPLY's check judges no device files until Storage S9b");
         });
     }
 

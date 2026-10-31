@@ -164,7 +164,9 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   Storage S9 nothing puts the working copy there; that gap is accepted while V1.2 is built (Alan, 2026-10-27: no catch-up record, no per-place overwrite before S9), and S9 must close it
   (built in Storage S4a, 2026-10-26). A file there that
   cannot be read counts as differing - it could hold anything of the user's. An installation with no
-  `DeviceMappings.xml` does not differ: nothing of the user's is in it.
+  `DeviceMappings.xml` does not differ here: APPLY writes one. *The check names it as a reset since Storage S9a
+  (Alan, 2026-10-31; rule 14, Settled with Storage S9's sources).* **Since Storage S9a the first BindForge click in a
+  session reconciles an installation that differs**; the check at APPLY is S9b's.
 
   **Settled from the S4a review (Alan, 2026-10-27):**
 
@@ -360,6 +362,31 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     **Settled from Krondor's branch review (Alan, 2026-10-31; Storage S8R2):** elements the game added that a merge
     keeps go into the working copy's file in the order the live copy has them - until then two or more came out
     reversed, harmless to the comparison but a drift in the file's layout.
+
+    **Settled with Storage S9's sources (Alan, 2026-10-31)** - the check for device files:
+
+    - **S9 is two slices**, as S8 was. S9a: the device files in the check at the first BindForge click, in the line at
+      Elite-Intel start, and Game Install Locations' match states. S9b: the device files in the check at APPLY, with
+      the edits on top. Until S9b, APPLY still leaves alone an installation whose device files differ, and the next
+      session's first click asks about it.
+    - **Each reachable installation is compared by value**, as APPLY compares it (*How the files are written*), and is
+      one of: *matches*; *differs*; *reset* - its `DeviceMappings.xml` is gone, or holds none of the user's elements
+      (every element a name Frontier ships) while the working copy holds at least one; *cannot be parsed*; or *cannot
+      be read*. The reset test does not depend on the game version Frontier's stock list was captured from.
+    - **A missing `DeviceMappings.xml` is a difference at the check**, named as a reset - without it the game loads no
+      bindings. Only putting the working copy back is offered for it. APPLY's write still writes one there as before.
+    - **A file that cannot be parsed** is named, and putting the working copy back is offered: the backup holds its
+      bytes. **A file that cannot be read at all** is named and left as it is - nothing is written to that
+      installation, since the backup could not hold the file.
+    - **One warning for the whole set**, binds files and installations together, then one backup and one write
+      (principle 1). *Put mine back* puts the working copy's side everywhere. *Use the game's files* takes the one
+      installation that differs, or opens the reconcile when several do, so the user picks; *Merge* answers the binds
+      rows, then opens the reconcile. The reconcile is first setup's (rule 2), with the working copy as one side. A
+      reset installation's files replacing the working copy ask *"Are you sure?"* first.
+    - **The result goes to every installation the check read**, after the backup. One it did not read - unreachable
+      when it ran, back by the write - is left alone if it differs from the working copy (rule 1).
+    - **Compared again before the write.** An installation whose device files changed while the dialogs were open
+      stops the write; the user is told and the warning opens again.
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

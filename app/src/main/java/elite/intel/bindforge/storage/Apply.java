@@ -44,7 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * <strong>Every APPLY runs the check</strong> for the binds and preset files (storage.md rule 14, <em>At APPLY</em>;
  * Storage S8b): {@link #check()} after the confirmation, then {@link #apply} with what the user settled on. The check
  * settles the working copy first and the edits go on top - an edit wins on every line item it changed - in one backup
- * and one write. The rows the edits change are never asked about. Device files are Storage S9's.
+ * and one write. The rows the edits change are never asked about. The device files are judged at the first click since
+ * Storage S9a; at APPLY, in S9b - until then an installation that differs is left alone.
  * Publishes no {@code BindingsUpdatedEvent} - {@code BindingsMonitor} sees the bindings folder change. Touches the disk
  * - not for the EDT.
  */
@@ -271,8 +272,8 @@ public final class Apply {
     }
 
     /**
-     * Leaves alone each installation whose device files differ from the working copy - APPLY's, and the check's, until
-     * Storage S9 reconciles them (Alan, 2026-10-26).
+     * Leaves alone each installation whose device files differ from the working copy (Alan, 2026-10-26): APPLY's, until
+     * Storage S9b reconciles them at APPLY, and the check's for an installation it did not read ({@link DeviceCheck}).
      */
     static LiveCopies.LeaveAlone leavingAloneWhereDifferent(DeviceFilesComparison comparison, Reader reader) {
         return installation -> differs(comparison, reader, installation);

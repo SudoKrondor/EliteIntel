@@ -8,9 +8,13 @@ import elite.intel.bindforge.storage.BindingsComparison.LineItem;
 import elite.intel.bindforge.storage.BindingsComparison.Presence;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.DeviceCheck;
+import elite.intel.bindforge.storage.DeviceFiles;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -72,6 +76,36 @@ class CheckFlowTest {
                 + "\n\n" + getText("bindings.check.leftOut", "Custom.4.3.binds")
                 + "\n\n" + getText("bindings.check.edited", 2)
                 + "\n\n" + getText("bindings.check.atApply"), text);
+    }
+
+    /**
+     * The device files at the first click (Storage S9a): each installation that does not match is a line after the
+     * files, a reset brings the advice, and one that matches says nothing.
+     */
+    @Test
+    void theWarningNamesEachInstallationThatDiffers() {
+        DeviceCheck.Found devices = new DeviceCheck.Found(true, List.of(
+                judged(1, "STEAM", DeviceCheck.State.MATCHES, null),
+                judged(2, "EPIC", DeviceCheck.State.RESET_MISSING, null),
+                judged(3, "FRONTIER", DeviceCheck.State.UNREADABLE, "locked")));
+        BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()),
+                Map.of(), differences(), 0, devices);
+
+        String text = CheckFlow.warningText(found, false);
+
+        String installations = "- " + getText("bindings.check.install.resetMissing",
+                getText("bindings.firstTimeStartup.place.installation", "EPIC", "Epic"))
+                + "\n- " + getText("bindings.check.install.unreadable",
+                getText("bindings.firstTimeStartup.place.installation", "FRONTIER", "Frontier"), "locked");
+        assertEquals(getText("bindings.check.intro", installations) + "\n\n" + getText("bindings.check.resetAdvice"),
+                text);
+    }
+
+    private static DeviceCheck.Judged judged(long id, String storefront, DeviceCheck.State state, String problem) {
+        String folder = storefront.charAt(0) + storefront.substring(1).toLowerCase(Locale.ROOT);
+        InstallationRow row = new InstallationRow(id, storefront, folder, false, false);
+        return new DeviceCheck.Judged(row, state,
+                state == DeviceCheck.State.UNREADABLE ? null : new DeviceFiles(null, Map.of()), problem);
     }
 
     private static LineItem slot(String element, String mine, String theirs) {

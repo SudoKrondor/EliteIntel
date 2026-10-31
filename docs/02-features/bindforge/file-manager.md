@@ -270,6 +270,11 @@ what is being edited; this sub-tab is where the files go. It lists:
   in first-time startup if they differ - never overwritten automatically ([storage.md](storage.md) rule 1; Alan,
   2026-10-25).
 
+**Match states — settled with Storage S9's sources (Alan, 2026-10-31), built in S9a:** the Status column reads
+*Matches*, *Differs* or *Not found*, as text colour. An installation whose device files cannot be read or parsed
+*differs*. Before first-time startup, or while the working copy cannot be read, there is nothing to compare with, and
+it reads *Found* or *Missing* as before. The bindings folder's row still says only whether it was found.
+
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*
 
@@ -397,7 +402,7 @@ From the [simplification review](../../../bindforge-simplification-review.md), c
 | ~~**Restore covers `.binds` only, one file at a time**, to the editing copy or straight to the game~~ **Built 2026-10-25 (Storage S3):** RESTORE puts the whole backup back, through the one write path | everything, no choices, to the live copies and the working copy (rule 10) |
 | **The "before BindForge" backup** holds everything, but its restore covers `.binds` only | part of the one backup system |
 | **Edit History is written three ways** — ~~device files into `bindings\history\<installation>\` (last 10)~~ *removed in Storage S4a, 2026-10-26*, ~~`.binds` copies into the backup folder (never deleted)~~ *removed in Storage S5, 2026-10-28*, ~~`StartPreset` copies into that same folder (last 10)~~ *removed in Storage S6, 2026-10-28* — and a `.bak` is left beside the working copy on every save | all of it goes: one backup system, nothing per file (rule 11) |
-| **Game Install Locations** ~~shows no match states and no Add missing~~ **Built 2026-10-25 (Storage S2b):** Add missing, Remove (stays removed) and Run first-time startup again; Rescan and Relocate removed. Match states wait for S9 | the list with match states, Add missing and Remove (rule 1) |
+| **Game Install Locations** ~~shows no match states and no Add missing~~ **Built 2026-10-25 (Storage S2b):** Add missing, Remove (stays removed) and Run first-time startup again; Rescan and Relocate removed. Match states built in S9a (2026-10-31) | the list with match states, Add missing and Remove (rule 1) |
 
 **Auto-backup and retention are one change, not two.** Today nothing prunes, and that is harmless because
 every backup is a deliberate button press. Add the launch trigger on its own and the folder grows every

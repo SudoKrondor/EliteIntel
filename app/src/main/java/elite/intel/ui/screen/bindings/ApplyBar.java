@@ -161,8 +161,9 @@ public final class ApplyBar extends JPanel {
         }
 
         @Override
-        public String write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers)
-                throws IOException {
+        public String write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers,
+                            DeviceCheck.Answer devices) throws IOException {
+            // WHY: APPLY's check does not judge the device files until Storage S9b, so there is never an answer here.
             try {
                 return reportText(applying.apply(found, answers));
             } catch (Backups.NothingToBackUpException e) {

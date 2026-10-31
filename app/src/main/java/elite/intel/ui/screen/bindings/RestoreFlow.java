@@ -89,7 +89,7 @@ final class RestoreFlow {
         if (prepared.identical()) {
             choice = HudConfirmDialog.confirm(parent, getText("bindings.restore.title"), trailer,
                     getText("bindings.restore.confirm.button"), getText("button.cancel"))
-                    ? Optional.of(new FirstSetupDialog.Choice(prepared.files(), 0))
+                    ? Optional.of(FirstSetupDialog.Choice.whole(prepared.files()))
                     : Optional.empty();
         } else {
             FirstSetupDialog.Wording wording = new FirstSetupDialog.Wording(getText("bindings.restore.title"),

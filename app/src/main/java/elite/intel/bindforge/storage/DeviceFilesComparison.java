@@ -4,6 +4,7 @@ import elite.intel.bindforge.devicefiles.ButtonMapReader;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
+import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.install.GameInstallation;
 
 import java.io.ByteArrayInputStream;
@@ -12,13 +13,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 
 /**
  * Whether an installation's device files hold what the working copy holds, <strong>by value</strong> (storage.md,
  * <em>How the files are written</em>; Alan, 2026-10-26): the device elements in file order - names and every VID/PID,
  * since the first element claiming a VID/PID is the one the game uses - and each {@code .buttonMap}'s labels. Bytes,
  * line endings and dates do not count ({@code overview.md}, <em>Freshness Checks</em>). APPLY leaves an installation
- * that differs alone, for the check to reconcile (Storage S9 reuses this). Pure.
+ * that differs alone, for the check to reconcile. The check asks {@link #judge} instead, which also says how
+ * (Storage S9a). Pure.
  * <p>
  * <strong>Not a difference:</strong> an installation with no {@code DeviceMappings.xml} - nothing of the user's is in it,
  * and APPLY simply writes one (alias-designer.md, <em>What APPLY does</em>); a working copy with none, which the write
@@ -31,13 +34,41 @@ import java.util.TreeMap;
  */
 public final class DeviceFilesComparison {
 
+    /**
+     * How an installation's device files stand against the working copy, at the check (storage.md rule 14, <em>Settled
+     * with Storage S9's sources</em>; Alan, 2026-10-31).
+     */
+    public enum Verdict {
+        MATCHES,
+        DIFFERS,
+        /**
+         * Its {@code DeviceMappings.xml} is gone while the working copy holds one - without it the game loads no
+         * bindings. Named as a reset; only putting the working copy back is offered.
+         */
+        RESET_MISSING,
+        /**
+         * Its {@code DeviceMappings.xml} holds none of the user's elements - every one a name Frontier ships - while
+         * the working copy holds at least one. Named as a reset.
+         */
+        RESET_FACTORY;
+
+        /** Whether a game update probably reset it. */
+        public boolean reset() {
+            return this == RESET_MISSING || this == RESET_FACTORY;
+        }
+    }
+
     /** The working copy's elements, or {@code null} when it holds no {@code DeviceMappings.xml}. */
     private final List<DeviceEntry> elements;
     private final Map<String, Map<String, String>> labels;
+    /** Whether Frontier ships an element of this name. */
+    private final Predicate<String> ships;
 
-    private DeviceFilesComparison(List<DeviceEntry> elements, Map<String, Map<String, String>> labels) {
+    private DeviceFilesComparison(List<DeviceEntry> elements, Map<String, Map<String, String>> labels,
+                                  Predicate<String> ships) {
         this.elements = elements;
         this.labels = labels;
+        this.ships = ships;
     }
 
     /**
@@ -47,9 +78,35 @@ public final class DeviceFilesComparison {
      * @throws IOException if its own {@code DeviceMappings.xml} or a {@code .buttonMap} cannot be parsed
      */
     public static DeviceFilesComparison of(ConfigurationFiles workingCopy) throws IOException {
+        // WHY: looked up only when a verdict needs it - APPLY never asks.
+        return of(workingCopy, name -> FrontierStockDevices.getInstance().ships(name));
+    }
+
+    /** {@link #of(ConfigurationFiles)}, with Frontier's names given. */
+    static DeviceFilesComparison of(ConfigurationFiles workingCopy, Predicate<String> ships) throws IOException {
         return new DeviceFilesComparison(
                 workingCopy.hasDeviceMappings() ? elements(workingCopy.deviceMappings()) : null,
-                labelsByDevice(workingCopy.buttonMaps()));
+                labelsByDevice(workingCopy.buttonMaps()), ships);
+    }
+
+    /**
+     * How the installation's device files stand against the working copy - what the check names (Storage S9a). Unlike
+     * {@link #differs}, a missing {@code DeviceMappings.xml} is a difference here.
+     *
+     * @throws IOException if one of the installation's files cannot be parsed
+     */
+    public Verdict judge(DeviceFiles installation) throws IOException {
+        if (elements != null && !installation.hasDeviceMappings()) return Verdict.RESET_MISSING;
+        if (!differs(installation)) return Verdict.MATCHES;
+        if (elements != null && holdsUsers(elements)
+                && !holdsUsers(elements(installation.deviceMappings()))) {
+            return Verdict.RESET_FACTORY;
+        }
+        return Verdict.DIFFERS;
+    }
+
+    private boolean holdsUsers(List<DeviceEntry> entries) {
+        return entries.stream().anyMatch(entry -> !ships.test(entry.name()));
     }
 
     /**

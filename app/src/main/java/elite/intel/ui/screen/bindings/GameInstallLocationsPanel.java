@@ -6,10 +6,14 @@ import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.GameInstallationProvider;
 import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.DeviceCheck;
 import elite.intel.bindforge.storage.FirstTimeStartup;
+import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
@@ -24,7 +28,9 @@ import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -47,6 +53,11 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * <strong>Remove</strong>, the same list and buttons as first-time startup (storage.md rule 1). A removed installation
  * stays removed. <em>Rescan and Relocate were removed in Storage S2b (Alan, 2026-10-24): detection runs at every
  * start, and moving the game is Remove, then Add Missing.</em>
+ * <p>
+ * <strong>Each installation's Status says whether its device files match the working copy</strong> - <em>Matches</em>,
+ * <em>Differs</em> or <em>Not found</em>, as text colour - from the check's own comparison ({@link DeviceCheck}; Storage
+ * S9a, Alan, 2026-10-31). Before first-time startup, or while the working copy cannot be read, there is nothing to
+ * compare with, and it says <em>Found</em> or <em>Missing</em>.
  * <p>
  * <strong>Run First-Time Startup Again</strong> is for testing V1.2, shown to every user, and is to be hidden or
  * removed before V1.2 ships (Alan, 2026-10-24; build plan, <em>Before V1.2 ships</em>).
@@ -109,6 +120,9 @@ public class GameInstallLocationsPanel extends JPanel {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(e -> updateSelectionActionsEnabled());
         HudTable.style(table);
+        // WHY: state is the text's colour, never a pill or a fill - the HUD canon.
+        table.setDefaultRenderer(Object.class, new StatusRenderer());
+        table.putClientProperty(HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
 
         HudSection section = new HudSection(
                 getText("bindings.installLocations.section.installations"),
@@ -154,7 +168,8 @@ public class GameInstallLocationsPanel extends JPanel {
         Function<String, Runnable> empty = reason -> () -> loaded(List.of(), List.of(), null);
         FlowSteps.inBackground("BindForge-Installations", log, "Refreshing the installation list", () -> {
             List<InstallationRow> rows = source.get();
-            List<Object[]> cells = rows.stream().map(this::cellsOf).toList();
+            Map<Long, DeviceCheck.State> states = matchStates();
+            List<Object[]> cells = rows.stream().map(row -> cellsOf(row, states)).toList();
             Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
             return () -> loaded(rows, cells, bindingsDir);
         }, empty, empty, FlowSteps.NOTHING);
@@ -238,8 +253,33 @@ public class GameInstallLocationsPanel extends JPanel {
                         : "bindings.installLocations.state.missing"));
     }
 
-    /** Everything one row displays. Built off the EDT, because the Device Files cell reads files. */
-    private Object[] cellsOf(InstallationRow row) {
+    /**
+     * How each reachable installation's device files stand against the working copy, by id - or {@code null} when there
+     * is nothing to compare with: before first-time startup, or a working copy that cannot be read. Off the EDT.
+     */
+    private static Map<Long, DeviceCheck.State> matchStates() {
+        try {
+            if (FirstTimeStartup.stored().needed()) return null;
+            ConfigurationFiles workingCopy = WorkingCopy.stored().read();
+            Map<Long, DeviceCheck.State> states = new HashMap<>();
+            DeviceCheck.stored().find(workingCopy).installations()
+                    .forEach(judged -> states.put(judged.row().id(), judged.state()));
+            return states;
+        } catch (IOException e) {
+            // WHY: the screen still lists the installations; the first BindForge click says the working copy cannot be
+            // read, and offers the newest backup.
+            log.warn("Could not compare the installations with the working copy", e);
+            return null;
+        }
+    }
+
+    /**
+     * Everything one row displays. Built off the EDT, because the Device Files cell reads files.
+     *
+     * @param states each reachable installation's state, by id, or {@code null} when there is no working copy to
+     *               compare with
+     */
+    private Object[] cellsOf(InstallationRow row, Map<Long, DeviceCheck.State> states) {
         return new Object[]{
                 row.storefront(),
                 row.rootPath(),
@@ -247,10 +287,48 @@ public class GameInstallLocationsPanel extends JPanel {
                         ? "bindings.installLocations.source.addedByHand"
                         : "bindings.installLocations.source.detected"),
                 describeDeviceFiles(row),
-                getText(row.missing()
-                        ? "bindings.installLocations.state.missing"
-                        : "bindings.installLocations.state.found")
+                statusOf(row, states)
         };
+    }
+
+    /** The Status cell (file-manager.md, <em>Game Install Locations</em>). */
+    static Status statusOf(InstallationRow row, Map<Long, DeviceCheck.State> states) {
+        if (states == null) {
+            return row.missing()
+                    ? new Status(getText("bindings.installLocations.state.missing"), HudPalette.HUD_COLOR_ROLE_WARNING)
+                    : new Status(getText("bindings.installLocations.state.found"), null);
+        }
+        DeviceCheck.State state = states.get(row.id());
+        if (state == null) {
+            return new Status(getText("bindings.installLocations.state.notFound"), HudPalette.HUD_COLOR_ROLE_WARNING);
+        }
+        if (state == DeviceCheck.State.MATCHES) {
+            return new Status(getText("bindings.installLocations.state.matches"), HudPalette.HUD_COLOR_ROLE_SUCCESS);
+        }
+        return new Status(getText("bindings.installLocations.state.differs"), HudPalette.HUD_COLOR_ROLE_DANGER);
+    }
+
+    /**
+     * The Status cell: its words, and the text colour that is its state - {@code null} for the table's own.
+     */
+    record Status(String text, Color colour) {
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+
+    /** Status in its colour; a selected row keeps the selection colour. */
+    private static final class StatusRenderer extends HudTable.CellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
+                                                       boolean focused, int row, int column) {
+            Component cell = super.getTableCellRendererComponent(table, value, selected, focused, row, column);
+            if (!selected && value instanceof Status status && status.colour() != null) {
+                cell.setForeground(status.colour());
+            }
+            return cell;
+        }
     }
 
     private void showRows(List<InstallationRow> rows, List<Object[]> cells) {
