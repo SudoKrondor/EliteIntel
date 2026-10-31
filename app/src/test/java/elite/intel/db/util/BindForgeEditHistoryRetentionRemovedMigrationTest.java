@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Migration {@code 12014} (Storage S6, Alan, 2026-10-28): the Edit History retention setting is dropped with the preset
+ * Migration {@code 12020} (Storage S6, Alan, 2026-10-28): the Edit History retention setting is dropped with the preset
  * file's own history, the last thing that read it, and the settings the user did choose stay.
  */
 class BindForgeEditHistoryRetentionRemovedMigrationTest {
@@ -27,7 +27,7 @@ class BindForgeEditHistoryRetentionRemovedMigrationTest {
                     + "daily_backup_retention_days = 90, before_changes_backups_kept = 250, edit_history_retention = 4 "
                     + "WHERE id = 1");
 
-            run(handle, "12014__bindforge_settings_edit_history_retention_removed.sql");
+            run(handle, "12020__bindforge_settings_edit_history_retention_removed.sql");
 
             List<String> columns = handle.createQuery("SELECT name FROM pragma_table_info('bindforge_settings')")
                     .mapTo(String.class).list();

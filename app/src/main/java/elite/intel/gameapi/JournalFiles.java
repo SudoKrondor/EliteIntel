@@ -50,7 +50,7 @@ public final class JournalFiles {
         return startStamp(file.getFileName().toString());
     }
 
-    static Optional<StartStamp> startStamp(String fileName) {
+    public static Optional<StartStamp> startStamp(String fileName) {
         Matcher m = JOURNAL_NAME.matcher(fileName);
         if (!m.matches()) return Optional.empty();
         long stamp;
@@ -66,7 +66,7 @@ public final class JournalFiles {
     /**
      * {@code yyyyMMddHHmmss} as one number, and the part counter after it.
      */
-    record StartStamp(long opened, int part) implements Comparable<StartStamp> {
+    public record StartStamp(long opened, int part) implements Comparable<StartStamp> {
         @Override
         public int compareTo(StartStamp other) {
             int byOpened = Long.compare(opened, other.opened);

@@ -17,7 +17,6 @@ import elite.intel.ai.mouth.supertonic.SupertonicBoost;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
-import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -44,11 +43,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * playback queue, interrupts, the persistent audio line, the MAIN / RADIO roles and the ducking under
  * {@link MainVoicePlaybackGate}. Synthesis of sentence N+1 overlaps with playback of sentence N.
  * <p>
- * An engine ({@code KokoroTTS}, {@code SupertonicTTS}) supplies only what differs between models: how the
+ * An engine ({@code SupertonicTTS}) supplies only what differs between models: how the
  * {@link OfflineTts} is built and whether it has to be rebuilt on a language switch, how one sentence is
  * generated, where a sentence ends, and its own voice cast. Everything about queues, threads, handles and
- * the audio line lives here exactly once, so the two engines cannot drift apart on interrupt semantics -
- * they had, when each carried its own copy.
+ * the audio line lives here.
  * <p>
  * Each concrete engine is a singleton holding exactly one {@code OfflineTts} per process lifetime; see
  * {@link #stop()} for why that handle is never released.
@@ -89,10 +87,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     /**
      * One sentence waiting for synthesis. {@code language} is the one the text is written in: the commander's
      * for everything we say ourselves, the game client's for a radio transmission (see
-     * {@link #languageOf(VocalisationRequestEvent)}). {@code russian} marks a transmission from a Russian
-     * client, which is written in a language {@link Language} does not have (see {@link #isRussian}).
+     * {@link #languageOf(VocalisationRequestEvent)}).
      */
-    private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language, boolean russian,
+    private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language,
                                  long generation, boolean firstSentence, boolean lastSentence,
                                  TransmissionAudio.Options effects, VocalisationHandle handle) {
     }
@@ -109,13 +106,11 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     private final BlockingQueue<PlaybackTask> playbackQueue = new LinkedBlockingQueue<>();
 
     protected final SystemSession systemSession = SystemSession.getInstance();
-    private final PlayerSession playerSession = PlayerSession.getInstance();
     private SourceDataLine persistentLine;
     private volatile boolean running = false;
     private Thread synthesisThread;
     private Thread playbackThread;
     private OfflineTts tts;
-    private Language builtFor;
 
     protected SherpaOnnxTTS() {
     }
@@ -128,28 +123,16 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     protected abstract TtsProvider provider();
 
     /**
-     * Builds the native engine for {@code language}. Called once per process for a model that reads the
-     * language per call, and again on every language switch for one that bakes it in (see
-     * {@link #rebuildsOnLanguageSwitch()}).
+     * Builds the native engine. Called once per process: the model takes the language on every generate call.
      */
-    protected abstract OfflineTts buildOfflineTts(Language language);
-
-    /**
-     * Whether the language is fixed at build time, so a switch needs a new {@link OfflineTts}. A model that
-     * takes the language on every generate call answers false and is built exactly once.
-     */
-    protected abstract boolean rebuildsOnLanguageSwitch();
+    protected abstract OfflineTts buildOfflineTts();
 
     /**
      * One sentence of speech from the model.
      *
-     * @param speed   1.0 is the model's own pace; {@code 1 + speechSpeed} as the commander set it
-     * @param russian the text is a Russian client's radio chatter, to be read as Russian whatever
-     *                {@code language} says. Only the radio engine for a Russian client - Supertonic - ever gets
-     *                one (see {@link RadioVoicing#engine()}).
+     * @param speed 1.0 is the model's own pace; the voice's {@link VoiceTuning#pace()} as the commander set it
      */
-    protected abstract GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
-                                               boolean russian);
+    protected abstract GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language);
 
     /**
      * The numbers this voice would misread, in words - while their sign and point are still there, since
@@ -179,6 +162,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     protected abstract int sidOf(String voiceName);
 
     /**
+     * The speed, volume trim and EQ for a voice name, or for the active ship's own voice when {@code voiceName}
+     * is null. Asked once per sentence on the synthesis thread, so it must not touch the database: the
+     * engine loads what it needs in {@link #buildOfflineTts()}.
+     */
+    protected abstract VoiceTuning tuningOf(String voiceName);
+
+    /**
      * The voice for a radio transmission from {@code speakerKey}: the same speaker draws the same voice, a
      * transmission with no speaker draws at random, and neither is ever the ship's own voice or one reserved
      * for a carrier.
@@ -206,9 +196,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             return;
         }
 
-        // A radio-only engine speaks nothing but the game client's prose, so it is built for that language.
-        Language builtLanguage = role == Role.RADIO ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
-        if (!ensureEngineBuilt(builtLanguage)) return;
+        if (!ensureEngineBuilt()) return;
 
         voicesRadio = RadioVoicing.isRadioEngine(provider());
         running = true;
@@ -228,31 +216,19 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
         // Only the main voice greets on start; the radio-only engine stays silent (its greeting would
         // otherwise be voiced by the main mouth as a normal narration).
         if (role == Role.MAIN) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(playerSession.getConfiguredPlayerName())));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting()));
         }
     }
 
     /**
-     * The native engine, built for {@code language} when it is not already. A model with the language baked
-     * in is released and rebuilt on a switch, here, at the one point where nothing is synthesising - the
-     * safe place to release a handle that {@link #stop()} deliberately leaves alone.
+     * The native engine, built on the first start and kept for the life of the process (see {@link #stop()}).
      *
      * @return false when the engine could not be built, which leaves this mouth stopped
      */
-    private boolean ensureEngineBuilt(Language language) {
-        boolean stale = tts != null && rebuildsOnLanguageSwitch() && builtFor != language;
-        if (stale) {
-            try {
-                tts.release();
-            } catch (Exception e) {
-                log.warn("{}: tts.release on language switch failed", engineName, e);
-            }
-            tts = null;
-        }
+    private boolean ensureEngineBuilt() {
         if (tts != null) return true;
         try {
-            tts = buildOfflineTts(language);
-            builtFor = language;
+            tts = buildOfflineTts();
             return true;
         } catch (Exception e) {
             log.error("{}: engine init failed", engineName, e);
@@ -303,10 +279,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
         closePersistentLine();
 
-        // WHY tts is NOT released here: tts.release() crashed in Kokoro's lexicon destructor (SIGSEGV) due
-        // to shared native state with ONNX Runtime. Every engine is a singleton with exactly one OfflineTts
-        // per process lifetime, and native memory is reclaimed when the process exits. The one release that
-        // is safe - a language switch, in start(), with nothing synthesising - is in ensureEngineBuilt().
+        // WHY tts is NOT released here: tts.release() crashed in an earlier engine's lexicon destructor
+        // (SIGSEGV) due to shared native state with ONNX Runtime, and it is not proven safe for Supertonic.
+        // Every engine is a singleton with exactly one OfflineTts per process lifetime, and native memory is
+        // reclaimed when the process exits.
     }
 
     // -- MouthInterface --------------------------------------------------------
@@ -333,8 +309,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     public void onVoiceProcessEvent(VocalisationRequestEvent event) {
         // In RADIO role this engine runs alongside a non-local main mouth and voices radio only;
         // normal narration belongs to the main mouth. In MAIN role it handles everything, radio included,
-        // when it is also the radio engine (see RadioVoicing).
-        if (role == Role.RADIO && !event.isRadio()) return;
+        // when it is also the radio engine (see RadioVoicing). A local voice audition is this engine's in
+        // either role: the voice being tuned is one of ours even when Google is the main mouth.
+        if (role == Role.RADIO && !event.isRadio() && !event.isLocalVoiceAudition()) return;
         if (event.isRadio() && !voicesRadio) return;
         if (!running) {
             return;
@@ -368,7 +345,6 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             // would change speaker mid-message.
             String voiceName = resolveVoiceName(event);
             Language language = languageOf(event);
-            boolean russian = isRussian(event);
             // WHY opt-in, and decided once per request: the ship voice used to be filtered whenever the commander
             // left the main ship, and the effect varied too much across voices and audio hardware - subtle on one,
             // unintelligible on another. Now it is the commander's choice, and one message never changes treatment
@@ -377,7 +353,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
             for (int i = 0; i < sentences.size(); i++) {
                 boolean isLast = (i == sentences.size() - 1);
                 if (!synthesisQueue.offer(new SynthesisTask(
-                        sentences.get(i), voiceName, event.isRadio(), language, russian, generation,
+                        sentences.get(i), voiceName, event.isRadio(), language, generation,
                         i == 0, isLast, effects, handle))) {
                     handle.fail(new IllegalStateException(engineName + " synthesis queue rejected vocalisation"));
                     return;
@@ -526,18 +502,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * The distinction is the origin, not the radio flag: a carrier audition is flagged radio so it gets
      * the transmission filter, but its words are ours.
      * <p>
-     * Only a model that takes the language per call (Supertonic) can honour a different one per task; Kokoro
-     * has it baked in at build time and reads every task with the language it was built for.
+     * Supertonic takes the language per call, so each task is read in its own language.
      */
     private Language languageOf(VocalisationRequestEvent event) {
         return isTransmission(event) ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
-    }
-
-    /**
-     * Whether the request is a Russian client's own prose, which no {@link Language} describes.
-     */
-    private static boolean isRussian(VocalisationRequestEvent event) {
-        return isTransmission(event) && RadioVoicing.isRussianClient();
     }
 
     private static boolean isTransmission(VocalisationRequestEvent event) {
@@ -546,12 +514,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
     /**
      * The sentence as the model is handed it. Numbers the voice would misread go to words first, while their
-     * sign and point are still there - in the task's language, which is why Russian chatter keeps its digits:
-     * we have no Russian number words to give it. Then dots go, or the voice says "dot" all the time.
+     * sign and point are still there - in the task's language. Then dots go, or the voice says "dot" all the time.
      */
     private String spokenText(SynthesisTask task) {
-        String text = task.russian() ? task.text() : textForSynthesis(task.text(), task.language());
-        return text.replace(".", " ");
+        return textForSynthesis(task.text(), task.language()).replace(".", " ");
     }
 
     // -- Stage 1: Synthesis thread ---------------------------------------------
@@ -567,13 +533,13 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 }
 
                 resetNumericLocale();
+                VoiceTuning tuning = tuningOf(task.voiceName());
                 GeneratedAudio audio = generate(
                         tts,
                         spokenText(task),
                         sidOf(task.voiceName()),
-                        1f + systemSession.getSpeechSpeed(),
-                        task.language(),
-                        task.russian()
+                        tuning.pace(),
+                        task.language()
                 );
 
                 if (audio == null || audio.getSamples() == null || audio.getSamples().length == 0) {
@@ -593,19 +559,18 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                     pcm = new Resampler(audio.getSampleRate(), SAMPLE_RATE, 1).resample(pcm, pcm.length);
                 }
 
+                // The voice's own EQ shapes the clean voice, so any radio processing below sits on top of it.
+                VoiceEqualizer.apply(pcm, SAMPLE_RATE, tuning.eq());
                 AudioDeClicker.sanitize(pcm, 5);
                 // WHY before the volume: the enhanced processor compresses, and would level a quiet slider
                 // setting back up to nearly full loudness.
                 TransmissionAudio.processVoice(pcm, task.isRadio(), task.effects());
                 // The radio has a level of its own: this engine is the only one that voices a transmission
-                // (Google drops them), so the fork between the two sliders lives here alone.
+                // (Google drops them), so the fork between the two sliders lives here alone. The voice's own
+                // trim rides on top of whichever it is.
                 int volume = task.isRadio() ? systemSession.getRadioVolume() : systemSession.getVoiceVolume();
-                AudioDeClicker.applyVolume(pcm, volume / 100f);
-                int supertonicBoost = provider() == TtsProvider.SUPERTONIC
-                        ? systemSession.getSupertonicBoostPercent() : 0;
-                if (supertonicBoost > 0) {
-                    SupertonicBoost.apply(pcm, supertonicBoost);
-                }
+                AudioDeClicker.applyVolume(pcm, volume / 100f * tuning.volumeGain());
+                SupertonicBoost.apply(pcm);
                 pcm = TransmissionAudio.withTones(pcm, task.effects(), task.firstSentence(), task.lastSentence(),
                         volume / 100f);
                 playbackQueue.put(new PlaybackTask(
@@ -786,10 +751,10 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     /**
      * ONNX Runtime (initialized by OfflineRecognizer / Parakeet STT) calls setlocale()
      * which can change LC_NUMERIC to the system locale (e.g. de_DE uses "," as decimal).
-     * Kokoro's espeak-ng phonemizer calls stof() inside Generate(), which is locale-sensitive and
-     * crashes with std::invalid_argument if LC_NUMERIC is not "C". Reset before every generate() call so
-     * Parakeet's init can't corrupt synthesis. Applied for every engine rather than only Kokoro: it costs
-     * one libc call, and which of Supertonic's native front-end parsers are locale-sensitive is not known.
+     * A native front end that calls stof() inside Generate() is locale-sensitive and crashes with
+     * std::invalid_argument if LC_NUMERIC is not "C". Reset before every generate() call so Parakeet's init
+     * can't corrupt synthesis: it costs one libc call, and which of Supertonic's native front-end parsers are
+     * locale-sensitive is not known.
      */
     private interface CLib extends Library {
         String setlocale(int category, String locale);

@@ -3,6 +3,7 @@ package elite.intel.ai.ears;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -15,24 +16,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlaybackEchoTest {
 
     private final AtomicLong nowNanos = new AtomicLong(1_000_000_000L);
-    private final PlaybackEcho echo = new PlaybackEcho(nowNanos::get);
+    private final AtomicBoolean playing = new AtomicBoolean();
+    private final PlaybackEcho echo = new PlaybackEcho(nowNanos::get, playing::get);
 
     @Test
     void silentBeforeAnythingHasPlayed() {
         assertFalse(echo.isAudible());
     }
 
+    // WHY no onPlayback call: the Mouth greets before the microphone starts, so no "started" event reaches it.
     @Test
     void audibleWhilePlaying() {
-        echo.onPlayback(true);
+        playing.set(true);
         advanceMs(10_000);
         assertTrue(echo.isAudible());
     }
 
     @Test
     void audibleThroughTheTailThenSilent() {
-        echo.onPlayback(true);
-        echo.onPlayback(false);
+        playing.set(true);
+        stop();
 
         advanceMs(PlaybackEcho.TAIL_MS - 1);
         assertTrue(echo.isAudible(), "the speakers and the room are still ringing");
@@ -43,12 +46,17 @@ class PlaybackEchoTest {
 
     @Test
     void playbackResumingInsideTheTailIsAudibleAgain() {
-        echo.onPlayback(true);
-        echo.onPlayback(false);
+        playing.set(true);
+        stop();
         advanceMs(100);
-        echo.onPlayback(true);
+        playing.set(true);
         advanceMs(PlaybackEcho.TAIL_MS * 10);
         assertTrue(echo.isAudible());
+    }
+
+    private void stop() {
+        playing.set(false);
+        echo.onPlaybackStopped();
     }
 
     private void advanceMs(long ms) {

@@ -17,18 +17,23 @@ final class ThoughtContext {
     private final String matchInput;
     private final GameStateSnapshot gameStateSnapshot;
     private final PendingClarification pendingClarification;
+    /**
+     * Who an event line is spoken to when it is not the commander, or {@code null} for the commander.
+     */
+    private final String addressee;
     /** Monotonic intake timestamp retained solely to attribute one thought's latency diagnostics. */
     private final long acceptedAtNanos;
 
     private ThoughtContext(ThoughtSource source, Urgency urgency, String currentInput, String matchInput,
                            GameStateSnapshot gameStateSnapshot, PendingClarification pendingClarification,
-                           long acceptedAtNanos) {
+                           String addressee, long acceptedAtNanos) {
         this.source = source;
         this.urgency = urgency;
         this.currentInput = currentInput;
         this.matchInput = matchInput;
         this.gameStateSnapshot = gameStateSnapshot;
         this.pendingClarification = pendingClarification;
+        this.addressee = addressee;
         this.acceptedAtNanos = acceptedAtNanos;
     }
 
@@ -52,13 +57,21 @@ final class ThoughtContext {
     static ThoughtContext commander(Urgency urgency, String currentInput, String matchInput, long acceptedAtNanos,
                                     GameStateSnapshot gameStateSnapshot) {
         return new ThoughtContext(ThoughtSource.COMMANDER, urgency, currentInput, matchInput,
-                gameStateSnapshot, null, acceptedAtNanos);
+                gameStateSnapshot, null, null, acceptedAtNanos);
     }
 
     /** Builds the turn signals for an event, whose match text is the LLM-visible event prompt. */
     static ThoughtContext event(Urgency urgency, String currentInput, String matchInput) {
+        return event(urgency, currentInput, matchInput, null);
+    }
+
+    /**
+     * As above, for a line spoken to someone other than the commander ({@code addressee}), or to the commander
+     * when it is {@code null}.
+     */
+    static ThoughtContext event(Urgency urgency, String currentInput, String matchInput, String addressee) {
         return new ThoughtContext(ThoughtSource.EVENT, urgency, currentInput, matchInput,
-                null, null, System.nanoTime());
+                null, null, addressee, System.nanoTime());
     }
 
     /** Returns a commander-context copy that owns one claimed cross-turn clarification. */
@@ -68,7 +81,7 @@ final class ThoughtContext {
         }
         return this.pendingClarification == pendingClarification ? this
                 : new ThoughtContext(source, urgency, currentInput, matchInput,
-                gameStateSnapshot, pendingClarification, acceptedAtNanos);
+                gameStateSnapshot, pendingClarification, addressee, acceptedAtNanos);
     }
 
     /** The source lane and memory role for this thought. */
@@ -108,6 +121,13 @@ final class ThoughtContext {
     /** The clarification atomically claimed for this commander turn, or {@code null} for a fresh turn. */
     PendingClarification pendingClarification() {
         return pendingClarification;
+    }
+
+    /**
+     * Who this event line is spoken to, or {@code null} when it is the commander (every commander turn).
+     */
+    String addressee() {
+        return addressee;
     }
 
     /** Monotonic timestamp at which this thought's input was accepted, used only for latency diagnostics. */

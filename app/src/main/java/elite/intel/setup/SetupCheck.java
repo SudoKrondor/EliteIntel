@@ -28,8 +28,9 @@ import java.util.stream.Stream;
  * Three separate things are checked, and each speaks on its own — a commander can easily have a working
  * language model and the wrong journal folder:
  * <ul>
- *   <li><b>No language model at all.</b> Points at the free Mistral tier or the local Gemma model, at the
- *       website for instructions, and at audio calibration. Short of that, a cloud setup with <b>no provider
+ *   <li><b>No language model at all.</b> Points at the free Mistral tier or the local Gemma model and at the
+ *       website for instructions - and no further: the microphone calibrates itself on its first start and speaks
+ *       up only when it needs attention, so the first thing a new commander hears stays short. Short of that, a cloud setup with <b>no provider
  *       picked</b> - an install upgraded with a key whose format named no provider - is sent to the settings
  *       tab to pick one.</li>
  *   <li><b>No journal files</b> where the app is looking. Without them it knows nothing about the game.</li>

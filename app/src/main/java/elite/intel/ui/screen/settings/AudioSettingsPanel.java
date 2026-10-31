@@ -35,7 +35,6 @@ public class AudioSettingsPanel extends JPanel {
     private HudSlider radioVolumeSlider;
     private HudSlider toneVolumeSlider;
     private HudSlider beepVolumeSlider;
-    private HudSlider speechSpeedSlider;
     private HudSlider sttThreadsSlider;
     private HudComboBox<String> inputCombo;
     private HudComboBox<String> outputCombo;
@@ -216,7 +215,7 @@ public class AudioSettingsPanel extends JPanel {
     }
 
     /**
-     * AUDIO LEVELS: five full-width HUD sliders stacked in one column. The tab names it, so no heading.
+     * AUDIO LEVELS: four full-width HUD sliders stacked in one column. The tab names it, so no heading.
      */
     private JPanel buildLevelsSection() {
         JPanel grid = transparentPanel(new GridBagLayout());
@@ -230,17 +229,13 @@ public class AudioSettingsPanel extends JPanel {
         radioVolumeSlider.addChangeListener(e -> UiBus.publish(new RadioVolumeChangedEvent(radioVolumeSlider.getValue())));
         addLevelRow(grid, ag, 1, getText("settings.audio.radioVolume"), radioVolumeSlider);
 
-        speechSpeedSlider = makeSlider(0, 100, (int) (systemSession.getSpeechSpeed() * 100));
-        speechSpeedSlider.addChangeListener(e -> UiBus.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
-        addLevelRow(grid, ag, 2, getText("settings.audio.ttsVoiceSpeed"), speechSpeedSlider);
-
         beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
         beepVolumeSlider.addChangeListener(e -> UiBus.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
-        addLevelRow(grid, ag, 3, getText("settings.audio.beepVolume"), beepVolumeSlider);
+        addLevelRow(grid, ag, 2, getText("settings.audio.beepVolume"), beepVolumeSlider);
 
         sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads());
         sttThreadsSlider.addChangeListener(e -> UiBus.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
-        addLevelRow(grid, ag, 4, getText("settings.audio.sttThreads"), sttThreadsSlider);
+        addLevelRow(grid, ag, 3, getText("settings.audio.sttThreads"), sttThreadsSlider);
 
         return grid;
     }
@@ -342,7 +337,7 @@ public class AudioSettingsPanel extends JPanel {
 
     /**
      * Applies a newly picked speaker by restarting TTS. Every engine holds a PERSISTENT output line -
-     * Kokoro and Google open theirs once and keep it - so a new speaker is not picked up by simply
+     * Supertonic and Google open theirs once and keep it - so a new speaker is not picked up by simply
      * speaking again. Same three guards as {@link #onInputDeviceSelected()}.
      */
     private void onOutputDeviceSelected() {

@@ -34,15 +34,24 @@ public class VocalisationRouter {
                 event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true, event.isRadio(), null));
     }
 
+    /**
+     * A Supertonic voice played from the voice tuning dialog: not radio, so it is heard without the
+     * transmission filter and the EQ can be judged on its own.
+     */
+    @Subscribe
+    public void onLocalVoiceAuditionEvent(LocalVoiceAuditionEvent event) {
+        publishToMouth(new VocalisationRequestEvent(
+                event.getText(), event.getVoiceName(), LocalVoiceAuditionEvent.class, true, false, null));
+    }
+
     // VEGA no longer routes any speech through here: spontaneous callouts and command/query/macro
     // outcomes are voiced by VEGA directly (VegaNarrator / recordOutcome / the speech gateway).
     // What remains is genuinely system speech (AI response, mission-critical, voice demo, radio), voiced by the
     // legacy TTS in every mode.
 
     /**
-     * Radio is never the main mouth's job as such: it is voiced by whichever engine {@link RadioVoicing} names
-     * for the game client's language - Kokoro almost everywhere, Supertonic for a Russian client, whose prose
-     * Kokoro cannot pronounce - on a random voice so the speaker on the other end sounds like a stranger. The
+     * Radio is never the main mouth's job as such: it is voiced by the engine {@link RadioVoicing} names
+     * - Supertonic, for every game client - on a random voice so the speaker on the other end sounds like a stranger. The
      * voice is drawn by that engine (only it knows its own roster) unless the transmission names one, which
      * happens for the one speaker the commander is not meeting for the first time: their own carrier's traffic
      * control.

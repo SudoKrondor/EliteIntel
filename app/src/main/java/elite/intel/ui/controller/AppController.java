@@ -2,7 +2,6 @@ package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ApiFactory;
-import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.health.AiServiceCheck;
@@ -15,7 +14,6 @@ import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -100,11 +98,6 @@ public class AppController {
 
     private void startIfWeHaveCredentials() {
         UiBus.publish(new ToggleServicesEvent(true));
-    }
-
-    @Subscribe
-    public void onSpeechSpeedChangeEvent(SpeechSpeedChangeEvent event) {
-        systemSession.setSpeechSpeed(event.getSpeed());
     }
 
     @Subscribe
@@ -289,8 +282,7 @@ public class AppController {
             appendToLog("Restarting TTS service...");
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
-            // Either side can change with what this restart reacts to (the TTS provider; the game client's
-            // language, which picks the radio engine - a Russian client moves radio to Supertonic), and every
+            // The main mouth can change with what this restart reacts to (the TTS provider), and every
             // engine is a singleton shared with the main mouth, so the radio engine is always retired BEFORE
             // the main mouth restarts: starting a main mouth while the same singleton still holds the RADIO
             // role would silence all narration.
@@ -341,12 +333,9 @@ public class AppController {
                 // does not pay ~4 s for it before the LLM is even asked.
                 SemanticCatalogWarmer.warmInBackground();
 
-                Timer connectionCheckTimer = new Timer(2000, e -> {
-                    if (!LlmProviderResolver.isCloudProviderMissing()) {
-                        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
-                    }
-                    connectionCheck();
-                });
+                // WHY no "connecting" line: the check answers within a second or two, and its result is the only
+                // part worth saying - on a fresh install not even that, since SetupCheck has already said why.
+                Timer connectionCheckTimer = new Timer(2000, e -> connectionCheck());
                 connectionCheckTimer.setRepeats(false);
                 connectionCheckTimer.start();
 
@@ -566,7 +555,6 @@ public class AppController {
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
-            case KOKORO -> radioLocal(KokoroTTS.getInstance());
             case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
             case GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };

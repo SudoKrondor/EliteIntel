@@ -31,7 +31,9 @@ public interface GlobalSettingsDao {
                                                                 announceJumpDeaths,
                                                                 announceRemainingJumps,
                                                                 announceFuelAvailable,
-                                                                announceArrival)
+                                                                announceArrival,
+                                                                aiRespondsToPirateScan,
+                                                                aiBountyKillGloat)
                     VALUES (1, :autoSpeedUpForFtl,
                                 :autoLightsForFtl,
                                 :autoNightVisionOff,
@@ -46,7 +48,9 @@ public interface GlobalSettingsDao {
                                 :announceJumpDeaths,
                                 :announceRemainingJumps,
                                 :announceFuelAvailable,
-                                :announceArrival)
+                                :announceArrival,
+                                :aiRespondsToPirateScan,
+                                :aiBountyKillGloat)
             """)
     void save(@BindBean GlobalSettings settings);
 
@@ -70,6 +74,8 @@ public interface GlobalSettingsDao {
             entity.setAnnounceRemainingJumps(rs.getBoolean("announceRemainingJumps"));
             entity.setAnnounceFuelAvailable(rs.getBoolean("announceFuelAvailable"));
             entity.setAnnounceArrival(rs.getBoolean("announceArrival"));
+            entity.setAiRespondsToPirateScan(rs.getBoolean("aiRespondsToPirateScan"));
+            entity.setAiBountyKillGloat(rs.getBoolean("aiBountyKillGloat"));
             return entity;
         }
     }
@@ -91,6 +97,8 @@ public interface GlobalSettingsDao {
         boolean announceRemainingJumps;
         boolean announceFuelAvailable;
         boolean announceArrival;
+        boolean aiRespondsToPirateScan;
+        boolean aiBountyKillGloat;
 
         public boolean isAutoSpeedUpForFtl() {
             return autoSpeedUpForFtl;
@@ -210,6 +218,22 @@ public interface GlobalSettingsDao {
 
         public void setAnnounceArrival(boolean announceArrival) {
             this.announceArrival = announceArrival;
+        }
+
+        public boolean isAiRespondsToPirateScan() {
+            return aiRespondsToPirateScan;
+        }
+
+        public void setAiRespondsToPirateScan(boolean aiRespondsToPirateScan) {
+            this.aiRespondsToPirateScan = aiRespondsToPirateScan;
+        }
+
+        public boolean isAiBountyKillGloat() {
+            return aiBountyKillGloat;
+        }
+
+        public void setAiBountyKillGloat(boolean aiBountyKillGloat) {
+            this.aiBountyKillGloat = aiBountyKillGloat;
         }
     }
 }

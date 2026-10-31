@@ -24,6 +24,16 @@ public final class AppPaths {
 
 
     /// --- APP USER DATA LOCATION
+
+    /**
+     * The folder holding everything the app keeps for the commander - the databases, custom commands, the
+     * bindings work and the player backups. Backup Settings and Data saves from it and a restore lands in it; a new
+     * folder under it that holds the commander's data must join {@code AppDataArchive.FOLDERS}, or no backup has it.
+     */
+    public static Path getAppDataDir() throws IOException {
+        return getAppDataBase().resolve("elite-intel");
+    }
+
     public static Path getDatabasePath() throws IOException {
         Path dbDir = getAppDataBase().resolve("elite-intel/db");
         Files.createDirectories(dbDir);
@@ -85,7 +95,7 @@ public final class AppPaths {
     }
 
     /**
-     * Optional file holding a language code (e.g. {@code DE}) the tester writes before launch. The command
+     * Optional file holding a language code (e.g. {@code RU}) the tester writes before launch. The command
      * language must be set at startup, before VEGA is built: its semantic reducer freezes the language
      * at construction, so switching afterwards would not reach it.
      */
@@ -123,7 +133,7 @@ public final class AppPaths {
 
     /**
      * Directory holding the in-process text-embedding model (multilingual-e5-small int8 ONNX +
-     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Kokoro models so the
+     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Supertonic models so the
      * installer/updater bundle it and users never hunt one down.
      */
     public static Path getEmbedModelDir() {

@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.handlers.commands.builtin.InterruptCommand;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.vega.input.BargeInEvent;
 import elite.intel.ai.ears.MicrophoneGate;
+import elite.intel.ai.mouth.VocalisationHandle;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
@@ -14,11 +15,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,20 +26,23 @@ class ParakeetSpeakingGateTest {
     private final Recorder recorder = new Recorder();
     private ParakeetSTTImpl stt;
     private Language previousLanguage;
+    /**
+     * VEGA's voice, playing for the whole test: the gate reads it live, as it does in the app.
+     */
+    private final VocalisationHandle playing = new VocalisationHandle("speaking-gate-test", true, null);
 
     @BeforeEach
     void setUp() throws Exception {
         previousLanguage = SystemSession.getInstance().getLanguage();
         SystemSession.getInstance().setLanguage(Language.EN);
         stt = new ParakeetSTTImpl();
-        Field field = ParakeetSTTImpl.class.getDeclaredField("isSpeaking");
-        field.setAccessible(true);
-        ((AtomicBoolean) field.get(stt)).set(true);
+        playing.claimForPlayback();
         GameEventBus.register(recorder);
     }
 
     @AfterEach
     void tearDown() {
+        playing.complete();
         SystemSession.getInstance().setLanguage(previousLanguage);
         GameEventBus.unregister(recorder);
         if (stt != null) {

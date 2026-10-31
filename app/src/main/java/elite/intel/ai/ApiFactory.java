@@ -15,7 +15,6 @@ import elite.intel.ai.ears.parakeet.ParakeetSTTImpl;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleTTSImpl;
-import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.session.SystemSession;
@@ -89,17 +88,16 @@ public class ApiFactory {
     static MouthInterface selectMouth(TtsProvider provider, String ttsApiKey) {
         return switch (resolveProvider(provider, ttsApiKey)) {
             case GOOGLE -> GoogleTTSImpl.getInstance();
-            case KOKORO -> mainLocal(KokoroTTS.getInstance());
             case SUPERTONIC -> mainLocal(SupertonicTTS.getInstance());
         };
     }
 
     /**
-     * The stored selection, with the Google-without-a-key safety net applied: Kokoro stands in.
+     * The stored selection, with the Google-without-a-key safety net applied: Supertonic stands in.
      */
     static TtsProvider resolveProvider(TtsProvider provider, String ttsApiKey) {
         boolean googleWithoutKey = provider == TtsProvider.GOOGLE && (ttsApiKey == null || ttsApiKey.isBlank());
-        return googleWithoutKey ? TtsProvider.KOKORO : provider;
+        return googleWithoutKey ? TtsProvider.SUPERTONIC : provider;
     }
 
     private static SherpaOnnxTTS mainLocal(SherpaOnnxTTS engine) {

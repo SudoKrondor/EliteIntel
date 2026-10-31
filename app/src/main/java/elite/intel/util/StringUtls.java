@@ -100,9 +100,9 @@ public class StringUtls {
         return LocalDateTime.now().getHour();
     }
 
-    public static String greeting(String playerName) {
+    public static String greeting() {
         Language language = SystemSession.getInstance().getLanguage();
-        String spokenName = spokenNameOrCommander(playerName, language);
+        String spokenName = spokenNameOrCommander(language);
 
         int hour = getHourOfDay();
         String greetingKey = hour >= 5 && hour < 12
@@ -115,10 +115,9 @@ public class StringUtls {
     }
 
 
-    //TODO: remove payer name from method signature once UI changes are in
-    public static String shipIntroduction(String playerName, String shipName) {
+    public static String shipIntroduction(String shipName) {
         Language language = SystemSession.getInstance().getLanguage();
-        String spokenName = spokenNameOrCommander(playerName, language);
+        String spokenName = spokenNameOrCommander(language);
         String safeShipName = shipName == null || shipName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : shipName;
@@ -137,9 +136,9 @@ public class StringUtls {
      * line the carrier actually says on a docking grant, so what the commander hears in the fleet grid is
      * what they will hear on approach.
      */
-    public static String carrierTrafficControl(String playerName, String carrierName) {
+    public static String carrierTrafficControl(String carrierName) {
         Language language = SystemSession.getInstance().getLanguage();
-        String spokenName = spokenNameOrCommander(playerName, language);
+        String spokenName = spokenNameOrCommander(language);
         String safeCarrierName = carrierName == null || carrierName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : carrierName;
@@ -168,7 +167,7 @@ public class StringUtls {
 
     public static String localizedEventPlural(int count, String keyBase, Object... extraArgs) {
         Language lang = SystemSession.getInstance().getLanguage();
-        String suffix = pluralSuffix(count);
+        String suffix = pluralSuffix(lang, count);
         Object[] args = new Object[1 + extraArgs.length];
         args[0] = count;
         System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
@@ -176,18 +175,32 @@ public class StringUtls {
     }
 
     /**
-     * The plural category a count falls into, as a key suffix ({@code .one} or {@code .many}).
+     * The plural category a count falls into, as a key suffix ({@code .one}, {@code .few}, {@code .many}).
      * <p>
      * Public because the rule is the language's, not the bundle's: the HUD pluralises against the
-     * {@code gui} bundle and must not carry a second copy of it. Every language we ship has the same two forms.
+     * {@code gui} bundle and must not carry a second copy of the Slavic categories.
      */
-    public static String pluralSuffix(int count) {
-        return count == 1 ? ".one" : ".many";
+    public static String pluralSuffix(Language lang, int count) {
+        return switch (lang) {
+            case RU, UK -> ruPlural(count);
+            default -> count == 1 ? ".one" : ".many";
+        };
+    }
+
+    private static String ruPlural(int count) {
+        int mod100 = count % 100;
+        int mod10 = count % 10;
+        if (mod100 >= 11 && mod100 <= 19) return ".many";
+        if (mod10 == 1) return ".one";
+        if (mod10 >= 2 && mod10 <= 4) return ".few";
+        return ".many";
     }
 
     public static String localizedSpeechLanguageName(Language language) {
         String key = switch (language) {
             case EN -> "language.english";
+            case RU -> "language.russian";
+            case UK -> "language.ukrainian";
             case DE -> "language.german";
             case FR -> "language.french";
             case ES -> "language.spanish";
@@ -198,13 +211,18 @@ public class StringUtls {
         return MultiLingualTextProvider.getText(SystemSession.getInstance().getLanguage(), key);
     }
 
-    private static String spokenNameOrCommander(String playerName, Language language) {
+    /**
+     * The name the commander chose to be called, else the localized "Commander" - never the in-game name
+     * ({@link PlayerSession#getSpokenName()}).
+     */
+    private static String spokenNameOrCommander(Language language) {
         // A greeting is an address like any other. With addressing off the name is simply left out and the
         // comma that carried it is tidied away in sanitizeTts, so "Good morning, Commander!" becomes
         // "Good morning!" rather than "Good morning, !".
         if (Boolean.FALSE.equals(PlayerSession.getInstance().isAddressMeOn())) {
             return "";
         }
+        String playerName = PlayerSession.getInstance().getSpokenName();
         if (language == Language.EN) {
             return asciiTtsNameOrCommander(playerName);
         }
@@ -275,8 +293,8 @@ public class StringUtls {
      * The extra pass the cloud mouth runs over {@link #sanitizeTts(String, boolean)} output: "present" is spoken
      * as "detected", and any underscore or asterisk that survived sanitization inside a word is dropped.
      * <p>
-     * The rule predates the cloud engine and is preserved verbatim for {@code GoogleTTSImpl}. Kokoro does not
-     * apply it.
+     * The rule predates the cloud engine and is preserved verbatim for {@code GoogleTTSImpl}. The offline
+     * Supertonic path does not apply it.
      */
     public static String sanitizeCloudSpeech(String input) {
         if (input == null) return "";
@@ -286,8 +304,9 @@ public class StringUtls {
     /**
      * Cleans LLM text for speech synthesis.
      * <p>
-     * When {@code hardenForEspeak} is true (the no-arg overload, used by the espeak-ng-based Kokoro engine),
-     * punctuation that crashes or misreads in espeak-ng is flattened ("!" → ". ", ":" → " - ", "..." → space).
+     * When {@code hardenForEspeak} is true (the no-arg overload, used by the offline Supertonic path),
+     * punctuation that crashed or misread in the espeak-ng phonemizer of the engine Supertonic replaced is
+     * flattened ("!" → ". ", ":" → " - ", "..." → space).
      * When false (the Google path), that punctuation is preserved so the neural voice can use it for intonation
      * and {@code GoogleSsml} can turn it into explicit pauses ({@code GoogleSsml} then normalizes "!" to "."). All
      * other cleanup is identical and the ordering is preserved, so the no-arg overload reproduces the previous
@@ -296,8 +315,8 @@ public class StringUtls {
     public static String sanitizeTts(String input, boolean hardenForEspeak) {
         if (input == null) return "";
         // NFC first: fold any decomposed accents (e + combining acute) into single precomposed
-        // letters so legitimate German/French/Spanish/Portuguese characters survive the
-        // \p{M} strip below. Precomposed letters (é, ü, ñ, ã) are category L, not M.
+        // letters so legitimate German/French/Russian/Ukrainian/Spanish characters survive the
+        // \p{M} strip below. Precomposed letters (é, ü, ñ, Cyrillic й/ї) are category L, not M.
         String s = Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain

@@ -49,7 +49,7 @@ class AiActionMapGeneratorTest {
      * changes.
      * <p>
      * This snapshot previously excluded transfer_power_to_ship_systems, described as "intentionally
-     * absent on EN (translated alias only, no EN bundle key)". That was not intentional: the generator only
+     * absent on EN (RU-only alias, no EN bundle key)". That was not intentional: the generator only
      * emits actions that have aliases in the active language, so the command was unreachable for every
      * English-speaking commander. The English aliases now exist and it belongs in the set.
      */
@@ -134,6 +134,7 @@ class AiActionMapGeneratorTest {
             "find_guardian_technology_broker",
             "find_bounty_hunting_ground",
             "find_conflict_zone_for_combat_bonds",
+            "find_powerplay_conflict_zone_for_merits",
             "find_pirate_massacre_missions",
             "find_human_technology_broker",
             "find_interstellar_factor",

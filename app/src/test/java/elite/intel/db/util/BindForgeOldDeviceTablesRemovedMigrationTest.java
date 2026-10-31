@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Migration {@code 12013} (Storage S4b, Alan, 2026-10-28): the device master, the draft, the pending removals, the
+ * Migration {@code 12019} (Storage S4b, Alan, 2026-10-28): the device master, the draft, the pending removals, the
  * per-installation rows and the waiting hardware-id moves are dropped, with {@code missed_write} - on a database that
  * still holds rows in them. The installations, the remembered identity answers and the settings stay.
  */
@@ -42,7 +42,7 @@ class BindForgeOldDeviceTablesRemovedMigrationTest {
             handle.execute("INSERT INTO bindforge_identity_answer (device_name, candidates, answer) "
                     + "VALUES ('LVWAP', '3344:83F5', 'NOT_NOW')");
 
-            run(handle, "12013__bindforge_old_device_tables_removed.sql");
+            run(handle, "12019__bindforge_old_device_tables_removed.sql");
 
             List<String> tables = handle.createQuery("SELECT name FROM sqlite_master WHERE type = 'table'")
                     .mapTo(String.class).list();

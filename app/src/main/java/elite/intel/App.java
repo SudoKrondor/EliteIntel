@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
+import elite.intel.appdata.PendingRestore;
 import elite.intel.bindforge.storage.StartupBackup;
 import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
@@ -17,8 +18,10 @@ import elite.intel.gameapi.eddn.EddnListener;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.screen.AppView;
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.util.AppRelauncher;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
@@ -27,6 +30,8 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import javax.swing.*;
+
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 
 public class App {
@@ -54,6 +59,11 @@ public class App {
         // Robot on XTEST through XWayland, the path every other desktop takes and the one the game hears.
         // The JDK reads the property once at class-init of sun.awt.screencast.XdgDesktopPortal.
         System.setProperty("awt.robot.screenshotMethod", "x11");
+
+        // A restore swaps in the commander's data, key included, so it runs before either is opened. A restart
+        // that began it first waits for the old process to let go of the files.
+        AppRelauncher.awaitPreviousInstance(args);
+        PendingRestore.Outcome restore = PendingRestore.applyAtStartup();
 
         // init kry and db first!
         Cypher.initializeKey();
@@ -121,7 +131,16 @@ public class App {
             AppView view = new AppView();
             new AppController();
             view.getUiComponent().setVisible(true);
+            reportRestore(view.getUiComponent(), restore);
         });
+    }
+
+    private static void reportRestore(JFrame window, PendingRestore.Outcome restore) {
+        if (restore == PendingRestore.Outcome.NONE) return;
+        String message = restore == PendingRestore.Outcome.RESTORED
+                ? getText("settings.appData.restore.done")
+                : getText("settings.appData.restore.failed");
+        HudConfirmDialog.info(window, getText("settings.appData.restore.title"), message, getText("button.ok"));
     }
 
     /**

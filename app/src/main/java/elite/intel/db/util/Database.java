@@ -61,10 +61,30 @@ public class Database {
 
     private static volatile Pool pool;
 
+    /**
+     * Another commander's file, opened for one thread's work only - see {@link #inCommanderFile}. Null on every
+     * thread that has not asked, which reads the open commander's pool as always.
+     */
+    private static final ThreadLocal<Pool> SCOPED = new ThreadLocal<>();
+
+    /**
+     * Whether a scope has already started a commander's file from the pending one. One commander inherits it, not
+     * every commander an import happens to find.
+     */
+    private static boolean pendingCopiedOut;
+
+    /**
+     * The pool this thread reads and writes through: the commander file it opened for itself, else the open one.
+     */
+    private static Pool active() {
+        Pool scoped = SCOPED.get();
+        return scoped != null ? scoped : pool;
+    }
+
     public static <T, R> R withDao(Class<T> daoClass, java.util.function.Function<T, R> block) {
         // Use withExtension to get a thread-safe handle for this specific operation
         try {
-            return pool.jdbi().withExtension(daoClass, block::apply);
+            return active().jdbi().withExtension(daoClass, block::apply);
         } catch (Exception e) {
             throw new RuntimeException("DAO operation failed: " + daoClass.getSimpleName(), e);
         }
@@ -72,7 +92,7 @@ public class Database {
 
     // shortcut if you just need a handle
     public static Handle init() {
-        return pool.jdbi().open();
+        return active().jdbi().open();
     }
 
     /**
@@ -80,7 +100,7 @@ public class Database {
      * one.
      */
     public static String currentCommander() {
-        return pool.commander();
+        return active().commander();
     }
 
     /**
@@ -142,6 +162,78 @@ public class Database {
             adopted.ifPresent(Database::deleteDatabaseFile);
         });
         return true;
+    }
+
+    /**
+     * Runs {@code work} on this thread against {@code fid}'s own file, whichever commander's file the app has open.
+     * Every manager and DAO called from {@code work} lands its commander tables in that file and its shared tables
+     * in the shared file, exactly as it would for the open commander. Other threads are not affected.
+     * <p>
+     * WHY a scope rather than switching: the journal import files years of several commanders' flying while the
+     * game runs one of them. Switching the app's file would point the live parser at the wrong commander, and
+     * routing every manager through an explicit handle would mean a second copy of each. The open commander gets a
+     * scope of their own as well, so a commander switch in the game during the import cannot move its writes.
+     * <p>
+     * {@code work} may open one transaction around many manager calls ({@link #inScopedTransaction}): JDBI hands a
+     * nested call on the same thread the handle already open.
+     * <p>
+     * A commander with no file yet gets one built from the commander tree. While the app is still on the
+     * {@value #PENDING_COMMANDER} file, the first file made this way (the caller decides which commander goes first)
+     * starts as a copy of it - the switch that would
+     * have handed it over finds the file there and adopts nothing, and what the commander set up before any journal
+     * named them (their name, their ships' voices) must not be left behind.
+     *
+     * @throws IllegalArgumentException when the FID is not one that can name a file
+     */
+    public static <R> R inCommanderFile(String fid, java.util.function.Supplier<R> work) {
+        if (!isUsableFid(fid) || PENDING_COMMANDER.equals(fid)) {
+            throw new IllegalArgumentException("Not a commander id: " + fid);
+        }
+        if (SCOPED.get() != null) {
+            throw new IllegalStateException("Already working in commander " + SCOPED.get().commander() + "'s file");
+        }
+        Pool scoped = openScopedPool(fid);
+        SCOPED.set(scoped);
+        try {
+            return work.get();
+        } finally {
+            SCOPED.remove();
+            scoped.dataSource().close();
+        }
+    }
+
+    /**
+     * One transaction on this thread's pool, which every {@link #withDao} inside it joins.
+     */
+    public static void inScopedTransaction(Runnable work) {
+        active().jdbi().useTransaction(h -> work.run());
+    }
+
+    private static synchronized Pool openScopedPool(String fid) {
+        String target = commanderLocation(fid);
+        Optional<Path> adopt = pendingCopiedOut ? Optional.empty() : pendingFileToAdopt(pool, target);
+        if (adopt.isPresent()) {
+            pendingCopiedOut = true;
+            try (Handle h = pool.jdbi().open()) {
+                h.execute("VACUUM " + CommanderSplit.SCHEMA + " INTO '" + target.replace("'", "''") + "'");
+            }
+            log.info("Commander {}'s file started from the data gathered before any commander was known", fid);
+        }
+        Pool scoped;
+        // The pool opens while the bootstrap handle is still open, as in switchCommander: under test the commander's
+        // file is a named in-memory database, which is gone the moment its last connection closes.
+        try (Handle commanderBootstrap = Jdbi.create("jdbc:sqlite:" + target).open()) {
+            commanderBootstrap.execute("PRAGMA journal_mode = WAL;");
+            migrate(commanderBootstrap, DatabaseMigrator.Tree.COMMANDER);
+            HikariConfig config = poolConfig(target);
+            config.setPoolName("EliteIntelSQLiteScope-" + fid);
+            config.setMaximumPoolSize(2);
+            config.setMinimumIdle(1);
+            HikariDataSource dataSource = new HikariDataSource(config);
+            scoped = new Pool(dataSource, Jdbi.create(dataSource).installPlugin(new SqlObjectPlugin()), fid);
+            scoped.jdbi().useHandle(Database::applyPragmas);
+        }
+        return scoped;
     }
 
     /**
@@ -293,7 +385,7 @@ public class Database {
      * An FID becomes part of a file name, so anything but the letters and digits Frontier uses is refused rather
      * than trusted.
      */
-    static boolean isUsableFid(String fid) {
+    public static boolean isUsableFid(String fid) {
         return fid != null && fid.matches("[A-Za-z0-9_-]{1,64}");
     }
 

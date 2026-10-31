@@ -10,9 +10,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>
  * A transmission is a stranger, so it draws from the whole cast - male and female, every accent - and never
  * the commander's own voice, so the two speakers never sound like the same person. A speaker the commander
- * will hear again keeps one voice. The rules are the same for every sherpa engine; only the cast differs,
- * which is why the enums ({@code KokoroVoices}, {@code SupertonicVoices}) hand their {@code values()} in
- * here rather than each carrying a copy of the walk.
+ * will hear again keeps one voice. The rules belong to the sherpa pipeline, not to a cast, which is why the
+ * cast enum ({@code SupertonicVoices}) hands its {@code values()} in here rather than carrying the walk.
  */
 public final class RadioVoiceDraw {
 

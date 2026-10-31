@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.*;
 import elite.intel.gameapi.PreScanOnly;
@@ -252,7 +252,7 @@ public class SilentPersistenceSubscriber {
         ShipDao.Ship existing = shipManager.getShipById(event.getShipId());
         if (existing == null) {
             shipManager.save(event.getShipId(), shipName, event.getCargoCapacity(),
-                    event.getShip(), KokoroVoices.BELLA.name(), lastCommanderName);
+                    event.getShip(), SupertonicVoices.BELLA.name(), lastCommanderName);
         } else {
             existing.setCargoCapacity(event.getCargoCapacity());
             existing.setShipIdentifier(event.getShip());

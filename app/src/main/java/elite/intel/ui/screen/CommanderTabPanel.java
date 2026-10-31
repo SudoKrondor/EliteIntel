@@ -6,7 +6,6 @@ import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
@@ -21,6 +20,7 @@ import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.JournalImportDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
@@ -80,7 +80,7 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * Maps a stored voice enum name to a readable label, resolved against the active TTS provider's voices.
-     * Google/Kokoro show "DisplayName - accent · quality": the accent disambiguates voices that share a display
+     * Google shows "DisplayName - accent · quality": the accent disambiguates voices that share a display
      * name (e.g. Spanish vs Portuguese "Dora"), and the quality tier (HD vs Standard) shows what the selected
      * language actually delivers.
      * Falls back to the raw name when the stored voice is not valid for the active provider (for example after
@@ -91,7 +91,7 @@ public class CommanderTabPanel extends JPanel {
         try {
             TtsProvider provider = SystemSession.getInstance().getTtsProvider();
             if (provider.isLocal()) {
-                return localVoiceLabel(provider, enumName);
+                return localVoiceLabel(enumName);
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
             String base = v.getDisplayName() + " - " + googleVoiceDescriptor(v);
@@ -119,8 +119,8 @@ public class CommanderTabPanel extends JPanel {
      * Recomputes each Google voice's quality tier (HD vs Standard) for the current language off the EDT, since
      * resolving a voice may query the TTS provider (a listVoices round-trip on first use), then repaints the
      * fleet grid so the labels show the tier. Shown only for a non-English cloud voice once the TTS engine has
-     * wired its voice lookup: English is uniformly HD (no tier needed), the local (Kokoro) engine already has
-     * accurate accent labels, and before the lookup is wired resolution is optimistic (so no tier is shown).
+     * wired its voice lookup: English is uniformly HD (no tier needed), the local engine's labels carry no
+     * tier, and before the lookup is wired resolution is optimistic (so no tier is shown).
      */
     private void refreshVoiceQualityLabels() {
         voiceQualityLabels.clear();
@@ -219,6 +219,15 @@ public class CommanderTabPanel extends JPanel {
                 playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
         addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
         addCheck(profile, addressMeBox, gbc);
+
+        // On the commander's own row: what an import teaches - their contracts, discoveries, samples - is theirs.
+        JButton importJournalsButton = AppTheme.makeButtonSubtle(getText("player.importJournals"));
+        importJournalsButton.setToolTipText(getText("player.importJournals.tooltip"));
+        importJournalsButton.addActionListener(e -> JournalImportDialog.open(this));
+        gbc.gridx = 3;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        profile.add(importJournalsButton, gbc);
 
         fleetTableModel = new FleetTableModel(playerSession);
         // Carrier rows share the grid but not its editors: their voices come from the radio engine's roster,
@@ -344,7 +353,11 @@ public class CommanderTabPanel extends JPanel {
                 SettingToggle.of("announcements.navigation",
                         playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
                 SettingToggle.of("announcements.radioTransmissions",
-                        playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn),
+                        playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn,
+                        SettingToggle.of("announcements.aiRespondsToPirateScan",
+                                mgr::getAiRespondsToPirateScan, mgr::setAiRespondsToPirateScan)),
+                SettingToggle.of("announcements.aiBountyKillGloat",
+                        mgr::getAiBountyKillGloat, mgr::setAiBountyKillGloat),
                 SettingToggle.of("announcements.route",
                         playerSession::isRouteAnnouncementOn, playerSession::setRouteAnnouncementOn,
                         SettingToggle.of("automation.announceJumpRoute", mgr::getAnnounceJumpRoute, mgr::setAnnounceJumpRoute),
@@ -388,7 +401,8 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        String[] voiceOptions = SystemSession.getInstance().getTtsProvider().voiceRoster().toArray(String[]::new);
+        TtsProvider provider = SystemSession.getInstance().getTtsProvider();
+        String[] voiceOptions = byGenderThenName(provider, provider.voiceRoster()).toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -414,22 +428,18 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * A local engine's voice as "DisplayName - description"; both local casts label themselves the same way.
+     * A Supertonic voice as a label: "DisplayName - gender", with the gender in the app language. Every voice
+     * speaks every language, so an accent would mislead.
      */
-    private static String localVoiceLabel(TtsProvider provider, String enumName) {
-        if (provider == TtsProvider.SUPERTONIC) {
-            SupertonicVoices v = SupertonicVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + v.getDescription();
-        }
-        KokoroVoices v = KokoroVoices.valueOf(enumName);
-        return v.getDisplayName() + " - " + v.getDescription();
+    private static String localVoiceLabel(String enumName) {
+        SupertonicVoices v = SupertonicVoices.valueOf(enumName);
+        return v.getDisplayName() + " - " + getText(v.isMale() ? "player.fleet.voice.male" : "player.fleet.voice.female");
     }
 
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
-     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the game client's language
-     * - Kokoro almost everywhere, Supertonic for a Russian client - so a Google voice picked here would name
-     * a speaker the engine that has to say the line has never heard of.
+     * A transmission is voiced by the engine {@code RadioVoicing} names - Supertonic - so a Google voice
+     * picked here would name a speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
         return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);
@@ -439,7 +449,24 @@ public class CommanderTabPanel extends JPanel {
      * Every voice the engine that speaks radio may transmit in, by enum name - its ship-only voices left out.
      */
     private static Stream<String> radioVoiceRoster() {
-        return RadioVoicing.engine().radioVoiceRoster();
+        TtsProvider engine = RadioVoicing.engine();
+        return byGenderThenName(engine, engine.radioVoiceRoster());
+    }
+
+    /**
+     * A roster in the order a voice dropdown lists it: female voices, then male, each alphabetical by the name
+     * the commander reads. The engines declare their voices in no order a person can scan.
+     */
+    private static Stream<String> byGenderThenName(TtsProvider engine, Stream<String> roster) {
+        return roster.sorted(Comparator.comparing(engine::voiceGender)
+                .thenComparing(voice -> voiceDisplayName(engine, voice), String.CASE_INSENSITIVE_ORDER));
+    }
+
+    private static String voiceDisplayName(TtsProvider engine, String voice) {
+        return switch (engine) {
+            case SUPERTONIC -> SupertonicVoices.valueOf(voice).getDisplayName();
+            case GOOGLE -> GoogleVoices.valueOf(voice).getDisplayName();
+        };
     }
 
     /**
@@ -448,9 +475,9 @@ public class CommanderTabPanel extends JPanel {
      * than the active provider's.
      * <p>
      * No voice stored means the commander never picked one, which is shown as {@code RANDOM_VOICE} and draws a
-     * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
-     * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
-     * name that is no longer offered. That is shown as the engine's default, because that is what
+     * stranger per transmission. A voice the radio engine no longer carries is a different thing: a cast is
+     * curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a name that
+     * is no longer offered. That is shown as the engine's default, because that is what
      * {@code SherpaOnnxTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
      * channel will not use.
      * <p>
@@ -475,7 +502,7 @@ public class CommanderTabPanel extends JPanel {
     private String radioVoiceLabel(String enumName) {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
-            return localVoiceLabel(RadioVoicing.engine(), enumName);
+            return localVoiceLabel(enumName);
         } catch (IllegalArgumentException e) {
             return enumName;
         }
@@ -521,7 +548,7 @@ public class CommanderTabPanel extends JPanel {
         /**
          * Stores the picked voice and returns the line to audition it with.
          */
-        String applyVoice(String voiceName, String commanderName);
+        String applyVoice(String voiceName);
 
         default boolean isCarrier() {
             return false;
@@ -549,11 +576,11 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override
-        public String applyVoice(String voiceName, String commanderName) {
+        public String applyVoice(String voiceName) {
             ship.setVoice(voiceName);
             ShipManager.getInstance().saveShip(ship);
             String speakerName = trimToNull(name());
-            return StringUtls.shipIntroduction(commanderName, speakerName == null ? voiceName : speakerName);
+            return StringUtls.shipIntroduction(speakerName == null ? voiceName : speakerName);
         }
     }
 
@@ -585,12 +612,12 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override
-        public String applyVoice(String voiceName, String commanderName) {
+        public String applyVoice(String voiceName) {
             boolean random = RANDOM_VOICE.equals(voiceName);
             carrier.update(data -> data.setVoice(random ? null : voiceName));
             return random
                     ? null
-                    : StringUtls.carrierTrafficControl(commanderName, carrier.data().getCarrierName());
+                    : StringUtls.carrierTrafficControl(carrier.data().getCarrierName());
         }
 
         @Override
@@ -663,7 +690,7 @@ public class CommanderTabPanel extends JPanel {
             switch (col) {
                 case COL_VOICE -> {
                     String voiceName = (String) value;
-                    String audition = fleetRow.applyVoice(voiceName, playerSession.getConfiguredPlayerName());
+                    String audition = fleetRow.applyVoice(voiceName);
                     // A carrier is auditioned over the radio, because that is the only way it is ever heard.
                     if (audition != null) {
                         GameEventBus.publish(new AiVoxDemoEvent(audition, voiceName, fleetRow.isCarrier()));

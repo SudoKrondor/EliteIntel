@@ -20,11 +20,6 @@ import java.util.function.Supplier;
  * materials and commodities - is in the client's language, so a radio transmission has to be read in the
  * client's language whatever the commander set here, and a learned name filed under it.
  * <p>
- * Russian is the one client language that is not also a language of this app. It has no {@link Language} and
- * reads as unknown to {@link #language()}, but {@link #isRussian()} still names it, because its radio chatter
- * is Cyrillic and Kokoro has no Cyrillic phonemizer: Supertonic voices it instead (see
- * {@code elite.intel.ai.mouth.RadioVoicing}). That is the only place a Russian client is treated differently.
- * <p>
  * Read lazily and cached: the header is the first line of the newest journal, it does not change while a game
  * session runs, and a live {@code Fileheader} replaces it when the commander starts a new one (see
  * {@link elite.intel.gameapi.journal.subscribers.FileheaderEventSubscriber}). Unknown - no journal yet, an
@@ -39,16 +34,15 @@ public class GameLanguage {
     /**
      * The header spells the client language {@code "<Name>/<REGION>"} - {@code "Russian/RU"},
      * {@code "English/UK"}, {@code "Portuguese/BR"} - and the name is what identifies it. Frontier ships the
-     * client in these, and Russian; Portuguese is the Brazilian edition only.
+     * client in exactly these six; Portuguese is the Brazilian edition only.
      */
     private static final Map<String, Language> CLIENT_LANGUAGES = Map.of(
             "english", Language.EN,
             "french", Language.FR,
             "german", Language.DE,
             "spanish", Language.ES,
+            "russian", Language.RU,
             "portuguese", Language.PTBZ);
-
-    private static final String RUSSIAN = "russian";
 
     private static volatile GameLanguage instance;
 
@@ -73,18 +67,18 @@ public class GameLanguage {
     }
 
     /**
-     * The language the game client writes its prose in, or empty when it is not known or is not one this app
-     * speaks (a Russian client - see {@link #isRussian()}).
+     * The language the game client writes its prose in, or empty when it is not known.
      */
     public Optional<Language> language() {
-        return clientName(current()).map(CLIENT_LANGUAGES::get);
+        return languageOf(current());
     }
 
     /**
-     * Whether the game client is the Russian edition, whose radio chatter only Supertonic can voice.
+     * The language a journal header's {@code language} field names, or empty when it names none this app speaks -
+     * for a reader of old journals, whose client may not have been the one installed today.
      */
-    public boolean isRussian() {
-        return clientName(current()).filter(RUSSIAN::equals).isPresent();
+    public static Optional<Language> languageOf(String headerLanguage) {
+        return clientName(headerLanguage).map(CLIENT_LANGUAGES::get);
     }
 
     /**

@@ -1,16 +1,12 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.screen.settings.AiServicesSettingsPanel;
-import elite.intel.ui.screen.settings.AudioSettingsPanel;
-import elite.intel.ui.screen.settings.CommonSettingsPanel;
-import elite.intel.ui.screen.settings.InputSettingsPanel;
+import elite.intel.ui.screen.settings.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudScrollingPage;
 import elite.intel.ui.widget.HudUpdateButton;
-
 
 import javax.swing.*;
 import java.awt.*;
@@ -56,9 +52,13 @@ public class SettingsTabPanel extends JPanel {
         tabs.addChangeListener(e -> guardAiServicesTab(tabs));
 
         updateAppButton = new HudUpdateButton(false);
+        JButton backupButton = AppTheme.makeButtonSubtle(getText("settings.appData.backup.button"));
+        backupButton.addActionListener(e -> AppDataActions.backUp(this));
+        JButton restoreButton = AppTheme.makeButtonSubtle(getText("settings.appData.restore.button"));
+        restoreButton.addActionListener(e -> AppDataActions.restore(this));
 
-        // Non-modal footer: no BACK, no status - just the update action on the right (shared rail).
-        JPanel footer = HudFooter.build(false, null, null, List.of(updateAppButton));
+        // Non-modal footer: no BACK, no status - the app-wide actions on the right (shared rail).
+        JPanel footer = HudFooter.build(false, null, null, List.of(backupButton, restoreButton, updateAppButton));
 
         add(commonPanel, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);

@@ -76,6 +76,14 @@ dependencies {
     //Utils
     implementation 'org.apache.commons:commons-lang3:3.18.0'
 
+    // Reading the commander's journal backups for the journal import: zip, 7z and tar, plain or gzip/bzip2/xz
+    // compressed. Declared here rather than inherited: it already arrived transitively with the DJL tokenizer,
+    // and the import must not lose its archive reader the day that library stops needing one. xz is what
+    // commons-compress decodes .xz and 7z's LZMA/LZMA2 with - without it a 7-Zip archive, the format most
+    // Windows commanders reach for, cannot be opened at all.
+    implementation 'org.apache.commons:commons-compress:1.27.1'
+    implementation 'org.tukaani:xz:1.10'
+
     // Spelling numbers out in words, per language (ICU RuleBasedNumberFormat, SPELLOUT).
     // Every credit amount and cargo count is spoken as words rather than digits, because a TTS engine
     // handed "45.132.120" reads the locale's group separator as a decimal point. The rules are the hard

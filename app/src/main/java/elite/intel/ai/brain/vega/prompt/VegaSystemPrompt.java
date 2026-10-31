@@ -19,6 +19,11 @@ public final class VegaSystemPrompt implements SystemPromptText {
         };
     }
 
+    @Override
+    public String narrationRulesTo(String addressee) {
+        return NarrationPrompt.renderTo(addressee);
+    }
+
     static String vegaName() {
         return VegaConfig.vegaName();
     }

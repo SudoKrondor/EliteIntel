@@ -3,6 +3,9 @@ package elite.intel.ui.support;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.JournalFiles;
+import elite.intel.bindforge.storage.Backup;
+import elite.intel.bindforge.storage.BackupContents;
+import elite.intel.bindforge.storage.Backups;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,11 +119,25 @@ public final class SupportBundle {
      * @param aiSetup        the language model and voice engine in use (see {@link AiSetupReport}), written into
      *                       the manifest. Deferred for the same reason as {@code micDiagnostics}: it reads the
      *                       database. Null when the caller has no settings to report.
+     * @param bindingsBackupDir BindForge's backup folder, whose before-changes backups hold the game's {@code .binds}
+     *                          as it was before every write (see {@link #previousBindings}). Null when the caller
+     *                          cannot resolve it.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
                           @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
-                          @Nullable Supplier<String> aiSetup) {
+                          @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir) {
+
+        /**
+         * Sources with no bindings backups to report.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    null);
+        }
 
         /**
          * Sources with no AI setup to report.
@@ -192,7 +209,10 @@ public final class SupportBundle {
             copy(zip, "previous application log", previousAppLog(sources.appLog()), included, omitted);
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
-            copy(zip, "bindings", activeBindings(sources.bindingsDir()), included, omitted);
+            Collected activeBindings = activeBindings(sources.bindingsDir());
+            copy(zip, "bindings", activeBindings, included, omitted);
+            copy(zip, "bindings backup", previousBindings(sources.bindingsBackupDir(), activeBindings),
+                    included, omitted);
             copy(zip, "custom commands", customCommands(sources.customCommands()), included, omitted);
             writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
 
@@ -209,6 +229,16 @@ public final class SupportBundle {
      */
     private static void copy(ZipOutputStream zip, String label, Collected source,
                              List<String> included, List<String> omitted) {
+        if (source.content() != null) {
+            try {
+                writeEntry(zip, source.entryName(), source.content());
+                included.add(source.entryName());
+            } catch (IOException e) {
+                log.warn("Diagnostics bundle: could not write {} ({}): {}", label, source.entryName(), e.toString());
+                omitted.add(label + " - could not write " + source.entryName() + ": " + e);
+            }
+            return;
+        }
         if (source.path() == null) {
             if (!source.reason().isBlank()) omitted.add(label + " - " + source.reason());
             return;
@@ -337,23 +367,35 @@ public final class SupportBundle {
         zip.closeEntry();
     }
 
-    private record Collected(@Nullable Path path, String reason) {
+    /**
+     * One source: a file to copy, bytes already read from somewhere that is not a file of its own (a file inside a
+     * backup zip), or the reason there is neither.
+     */
+    private record Collected(@Nullable Path path, String reason, @Nullable String entryName,
+                             @Nullable byte[] content) {
         static Collected of(Path path) {
-            return new Collected(path, "");
+            return new Collected(path, "", null, null);
+        }
+
+        /**
+         * Already read, written into the bundle under {@code entryName}.
+         */
+        static Collected read(String entryName, byte[] content) {
+            return new Collected(null, "", entryName, content);
         }
 
         /**
          * Not collected, and worth reporting: something the bundle wanted and could not get.
          */
         static Collected missing(String reason) {
-            return new Collected(null, reason);
+            return new Collected(null, reason, null, null);
         }
 
         /**
          * Not collected, and that is normal - reported nowhere, so it cannot make a good bundle look broken.
          */
         static Collected absent() {
-            return new Collected(null, "");
+            return new Collected(null, "", null, null);
         }
     }
 
@@ -428,6 +470,47 @@ public final class SupportBundle {
         } catch (IOException e) {
             return Collected.missing("could not resolve the active preset in " + bindingsDir + ": " + e);
         }
+    }
+
+    /**
+     * The newest copy of the active preset's {@code .binds} that Elite Intel took before it last wrote that file:
+     * the copy in the newest before-changes backup that holds it (BindForge's backups, {@link Backups}), carried as
+     * {@code <preset>.before-changes-<backup stamp>}. A backup that cannot be read is skipped for the one before it.
+     * Read out of the zip rather than from a loose copy since {@code TimestampedBackups} went (Alan, 2026-10-31).
+     * <p>
+     * WHY: "the app changed my gamepad binds" is a report the current file alone cannot answer, because it shows
+     * the result and not what it replaced. A bundle of 2026-10-27 turned on exactly that question, and the
+     * answer sat in this backup on the commander's disk, in a folder they had no reason to know about. Diffed
+     * against the active file, it shows every change the last apply made, and nothing the game itself made later.
+     * <p>
+     * No backup at all is worth a line of its own: it means Elite Intel has never written this preset, which
+     * answers the report by itself. Nothing is said when the active preset is unknown, since the bindings entry
+     * has already said why, or when the caller has no backup folder to point at.
+     */
+    private static Collected previousBindings(@Nullable Path backupDir, Collected activeBindings) {
+        if (backupDir == null || activeBindings.path() == null) return Collected.absent();
+        String presetFile = activeBindings.path().getFileName().toString();
+        List<Backup> backups;
+        try {
+            backups = Backups.list(backupDir);
+        } catch (IOException e) {
+            return Collected.missing("could not list " + backupDir + ": " + e);
+        }
+        for (Backup backup : backups) {
+            if (backup.kind() != Backups.Kind.BEFORE_CHANGES) continue;
+            try {
+                byte[] copy = BackupContents.read(backup.zip()).bindings().get(presetFile);
+                if (copy != null) return Collected.read(presetFile + ".before-changes-" + stemOf(backup.zip()), copy);
+            } catch (IOException e) {
+                log.warn("Diagnostics bundle: skipped the backup {}: {}", backup.zip(), e.toString());
+            }
+        }
+        return Collected.missing("none - Elite Intel has never written " + presetFile);
+    }
+
+    private static String stemOf(Path zip) {
+        String name = zip.getFileName().toString();
+        return name.endsWith(".zip") ? name.substring(0, name.length() - ".zip".length()) : name;
     }
 
     /**
@@ -558,6 +641,7 @@ public final class SupportBundle {
                 .append("  Timezone: ").append(java.time.ZoneId.systemDefault()).append('\n')
                 .append("Game clock: ").append(GameClock.get().describe()).append('\n')
                 .append(desktop())
+                .append(WaylandInputReport.describe())
                 .append(displays())
                 .append(HardwareReport.describe(installDir(sources), sources.journalDir()))
                 .append(aiSetup(sources.aiSetup()))

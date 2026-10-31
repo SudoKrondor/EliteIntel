@@ -26,7 +26,7 @@ The reducers (`WordOverlapActionReducer`, and the legacy `ai.brain.Reducer` that
 
 Model: **multilingual-e5-small**, int8 ONNX (~118 MB) + tokenizer (~17 MB). 384-d vectors. CPU only,
 ~130 MB system RAM — **does not touch the GPU the game uses**. Packaged in
-`../distribution/embed` exactly like Parakeet/Kokoro, so the installer/updater carry it and users never hunt down a model.
+`../distribution/embed` exactly like the Parakeet and Supertonic models, so the installer/updater carry it and users never hunt down a model.
 
 ## Run the proof
 

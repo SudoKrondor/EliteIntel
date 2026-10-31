@@ -119,6 +119,15 @@ public abstract class Thought {
      */
     public static Thought eventReaction(Urgency urgency, String stimulus, String instructions,
                                         ThoughtDependencies dependencies) {
+        return eventReaction(urgency, stimulus, instructions, null, dependencies);
+    }
+
+    /**
+     * As above, for a line spoken to {@code addressee} rather than the commander - a reply over comms to an NPC.
+     * A {@code null} addressee is the commander.
+     */
+    public static Thought eventReaction(Urgency urgency, String stimulus, String instructions, String addressee,
+                                        ThoughtDependencies dependencies) {
         String eventData = boundTransientInput(stimulus, VegaMemoryPolicy.eventDataMaxChars());
         StringBuilder promptInput = new StringBuilder(PromptXml.element("event_data", eventData));
         if (instructions != null && !instructions.isBlank()) {
@@ -126,7 +135,8 @@ public abstract class Thought {
                     .append(PromptXml.element("narration_instructions", boundTransientInput(
                             instructions, VegaMemoryPolicy.eventInstructionsMaxChars())));
         }
-        return new EventThought(ThoughtContext.event(urgency, eventData, promptInput.toString()), dependencies);
+        return new EventThought(
+                ThoughtContext.event(urgency, eventData, promptInput.toString(), addressee), dependencies);
     }
 
     /**
@@ -281,7 +291,7 @@ public abstract class Thought {
         long promptStartedNanos = System.nanoTime();
         ComposedPrompt composed = dependencies.promptComposer().compose(
                 source(), context.matchInput(), gameTools, sysTools, history, candidates,
-                context.pendingClarification());
+                context.pendingClarification(), context.addressee());
         long promptMillis = elapsedMillis(promptStartedNanos);
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system

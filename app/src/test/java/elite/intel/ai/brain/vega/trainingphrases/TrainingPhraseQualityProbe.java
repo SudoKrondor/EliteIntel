@@ -68,6 +68,11 @@ class TrainingPhraseQualityProbe {
     }
 
     @Test
+    void scoresRussianTrainingPhraseQualityToCsv() throws Exception {
+        scoreLanguage(Language.RU, "ru", false);
+    }
+
+    @Test
     void scoresEnglishTrainingPhraseQualityToCsv() throws Exception {
         scoreLanguage(Language.EN, "en", true);
     }

@@ -33,8 +33,9 @@ Krondor's work is not reviewed as ours.
   `elite.intel.io` and `AppPaths` are edited here like any V1.2 code; the merge-up rule and the foundation branch
   below are repealed ([CLAUDE.md](../../CLAUDE.md#branching-model)).
 - **`elite.intel.ai.hands` is keystroke execution only.** BindForge code never goes there.
-- **Migrations:** the next free number in BindForge's band, `12000–12499`. Never edit an applied one.
-- **Strings:** all seven `gui*.properties` bundles (RU and UK were dropped 2026-10-15). `getText` runs `MessageFormat` only when arguments are passed,
+- **Migrations:** the next free number on `V1.2` at merge time - `V1.2` uses the 12000 range too, so an unshipped
+  BindForge migration that clashes is renumbered when merging (Alan, 2026-10-31). Never edit an applied one.
+- **Strings:** all nine `gui*.properties` bundles (RU and UK, dropped 2026-10-15, restored on `V1.2` and merged 2026-10-31). `getText` runs `MessageFormat` only when arguments are passed,
   so a literal apostrophe is doubled in a string that takes arguments and single in one that does not.
 - **UI:** [the HUD canon](../02-features/bindforge/ui-component-map.md) — state is text colour, never a pill;
   `HudConfirmDialog`, never `JOptionPane`.

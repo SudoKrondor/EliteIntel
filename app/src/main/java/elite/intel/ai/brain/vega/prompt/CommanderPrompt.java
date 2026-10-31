@@ -79,8 +79,8 @@ final class CommanderPrompt {
               call speak with that fact.
 
             ELSE:
-              call speak for truthful text-only answers using reasoning or general knowledge; decline only requests
-              requiring unavailable external data or actions.
+                      call speak for truthful text-only answers from general knowledge. For an action no offered function
+                      performs, say it is unavailable, never that it is done.
 
                     Treat single-word or very short ship-context phrases as likely commands, not conversation; never echo or
                     restate the input. Game-data questions require their matching function, never a guessed answer. Only

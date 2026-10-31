@@ -58,12 +58,22 @@ The dependency is unmodified and is included in `elite_intel.jar` by the Gradle 
 
 ## Supertonic-3 TTS model
 
-`tts/sherpa-onnx-supertonic-3-tts-int8-2026-05-11` bundles the quantized ONNX weights and voice data for Supertone Inc.'s Supertonic-3 text-to-speech model, run locally through the sherpa-onnx JNI bindings as EliteIntel's alternative offline TTS engine (beside Kokoro).
+`tts/sherpa-onnx-supertonic-3-tts-int8-2026-05-11` bundles the quantized ONNX weights and voice data for Supertone Inc.'s Supertonic-3 text-to-speech model, run locally through the sherpa-onnx JNI bindings as EliteIntel's offline TTS engine.
 
 - License: MIT License, Copyright (c) 2025 Supertone Inc. The full text is included alongside the model files as `LICENSE`.
 
 The model is unmodified and distributed as downloaded from the
 [k2-fsa/sherpa-onnx releases](https://github.com/k2-fsa/sherpa-onnx/releases).
+
+## RUAccent Russian stress models
+
+`tts/ruaccent-tiny2.1` bundles the dictionaries and ONNX models of Denis Petrov's RUAccent, which put the stress and the letter ё on Russian text before Supertonic-3 reads it. EliteIntel runs them through ONNX Runtime and the DJL HuggingFace tokenizer, with its own Java port of RUAccent's "tiny" pipeline (`elite.intel.ai.mouth.supertonic.stress`). The Python library itself is not shipped.
+
+- License: MIT License, Copyright 2026 Denis Petrov. The full text is included alongside the model files as `LICENSE`. The model card states that all of RUAccent v1 moved to MIT.
+
+The files are unmodified and distributed as downloaded from
+[ruaccent/accentuator on Hugging Face](https://huggingface.co/ruaccent/accentuator), revision
+`b78ae5ea1e62beaf138bed1865cd8c3b0b5ca855`: the `tiny2.1` homograph model, the character accent model, the ё homograph model and four dictionaries. The rest of the repository (the larger models and dictionaries, and the part-of-speech tools used outside tiny mode) is not bundled.
 
 ## Jukebox audio test fixtures
 

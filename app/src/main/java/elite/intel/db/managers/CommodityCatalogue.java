@@ -3,6 +3,7 @@ package elite.intel.db.managers;
 import elite.intel.db.NameColumns;
 import elite.intel.db.dao.CommodityDao;
 import elite.intel.db.util.Database;
+import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.JournalSymbol;
 import elite.intel.i18n.Language;
 import elite.intel.util.StringUtls;
@@ -58,8 +59,16 @@ public final class CommodityCatalogue {
      * insert and one conditional update per good, both on the symbol index.
      */
     public void learnAll(Collection<Sighting> sightings) {
+        learnAll(sightings, GameLanguage.getInstance().language());
+    }
+
+    /**
+     * {@link #learnAll(Collection)} for sightings written by a client in {@code clientLanguage} - an old journal's
+     * own, which need not be the client installed today. Empty files no name, as for an unknown client.
+     */
+    public void learnAll(Collection<Sighting> sightings, Optional<Language> clientLanguage) {
         if (sightings == null || sightings.isEmpty()) return;
-        Optional<String> gameColumn = NameColumns.gameCommodity();
+        Optional<String> gameColumn = clientLanguage.map(NameColumns::commodity);
         boolean englishClient = gameColumn.isPresent() && gameColumn.get().equals(NameColumns.commodity(Language.EN));
         Database.withDao(CommodityDao.class, dao -> {
             for (Sighting sighting : sightings) {

@@ -79,7 +79,7 @@ class MigrationLayoutTest {
     void noMigrationWrittenUnderTheBandRuleEndsWithComments() throws Exception {
         // The same split: comments after the last statement are a piece of their own, which SQLite prepares as an
         // empty statement - and then the connection cannot be closed, so the database never opens (Storage S4b,
-        // 2026-10-28: 12013 did this, and every test touching the database failed).
+        // 2026-10-28: 12013, now 12019, did this, and every test touching the database failed).
         for (DatabaseMigrator.Tree tree : DatabaseMigrator.Tree.values()) {
             for (String file : DatabaseMigrator.findMigrationFiles(tree)) {
                 if (numberOf(file) <= LAST_LEGACY_NUMBER) continue;

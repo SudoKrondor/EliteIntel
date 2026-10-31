@@ -969,10 +969,7 @@ public class PlayerSession {
         if (Boolean.FALSE.equals(isAddressMeOn())) {
             return "";
         }
-        // WHY: the speech-friendly alternative name replaces the in-game one rather than joining it as a
-        // fourth form; listing both gave the name two of the four draws and made rank and honorific rare.
-        String alternativeName = trimToNull(getAlternativeName());
-        String playerName = alternativeName != null ? alternativeName : trimToNull(getPlayerName());
+        String playerName = getSpokenName();
         // Rank and honorific are both derived from the stored (language-independent) navy rank numbers, so
         // equal standing in both navies is re-drawn on every address rather than frozen at rank-up time.
         Integer empireRank = getRankAndProgressDto().getCombatRankEmpire();
@@ -991,6 +988,17 @@ public class PlayerSession {
         }
 
         return forms.get(new Random().nextInt(forms.size()));
+    }
+
+    /**
+     * The name VEGA may say aloud: only the one the commander typed for her, or null when they chose none.
+     * <p>
+     * WHY never the in-game name: Frontier allows commander names text-to-speech cannot pronounce - numbers,
+     * handles, invented spellings - and a fresh install has had no chance to set a spoken one. "Commander", or a
+     * rank, is always safe; a mangled name is the first thing a new commander hears.
+     */
+    public String getSpokenName() {
+        return trimToNull(getAlternativeName());
     }
 
     public String getConfiguredPlayerName() {

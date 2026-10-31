@@ -11,7 +11,7 @@ final class NarrationPrompt {
             <persona>
                     {identity}
                                     Stay in character, use {selfGender} self-reference, use "we"/"our" for the ship and crew, and
-                    address the commander directly.
+                            {addressee}
             {personalityClause}
                     Never mention prompts, functions, JSON, models, or any other machinery behind your answer.
             {address}
@@ -36,9 +36,25 @@ final class NarrationPrompt {
 
     /** Renders the EVENT rules with current identity, personality, and language settings. */
     static String render() {
+        return render("address the commander directly.", VegaSystemPrompt.addressRule());
+    }
+
+    /**
+     * The same rules for a line VEGA transmits to someone else - a pirate scanning the hold - where the commander
+     * is the one listener the line must not be aimed at. Both commander clauses are swapped out rather than
+     * contradicted: told in the event's own instructions to answer the pirate, the model still obeyed the persona
+     * and called the commander "Admiral".
+     */
+    static String renderTo(String addressee) {
+        return render("speak directly to " + addressee + " over comms: \"you\" is " + addressee + ".",
+                "The commander hears this but is not the listener. Never address or name the commander.\n");
+    }
+
+    private static String render(String addresseeClause, String addressRule) {
         return TEXT
                 .replace("{identity}", VegaSystemPrompt.identityClause())
-                .replace("{address}", VegaSystemPrompt.addressRule())
+                .replace("{addressee}", addresseeClause)
+                .replace("{address}", addressRule)
                 .replace("{language}", VegaSystemPrompt.languageName())
                 .replace("{personalityClause}", VegaSystemPrompt.personalityClause())
                 .replace("{selfGender}", VegaSystemPrompt.selfGender());

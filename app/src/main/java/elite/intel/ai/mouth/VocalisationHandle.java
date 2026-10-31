@@ -26,6 +26,17 @@ public final class VocalisationHandle {
     private final AtomicBoolean handled = new AtomicBoolean();
     private final AtomicBoolean counted = new AtomicBoolean();
 
+    /**
+     * Whether any accepted vocalisation is pending or playing right now, on any Mouth.
+     * <p>
+     * WHY a live read beside the {@link IsSpeakingEvent} stream: the stream only reports transitions, and a
+     * listener that registers while something is already playing - the microphone, which starts after the Mouth
+     * has queued its greeting - would otherwise take the app for silent until the whole queue drains.
+     */
+    public static boolean isAnyPlaying() {
+        return ACTIVE_REQUESTS.get() > 0;
+    }
+
     /** Creates an unclaimed handle, reusing {@code completion} when a caller supplied one. */
     public VocalisationHandle(
             String requestId,

@@ -133,7 +133,7 @@ public class MarkdownViewPanel extends JPanel {
 
     /**
      * Inserts a {@code -<tag>} language suffix before the file extension, e.g.
-     * {@code ("credits.md", "de")} -> {@code "credits-de.md"}. The English base tag and a
+     * {@code ("credits.md", "ru")} -> {@code "credits-ru.md"}. The English base tag and a
      * blank tag return the base name unchanged.
      */
     private static String localizedName(String base, String tag) {

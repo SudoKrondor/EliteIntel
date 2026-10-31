@@ -9,6 +9,7 @@ import com.sun.jna.ptr.IntByReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,6 +21,11 @@ import static elite.intel.ai.hands.KeyProcessor.NATIVE_BASE;
  * using the X11 library and its XTest extension on Linux. This implementation directly interacts with the X11
  * server to inject key events and perform low-level key handling. The class is designed for advanced keyboard
  * control, including support for modifier keys (like Shift or Control) through X11's native APIs.
+ * <p>
+ * It sends <em>every</em> key, the plain AWT ones included, over its one display connection, and never leaves
+ * any to {@link java.awt.Robot}. Robot injects over AWT's own connection, and a compositor that gates XTEST per
+ * X11 client (KWin, on an Xwayland built with libei) asks the commander's permission once for each connection:
+ * splitting a chord across two cost a second prompt, and the modifier was lost while it was open.
  */
 class LinuxX11NativeKeyInput implements NativeKeyInput {
     private static final Logger log = LogManager.getLogger(LinuxX11NativeKeyInput.class);
@@ -89,6 +95,72 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
         KEYSYM_MAP.put(KeyProcessor.NATIVE_NUMPAD_SUBTRACT, 0xFFADL); // XK_KP_Subtract
     }
 
+    /**
+     * AWT virtual keys → the X11 keysym {@link java.awt.Robot} presses for each, so a key sent here reaches the
+     * same physical key it reached through Robot, on any layout. Every {@code KEY_*} in {@link KeyProcessor}
+     * below {@link KeyProcessor#NATIVE_BASE} needs an entry, or it falls back to Robot's connection.
+     */
+    private static final Map<Integer, Long> VK_KEYSYM_MAP = new HashMap<>();
+
+    static {
+        for (int vk = KeyEvent.VK_A; vk <= KeyEvent.VK_Z; vk++) {
+            VK_KEYSYM_MAP.put(vk, (long) Character.toLowerCase((char) vk));  // XK_a .. XK_z
+        }
+        for (int vk = KeyEvent.VK_0; vk <= KeyEvent.VK_9; vk++) {
+            VK_KEYSYM_MAP.put(vk, (long) vk);                                 // XK_0 .. XK_9
+        }
+        for (int i = 0; i < 12; i++) {
+            VK_KEYSYM_MAP.put(KeyEvent.VK_F1 + i, 0xFFBEL + i);               // XK_F1 .. XK_F12
+        }
+        for (int i = 0; i < 10; i++) {
+            VK_KEYSYM_MAP.put(KeyEvent.VK_NUMPAD0 + i, 0xFFB0L + i);          // XK_KP_0 .. XK_KP_9
+        }
+        VK_KEYSYM_MAP.put(KeyEvent.VK_SPACE, 0x0020L);          // XK_space
+        VK_KEYSYM_MAP.put(KeyEvent.VK_ENTER, 0xFF0DL);          // XK_Return
+        VK_KEYSYM_MAP.put(KeyEvent.VK_BACK_SPACE, 0xFF08L);     // XK_BackSpace
+        VK_KEYSYM_MAP.put(KeyEvent.VK_TAB, 0xFF09L);            // XK_Tab
+        VK_KEYSYM_MAP.put(KeyEvent.VK_CLEAR, 0xFF0BL);          // XK_Clear
+        VK_KEYSYM_MAP.put(KeyEvent.VK_ESCAPE, 0xFF1BL);         // XK_Escape
+        VK_KEYSYM_MAP.put(KeyEvent.VK_PAUSE, 0xFF13L);          // XK_Pause
+        VK_KEYSYM_MAP.put(KeyEvent.VK_SCROLL_LOCK, 0xFF14L);    // XK_Scroll_Lock
+        VK_KEYSYM_MAP.put(KeyEvent.VK_PRINTSCREEN, 0xFF61L);    // XK_Print
+        VK_KEYSYM_MAP.put(KeyEvent.VK_INSERT, 0xFF63L);         // XK_Insert
+        VK_KEYSYM_MAP.put(KeyEvent.VK_DELETE, 0xFFFFL);         // XK_Delete
+        VK_KEYSYM_MAP.put(KeyEvent.VK_HOME, 0xFF50L);           // XK_Home
+        VK_KEYSYM_MAP.put(KeyEvent.VK_LEFT, 0xFF51L);           // XK_Left
+        VK_KEYSYM_MAP.put(KeyEvent.VK_UP, 0xFF52L);             // XK_Up
+        VK_KEYSYM_MAP.put(KeyEvent.VK_RIGHT, 0xFF53L);          // XK_Right
+        VK_KEYSYM_MAP.put(KeyEvent.VK_DOWN, 0xFF54L);           // XK_Down
+        VK_KEYSYM_MAP.put(KeyEvent.VK_PAGE_UP, 0xFF55L);        // XK_Page_Up
+        VK_KEYSYM_MAP.put(KeyEvent.VK_PAGE_DOWN, 0xFF56L);      // XK_Page_Down
+        VK_KEYSYM_MAP.put(KeyEvent.VK_END, 0xFF57L);            // XK_End
+        VK_KEYSYM_MAP.put(KeyEvent.VK_NUM_LOCK, 0xFF7FL);       // XK_Num_Lock
+        VK_KEYSYM_MAP.put(KeyEvent.VK_CAPS_LOCK, 0xFFE5L);      // XK_Caps_Lock
+        VK_KEYSYM_MAP.put(KeyEvent.VK_MULTIPLY, 0xFFAAL);       // XK_KP_Multiply
+        VK_KEYSYM_MAP.put(KeyEvent.VK_ADD, 0xFFABL);            // XK_KP_Add
+        VK_KEYSYM_MAP.put(KeyEvent.VK_SUBTRACT, 0xFFADL);       // XK_KP_Subtract
+        VK_KEYSYM_MAP.put(KeyEvent.VK_DECIMAL, 0xFFAEL);        // XK_KP_Decimal
+        VK_KEYSYM_MAP.put(KeyEvent.VK_DIVIDE, 0xFFAFL);         // XK_KP_Divide
+        VK_KEYSYM_MAP.put(KeyEvent.VK_MINUS, 0x002DL);          // XK_minus
+        VK_KEYSYM_MAP.put(KeyEvent.VK_EQUALS, 0x003DL);         // XK_equal
+        VK_KEYSYM_MAP.put(KeyEvent.VK_SEMICOLON, 0x003BL);      // XK_semicolon
+        VK_KEYSYM_MAP.put(KeyEvent.VK_QUOTE, 0x0027L);          // XK_apostrophe
+        VK_KEYSYM_MAP.put(KeyEvent.VK_COMMA, 0x002CL);          // XK_comma
+        VK_KEYSYM_MAP.put(KeyEvent.VK_PERIOD, 0x002EL);         // XK_period
+        VK_KEYSYM_MAP.put(KeyEvent.VK_SLASH, 0x002FL);          // XK_slash
+        VK_KEYSYM_MAP.put(KeyEvent.VK_BACK_QUOTE, 0x0060L);     // XK_grave
+        VK_KEYSYM_MAP.put(KeyEvent.VK_OPEN_BRACKET, 0x005BL);   // XK_bracketleft
+        VK_KEYSYM_MAP.put(KeyEvent.VK_BACK_SLASH, 0x005CL);     // XK_backslash
+        VK_KEYSYM_MAP.put(KeyEvent.VK_CLOSE_BRACKET, 0x005DL);  // XK_bracketright
+    }
+
+    /**
+     * Seam for tests: whether an AWT virtual key is sent over this connection rather than Robot's.
+     */
+    static boolean mapsVirtualKey(int vk) {
+        return VK_KEYSYM_MAP.containsKey(vk);
+    }
+
     private final X11 x11;
     private final XTst xtst;
     private final X11Keyboard x11keyboard;
@@ -148,7 +220,8 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
 
     @Override
     public boolean handles(int keyCode) {
-        return KEYSYM_MAP.containsKey(keyCode) || KeyProcessor.isNativeCharacterCode(keyCode);
+        return KEYSYM_MAP.containsKey(keyCode) || VK_KEYSYM_MAP.containsKey(keyCode)
+                || KeyProcessor.isNativeCharacterCode(keyCode);
     }
 
     @Override
@@ -161,7 +234,21 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
         fakeKeyEvent(syntheticCode, false);
     }
 
-    private void fakeKeyEvent(int syntheticCode, boolean press) {
+    // Xlib is not thread-safe on one display, and the action lane runs commands on their own threads.
+    private synchronized void fakeKeyEvent(int syntheticCode, boolean press) {
+        Long vkKeysym = VK_KEYSYM_MAP.get(syntheticCode);
+        if (vkKeysym != null) {
+            // Resolved per press, as Robot does, so a layout switched mid-session is followed.
+            byte keycode = x11.XKeysymToKeycode(display, new X11.KeySym(vkKeysym));
+            if (keycode == 0) {
+                log.warn("No X11 keycode for virtual key 0x{} (keysym 0x{})",
+                        Integer.toHexString(syntheticCode), Long.toHexString(vkKeysym));
+                return;
+            }
+            xtst.XTestFakeKeyEvent(display, keycode & 0xFF, press ? 1 : 0, new NativeLong(0));
+            x11.XFlush(display);
+            return;
+        }
         if (KeyProcessor.isNativeCharacterCode(syntheticCode)) {
             char character = KeyProcessor.nativeCharacter(syntheticCode);
             long keysym = characterKeysym(character);
@@ -213,7 +300,7 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
 
 
     @Override
-    public boolean typeChar(char c) {
+    public synchronized boolean typeChar(char c) {
         if (!available) return false;
 
         // X11 keysym: Latin-1 range (0x00–0xFF) maps directly; beyond that use the Unicode escape.

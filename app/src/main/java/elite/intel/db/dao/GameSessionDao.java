@@ -15,14 +15,14 @@ public interface GameSessionDao {
 
 
     @SqlUpdate("""
-            INSERT OR REPLACE INTO game_session (id, kokoroVoice, googleVoice,
+            INSERT OR REPLACE INTO game_session (id, googleVoice,
                                                              rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
-                                                             speechSpeed, googleWaveNetPitch,
+                                                             googleSpeechSpeed, googleWaveNetPitch,
                                                              keyInputDelayMs,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, ttsProvider, llmProvider, notificationVolume, sttThreads, voiceVolume, radioVolume,
                                                              transmissionTones, enhancedRadioEffect, effectsOnRadio, effectsOnVegaAway,
-                                                             transmissionToneVolume, supertonicBoostPercent,
+                                                             transmissionToneVolume,
                                                              lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
@@ -33,14 +33,14 @@ public interface GameSessionDao {
                                                              overlayDisplayMode, overlayVrPosition, overlayVisible,
                                                              overlayColors, overlaySection, overlaySectionPoints
                                                 )
-                                  VALUES (1, :kokoroVoice, :googleVoice,
+                                  VALUES (1, :googleVoice,
                                                       :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
-                                                      :speechSpeed, :googleWaveNetPitch,
+                                                      :googleSpeechSpeed, :googleWaveNetPitch,
                                                       :keyInputDelayMs,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :ttsProvider, :llmProvider, :notificationVolume, :sttThreads, :voiceVolume, :radioVolume,
                                                       :transmissionTones, :enhancedRadioEffect, :effectsOnRadio, :effectsOnVegaAway,
-                                                      :transmissionToneVolume, :supertonicBoostPercent,
+                                                      :transmissionToneVolume,
                                                       :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
@@ -66,12 +66,11 @@ public interface GameSessionDao {
             session.setEncryptedLLMKey(rs.getString("encryptedLLMKey"));
             session.setEncryptedTTSKey(rs.getString("encryptedTTSKey"));
 
-            session.setKokoroVoice(rs.getString("kokoroVoice"));
             session.setGoogleVoice(rs.getString("googleVoice"));
             session.setRmsThresholdHigh(rs.getDouble("rmsThresholdHigh"));
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
 
-            session.setSpeechSpeed(rs.getFloat("speechSpeed"));
+            session.setGoogleSpeechSpeed(rs.getFloat("googleSpeechSpeed"));
             session.setGoogleWaveNetPitch(rs.getInt("googleWaveNetPitch"));
             session.setKeyInputDelayMs(rs.getInt("keyInputDelayMs"));
 
@@ -89,7 +88,6 @@ public interface GameSessionDao {
             session.setEffectsOnRadio(rs.getBoolean("effectsOnRadio"));
             session.setEffectsOnVegaAway(rs.getBoolean("effectsOnVegaAway"));
             session.setTransmissionToneVolume(rs.getInt("transmissionToneVolume"));
-            session.setSupertonicBoostPercent(rs.getInt("supertonicBoostPercent"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
             session.setAiLanguage(rs.getString("aiLanguage"));
@@ -122,12 +120,11 @@ public interface GameSessionDao {
         private String encryptedLLMKey;
         private String encryptedTTSKey;
 
-        private String kokoroVoice;
         private String googleVoice;
         private Double rmsThresholdHigh = 460.00;
         private Double rmsThresholdLow = 100.00;
 
-        private Float speechSpeed;
+        private Float googleSpeechSpeed;
         private int googleWaveNetPitch;
         /**
          * Floor of the pause the input executor holds after each keystroke, in milliseconds.
@@ -159,7 +156,6 @@ public interface GameSessionDao {
         private boolean effectsOnRadio;
         private boolean effectsOnVegaAway;
         private int transmissionToneVolume = 35;
-        private int supertonicBoostPercent;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
         private String aiLanguage;
@@ -205,18 +201,7 @@ public interface GameSessionDao {
 
 
         /**
-         * App-global Kokoro (local TTS) voice, independent of {@link #googleVoice}.
-         */
-        public String getKokoroVoice() {
-            return kokoroVoice;
-        }
-
-        public void setKokoroVoice(String kokoroVoice) {
-            this.kokoroVoice = kokoroVoice;
-        }
-
-        /**
-         * App-global Google (cloud TTS) voice, independent of {@link #kokoroVoice}.
+         * App-global Google (cloud TTS) voice.
          */
         public String getGoogleVoice() {
             return googleVoice;
@@ -259,12 +244,12 @@ public interface GameSessionDao {
             this.encryptedTTSKey = encryptedTTSKey;
         }
 
-        public Float getSpeechSpeed() {
-            return speechSpeed;
+        public Float getGoogleSpeechSpeed() {
+            return googleSpeechSpeed;
         }
 
-        public void setSpeechSpeed(Float speechSpeed) {
-            this.speechSpeed = speechSpeed;
+        public void setGoogleSpeechSpeed(Float googleSpeechSpeed) {
+            this.googleSpeechSpeed = googleSpeechSpeed;
         }
 
         public int getGoogleWaveNetPitch() {
@@ -365,8 +350,6 @@ public interface GameSessionDao {
         public void setEffectsOnVegaAway(boolean value) { effectsOnVegaAway = value; }
         public int getTransmissionToneVolume() { return transmissionToneVolume; }
         public void setTransmissionToneVolume(int value) { transmissionToneVolume = value; }
-        public int getSupertonicBoostPercent() { return supertonicBoostPercent; }
-        public void setSupertonicBoostPercent(int value) { supertonicBoostPercent = value; }
 
         public String getLmStudioAddress() {
             return lmStudioAddress;

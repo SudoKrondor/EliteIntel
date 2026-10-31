@@ -245,7 +245,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     private Font loadCustomFont() {
         Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_MONO_BASE);
-        // Use platform sans-serif for UI labels because the previous custom font did not cover every glyph reliably.
+        // Use platform sans-serif for UI labels because the previous custom font did not cover Cyrillic glyphs reliably.
         UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_UI_DEFAULT)));
         try {
             mono = Font.createFont(Font.TRUETYPE_FONT,
@@ -311,6 +311,14 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("Table.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("Table.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
         UIManager.put("Table.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
+        // A JList dresses like a table: the light look-and-feel would otherwise paint it white with a blue
+        // selection (the voice tuning list, the journal import sources).
+        UIManager.put("List.background", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
+        UIManager.put("List.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
+        UIManager.put("List.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("List.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
+        UIManager.put("List.selectionInactiveBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("List.selectionInactiveForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
         UIManager.put("ComboBox.background",              HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
         UIManager.put("ComboBox.foreground",              HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("ComboBox.disabledBackground",       HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);

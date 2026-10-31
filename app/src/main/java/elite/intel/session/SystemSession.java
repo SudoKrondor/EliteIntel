@@ -5,7 +5,6 @@ import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;
@@ -25,8 +24,6 @@ public class SystemSession {
 
     public static final int GOOGLE_WAVENET_PITCH_MIN = -20;
     public static final int GOOGLE_WAVENET_PITCH_MAX = 20;
-    public static final int SUPERTONIC_BOOST_MIN = 0;
-    public static final int SUPERTONIC_BOOST_MAX = 100;
 
     /**
      * Range of the pause the input executor holds after each keystroke it sends to the game, in
@@ -73,11 +70,6 @@ public class SystemSession {
         return GoogleVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
     }
 
-
-    public KokoroVoices getKokoroVoice() {
-        ShipDao.Ship ship = shipManager.getShip();
-        return KokoroVoices.voiceOrDefault(ship == null ? null : ship.getVoice());
-    }
 
     public SupertonicVoices getSupertonicVoice() {
         ShipDao.Ship ship = shipManager.getShip();
@@ -254,10 +246,10 @@ public class SystemSession {
     }
 
 
-    public void setSpeechSpeed(float speed) {
+    public void setGoogleSpeechSpeed(float speed) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
-            session.setSpeechSpeed(speed);
+            session.setGoogleSpeechSpeed(speed);
             dao.save(session);
             return Void.class;
         });
@@ -276,8 +268,8 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getNotificationVolume());
     }
 
-    public Float getSpeechSpeed() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getSpeechSpeed());
+    public Float getGoogleSpeechSpeed() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getGoogleSpeechSpeed());
     }
 
     public int getGoogleWaveNetPitch() {
@@ -355,7 +347,7 @@ public class SystemSession {
      * commander who rolls back to an earlier jar lands on a database where it still describes their choice.
      */
     public void setTtsProvider(TtsProvider provider) {
-        TtsProvider selected = provider == null ? TtsProvider.KOKORO : provider;
+        TtsProvider selected = provider == null ? TtsProvider.SUPERTONIC : provider;
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setTtsProvider(selected.name());
@@ -492,22 +484,6 @@ public class SystemSession {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setTransmissionToneVolume(percent);
-            dao.save(session);
-            return null;
-        });
-    }
-
-    public int getSupertonicBoostPercent() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getSupertonicBoostPercent());
-    }
-
-    public void setSupertonicBoostPercent(int percent) {
-        if (percent < SUPERTONIC_BOOST_MIN || percent > SUPERTONIC_BOOST_MAX) {
-            throw new IllegalArgumentException("Supertonic boost must be 0–100%");
-        }
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setSupertonicBoostPercent(percent);
             dao.save(session);
             return null;
         });

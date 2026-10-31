@@ -1,8 +1,12 @@
 package elite.intel.ai.mouth.supertonic;
 
 import com.k2fsa.sherpa.onnx.*;
+import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.ai.mouth.VoiceTuning;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
+import elite.intel.ai.mouth.supertonic.stress.RussianStress;
+import elite.intel.db.managers.SupertonicVoiceTuningManager;
 import elite.intel.i18n.Language;
 import elite.intel.util.AppPaths;
 
@@ -16,8 +20,8 @@ import java.util.function.Consumer;
 /**
  * Offline TTS using Supertonic 3 via sherpa-onnx JNI, on the shared {@link SherpaOnnxTTS} pipeline.
  * <p>
- * The alternative local engine, beside Kokoro (see {@link TtsProvider}), and the radio engine for a Russian
- * game client, whose Cyrillic chatter Kokoro cannot read. Unlike Kokoro, Supertonic is a single
+ * The only local engine and the default (see {@link TtsProvider}) and the radio engine for every game client (see
+ * {@link elite.intel.ai.mouth.RadioVoicing}). Supertonic is a single
  * multilingual model: the language is not baked into the engine at build time, it is passed on every
  * {@code generate} call (see {@link #supertonicLangCode(Language)}). The engine is therefore built exactly
  * once and never rebuilt on a language switch. It generates at 44.1 kHz; the pipeline resamples.
@@ -47,14 +51,6 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     }
 
     /**
-     * One multilingual model, language per call: built once for the life of the process.
-     */
-    @Override
-    protected boolean rebuildsOnLanguageSwitch() {
-        return false;
-    }
-
-    /**
      * WHY the model is never asked to go faster than this: above its own pace Supertonic keeps the clip's
      * length but renders the last word as silence ("Preparing for FTL" came out "Preparing for F" about two
      * times in three at 1.15, and still about one in ten at 1.0). At its default pace it spoke 45 of 45 whole;
@@ -63,15 +59,14 @@ public class SupertonicTTS extends SherpaOnnxTTS {
     private static final float MAX_MODEL_SPEED = SPEED_MULTIPLIER;
 
     @Override
-    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language,
-                                      boolean russian) {
+    protected GeneratedAudio generate(OfflineTts tts, String text, int sid, float speed, Language language) {
         float pace = speed * SPEED_MULTIPLIER;
         float modelPace = Math.min(pace, MAX_MODEL_SPEED);
         GenerationConfig genConfig = new GenerationConfig();
         genConfig.setSid(sid);
         genConfig.setSpeed(modelPace);
         genConfig.setNumSteps(NUM_STEPS);
-        genConfig.setExtra(Map.of("lang", russian ? "ru" : supertonicLangCode(language)));
+        genConfig.setExtra(Map.of("lang", supertonicLangCode(language)));
         Consumer<float[]> noStreaming = samples -> {
         };
         GeneratedAudio audio = tts.generateWithConfigAndCallback(text, genConfig, noStreaming);
@@ -84,7 +79,9 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     @Override
     protected String textForSynthesis(String text, Language language) {
-        return SupertonicTextNormalizer.normalize(text, language);
+        String normalized = SupertonicTextNormalizer.normalize(text, language);
+        // WHY last: the number words and spelled letters the normalizer writes need their stress too.
+        return language == Language.RU ? RussianStress.mark(normalized) : normalized;
     }
 
     /**
@@ -108,10 +105,18 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     @Override
     protected int sidOf(String voiceName) {
-        SupertonicVoices voice = voiceName != null
+        return voiceOf(voiceName).getSid();
+    }
+
+    @Override
+    protected VoiceTuning tuningOf(String voiceName) {
+        return SupertonicVoiceTuningManager.getInstance().tuningOf(voiceOf(voiceName));
+    }
+
+    private SupertonicVoices voiceOf(String voiceName) {
+        return voiceName != null
                 ? SupertonicVoices.voiceOrDefault(voiceName)
                 : systemSession.getSupertonicVoice();
-        return voice.getSid();
     }
 
     @Override
@@ -123,25 +128,31 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     /**
      * The language code Supertonic reads the text with, passed per-call via {@link GenerationConfig#setExtra}
-     * rather than baked into the model at build time (see {@link #buildOfflineTts(Language)}). Supertonic
-     * ships one multilingual model covering every language this app supports, and Russian besides - which is
-     * why it voices a Russian game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
+     * rather than baked into the model at build time (see {@link #buildOfflineTts()}). Supertonic
+     * ships one multilingual model covering every language this app supports, Cyrillic included - which is
+     * why it voices every game client's radio chatter (see {@link elite.intel.ai.mouth.RadioVoicing}).
      */
     private static String supertonicLangCode(Language language) {
         return switch (language) {
+            case RU -> "ru";
+            case UK -> "uk";
             case FR -> "fr";
             case ES -> "es";
             case IT -> "it";
             case DE -> "de";
-            // Supertonic ships one Portuguese code; European Portuguese speaks with whatever accent that
-            // single model carries, same trade-off Kokoro made with its Brazilian-only Portuguese voice.
             case PT, PTBZ -> "pt";
             default -> "en";
         };
     }
 
     @Override
-    protected OfflineTts buildOfflineTts(Language language) {
+    protected OfflineTts buildOfflineTts() {
+        // WHY here: the synthesis thread asks for a voice's tuning on every sentence, and must not be the one
+        // that reads the table the first time.
+        SupertonicVoiceTuningManager.getInstance().load();
+        if (systemSession.getLanguage() == Language.RU || RadioVoicing.transmissionLanguage() == Language.RU) {
+            RussianStress.warmUp();
+        }
         Path modelDir = AppPaths.getTtsModelDir().resolve("sherpa-onnx-supertonic-3-tts-int8-2026-05-11");
         if (!Files.exists(modelDir)) {
             throw new IllegalStateException(

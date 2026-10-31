@@ -31,7 +31,7 @@ class QueryRegistryTest {
     @Test
     void registryIsNotEmpty() {
         assertFalse(QueryRegistry.getInstance().byId().isEmpty(),
-                "QueryRegistry.byId() is empty - the @RegisterQuery scan found nothing");
+                "QueryRegistry.byId() пуст — скан @RegisterQuery ничего не нашёл");
     }
 
     // 2. No duplicate ids among registry values
@@ -41,17 +41,17 @@ class QueryRegistryTest {
         Set<String> ids = new HashSet<>();
         for (IntelQuery q : byId.values()) {
             assertTrue(ids.add(q.id()),
-                    "Duplicate id among registry values: " + q.id() + " (" + q.getClass().getName() + ")");
+                    "Дубль id среди значений реестра: " + q.id() + " (" + q.getClass().getName() + ")");
         }
-        assertEquals(byId.size(), ids.size(), "byId() size does not match the number of unique ids");
+        assertEquals(byId.size(), ids.size(), "Размер byId() не совпал с числом уникальных id");
     }
 
     // 3. Hard size sentinel: adding/removing @RegisterQuery must be a conscious change
     @Test
     void registryHasExpectedSize() {
         assertEquals(EXPECTED_QUERY_COUNT, QueryRegistry.getInstance().byId().size(),
-                "Expected " + EXPECTED_QUERY_COUNT + " registered queries. " +
-                        "Did the number of @RegisterQuery classes change? Update the expectation deliberately.");
+                "Ожидалось " + EXPECTED_QUERY_COUNT + " зарегистрированных запросов. " +
+                        "Изменилось число @RegisterQuery? Обнови ожидание осознанно.");
     }
 
     // 4. Every id is non-blank and the key set is unique (safety net that used to be the enum cross-check)
@@ -59,9 +59,9 @@ class QueryRegistryTest {
     void allIdsNonBlankAndUnique() {
         Map<String, IntelQuery> byId = QueryRegistry.getInstance().byId();
         for (String id : byId.keySet()) {
-            assertFalse(id == null || id.isBlank(), "Blank id key in the registry");
+            assertFalse(id == null || id.isBlank(), "Пустой id-ключ в реестре");
         }
         assertEquals(byId.size(), new HashSet<>(byId.keySet()).size(),
-                "Duplicate keys in byId()");
+                "Дублирующиеся ключи в byId()");
     }
 }

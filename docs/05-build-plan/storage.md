@@ -35,10 +35,10 @@ change. The slice that moves them rewrites the *Built* note.
 | **Done in S3:** RESTORE - the whole backup back, through `WritePath`, after a before-RESTORE backup; a backup whose installations differ reconciled in `FirstSetupDialog`; Browse for Backup File; the working copy read at every tab click, the newest backup offered when it cannot be; the read-only flag kept by every live write | `bindforge.storage.Restore`, `BackupContents`, `ReadOnlyFlag`, `Written` (shared with first-time startup), `LiveCopies`; `ui.screen.bindings.RestoreFlow`, `BindingManagementPanel`, `FirstTimeStartupFlow` | - |
 | **Done in S2b:** first-time startup - the installation list (Confirm / Add missing), the reconcile (use one installation for all, or merge), the working copy written through `WritePath` with the first setup backup, the flag; Game Install Locations' Add missing, Remove (stays removed), Run first-time startup again (migration `12012`) | `bindforge.storage.FirstTimeStartup`, `FirstSetupReading`, `InstallationFiles`, `FirstSetupFiles`; `ui.screen.bindings.FirstTimeStartupFlow`, `InstallationListDialog`, `FirstSetupDialog`, `GameInstallLocationsPanel` | - |
 | **Done in S4a:** the edits not applied, in memory and shared by the tabs; the APPLY / DISCARD bar above BindForge's tabs; APPLY through `WritePath` with a before-APPLY backup, leaving alone an installation whose device files differ by value; the Alias Designer and Device Editor on the edits - SAVE, rename, shadow, going back, CLEAR, RESET LABELS, the undos, onboarding's FINISH with A17's old-id move; default labels written at APPLY | `bindforge.storage.Edits`, `DeviceEdits`, `BindsFiles`, `Apply`, `DeviceFilesComparison` (and `WritePath`'s hand-off and leave-alone, `WriteReport.Place.differs`); `ui.screen.bindings.ApplyBar`, `AliasDesignerReader`, `AliasDesignerController`, `AliasDesignerPanel`, `DeviceEditorDialog`; `ui.event.BindForgeEditsChangedEvent` | - |
-| **Done in S4b:** the identity question reads the edits and its retarget is an edit; the Bind Editor's controller names (the working copy's) and labels (the edits'); the device master, draft, pending removals, per-installation rows, hardware-id moves and `missed_write` dropped (migration `12013`) | `bindforge.storage.SavedDeviceLabels`, `DeviceEdits.retarget`, `DeviceMappingsMerge.retarget`; `bindforge.devices.IdentityQuestions`, `CaptureControllers`; `ui.screen.bindings.AliasDesignerReader`, `AliasDesignerController` | - |
+| **Done in S4b:** the identity question reads the edits and its retarget is an edit; the Bind Editor's controller names (the working copy's) and labels (the edits'); the device master, draft, pending removals, per-installation rows, hardware-id moves and `missed_write` dropped (migration `12019`) | `bindforge.storage.SavedDeviceLabels`, `DeviceEdits.retarget`, `DeviceMappingsMerge.retarget`; `bindforge.devices.IdentityQuestions`, `CaptureControllers`; `ui.screen.bindings.AliasDesignerReader`, `AliasDesignerController` | - |
 | **Done in S5:** the Bind Editor on the edits - any binds file loads (LOAD), the General line's file first; capture SAVE (all or none), the Clear column and Auto-Assign are edits; the writer edits bytes in memory; the capture tab names a controller as the edits do; the AI tab's counts from the live bindings | `bindforge.storage.BindsEdits`, `SavedDeviceLabels`; `bindforge.io.BindingsWriter`, `EditedBinds`; `ui.screen.bindings.BindingProfilePanel`, `ui.dialog.ClearKeyboardBindingDialog` | - |
 | ~~Device Apply and per-installation push, Edit History, catch-up~~ **removed in S4a**; `missed_write` dropped in S4b | - | - |
-| **Done in S6:** the preset file on the edits; APPLY refuses first, naming the sections, a preset line that is empty or names no binds file the BindName list offers (the list read from the edits and each installation's factory files); the preset file's master, draft, merge and history, `TimestampedBackups`, `getBindingsBackupDir` and `edit_history_retention` removed (migration `12014`) | `bindforge.storage.PresetEdits`, `PresetRefusedException`, `Apply`; `bindforge.preseteditor.BindNameCatalog`; `ui.screen.bindings.ApplyBar` | - |
+| **Done in S6:** the preset file on the edits; APPLY refuses first, naming the sections, a preset line that is empty or names no binds file the BindName list offers (the list read from the edits and each installation's factory files); the preset file's master, draft, merge and history, `TimestampedBackups`, `getBindingsBackupDir` and `edit_history_retention` removed (migration `12020`) | `bindforge.storage.PresetEdits`, `PresetRefusedException`, `Apply`; `bindforge.preseteditor.BindNameCatalog`; `ui.screen.bindings.ApplyBar` | - |
 | **Done in S7:** leaving BindForge with edits not applied - another main tab, or closing Elite-Intel - asks Go back / Discard / Apply, nothing selected; Apply is the bar's APPLY and leaves once the edits are gone; closing refused while a write runs | `ui.screen.bindings.LeavePrompt`, `ApplyBar.leavePrompt`; `ui.screen.AppView` (the main tabs' selection, the window close); `ui.dialog.HudConfirmDialog.showWithoutDefault` | - |
 | **Done in S8a:** the check for the binds and preset files at the first BindForge click in a session - by value, one warning for the set, Put mine back / Merge / Use the game's files, Not now; the merge a row per slot; a file on one side only a difference, a newer version left out; a reset named; compared again before the write; the before-the-check backup holding the working copy under `WorkingCopy\`; the line at Elite-Intel start | `bindforge.storage.BindingsComparison`, `BindsElements`, `BindingsCheck`, `StartupCheck`, `Backups.backUpBeforeChange` (with the working copy), `LiveCopies` / `WritePath` (the removal); `ui.screen.bindings.CheckFlow`, `CheckWarningDialog`, `CheckMergeDialog`; `ui.controller.AppController` | - |
 | **Done in S8b:** the check at APPLY - after the confirmation, before the backup; the rows the edits change left out of the warning, with a count; Not now cancels APPLY; a game file the check cannot read stops APPLY; the working copy settled, the edits on top (an edit's whole element wins), the preset file checked again on the set written; one before-APPLY backup, holding the working copy when the check settled something | `bindforge.storage.Apply` (`check`, `apply(found, answers)`), `BindingsCheck.settled`, `BindingsComparison.edited` / `covers` / `without` / `withEditsOnTop`, `ConfigurationFiles.withBindings`; `ui.screen.bindings.CheckFlow` (`Writing`, `atApply`), `ApplyBar.ApplyWriting` | - |
@@ -104,8 +104,9 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 - **Linux, several installations:** every `.binds` read and write uses the one bindings folder Elite-Intel is set
   to ([input environment §7](../00-overview/input-environment.md#7-linux-the-bindings-folder-is-not-shared)). The
   working copy holds one `Bindings\`; APPLY's confirm keeps A11's Linux note.
-- **Migration `12009__hunting_ground_scan_per_commander.sql` is in BindForge's band** (`12000–12499`). Raise with
-  Krondor; never edit an applied migration.
+- **Migration `12009__hunting_ground_scan_per_commander.sql` is in what was BindForge's band** (`12000–12499`). Raise with
+  Krondor; never edit an applied migration. Since the 2026-10-31 merge `V1.2` has `12013`–`12018` in that range as
+  well; a sub-band is to be agreed with Krondor.
 - **`BindingsMonitor` ignores `StartPreset.4.start`** — a V1.1 defect, fixed on `V1.1-Release`, not here.
 - **Old folder backups** — V1.1's `playerbackups\<time>\` and the `_before-bindforge` and `_first-setup` folders stay
   where they are: not listed, never pruned (Alan, 2026-10-24; [file-manager.md](../02-features/bindforge/file-manager.md#old-folder-backups--v11s-and-the-old-bindforge-ones-settled-2026-10-24-alan)).
@@ -116,11 +117,14 @@ its table (`12007`), `BindingsMonitor` (not BindForge's — it reloads the assis
 - **New code** in `elite.intel.bindforge.storage` — backups since S1; the working copy, the write path and the check
   go there too (Alan, 2026-10-24).
 - **`bindforge.io`, `bindforge.rules`, `elite.intel.io`, `AppPaths`** are changed here like any V1.2 code.
-- **`ai.hands`** — never. **Migrations:** look in `db-migration\` when you write one and take the next free number in
-  `12000–12499` then — the brief names no number, because a named number goes stale. If Krondor lands the same number
-  first, whoever merges second renumbers, which is safe while the migration has not shipped (Alan, 2026-10-24). Never
+- **`ai.hands`** — never. **Migrations:** look in `db-migration\` when you write one and take the next free number
+  then — the brief names no number, because a named number goes stale. If Krondor lands the same number
+  first, whoever merges second renumbers, which is safe while the migration has not shipped (Alan, 2026-10-24). `V1.2`
+  uses the 12000 range too, so the number is the next free one on `V1.2` at merge time: the 2026-10-31 merge moved
+  BindForge's `12013` and `12014` to `12019` and `12020` past `V1.2`'s `12013`–`12018` (Alan, 2026-10-31). Never
   edit an applied one.
-- **UI** follows [the HUD canon](../02-features/bindforge/ui-component-map.md); strings in all seven bundles.
+- **UI** follows [the HUD canon](../02-features/bindforge/ui-component-map.md); strings in all nine bundles (RU and UK
+  back since the 2026-10-31 merge).
 
 ## Slices
 
@@ -204,6 +208,17 @@ failures reported per place, tests in the matching package, migrations `12010`�
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-10-31 — `V1.2` merged into `V1.2-BindForge`: the four blockers fixed.** **Decided (Alan, all four):** the
+  support bundle takes the active preset's `.binds` out of the newest before-changes backup that holds it, and
+  `AiTabPanel` hands it `BackupDestination.stored()`'s folder (recorded in file-manager.md, *How the backup folder is
+  laid out*); `TimestampedBackups` stays deleted. BindForge's `12013` and `12014` became `12019` and `12020` past
+  `V1.2`'s own `12013`–`12018`, and a BindForge migration now takes the next free number on `V1.2` at merge time
+  (file-manager.md, *What exists in code today*; *Boundaries* here). `gui_ru` and `gui_uk`, back on `V1.2`, lost the 36 keys the branch
+  had removed and gained its 53 in Russian and Ukrainian; strings now go in nine bundles. **Found:** the brief counted
+  37 extra keys, but `overlay.card.value.missionCount.few` is the Slavic plural `HudText.plural` reads, so it stays.
+  `Backups.list(Path)` is public now, so the bundle lists a folder the way the backup list does. **S9 needs:** nothing
+  new; Krondor's other branch findings are the next slice.
+
 - **2026-10-31 — S8R done: the S7-S8b review follow-up.** All six decisions built as approved. **Recorded:** storage.md rule 14, *Until S10* - the newer live binds file always left out, the older one only when the live folder lacks it, and a newer XML root version under the same name an ordinary details row until S10 (S10's row says so). **Decided while building (Alan, approving the sources):** D3 reached APPLY's and DISCARD's Cancel too (S4a code, same file), so `ApplyBar` borrows no Alias Designer key; the click-only helper is public, `HudConfirmDialog.chooseByClickOnly`, since the two dialogs are in different packages; the count line reads *"{0}: lines that differ: {1}"*. **Built:** `Backups.backUpBeforeChange(Before, from, workingCopy)` replaces `backUpBeforeCheck` and `backUpBeforeApply`; `Apply.BackUp` has `take` and `takeWithWorkingCopy`; `WritePath` and `LiveCopies` each keep one write with `removeFromBindings`; `LeavePrompt` takes `Supplier<Choice>` and `Runnable` (`Leaving` stays for `request`); `CheckFlowTest`; the startup check on a `BindForge-StartupCheck` platform thread. **S9 needs:** nothing new from this slice; the sync of `V1.2-BindForge` with `V1.2` follows this commit.
 
 - **2026-10-31 — S7-S8b code-integrity review: S8R added, next.** Alan approved all six decisions as recommended; they are in the S8R row. The review is `code-integrity-review.md` at the repo root. S9 follows S8R, and the sync of `V1.2-BindForge` with `V1.2` follows S8R's commit, so V1.2 gets the reviewed code.
@@ -235,7 +250,7 @@ slice needs.*
   *How the four lines are read*, and file-manager.md *Settings*. **Built:** `PresetEdits` (`presetFile`, `sections`,
   `change`, `gameForm`, `check`, `bindsFiles`), `PresetRefusedException`, `Apply.BindNames`; `BindsEdits.generalFile`
   picks the preset file through `PresetEdits`; `BindNameCatalog.list` takes the set's binds files (a player's file is a
-  `Path` of its name alone); migration `12014`; `bindings.applyBar.presetRefused` in seven bundles. **Found / left:**
+  `Path` of its name alone); migration `12020`; `bindings.applyBar.presetRefused` in seven bundles. **Found / left:**
   `CLAUDE.md`'s `elite.intel.io` row updated, but the file is gitignored; `PACKAGE.md` stale from S5 (*Known issues*).
   **P4 needs:** `PresetEdits.sections` for the dropdowns, `Edits.change(EditFromApplied)` with `PresetEdits.change`,
   and `BindNameCatalog.list(PresetEdits.bindsFiles(current), controlSchemesOf(...))` for what they offer (`Apply.offered` since S6R). **S7 needs:**
@@ -268,7 +283,7 @@ slice needs.*
   `edit_history_retention` is dropped in S6, with `StartPresetApply`, which still reads it (file-manager.md *Settings*);
   the identity question counts the edits' binds files (alias-designer.md *On the working copy — 2026-10-28*). **Found,
   and kept to the spec:** bind-editor.md says the capture tab writes the working copy's name, so `SavedDeviceLabels`
-  takes names from the working copy and labels from the edits (recorded there). **Built:** migration `12013`;
+  takes names from the working copy and labels from the edits (recorded there). **Built:** migration `12019`;
   `SavedDeviceLabels` moved to `bindforge.storage`; `Provenance` and `ProvenanceRule` removed with the installs table;
   device-provenance.md rewritten. **Found:** a migration ending in comments breaks the database for every test - the
   shared helper `MigrationScripts.run` now runs pieces as `DatabaseMigrator` does, and `MigrationLayoutTest` refuses it.

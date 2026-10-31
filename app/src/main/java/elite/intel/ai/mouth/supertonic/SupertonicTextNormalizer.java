@@ -52,7 +52,12 @@ final class SupertonicTextNormalizer {
                     "i grego", "zê"),
             Language.PTBZ, List.of("á", "bê", "cê", "dê", "é", "efe", "gê", "agá", "i", "jota", "cá", "ele",
                     "eme", "ene", "ó", "pê", "quê", "erre", "esse", "tê", "u", "vê", "dáblio", "xis",
-                    "ípsilon", "zê"));
+                    "ípsilon", "zê"),
+            // Latin letters as a Russian or Ukrainian speaker names them when reading a code aloud.
+            Language.RU, List.of("а", "бэ", "цэ", "дэ", "е", "эф", "гэ", "ха", "и", "йот", "ка", "эль",
+                    "эм", "эн", "о", "пэ", "ку", "эр", "эс", "тэ", "у", "вэ", "дубль-вэ", "икс", "игрек", "зэт"),
+            Language.UK, List.of("а", "бе", "це", "де", "е", "еф", "ге", "ха", "і", "йот", "ка", "ель",
+                    "ем", "ен", "о", "пе", "ку", "ер", "ес", "те", "у", "ве", "дубль-ве", "ікс", "ігрек", "зет"));
 
     private SupertonicTextNormalizer() {
     }
@@ -192,6 +197,8 @@ final class SupertonicTextNormalizer {
             case ES -> "guion";
             case IT -> "trattino";
             case PT, PTBZ -> "hífen";
+            case RU -> "дефис";
+            case UK -> "дефіс";
         };
     }
 

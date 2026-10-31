@@ -2,7 +2,7 @@
 
 **Rewritten 2026-10-28 (Storage S4b, Alan).** BindForge keeps **no database record of devices**. The device master,
 the draft, the pending removals, the per-installation rows and the waiting hardware-id moves were dropped by
-migration `12013`, with `bindforge_installations.missed_write`. *From 2026-10-01 to 2026-10-28 this page described
+migration `12019`, with `bindforge_installations.missed_write`. *From 2026-10-01 to 2026-10-28 this page described
 those tables; [the history](#history--the-tables-that-were) is kept below.*
 
 ## What answers each question now
@@ -47,13 +47,15 @@ of candidates changes or the missing controller comes back
 ## Migration band
 
 **BindForge writes in `12000–12499`**; commander and galaxy work in `12500–12999` (Krondor's <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
-[proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24). A migration number
-is never reused or renamed, and an applied migration is never edited — a new numbered script is added instead, as
-`12013` drops the tables `12002`–`12004` and `12008` created.
+[proposal §4](../multi-install-proposal.md#4-migrations-one-tree-per-file), accepted 2026-09-24) - until 2026-10-31,
+when `V1.2`'s own `12013`–`12018` moved BindForge's unshipped `12013` and `12014` to `12019` and `12020` in the merge
+([file-manager.md](../02-features/bindforge/file-manager.md), Alan, 2026-10-31). A shipped migration number is never
+reused or renamed, and an applied migration is never edited — a new numbered script is added instead, as
+`12019` drops the tables `12002`–`12004` and `12008` created.
 
 ## History — the tables that were
 
-*Kept for the reasoning the specs cite. None of these exist after migration `12013`.*
+*Kept for the reasoning the specs cite. None of these exist after migration `12019`.*
 
 - **`12002`** (2026-10-01): `bindforge_device_master` (the user's element set, with `alias_confirmed` and
   `previous_name`), `bindforge_device_labels` (its `.buttonMap` content) and `bindforge_device_installs` — one row per

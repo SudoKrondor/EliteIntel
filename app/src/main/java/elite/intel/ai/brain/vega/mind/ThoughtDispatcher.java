@@ -149,7 +149,7 @@ public final class ThoughtDispatcher implements ManagedService {
         GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by VEGA's own name ("Vega, all stop", or - as STT usually
-        // returns it, with no comma - "Vega all stop") before normalizing, for BOTH paths: the
+        // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
         // reflex fast-path and the LLM path (the reducer, prompt current-input, and eligible memory). The name carries no
         // routing signal and can distract the model from the command. Raw STT stays only in intake diagnostics
         // and the execution request; a completed dialogue/query remembers the normalized match text.
@@ -200,10 +200,17 @@ public final class ThoughtDispatcher implements ManagedService {
      * bounded narration request, and the spoken line is not stored.
      */
     public void submitEventReaction(String stimulus, String instructions, Urgency urgency) {
+        submitEventReaction(stimulus, instructions, null, urgency);
+    }
+
+    /**
+     * As above, for a line spoken to {@code addressee} rather than the commander; {@code null} is the commander.
+     */
+    public void submitEventReaction(String stimulus, String instructions, String addressee, Urgency urgency) {
         if (stimulus == null || stimulus.isBlank()) {
             return;
         }
-        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, dependencies);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, addressee, dependencies);
         VegaDiagnostics.debug(thought.trace(), "event", "reaction");
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }

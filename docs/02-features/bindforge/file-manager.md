@@ -129,6 +129,16 @@ chose that is missing or empty is still told to fix the setting; the game's fold
 is still told to change a binding in the game. **Backup Now's "Nothing to Back Up Yet" dialog and the startup log line
 say the same words** (Alan, 2026-10-24).
 
+**The support bundle reads the before-changes backups** (Alan, 2026-10-31). V1.1's fix `967ba93ec` put the newest
+loose `.bak` copy of the active preset's `.binds` into the support bundle, so "the app changed my binds" can be answered
+by what the last write replaced. Those loose copies went with `TimestampedBackups` in Storage S6, so when `V1.2` was
+merged into `V1.2-BindForge` the bundle (`ui.support.SupportBundle.previousBindings`) was moved onto this folder: it
+takes the active preset's file out of the newest before-changes backup that holds it, read through `BackupContents`,
+and carries it as `<preset>.before-changes-<stamp>`. A backup that cannot be read is skipped for the one before it;
+daily, user and first setup backups are not used, since they were not taken before a write. With none, the bundle says
+*none - Elite Intel has never written* the file; a folder that cannot be listed is said too. `ui.screen.AiTabPanel`
+passes `BackupDestination.stored()`'s folder, or nothing when that cannot be resolved.
+
 ### Old folder backups — V1.1's, and the old BindForge ones (settled 2026-10-24, Alan)
 
 V1.1's Backup Now wrote `<backup folder>\<yyyy-MM-dd_HH-mm-ss>\` folders holding only `.binds` and `StartPreset`;
@@ -346,7 +356,7 @@ first ([storage.md](storage.md) rule 12), which meets that.
 switched off ([storage.md](storage.md) rule 12); "Edit History retention" — Edit History is gone.* **Built 2026-10-24
 (Storage S1):** migration `12010` drops the `auto_backup_on_launch` column. Edit History's device-file code went in
 S4a (2026-10-26), and the preset file's own history (`StartPresetApply`), the last reader of `edit_history_retention`,
-in **Storage S6 (2026-10-28)**, whose migration `12014` drops the column. *Until S1b (2026-10-24) the settings were meant
+in **Storage S6 (2026-10-28)**, whose migration `12020` drops the column. *Until S1b (2026-10-24) the settings were meant
 for a BindForge panel on Elite-Intel's Settings screen, and there was one retention, 30 days with a floor of one day.*
 
 **Built 2026-10-24 (Storage S1b; Alan approved):** a *Backup Settings* section above the list. **Backups go to** shows
@@ -398,6 +408,13 @@ first, the other has to land with it.
 shared top-level `db-migration/` tree and never `db-migration/commander/`, which is Krondor's alone. <!-- terminology-ok: names the real db-migration/commander/ tree and Krondor's per-commander work -->
 The range held one file when this was written; it now holds `12000` to `12011` — look in `db-migration/` for the
 current list rather than trusting a count here. [An applied migration is never edited](../../../CLAUDE.md).
+
+**Since 2026-10-31 the band does not hold** (Alan): `V1.2` itself took `12013`–`12018`, so BindForge's
+`12013__bindforge_old_device_tables_removed` and `12014__bindforge_settings_edit_history_retention_removed`, not yet
+shipped, became `12019` and `12020` in the merge of `V1.2` into `V1.2-BindForge`. Running them again on a database
+that applied them under the old numbers is safe: the table drops are `IF EXISTS`, and `DatabaseMigrator` skips a
+`DROP COLUMN` whose column is already gone. A BindForge migration takes the next free number on `V1.2` at merge time
+until a sub-band is agreed with Krondor.
 
 ## Export / Import — Considered, Then Cut
 

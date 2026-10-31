@@ -5,7 +5,6 @@ import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.gameapi.GameLanguage;
 import elite.intel.i18n.Language;
 
-import java.util.Optional;
 
 /**
  * Which column of the material and commodity catalogues holds a display name in a given language.
@@ -33,6 +32,8 @@ public final class NameColumns {
             case DE -> "name_de";
             case FR -> "name_fr";
             case ES -> "name_es";
+            case RU -> "name_ru";
+            case UK -> "name_uk";
             case IT -> "name_it";
             case PT -> "name_pt";
             case PTBZ -> "name_ptbz";
@@ -48,26 +49,13 @@ public final class NameColumns {
             case DE -> "commodity_de";
             case FR -> "commodity_fr";
             case ES -> "commodity_es";
+            case RU -> "commodity_ru";
+            case UK -> "commodity_uk";
             case IT -> "commodity_it";
             case PT -> "commodity_pt";
             case PTBZ -> "commodity_ptbz";
             default -> "commodity";
         };
-    }
-
-    /**
-     * The material column the game client writes its {@code Name_Localised} in, or empty when the client
-     * language is not known. Empty means a learner must not guess a column.
-     */
-    public static Optional<String> gameMaterial() {
-        return GameLanguage.getInstance().language().map(NameColumns::material);
-    }
-
-    /**
-     * The commodity column the game client writes its {@code Name_Localised} in - see {@link #gameMaterial()}.
-     */
-    public static Optional<String> gameCommodity() {
-        return GameLanguage.getInstance().language().map(NameColumns::commodity);
     }
 
     /**

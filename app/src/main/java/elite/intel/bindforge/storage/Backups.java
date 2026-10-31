@@ -272,8 +272,12 @@ public final class Backups {
         return list(root.get());
     }
 
-    /** As {@link #list()}, in a backup folder already resolved - so one prune works in one folder throughout. */
-    private static List<Backup> list(Path backupRoot) throws IOException {
+    /**
+     * As {@link #list()}, in a backup folder already resolved - so one prune works in one folder throughout, and the
+     * support bundle, which is handed the folder, reads it the way the backup list does (Alan, 2026-10-31). A folder
+     * that does not exist holds no backups.
+     */
+    public static List<Backup> list(Path backupRoot) throws IOException {
         List<Backup> backups = new ArrayList<>();
         for (Kind kind : Kind.values()) {
             Path folder = backupRoot.resolve(kind.folder);

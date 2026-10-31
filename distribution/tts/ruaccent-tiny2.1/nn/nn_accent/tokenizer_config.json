@@ -1,0 +1,10 @@
+{
+  "bos_token": "[bos]",
+  "clean_up_tokenization_spaces": true,
+  "do_lower_case": true,
+  "eos_token": "[eos]",
+  "model_max_length": 1000000000000000019884624838656,
+  "pad_token": "[pad]",
+  "tokenizer_class": "CharTokenizer",
+  "unk_token": "[unk]"
+}

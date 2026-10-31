@@ -15,6 +15,12 @@ public class ReceiveTextEvent extends BaseEvent {
      */
     private static final String NPC_NAME_PREFIX = "$npc_name_decorate:#name=";
 
+    /**
+     * The symbol of every line a pirate sends as their cargo scan starts, {@code $Pirate_OnStartScanCargo04;}:
+     * the same in every client language, unlike the localised text {@link #PIRATE_HAILS} matches.
+     */
+    private static final String PIRATE_SCAN_SYMBOL = "$Pirate_OnStartScanCargo";
+
     @SerializedName("From")
     public String from;
 
@@ -71,6 +77,13 @@ public class ReceiveTextEvent extends BaseEvent {
     /** Whether this transmission is a known pirate interdiction hail. */
     public boolean isPirateMessage() {
         return messageLocalised != null && PIRATE_HAILS.contains(messageLocalised.toLowerCase());
+    }
+
+    /**
+     * Whether this transmission is a pirate announcing that they have started scanning our cargo hold.
+     */
+    public boolean isPirateCargoScan() {
+        return message != null && message.startsWith(PIRATE_SCAN_SYMBOL);
     }
 
     /**

@@ -122,6 +122,14 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     }
 
     /**
+     * True for a Supertonic voice played from the voice tuning dialog. Supertonic speaks it in either role, clean
+     * (no radio processing), and Google leaves it alone.
+     */
+    public boolean isLocalVoiceAudition() {
+        return originType == LocalVoiceAuditionEvent.class;
+    }
+
+    /**
      * True for speech in VEGA's voice - the speech gateway's requests and mission-critical callouts - never for
      * system responses (errors, greetings, voice auditions).
      */

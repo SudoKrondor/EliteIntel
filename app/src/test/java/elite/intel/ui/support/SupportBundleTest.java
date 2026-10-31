@@ -1,5 +1,6 @@
 package elite.intel.ui.support;
 
+import elite.intel.bindforge.storage.Backups;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -367,6 +369,99 @@ class SupportBundleTest {
                 new SupportBundle.Sources("1.1.0", "log", null, null, null));
 
         assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("game state")),
+                result.omitted().toString());
+    }
+
+    /**
+     * A backup zip in BindForge's layout: {@code backup-info.txt} and each binds file under {@code Bindings/}, in
+     * the kind's folder, named with its stamp.
+     */
+    private static void backup(Path backupDir, Backups.Kind kind, String stamp, Map<String, String> binds)
+            throws IOException {
+        Path folder = Files.createDirectories(backupDir.resolve(kind.folder()));
+        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(folder.resolve(stamp + ".zip")),
+                StandardCharsets.UTF_8)) {
+            out.putNextEntry(new ZipEntry(Backups.INFO_FILE));
+            out.write("Status: Full\n".getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+            for (Map.Entry<String, String> file : binds.entrySet()) {
+                out.putNextEntry(new ZipEntry("Bindings/" + file.getKey()));
+                out.write(file.getValue().getBytes(StandardCharsets.UTF_8));
+                out.closeEntry();
+            }
+        }
+    }
+
+    /**
+     * "The app changed my binds" is answered by what the last apply replaced, so the active preset's copy in the
+     * newest before-changes backup travels with it - and only that preset's, since another preset's history says
+     * nothing about this one, and only a before-changes backup's, since a daily one was not taken before a write.
+     */
+    @Test
+    void carriesTheNewestBackupOfTheActivePreset(@TempDir Path tmp) throws IOException {
+        Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
+        Path backupDir = Files.createDirectory(tmp.resolve("backups"));
+        write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_12-00-00",
+                Map.of("Custom.4.2.binds", "<Root older/>"));
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
+                Map.of("Custom.4.2.binds", "<Root before apply/>", "Other.4.2.binds", "<Root other preset/>"));
+        backup(backupDir, Backups.Kind.DAILY, "2026-10-28_09-00-00",
+                Map.of("Custom.4.2.binds", "<Root daily/>"));
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, bindingsDir, null, null, null, backupDir));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("<Root now/>", entries.get("Custom.4.2.binds"));
+        assertEquals("<Root before apply/>", entries.get("Custom.4.2.binds.before-changes-2026-10-27_16-57-18"));
+        assertFalse(entries.containsKey("Custom.4.2.binds.before-changes-2026-10-27_12-00-00"));
+        assertTrue(entries.keySet().stream().noneMatch(name -> name.startsWith("Other.4.2.binds")), entries.keySet().toString());
+        assertTrue(entries.values().stream().noneMatch("<Root daily/>"::equals));
+        assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("bindings backup")),
+                result.omitted().toString());
+    }
+
+    /**
+     * A newer backup that does not hold the preset, or cannot be read, is passed over for the one that does.
+     */
+    @Test
+    void takesTheNewestBackupThatHoldsThePreset(@TempDir Path tmp) throws IOException {
+        Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
+        Path backupDir = Files.createDirectory(tmp.resolve("backups"));
+        write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
+                Map.of("Custom.4.2.binds", "<Root before apply/>"));
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-28_09-00-00",
+                Map.of("Other.4.2.binds", "<Root other preset/>"));
+        write(Files.createDirectories(backupDir.resolve(Backups.Kind.BEFORE_CHANGES.folder())),
+                "2026-10-29_09-00-00.zip", "not a zip");
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, bindingsDir, null, null, null, backupDir));
+
+        assertEquals("<Root before apply/>",
+                unzip(zip).get("Custom.4.2.binds.before-changes-2026-10-27_16-57-18"));
+    }
+
+    /**
+     * No backup means Elite Intel never wrote the preset, which is the answer to the report - so it is said.
+     */
+    @Test
+    void aPresetEliteIntelNeverWroteIsSaidSo(@TempDir Path tmp) throws IOException {
+        Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
+        Path backupDir = Files.createDirectory(tmp.resolve("backups"));
+        write(bindingsDir, "Custom.4.2.binds", "<Root/>");
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
+                Map.of("Other.4.2.binds", "<Root other preset/>"));
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, bindingsDir, null, null, null, backupDir));
+
+        assertTrue(result.omitted().contains("bindings backup - none - Elite Intel has never written Custom.4.2.binds"),
                 result.omitted().toString());
     }
 

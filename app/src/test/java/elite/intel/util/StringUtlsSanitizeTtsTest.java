@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Guards the unicode handling in {@link StringUtls#sanitizeTts(String)}.
  * <p>
- * The Kokoro/espeak phonemizer skips combining marks it has no phoneme for
+ * A local engine's text front end skips combining marks it has no rule for
  * (e.g. the IPA syllabic marker U+0329), which produces audio artifacts. The
  * sanitizer must drop such stray marks while preserving the precomposed
  * accented letters used by the supported non-English languages.
@@ -40,6 +40,17 @@ class StringUtlsSanitizeTtsTest {
         assertTrue(result.contains("Grün"), "German umlaut should survive");
         assertTrue(result.contains("Système"), "French accents should survive");
         assertTrue(result.contains("Niño"), "Spanish tilde-n should survive");
+    }
+
+    @Test
+    void preservesCyrillicLettersForRussianAndUkrainian() {
+        // й (Russian U+0439) and ї/і (Ukrainian) are precomposed letters.
+        String input = "Привет Київ"; // Привет Київ
+
+        String result = StringUtls.sanitizeTts(input);
+
+        assertTrue(result.contains("Привет"), "Russian letters should survive");
+        assertTrue(result.contains("Київ"), "Ukrainian letters should survive");
     }
 
     @Test

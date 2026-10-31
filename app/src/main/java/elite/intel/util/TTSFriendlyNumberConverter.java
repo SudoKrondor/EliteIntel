@@ -94,7 +94,7 @@ public class TTSFriendlyNumberConverter {
         // Nearest thousand, up to a million. Rounding 999,600 up lands on a million, so let it fall through.
         // The rounded figure is spelled whole - 343,000, not 343 with a "thousand" pasted after it - because
         // German and Italian join the scale onto the number ("dreihundertdreiundvierzigtausend",
-        // "trecentoquarantatremila"). The template only hedges the
+        // "trecentoquarantatremila") and Russian inflects it with the count. The template only hedges the
         // figure and names the currency; the language decides how the thousand itself is said.
         long thousands = divideRounded(credits, 1_000L);
         if (thousands < 1_000L) {

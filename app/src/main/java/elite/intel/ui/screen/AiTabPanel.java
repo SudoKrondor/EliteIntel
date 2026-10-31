@@ -6,6 +6,7 @@ import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.ears.MicDiagnosticsReport;
+import elite.intel.bindforge.storage.BackupDestination;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -400,7 +401,8 @@ public class AiTabPanel extends JPanel {
                 // blocks, and this runs on the EDT. The bundle worker calls it.
                 MicDiagnosticsReport::render,
                 customCommandsFile(),
-                AiSetupReport::render);
+                AiSetupReport::render,
+                bindingsBackupDir());
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }
@@ -417,6 +419,19 @@ public class AiTabPanel extends JPanel {
             return AppPaths.getCustomCommandsFilePath();
         } catch (IOException | RuntimeException e) {
             log.warn("Diagnostics bundle: could not resolve the custom commands file", e);
+            return null;
+        }
+    }
+
+    /**
+     * BindForge's backup folder, whose before-changes backups hold the game's bindings as they were before each
+     * write, or null if that cannot be worked out - on the same reasoning as {@link #customCommandsFile()}.
+     */
+    private static Path bindingsBackupDir() {
+        try {
+            return BackupDestination.stored().resolve();
+        } catch (IOException | RuntimeException e) {
+            log.warn("Diagnostics bundle: could not resolve the bindings backup folder", e);
             return null;
         }
     }

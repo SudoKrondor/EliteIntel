@@ -6,6 +6,7 @@ import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.ConflictZoneManager;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.db.managers.PowerConflictZoneManager;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -36,6 +37,7 @@ public class FSSSignalDiscoveredSubscriber {
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final HuntingGroundManager huntingGrounds = HuntingGroundManager.getInstance();
     private final ConflictZoneManager conflictZones = ConflictZoneManager.getInstance();
+    private final PowerConflictZoneManager powerConflictZones = PowerConflictZoneManager.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ResourceSiteSweep resourceSites = new ResourceSiteSweep();
     private final ConflictZoneSweep conflictZoneSweep = new ConflictZoneSweep();
@@ -126,13 +128,13 @@ public class FSSSignalDiscoveredSubscriber {
         // keeps only the largest. Zones are counted by identity, so a re-arrival re-announcing the same
         // set adds nothing, and a different system starts the tally over.
         ConflictZoneProfile sweep = conflictZoneSweep.add(String.valueOf(event.getSystemAddress()), zone);
-        conflictZones.recordZones(
-                starSystem,
-                event.getSystemAddress(),
-                new Coordinates(starSystem, location.getX(), location.getY(), location.getZ()),
-                sweep,
-                event.getTimestamp()
-        );
+        Coordinates coordinates = new Coordinates(starSystem, location.getX(), location.getY(), location.getZ());
+        conflictZones.recordZones(starSystem, event.getSystemAddress(), coordinates, sweep, event.getTimestamp());
+        // A power's war has a ledger of its own, read back by a commander pledged to one of the powers there.
+        if (zone.intensity() == ConflictZoneIntensity.POWERPLAY) {
+            powerConflictZones.recordZones(starSystem, event.getSystemAddress(), coordinates, sweep.powerplay(),
+                    event.getTimestamp());
+        }
     }
 
     /**

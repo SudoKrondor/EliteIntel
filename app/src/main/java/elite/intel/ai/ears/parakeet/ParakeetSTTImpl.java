@@ -7,6 +7,7 @@ import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.brain.vega.input.BargeInEvent;
 import elite.intel.ai.ears.*;
+import elite.intel.ai.mouth.VocalisationHandle;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.eventbus.GameEventBus;
@@ -67,7 +68,6 @@ public class ParakeetSTTImpl implements EarsInterface {
 
     private final AtomicBoolean isStopping = new AtomicBoolean(false);
     private final AtomicBoolean isListening = new AtomicBoolean(false);
-    private final AtomicBoolean isSpeaking = new AtomicBoolean(false);
     private final PlaybackEcho playbackEcho = new PlaybackEcho();
     /**
      * The mapped controller button's current level: under push-to-talk this alone is the capture window.
@@ -166,7 +166,9 @@ public class ParakeetSTTImpl implements EarsInterface {
         } else if (!AudioCalibrator.gateClearsNoiseFloor(NOISE_FLOOR, RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabled")));
+            // WHY written, not spoken: a working microphone is the normal case, and the greeting already says
+            // the app is up. Only a microphone that needs attention is worth a spoken line.
+            UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("speech.voiceInputEnabled")));
         }
     }
 
@@ -627,7 +629,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     private void sendToAi(String transcript, boolean pttCapture) {
-        if (isSpeaking.get()) {
+        if (VocalisationHandle.isAnyPlaying()) {
             // A held button is an explicit order, never a bare interrupt: only a hands-free utterance may stop
             // at the interrupt phrase, or pressing to talk over her would silently discard what was said.
             if (!pttCapture && isInterruptPhrase(transcript)) {
@@ -659,13 +661,12 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     /**
-     * Tracks TTS lifecycle: a hands-free capture heard while anything plays admits only an interrupt phrase
-     * (see {@link PlaybackEcho}), and a transcript dispatched over playback is a barge-in.
+     * Arms the echo tail when playback stops. Whether anything plays right now is read live (see
+     * {@link PlaybackEcho}); this event only marks the moment it ended.
      */
     @Subscribe
     public void onIsSpeakingEvent(IsSpeakingEvent event) {
-        isSpeaking.set(event.isSpeaking());
-        playbackEcho.onPlayback(event.isSpeaking());
+        if (!event.isSpeaking()) playbackEcho.onPlaybackStopped();
     }
 
     /**
@@ -761,6 +762,8 @@ public class ParakeetSTTImpl implements EarsInterface {
             case FR -> "fr";
             case DE -> "de";
             case ES -> "es";
+            case RU -> "ru";
+            case UK -> "uk";
             case IT -> "it";
             // Parakeet takes ISO 639-1 only: both Portuguese variants transcribe as "pt".
             case PT, PTBZ -> "pt";

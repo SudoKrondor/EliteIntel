@@ -33,6 +33,14 @@ public final class AtomicFiles {
         replace(target, tmp -> Files.copy(source, tmp, StandardCopyOption.COPY_ATTRIBUTES));
     }
 
+    /**
+     * Replaces {@code target} with whatever {@code fill} writes. The fill gets a path that does not exist yet and
+     * must create it there - for content streamed out rather than held in memory, such as a zip.
+     */
+    public static void writeWith(Path target, TempFill fill) throws IOException {
+        replace(target, fill);
+    }
+
     private static void replace(Path target, TempFill fill) throws IOException {
         Path tmp = tempSibling(target);
         try {
@@ -79,7 +87,7 @@ public final class AtomicFiles {
     }
 
     @FunctionalInterface
-    private interface TempFill {
+    public interface TempFill {
         void writeTo(Path tmp) throws IOException;
     }
 }

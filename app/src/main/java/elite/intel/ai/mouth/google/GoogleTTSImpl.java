@@ -7,7 +7,6 @@ import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -56,7 +55,6 @@ public class GoogleTTSImpl implements MouthInterface {
     /** Voices Google actually offers per BCP-47 language code, cached from listVoices; cleared on stop. */
     private final Map<String, List<GoogleVoiceProvider.AvailableVoice>> voiceCache = new ConcurrentHashMap<>();
     private final SystemSession systemSession = SystemSession.getInstance();
-    private final PlayerSession playerSession = PlayerSession.getInstance();
 
     private GoogleTTSImpl() {
         this.ttsQueue = new LinkedBlockingQueue<>();
@@ -108,7 +106,7 @@ public class GoogleTTSImpl implements MouthInterface {
         if (systemSession.getRmsThresholdHigh() != null) {
             UiBus.publish(new AiResponseLogEvent(MultiLingualTextProvider.getText("speech.enabled")));
         }
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(playerSession.getConfiguredPlayerName())));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting()));
     }
 
     @Override
@@ -190,9 +188,10 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     @Subscribe @Override public void onVoiceProcessEvent(VocalisationRequestEvent event) {
-        // Radio is never Google's: a dedicated local radio engine voices it (Kokoro, or Supertonic for a
-        // Russian client - see RadioVoicing), so ignore it here rather than double-speak it on a metered key.
-        if (event.isRadio()) return;
+        // Radio is never Google's: a dedicated local radio engine voices it (Supertonic - see
+        // RadioVoicing), so ignore it here rather than double-speak it on a metered key. A local voice audition
+        // names a Supertonic voice, which only that engine can speak.
+        if (event.isRadio() || event.isLocalVoiceAudition()) return;
         if (!running) {
             return;
         }
@@ -221,7 +220,7 @@ public class GoogleTTSImpl implements MouthInterface {
             TransmissionAudio.Options effects = TransmissionAudio.forRequest(event);
             for (int i = 0; i < sentences.length; i++) {
                 boolean isLast = (i == sentences.length - 1);
-                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()),
+                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getGoogleSpeechSpeed()),
                         event.getOriginType(), event.isRadio(), generation, i == 0, isLast, effects, handle));
             }
 
@@ -436,7 +435,7 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     /**
-     * Voices Google offers for a BCP-47 language code (e.g. "de-DE"), fetched once via listVoices and cached.
+     * Voices Google offers for a BCP-47 language code (e.g. "ru-RU"), fetched once via listVoices and cached.
      * Returns an empty list on lookup failure (the provider then falls back to a known-good voice) and does not
      * cache the failure, so a transient error is retried next time.
      */
@@ -585,7 +584,7 @@ public class GoogleTTSImpl implements MouthInterface {
         byte[] silenceBuffer = new byte[silenceFrames * format.getFrameSize()];
         boolean interrupted = false;
 
-        // Bracket main-voice playback so the always-on Kokoro radio engine can duck behind it.
+        // Bracket main-voice playback so the always-on Supertonic radio engine can duck behind it.
         MainVoicePlaybackGate.begin();
         try {
             currentLine.set(persistentLine);

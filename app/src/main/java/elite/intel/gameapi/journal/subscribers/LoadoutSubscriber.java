@@ -64,7 +64,7 @@ public class LoadoutSubscriber {
             UiBus.publish(new ActiveShipChangedEvent(shipName));
 
             if (Status.getInstance().isOkToAnnounceLoadout()) {
-                EventNarrator.critical(StringUtls.shipIntroduction(playerSession.getPlayerName(), shipName));
+                EventNarrator.critical(StringUtls.shipIntroduction(shipName));
             }
         });
     }

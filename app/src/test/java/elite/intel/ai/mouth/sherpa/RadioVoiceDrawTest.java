@@ -1,6 +1,5 @@
 package elite.intel.ai.mouth.sherpa;
 
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -85,11 +84,6 @@ class RadioVoiceDrawTest {
 
     static Stream<Cast> casts() {
         return Stream.of(
-                new Cast("Kokoro",
-                        Arrays.stream(KokoroVoices.radioCast()).map(Enum::name).toList(),
-                        KokoroVoices.DEFAULT_VOICE.name(),
-                        (own, reserved) -> KokoroVoices.randomRadioVoice(own, reserved).name(),
-                        (speaker, own, reserved) -> KokoroVoices.radioVoiceFor(speaker, own, reserved).name()),
                 new Cast("Supertonic",
                         Arrays.stream(SupertonicVoices.values()).map(Enum::name).toList(),
                         SupertonicVoices.DEFAULT_VOICE.name(),
