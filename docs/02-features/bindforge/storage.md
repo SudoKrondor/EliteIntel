@@ -103,10 +103,10 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    `StartPreset.4.start` names a binds file that exists.** If one does not — or is empty — APPLY refuses as a whole
    and names the sections (2026-10-24, Alan), because the game would silently load something else.
 8. APPLY writes everything it can. If a file or an installation can't be written, the user is told — *"updated 2 of
-   3"* — and the check finds the missed installation and offers to put the working copy there (rule 14). The next
-   APPLY writes only the bindings folder again: a missed installation now differs, and is left as it is until the
-   check (Alan, 2026-10-27; [How the files are written](#how-the-files-are-written--2026-10-24)). Nothing is rolled
-   back (2026-10-23, Alan).
+   3"* — and the check finds the missed installation and offers to put the working copy there (rule 14). A missed
+   installation now differs, so it is never written over unasked: the check at the next BindForge click, or at the next
+   APPLY, asks about it (Alan, 2026-10-27; at APPLY since Storage S9b, 2026-10-31;
+   [How the files are written](#how-the-files-are-written--2026-10-24)). Nothing is rolled back (2026-10-23, Alan).
 9. Before the user leaves BindForge with edits not applied — another Elite-Intel tab, or closing Elite-Intel — they
    are reminded, and choose **Go back**, **Discard** or **Apply** (Apply with its usual confirmation and backup).
    Nothing is selected and Enter chooses nothing; Esc and the close glyph are Go back (2026-10-23, Alan).
@@ -160,13 +160,15 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   installation (rule 1). The bindings folder and every other installation are still written. Reconciling it is the
   check's (rule 14, Storage S9). First setup and RESTORE write every installation, as they always have: first setup
   has just reconciled them, and RESTORE is the user asking to replace them (rule 10). **An installation a write
-  missed differs too**, so it also waits for the check rather than the next APPLY, which rule 8 promised it. Until
-  Storage S9 nothing puts the working copy there; that gap is accepted while V1.2 is built (Alan, 2026-10-27: no catch-up record, no per-place overwrite before S9), and S9 must close it
-  (built in Storage S4a, 2026-10-26). A file there that
+  missed differs too**, so it also waits for the check (built in Storage S4a, 2026-10-26). A file there that
   cannot be read counts as differing - it could hold anything of the user's. An installation with no
   `DeviceMappings.xml` does not differ here: APPLY writes one. *The check names it as a reset since Storage S9a
   (Alan, 2026-10-31; rule 14, Settled with Storage S9's sources).* **Since Storage S9a the first BindForge click in a
-  session reconciles an installation that differs**; the check at APPLY is S9b's.
+  session reconciles an installation that differs, and since Storage S9b (2026-10-31) so does the check at APPLY**:
+  APPLY now leaves alone only an installation its check could not read at all, and one it never read - unreachable
+  when the check ran, back by the write - that differs (rule 1). *Until S9 nothing put the working copy on a missed
+  installation; that gap was accepted while V1.2 was built (Alan, 2026-10-27: no catch-up record, no per-place
+  overwrite before S9).*
 
   **Settled from the S4a review (Alan, 2026-10-27):**
 
@@ -297,7 +299,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     sure?"* before the live copy replaces the working copy.
 
     **At APPLY, with edits on screen** (2026-10-23, Alan): the check settles the working copy first; APPLY then puts
-    the on-screen edits on top and writes everything out.
+    the on-screen edits on top and writes everything out. *For the device files the edits are instead the user's side
+    of the reconcile (Alan, 2026-10-31, Storage S9b; Settled with Storage S9b's sources, below).*
 
     **A newer version is reconciled, never overwritten** (Krondor, 2026-09-24; Alan, 2026-10-23). When a live copy is
     a newer version than the working copy — `.4.2.binds` becoming `.4.3.binds`, or a newer version on the XML root —
@@ -367,8 +370,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
 
     - **S9 is two slices**, as S8 was. S9a: the device files in the check at the first BindForge click, in the line at
       Elite-Intel start, and Game Install Locations' match states. S9b: the device files in the check at APPLY, with
-      the edits on top. Until S9b, APPLY still leaves alone an installation whose device files differ, and the next
-      session's first click asks about it.
+      the edits. *Until S9b, APPLY left alone an installation whose device files differed, and the next session's
+      first click asked about it.*
     - **Each reachable installation is compared by value**, as APPLY compares it (*How the files are written*), and is
       one of: *matches*; *differs*; *reset* - its `DeviceMappings.xml` is gone, or holds none of the user's elements
       (every element a name Frontier ships) while the working copy holds at least one; *cannot be parsed*; or *cannot
@@ -393,11 +396,27 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       S9R; values, never bytes - [Freshness Checks](overview.md#freshness-checks)).
     - **Cancelling the reconcile in Merge goes back to the binds rows**, the answers kept; with no binds rows to
       answer it goes back to the warning (Alan, 2026-10-31, Storage S9R).
-    - **Until Storage S9b the reconcile judges losses on the working copy's binds files** (Alan, 2026-10-31, from
-      the S9a review): it ranks a device red, and *use one installation for all* names the bindings it would lose,
-      from the working copy's binds files, not from the binds files the check settles. When the user takes the game's
-      binds rows, a device that only the game's side uses can be removed without being named. S9b builds the reading
-      from the settled binds files.
+    - *Until Storage S9b the reconcile judged losses on the working copy's binds files* (Alan, 2026-10-31, from the
+      S9a review), so a device only the game's side used could be removed without being named. S9b builds the reading
+      from the settled binds files - below.
+
+    **Settled with Storage S9b's sources (Alan, 2026-10-31)** - the device files at APPLY:
+
+    - **APPLY's check judges the device files** as the first click's does, in the same warning, backup and write. An
+      installation that differs is reconciled, no longer left alone, so a write missed earlier - in this session or
+      another - is put right at the next APPLY.
+    - **The edits are the user's side of the reconcile.** BindForge's side is the working copy with the edits on top,
+      named on screen *"Your files, with the edits not applied"*. *Put mine back* writes the edits' device files; the
+      reconcile weighs them against the installation's, conflict by conflict; taking an installation's files over them
+      drops a device edit, by the user's choice, and the backup holds the working copy. So, unlike the binds and preset
+      files, a device-file edit does not go on top of the settled set: an automatic merge per device would have to
+      guess when an edited device and a reconciled one claim one VID/PID (principle 6). A reconciled set replaces the
+      edits' device files whole, its moves made in the binds files written, the edits' included.
+    - **An installation the check cannot read at all asks nothing at APPLY**: APPLY writes, leaves it alone, and the
+      report says it was not written. Stopping every APPLY while a drive is unreadable would block the user's work.
+    - **The reconcile reads the binds files the answers settle**, the edits on top at APPLY - built in storage once the
+      binds rows are answered - so a device only the game's side uses ranks red, and *use one installation for all*
+      names the bindings it would lose.
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

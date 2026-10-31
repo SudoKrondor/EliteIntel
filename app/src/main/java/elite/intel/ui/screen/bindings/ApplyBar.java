@@ -33,10 +33,10 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * alone do not light them.
  * <p>
  * APPLY asks first, with rule 13's warning and, on Linux with several installations, that bindings move only in the
- * one Elite-Intel uses; then checks the preset file, naming the sections it refuses for; then runs the check for the
- * binds and preset files, warning when the game's differ ({@link CheckFlow}, Storage S8b); then backs up, saves the
- * edits on top of what the check settled into the working copy and writes it out ({@link Apply}), and reports per
- * place. DISCARD asks, then throws every edit away; no file is touched.
+ * one Elite-Intel uses; then checks the preset file, naming the sections it refuses for; then runs the check, warning
+ * when the game's binds and preset files or an installation's device files differ ({@link CheckFlow}, Storage S8b,
+ * S9b); then backs up, saves the edits on top of what the check settled into the working copy and writes it out
+ * ({@link Apply}), and reports per place. DISCARD asks, then throws every edit away; no file is touched.
  * <p>
  * The leave prompt's Apply ({@link LeavePrompt}, storage.md rule 9) is this APPLY, with its confirmation and report,
  * told when it has finished so it can leave once the edits are gone.
@@ -163,13 +163,11 @@ public final class ApplyBar extends JPanel {
         @Override
         public String write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers,
                             DeviceCheck.Answer devices) throws IOException {
-            // WHY: APPLY's check does not judge the device files until Storage S9b, so only a put-back can come here -
-            // a reconciled answer would be S9b wired in half way, and is not dropped unseen.
-            if (!(devices instanceof DeviceCheck.PutMineBack)) {
-                throw new IllegalStateException("APPLY's check reconciled device files before Storage S9b: " + devices);
-            }
             try {
-                return reportText(applying.apply(found, answers));
+                StringBuilder report = new StringBuilder(reportText(applying.apply(found, answers, devices)));
+                devices.moves().forEach((from, to) -> report.append('\n')
+                        .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
+                return report.toString();
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("APPLY wrote nothing: there was nothing to back up");
                 return getText(Backups.NothingToBackUpException.ADVICE_KEY);

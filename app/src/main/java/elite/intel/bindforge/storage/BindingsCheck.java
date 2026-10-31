@@ -7,6 +7,7 @@ import elite.intel.bindforge.storage.BindingsComparison.Factory;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -36,15 +38,15 @@ import java.util.stream.Stream;
  * <strong>Nothing watches the files</strong>: just before the write the bindings folder is compared again, and if a
  * row changed meanwhile nothing is written ({@link ChangedMeanwhileException}, carrying what is found now).
  * <p>
- * <strong>At the first click the device files are checked too</strong> (Storage S9a; {@link DeviceCheck}): every
- * reachable installation judged against the working copy, in the same warning, backup and write - the device files the
- * user settled on go to every installation the check read, and an installation whose device files changed meanwhile
- * stops the write as a row does.
+ * <strong>The device files are checked too</strong> (Storage S9a and S9b; {@link DeviceCheck}): every reachable
+ * installation judged against the working copy, in the same warning, backup and write - the device files the user
+ * settled on go to every installation the check read, and an installation whose device files changed meanwhile stops
+ * the write as a row does. The reconcile's reading is built here ({@link #reading}), from the binds files the user's
+ * answers settle.
  * <p>
- * <strong>At APPLY</strong> (Storage S8b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes the
- * settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
- * screen. APPLY's check does not judge the device files until Storage S9b: APPLY leaves an installation that differs
- * alone. Touches the disk - not for the EDT.
+ * <strong>At APPLY</strong> (Storage S8b, S9b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes
+ * the settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
+ * screen. Touches the disk - not for the EDT.
  */
 public final class BindingsCheck {
 
@@ -69,6 +71,12 @@ public final class BindingsCheck {
                           Set<String> removeFromBindings) throws IOException;
     }
 
+    /** Where the working copy is - for the reconcile's message naming BindForge's side. */
+    @FunctionalInterface
+    interface WorkingCopyFolder {
+        Path get() throws IOException;
+    }
+
     /** The before-the-check backup: the live copies, and the working copy as it is. */
     @FunctionalInterface
     interface BackUp {
@@ -83,8 +91,7 @@ public final class BindingsCheck {
      * @param differences the rows to ask about - every one that differs, but those the edits change
      * @param edited      how many rows that differ are not asked about because the edits change them - at APPLY, where
      *                    the edits go on top (Storage S8b); none at the first click, which has no edits
-     * @param devices     every reachable installation's device files, judged - at the first click (Storage S9a);
-     *                    {@link DeviceCheck.Found#NOT_CHECKED} at APPLY until Storage S9b
+     * @param devices     every reachable installation's device files, judged (Storage S9a, S9b)
      */
     public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited,
                         DeviceCheck.Found devices) {
@@ -93,11 +100,6 @@ public final class BindingsCheck {
             live = Map.copyOf(live);
             Objects.requireNonNull(differences, "differences");
             Objects.requireNonNull(devices, "devices");
-        }
-
-        /** What the binds and preset files' check found, with the device files not judged. */
-        public Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited) {
-            this(workingCopy, live, differences, edited, DeviceCheck.Found.NOT_CHECKED);
         }
 
         /** Whether nothing differs - no binds or preset file, and no installation. */
@@ -140,6 +142,7 @@ public final class BindingsCheck {
 
     private final Edits edits;
     private final Supplier<Path> bindingsFolder;
+    private final WorkingCopyFolder workingCopyFolder;
     private final LiveReader liveReader;
     private final FactorySource factory;
     private final Writer writer;
@@ -148,21 +151,24 @@ public final class BindingsCheck {
     private final DeviceCheck.Source devices;
 
     /**
-     * The shared edits, the bindings folder Elite-Intel is set to, the backup folder, the write path and the stored
-     * installations.
+     * The shared edits, the bindings folder Elite-Intel is set to, the working copy's folder, the backup folder, the
+     * write path and the stored installations.
      */
     public static BindingsCheck stored() {
         return new BindingsCheck(Edits.stored(), () -> PlayerSession.getInstance().getBindingsDir(),
+                AppPaths::getWorkingCopyDir,
                 BindingsCheck::readBindingsFolder, BindingsCheck::factoryOf,
                 (files, backUp, leaveAlone, remove) -> WritePath.stored().write(files, backUp, leaveAlone, remove),
                 (sources, workingCopy) -> Backups.stored().backUpBeforeChange(Backups.Before.CHECK, sources, workingCopy),
                 installation -> DeviceFiles.read(installation.root()), DeviceCheck.stored());
     }
 
-    BindingsCheck(Edits edits, Supplier<Path> bindingsFolder, LiveReader liveReader, FactorySource factory,
-                  Writer writer, BackUp backUp, Apply.Reader deviceFiles, DeviceCheck.Source devices) {
+    BindingsCheck(Edits edits, Supplier<Path> bindingsFolder, WorkingCopyFolder workingCopyFolder, LiveReader liveReader,
+                  FactorySource factory, Writer writer, BackUp backUp, Apply.Reader deviceFiles,
+                  DeviceCheck.Source devices) {
         this.edits = edits;
         this.bindingsFolder = bindingsFolder;
+        this.workingCopyFolder = workingCopyFolder;
         this.liveReader = liveReader;
         this.factory = factory;
         this.writer = writer;
@@ -174,27 +180,18 @@ public final class BindingsCheck {
     /**
      * Compares the bindings folder with the working copy, leaving out the rows the edits on screen change - at APPLY
      * the edits go on top of whichever side is kept, so nobody is asked about them (Alan, 2026-10-30, Storage S8b).
-     * Reads only.
+     * The device files are judged too - every reachable installation's, against the working copy - at the first click
+     * (Storage S9a) and at APPLY (Storage S9b). Reads only.
      *
      * @throws NoSuchFileException if there is no working copy, or no bindings folder - nothing can be compared
-     * @throws IOException         if either cannot be read
+     * @throws IOException         if either cannot be read, or the working copy's own device files cannot be parsed. An
+     *                             installation that cannot be read is judged so, not thrown
      */
     public Found find() throws IOException {
-        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()), false);
+        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()));
     }
 
-    /**
-     * {@link #find()}, and every reachable installation's device files judged against the working copy - the first
-     * click's check (Storage S9a). Reads only.
-     *
-     * @throws IOException if the bindings folder or the working copy cannot be read, or the working copy's own device
-     *                     files cannot be parsed. An installation that cannot be read is judged so, not thrown
-     */
-    public Found findWithDeviceFiles() throws IOException {
-        return find(edits.snapshot(), liveReader.read(bindingsFolder.get()), true);
-    }
-
-    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live, boolean withDevices) throws IOException {
+    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live) throws IOException {
         ConfigurationFiles workingCopy = snapshot.applied();
         Differences all = BindingsComparison.compare(workingCopy.bindings(), live, Factory.NONE);
         // WHY: the factory binds files are read only when something differs - most first clicks find nothing.
@@ -206,7 +203,7 @@ public final class BindingsCheck {
                     String.join(", ", all.leftOut()));
         }
         Differences asked = BindingsComparison.without(all, edited(snapshot));
-        DeviceCheck.Found judged = withDevices ? devices.find(workingCopy) : DeviceCheck.Found.NOT_CHECKED;
+        DeviceCheck.Found judged = devices.find(workingCopy);
         return new Found(workingCopy, live, asked, all.items().size() - asked.items().size(), judged);
     }
 
@@ -222,8 +219,8 @@ public final class BindingsCheck {
      * @param snapshot the edits and the working copy, read inside the write
      * @param found    what the warning showed - nothing, when it showed none
      * @param answers  the side each of its rows keeps
-     * @throws ChangedMeanwhileException if a row, the working copy, the edits or - when they were judged - an
-     *                                   installation's device files changed since {@code found} - nothing is written
+     * @throws ChangedMeanwhileException if a row, the working copy, the edits or an installation's device files changed
+     *                                   since {@code found} - nothing is written
      * @throws IOException               if the bindings folder cannot be read, or a merge cannot be made
      */
     BindingsComparison.Settled settled(Edits.Snapshot snapshot, Found found, Map<String, Side> answers)
@@ -231,12 +228,38 @@ public final class BindingsCheck {
         Map<String, byte[]> live = liveReader.read(bindingsFolder.get());
         Differences now = BindingsComparison.without(
                 BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE), edited(snapshot));
-        boolean withDevices = found.devices().checked();
         if (!snapshot.applied().sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())
-                || (withDevices && !devices.find(snapshot.applied()).sameAs(found.devices()))) {
-            throw new ChangedMeanwhileException(find(snapshot, live, withDevices));
+                || !devices.find(snapshot.applied()).sameAs(found.devices())) {
+            throw new ChangedMeanwhileException(find(snapshot, live));
         }
         return BindingsComparison.settle(snapshot.applied().bindings(), live, now, answers);
+    }
+
+    /**
+     * The device files' reconcile, as first setup's reading (storage.md rule 14), once the user has answered the binds
+     * rows (Storage S9b, from the S9a review): BindForge's side is the working copy with the edits on top - at APPLY
+     * the edits are the user's side, decided in the reconcile like any other difference (Alan, 2026-10-31) - and the
+     * binds files are those the write would hold: the rows settled by {@code answers}, the edits on top. So a device
+     * only the game's side uses ranks red, and <em>use one installation for all</em> counts its bindings. Reads the
+     * edits and parses the device files - not for the EDT.
+     *
+     * @param answers  the side each binds row keeps - every row answered, or none when there are none
+     * @param mineName BindForge's side's name on screen, in the user's language
+     * @return empty when no installation's files can be a side - only a missing or unparseable file, for which putting
+     *         the working copy back is all there is
+     * @throws IOException if a merge cannot be made, or a side's files cannot be read for the plan - the message names
+     *                     it
+     */
+    public Optional<FirstSetupReading> reading(Found found, Map<String, Side> answers, String mineName)
+            throws IOException {
+        if (found.devices().sides().isEmpty()) return Optional.empty();
+        Edits.Snapshot snapshot = edits.snapshot();
+        Map<String, byte[]> settled = BindingsComparison.settle(found.workingCopy().bindings(), found.live(),
+                found.differences(), answers).bindings();
+        Map<String, byte[]> bindings = BindingsComparison.withEditsOnTop(settled, snapshot.applied().bindings(),
+                snapshot.current().bindings());
+        return Optional.of(found.devices().reading(snapshot.current(), bindings, bindingsFolder.get(),
+                workingCopyFolder.get(), mineName));
     }
 
     /**

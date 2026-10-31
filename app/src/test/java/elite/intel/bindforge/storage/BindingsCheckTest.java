@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * The check for the binds and preset files (storage.md rule 14; Storage S8a): it reads and compares, then writes what
  * the user settled on through the write path - backed up first with the working copy inside - and writes nothing when
- * the files changed meanwhile or edits are on screen. At the first click it judges the device files too, and writes
- * what the user settled for them in the same write (Storage S9a).
+ * the files changed meanwhile or edits are on screen. It judges the device files too, and writes what the user settled
+ * for them in the same write (Storage S9a); the reconcile reads the binds files the answers settle (Storage S9b).
  */
 class BindingsCheckTest {
 
@@ -49,7 +49,7 @@ class BindingsCheckTest {
     private final List<ConfigurationFiles> backedUpWorkingCopies = new ArrayList<>();
     private final AtomicInteger factoryReads = new AtomicInteger();
     /** What the device files' check finds - every installation matching, until a test says otherwise. */
-    private DeviceCheck.Found devices = new DeviceCheck.Found(true, List.of());
+    private DeviceCheck.Found devices = new DeviceCheck.Found(List.of());
 
     @BeforeEach
     void aBindingsFolder() throws IOException {
@@ -161,30 +161,28 @@ class BindingsCheckTest {
         assertEquals(List.of(), written);
     }
 
-    // ---- the device files, at the first click (Storage S9a)
+    // ---- the device files (Storage S9a, S9b)
 
+    /** The one check judges the device files - at the first click and, since Storage S9b, at APPLY. */
     @Test
-    void theFirstClickJudgesTheDeviceFilesAndAPPLYsCheckDoesNot() throws IOException {
+    void theCheckJudgesTheDeviceFiles() throws IOException {
         live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
-        devices = new DeviceCheck.Found(true, List.of(judged(State.RESET_MISSING)));
+        devices = new DeviceCheck.Found(List.of(judged(State.RESET_MISSING)));
 
-        BindingsCheck.Found atFirstClick = check().findWithDeviceFiles();
-        BindingsCheck.Found atApply = check().find();
+        BindingsCheck.Found found = check().find();
 
-        assertTrue(atFirstClick.differences().none());
-        assertFalse(atFirstClick.none(), "an installation that differs is something to say");
-        assertTrue(atFirstClick.anythingToAsk());
-        assertFalse(atApply.devices().checked(), "APPLY's check judges no device files until Storage S9b");
-        assertTrue(atApply.none());
+        assertTrue(found.differences().none());
+        assertFalse(found.none(), "an installation that differs is something to say");
+        assertTrue(found.anythingToAsk());
     }
 
     /** One the check could not read at all is said, but there is nothing to ask about it (Alan, 2026-10-31). */
     @Test
     void anInstallationThatCannotBeReadIsNothingToAsk() throws IOException {
         live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
-        devices = new DeviceCheck.Found(true, List.of(judged(State.UNREADABLE)));
+        devices = new DeviceCheck.Found(List.of(judged(State.UNREADABLE)));
 
-        BindingsCheck.Found found = check().findWithDeviceFiles();
+        BindingsCheck.Found found = check().find();
 
         assertFalse(found.none());
         assertFalse(found.anythingToAsk());
@@ -194,9 +192,9 @@ class BindingsCheckTest {
     @Test
     void theReconciledDeviceFilesGoInTheSameWriteAsTheBindsFiles() throws IOException {
         live(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""));
-        devices = new DeviceCheck.Found(true, List.of(judged(State.DIFFERS)));
+        devices = new DeviceCheck.Found(List.of(judged(State.DIFFERS)));
         BindingsCheck check = check();
-        BindingsCheck.Found found = check.findWithDeviceFiles();
+        BindingsCheck.Found found = check.find();
         ConfigurationFiles reconciled = new ConfigurationFiles(Map.of(), bytes("<Root><LVWAP/></Root>"),
                 Map.of("LVWAP.buttonMap", bytes("<Root/>")));
 
@@ -214,16 +212,65 @@ class BindingsCheckTest {
     @Test
     void anInstallationChangedAfterTheWarningOpenedStopsTheWrite() throws IOException {
         live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
-        devices = new DeviceCheck.Found(true, List.of(judged(State.RESET_MISSING)));
+        devices = new DeviceCheck.Found(List.of(judged(State.RESET_MISSING)));
         BindingsCheck check = check();
-        BindingsCheck.Found found = check.findWithDeviceFiles();
-        devices = new DeviceCheck.Found(true, List.of(judged(State.DIFFERS)));
+        BindingsCheck.Found found = check.find();
+        devices = new DeviceCheck.Found(List.of(judged(State.DIFFERS)));
 
         BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
                 () -> check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK));
 
         assertEquals(List.of(), written);
         assertEquals(State.DIFFERS, changed.now().devices().installations().getFirst().state());
+    }
+
+    // ---- the reconcile's reading (Storage S9b, from the S9a review)
+
+    /**
+     * The reconcile reads the binds files the answers settle, the edits on top - so a binding only the game's side holds
+     * counts - and BindForge's side is the working copy with the edits, under the name given.
+     */
+    @Test
+    void theReconcileReadsTheBindsFilesTheAnswersSettleWithTheEditsOnTop() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(List.of(judged(State.DIFFERS)));
+        edits.change(current -> current.withBindingsFile(CUSTOM, bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+
+        FirstSetupReading reading = check.reading(found, every(found, Side.LIVE), "Yours").orElseThrow();
+
+        assertEquals(1, found.differences().items().size(), "the game's line only - the edit's is not asked");
+        assertEquals(binds("Custom", "Key_Q", "Joy_YAxis", ""), text(reading.bindings().get(CUSTOM)),
+                "the game's line, and the edit on top");
+        assertEquals(List.of(DeviceCheck.WORKING_COPY_SIDE, 1L),
+                reading.installations().stream().map(InstallationFiles::installId).toList());
+        assertEquals("Yours", reading.installations().getFirst().storefront());
+        assertEquals(temp.resolve("working-copy"), reading.installations().getFirst().root());
+        assertEquals(List.of(), written, "the reading writes nothing");
+    }
+
+    /** Putting the working copy's side back keeps the working copy's lines in the reading. */
+    @Test
+    void keepingMineReadsTheWorkingCopysBindsFiles() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(List.of(judged(State.DIFFERS)));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+
+        FirstSetupReading reading = check.reading(found, every(found, Side.WORKING_COPY), "Yours").orElseThrow();
+
+        assertEquals(text(workingCopy.bindings().get(CUSTOM)), text(reading.bindings().get(CUSTOM)));
+    }
+
+    /** A missing or unparseable file is never a side, so there is nothing to reconcile. */
+    @Test
+    void noInstallationThatCanBeASideHasNoReading() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        devices = new DeviceCheck.Found(List.of(judged(State.RESET_MISSING)));
+        BindingsCheck check = check();
+
+        assertTrue(check.reading(check.find(), Map.of(), "Yours").isEmpty());
     }
 
     // ---- helpers
@@ -236,7 +283,8 @@ class BindingsCheckTest {
     }
 
     private BindingsCheck check() {
-        return new BindingsCheck(edits, () -> bindings, BindingsCheck::readBindingsFolder,
+        return new BindingsCheck(edits, () -> bindings, () -> temp.resolve("working-copy"),
+                BindingsCheck::readBindingsFolder,
                 files -> {
                     factoryReads.incrementAndGet();
                     return Factory.NONE;

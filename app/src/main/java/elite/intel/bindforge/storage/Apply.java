@@ -30,9 +30,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * the edits and the controllers attached now - not pushed earlier by a screen, which could leave them stale after a
  * rename or a controller plugged in while the screen was not showing.
  * <p>
- * <strong>An installation whose device files differ from the working copy is left alone</strong> and reported, until it
- * is reconciled (Alan, 2026-10-26; storage.md, <em>How the files are written</em>): compared by value
- * ({@link DeviceFilesComparison}) against the working copy as it was before the edits went on top.
+ * <strong>An installation whose device files differ from the working copy is reconciled at APPLY</strong> (Storage S9b;
+ * storage.md rule 14): the check judges it, the user settles it, and the result goes to every installation the check
+ * read. Left alone are only one the check could not read at all, and one it never read - unreachable when it ran, back
+ * by the write - whose device files differ from the working copy by value ({@link DeviceFilesComparison}; rule 1).
  * <p>
  * <strong>The preset file is checked first</strong>, before anything is backed up or written (preset-editor.md,
  * <em>What APPLY checks and writes for the preset file</em>; Storage S6, 2026-10-28): every one of its four lines must
@@ -41,11 +42,12 @@ import java.util.concurrent.atomic.AtomicReference;
  * factory binds files come only from the installations that are reachable ({@link BackupSources.Installation#reachable});
  * when one is not, the refusal names it, since its files may be what a line names (Storage S6R, 2026-10-29).
  * <p>
- * <strong>Every APPLY runs the check</strong> for the binds and preset files (storage.md rule 14, <em>At APPLY</em>;
- * Storage S8b): {@link #check()} after the confirmation, then {@link #apply} with what the user settled on. The check
- * settles the working copy first and the edits go on top - an edit wins on every line item it changed - in one backup
- * and one write. The rows the edits change are never asked about. The device files are judged at the first click since
- * Storage S9a; at APPLY, in S9b - until then an installation that differs is left alone.
+ * <strong>Every APPLY runs the check</strong> (storage.md rule 14, <em>At APPLY</em>; Storage S8b, S9b): {@link #check()}
+ * after the confirmation, then {@link #apply} with what the user settled on, in one backup and one write. For the binds
+ * and preset files the check settles the working copy first and the edits go on top - an edit wins on every line item
+ * it changed, and the rows the edits change are never asked about. <strong>For the device files the edits are the
+ * user's side</strong> (Alan, 2026-10-31, Storage S9b): putting mine back writes the edits' device files, and the
+ * reconcile weighs them against the installation's, so no device edit is merged in unseen.
  * Publishes no {@code BindingsUpdatedEvent} - {@code BindingsMonitor} sees the bindings folder change. Touches the disk
  * - not for the EDT.
  */
@@ -180,7 +182,8 @@ public final class Apply {
     /**
      * APPLY's first step, once the user has confirmed: the preset file the edits hold, then the check - the game's binds
      * and preset files compared with the working copy, leaving out the rows the edits change (Alan, 2026-10-30, Storage
-     * S8b). Reads only; the user then answers what it found, if anything, and {@link #apply} writes.
+     * S8b), and every reachable installation's device files judged (Storage S9b). Reads only; the user then answers what
+     * it found, if anything, and {@link #apply} writes.
      *
      * @throws PresetRefusedException if a line of the preset file names no binds file that can be found - before the
      *                                 warning, so no merge is answered for nothing
@@ -198,6 +201,9 @@ public final class Apply {
      *
      * @param found   what {@link #check()} found
      * @param answers the side each of its rows keeps - none when it found nothing
+     * @param devices the device files settled on - {@link DeviceCheck.Answer#PUT_MINE_BACK} when no installation was
+     *                asked about, or the user put theirs back: the edits' device files. A reconciled answer replaces them
+     *                whole, its moves made in the binds files written
      * @return the report and the before-APPLY backup
      * @throws BindingsCheck.ChangedMeanwhileException if the game's files changed since {@code found} - nothing was
      *                                                 written; it carries what is there now
@@ -210,22 +216,28 @@ public final class Apply {
      *                                                 the working copy cannot be saved - no live copy was written, and
      *                                                 the edits are still on screen
      */
-    public Written apply(BindingsCheck.Found found, Map<String, Side> answers) throws IOException {
+    public Written apply(BindingsCheck.Found found, Map<String, Side> answers, DeviceCheck.Answer devices)
+            throws IOException {
         return edits.whileWriting(() -> {
             Edits.Snapshot snapshot = edits.snapshot();
             BindingsComparison.Settled settled = check.settled(snapshot, found, answers);
-            boolean checkSettled = !found.differences().none();
+            boolean bindsSettled = !found.differences().none();
+            boolean reconciled = devices instanceof DeviceCheck.Reconciled;
             // WHY: with nothing settled the edits go out byte for byte, as they always have.
-            ConfigurationFiles onTop = checkSettled
+            ConfigurationFiles onTop = bindsSettled
                     ? snapshot.current().withBindings(BindingsComparison.withEditsOnTop(settled.bindings(),
                     snapshot.applied().bindings(), snapshot.current().bindings()))
                     : snapshot.current();
+            // WHY: the edits' device files are the user's side of the reconcile (Alan, 2026-10-31, Storage S9b), so a
+            // reconciled answer replaces them whole - its moves made in the binds files, edits included.
+            onTop = DeviceCheck.withDevices(onTop, devices);
             // WHY: again, on the set written - a merge can take the game's preset line.
             checkPresetFile(onTop);
             // WHY: before anything is backed up or written. The working copy is BindForge's own, so one it cannot
             // parse is a broken invariant - not a user file to protect by leaving every installation alone.
             DeviceFilesComparison comparison = DeviceFilesComparison.of(snapshot.applied());
             ConfigurationFiles files = withDefaults(onTop, defaults.of(onTop, snapshot.applied()));
+            boolean checkSettled = bindsSettled || reconciled;
             Set<String> remove = new TreeSet<>(settled.removeFromLive());
             // WHY: a file the edits hold is written, never removed - the edit wins.
             remove.removeAll(files.bindings().keySet());
@@ -235,10 +247,12 @@ public final class Apply {
                         : backUp.take(sources);
                 taken.set(backup);
                 return backup;
-            }, leavingAloneWhereDifferent(comparison, reader), remove);
-            log.info("Applied: {} binds and preset files, {} button maps; the check settled {} rows; installations "
-                            + "updated {} of {}", files.bindings().size(), files.buttonMaps().size(),
-                    found.differences().items().size(), report.installationsUpdated(), report.installations().size());
+            }, found.devices().leavingAlone(comparison, reader), remove);
+            log.info("Applied: {} binds and preset files, {} button maps; the check settled {} rows and {} "
+                            + "installations that differed, their device files {}; installations updated {} of {}",
+                    files.bindings().size(), files.buttonMaps().size(), found.differences().items().size(),
+                    found.devices().asked().size(), reconciled ? "reconciled" : "the edits'",
+                    report.installationsUpdated(), report.installations().size());
             return new Written(report, taken.get());
         });
     }
@@ -272,8 +286,9 @@ public final class Apply {
     }
 
     /**
-     * Leaves alone each installation whose device files differ from the working copy (Alan, 2026-10-26): APPLY's, until
-     * Storage S9b reconciles them at APPLY, and the check's for an installation it did not read ({@link DeviceCheck}).
+     * Leaves alone each installation whose device files differ from the working copy (Alan, 2026-10-26) - the check's
+     * rule for an installation it did not read, unreachable when it ran and back by the write ({@link DeviceCheck};
+     * storage.md rule 1).
      */
     static LiveCopies.LeaveAlone leavingAloneWhereDifferent(DeviceFilesComparison comparison, Reader reader) {
         return installation -> differs(comparison, reader, installation);

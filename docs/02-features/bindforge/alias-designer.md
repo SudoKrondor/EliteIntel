@@ -540,7 +540,9 @@ row with its own ways out — revert, adopt one device, compare labels.*
 **"Cannot be read" is two cases** (Alan, 2026-10-31, Storage S9): a file that cannot be *parsed* is offered putting the
 working copy back, since the backup holds its bytes; a file that cannot be *read at all* is named and left as it is,
 since the backup could not hold it ([storage.md](storage.md#when-a-live-copy-differs), *Settled with Storage S9's
-sources*). The reconcile is first setup's dialog, with BindForge's working copy as one of the sides.
+sources*). The reconcile is first setup's dialog, with BindForge's working copy as one of the sides - at APPLY, the
+working copy with the edits not applied, named *"Your files, with the edits not applied"* (Alan, 2026-10-31, Storage
+S9b).
 
 ## VID/PID Is Not a Stable Identity
 

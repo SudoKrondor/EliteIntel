@@ -23,18 +23,20 @@ import java.util.function.Predicate;
  * The check for the device files (storage.md rule 14, <em>Settled with Storage S9's sources</em>; Storage S9a): every
  * reachable installation's {@code DeviceMappings.xml} and {@code .buttonMap}s judged against the working copy by value
  * ({@link DeviceFilesComparison}), and - when one no longer matches - the reconcile first setup uses (rule 2), with
- * the working copy as one of the sides ({@link Found#reading}).
+ * the working copy as one of the sides ({@link Found#reading}). Judged at the first click (Storage S9a) and at APPLY
+ * (Storage S9b).
  * <p>
- * Nothing is written here: {@link BindingsCheck#settle} writes the device files the user settled on with the binds and
- * preset files, in one backup and one write. Touches the disk where it reads - not for the EDT.
+ * Nothing is written here: {@link BindingsCheck#settle} at the first click, and {@link Apply#apply} at APPLY, write the
+ * device files the user settled on with the binds and preset files, in one backup and one write. Touches the disk where
+ * it reads - not for the EDT.
  */
 public final class DeviceCheck {
 
     private static final Logger log = LogManager.getLogger(DeviceCheck.class);
 
     /**
-     * The working copy's side in a reconcile. Stored installation ids start at 1, so 0 is no installation's; it is used
-     * only in the reading {@link Found#reading} makes.
+     * BindForge's side in a reconcile - the working copy, with the edits on top at APPLY. Stored installation ids start
+     * at 1, so 0 is no installation's; it is used only in the reading {@link Found#reading} makes.
      */
     public static final long WORKING_COPY_SIDE = 0L;
 
@@ -144,16 +146,11 @@ public final class DeviceCheck {
     }
 
     /**
-     * What the check found for the device files.
+     * What the check found for the device files - at the first click (Storage S9a) and at APPLY (Storage S9b).
      *
-     * @param checked       whether the device files were judged at all - APPLY's check does not judge them until
-     *                      Storage S9b
      * @param installations every reachable installation, in the stored list's order
      */
-    public record Found(boolean checked, List<Judged> installations) {
-
-        /** The device files were not judged. */
-        public static final Found NOT_CHECKED = new Found(false, List.of());
+    public record Found(List<Judged> installations) {
 
         public Found {
             installations = List.copyOf(installations);
@@ -186,7 +183,7 @@ public final class DeviceCheck {
 
         /** Whether {@code other} judged the same installations the same way, holding the same files by value. */
         public boolean sameAs(Found other) {
-            if (checked != other.checked || installations.size() != other.installations.size()) return false;
+            if (installations.size() != other.installations.size()) return false;
             for (int i = 0; i < installations.size(); i++) {
                 if (!installations.get(i).sameAs(other.installations.get(i))) return false;
             }
@@ -195,24 +192,27 @@ public final class DeviceCheck {
 
         /**
          * The reconcile, as first setup's reading (storage.md rule 14; alias-designer.md, <em>The {@code .buttonMap}
-         * label merge</em>): the working copy first - its {@code DeviceMappings.xml} gives the reconciled file's
-         * Frontier entries - then each installation that can be a side. The binds files are the working copy's; they
-         * rank a device red when bindings use it.
+         * label merge</em>): BindForge's side first - its {@code DeviceMappings.xml} gives the reconciled file's Frontier
+         * entries - then each installation that can be a side. Built by {@link BindingsCheck#reading}, from the binds
+         * files the user settled on, which rank a device red when bindings use it (Storage S9b).
          *
-         * @param workingCopyFolder where the working copy is, for a message naming it
-         * @param workingCopyName   the working copy's name on screen, in the user's language
+         * @param mine       BindForge's side: the working copy, with the edits on top at APPLY (Alan, 2026-10-31,
+         *                   Storage S9b) - only its device files are used
+         * @param bindings   the binds and preset files the write would hold, before the reconcile's moves
+         * @param mineFolder where the working copy is, for a message naming it
+         * @param mineName   BindForge's side's name on screen, in the user's language
          * @throws IOException if a side's files cannot be read for the plan - the message names it
          */
-        public FirstSetupReading reading(ConfigurationFiles workingCopy, Path bindingsFolder, Path workingCopyFolder,
-                                         String workingCopyName) throws IOException {
+        FirstSetupReading reading(ConfigurationFiles mine, Map<String, byte[]> bindings, Path bindingsFolder,
+                                  Path mineFolder, String mineName) throws IOException {
             List<InstallationFiles> sides = new ArrayList<>();
-            sides.add(new InstallationFiles(WORKING_COPY_SIDE, workingCopyName, workingCopyFolder,
-                    workingCopy.hasDeviceMappings() ? workingCopy.deviceMappings() : null, workingCopy.buttonMaps()));
+            sides.add(new InstallationFiles(WORKING_COPY_SIDE, mineName, mineFolder,
+                    mine.hasDeviceMappings() ? mine.deviceMappings() : null, mine.buttonMaps()));
             for (Judged side : sides()) {
                 sides.add(new InstallationFiles(side.row().id(), side.row().storefront(), side.root(),
                         side.files().deviceMappings(), side.files().buttonMaps()));
             }
-            return FirstSetupReading.of(bindingsFolder, workingCopy.bindings(), sides, List.of(),
+            return FirstSetupReading.of(bindingsFolder, bindings, sides, List.of(),
                     FrontierStockDevices.getInstance(), FrontierStockButtonMaps.getInstance());
         }
 
@@ -245,7 +245,10 @@ public final class DeviceCheck {
      */
     public sealed interface Answer permits PutMineBack, Reconciled {
 
-        /** Put mine back - the working copy's device files, as they are. */
+        /**
+         * Put mine back - the working copy's device files, as they are; at APPLY, the edits' (Alan, 2026-10-31,
+         * Storage S9b).
+         */
         PutMineBack PUT_MINE_BACK = new PutMineBack();
 
         /**
@@ -263,7 +266,10 @@ public final class DeviceCheck {
         Map<String, String> moves();
     }
 
-    /** The working copy's device files, as they are. Its one instance is {@link Answer#PUT_MINE_BACK}. */
+    /**
+     * The user's own device files - the working copy's, with the edits on top at APPLY. Its one instance is
+     * {@link Answer#PUT_MINE_BACK}.
+     */
     public static final class PutMineBack implements Answer {
         private PutMineBack() {
         }
@@ -323,7 +329,7 @@ public final class DeviceCheck {
             if (!BackupSources.reachable(row)) continue;
             judged.add(judge(comparison, row, reader));
         }
-        return new Found(true, judged);
+        return new Found(judged);
     }
 
     private static Judged judge(DeviceFilesComparison comparison, InstallationRow row, Reader reader) {
@@ -345,9 +351,11 @@ public final class DeviceCheck {
 
     /**
      * The set the check writes: {@code settled}'s binds and preset files - a merge's moves rewritten in them - with the
-     * device files the user settled on.
+     * device files the user settled on. A put-back keeps {@code settled}'s own device files: the working copy's at the
+     * first click, the edits' at APPLY (Storage S9b).
      *
-     * @param settled the working copy with the binds and preset files the check settled
+     * @param settled the binds and preset files the check settled - with the edits on top at APPLY - and the user's
+     *                device files
      * @throws IOException if a move cannot be made in a binds file - the message names it
      */
     static ConfigurationFiles withDevices(ConfigurationFiles settled, Answer answer) throws IOException {

@@ -12,9 +12,7 @@ import elite.intel.bindforge.storage.FirstSetupReading;
 import elite.intel.bindforge.storage.WriteReport;
 import elite.intel.bindforge.storage.Written;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
-import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.util.AppPaths;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -47,12 +46,14 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  *       in the same warning; taking the game's files takes the one installation that differs, or opens first setup's
  *       reconcile, with the working copy as one side, when several do; merge answers the binds rows, then opens the
  *       reconcile. One backup and one write for everything.</li>
- *   <li><strong>APPLY</strong> (Storage S8b; {@link ApplyBar}): after the confirmation; the write is APPLY's, the edits
- *       on top. The rows the edits change are not asked about, and the warning says how many. Not now cancels the
- *       APPLY, leaving the edits on screen (Alan, 2026-10-30). The device files are not judged there until Storage
- *       S9b.</li>
+ *   <li><strong>APPLY</strong> (Storage S8b, S9b; {@link ApplyBar}): after the confirmation; the write is APPLY's, the
+ *       edits on top. The rows the edits change are not asked about, and the warning says how many. Not now cancels the
+ *       APPLY, leaving the edits on screen (Alan, 2026-10-30). The device files are judged as at the first click, and
+ *       the reconcile's own side is the user's files with the edits not applied (Alan, 2026-10-31). An installation
+ *       that cannot be read at all asks nothing: APPLY writes, leaves it alone, and the report names it.</li>
  * </ul>
- * The disk work runs off the EDT; the dialogs on it.
+ * The reconcile's reading is built once the binds rows are answered, from the binds files they settle (Storage S9b), so
+ * a device only the game's side uses counts. The disk work runs off the EDT; the dialogs on it.
  */
 final class CheckFlow {
 
@@ -122,14 +123,22 @@ final class CheckFlow {
     };
 
     /**
-     * What one check found, ready for the screen: the reconcile of the device files, worked out off the EDT, when an
-     * installation's files can be a side of it.
+     * What one check found, ready for the screen.
      *
-     * @param reconcile first setup's reading with the working copy as one side - {@code null} when no installation's
-     *                  files can be a side
-     * @param names     what each side is called, keyed by its id as text
+     * @param names what each side of the device files' reconcile is called, keyed by its id as text - BindForge's own
+     *              side first
      */
-    record Checked(BindingsCheck.Found found, FirstSetupReading reconcile, Map<String, String> names) {
+    record Checked(BindingsCheck.Found found, Map<String, String> names) {
+
+        /** BindForge's own side's name. */
+        String mine() {
+            return names.get(String.valueOf(DeviceCheck.WORKING_COPY_SIDE));
+        }
+
+        /** Whether any installation's files can be a side of the reconcile. */
+        boolean anySide() {
+            return !found.devices().sides().isEmpty();
+        }
     }
 
     private final Component parent;
@@ -167,7 +176,7 @@ final class CheckFlow {
         if (!CHECKED_THIS_SESSION.compareAndSet(false, true)) return null;
         Checked checked;
         try {
-            checked = prepared(BindingsCheck.stored().findWithDeviceFiles());
+            checked = prepared(BindingsCheck.stored().find());
         } catch (IOException e) {
             log.warn("The check could not compare your control files", e);
             return () -> tell(getText("bindings.check.readFailed", StringUtls.messageOf(e)), then);
@@ -185,7 +194,8 @@ final class CheckFlow {
     }
 
     /**
-     * APPLY's check, once {@code found} is read (Storage S8b): with nothing to ask, the write runs here and now; else the
+     * APPLY's check, once {@code found} is read (Storage S8b, S9b): with nothing to ask, the write runs here and now -
+     * an installation that cannot be read at all is left alone, and the report names it (Alan, 2026-10-31); else the
      * warning, handed back for the EDT. Off the EDT.
      *
      * @param then run on the EDT once it is over - written, cancelled or refused
@@ -195,34 +205,31 @@ final class CheckFlow {
         if (found.edited() > 0) {
             log.info("APPLY's check: {} rows that differ are under the edits, which go on top", found.edited());
         }
-        if (found.differences().none()) return written(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
-        return () -> warn(new Checked(found, null, Map.of()), then);
+        if (!found.anythingToAsk()) return written(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
+        Checked checked = prepared(found);
+        return () -> warn(checked, then);
     }
 
     /**
-     * {@code found}, with the device files' reconcile worked out when an installation's files can be a side of it. Off
-     * the EDT: it parses the device files and finds the working copy's folder.
-     *
-     * @throws IOException if a side's files cannot be read for the reconcile, or the working copy's folder found
+     * {@code found}, with what each side of the device files' reconcile is called. Off the EDT: it reads the stored
+     * installations' names. The reconcile itself is read once the binds rows are answered ({@link #withReading}).
      */
-    private static Checked prepared(BindingsCheck.Found found) throws IOException {
-        DeviceCheck.Found devices = found.devices();
-        if (devices.sides().isEmpty()) return new Checked(found, null, Map.of());
-        String workingCopy = getText("bindings.check.devices.workingCopy");
-        FirstSetupReading reading = devices.reading(found.workingCopy(), PlayerSession.getInstance().getBindingsDir(),
-                AppPaths.getWorkingCopyDir(), workingCopy);
-        List<InstallationRow> rows = devices.sides().stream().map(DeviceCheck.Judged::row).toList();
+    private Checked prepared(BindingsCheck.Found found) {
+        // WHY: at APPLY the user's side holds the edits not applied too (Alan, 2026-10-31, Storage S9b).
+        String mine = getText(atApply ? "bindings.check.devices.workingCopyWithEdits"
+                : "bindings.check.devices.workingCopy");
+        List<InstallationRow> rows = found.devices().sides().stream().map(DeviceCheck.Judged::row).toList();
         Map<String, String> names = new LinkedHashMap<>();
-        names.put(String.valueOf(DeviceCheck.WORKING_COPY_SIDE), workingCopy);
+        names.put(String.valueOf(DeviceCheck.WORKING_COPY_SIDE), mine);
         names.putAll(FirstTimeStartupFlow.labelsFor(rows));
-        return new Checked(found, reading, names);
+        return new Checked(found, names);
     }
 
     private void warn(Checked checked, Runnable then) {
         BindingsCheck.Found found = checked.found();
         // WHY: with no binds row and no installation's files to take - only a missing or unparseable file - putting
         // the working copy back is all there is to offer (Alan, 2026-10-31).
-        boolean offerMergeAndTake = !found.differences().none() || checked.reconcile() != null;
+        boolean offerMergeAndTake = !found.differences().none() || checked.anySide();
         switch (CheckWarningDialog.show(parent, warningText(found, atApply), offerMergeAndTake)) {
             case KEEP_MINE -> write(found, everyRow(found, Side.WORKING_COPY), DeviceCheck.Answer.PUT_MINE_BACK,
                     false, then);
@@ -231,12 +238,14 @@ final class CheckFlow {
                     warn(checked, then);
                     return;
                 }
-                Optional<DeviceCheck.Answer> devices = theGames(checked);
-                if (devices.isEmpty()) {
-                    warn(checked, then);
+                Map<String, Side> answers = everyRow(found, Side.LIVE);
+                if (!checked.anySide()) {
+                    // WHY: only a missing or unparseable file - never a side; the working copy goes back there.
+                    write(found, answers, DeviceCheck.Answer.PUT_MINE_BACK, false, then);
                     return;
                 }
-                write(found, everyRow(found, Side.LIVE), devices.get(), false, then);
+                withReading(checked, answers, then, reading -> theGames(checked, reading).ifPresentOrElse(
+                        devices -> write(found, answers, devices, false, then), () -> warn(checked, then)));
             }
             case MERGE -> merge(checked, Map.of(), then);
             case NOT_NOW -> {
@@ -253,55 +262,72 @@ final class CheckFlow {
      */
     private void merge(Checked checked, Map<String, Side> given, Runnable then) {
         BindingsCheck.Found found = checked.found();
-        Map<String, Side> answers = Map.of();
+        Map<String, Side> answered = Map.of();
         if (!found.differences().none()) {
-            answers = new CheckMergeDialog(parent, found.differences().items(), given).showDialog().orElse(null);
-            if (answers == null) {
+            answered = new CheckMergeDialog(parent, found.differences().items(), given).showDialog().orElse(null);
+            if (answered == null) {
                 warn(checked, then);
                 return;
             }
-            if (takesAReset(found.differences(), answers) && !sure()) {
-                merge(checked, answers, then);
+            if (takesAReset(found.differences(), answered) && !sure()) {
+                merge(checked, answered, then);
                 return;
             }
         }
-        Optional<DeviceCheck.Answer> devices = reconciled(checked);
-        if (devices.isEmpty()) {
-            // WHY: with no binds rows, reopening the merge would open the reconcile again at once.
-            if (found.differences().none()) warn(checked, then);
-            else merge(checked, answers, then);
+        Map<String, Side> answers = answered;
+        if (!checked.anySide()) {
+            // WHY: only a missing or unparseable file - never a side; the working copy goes back there.
+            write(found, answers, DeviceCheck.Answer.PUT_MINE_BACK, true, then);
             return;
         }
-        write(found, answers, devices.get(), true, then);
+        withReading(checked, answers, then, reading -> reconciled(checked, reading).ifPresentOrElse(
+                devices -> write(found, answers, devices, true, then),
+                // WHY: with no binds rows, reopening the merge would open the reconcile again at once.
+                () -> {
+                    if (found.differences().none()) warn(checked, then);
+                    else merge(checked, answers, then);
+                }));
+    }
+
+    /**
+     * The device files' reconcile, read off the EDT from the binds files {@code answers} settle - with the edits on top
+     * at APPLY (Storage S9b, from the S9a review) - then {@code next} on the EDT. Only when an installation's files can be
+     * a side. A reading that fails is told, and the flow ends: nothing was written.
+     */
+    private void withReading(Checked checked, Map<String, Side> answers, Runnable then,
+                             Consumer<FirstSetupReading> next) {
+        FlowSteps.inBackground(atApply ? "BindForge-Apply" : "BindForge-Check", log, "The check's reconcile", () -> {
+                    FirstSetupReading reading = BindingsCheck.stored().reading(checked.found(), answers, checked.mine())
+                            .orElseThrow(() -> new IllegalStateException("no installation's files can be a side"));
+                    return () -> next.accept(reading);
+                }, reason -> () -> tell(writing.failed(reason), then),
+                reason -> () -> tell(writing.stopped(reason), then), then);
     }
 
     /**
      * The game's device files (Alan, 2026-10-31): the one installation that differs, taken whole after "use one
-     * installation for all"'s confirmation; the reconcile when several do. With none that can be a side - only a missing
-     * or unreadable file - the working copy is put back, the only choice offered for those. Empty when cancelled.
+     * installation for all"'s confirmation; the reconcile when several do. Empty when cancelled.
      */
-    private Optional<DeviceCheck.Answer> theGames(Checked checked) {
+    private Optional<DeviceCheck.Answer> theGames(Checked checked, FirstSetupReading reading) {
         List<DeviceCheck.Judged> sides = checked.found().devices().sides();
-        if (sides.isEmpty()) return Optional.of(DeviceCheck.Answer.PUT_MINE_BACK);
-        if (sides.size() > 1) return reconciled(checked);
+        if (sides.size() > 1) return reconciled(checked, reading);
         DeviceCheck.Judged only = sides.getFirst();
         long id = only.row().id();
         String name = checked.names().getOrDefault(String.valueOf(id), only.row().storefront());
-        if (!FirstSetupDialog.confirmUseOne(parent, checked.reconcile(), id, name, wording(checked))) {
+        if (!FirstSetupDialog.confirmUseOne(parent, reading, id, name, wording(checked))) {
             return Optional.empty();
         }
         if (only.state().reset() && !deviceSure(name)) return Optional.empty();
-        return Optional.of(DeviceCheck.Answer.reconciled(FirstSetupFiles.useOne(checked.reconcile(), id), Map.of()));
+        return Optional.of(DeviceCheck.Answer.reconciled(FirstSetupFiles.useOne(reading, id), Map.of()));
     }
 
     /**
-     * First setup's reconcile, with the working copy as one side (storage.md rule 14). With no installation that can be
-     * a side, the working copy is put back - all a missing or unreadable file is offered. Empty when cancelled.
+     * First setup's reconcile, with the user's own files as one side (storage.md rule 14) - the working copy, with the
+     * edits not applied at APPLY. Empty when cancelled.
      */
-    private Optional<DeviceCheck.Answer> reconciled(Checked checked) {
-        if (checked.reconcile() == null) return Optional.of(DeviceCheck.Answer.PUT_MINE_BACK);
+    private Optional<DeviceCheck.Answer> reconciled(Checked checked, FirstSetupReading reading) {
         while (true) {
-            Optional<FirstSetupDialog.Choice> choice = new FirstSetupDialog(parent, checked.reconcile(),
+            Optional<FirstSetupDialog.Choice> choice = new FirstSetupDialog(parent, reading,
                     checked.names(), wording(checked)).showDialog();
             if (choice.isEmpty()) return Optional.empty();
             FirstSetupDialog.Choice chosen = choice.get();
@@ -379,7 +405,7 @@ final class CheckFlow {
         } catch (BindingsCheck.ChangedMeanwhileException e) {
             log.info("The check found the files changed while it was open");
             BindingsCheck.Found now = e.now();
-            if (atApply && now.differences().none()) {
+            if (atApply && !now.anythingToAsk()) {
                 // WHY: at APPLY the edits are still to be written.
                 return written(now, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
             }

@@ -84,7 +84,7 @@ class CheckFlowTest {
      */
     @Test
     void theWarningNamesEachInstallationThatDiffers() {
-        DeviceCheck.Found devices = new DeviceCheck.Found(true, List.of(
+        DeviceCheck.Found devices = new DeviceCheck.Found(List.of(
                 judged(1, "STEAM", DeviceCheck.State.MATCHES, null),
                 judged(2, "EPIC", DeviceCheck.State.RESET_MISSING, null),
                 judged(3, "FRONTIER", DeviceCheck.State.UNREADABLE, "locked")));
@@ -123,6 +123,6 @@ class CheckFlowTest {
 
     private static BindingsCheck.Found found(Differences differences, int edited) {
         return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
-                edited);
+                edited, new DeviceCheck.Found(List.of()));
     }
 }

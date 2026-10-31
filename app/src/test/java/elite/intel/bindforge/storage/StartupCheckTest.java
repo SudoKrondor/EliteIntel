@@ -26,7 +26,7 @@ class StartupCheckTest {
             Map.of(CUSTOM, bytes(binds("Custom", "Key_A", "Joy_XAxis", ""))), null, Map.of());
 
     /** Every installation matching the working copy. */
-    private static final DeviceCheck.Source NONE_DIFFER = files -> new DeviceCheck.Found(true, List.of());
+    private static final DeviceCheck.Source NONE_DIFFER = files -> new DeviceCheck.Found(List.of());
 
     @TempDir
     Path bindings;
@@ -51,7 +51,7 @@ class StartupCheckTest {
         Files.writeString(bindings.resolve(CUSTOM), binds("Custom", "Key_A", "Joy_XAxis", ""));
 
         assertTrue(new StartupCheck(() -> true, () -> WORKING_COPY, () -> bindings,
-                files -> new DeviceCheck.Found(true, List.of(steam(DeviceCheck.State.RESET_MISSING)))).changedOutside());
+                files -> new DeviceCheck.Found(List.of(steam(DeviceCheck.State.RESET_MISSING)))).changedOutside());
     }
 
     /** One that cannot be read at all is logged, not said - the first click names it. */
@@ -60,7 +60,7 @@ class StartupCheckTest {
         Files.writeString(bindings.resolve(CUSTOM), binds("Custom", "Key_A", "Joy_XAxis", ""));
 
         assertFalse(new StartupCheck(() -> true, () -> WORKING_COPY, () -> bindings,
-                files -> new DeviceCheck.Found(true, List.of(steam(DeviceCheck.State.UNREADABLE)))).changedOutside());
+                files -> new DeviceCheck.Found(List.of(steam(DeviceCheck.State.UNREADABLE)))).changedOutside());
     }
 
     /** Before first-time startup there is no working copy to compare with - nothing is read. */

@@ -126,8 +126,8 @@ class DeviceCheckTest {
         InstallationRow epic = installation(2, "EPIC",
                 "<Root><LVWAP><PID>83F5</PID><VID>3344</VID></LVWAP>" + RUDDER + "</Root>");
 
-        FirstSetupReading reading = judge(List.of(epic)).reading(workingCopy, temp, temp.resolve("working-copy"),
-                "BindForge's working copy");
+        FirstSetupReading reading = judge(List.of(epic)).reading(workingCopy, workingCopy.bindings(), temp,
+                temp.resolve("working-copy"), "BindForge's working copy");
 
         assertEquals(List.of(DeviceCheck.WORKING_COPY_SIDE, 2L),
                 reading.installations().stream().map(InstallationFiles::installId).toList());

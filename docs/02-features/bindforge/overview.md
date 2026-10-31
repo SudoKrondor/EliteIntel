@@ -180,7 +180,9 @@ sure?"* before the reset file replaces the working copy.
 **Nothing is decided automatically**, and the backup is taken before anything is written (rule 12).
 
 **At APPLY, with edits on screen** (2026-10-23, Alan): the check settles the working copy first; APPLY then puts the
-on-screen edits on top and writes everything out.
+on-screen edits on top and writes everything out. For the device files the edits are the user's side of the reconcile
+instead, so no device edit is merged in unseen (Alan, 2026-10-31, Storage S9b;
+[storage.md](storage.md#when-a-live-copy-differs), *Settled with Storage S9b's sources*).
 
 #### The check for device files — 2026-10-23
 

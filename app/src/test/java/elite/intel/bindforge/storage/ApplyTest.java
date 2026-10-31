@@ -27,9 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * APPLY (storage.md rules 7-8; Storage S4a): the edits and the default labels, through the write path with a
- * before-APPLY backup, leaving alone an installation whose device files differ from the working copy - and, first of
- * all, refusing a preset file that names a binds file nobody can find (Storage S6). Every APPLY runs the check
- * first, and the edits go on top of what it settled (Storage S8b).
+ * before-APPLY backup - and, first of all, refusing a preset file that names a binds file nobody can find (Storage S6).
+ * Every APPLY runs the check first, and the edits go on top of what it settled (Storage S8b). The check judges the
+ * device files: one that differs is written what the user settled on, and only one it could not read, or never read
+ * and differing, is left alone (Storage S9b).
  */
 class ApplyTest {
 
@@ -61,6 +62,8 @@ class ApplyTest {
     private Map<String, byte[]> liveBindings;
     /** Thrown when the check reads the bindings folder, when set. */
     private IOException unreadable;
+    /** What the check finds for the installations' device files - none judged, until a test says otherwise. */
+    private DeviceCheck.Found judgedDevices = new DeviceCheck.Found(List.of());
 
     @Test
     void theEditsAndTheDefaultLabelsAreWrittenAfterTheBackup() throws IOException {
@@ -105,9 +108,13 @@ class ApplyTest {
         assertEquals("<Root><Joy_1>FIRE</Joy_1></Root>", text(maps.get("lvwap.buttonMap")));
     }
 
-    /** Compared against the working copy as it was before the edits - not the edits, which always differ. */
+    /**
+     * An installation the check never read - unreachable when it ran, back by the write - is left alone when it differs
+     * (storage.md rule 1), compared against the working copy as it was before the edits, which always differ. The
+     * tests up to the S9b section leave the check judging no installation, so the write meets each one unseen.
+     */
     @Test
-    void anInstallationThatDiffersFromTheWorkingCopyIsLeftAlone() throws IOException {
+    void anInstallationTheCheckNeverReadIsLeftAloneWhenItDiffers() throws IOException {
         edits.change(current -> set("<edited/>", "<Root><Renamed><PID>83F4</PID><VID>3344</VID></Renamed></Root>"));
 
         apply(installation -> live("<Root><Changed><PID>0001</PID><VID>1234</VID></Changed></Root>")).apply();
@@ -116,7 +123,7 @@ class ApplyTest {
     }
 
     @Test
-    void anInstallationMatchingTheWorkingCopyIsWritten() throws IOException {
+    void anInstallationTheCheckNeverReadIsWrittenWhenItMatches() throws IOException {
         edits.change(current -> set("<edited/>", "<Root><Renamed><PID>83F4</PID><VID>3344</VID></Renamed></Root>"));
 
         apply(installation -> live(LVWAP)).apply();
@@ -124,9 +131,9 @@ class ApplyTest {
         assertEquals(List.of(), leftAlone);
     }
 
-    /** An installation file that cannot be read could hold anything of the user's, so it is left alone too. */
+    /** An unseen installation file that cannot be read could hold anything of the user's, so it is left alone too. */
     @Test
-    void anInstallationThatCannotBeReadIsLeftAlone() throws IOException {
+    void anInstallationTheCheckNeverReadIsLeftAloneWhenItCannotBeRead() throws IOException {
         edits.change(current -> set("<edited/>", LVWAP));
 
         apply(installation -> {
@@ -138,7 +145,7 @@ class ApplyTest {
 
     /** One that cannot be parsed, likewise. */
     @Test
-    void anInstallationThatCannotBeParsedIsLeftAlone() throws IOException {
+    void anInstallationTheCheckNeverReadIsLeftAloneWhenItCannotBeParsed() throws IOException {
         edits.change(current -> set("<edited/>", LVWAP));
 
         apply(installation -> live("not xml at all")).apply();
@@ -336,7 +343,8 @@ class ApplyTest {
         Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
 
         BindingsCheck.Found found = apply.check();
-        Written result = apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE));
+        Written result = apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE),
+                DeviceCheck.Answer.PUT_MINE_BACK);
 
         assertEquals(1, found.differences().items().size(), "the game's line only - the edit's is not asked");
         assertEquals(1, written.size());
@@ -359,7 +367,7 @@ class ApplyTest {
         Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
 
         BindingsCheck.Found found = apply.check();
-        apply.apply(found, Map.of());
+        apply.apply(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
 
         assertTrue(found.differences().none());
         assertEquals(1, found.edited());
@@ -380,7 +388,8 @@ class ApplyTest {
         Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
 
         BindingsCheck.Found found = apply.check();
-        apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.WORKING_COPY));
+        apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.WORKING_COPY),
+                DeviceCheck.Answer.PUT_MINE_BACK);
 
         assertEquals(List.of(Set.of("Spare.4.2.binds")), removed);
         assertFalse(written.getFirst().bindings().containsKey("Spare.4.2.binds"));
@@ -399,7 +408,8 @@ class ApplyTest {
         liveBindings = bindsSet(binds("Custom", "Key_E", "Joy_XAxis", "")).bindings();
 
         BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
-                () -> apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE)));
+                () -> apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE),
+                        DeviceCheck.Answer.PUT_MINE_BACK));
 
         assertEquals("Key_E", changed.now().differences().items().getFirst().live());
         assertEquals(List.of(), backedUp);
@@ -420,7 +430,8 @@ class ApplyTest {
 
         BindingsCheck.Found found = apply.check();
         PresetRefusedException refused = assertThrows(PresetRefusedException.class,
-                () -> apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE)));
+                () -> apply.apply(found, Map.of(found.differences().items().getFirst().id(), Side.LIVE),
+                        DeviceCheck.Answer.PUT_MINE_BACK));
 
         assertEquals(List.of(BindingSection.SHIP), refused.sections());
         assertEquals(List.of(), backedUp);
@@ -440,10 +451,105 @@ class ApplyTest {
         assertTrue(edits.hasEdits());
     }
 
+    // ---- the device files at APPLY (Storage S9b)
+
+    /**
+     * An installation the check judged different is no longer left alone: putting mine back writes the edits' device
+     * files there - the edits are the user's side (Alan, 2026-10-31). Nothing settled, so the backup holds no working
+     * copy.
+     */
+    @Test
+    void puttingMineBackWritesTheEditsDeviceFilesToAnInstallationThatDiffered() throws IOException {
+        String renamed = "<Root><Renamed><PID>83F4</PID><VID>3344</VID></Renamed></Root>";
+        edits.change(current -> set("<edited/>", renamed));
+        judgedDevices = new DeviceCheck.Found(List.of(steam(DeviceCheck.State.DIFFERS,
+                live("<Root><Changed><PID>0001</PID><VID>1234</VID></Changed></Root>"))));
+        Apply apply = applying((current, applied) -> Map.of(), installation -> {
+            throw new AssertionError("the check judged it - the write does not read it again");
+        });
+
+        BindingsCheck.Found found = apply.check();
+        apply.apply(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertTrue(found.anythingToAsk());
+        assertEquals(List.of(), leftAlone);
+        assertEquals(renamed, text(written.getFirst().deviceMappings()));
+        assertEquals(List.of("APPLY"), backedUp);
+    }
+
+    /**
+     * A reconciled answer replaces the edits' device files whole, its moves are made in the binds files written - the
+     * edits' included - and the backup holds the working copy, since the check changed it.
+     */
+    @Test
+    void aReconciledAnswerReplacesTheDeviceFilesAndMovesTheBindings() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        judgedDevices = new DeviceCheck.Found(List.of(steam(DeviceCheck.State.DIFFERS,
+                live("<Root><RightStick><PID>83F4</PID><VID>3344</VID></RightStick></Root>"))));
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+        String reconciled = "<Root><RightStick><PID>83F4</PID><VID>3344</VID></RightStick></Root>";
+
+        BindingsCheck.Found found = apply.check();
+        apply.apply(found, Map.of(), DeviceCheck.Answer.reconciled(new ConfigurationFiles(Map.of(), bytes(reconciled),
+                Map.of("RightStick.buttonMap", bytes("<Root/>"))), Map.of("RVWAP", "RightStick")));
+
+        ConfigurationFiles files = written.getFirst();
+        assertEquals(reconciled, text(files.deviceMappings()));
+        assertEquals(Set.of("RightStick.buttonMap"), files.buttonMaps().keySet());
+        assertEquals(binds("Custom", "Key_A", "Joy_YAxis", "").replace("\"RVWAP\"", "\"RightStick\""),
+                text(files.bindings().get(CUSTOM_BINDS)), "the edit kept, and its binding moved");
+        assertEquals(List.of("APPLY with the working copy"), backedUp);
+        assertEquals(List.of(), leftAlone);
+    }
+
+    /**
+     * One the check could not read at all asks nothing: APPLY writes, leaving it alone (Alan, 2026-10-31, Storage S9b) -
+     * the report says it was not written.
+     */
+    @Test
+    void anInstallationTheCheckCouldNotReadIsLeftAloneAndApplyStillWrites() throws IOException {
+        edits.change(current -> set("<edited/>", LVWAP));
+        judgedDevices = new DeviceCheck.Found(List.of(steam(DeviceCheck.State.UNREADABLE, null)));
+
+        BindingsCheck.Found found = apply(installation -> live(LVWAP)).applying().check();
+        apply(installation -> live(LVWAP)).apply();
+
+        assertFalse(found.anythingToAsk());
+        assertEquals(1, written.size());
+        assertEquals(List.of("STEAM"), leftAlone);
+    }
+
+    /** Nothing watches the installations either: one that changed after the check stops APPLY, nothing written. */
+    @Test
+    void anInstallationChangedAfterTheCheckStopsApply() throws IOException {
+        edits.change(current -> set("<edited/>", LVWAP));
+        judgedDevices = new DeviceCheck.Found(List.of(steam(DeviceCheck.State.RESET_MISSING, new DeviceFiles(null,
+                Map.of()))));
+        Apply apply = applying((current, applied) -> Map.of(), installation -> live(LVWAP));
+        BindingsCheck.Found found = apply.check();
+        judgedDevices = new DeviceCheck.Found(List.of(steam(DeviceCheck.State.DIFFERS,
+                live("<Root><Changed><PID>0001</PID><VID>1234</VID></Changed></Root>"))));
+
+        assertThrows(BindingsCheck.ChangedMeanwhileException.class,
+                () -> apply.apply(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK));
+
+        assertEquals(List.of(), backedUp);
+        assertEquals(List.of(), written);
+        assertTrue(edits.hasEdits());
+    }
+
+    /** Steam, at the folder the fake write path names, judged {@code state} with {@code files}. */
+    private static DeviceCheck.Judged steam(DeviceCheck.State state, DeviceFiles files) {
+        return new DeviceCheck.Judged(new InstallationRow(1, "STEAM", "Steam", false, false), state, files,
+                state == DeviceCheck.State.UNREADABLE ? "locked" : null);
+    }
+
     /** APPLY as the bar runs it: the check, then the write - with nothing to answer unless a test answers. */
     private record Run(Apply applying) {
         Written apply() throws IOException {
-            return applying.apply(applying.check(), Map.of());
+            return applying.apply(applying.check(), Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
         }
     }
 
@@ -459,9 +565,12 @@ class ApplyTest {
         return new Apply(edits, defaults, this::write, backUp, reader, OFFERED, check());
     }
 
-    /** The check, reading {@link #liveBindings} as the bindings folder - the working copy's files until a test sets it. */
+    /**
+     * The check, reading {@link #liveBindings} as the bindings folder - the working copy's files until a test sets it -
+     * and finding {@link #judgedDevices} for the installations.
+     */
     private BindingsCheck check() {
-        return new BindingsCheck(edits, () -> Path.of("Bindings"), folder -> {
+        return new BindingsCheck(edits, () -> Path.of("Bindings"), () -> Path.of("working-copy"), folder -> {
             if (unreadable != null) throw unreadable;
             return liveBindings != null ? liveBindings : workingCopy.get().bindings();
         }, files -> BindingsComparison.Factory.NONE, (files, backUp, leaveAlone, remove) -> {
@@ -470,9 +579,7 @@ class ApplyTest {
             throw new AssertionError("APPLY takes its own backup");
         }, installation -> {
             throw new AssertionError("APPLY reads the installations through its own reader");
-        }, files -> {
-            throw new AssertionError("APPLY's check judges no device files until Storage S9b");
-        });
+        }, files -> judgedDevices);
     }
 
     private WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
