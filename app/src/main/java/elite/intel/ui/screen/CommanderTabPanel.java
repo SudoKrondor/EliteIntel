@@ -548,7 +548,7 @@ public class CommanderTabPanel extends JPanel {
         /**
          * Stores the picked voice and returns the line to audition it with.
          */
-        String applyVoice(String voiceName, String commanderName);
+        String applyVoice(String voiceName);
 
         default boolean isCarrier() {
             return false;
@@ -576,11 +576,11 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override
-        public String applyVoice(String voiceName, String commanderName) {
+        public String applyVoice(String voiceName) {
             ship.setVoice(voiceName);
             ShipManager.getInstance().saveShip(ship);
             String speakerName = trimToNull(name());
-            return StringUtls.shipIntroduction(commanderName, speakerName == null ? voiceName : speakerName);
+            return StringUtls.shipIntroduction(speakerName == null ? voiceName : speakerName);
         }
     }
 
@@ -612,12 +612,12 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override
-        public String applyVoice(String voiceName, String commanderName) {
+        public String applyVoice(String voiceName) {
             boolean random = RANDOM_VOICE.equals(voiceName);
             carrier.update(data -> data.setVoice(random ? null : voiceName));
             return random
                     ? null
-                    : StringUtls.carrierTrafficControl(commanderName, carrier.data().getCarrierName());
+                    : StringUtls.carrierTrafficControl(carrier.data().getCarrierName());
         }
 
         @Override
@@ -690,7 +690,7 @@ public class CommanderTabPanel extends JPanel {
             switch (col) {
                 case COL_VOICE -> {
                     String voiceName = (String) value;
-                    String audition = fleetRow.applyVoice(voiceName, playerSession.getConfiguredPlayerName());
+                    String audition = fleetRow.applyVoice(voiceName);
                     // A carrier is auditioned over the radio, because that is the only way it is ever heard.
                     if (audition != null) {
                         GameEventBus.publish(new AiVoxDemoEvent(audition, voiceName, fleetRow.isCarrier()));

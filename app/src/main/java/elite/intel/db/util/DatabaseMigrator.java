@@ -190,7 +190,7 @@ public class DatabaseMigrator {
      * Reads only the tree's own directory, never below it: the shared tree's directory holds the commander tree as
      * a subdirectory, and walking into it would apply commander migrations to the shared file.
      */
-    static Set<String> findMigrationFiles(Tree tree) throws IOException, URISyntaxException {
+    public static Set<String> findMigrationFiles(Tree tree) throws IOException, URISyntaxException {
         Set<String> files = new TreeSet<>();
         ClassLoader cl = DatabaseMigrator.class.getClassLoader();
         String path = tree.path();

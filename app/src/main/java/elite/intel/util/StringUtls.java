@@ -100,9 +100,9 @@ public class StringUtls {
         return LocalDateTime.now().getHour();
     }
 
-    public static String greeting(String playerName) {
+    public static String greeting() {
         Language language = SystemSession.getInstance().getLanguage();
-        String spokenName = spokenNameOrCommander(playerName, language);
+        String spokenName = spokenNameOrCommander(language);
 
         int hour = getHourOfDay();
         String greetingKey = hour >= 5 && hour < 12
@@ -115,10 +115,9 @@ public class StringUtls {
     }
 
 
-    //TODO: remove payer name from method signature once UI changes are in
-    public static String shipIntroduction(String playerName, String shipName) {
+    public static String shipIntroduction(String shipName) {
         Language language = SystemSession.getInstance().getLanguage();
-        String spokenName = spokenNameOrCommander(playerName, language);
+        String spokenName = spokenNameOrCommander(language);
         String safeShipName = shipName == null || shipName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : shipName;
@@ -137,9 +136,9 @@ public class StringUtls {
      * line the carrier actually says on a docking grant, so what the commander hears in the fleet grid is
      * what they will hear on approach.
      */
-    public static String carrierTrafficControl(String playerName, String carrierName) {
+    public static String carrierTrafficControl(String carrierName) {
         Language language = SystemSession.getInstance().getLanguage();
-        String spokenName = spokenNameOrCommander(playerName, language);
+        String spokenName = spokenNameOrCommander(language);
         String safeCarrierName = carrierName == null || carrierName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : carrierName;
@@ -212,13 +211,18 @@ public class StringUtls {
         return MultiLingualTextProvider.getText(SystemSession.getInstance().getLanguage(), key);
     }
 
-    private static String spokenNameOrCommander(String playerName, Language language) {
+    /**
+     * The name the commander chose to be called, else the localized "Commander" - never the in-game name
+     * ({@link PlayerSession#getSpokenName()}).
+     */
+    private static String spokenNameOrCommander(Language language) {
         // A greeting is an address like any other. With addressing off the name is simply left out and the
         // comma that carried it is tidied away in sanitizeTts, so "Good morning, Commander!" becomes
         // "Good morning!" rather than "Good morning, !".
         if (Boolean.FALSE.equals(PlayerSession.getInstance().isAddressMeOn())) {
             return "";
         }
+        String playerName = PlayerSession.getInstance().getSpokenName();
         if (language == Language.EN) {
             return asciiTtsNameOrCommander(playerName);
         }

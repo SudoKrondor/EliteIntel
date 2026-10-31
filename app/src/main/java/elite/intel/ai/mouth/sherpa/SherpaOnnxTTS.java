@@ -17,7 +17,6 @@ import elite.intel.ai.mouth.supertonic.SupertonicBoost;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
-import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -107,7 +106,6 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     private final BlockingQueue<PlaybackTask> playbackQueue = new LinkedBlockingQueue<>();
 
     protected final SystemSession systemSession = SystemSession.getInstance();
-    private final PlayerSession playerSession = PlayerSession.getInstance();
     private SourceDataLine persistentLine;
     private volatile boolean running = false;
     private Thread synthesisThread;
@@ -218,7 +216,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
         // Only the main voice greets on start; the radio-only engine stays silent (its greeting would
         // otherwise be voiced by the main mouth as a normal narration).
         if (role == Role.MAIN) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(playerSession.getConfiguredPlayerName())));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting()));
         }
     }
 

@@ -2,7 +2,6 @@ package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ApiFactory;
-import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.health.AiServiceCheck;
@@ -332,12 +331,9 @@ public class AppController {
                 // does not pay ~4 s for it before the LLM is even asked.
                 SemanticCatalogWarmer.warmInBackground();
 
-                Timer connectionCheckTimer = new Timer(2000, e -> {
-                    if (!LlmProviderResolver.isCloudProviderMissing()) {
-                        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
-                    }
-                    connectionCheck();
-                });
+                // WHY no "connecting" line: the check answers within a second or two, and its result is the only
+                // part worth saying - on a fresh install not even that, since SetupCheck has already said why.
+                Timer connectionCheckTimer = new Timer(2000, e -> connectionCheck());
                 connectionCheckTimer.setRepeats(false);
                 connectionCheckTimer.start();
 

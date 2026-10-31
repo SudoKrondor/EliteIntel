@@ -24,6 +24,16 @@ public final class AppPaths {
 
 
     /// --- APP USER DATA LOCATION
+
+    /**
+     * The folder holding everything the app keeps for the commander - the databases, custom commands, the
+     * bindings work and the player backups. Backup Settings and Data saves from it and a restore lands in it; a new
+     * folder under it that holds the commander's data must join {@code AppDataArchive.FOLDERS}, or no backup has it.
+     */
+    public static Path getAppDataDir() throws IOException {
+        return getAppDataBase().resolve("elite-intel");
+    }
+
     public static Path getDatabasePath() throws IOException {
         Path dbDir = getAppDataBase().resolve("elite-intel/db");
         Files.createDirectories(dbDir);

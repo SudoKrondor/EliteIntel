@@ -7,7 +7,6 @@ import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -56,7 +55,6 @@ public class GoogleTTSImpl implements MouthInterface {
     /** Voices Google actually offers per BCP-47 language code, cached from listVoices; cleared on stop. */
     private final Map<String, List<GoogleVoiceProvider.AvailableVoice>> voiceCache = new ConcurrentHashMap<>();
     private final SystemSession systemSession = SystemSession.getInstance();
-    private final PlayerSession playerSession = PlayerSession.getInstance();
 
     private GoogleTTSImpl() {
         this.ttsQueue = new LinkedBlockingQueue<>();
@@ -108,7 +106,7 @@ public class GoogleTTSImpl implements MouthInterface {
         if (systemSession.getRmsThresholdHigh() != null) {
             UiBus.publish(new AiResponseLogEvent(MultiLingualTextProvider.getText("speech.enabled")));
         }
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(playerSession.getConfiguredPlayerName())));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting()));
     }
 
     @Override
