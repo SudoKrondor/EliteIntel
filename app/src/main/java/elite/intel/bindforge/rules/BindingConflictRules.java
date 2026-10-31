@@ -399,10 +399,28 @@ public class BindingConflictRules {
                 || action.startsWith("MovePlacement") || action.startsWith("Placement")
                 || action.startsWith("GalnetAudio")
                 || action.startsWith("MultiCrew") || action.startsWith("Store")
-                || action.startsWith("ExplorationFSS") || action.startsWith("ExplorationSAA")
-                // The rest of the Detailed Surface Scanner: its third-person camera controls drop the
-                // "Exploration" prefix. The scanner is a screen of its own - while it is up, nothing
-                // else fires, not even from a HOTAS - so none of its controls can clash with a ship one.
-                || action.startsWith("SAAThirdPerson");
+                || isScannerScreenControl(action);
+    }
+
+    /**
+     * The groups the game lists the two scanner screens under. The Detailed Surface Scanner is a screen of its own -
+     * while it is up, nothing else fires, not even from a HOTAS - so none of its controls can clash with a ship one.
+     */
+    private static final Set<String> SCANNER_SCREEN_GROUPS = Set.of(
+            "Full Spectrum System Scanner", "Detailed Surface Scanner");
+
+    /**
+     * A control that works only inside the FSS or the Detailed Surface Scanner, by the group the game's own controls
+     * screen lists it under ({@link BindingDisplayNames}).
+     * <p>
+     * WHY the group and not the {@code ExplorationFSS} / {@code ExplorationSAA} prefixes: {@code ExplorationFSSEnter}
+     * carries the FSS prefix but sits under Mode Switches - it is pressed in normal flight to open the scanner, so it
+     * clashes with a ship control on its key ({@code DeployHardpointToggle}, confirmed in the game: FP-3). The group
+     * also covers the scanner's third-person camera controls, which drop the prefix ({@code SAAThirdPerson*}).
+     */
+    private static boolean isScannerScreenControl(String action) {
+        String group = BindingDisplayNames.lookup(action).group();
+        // WHY: a control the table has not met has no group, and Set.of(...).contains(null) throws.
+        return group != null && SCANNER_SCREEN_GROUPS.contains(group);
     }
 }

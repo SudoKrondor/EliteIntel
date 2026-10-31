@@ -28,11 +28,15 @@ final class AppDataArchive {
      * <p>
      * WHY a list rather than the whole app data folder: that folder also collects what is not the commander's data -
      * the diagnostics harness, hand-made database copies, and this feature's own restore folders. A new folder in
-     * {@code AppPaths} that holds the commander's data must be added here. {@code working-copy} is BindForge's working
-     * copy ({@code AppPaths.getWorkingCopyDir()}, {@code bindings} until Storage S8R4); the old {@code bindings} folder
-     * is left behind with nothing reading it, so it is not carried (Storage S9R, 2026-10-31).
+     * {@code AppPaths} that holds the commander's data must be added here.
+     * <p>
+     * WHY BindForge's working copy ({@code AppPaths.getBindingsWorkingDir()}) is left out, neither backed up nor
+     * restored: it is BindForge's master, the side it judges the game's live files against. A restore over it would
+     * put back a working copy older than the live files, and BindForge would then reconcile the newer files toward the
+     * older ones (Alan, 2026-10-31). BindForge keeps its own backups of it. An older zip that carries the folder still
+     * restores - {@link #isBackupEntry} skips it.
      */
-    static final List<String> FOLDERS = List.of("custom-commands", "working-copy", "playerbackups");
+    static final List<String> FOLDERS = List.of("custom-commands", "playerbackups");
 
     /**
      * A restore unpacks here while it is checked and unlocked.

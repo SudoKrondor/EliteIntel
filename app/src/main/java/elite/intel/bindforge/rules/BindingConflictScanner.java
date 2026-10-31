@@ -113,6 +113,11 @@ public final class BindingConflictScanner {
             Comparator.<Map.Entry<SlotRef, Set<String>>, String>comparing(e -> e.getKey().action())
                     .thenComparing(e -> e.getKey().slot());
 
+    /**
+     * The device Elite names the keyboard by, on a slot and on each of its modifiers.
+     */
+    private static final String KEYBOARD = "Keyboard";
+
     private BindingConflictScanner() {
     }
 
@@ -126,6 +131,35 @@ public final class BindingConflictScanner {
      */
     public static List<Conflict> scanSlots(Map<String, KeyBindingsParser.BindingSlots> slots) {
         return scanSlotKeysets(toSlotKeysets(slots));
+    }
+
+    /**
+     * {@link #scanSlots}, over every slot the file holds whose main key is on the keyboard - a modifier held on a
+     * controller included (FN-6). The Bindings tab's scan.
+     * <p>
+     * WHY a second entry point: {@link #scanSlots} reads the execution view, which drops a slot EliteIntel cannot
+     * press. {@code [HOTAS Joy_1] + K} is one of those, and two actions on it still both fire in the game. The
+     * spoken startup warning keeps the execution view on purpose; the Bindings tab, where the commander presses
+     * either slot, needs the whole file.
+     *
+     * @param slots action name → both parsed slots, controller assignments included, as from
+     *              {@link KeyBindingsParser#parseReadOnlyBindingSlots}
+     */
+    public static List<Conflict> scanReadOnlySlots(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
+        Map<SlotRef, Set<String>> keysets = new LinkedHashMap<>();
+        for (Map.Entry<String, KeyBindingsParser.ReadOnlyBindingSlots> e : slots.entrySet()) {
+            putIfChord(keysets, e.getKey(), e.getValue().primary());
+            putIfChord(keysets, e.getKey(), e.getValue().secondary());
+        }
+        return scanSlotKeysets(keysets);
+    }
+
+    private static void putIfChord(Map<SlotRef, Set<String>> keysets, String action,
+                                   KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        Set<String> chord = chordOf(slot);
+        if (!chord.isEmpty()) {
+            keysets.put(new SlotRef(action, slot.slotType(), slot.hold()), chord);
+        }
     }
 
     /**
@@ -224,7 +258,7 @@ public final class BindingConflictScanner {
 
     private static String bareModifierHeldIn(Set<String> bare, Set<String> chord) {
         String key = bare.iterator().next();
-        return BindingModifier.isSupportedKeyboardModifier("Keyboard", key) && chord.contains(key) ? key : null;
+        return BindingModifier.isSupportedKeyboardModifier(KEYBOARD, key) && chord.contains(key) ? key : null;
     }
 
     /**
@@ -377,16 +411,24 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * The chord one parsed slot holds, or an empty set when the slot is empty.
+     * The chord one parsed slot holds, or an empty set when the slot is empty or its main key is not on the
+     * keyboard. A modifier held on a controller is named with its device ({@code 231D3200/Joy_1}), since
+     * {@code Joy_1} on two sticks is two different buttons; a keyboard modifier stays its bare token.
      * <p>
      * Public because a caller holding a {@link Conflict} may need to find which of an action's two
      * slots the scan actually matched on. Since the scan reads both, "the Primary if it holds a key"
      * is no longer that slot, and telling the commander to move the wrong chord is worse than telling
-     * them nothing. Taking the slot rather than its parts also saves each caller a hand-rolled unpack
-     * and the array copy {@code modifiers()} returns.
+     * them nothing. Taking the slot rather than its parts also saves each caller a hand-rolled unpack.
      */
     public static Set<String> chordOf(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return slot == null ? Set.of() : chordOf(slot.key(), Arrays.asList(slot.modifiers()));
+        if (slot == null || !KEYBOARD.equals(slot.device())) {
+            return Set.of();
+        }
+        return chordOf(slot.key(), slot.bindingModifiers().stream().map(BindingConflictScanner::modifierToken).toList());
+    }
+
+    private static String modifierToken(BindingModifier modifier) {
+        return KEYBOARD.equals(modifier.device()) ? modifier.key() : modifier.device() + "/" + modifier.key();
     }
 
     /**
