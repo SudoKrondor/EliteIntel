@@ -303,8 +303,9 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     of the reconcile (Alan, 2026-10-31, Storage S9b; Settled with Storage S9b's sources, below).*
 
     **A newer version is reconciled, never overwritten** (Krondor, 2026-09-24; Alan, 2026-10-23). When a live copy is
-    a newer version than the working copy — `.4.2.binds` becoming `.4.3.binds`, or a newer version on the XML root —
-    "overwrite the live copy with the working copy" is not offered. If the newer live copy holds every binding the
+    a newer version than the working copy — `.4.2.binds` becoming `.4.3.binds` — "overwrite the live copy with the
+    working copy" is not offered. *Only the file name's version counts since Storage S10 (Alan, 2026-10-31): a newer
+    version on the XML root under the same name is an ordinary details row - below.* If the newer live copy holds every binding the
     working copy has, unchanged, the user is asked to approve it becoming the working copy, under its new name. If
     not, the user reconciles: the new slots are inserted into the working copy, every other difference is decided
     line by line, and the working copy is renamed to the new version. Either way the new slots are listed, so the
@@ -313,7 +314,7 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     Large changes Frontier makes to anything other than `.binds` would need a BindForge code fix.
 
     **Settled with Storage S8's sources (Alan, 2026-10-30)** - the check for the binds and preset files; device
-    files are Storage S9, a newer version S10:
+    files are Storage S9, a newer version S10 (below):
 
     - **S8 is two slices.** S8a: the comparison, the check at the first BindForge click with its three choices, merge
       and the reset, and the line at Elite-Intel start. S8b: the check at APPLY, the edits put on top of the settled
@@ -323,12 +324,9 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       A file the live folder lacks is the same the other way round. Either way the two match afterwards, so nobody is
       asked about it again - it is how the game's own new `Custom.4.2.binds` reaches the working copy. This is the one
       write that removes a `.binds`, besides a rename's (rule 7), and only when the user chose it.
-    - **Until S10, a newer version of a working-copy binds file is left out of the check** and logged - a live
-      `X.4.3.binds` beside the working copy's `X.4.2.binds`. Keeping the working copy's side would delete the game's
-      new file. **The newer one is always left out; the older one too only when the live folder lacks it** (Alan,
-      2026-10-31, from the S7-S8b review): a live folder still holding `X.4.2.binds` beside `X.4.3.binds` has its
-      `X.4.2.binds` compared as usual, and the newer is still never offered for removal. A newer version on the XML
-      root under the same file name is not left out before S10 - it is an ordinary details row.
+    - *Until Storage S10 a newer version of a working-copy binds file was left out of the check and logged - the newer
+      one always, the older one too when the live folder lacked it (Alan, 2026-10-31, from the S7-S8b review). S10
+      replaced that - below.*
     - **A reset, for these files:** a live binds file whose every element, and its root apart from `PresetName`,
       equals by value one of the factory binds files of a reachable installation; a live preset file whose four lines
       all name factory binds files while the working copy's name one of the user's own.
@@ -417,6 +415,35 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **The reconcile reads the binds files the answers settle**, the edits on top at APPLY - built in storage once the
       binds rows are answered - so a device only the game's side uses ranks red, and *use one installation for all*
       names the bindings it would lose.
+    **Settled with Storage S10's sources (Alan, 2026-10-31)** - a newer version:
+
+    - **Asked on its own, before the warning**, at the first click and at APPLY, in the same backup and write as the
+      rest. When every binding carried over: *Approve* or *Not now*. Otherwise: *Reconcile* - the merge for that file's
+      rows, with *Keep all mine* and *Keep all in-game* - or *Not now*. Nothing is selected and Enter chooses nothing.
+      Not now ends the check, or cancels APPLY, as the warning's does. A reset newer file asks *"Are you sure?"* before
+      a line of it is taken. The warning follows for whatever else differs.
+    - **Only the file name's version counts.** The root's `MajorVersion` / `MinorVersion` name the tool that last wrote
+      the file ([bind-editor.md, *A fourth source*](bind-editor.md#a-fourth-source-48354-community-configs--2026-09-17)),
+      so a higher one under the same name is the file's ordinary details row. The newer version is the newest live
+      file of a BindName above the working copy's newest version of it.
+    - **"Every binding carried over, unchanged":** every element of the working copy's file is in the newer one with
+      the same value, the root's version and `PresetName` aside. **A new slot** is an element only the newer one has; it
+      is always taken, never a row. A changed element, one the newer file dropped, or a new child inside an element is a
+      row, at the merge grain.
+    - **The result is the game's file**, its root and new slots kept, with each row answered as the working copy's
+      spliced back in; it becomes the working copy's under the newer name, and the older name goes from the working
+      copy. **An older-named file still in the bindings folder is removed after the backup**, as a rename's old name is
+      (rule 7), and is not compared.
+    - **The new slots are listed** by the game's element names, in the question and again in the report, to bind in the
+      Bind Editor.
+    - **At APPLY, an edit on the older file goes on top of the newer one** and covers the same line there, which is then
+      not asked.
+    - **A newer version that cannot be read element by element is left as it is** and named in the warning, with the
+      file it replaces when the live folder lacks that.
+    - **Device files and the preset file are left out.** A new Frontier entry in `DeviceMappings.xml` cannot be told
+      from the user's - the stock list belongs to one game version - so it is an ordinary difference, and Merge keeps
+      it; a `StartPreset.5.start` is hypothetical.
+
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

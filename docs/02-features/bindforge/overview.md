@@ -203,8 +203,11 @@ reset it, and offers putting the working copy back first. Without `DeviceMapping
 ### When a game update brings a newer version — 2026-10-23
 
 **A working copy is never written over a game file of a newer version** (Krondor, 2026-09-24; Alan, 2026-10-23). A
-newer version — `DualVirpilDawnTreader.4.2.binds` becoming `.4.3.binds`, or a newer version on the file's XML root —
-means a reconcile, never an overwrite. This holds for every one of the files: `.binds` certainly,
+newer version — `DualVirpilDawnTreader.4.2.binds` becoming `.4.3.binds` — means a reconcile, never an overwrite.
+*Only the file name's version counts* (Alan, 2026-10-31, Storage S10): the version on the XML root names the tool that
+last wrote the file ([bind-editor.md](bind-editor.md#a-fourth-source-48354-community-configs--2026-09-17)), so a
+higher one under the same name is an ordinary difference. How it is asked is in [storage.md](storage.md#when-a-live-copy-differs),
+*Settled with Storage S10's sources*. This holds for every one of the files: `.binds` certainly,
 `DeviceMappings.xml` and `StartPreset.4.start` possibly one day, `.buttonMap`s probably never.
 
 **The quick way, when nothing of the user's was lost.** The game carries the user's bindings into the new version

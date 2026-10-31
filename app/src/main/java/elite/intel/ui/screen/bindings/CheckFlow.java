@@ -4,6 +4,7 @@ import elite.intel.bindforge.storage.BindingsCheck;
 import elite.intel.bindforge.storage.BindingsComparison.Differences;
 import elite.intel.bindforge.storage.BindingsComparison.FileDifference;
 import elite.intel.bindforge.storage.BindingsComparison.LineItem;
+import elite.intel.bindforge.storage.BindingsComparison.NewerVersion;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.DeviceCheck;
 import elite.intel.bindforge.storage.Edits;
@@ -52,6 +53,11 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  *       the reconcile's own side is the user's files with the edits not applied (Alan, 2026-10-31). An installation
  *       that cannot be read at all asks nothing: APPLY writes, leaves it alone, and the report names it.</li>
  * </ul>
+ * <strong>A newer version of one of the user's binds files is asked first</strong>, at either moment (Storage S10): on
+ * its own, before the warning - Approve when every binding carried over, else Reconcile, its lines one by one - and
+ * written in the same backup and write as the rest. Put mine back is never offered for it. Not now ends the check, or
+ * cancels the APPLY, as the warning's does.
+ * <p>
  * The reconcile's reading is built once the binds rows are answered, from the binds files they settle (Storage S9b), so
  * a device only the game's side uses counts. The disk work runs off the EDT; the dialogs on it.
  */
@@ -99,6 +105,7 @@ final class CheckFlow {
             try {
                 StringBuilder report = new StringBuilder(reportText(BindingsCheck.stored().settle(found, answers,
                         devices)));
+                report.append(newerReport(found));
                 devices.moves().forEach((from, to) -> report.append('\n')
                         .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
                 return report.toString();
@@ -127,8 +134,20 @@ final class CheckFlow {
      *
      * @param names what each side of the device files' reconcile is called, keyed by its id as text - BindForge's own
      *              side first
+     * @param newer the answers to the newer versions' rows, once they are asked (Storage S10) - every write carries them
      */
-    record Checked(BindingsCheck.Found found, Map<String, String> names) {
+    record Checked(BindingsCheck.Found found, Map<String, String> names, Map<String, Side> newer) {
+
+        Checked withNewer(Map<String, Side> answers) {
+            return new Checked(found, names, Map.copyOf(answers));
+        }
+
+        /** {@code answers} to the warning's rows, with the newer versions'. */
+        Map<String, Side> with(Map<String, Side> answers) {
+            Map<String, Side> all = new HashMap<>(newer);
+            all.putAll(answers);
+            return all;
+        }
 
         /** BindForge's own side's name. */
         String mine() {
@@ -190,7 +209,7 @@ final class CheckFlow {
             // WHY: only installations it could not read at all - named, and left as they are (Alan, 2026-10-31).
             return () -> tell(getText("bindings.check.unreadableOnly", installationLines(found)), then);
         }
-        return () -> warn(checked, then);
+        return () -> begin(checked, Map.of(), false, then);
     }
 
     /**
@@ -207,7 +226,7 @@ final class CheckFlow {
         }
         if (!found.anythingToAsk()) return written(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
         Checked checked = prepared(found);
-        return () -> warn(checked, then);
+        return () -> begin(checked, Map.of(), false, then);
     }
 
     /**
@@ -222,23 +241,79 @@ final class CheckFlow {
         Map<String, String> names = new LinkedHashMap<>();
         names.put(String.valueOf(DeviceCheck.WORKING_COPY_SIDE), mine);
         names.putAll(FirstTimeStartupFlow.labelsFor(rows));
-        return new Checked(found, names);
+        return new Checked(found, names, Map.of());
+    }
+
+    /**
+     * Each newer version first, on its own (Alan, 2026-10-31, Storage S10 D1): approved when every binding carried
+     * over, else reconciled line by line; Not now on any ends the check - at APPLY, cancels it. Then the warning, or the
+     * merge when it is opened again, for what else differs; with nothing else to ask, the write.
+     *
+     * @param given   answers already given - kept when the files changed meanwhile
+     * @param merging whether to go on to the merge rather than the warning
+     */
+    private void begin(Checked checked, Map<String, Side> given, boolean merging, Runnable then) {
+        BindingsCheck.Found found = checked.found();
+        Map<String, Side> newer = new HashMap<>();
+        for (NewerVersion version : found.differences().newer()) {
+            Optional<Map<String, Side>> answered = askNewer(version, given);
+            if (answered.isEmpty()) {
+                log.info(atApply ? "APPLY was cancelled at a newer version: Not now"
+                        : "The check was put off at a newer version: Not now");
+                then.run();
+                return;
+            }
+            newer.putAll(answered.get());
+        }
+        Checked asked = checked.withNewer(newer);
+        if (found.differences().files().isEmpty() && found.devices().asked().isEmpty()) {
+            write(found, asked.with(Map.of()), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
+        } else if (merging) {
+            merge(asked, given, then);
+        } else {
+            warn(asked, then);
+        }
+    }
+
+    /**
+     * One newer version (storage.md rule 14): <em>Approve</em> when every binding carried over; else <em>Reconcile</em>,
+     * the merge for its rows, with <em>"Are you sure?"</em> before a reset file's line is taken. Cancelling the merge goes
+     * back to the question. Nothing is selected and Enter chooses nothing. Empty for Not now.
+     */
+    private Optional<Map<String, Side>> askNewer(NewerVersion version, Map<String, Side> given) {
+        Map<String, Side> kept = given;
+        while (true) {
+            String action = getText(version.carriedOver() ? "bindings.check.newer.approve"
+                    : "bindings.check.newer.reconcile");
+            HudConfirmDialog.Result chosen = HudConfirmDialog.showWithoutDefault(parent,
+                    getText("bindings.check.newer.title"), newerText(version, atApply), action, null,
+                    getText("bindings.restore.notNow"));
+            if (chosen != HudConfirmDialog.Result.PRIMARY) return Optional.empty();
+            if (version.carriedOver()) return Optional.of(Map.of());
+            Optional<Map<String, Side>> answered = new CheckMergeDialog(parent, version.items(), kept).showDialog();
+            if (answered.isEmpty()) continue;
+            kept = answered.get();
+            Map<String, Side> answers = kept;
+            boolean takesTheGames = version.items().stream().anyMatch(item -> answers.get(item.id()) == Side.LIVE);
+            if (version.reset() && takesTheGames && !sure()) continue;
+            return answered;
+        }
     }
 
     private void warn(Checked checked, Runnable then) {
         BindingsCheck.Found found = checked.found();
         // WHY: with no binds row and no installation's files to take - only a missing or unparseable file - putting
         // the working copy back is all there is to offer (Alan, 2026-10-31).
-        boolean offerMergeAndTake = !found.differences().none() || checked.anySide();
+        boolean offerMergeAndTake = !found.differences().files().isEmpty() || checked.anySide();
         switch (CheckWarningDialog.show(parent, warningText(found, atApply), offerMergeAndTake)) {
-            case KEEP_MINE -> write(found, everyRow(found, Side.WORKING_COPY), DeviceCheck.Answer.PUT_MINE_BACK,
-                    false, then);
+            case KEEP_MINE -> write(found, checked.with(everyRow(found, Side.WORKING_COPY)),
+                    DeviceCheck.Answer.PUT_MINE_BACK, false, then);
             case TAKE_THE_GAMES -> {
                 if (found.differences().anyReset() && !sure()) {
                     warn(checked, then);
                     return;
                 }
-                Map<String, Side> answers = everyRow(found, Side.LIVE);
+                Map<String, Side> answers = checked.with(everyRow(found, Side.LIVE));
                 if (!checked.anySide()) {
                     // WHY: only a missing or unparseable file - never a side; the working copy goes back there.
                     write(found, answers, DeviceCheck.Answer.PUT_MINE_BACK, false, then);
@@ -263,7 +338,7 @@ final class CheckFlow {
     private void merge(Checked checked, Map<String, Side> given, Runnable then) {
         BindingsCheck.Found found = checked.found();
         Map<String, Side> answered = Map.of();
-        if (!found.differences().none()) {
+        if (!found.differences().files().isEmpty()) {
             answered = new CheckMergeDialog(parent, found.differences().items(), given).showDialog().orElse(null);
             if (answered == null) {
                 warn(checked, then);
@@ -274,7 +349,7 @@ final class CheckFlow {
                 return;
             }
         }
-        Map<String, Side> answers = answered;
+        Map<String, Side> answers = checked.with(answered);
         if (!checked.anySide()) {
             // WHY: only a missing or unparseable file - never a side; the working copy goes back there.
             write(found, answers, DeviceCheck.Answer.PUT_MINE_BACK, true, then);
@@ -284,7 +359,7 @@ final class CheckFlow {
                 devices -> write(found, answers, devices, true, then),
                 // WHY: with no binds rows, reopening the merge would open the reconcile again at once.
                 () -> {
-                    if (found.differences().none()) warn(checked, then);
+                    if (found.differences().files().isEmpty()) warn(checked, then);
                     else merge(checked, answers, then);
                 }));
     }
@@ -418,17 +493,17 @@ final class CheckFlow {
             return () -> {
                 HudConfirmDialog.info(parent, getText("bindings.check.title"), getText("bindings.check.changed"),
                         getText("button.close"));
-                if (merging) merge(again, kept, then);
-                else warn(again, then);
+                // WHY: a newer version is asked again too - its answers kept on the rows that did not change.
+                begin(again, kept, merging, then);
             };
         }
     }
 
-    /** The answers to rows that are still exactly as they were. */
+    /** The answers to rows that are still exactly as they were - a newer version's included. */
     static Map<String, Side> kept(BindingsCheck.Found before, BindingsCheck.Found now, Map<String, Side> answers) {
-        Set<LineItem> unchanged = new HashSet<>(now.differences().items());
+        Set<LineItem> unchanged = new HashSet<>(now.differences().rows());
         Map<String, Side> kept = new HashMap<>();
-        for (LineItem item : before.differences().items()) {
+        for (LineItem item : before.differences().rows()) {
             Side answer = answers.get(item.id());
             if (answer != null && unchanged.contains(item)) kept.put(item.id(), answer);
         }
@@ -440,8 +515,40 @@ final class CheckFlow {
     }
 
     /**
-     * The warning: every file and installation that differs, each one that looks reset, any left for a newer version -
-     * and, at APPLY, how many rows the edits change and that closing cancels the APPLY (Storage S8b).
+     * One newer version's question (Storage S10): what it is, its new slots, and - when lines differ - how many and what
+     * Reconcile does; a reset named; at APPLY, that closing cancels the APPLY.
+     */
+    static String newerText(NewerVersion version, boolean atApply) {
+        String text = version.carriedOver()
+                ? getText("bindings.check.newer.carriedOver", version.newer(), version.older(),
+                version.newSlots().size(), newSlots(version))
+                : getText("bindings.check.newer.changed", version.newer(), version.older(), version.items().size(),
+                version.newSlots().size(), newSlots(version));
+        if (version.reset()) text += "\n\n" + getText("bindings.check.resetAdvice");
+        if (atApply) text += "\n\n" + getText("bindings.check.atApply");
+        return text;
+    }
+
+    /** The new slots, by the game's own element names (Alan, 2026-10-31, Storage S10 D6). */
+    private static String newSlots(NewerVersion version) {
+        return version.newSlots().isEmpty() ? getText("bindings.check.newer.noNewSlots")
+                : String.join(", ", version.newSlots());
+    }
+
+    /** The report's lines for each newer version written: what replaced what, and the new slots to bind. */
+    static String newerReport(BindingsCheck.Found found) {
+        StringBuilder text = new StringBuilder();
+        for (NewerVersion version : found.differences().newer()) {
+            text.append('\n').append(getText("bindings.check.newer.result", version.newer(), version.older(),
+                    newSlots(version)));
+        }
+        return text.toString();
+    }
+
+    /**
+     * The warning: every file and installation that differs, each one that looks reset, any newer version left as it is
+     * - and, at APPLY, how many rows the edits change and that closing cancels the APPLY (Storage S8b). A newer version
+     * that can be read was asked on its own before it.
      */
     static String warningText(BindingsCheck.Found found, boolean atApply) {
         Differences differences = found.differences();
@@ -452,7 +559,7 @@ final class CheckFlow {
         String text = getText("bindings.check.intro", String.join("\n", lines));
         if (differences.anyReset() || found.devices().anyReset()) text += "\n\n" + getText("bindings.check.resetAdvice");
         if (!differences.leftOut().isEmpty()) {
-            text += "\n\n" + getText("bindings.check.leftOut", String.join(", ", differences.leftOut()));
+            text += "\n\n" + getText("bindings.check.newer.leftOut", String.join(", ", differences.leftOut()));
         }
         if (found.edited() > 0) text += "\n\n" + getText("bindings.check.edited", found.edited());
         if (atApply) text += "\n\n" + getText("bindings.check.atApply");

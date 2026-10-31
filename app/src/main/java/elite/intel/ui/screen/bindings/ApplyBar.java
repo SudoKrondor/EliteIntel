@@ -165,6 +165,7 @@ public final class ApplyBar extends JPanel {
                             DeviceCheck.Answer devices) throws IOException {
             try {
                 StringBuilder report = new StringBuilder(reportText(applying.apply(found, answers, devices)));
+                report.append(CheckFlow.newerReport(found));
                 devices.moves().forEach((from, to) -> report.append('\n')
                         .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
                 return report.toString();

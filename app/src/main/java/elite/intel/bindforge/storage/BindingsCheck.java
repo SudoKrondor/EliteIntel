@@ -44,6 +44,10 @@ import java.util.stream.Stream;
  * the write as a row does. The reconcile's reading is built here ({@link #reading}), from the binds files the user's
  * answers settle.
  * <p>
+ * <strong>A newer version of a working-copy binds file</strong> (Storage S10; {@link BindingsComparison.NewerVersion})
+ * is found by the same comparison, its rows answered in the same map, and written in the same backup and write: the
+ * newer file becomes the working copy's, the older name goes.
+ * <p>
  * <strong>At APPLY</strong> (Storage S8b, S9b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes
  * the settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
  * screen. Touches the disk - not for the EDT.
@@ -199,12 +203,14 @@ public final class BindingsCheck {
             all = BindingsComparison.compare(workingCopy.bindings(), live, factory.of(workingCopy));
         }
         if (!all.leftOut().isEmpty()) {
-            log.info("The check left out until a newer game version is reconciled (Storage S10): {}",
-                    String.join(", ", all.leftOut()));
+            log.warn("The check left as they are a newer version it cannot read line by line, and the file it replaces: "
+                    + "{}", String.join(", ", all.leftOut()));
         }
+        all.newer().forEach(version -> log.info("The game has a newer version of {}: {}, {} new slots, {} lines that "
+                + "differ", version.older(), version.newer(), version.newSlots().size(), version.items().size()));
         Differences asked = BindingsComparison.without(all, edited(snapshot));
         DeviceCheck.Found judged = devices.find(workingCopy);
-        return new Found(workingCopy, live, asked, all.items().size() - asked.items().size(), judged);
+        return new Found(workingCopy, live, asked, all.rows().size() - asked.rows().size(), judged);
     }
 
     private static List<BindingsComparison.LineItem> edited(Edits.Snapshot snapshot) {
@@ -228,7 +234,7 @@ public final class BindingsCheck {
         Map<String, byte[]> live = liveReader.read(bindingsFolder.get());
         Differences now = BindingsComparison.without(
                 BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE), edited(snapshot));
-        if (!snapshot.applied().sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())
+        if (!snapshot.applied().sameAs(found.workingCopy()) || !now.sameRows(found.differences())
                 || !devices.find(snapshot.applied()).sameAs(found.devices())) {
             throw new ChangedMeanwhileException(find(snapshot, live));
         }
@@ -254,10 +260,10 @@ public final class BindingsCheck {
             throws IOException {
         if (found.devices().sides().isEmpty()) return Optional.empty();
         Edits.Snapshot snapshot = edits.snapshot();
-        Map<String, byte[]> settled = BindingsComparison.settle(found.workingCopy().bindings(), found.live(),
-                found.differences(), answers).bindings();
-        Map<String, byte[]> bindings = BindingsComparison.withEditsOnTop(settled, snapshot.applied().bindings(),
-                snapshot.current().bindings());
+        BindingsComparison.Settled settled = BindingsComparison.settle(found.workingCopy().bindings(), found.live(),
+                found.differences(), answers);
+        Map<String, byte[]> bindings = BindingsComparison.withEditsOnTop(settled.bindings(), settled.renamed(),
+                snapshot.applied().bindings(), snapshot.current().bindings());
         return Optional.of(found.devices().reading(snapshot.current(), bindings, bindingsFolder.get(),
                 workingCopyFolder.get(), mineName));
     }
@@ -294,9 +300,10 @@ public final class BindingsCheck {
                 taken.set(backup);
                 return backup;
             }, found.devices().leavingAlone(comparison, deviceFiles), settled.removeFromLive());
-            log.info("The check settled {} files: {} rows; removed from the bindings folder: {}; installations "
-                            + "written that differed: {}, their device files {}", found.differences().files().size(),
-                    found.differences().items().size(), settled.removeFromLive(), found.devices().asked().size(),
+            log.info("The check settled {} files: {} rows; newer versions taken: {}; removed from the bindings folder: "
+                            + "{}; installations written that differed: {}, their device files {}",
+                    found.differences().files().size(), found.differences().rows().size(), settled.renamed(),
+                    settled.removeFromLive(), found.devices().asked().size(),
                     switch (devices) {
                         case DeviceCheck.PutMineBack putBack -> "the working copy's";
                         case DeviceCheck.Reconciled reconciled -> "reconciled";

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,8 +31,12 @@ import java.util.TreeSet;
  *       root's {@code PresetName} and version are one; the preset file is a row per line.</li>
  *   <li><strong>A file on one side only is a difference</strong>, one row (Alan, 2026-10-30): keeping the working
  *       copy's side of a live-only file removes it from the bindings folder.</li>
- *   <li><strong>A newer version is left out until Storage S10</strong>: a live {@code X.4.3.binds} beside the working
- *       copy's {@code X.4.2.binds}, always; the {@code X.4.2.binds} too unless the live folder still holds it.</li>
+ *   <li><strong>A newer version is reconciled, never overwritten</strong> (storage.md rule 14; Storage S10): a live
+ *       {@code X.4.3.binds} where the working copy's newest {@code X} is {@code X.4.2.binds} - the version in the file
+ *       name, never the root's, which names the tool that wrote it (Alan, 2026-10-31). Its new slots, the elements only
+ *       it has, are always taken; the lines of the working copy's file that differ in it are rows; the result is the
+ *       newer file under its name, and the older name goes from the working copy and, after the backup, from the
+ *       bindings folder. One that cannot be read element by element is left out and named, as before S10.</li>
  *   <li><strong>A reset is named</strong>: a live binds file equal by value to a factory one but for its
  *       {@code PresetName}, or a preset file whose four lines all name factory binds files where the working copy's
  *       name one of the user's own.</li>
@@ -119,25 +124,77 @@ public final class BindingsComparison {
     }
 
     /**
+     * The game's newer version of one of the working copy's binds files (storage.md rule 14; Storage S10). Never
+     * overwritten: whatever the answers, the result is the newer file, its new slots in it, under its name.
+     *
+     * @param older    the working copy's file
+     * @param newer    the game's newer one, which the rows are in
+     * @param reset    whether the newer one looks reset by a game update
+     * @param newSlots the elements only the newer one has, in its order - always taken, and listed so the user binds
+     *                 them
+     * @param items    the lines of the working copy's file that differ in the newer one, or that it lacks; none when every
+     *                 binding carried over unchanged (Alan, 2026-10-31: the root's version and {@code PresetName} aside)
+     */
+    public record NewerVersion(String older, String newer, boolean reset, List<String> newSlots,
+                               List<LineItem> items) {
+        public NewerVersion {
+            Objects.requireNonNull(older, "older");
+            Objects.requireNonNull(newer, "newer");
+            newSlots = List.copyOf(newSlots);
+            items = List.copyOf(items);
+        }
+
+        /** Whether every binding the working copy has is in the newer file, unchanged - approved, not reconciled. */
+        public boolean carriedOver() {
+            return items.isEmpty();
+        }
+
+        /** Whether {@code other} found the same - the reset flag aside, which only the warning's check reads. */
+        boolean sameRows(NewerVersion other) {
+            return older.equals(other.older) && newer.equals(other.newer) && newSlots.equals(other.newSlots)
+                    && items.equals(other.items);
+        }
+    }
+
+    /**
      * Everything the check found.
      *
-     * @param files   each file that differs, by name
-     * @param leftOut the files left out until Storage S10 - a newer version beside an older one
+     * @param files   each file that differs, by name - the warning's
+     * @param newer   each newer version of a working-copy binds file, asked on its own before the warning (Storage S10)
+     * @param leftOut a newer version that cannot be read element by element, and the file it replaces unless the live
+     *                folder still holds it - left as they are, and named
      */
-    public record Differences(List<FileDifference> files, List<String> leftOut) {
+    public record Differences(List<FileDifference> files, List<NewerVersion> newer, List<String> leftOut) {
         public Differences {
             files = List.copyOf(files);
+            newer = List.copyOf(newer);
             leftOut = List.copyOf(leftOut);
         }
 
-        /** Whether nothing differs. */
+        /** Whether nothing differs - no file, and no newer version. */
         public boolean none() {
-            return files.isEmpty();
+            return files.isEmpty() && newer.isEmpty();
         }
 
-        /** Every row, file by file. */
+        /** The warning's rows, file by file - not the newer versions'. */
         public List<LineItem> items() {
             return files.stream().flatMap(file -> file.items().stream()).toList();
+        }
+
+        /** Every row to answer: the warning's, then each newer version's. */
+        public List<LineItem> rows() {
+            List<LineItem> rows = new ArrayList<>(items());
+            newer.forEach(version -> rows.addAll(version.items()));
+            return rows;
+        }
+
+        /** Whether {@code other} holds the same rows and newer versions - what changed meanwhile is judged by. */
+        boolean sameRows(Differences other) {
+            if (!items().equals(other.items()) || newer.size() != other.newer.size()) return false;
+            for (int i = 0; i < newer.size(); i++) {
+                if (!newer.get(i).sameRows(other.newer.get(i))) return false;
+            }
+            return true;
         }
 
         /** Whether any file looks reset. */
@@ -162,12 +219,16 @@ public final class BindingsComparison {
     /**
      * What the check settles on: the binds and preset files the working copy and the bindings folder will both hold,
      * and the live files to remove from the bindings folder - a live-only file the user kept the working copy's side
-     * of.
+     * of, and the older name of a file a newer version replaced.
+     *
+     * @param renamed each working-copy binds file a newer version replaced, to the newer one's name - so the edits on
+     *                the older one go on top of the newer (Storage S10)
      */
-    public record Settled(Map<String, byte[]> bindings, Set<String> removeFromLive) {
+    public record Settled(Map<String, byte[]> bindings, Set<String> removeFromLive, Map<String, String> renamed) {
         public Settled {
             bindings = Map.copyOf(bindings);
             removeFromLive = Set.copyOf(removeFromLive);
+            renamed = Map.copyOf(renamed);
         }
     }
 
@@ -180,10 +241,26 @@ public final class BindingsComparison {
      * @param live        the bindings folder's, by name
      */
     public static Differences compare(Map<String, byte[]> workingCopy, Map<String, byte[]> live, Factory factory) {
-        Set<String> leftOut = leftOut(workingCopy.keySet(), live.keySet());
+        Set<String> leftOut = new TreeSet<>();
+        List<NewerVersion> newer = new ArrayList<>();
         Set<String> names = new TreeSet<>(workingCopy.keySet());
         names.addAll(live.keySet());
-        names.removeAll(leftOut);
+        newerVersions(workingCopy.keySet(), live.keySet()).forEach((older, newest) -> {
+            names.remove(newest);
+            Optional<NewerVersion> version = newerVersion(older, newest, workingCopy.get(older), live.get(newest),
+                    factory);
+            if (version.isPresent()) {
+                newer.add(version.get());
+                // WHY: the older name goes from the bindings folder too (Alan, 2026-10-31, D3), so it is not compared.
+                names.remove(older);
+                return;
+            }
+            leftOut.add(newest);
+            if (!live.containsKey(older)) {
+                leftOut.add(older);
+                names.remove(older);
+            }
+        });
         List<FileDifference> files = new ArrayList<>();
         for (String name : names) {
             byte[] mine = workingCopy.get(name);
@@ -200,28 +277,51 @@ public final class BindingsComparison {
             }
             difference.ifPresent(files::add);
         }
-        return new Differences(files, List.copyOf(leftOut));
+        return new Differences(files, newer, List.copyOf(leftOut));
     }
 
     /**
-     * A live binds file newer than one of the working copy's with the same BindName - left for Storage S10, always, so
-     * no answer deletes it. The older one is left out too only when the live folder lacks it; one the live folder still
-     * holds is compared as usual (Alan, 2026-10-31, Storage S8R).
+     * Each working-copy binds file the game has a newer version of, to the newest such live file: for every BindName,
+     * the working copy's newest version, and the newest live file of that BindName above it that the working copy does
+     * not hold. Only the file name's version counts - the root's names the tool that last wrote the file, and BindForge
+     * gates nothing on it (bind-editor.md, <em>A fourth source</em>; Alan, 2026-10-31, Storage S10 D2).
      */
-    private static Set<String> leftOut(Set<String> workingCopy, Set<String> live) {
-        Set<String> leftOut = new TreeSet<>();
-        for (String newer : live) {
-            if (workingCopy.contains(newer)) continue;
-            Optional<String> bindName = FileNames.bindName(newer);
-            if (bindName.isEmpty()) continue;
-            for (String older : workingCopy) {
-                if (bindName.equals(FileNames.bindName(older)) && FileNames.version(older) < FileNames.version(newer)) {
-                    leftOut.add(newer);
-                    if (!live.contains(older)) leftOut.add(older);
-                }
-            }
+    private static Map<String, String> newerVersions(Set<String> workingCopy, Set<String> live) {
+        Map<String, String> newestMine = new TreeMap<>();
+        for (String file : workingCopy) {
+            FileNames.bindName(file).ifPresent(bindName -> newestMine.merge(bindName, file,
+                    (a, b) -> FileNames.version(a) >= FileNames.version(b) ? a : b));
         }
-        return leftOut;
+        Map<String, String> newer = new TreeMap<>();
+        for (String older : newestMine.values()) {
+            Optional<String> bindName = FileNames.bindName(older);
+            live.stream()
+                    .filter(file -> !workingCopy.contains(file) && FileNames.bindName(file).equals(bindName)
+                            && FileNames.version(file) > FileNames.version(older))
+                    .max(Comparator.comparingLong(FileNames::version))
+                    .ifPresent(newest -> newer.put(older, newest));
+        }
+        return newer;
+    }
+
+    /**
+     * The working copy's {@code older} against the game's {@code newer}: the elements only the newer has are its new
+     * slots, and every element of the older that the newer lacks or holds differently is a row, in the newer's name.
+     * The root is the newer's whatever is answered, so it is no row. Empty when either cannot be read element by
+     * element.
+     */
+    private static Optional<NewerVersion> newerVersion(String older, String newer, byte[] mine, byte[] theirs,
+                                                       Factory factory) {
+        Optional<BindsElements> a = BindsElements.of(mine);
+        Optional<BindsElements> b = BindsElements.of(theirs);
+        if (a.isEmpty() || b.isEmpty()) return Optional.empty();
+        List<String> newSlots = b.get().elements().keySet().stream()
+                .filter(element -> !a.get().elements().containsKey(element)).toList();
+        List<LineItem> items = new ArrayList<>();
+        for (BindsElements.Top element : a.get().elements().values()) {
+            items.addAll(elementItems(newer, element, b.get().elements().get(element.name())));
+        }
+        return Optional.of(new NewerVersion(older, newer, isReset(b.get(), factory), newSlots, items));
     }
 
     private static FileDifference oneSide(String name, Presence presence, String mine, String theirs) {
@@ -359,7 +459,47 @@ public final class BindingsComparison {
                 settled.put(name, mergedBindsFile(file, workingCopy.get(name), live.get(name), answers));
             }
         }
-        return new Settled(settled, remove);
+        Map<String, String> renamed = new TreeMap<>();
+        for (NewerVersion version : differences.newer()) {
+            settled.remove(version.older());
+            settled.put(version.newer(), mergedNewerVersion(version, workingCopy.get(version.older()),
+                    live.get(version.newer()), answers));
+            // WHY: the older name goes from the bindings folder after the backup, as a rename's does (Alan, 2026-10-31,
+            // Storage S10 D3) - the backup holds it.
+            if (live.containsKey(version.older())) remove.add(version.older());
+            renamed.put(version.older(), version.newer());
+        }
+        return new Settled(settled, remove, renamed);
+    }
+
+    /**
+     * The newer version, never written over (storage.md rule 14): the game's file, its new slots and root kept, with
+     * each row answered as the working copy's spliced back in - a line the game changed or dropped, the user's. Every
+     * other byte is the game's.
+     */
+    private static byte[] mergedNewerVersion(NewerVersion version, byte[] mine, byte[] theirs,
+                                             Map<String, Side> answers) throws IOException {
+        List<BindsElements.Splice> splices = new ArrayList<>();
+        BindsElements a = BindsElements.of(mine).orElseThrow(() -> notMerged(version.newer()));
+        BindsElements b = BindsElements.of(theirs).orElseThrow(() -> notMerged(version.newer()));
+        for (LineItem item : version.items()) {
+            if (answerOf(item, answers) != Side.WORKING_COPY) continue;
+            switch (item.kind()) {
+                case SLOT -> {
+                    BindsElements.Child gameChild = b.elements().get(item.element()).child(item.part()).orElseThrow();
+                    BindsElements.Child mineChild = a.elements().get(item.element()).child(item.part()).orElseThrow();
+                    splices.add(new BindsElements.Splice(gameChild.range(), a.text(mineChild.range())));
+                }
+                // WHY: the roles swapped - the game's file is the one spliced, the working copy's text the one taken.
+                case ELEMENT -> splices.add(elementSplice(b, a, item.element()));
+                case FILE, DETAILS, PRESET_LINE -> throw new IllegalStateException("not a row of a newer version");
+            }
+        }
+        if (splices.isEmpty()) return theirs;
+        byte[] merged = b.with(splices);
+        // WHY: never write a file the check cannot read back - a merge that broke it would reach the game.
+        if (BindsElements.of(merged).isEmpty()) throw notMerged(version.newer());
+        return merged;
     }
 
     private static Side answerOf(LineItem item, Map<String, Side> answers) {
@@ -463,7 +603,24 @@ public final class BindingsComparison {
                     .toList();
             if (!asked.isEmpty()) files.add(new FileDifference(file.file(), file.presence(), file.reset(), asked));
         }
-        return new Differences(files, differences.leftOut());
+        // WHY: an edit on the older file covers the same line of the newer, which it goes on top of (Storage S10). A
+        // newer version is kept with no rows left: it is still approved, and its new slots listed.
+        List<NewerVersion> newer = new ArrayList<>();
+        for (NewerVersion version : differences.newer()) {
+            List<LineItem> renamed = edits.stream()
+                    .map(edit -> edit.file().equals(version.older()) ? inFile(edit, version.newer()) : edit)
+                    .toList();
+            List<LineItem> asked = version.items().stream()
+                    .filter(row -> renamed.stream().noneMatch(edit -> covers(edit, row)))
+                    .toList();
+            newer.add(new NewerVersion(version.older(), version.newer(), version.reset(), version.newSlots(), asked));
+        }
+        return new Differences(files, newer, differences.leftOut());
+    }
+
+    private static LineItem inFile(LineItem item, String file) {
+        return new LineItem(file, item.key(), item.kind(), item.element(), item.part(), item.section(),
+                item.workingCopy(), item.live());
     }
 
     /**
@@ -471,27 +628,48 @@ public final class BindingsComparison {
      * change, the edits' side; everywhere else, the settled side.
      *
      * @param settled the binds and preset files the check settled on
+     * @param renamed each file a newer version replaced, to its new name ({@link Settled#renamed()}): the edits on the
+     *                older go on top of the newer (Storage S10)
      * @param applied the working copy's, which the edits started from
      * @param current the working copy's with the edits on them
      * @throws IOException if a file could not be merged, or the edits are on a binds file whose newer version the
      *                     check left out - the message names it
      */
-    public static Map<String, byte[]> withEditsOnTop(Map<String, byte[]> settled, Map<String, byte[]> applied,
-                                                     Map<String, byte[]> current) throws IOException {
-        List<LineItem> edits = edited(applied, current);
+    public static Map<String, byte[]> withEditsOnTop(Map<String, byte[]> settled, Map<String, String> renamed,
+                                                     Map<String, byte[]> applied, Map<String, byte[]> current)
+            throws IOException {
+        Map<String, byte[]> appliedNamed = named(applied, renamed);
+        Map<String, byte[]> currentNamed = named(current, renamed);
+        List<LineItem> edits = edited(appliedNamed, currentNamed);
         if (edits.isEmpty()) return settled;
-        Differences between = compare(settled, current, Factory.NONE);
-        // WHY: a row left out is never merged, so an edit on it would be dropped unseen. Edits never make a newer
-        // version, so this is a broken invariant rather than something the user did.
-        if (!between.leftOut().isEmpty()) {
-            throw new IOException("the edits cannot be put on top of " + String.join(", ", between.leftOut()));
+        Differences between = compare(settled, currentNamed, Factory.NONE);
+        // WHY: a row left out or asked as a newer version is never merged here, so an edit on it would be dropped
+        // unseen. Edits never make a newer version, so this is a broken invariant rather than something the user did.
+        if (!between.leftOut().isEmpty() || !between.newer().isEmpty()) {
+            List<String> names = new ArrayList<>(between.leftOut());
+            between.newer().forEach(version -> names.add(version.newer()));
+            throw new IOException("the edits cannot be put on top of " + String.join(", ", names));
         }
         Map<String, Side> answers = new HashMap<>();
         for (LineItem row : between.items()) {
             boolean edited = edits.stream().anyMatch(edit -> covers(edit, row));
             answers.put(row.id(), edited ? Side.LIVE : Side.WORKING_COPY);
         }
-        return settle(settled, current, between, answers).bindings();
+        return settle(settled, currentNamed, between, answers).bindings();
+    }
+
+    /** {@code files} with each older name in {@code renamed} under its newer one - the bytes unchanged. */
+    private static Map<String, byte[]> named(Map<String, byte[]> files, Map<String, String> renamed) {
+        if (renamed.isEmpty()) return files;
+        Map<String, byte[]> named = new TreeMap<>(files);
+        renamed.forEach((older, newer) -> {
+            byte[] content = named.get(older);
+            if (content != null && !named.containsKey(newer)) {
+                named.remove(older);
+                named.put(newer, content);
+            }
+        });
+        return named;
     }
 
     // ---- reading and describing

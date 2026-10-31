@@ -5,6 +5,7 @@ import elite.intel.bindforge.storage.BindingsComparison.Differences;
 import elite.intel.bindforge.storage.BindingsComparison.FileDifference;
 import elite.intel.bindforge.storage.BindingsComparison.Kind;
 import elite.intel.bindforge.storage.BindingsComparison.LineItem;
+import elite.intel.bindforge.storage.BindingsComparison.NewerVersion;
 import elite.intel.bindforge.storage.BindingsComparison.Presence;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.ConfigurationFiles;
@@ -23,12 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * The check on screen, without Swing (storage.md rule 14; Storage S8R, the S7-S8b review): which answers survive the
  * files changing while the warning was open, and what the warning says. Compared through the bundles, so it holds in
- * any language.
+ * any language. A newer version's question and report (Storage S10).
  */
 class CheckFlowTest {
 
     private static final String CUSTOM = "Custom.4.2.binds";
     private static final String SPARE = "Spare.4.2.binds";
+    private static final String NEWER = "Custom.4.3.binds";
 
     /**
      * The answers kept on every row that did not change (storage.md, <em>Settled with Storage S8's sources</em>): a row
@@ -63,17 +65,20 @@ class CheckFlowTest {
         assertEquals(getText("bindings.check.intro", files) + "\n\n" + getText("bindings.check.resetAdvice"), text);
     }
 
-    /** At APPLY: the files left for a newer version, how many rows the edits change, and that closing cancels APPLY. */
+    /**
+     * At APPLY: a newer version that cannot be read, left as it is; how many rows the edits change; and that closing
+     * cancels APPLY.
+     */
     @Test
     void theWarningAtApplySaysWhatIsLeftOutWhatTheEditsChangeAndThatClosingCancels() {
         FileDifference custom = file(false, slot("YawLeftButton", "Key_A", "Key_Q"),
                 slot("RollLeftButton", "Key_E", "Key_R"));
-        Differences differences = new Differences(List.of(custom), List.of("Custom.4.3.binds"));
+        Differences differences = new Differences(List.of(custom), List.of(), List.of(NEWER));
 
         String text = CheckFlow.warningText(found(differences, 2), true);
 
         assertEquals(getText("bindings.check.intro", "- " + getText("bindings.check.file.differs", CUSTOM, 2))
-                + "\n\n" + getText("bindings.check.leftOut", "Custom.4.3.binds")
+                + "\n\n" + getText("bindings.check.newer.leftOut", NEWER)
                 + "\n\n" + getText("bindings.check.edited", 2)
                 + "\n\n" + getText("bindings.check.atApply"), text);
     }
@@ -101,6 +106,53 @@ class CheckFlowTest {
                 text);
     }
 
+    /**
+     * A newer version's question (Storage S10): every binding carried over asks to approve, naming the new slots; at
+     * APPLY it says closing cancels APPLY.
+     */
+    @Test
+    void aNewerVersionWithEveryBindingCarriedOverAsksToApproveAndNamesTheNewSlots() {
+        NewerVersion version = new NewerVersion(CUSTOM, NEWER, false, List.of("NewThing", "OtherThing"), List.of());
+
+        assertEquals(getText("bindings.check.newer.carriedOver", NEWER, CUSTOM, 2, "NewThing, OtherThing")
+                + "\n\n" + getText("bindings.check.atApply"), CheckFlow.newerText(version, true));
+    }
+
+    /** Lines that differ: how many, the new slots - none here, so said - and a reset's advice. */
+    @Test
+    void aNewerVersionWithLinesThatDifferSaysHowManyAndAReset() {
+        LineItem row = new LineItem(NEWER, "YawLeftButton/Primary", Kind.SLOT, "YawLeftButton", "Primary", null,
+                "Key_A", "Key_Q");
+        NewerVersion version = new NewerVersion(CUSTOM, NEWER, true, List.of(), List.of(row));
+
+        assertEquals(getText("bindings.check.newer.changed", NEWER, CUSTOM, 1, 0,
+                getText("bindings.check.newer.noNewSlots")) + "\n\n" + getText("bindings.check.resetAdvice"),
+                CheckFlow.newerText(version, false));
+    }
+
+    /** The report names each newer version written and its new slots to bind. */
+    @Test
+    void theReportNamesEachNewerVersionWritten() {
+        NewerVersion version = new NewerVersion(CUSTOM, NEWER, false, List.of("NewThing"), List.of());
+        Differences differences = new Differences(List.of(), List.of(version), List.of());
+
+        assertEquals("\n" + getText("bindings.check.newer.result", NEWER, CUSTOM, "NewThing"),
+                CheckFlow.newerReport(found(differences, 0)));
+    }
+
+    /** A newer version's answers are kept like any row's when the files change meanwhile. */
+    @Test
+    void theAnswersToANewerVersionsRowsAreKeptToo() {
+        LineItem row = new LineItem(NEWER, "YawLeftButton/Primary", Kind.SLOT, "YawLeftButton", "Primary", null,
+                "Key_A", "Key_Q");
+        Differences differences = new Differences(List.of(),
+                List.of(new NewerVersion(CUSTOM, NEWER, false, List.of(), List.of(row))), List.of());
+        BindingsCheck.Found found = found(differences, 0);
+
+        assertEquals(Map.of(row.id(), Side.WORKING_COPY),
+                CheckFlow.kept(found, found, Map.of(row.id(), Side.WORKING_COPY)));
+    }
+
     private static DeviceCheck.Judged judged(long id, String storefront, DeviceCheck.State state, String problem) {
         String folder = storefront.charAt(0) + storefront.substring(1).toLowerCase(Locale.ROOT);
         InstallationRow row = new InstallationRow(id, storefront, folder, false, false);
@@ -118,7 +170,7 @@ class CheckFlowTest {
     }
 
     private static Differences differences(FileDifference... files) {
-        return new Differences(List.of(files), List.of());
+        return new Differences(List.of(files), List.of(), List.of());
     }
 
     private static BindingsCheck.Found found(Differences differences, int edited) {
