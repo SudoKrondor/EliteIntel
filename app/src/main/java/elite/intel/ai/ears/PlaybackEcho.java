@@ -1,6 +1,9 @@
 package elite.intel.ai.ears;
 
+import elite.intel.ai.mouth.VocalisationHandle;
+
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 /**
@@ -13,6 +16,11 @@ import java.util.function.LongSupplier;
  * transmissions both raise), or within {@link #TAIL_MS} after it stops, admits nothing but an exact interrupt
  * phrase. The tail covers what is still leaving the speaker and the room after playback reports done.
  * <p>
+ * Whether something plays is read live ({@link VocalisationHandle#isAnyPlaying()}), never remembered from the
+ * {@link IsSpeakingEvent} stream: the microphone starts after the Mouth has already queued its startup lines, so it
+ * would miss the one "started" event of that burst and transcribe all of it as orders. The "stopped" event still
+ * arms the tail.
+ * <p>
  * Push-to-talk never consults this - a held button is a deliberate order and still talks over her.
  */
 public final class PlaybackEcho {
@@ -21,28 +29,27 @@ public final class PlaybackEcho {
     private static final long TAIL_NANOS = TimeUnit.MILLISECONDS.toNanos(TAIL_MS);
 
     private final LongSupplier nanoClock;
-    private volatile boolean playing;
+    private final BooleanSupplier playingNow;
     private volatile long audibleUntilNanos;
 
     public PlaybackEcho() {
-        this(System::nanoTime);
+        this(System::nanoTime, VocalisationHandle::isAnyPlaying);
     }
 
-    PlaybackEcho(LongSupplier nanoClock) {
+    PlaybackEcho(LongSupplier nanoClock, BooleanSupplier playingNow) {
         this.nanoClock = nanoClock;
+        this.playingNow = playingNow;
         this.audibleUntilNanos = nanoClock.getAsLong();
     }
 
-    public void onPlayback(boolean isPlaying) {
-        if (!isPlaying) {
-            // The tail is armed before playing drops, so a capture thread reading between the two writes
-            // still sees one of them as audible.
-            audibleUntilNanos = nanoClock.getAsLong() + TAIL_NANOS;
-        }
-        playing = isPlaying;
+    /**
+     * Playback has just stopped: the room is still ringing for {@link #TAIL_MS}.
+     */
+    public void onPlaybackStopped() {
+        audibleUntilNanos = nanoClock.getAsLong() + TAIL_NANOS;
     }
 
     public boolean isAudible() {
-        return playing || nanoClock.getAsLong() - audibleUntilNanos < 0;
+        return playingNow.getAsBoolean() || nanoClock.getAsLong() - audibleUntilNanos < 0;
     }
 }
