@@ -178,8 +178,9 @@ public final class VegaRoutingHarness {
                     if (result != null) {
                         return CompletableFuture.completedFuture(result);
                     }
-                } catch (Exception ignored) {
-                    // a system-function failure must not abort the turn
+                } catch (Exception failure) {
+                    // WHY: a system-function failure must not abort the turn, but it must not pass as "recorded".
+                    System.out.printf("VEGA routing: system function %s failed: %s%n", toolName, failure);
                 }
             }
             JsonObject recorded = new JsonObject();

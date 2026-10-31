@@ -107,11 +107,6 @@ public final class VegaSubsystemGate implements ManagedService {
         }
     }
 
-    boolean hasPendingDangerousConfirmation() {
-        VegaRuntimeGraph runtimeGraph = activeGraph;
-        return runtimeGraph != null && runtimeGraph.confirmationCoordinator().isPending();
-    }
-
     @Override
     public synchronized void start() {
         if (activeGraph != null) {
@@ -181,6 +176,14 @@ public final class VegaSubsystemGate implements ManagedService {
     public ThoughtDispatcher dispatcher() {
         VegaRuntimeGraph runtimeGraph = activeGraph;
         return runtimeGraph == null ? null : runtimeGraph.thoughtDispatcher();
+    }
+
+    /**
+     * Test access: whether a dangerous action is waiting on the commander's answer; {@code false} while stopped.
+     */
+    boolean hasPendingDangerousConfirmation() {
+        VegaRuntimeGraph runtimeGraph = activeGraph;
+        return runtimeGraph != null && runtimeGraph.confirmationCoordinator().isPending();
     }
 
     private void unregisterAfterFailedStart(
