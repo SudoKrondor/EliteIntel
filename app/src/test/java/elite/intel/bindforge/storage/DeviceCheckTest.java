@@ -87,6 +87,39 @@ class DeviceCheckTest {
         assertFalse(judge(List.of(epic)).sameAs(before));
     }
 
+    /**
+     * Compared again both ways (Storage S9R): a Frontier-shipped map the working copy lacks is no difference to the
+     * working copy, but between two reads its coming or going is the game's doing.
+     */
+    @Test
+    void aShippedMapThatComesOrGoesMeanwhileIsAChange() throws IOException {
+        InstallationRow epic = installation(2, "EPIC", "<Root>" + LVWAP + RUDDER + "</Root>");
+        Path shipped = buttonMap(epic, "VPCPanel.buttonMap");
+        DeviceCheck.Found withIt = judge(List.of(epic));
+        assertEquals(State.MATCHES, withIt.installations().getFirst().state());
+
+        Files.delete(shipped);
+        DeviceCheck.Found withoutIt = judge(List.of(epic));
+        assertEquals(State.MATCHES, withoutIt.installations().getFirst().state());
+
+        assertFalse(withoutIt.sameAs(withIt), "removed meanwhile");
+        assertFalse(withIt.sameAs(withoutIt), "added meanwhile");
+    }
+
+    /**
+     * A DeviceMappings.xml the judgement never parsed - the working copy holds none, so the installation matches
+     * unread - and cannot be parsed now counts as changed rather than throwing.
+     */
+    @Test
+    void aFileThatCannotBeParsedWhenComparedAgainIsAChange() throws IOException {
+        ConfigurationFiles noDeviceMappings = new ConfigurationFiles(workingCopy.bindings(), null, Map.of());
+        InstallationRow epic = installation(2, "EPIC", "not xml at all");
+        DeviceCheck.Found before = DeviceCheck.judge(noDeviceMappings, List.of(epic), DeviceFiles::read, SHIPS);
+        assertEquals(State.MATCHES, before.installations().getFirst().state());
+
+        assertFalse(DeviceCheck.judge(noDeviceMappings, List.of(epic), DeviceFiles::read, SHIPS).sameAs(before));
+    }
+
     /** The reconcile: the working copy first, under its own side id, then each installation that can be a side. */
     @Test
     void theReconcileHasTheWorkingCopyAsOneSide() throws IOException {
@@ -131,7 +164,7 @@ class DeviceCheckTest {
 
     @Test
     void puttingTheWorkingCopyBackChangesNothingInTheSet() throws IOException {
-        assertSame(workingCopy, DeviceCheck.withDevices(workingCopy, DeviceCheck.Answer.WORKING_COPY));
+        assertSame(workingCopy, DeviceCheck.withDevices(workingCopy, DeviceCheck.Answer.PUT_MINE_BACK));
     }
 
     /** A reconcile's device files replace the working copy's, and a losing name's bindings move to the winner. */
@@ -167,6 +200,12 @@ class DeviceCheckTest {
     private static void write(InstallationRow row, String deviceMappings) throws IOException {
         Files.writeString(GameInstallation.deviceMappingsIn(GameInstallation.controlSchemesUnder(
                 Path.of(row.rootPath()))), deviceMappings);
+    }
+
+    private static Path buttonMap(InstallationRow row, String name) throws IOException {
+        Path folder = Files.createDirectories(GameInstallation.deviceButtonMapsIn(GameInstallation.controlSchemesUnder(
+                Path.of(row.rootPath()))));
+        return Files.writeString(folder.resolve(name), "<Root><Joy_1>FIRE</Joy_1></Root>");
     }
 
     private static BackupSources.Installation place(InstallationRow row) {

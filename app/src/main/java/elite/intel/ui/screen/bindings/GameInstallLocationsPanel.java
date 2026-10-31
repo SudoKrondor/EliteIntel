@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -168,8 +169,9 @@ public class GameInstallLocationsPanel extends JPanel {
         Function<String, Runnable> empty = reason -> () -> loaded(List.of(), List.of(), null);
         FlowSteps.inBackground("BindForge-Installations", log, "Refreshing the installation list", () -> {
             List<InstallationRow> rows = source.get();
-            Map<Long, DeviceCheck.State> states = matchStates();
-            List<Object[]> cells = rows.stream().map(row -> cellsOf(row, states)).toList();
+            Optional<Map<Long, DeviceCheck.State>> states = matchStates();
+            List<Object[]> cells = rows.stream().map(row -> cellsOf(row,
+                    states.map(judged -> statusOf(row, judged)).orElseGet(() -> listedStatus(row)))).toList();
             Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
             return () -> loaded(rows, cells, bindingsDir);
         }, empty, empty, FlowSteps.NOTHING);
@@ -254,32 +256,35 @@ public class GameInstallLocationsPanel extends JPanel {
     }
 
     /**
-     * How each reachable installation's device files stand against the working copy, by id - or {@code null} when there
-     * is nothing to compare with: before first-time startup, or a working copy that cannot be read. Off the EDT.
+     * How each reachable installation's device files stand against the working copy, by id - empty when there is
+     * nothing to compare with: before first-time startup, or a working copy that cannot be read. Off the EDT.
+     * <p>
+     * <em>Read twice:</em> {@link #describeDeviceFiles} reads each installation's files again for its own cell. Few
+     * installations and off the EDT, so it costs nothing today; it is two readers of the same files (S9a review,
+     * finding 9 - left as it is).
      */
-    private static Map<Long, DeviceCheck.State> matchStates() {
+    private static Optional<Map<Long, DeviceCheck.State>> matchStates() {
         try {
-            if (FirstTimeStartup.stored().needed()) return null;
+            if (FirstTimeStartup.stored().needed()) return Optional.empty();
             ConfigurationFiles workingCopy = WorkingCopy.stored().read();
             Map<Long, DeviceCheck.State> states = new HashMap<>();
             DeviceCheck.stored().find(workingCopy).installations()
                     .forEach(judged -> states.put(judged.row().id(), judged.state()));
-            return states;
+            return Optional.of(states);
         } catch (IOException e) {
             // WHY: the screen still lists the installations; the first BindForge click says the working copy cannot be
             // read, and offers the newest backup.
             log.warn("Could not compare the installations with the working copy", e);
-            return null;
+            return Optional.empty();
         }
     }
 
     /**
      * Everything one row displays. Built off the EDT, because the Device Files cell reads files.
      *
-     * @param states each reachable installation's state, by id, or {@code null} when there is no working copy to
-     *               compare with
+     * @param status its Status cell - worked out by the caller, which knows whether there is a working copy
      */
-    private Object[] cellsOf(InstallationRow row, Map<Long, DeviceCheck.State> states) {
+    private Object[] cellsOf(InstallationRow row, Status status) {
         return new Object[]{
                 row.storefront(),
                 row.rootPath(),
@@ -287,17 +292,27 @@ public class GameInstallLocationsPanel extends JPanel {
                         ? "bindings.installLocations.source.addedByHand"
                         : "bindings.installLocations.source.detected"),
                 describeDeviceFiles(row),
-                statusOf(row, states)
+                status
         };
     }
 
-    /** The Status cell (file-manager.md, <em>Game Install Locations</em>). */
+    /**
+     * The Status cell with nothing to compare with - before first-time startup, or a working copy that cannot be read:
+     * the stored list's Found or Missing (file-manager.md, <em>Game Install Locations</em>).
+     */
+    static Status listedStatus(InstallationRow row) {
+        return row.missing()
+                ? new Status(getText("bindings.installLocations.state.missing"), HudPalette.HUD_COLOR_ROLE_WARNING)
+                : new Status(getText("bindings.installLocations.state.found"), null);
+    }
+
+    /**
+     * The Status cell against the working copy (file-manager.md, <em>Game Install Locations</em>): Matches, Differs, or
+     * Not found for one the check did not reach.
+     *
+     * @param states each reachable installation's state, by id
+     */
     static Status statusOf(InstallationRow row, Map<Long, DeviceCheck.State> states) {
-        if (states == null) {
-            return row.missing()
-                    ? new Status(getText("bindings.installLocations.state.missing"), HudPalette.HUD_COLOR_ROLE_WARNING)
-                    : new Status(getText("bindings.installLocations.state.found"), null);
-        }
         DeviceCheck.State state = states.get(row.id());
         if (state == null) {
             return new Status(getText("bindings.installLocations.state.notFound"), HudPalette.HUD_COLOR_ROLE_WARNING);

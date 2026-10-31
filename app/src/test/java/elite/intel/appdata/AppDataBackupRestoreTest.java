@@ -81,6 +81,22 @@ class AppDataBackupRestoreTest {
         assertArrayEquals(NEW_KEY, Files.readAllBytes(safetyFolder(newDir).resolve("secret.key")));
     }
 
+    /** BindForge's working copy is carried, and the old folder it left in Storage S8R4 is not (Storage S9R). */
+    @Test
+    void theWorkingCopyIsCarriedAndTheOldBindingsFolderIsNot() throws Exception {
+        Files.createDirectories(oldDir.resolve("working-copy/Bindings"));
+        Files.writeString(oldDir.resolve("working-copy/Bindings/Custom.4.2.binds"), "<Root/>");
+        Files.createDirectories(oldDir.resolve("bindings"));
+        Files.writeString(oldDir.resolve("bindings/Custom.4.2.binds"), "<Old/>");
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals("<Root/>", Files.readString(newDir.resolve("working-copy/Bindings/Custom.4.2.binds")));
+        assertFalse(Files.exists(newDir.resolve("bindings")));
+    }
+
     @Test
     void withoutAPasswordAnotherComputerLosesTheApiKeys() throws Exception {
         try (Handle live = open(oldDir.resolve("db/database.db"))) {

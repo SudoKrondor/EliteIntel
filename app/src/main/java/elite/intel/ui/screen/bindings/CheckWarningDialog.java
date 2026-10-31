@@ -35,7 +35,7 @@ final class CheckWarningDialog extends JDialog {
 
     private Choice choice = Choice.NOT_NOW;
 
-    private CheckWarningDialog(Component parent, String message, boolean choices) {
+    private CheckWarningDialog(Component parent, String message, boolean offerMergeAndTake) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         JPanel body = transparentPanel(new BorderLayout());
@@ -53,7 +53,7 @@ final class CheckWarningDialog extends JDialog {
                 .onClose(() -> finish(Choice.NOT_NOW))
                 .body(body)
                 .primary(keepMine);
-        if (choices) builder.middle(merge).extra(takeTheGames);
+        if (offerMergeAndTake) builder.middle(merge).extra(takeTheGames);
         HudModalSpec spec = builder.build();
         setContentPane(AppTheme.hudModalScaffold(spec));
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -69,11 +69,12 @@ final class CheckWarningDialog extends JDialog {
     /**
      * Shows the warning and waits. On the EDT.
      *
-     * @param choices whether Merge and Use the game's files are offered - not when only a missing or unparseable device
-     *                file differs, which is offered putting the working copy back alone (Storage S9a)
+     * @param offerMergeAndTake whether Merge and Use the game's files are offered - not when only a missing or
+     *                          unparseable device file differs, which is offered putting the working copy back alone
+     *                          (Storage S9a)
      */
-    static Choice show(Component parent, String message, boolean choices) {
-        CheckWarningDialog dialog = new CheckWarningDialog(parent, message, choices);
+    static Choice show(Component parent, String message, boolean offerMergeAndTake) {
+        CheckWarningDialog dialog = new CheckWarningDialog(parent, message, offerMergeAndTake);
         AppTheme.runWithModalScrim(dialog.getOwner(), () -> dialog.setVisible(true));
         return dialog.choice;
     }

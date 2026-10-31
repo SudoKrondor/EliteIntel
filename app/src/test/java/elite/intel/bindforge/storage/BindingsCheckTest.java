@@ -95,7 +95,7 @@ class BindingsCheckTest {
         BindingsCheck check = check();
         BindingsCheck.Found found = check.find();
 
-        Written result = check.settle(found, every(found, Side.WORKING_COPY), DeviceCheck.Answer.WORKING_COPY);
+        Written result = check.settle(found, every(found, Side.WORKING_COPY), DeviceCheck.Answer.PUT_MINE_BACK);
 
         assertEquals(text(workingCopy.bindings().get(CUSTOM)), text(written.getFirst().bindings().get(CUSTOM)));
         assertEquals(Set.of(CUSTOM), written.getFirst().bindings().keySet());
@@ -111,7 +111,7 @@ class BindingsCheckTest {
         BindingsCheck check = check();
         BindingsCheck.Found found = check.find();
 
-        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.WORKING_COPY);
+        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.PUT_MINE_BACK);
 
         ConfigurationFiles files = written.getFirst();
         assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", ""), text(files.bindings().get(CUSTOM)));
@@ -128,7 +128,7 @@ class BindingsCheckTest {
         live(CUSTOM, binds("Custom", "Key_W", "Joy_XAxis", ""));
 
         BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
-                () -> check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.WORKING_COPY));
+                () -> check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.PUT_MINE_BACK));
 
         assertEquals(List.of(), written);
         assertEquals("Key_W", changed.now().differences().items().getFirst().live());
@@ -142,7 +142,7 @@ class BindingsCheckTest {
         BindingsCheck.Found found = check.find();
         live(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "").replace("\r\n", "\n"));
 
-        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.WORKING_COPY);
+        check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.PUT_MINE_BACK);
 
         assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", "").replace("\r\n", "\n"),
                 text(written.getFirst().bindings().get(CUSTOM)), "the game's file as it is now");
@@ -157,7 +157,7 @@ class BindingsCheckTest {
         edits.change(current -> current.withBindingsFile(SPARE, bytes("<edited/>")));
 
         assertThrows(BindingsCheck.EditsNotAppliedException.class,
-                () -> check.settle(found, every(found, Side.WORKING_COPY), DeviceCheck.Answer.WORKING_COPY));
+                () -> check.settle(found, every(found, Side.WORKING_COPY), DeviceCheck.Answer.PUT_MINE_BACK));
         assertEquals(List.of(), written);
     }
 
@@ -220,7 +220,7 @@ class BindingsCheckTest {
         devices = new DeviceCheck.Found(true, List.of(judged(State.DIFFERS)));
 
         BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
-                () -> check.settle(found, Map.of(), DeviceCheck.Answer.WORKING_COPY));
+                () -> check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK));
 
         assertEquals(List.of(), written);
         assertEquals(State.DIFFERS, changed.now().devices().installations().getFirst().state());

@@ -69,7 +69,7 @@ final class CheckFlow {
         /**
          * Writes what the user settled on.
          *
-         * @param devices the device files settled on - {@link DeviceCheck.Answer#WORKING_COPY} when none were asked
+         * @param devices the device files settled on - {@link DeviceCheck.Answer#PUT_MINE_BACK} when none were asked
          * @return the report - what was written, or why nothing was
          * @throws BindingsCheck.ChangedMeanwhileException if the game's files changed since {@code found} - nothing
          *                                                 was written
@@ -195,7 +195,7 @@ final class CheckFlow {
         if (found.edited() > 0) {
             log.info("APPLY's check: {} rows that differ are under the edits, which go on top", found.edited());
         }
-        if (found.differences().none()) return written(found, Map.of(), DeviceCheck.Answer.WORKING_COPY, false, then);
+        if (found.differences().none()) return written(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
         return () -> warn(new Checked(found, null, Map.of()), then);
     }
 
@@ -222,9 +222,9 @@ final class CheckFlow {
         BindingsCheck.Found found = checked.found();
         // WHY: with no binds row and no installation's files to take - only a missing or unparseable file - putting
         // the working copy back is all there is to offer (Alan, 2026-10-31).
-        boolean choices = !found.differences().none() || checked.reconcile() != null;
-        switch (CheckWarningDialog.show(parent, warningText(found, atApply), choices)) {
-            case KEEP_MINE -> write(found, everyRow(found, Side.WORKING_COPY), DeviceCheck.Answer.WORKING_COPY,
+        boolean offerMergeAndTake = !found.differences().none() || checked.reconcile() != null;
+        switch (CheckWarningDialog.show(parent, warningText(found, atApply), offerMergeAndTake)) {
+            case KEEP_MINE -> write(found, everyRow(found, Side.WORKING_COPY), DeviceCheck.Answer.PUT_MINE_BACK,
                     false, then);
             case TAKE_THE_GAMES -> {
                 if (found.differences().anyReset() && !sure()) {
@@ -247,7 +247,9 @@ final class CheckFlow {
     }
 
     /**
-     * The merge: the binds rows, then the device files' reconcile. Cancel in either goes back to the warning.
+     * The merge: the binds rows, then the device files' reconcile. Cancelling the binds rows goes back to the warning;
+     * cancelling the reconcile goes back to the binds rows, the answers kept (Alan, 2026-10-31, Storage S9R) - or to
+     * the warning when there were no binds rows to answer.
      */
     private void merge(Checked checked, Map<String, Side> given, Runnable then) {
         BindingsCheck.Found found = checked.found();
@@ -265,7 +267,9 @@ final class CheckFlow {
         }
         Optional<DeviceCheck.Answer> devices = reconciled(checked);
         if (devices.isEmpty()) {
-            warn(checked, then);
+            // WHY: with no binds rows, reopening the merge would open the reconcile again at once.
+            if (found.differences().none()) warn(checked, then);
+            else merge(checked, answers, then);
             return;
         }
         write(found, answers, devices.get(), true, then);
@@ -278,7 +282,7 @@ final class CheckFlow {
      */
     private Optional<DeviceCheck.Answer> theGames(Checked checked) {
         List<DeviceCheck.Judged> sides = checked.found().devices().sides();
-        if (sides.isEmpty()) return Optional.of(DeviceCheck.Answer.WORKING_COPY);
+        if (sides.isEmpty()) return Optional.of(DeviceCheck.Answer.PUT_MINE_BACK);
         if (sides.size() > 1) return reconciled(checked);
         DeviceCheck.Judged only = sides.getFirst();
         long id = only.row().id();
@@ -295,7 +299,7 @@ final class CheckFlow {
      * a side, the working copy is put back - all a missing or unreadable file is offered. Empty when cancelled.
      */
     private Optional<DeviceCheck.Answer> reconciled(Checked checked) {
-        if (checked.reconcile() == null) return Optional.of(DeviceCheck.Answer.WORKING_COPY);
+        if (checked.reconcile() == null) return Optional.of(DeviceCheck.Answer.PUT_MINE_BACK);
         while (true) {
             Optional<FirstSetupDialog.Choice> choice = new FirstSetupDialog(parent, checked.reconcile(),
                     checked.names(), wording(checked)).showDialog();
@@ -303,7 +307,7 @@ final class CheckFlow {
             FirstSetupDialog.Choice chosen = choice.get();
             Long usedOne = chosen.usedOne();
             if (usedOne != null && usedOne == DeviceCheck.WORKING_COPY_SIDE) {
-                return Optional.of(DeviceCheck.Answer.WORKING_COPY);
+                return Optional.of(DeviceCheck.Answer.PUT_MINE_BACK);
             }
             if (usedOne != null && resetInstallation(checked, usedOne)
                     && !deviceSure(checked.names().getOrDefault(String.valueOf(usedOne), String.valueOf(usedOne)))) {
@@ -377,7 +381,7 @@ final class CheckFlow {
             BindingsCheck.Found now = e.now();
             if (atApply && now.differences().none()) {
                 // WHY: at APPLY the edits are still to be written.
-                return written(now, Map.of(), DeviceCheck.Answer.WORKING_COPY, false, then);
+                return written(now, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
             }
             if (now.none()) return () -> tell(getText("bindings.check.changed.none"), then);
             if (!now.anythingToAsk()) {

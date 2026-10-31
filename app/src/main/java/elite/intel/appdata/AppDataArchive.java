@@ -28,9 +28,11 @@ final class AppDataArchive {
      * <p>
      * WHY a list rather than the whole app data folder: that folder also collects what is not the commander's data -
      * the diagnostics harness, hand-made database copies, and this feature's own restore folders. A new folder in
-     * {@code AppPaths} that holds the commander's data must be added here.
+     * {@code AppPaths} that holds the commander's data must be added here. {@code working-copy} is BindForge's working
+     * copy ({@code AppPaths.getWorkingCopyDir()}, {@code bindings} until Storage S8R4); the old {@code bindings} folder
+     * is left behind with nothing reading it, so it is not carried (Storage S9R, 2026-10-31).
      */
-    static final List<String> FOLDERS = List.of("custom-commands", "bindings", "playerbackups");
+    static final List<String> FOLDERS = List.of("custom-commands", "working-copy", "playerbackups");
 
     /**
      * A restore unpacks here while it is checked and unlocked.

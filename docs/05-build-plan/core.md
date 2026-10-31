@@ -136,7 +136,7 @@ exists — so it is built when Preset Editor or File Manager needs it. C7 waits 
   five `<SupportsIcons>`. The file looked right and the content was gone.*
 - **History by installation.** Two installations' `DeviceMappings.xml` share a name, so kept copies are keyed by
   installation id, which survives a relocate. `AppPaths.getAppDataBase()` is private; `elite-intel/bindings/`
-  (`AppPaths.getBindingsWorkingDir()`) could host `history/<installId>/` without touching `AppPaths`, or Krondor
+  (`AppPaths.getBindingsWorkingDir()`, both until Storage S8R4) could host `history/<installId>/` without touching `AppPaths`, or Krondor
   adds a method. Decide in the sources table.
 - **Keep what is unique.** Before replacing a file, keep its content — unless identical content was already kept
   in this operation.

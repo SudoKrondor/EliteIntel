@@ -233,7 +233,7 @@ public final class BindingsCheck {
                 BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE), edited(snapshot));
         boolean withDevices = found.devices().checked();
         if (!snapshot.applied().sameAs(found.workingCopy()) || !now.items().equals(found.differences().items())
-                || withDevices && !devices.find(snapshot.applied()).sameAs(found.devices())) {
+                || (withDevices && !devices.find(snapshot.applied()).sameAs(found.devices()))) {
             throw new ChangedMeanwhileException(find(snapshot, live, withDevices));
         }
         return BindingsComparison.settle(snapshot.applied().bindings(), live, now, answers);
@@ -247,7 +247,7 @@ public final class BindingsCheck {
      *
      * @param found   what the warning showed
      * @param answers the side each of its rows keeps, by {@link BindingsComparison.LineItem#id()}
-     * @param devices the device files settled on - {@link DeviceCheck.Answer#WORKING_COPY} when no installation was
+     * @param devices the device files settled on - {@link DeviceCheck.Answer#PUT_MINE_BACK} when no installation was
      *                asked about, or the user put the working copy back
      * @throws ChangedMeanwhileException if a row, the working copy or an installation changed since {@code found} -
      *                                   nothing written
@@ -271,10 +271,13 @@ public final class BindingsCheck {
                 taken.set(backup);
                 return backup;
             }, found.devices().leavingAlone(comparison, deviceFiles), settled.removeFromLive());
-            log.info("The check settled {} files: {} rows; removed from the bindings folder: {}; installations that "
-                            + "differed: {}, their device files {}", found.differences().files().size(),
-                    found.differences().items().size(), settled.removeFromLive(), found.devices().differing().size(),
-                    devices.workingCopys() ? "the working copy's" : "reconciled");
+            log.info("The check settled {} files: {} rows; removed from the bindings folder: {}; installations "
+                            + "written that differed: {}, their device files {}", found.differences().files().size(),
+                    found.differences().items().size(), settled.removeFromLive(), found.devices().asked().size(),
+                    switch (devices) {
+                        case DeviceCheck.PutMineBack putBack -> "the working copy's";
+                        case DeviceCheck.Reconciled reconciled -> "reconciled";
+                    });
             return new Written(report, taken.get());
         });
     }

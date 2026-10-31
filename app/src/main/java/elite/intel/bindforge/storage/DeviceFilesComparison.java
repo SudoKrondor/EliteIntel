@@ -50,12 +50,7 @@ public final class DeviceFilesComparison {
          * Its {@code DeviceMappings.xml} holds none of the user's elements - every one a name Frontier ships - while
          * the working copy holds at least one. Named as a reset.
          */
-        RESET_FACTORY;
-
-        /** Whether a game update probably reset it. */
-        public boolean reset() {
-            return this == RESET_MISSING || this == RESET_FACTORY;
-        }
+        RESET_FACTORY
     }
 
     /** The working copy's elements, or {@code null} when it holds no {@code DeviceMappings.xml}. */
@@ -103,6 +98,23 @@ public final class DeviceFilesComparison {
             return Verdict.RESET_FACTORY;
         }
         return Verdict.DIFFERS;
+    }
+
+    /**
+     * Whether two reads of one installation hold the same device files by value - every element, and every
+     * {@code .buttonMap}'s labels, a Frontier-shipped map included: between two reads, any map that comes or goes is
+     * something the game did (Storage S9R, the S9a review; values, never bytes - {@code overview.md},
+     * <em>Freshness Checks</em>). Pure.
+     *
+     * @throws IOException if a file in either read cannot be parsed
+     */
+    static boolean sameValues(DeviceFiles one, DeviceFiles other) throws IOException {
+        if (one.hasDeviceMappings() != other.hasDeviceMappings()) return false;
+        if (one.hasDeviceMappings()
+                && !elements(one.deviceMappings()).equals(elements(other.deviceMappings()))) {
+            return false;
+        }
+        return labelsByDevice(one.buttonMaps()).equals(labelsByDevice(other.buttonMaps()));
     }
 
     private boolean holdsUsers(List<DeviceEntry> entries) {

@@ -121,14 +121,16 @@ public final class DeviceCheck {
         boolean sameAs(Judged other) {
             if (row.id() != other.row.id() || state != other.state) return false;
             if (files == null || other.files == null) return files == other.files;
-            if (files.hasDeviceMappings() != other.files.hasDeviceMappings()) return false;
             // WHY: a file that cannot be parsed has no values to compare - its bytes are all there is.
             if (state == State.UNPARSEABLE) return sameBytes(files, other.files);
             try {
-                return !DeviceFilesComparison.of(new ConfigurationFiles(Map.of(),
-                        files.hasDeviceMappings() ? files.deviceMappings() : null, files.buttonMaps()),
-                        name -> true).differs(other.files);
+                return DeviceFilesComparison.sameValues(files, other.files);
             } catch (IOException e) {
+                // WHY: a file the judgement did not need to parse - a match leaves an installation's
+                // DeviceMappings.xml unread when the working copy holds none - can fail here. What it holds is
+                // unknown, so it counts as changed: the warning opens again rather than writing over it unseen.
+                log.warn("Could not compare the device files of {} ({}) with the warning's, so they count as changed",
+                        row.storefront(), row.rootPath(), e);
                 return false;
             }
         }
@@ -238,23 +240,13 @@ public final class DeviceCheck {
     }
 
     /**
-     * The device files the user settled on.
-     *
-     * @param workingCopys   whether they are the working copy's own - <em>Put mine back</em>; the rest is then unused
-     * @param deviceMappings the reconciled {@code DeviceMappings.xml}, or {@code null} for none
-     * @param buttonMaps     the reconciled {@code .buttonMap}s, by file name
-     * @param moves          each losing name, by the name its bindings move to - a merge's
+     * The device files the user settled on: the working copy's own, or what the reconcile made (Storage S9R, the S9a
+     * review - one type each, so a put-back carries no files that mean nothing).
      */
-    public record Answer(boolean workingCopys, byte[] deviceMappings, Map<String, byte[]> buttonMaps,
-                         Map<String, String> moves) {
+    public sealed interface Answer permits PutMineBack, Reconciled {
 
         /** Put mine back - the working copy's device files, as they are. */
-        public static final Answer WORKING_COPY = new Answer(true, null, Map.of(), Map.of());
-
-        public Answer {
-            buttonMaps = Collections.unmodifiableMap(new TreeMap<>(buttonMaps));
-            moves = Collections.unmodifiableMap(new TreeMap<>(moves));
-        }
+        PutMineBack PUT_MINE_BACK = new PutMineBack();
 
         /**
          * The reconcile's result.
@@ -262,9 +254,49 @@ public final class DeviceCheck {
          * @param reconciled what the reconcile made - only its device files are used; the binds files are settled
          *                   by the binds check, and {@code moves} rewritten in them at the write
          */
-        public static Answer reconciled(ConfigurationFiles reconciled, Map<String, String> moves) {
-            return new Answer(false, reconciled.hasDeviceMappings() ? reconciled.deviceMappings() : null,
+        static Reconciled reconciled(ConfigurationFiles reconciled, Map<String, String> moves) {
+            return new Reconciled(reconciled.hasDeviceMappings() ? reconciled.deviceMappings() : null,
                     reconciled.buttonMaps(), moves);
+        }
+
+        /** Each losing name, by the name its bindings move to - a merge's; none for a put-back. */
+        Map<String, String> moves();
+    }
+
+    /** The working copy's device files, as they are. Its one instance is {@link Answer#PUT_MINE_BACK}. */
+    public static final class PutMineBack implements Answer {
+        private PutMineBack() {
+        }
+
+        @Override
+        public Map<String, String> moves() {
+            return Map.of();
+        }
+
+        @Override
+        public String toString() {
+            return "PutMineBack";
+        }
+    }
+
+    /**
+     * What the reconcile made.
+     *
+     * @param deviceMappings the reconciled {@code DeviceMappings.xml}, or {@code null} for none
+     * @param buttonMaps     the reconciled {@code .buttonMap}s, by file name
+     * @param moves          each losing name, by the name its bindings move to - a merge's
+     */
+    public record Reconciled(byte[] deviceMappings, Map<String, byte[]> buttonMaps, Map<String, String> moves)
+            implements Answer {
+        public Reconciled {
+            deviceMappings = deviceMappings == null ? null : deviceMappings.clone();
+            buttonMaps = Collections.unmodifiableMap(new TreeMap<>(buttonMaps));
+            moves = Collections.unmodifiableMap(new TreeMap<>(moves));
+        }
+
+        @Override
+        public byte[] deviceMappings() {
+            return deviceMappings == null ? null : deviceMappings.clone();
         }
     }
 
@@ -319,9 +351,13 @@ public final class DeviceCheck {
      * @throws IOException if a move cannot be made in a binds file - the message names it
      */
     static ConfigurationFiles withDevices(ConfigurationFiles settled, Answer answer) throws IOException {
-        if (answer.workingCopys()) return settled;
-        Map<String, byte[]> bindings = new TreeMap<>(settled.bindings());
-        FirstSetupFiles.moveBindings(bindings, answer.moves());
-        return new ConfigurationFiles(bindings, answer.deviceMappings(), answer.buttonMaps());
+        return switch (answer) {
+            case PutMineBack putBack -> settled;
+            case Reconciled reconciled -> {
+                Map<String, byte[]> bindings = new TreeMap<>(settled.bindings());
+                FirstSetupFiles.moveBindings(bindings, reconciled.moves());
+                yield new ConfigurationFiles(bindings, reconciled.deviceMappings(), reconciled.buttonMaps());
+            }
+        };
     }
 }

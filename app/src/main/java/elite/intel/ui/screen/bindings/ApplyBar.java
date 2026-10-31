@@ -163,7 +163,11 @@ public final class ApplyBar extends JPanel {
         @Override
         public String write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers,
                             DeviceCheck.Answer devices) throws IOException {
-            // WHY: APPLY's check does not judge the device files until Storage S9b, so there is never an answer here.
+            // WHY: APPLY's check does not judge the device files until Storage S9b, so only a put-back can come here -
+            // a reconciled answer would be S9b wired in half way, and is not dropped unseen.
+            if (!(devices instanceof DeviceCheck.PutMineBack)) {
+                throw new IllegalStateException("APPLY's check reconciled device files before Storage S9b: " + devices);
+            }
             try {
                 return reportText(applying.apply(found, answers));
             } catch (Backups.NothingToBackUpException e) {

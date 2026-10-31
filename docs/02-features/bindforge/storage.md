@@ -380,13 +380,24 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       installation, since the backup could not hold the file.
     - **One warning for the whole set**, binds files and installations together, then one backup and one write
       (principle 1). *Put mine back* puts the working copy's side everywhere. *Use the game's files* takes the one
-      installation that differs, or opens the reconcile when several do, so the user picks; *Merge* answers the binds
+      installation whose files can be taken, or opens the reconcile when several can, so the user picks - a missing or
+      unparseable file is never a side (Storage S9R, 2026-10-31); *Merge* answers the binds
       rows, then opens the reconcile. The reconcile is first setup's (rule 2), with the working copy as one side. A
       reset installation's files replacing the working copy ask *"Are you sure?"* first.
     - **The result goes to every installation the check read**, after the backup. One it did not read - unreachable
       when it ran, back by the write - is left alone if it differs from the working copy (rule 1).
     - **Compared again before the write.** An installation whose device files changed while the dialogs were open
-      stops the write; the user is told and the warning opens again.
+      stops the write; the user is told and the warning opens again. *Changed* is by value, both ways: every element
+      and every `.buttonMap`'s labels, a Frontier-shipped map that came or went included - unlike the comparison with
+      the working copy, which a shipped map the working copy lacks does not count against (Alan, 2026-10-31, Storage
+      S9R; values, never bytes - [Freshness Checks](overview.md#freshness-checks)).
+    - **Cancelling the reconcile in Merge goes back to the binds rows**, the answers kept; with no binds rows to
+      answer it goes back to the warning (Alan, 2026-10-31, Storage S9R).
+    - **Until Storage S9b the reconcile judges losses on the working copy's binds files** (Alan, 2026-10-31, from
+      the S9a review): it ranks a device red, and *use one installation for all* names the bindings it would lose,
+      from the working copy's binds files, not from the binds files the check settles. When the user takes the game's
+      binds rows, a device that only the game's side uses can be removed without being named. S9b builds the reading
+      from the settled binds files.
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

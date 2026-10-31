@@ -122,7 +122,6 @@ class DeviceFilesComparisonTest {
                 live(null, Map.of()));
 
         assertEquals(DeviceFilesComparison.Verdict.RESET_MISSING, verdict);
-        assertTrue(verdict.reset());
     }
 
     /** None of the user's elements left, while the working copy holds one: a factory file, a reset. */
