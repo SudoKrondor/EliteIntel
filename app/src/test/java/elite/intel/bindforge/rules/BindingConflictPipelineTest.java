@@ -137,6 +137,102 @@ class BindingConflictPipelineTest {
     }
 
     /**
+     * A tap and a long press on one key are two controls (FP-1), read from the file: the scanner's own tests hand it
+     * the hold flag directly, so only a file-backed case shows that {@code <Hold Value="1" />} survives the parse.
+     * Two long presses on that key still clash.
+     */
+    @Test
+    void aPressAndALongPressOnOneKeyAreTwoControlsInARealFile() throws Exception {
+        Map<String, KeyBindingsParser.BindingSlots> slots = KeyBindingsParser.getInstance().parseBindingSlots(bindsFile("""
+                	<HumanoidSelectPrimaryWeaponButton>
+                		<Primary Device="Keyboard" Key="Key_1" />
+                		<Secondary Device="{NoDevice}" Key="" />
+                	</HumanoidSelectPrimaryWeaponButton>
+                	<HumanoidHealthPack>
+                		<Primary Device="Keyboard" Key="Key_1">
+                			<Hold Value="1" />
+                		</Primary>
+                		<Secondary Device="{NoDevice}" Key="" />
+                	</HumanoidHealthPack>
+                	<HumanoidBattery>
+                		<Primary Device="{NoDevice}" Key="" />
+                		<Secondary Device="Keyboard" Key="Key_1">
+                			<Hold Value="1" />
+                		</Secondary>
+                	</HumanoidBattery>
+                """));
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanSlots(slots);
+
+        assertEquals(1, conflicts.size(), "only the two long presses on 1 should clash: " + conflicts);
+        assertEquals("HumanoidBattery", conflicts.get(0).actionA());
+        assertEquals("HumanoidHealthPack", conflicts.get(0).actionB());
+    }
+
+    /**
+     * FN-6: a keyboard key with its modifier held on a controller is a chord the game fires, and two actions on it
+     * clash. The Bindings tab's scan reads it; the execution view, which feeds the spoken startup warning, still
+     * drops it because EliteIntel cannot press it.
+     */
+    @Test
+    void aKeyWithAControllerModifierIsScannedOnTheBindingsTab() throws Exception {
+        File file = bindsFile("""
+                	<LandingGearToggle>
+                		<Primary Device="Keyboard" Key="Key_K">
+                			<Modifier Device="231D3200" Key="Joy_1" />
+                		</Primary>
+                		<Secondary Device="{NoDevice}" Key="" />
+                	</LandingGearToggle>
+                	<ToggleCargoScoop>
+                		<Primary Device="{NoDevice}" Key="" />
+                		<Secondary Device="Keyboard" Key="Key_K">
+                			<Modifier Device="231D3200" Key="Joy_1" />
+                		</Secondary>
+                	</ToggleCargoScoop>
+                """);
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanReadOnlySlots(
+                KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(file));
+
+        assertEquals(1, conflicts.size(), "the shared controller-modified K should be reported once: " + conflicts);
+        assertEquals("LandingGearToggle", conflicts.get(0).actionA());
+        assertEquals("ToggleCargoScoop", conflicts.get(0).actionB());
+        assertEquals(Set.of("Key_K", "231D3200/Joy_1"), conflicts.get(0).chord());
+        assertTrue(BindingConflictScanner.scanSlots(KeyBindingsParser.getInstance().parseBindingSlots(file)).isEmpty(),
+                "the execution view keeps dropping a slot EliteIntel cannot press");
+    }
+
+    /**
+     * The controller modifier is named with its device: {@code Joy_1} on two sticks is two buttons, and neither
+     * chord is the bare keyboard key.
+     */
+    @Test
+    void aControllerModifierOnAnotherDeviceOrNoneIsAnotherChord() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<LandingGearToggle>
+                        		<Primary Device="Keyboard" Key="Key_K">
+                        			<Modifier Device="231D3200" Key="Joy_1" />
+                        		</Primary>
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</LandingGearToggle>
+                        	<ToggleCargoScoop>
+                        		<Primary Device="Keyboard" Key="Key_K">
+                        			<Modifier Device="044F0404" Key="Joy_1" />
+                        		</Primary>
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</ToggleCargoScoop>
+                        	<DeployHardpointToggle>
+                        		<Primary Device="Keyboard" Key="Key_K" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</DeployHardpointToggle>
+                        """));
+
+        assertTrue(BindingConflictScanner.scanReadOnlySlots(slots).isEmpty(),
+                "three different chords on K: " + BindingConflictScanner.scanReadOnlySlots(slots));
+    }
+
+    /**
      * A reserved chord in a Secondary slot is found from the file, not only from a hand-built map.
      */
     @Test
@@ -176,5 +272,29 @@ class BindingConflictPipelineTest {
 
         assertTrue(BindingConflictScanner.scanSlots(slots).isEmpty(),
                 "two actions on the same joystick button is Elite's business, not a keyboard conflict");
+    }
+
+    /**
+     * The Bindings tab's full-file scan keeps that rule: a slot whose main key is on a controller is no chord.
+     */
+    @Test
+    void aControllerSlotIsNotComparedAsAChordOnTheBindingsTab() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<UI_Up>
+                        		<Primary Device="T16000MTHROTTLE" DeviceIndex="0" Key="Joy_5">
+                        			<Modifier Device="Keyboard" Key="Key_LeftShift" />
+                        		</Primary>
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</UI_Up>
+                        	<CamPitchUp>
+                        		<Primary Device="T16000MTHROTTLE" DeviceIndex="0" Key="Joy_5">
+                        			<Modifier Device="Keyboard" Key="Key_LeftShift" />
+                        		</Primary>
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</CamPitchUp>
+                        """));
+
+        assertTrue(BindingConflictScanner.scanReadOnlySlots(slots).isEmpty());
     }
 }
