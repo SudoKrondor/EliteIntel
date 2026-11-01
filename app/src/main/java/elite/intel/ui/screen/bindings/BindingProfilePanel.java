@@ -89,7 +89,7 @@ public class BindingProfilePanel extends JPanel {
     private final MissingBindingAutoAssigner autoAssigner = new MissingBindingAutoAssigner();
     private final RefreshCoalescer refreshes = new RefreshCoalescer();
 
-    private JComboBox<String> bindsFileBox;
+    private HudComboBox<String> bindsFileBox;
     private JButton loadButton;
     private JTextField bindingsDirField;
     private JPanel keyboardOnlyBanner;
@@ -235,8 +235,7 @@ public class BindingProfilePanel extends JPanel {
         // Row 1 - the binds file, from the working copy with the edits on it, and LOAD (bind-editor.md, Shell)
         gbc.gridy = 1;
         addProfileLabel(details, getText("bindings.bindsFile"), gbc, 0, LABEL_COL_WIDTH);
-        bindsFileBox = new JComboBox<>();
-        AppTheme.styleComboBox(bindsFileBox);
+        bindsFileBox = new HudComboBox<>(new DefaultComboBoxModel<>());
         bindsFileBox.setToolTipText(getText("bindings.bindsFile.tooltip"));
         addProfileField(details, bindsFileBox, gbc, 1, 1, 1.0);
 
