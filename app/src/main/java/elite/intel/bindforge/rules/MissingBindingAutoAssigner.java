@@ -99,16 +99,24 @@ public class MissingBindingAutoAssigner {
     }
 
     /**
-     * Plans assignments for every unbound keyboard-capable action in the file,
-     * in stable (case-insensitive bindingId) order.
+     * Plans assignments for every unbound keyboard-capable action in the file: the controls in
+     * {@code assignFirst} first, then the rest, each group in stable (case-insensitive bindingId) order.
+     * <p>
+     * The order matters because the safe pool is smaller than Elite's control set. A binds file made for
+     * a HOTAS or a gamepad has no keyboard bindings at all, so every control is a target and the pool runs
+     * out before the end of the list. Handed out alphabetically, the keys went to emotes and vanity cameras
+     * while controls VEGA presses were skipped as {@link SkipReason#NO_FREE_KEY}. Whatever the pool cannot
+     * cover should be a control VEGA never touches.
+     *
+     * @param assignFirst the binding ids served before any other - the controls VEGA presses
      */
-    public Plan planAll(Map<String, ReadOnlyBindingSlots> slots) {
+    public Plan planAll(Map<String, ReadOnlyBindingSlots> slots, Set<String> assignFirst) {
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
         Set<String> gameMenuKeys = ReservedKeyChords.gameMenuKeysFromSlots(slots);
         Map<String, Set<String>> bareModifierOwners = bareModifierOwners(slots);
         List<PlannedEdit> edits = new ArrayList<>();
         List<SkippedBinding> skipped = new ArrayList<>();
-        for (String bindingId : unboundTargets(slots)) {
+        for (String bindingId : unboundTargets(slots, assignFirst)) {
             assignOne(bindingId, slots.get(bindingId), occupied, gameMenuKeys, bareModifierOwners, edits, skipped);
         }
         return new Plan(edits, skipped);
@@ -178,14 +186,15 @@ public class MissingBindingAutoAssigner {
         edits.add(new PlannedEdit(bindingId, slotType, chord.key(), chord.modifier()));
     }
 
-    private List<String> unboundTargets(Map<String, ReadOnlyBindingSlots> slots) {
+    private List<String> unboundTargets(Map<String, ReadOnlyBindingSlots> slots, Set<String> assignFirst) {
         List<String> targets = new ArrayList<>();
         for (Map.Entry<String, ReadOnlyBindingSlots> entry : slots.entrySet()) {
             if (!isKeyboardBound(entry.getValue())) {
                 targets.add(entry.getKey());
             }
         }
-        targets.sort(String.CASE_INSENSITIVE_ORDER);
+        targets.sort(Comparator.comparing((String id) -> !assignFirst.contains(id))
+                .thenComparing(String.CASE_INSENSITIVE_ORDER));
         return targets;
     }
 

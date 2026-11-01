@@ -41,7 +41,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertEquals(1, plan.edits().size());
         PlannedEdit edit = plan.edits().get(0);
@@ -64,7 +64,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertEquals(1, plan.edits().size());
         assertEquals(BindingSlotType.SECONDARY, plan.edits().get(0).slotType());
@@ -84,7 +84,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertTrue(plan.edits().isEmpty(), "a controller assignment must never be planned away");
         assertEquals(1, plan.skipped().size());
@@ -104,7 +104,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertTrue(plan.edits().isEmpty());
         assertTrue(plan.skipped().isEmpty());
@@ -135,7 +135,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertFalse(plan.edits().isEmpty());
         for (PlannedEdit edit : plan.edits()) {
@@ -160,7 +160,7 @@ class MissingBindingAutoAssignerTest {
         }
         xml.append("</Root>\n");
 
-        Plan plan = assigner.planAll(parse(xml.toString()));
+        Plan plan = assigner.planAll(parse(xml.toString()), Set.of());
 
         assertFalse(plan.edits().isEmpty());
         for (PlannedEdit edit : plan.edits()) {
@@ -181,7 +181,7 @@ class MissingBindingAutoAssignerTest {
         }
         xml.append("</Root>\n");
 
-        Plan plan = assigner.planAll(parse(xml.toString()));
+        Plan plan = assigner.planAll(parse(xml.toString()), Set.of());
 
         assertFalse(plan.edits().isEmpty());
         for (PlannedEdit edit : plan.edits()) {
@@ -207,7 +207,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertTrue(plan.edits().isEmpty());
         assertTrue(plan.skipped().isEmpty());
@@ -227,7 +227,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertFalse(slots.containsKey("YawAxisRaw"));
         assertTrue(plan.edits().isEmpty());
@@ -254,7 +254,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """.formatted(first.key(), first.modifier().key()));
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertEquals(1, plan.edits().size());
         PlannedEdit edit = plan.edits().get(0);
@@ -278,7 +278,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertEquals(2, plan.edits().size());
         Set<SafeKeyboardKeys.Chord> used = new HashSet<>();
@@ -309,7 +309,7 @@ class MissingBindingAutoAssignerTest {
 
         Map<String, ReadOnlyBindingSlots> slots = parse(xml.toString());
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertTrue(plan.edits().isEmpty());
         assertEquals(List.of(new SkippedBinding("LeftOver", SkipReason.NO_FREE_KEY)), plan.skipped());
@@ -369,7 +369,7 @@ class MissingBindingAutoAssignerTest {
         Map<String, ReadOnlyBindingSlots> slots = parse(xml.toString());
 
         Set<SafeKeyboardKeys.Chord> pool = Set.copyOf(SafeKeyboardKeys.orderedChords());
-        List<PlannedEdit> edits = assigner.planAll(slots).edits();
+        List<PlannedEdit> edits = assigner.planAll(slots, Set.of()).edits();
 
         assertEquals(230, edits.size());
         for (PlannedEdit edit : edits) {
@@ -397,7 +397,7 @@ class MissingBindingAutoAssignerTest {
         }
         xml.append("</Root>\n");
 
-        Plan plan = assigner.planAll(parse(xml.toString()));
+        Plan plan = assigner.planAll(parse(xml.toString()), Set.of());
 
         assertEquals(40, plan.edits().size());
         for (PlannedEdit edit : plan.edits()) {
@@ -420,7 +420,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         // Escape opens that menu anyway; a key here would be spent for nothing.
         assertEquals(List.of("ToggleCargoScoop"), plan.edits().stream().map(PlannedEdit::bindingId).toList());
@@ -450,7 +450,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         // Emptying the hold into space cannot be undone, and no built-in command presses it.
         assertEquals(List.of("ToggleCargoScoop"), plan.edits().stream().map(PlannedEdit::bindingId).toList());
@@ -482,7 +482,7 @@ class MissingBindingAutoAssignerTest {
         }
         xml.append("</Root>\n");
 
-        Plan plan = assigner.planAll(parse(xml.toString()));
+        Plan plan = assigner.planAll(parse(xml.toString()), Set.of());
 
         for (PlannedEdit edit : plan.edits()) {
             assertNotEquals("Key_P", edit.key());
@@ -517,7 +517,7 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertEquals(3, plan.edits().size());
         for (PlannedEdit edit : plan.edits()) {
@@ -546,10 +546,65 @@ class MissingBindingAutoAssignerTest {
                 </Root>
                 """);
 
-        Plan plan = assigner.planAll(slots);
+        Plan plan = assigner.planAll(slots, Set.of());
 
         assertEquals(2, plan.edits().size());
         assertEquals("Key_LeftShift", plan.edits().get(1).modifier().key());
+    }
+
+    @Test
+    void assignFirstControlIsServedBeforeAlphabeticallyEarlierOnes() throws Exception {
+        Map<String, ReadOnlyBindingSlots> slots = parse("""
+                <Root>
+                    <AAA_Emote>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </AAA_Emote>
+                    <ToggleCargoScoop>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </ToggleCargoScoop>
+                </Root>
+                """);
+
+        Plan plan = assigner.planAll(slots, Set.of("ToggleCargoScoop"));
+
+        assertEquals(List.of("ToggleCargoScoop", "AAA_Emote"),
+                plan.edits().stream().map(PlannedEdit::bindingId).toList());
+        assertEquals(SafeKeyboardKeys.orderedChords().get(0).key(), plan.edits().get(0).key());
+        assertEquals(SafeKeyboardKeys.orderedChords().get(0).modifier(), plan.edits().get(0).modifier());
+    }
+
+    @Test
+    void controllerOnlyFileExhaustsThePoolOnControlsVegaNeverPresses() throws Exception {
+        // A binds file made for a HOTAS or a gamepad: no keyboard binding anywhere, so every control is a
+        // target and the pool cannot cover them all. What it cannot cover must never be a control VEGA presses.
+        StringBuilder xml = new StringBuilder("<Root>\n");
+        Set<String> written = new HashSet<>();
+        Set<String> vegaControls = new HashSet<>();
+        for (Bindings.GameCommand command : Bindings.GameCommand.values()) {
+            if (command.isDrivenByApp()) {
+                vegaControls.add(command.getGameBinding());
+            }
+            if (written.add(command.getGameBinding())) {
+                xml.append("<").append(command.getGameBinding()).append(">")
+                        .append("<Primary Device=\"{NoDevice}\" Key=\"\" />")
+                        .append("<Secondary Device=\"{NoDevice}\" Key=\"\" />")
+                        .append("</").append(command.getGameBinding()).append(">\n");
+            }
+        }
+        xml.append("</Root>\n");
+
+        Plan plan = assigner.planAll(parse(xml.toString()), vegaControls);
+
+        List<String> outOfKeys = plan.skipped().stream()
+                .filter(skip -> skip.reason() == SkipReason.NO_FREE_KEY)
+                .map(SkippedBinding::bindingId)
+                .toList();
+        assertFalse(outOfKeys.isEmpty(), "precondition: the pool must run out for this test to mean anything");
+        for (String bindingId : outOfKeys) {
+            assertFalse(vegaControls.contains(bindingId), "a control VEGA presses ran out of keys: " + bindingId);
+        }
     }
 
     private Map<String, ReadOnlyBindingSlots> parse(String xml) throws Exception {

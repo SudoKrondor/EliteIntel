@@ -414,7 +414,7 @@ public class BindingProfilePanel extends JPanel {
             return;
         }
 
-        MissingBindingAutoAssigner.Plan plan = autoAssigner.planAll(currentSlots);
+        MissingBindingAutoAssigner.Plan plan = autoAssigner.planAll(currentSlots, BindingsMonitor.appDrivenControls());
         applyPlanInBackground(plan, outcome -> showBatchSummary(outcome, plan));
     }
 
