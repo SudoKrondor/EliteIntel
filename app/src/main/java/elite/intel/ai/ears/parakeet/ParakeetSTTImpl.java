@@ -193,7 +193,10 @@ public class ParakeetSTTImpl implements EarsInterface {
         }
         MicLevelRecorder.getInstance().captureStopped();
         isStopping.set(false);
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputDisabled")));
+        // WHY written, not spoken: stop() is nearly always half of a restart (recalibration, a push-to-talk or
+        // device change), and start() writes its "enabled" line rather than speaking it. Spoken, this was the
+        // only half the commander heard, so a routine restart sounded like the microphone had been cut off.
+        UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("speech.voiceInputDisabled")));
     }
 
     private OfflineRecognizer buildRecognizer() {
