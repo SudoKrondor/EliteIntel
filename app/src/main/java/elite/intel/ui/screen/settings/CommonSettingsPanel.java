@@ -15,24 +15,28 @@ import elite.intel.util.StringUtls;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.AppTheme.makeFieldButton;
-import static elite.intel.ui.theme.AppTheme.makeTextField;
+import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudForms.*;
-import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
-import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
-import static elite.intel.ui.theme.HudPalette.HUD_FIELD_HEIGHT;
+import static elite.intel.ui.theme.HudGlyphs.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * COMMON settings shown above the SETTINGS sub-tabs (settings shared across all of them):
  * command language and journal directory. Moved here from the now-removed CUSTOM tab. FLAT section (section 9).
+ * The language dropdown is locked until the commander unlocks it, so it cannot be switched by accident.
  */
 public class CommonSettingsPanel extends JPanel {
 
     private final SystemSession systemSession = SystemSession.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
+
+    private static final String ICON_LANGUAGE = "/images/language-orange.png";
+    private static final String ICON_LOCKED = "/images/locked-orange.png";
 
     private HudComboBox<LanguageOption> languageCombo;
     private JTextField journalDirField;
@@ -51,7 +55,11 @@ public class CommonSettingsPanel extends JPanel {
 
         // Row 0 - command language (wide first column, cols 0-2).
         GridBagConstraints g = baseGbc();
-        addLabel(body, getText("player.commandLanguage"), g);
+        // The globe stays recognisable whatever language the labels have switched to, so a commander who
+        // changed language by accident can still find the way back.
+        JLabel languageLabel = addLabel(body, getText("player.commandLanguage"), g);
+        languageLabel.setIcon(scaledIcon(getClass(), ICON_LANGUAGE, HUD_ICON_NAV));
+        languageLabel.setIconTextGap(HUD_PADDING);
 
         languageCombo = makeLanguageCombo(systemSession.getLanguage());
         languageCombo.setToolTipText(getText("player.commandLanguage.tooltip"));
@@ -65,12 +73,23 @@ public class CommonSettingsPanel extends JPanel {
             SwingUtilities.invokeLater(() -> GameEventBus.publish(new MissionCriticalAnnouncementEvent(
                     StringUtls.localizedSpeech("speech.languageChanged", StringUtls.localizedSpeechLanguageName(language)))));
         });
+        // Locked on every build of the panel, like the API keys: a stray click or scroll cannot switch the
+        // language. A change rebuilds the whole UI, so the lock closes again behind it.
+        JCheckBox languageLockCheck = makeCheckBox(getText("settings.cloud.locked"), true);
+        JLabel lockIcon = makeLockIcon(languageLockCheck);
+        bindLock(languageLockCheck, languageCombo);
+        JPanel lockCell = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
+        lockCell.add(lockIcon, BorderLayout.WEST);
+        lockCell.add(languageLockCheck, BorderLayout.CENTER);
+        JPanel languageRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
+        languageRow.add(languageCombo, BorderLayout.CENTER);
+        languageRow.add(lockCell, BorderLayout.EAST);
         g.gridx = 1;
         g.gridy = 0;
         g.gridwidth = 2;
         g.weightx = 1.0;
         g.fill = GridBagConstraints.HORIZONTAL;
-        body.add(languageCombo, g);
+        body.add(languageRow, g);
 
         // Row 1 - journal directory under language (label + field + compact picker).
         GridBagConstraints jg = baseGbc();
@@ -92,6 +111,25 @@ public class CommonSettingsPanel extends JPanel {
         body.add(selectJournalDirButton, jg);
 
         add(section, BorderLayout.CENTER);
+    }
+
+    /**
+     * The lock glyph beside the LOCKED box: full strength while locked, receded while open, and a click on it
+     * toggles the box too.
+     */
+    private JLabel makeLockIcon(JCheckBox lockCheck) {
+        ImageIcon locked = scaledIcon(getClass(), ICON_LOCKED, HUD_ICON_NAV);
+        ImageIcon open = dimIcon(locked, 0.35f);
+        JLabel icon = new JLabel(lockCheck.isSelected() ? locked : open);
+        icon.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        icon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                lockCheck.setSelected(!lockCheck.isSelected());
+            }
+        });
+        lockCheck.addItemListener(e -> icon.setIcon(lockCheck.isSelected() ? locked : open));
+        return icon;
     }
 
     private void chooseJournalDir() {

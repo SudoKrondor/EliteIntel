@@ -39,7 +39,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_FF2E00 = new Color(0xFF2E00);
     public static final Color HUD_COLOR_FF7100 = new Color(0xFF7100);
     public static final Color HUD_COLOR_FF822E = new Color(0xFF822E);
-    public static final Color HUD_COLOR_FFB000 = new Color(0xD39207);
+    public static final Color HUD_COLOR_6EA7FF = new Color(0x6EA7FF);
 
     // -- HUD semantic color roles ---------------------------------------------
 
@@ -88,7 +88,7 @@ public final class HudPalette {
      */
     public static final Color HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SUCCESS = HUD_COLOR_4FC56B;
-    public static final Color HUD_COLOR_ROLE_WARNING = HUD_COLOR_FFB000;
+    public static final Color HUD_COLOR_ROLE_WARNING = HUD_COLOR_6EA7FF;
     public static final Color HUD_COLOR_ROLE_DANGER = HUD_COLOR_D94F4F;
     public static final Color HUD_COLOR_ROLE_DISABLED = HUD_COLOR_6E4A28;
     /** More receded disabled tint for icon affordances, derived from the shared disabled role. */
@@ -96,7 +96,7 @@ public final class HudPalette {
             HUD_COLOR_ROLE_DISABLED.getRed(), HUD_COLOR_ROLE_DISABLED.getGreen(), HUD_COLOR_ROLE_DISABLED.getBlue(), 128);
     public static final Color HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND = HUD_COLOR_1A1206;
     public static final Color HUD_COLOR_ROLE_INFORMATION_MARK = HUD_COLOR_33D7E8;
-    public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FFB000;
+    public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_6EA7FF;
     public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND = HUD_COLOR_1A1206;
