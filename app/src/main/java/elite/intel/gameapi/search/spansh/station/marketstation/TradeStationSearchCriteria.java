@@ -255,6 +255,15 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
         @SerializedName("modules")
         private List<OutfittingModule> modules;
 
+        @SerializedName("ships")
+        private Ships ships;
+
+        /**
+         * When the station's SHIPYARD was last uploaded, for the reason {@link #marketUpdatedAt} gives.
+         */
+        @SerializedName("shipyard_updated_at")
+        private UpdatedAt shipyardUpdatedAt;
+
 
         public UpdatedAt getUpdatedAt() {
             return updatedAt;
@@ -320,6 +329,32 @@ public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonCon
          */
         public void setModules(List<OutfittingModule> modules) {
             this.modules = modules;
+        }
+
+        /**
+         * Hulls the station's shipyard must sell; see {@link Ships}.
+         */
+        public void setShips(Ships ships) {
+            this.ships = ships;
+        }
+
+        public void setShipyardUpdatedAt(UpdatedAt shipyardUpdatedAt) {
+            this.shipyardUpdatedAt = shipyardUpdatedAt;
+        }
+    }
+
+    /**
+     * Hulls the station's shipyard must sell, as {@code {"value": ["Cobra MkIII"]}}: any one of them admits the
+     * station. Names are Spansh's English ones, matched exactly - measured live, a name it does not know matches
+     * no station at all rather than failing the search.
+     */
+    public static class Ships {
+
+        @SerializedName("value")
+        private final List<String> value;
+
+        public Ships(List<String> names) {
+            this.value = List.copyOf(names);
         }
     }
 

@@ -468,6 +468,10 @@ public class TradeStationSearchResultDto extends BaseJsonDto implements ToJsonCo
 
             public String getName() { return name; }
             public Long getPrice() { return price; }
+
+            public String getSymbol() {
+                return symbol;
+            }
         }
     }
 }

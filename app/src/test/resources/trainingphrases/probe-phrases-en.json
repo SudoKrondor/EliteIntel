@@ -2111,17 +2111,17 @@
     "how far on the route",
     "show remaining route jumps"
   ],
-  "query_local_shipyard": [
-    "shipyard",
-    "show shipyard",
-    "check shipyard",
-    "give me shipyard",
-    "ships for sale",
-    "show ships for sale",
-    "check ships for sale",
-    "give me ships for sale",
-    "what ships at station",
-    "tell me what ships at station"
+  "find_shipyard_selling_ship": [
+    "find a shipyard that sells the cobra mk iii",
+    "where is the nearest shipyard with a python",
+    "find a shipyard selling an imperial cutter",
+    "which shipyard has the krait phantom",
+    "find me a shipyard where I can buy a type-9",
+    "nearest shipyard selling the anaconda",
+    "find the cheapest shipyard with a federal corvette",
+    "shipyard that sells the mandalay within 100 light years",
+    "find a shipyard to buy a diamondback explorer",
+    "locate a shipyard selling the asp explorer"
   ],
   "query_stellar_objects": [
     "stellar objects",
