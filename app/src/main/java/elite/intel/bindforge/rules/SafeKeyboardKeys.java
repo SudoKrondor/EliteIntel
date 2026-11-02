@@ -2,6 +2,7 @@ package elite.intel.bindforge.rules;
 
 import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.model.EliteKeyboardKeys;
+import elite.intel.bindforge.model.GameKeyboardLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,9 +17,10 @@ import java.util.List;
  * locale - so auto-assignment must pick keys that behave identically regardless
  * of hardware.
  * <p>
- * Excluded on purpose: Q, W, A, Z, M, Y (move between layouts), all punctuation
- * (positions swing across ISO/ANSI/AZERTY), and {@code Key_RightAlt}
- * (AltGr on AZERTY/QWERTZ).
+ * The pool depends on the layout the binds file declares ({@link GameKeyboardLayout}). On an AZERTY
+ * file it is strict: the layout-stable letters and the function keys only - no top-row digits, no
+ * Q/W/A/Z/M/Y, no punctuation. Other layouts also get the digits and the layout-variable keys
+ * (relaxed 2026-06-24). {@code Key_RightAlt} (AltGr on AZERTY/QWERTZ) is never a modifier.
  * <p>
  * The <b>numpad is excluded outright</b> - see {@link #NUMPAD_KEYS_NEVER_AUTO_ASSIGNED}.
  * Its keys are layout-stable, but we cannot know the commander has them: TKL, 60% and most
@@ -50,39 +52,52 @@ public final class SafeKeyboardKeys {
             "Key_Numpad_Decimal"
     );
 
-    private static final List<String> LAYOUT_STABLE_KEYS = buildLayoutStableKeys();
+    /**
+     * Letters with an identical physical position and label on every layout.
+     */
+    private static final List<String> LAYOUT_STABLE_LETTERS = List.of(
+            "Key_E", "Key_R", "Key_T", "Key_U", "Key_I", "Key_O", "Key_P",
+            "Key_S", "Key_D", "Key_F", "Key_G", "Key_H", "Key_J", "Key_K", "Key_L",
+            "Key_B", "Key_N"
+    );
 
-    private static List<String> buildLayoutStableKeys() {
-        return List.of(
-                // Letters with identical physical position and label on every layout.
-                "Key_E", "Key_R", "Key_T", "Key_U", "Key_I", "Key_O", "Key_P",
-                "Key_S", "Key_D", "Key_F", "Key_G", "Key_H", "Key_J", "Key_K", "Key_L",
-                "Key_B", "Key_N",
-                // Top-row digits: same physical position; shifted on AZERTY but resolved by keysym.
-                "Key_0", "Key_1", "Key_2", "Key_3", "Key_4",
-                "Key_5", "Key_6", "Key_7", "Key_8", "Key_9",
-                // Function keys: identical on every layout.
-                "Key_F1", "Key_F2", "Key_F3", "Key_F4", "Key_F5", "Key_F6",
-                "Key_F7", "Key_F8", "Key_F9", "Key_F10", "Key_F11", "Key_F12"
-        );
-    }
+    /**
+     * Top-row digits. Same physical position everywhere, but on AZERTY the digit is the <i>shifted</i>
+     * character, and the game names that key by its unshifted symbol ({@code Key_é}, {@code Key_ç}...) -
+     * a {@code Key_9} in an AZERTY file is not a key the game can tell apart from {@code Key_1}.
+     */
+    private static final List<String> TOP_ROW_DIGITS = List.of(
+            "Key_0", "Key_1", "Key_2", "Key_3", "Key_4",
+            "Key_5", "Key_6", "Key_7", "Key_8", "Key_9"
+    );
 
-    // AZERTY safety guard relaxed 2026-06-24: testers confirmed these layout-variable keys work
-    // fine in practice, and excluding them needlessly shrank the auto-assign pool. To RESTORE the
-    // strict guard, drop LAYOUT_VARIABLE_KEYS from BASE_KEYS below (the list itself can stay).
+    /**
+     * Function keys: identical on every layout.
+     */
+    private static final List<String> FUNCTION_KEYS = List.of(
+            "Key_F1", "Key_F2", "Key_F3", "Key_F4", "Key_F5", "Key_F6",
+            "Key_F7", "Key_F8", "Key_F9", "Key_F10", "Key_F11", "Key_F12"
+    );
+
+    /**
+     * Keys whose position or meaning moves between layouts. Relaxed into the pool on 2026-06-24 for
+     * non-AZERTY files (testers confirmed they work there); never handed out on an AZERTY file, where
+     * several of them ({@code Key_Period}, {@code Key_Slash}, the brackets...) need Shift or AltGr and so
+     * have no name the game recognises.
+     */
     private static final List<String> LAYOUT_VARIABLE_KEYS = List.of(
             "Key_Q", "Key_W", "Key_A", "Key_Z", "Key_M", "Key_Y",
             "Key_Minus", "Key_Equals", "Key_LeftBracket", "Key_RightBracket", "Key_BackSlash",
             "Key_SemiColon", "Key_Apostrophe", "Key_Comma", "Key_Period", "Key_Slash", "Key_Grave"
     );
 
-    private static final List<String> BASE_KEYS = buildBaseKeys();
+    /**
+     * The strict AZERTY pool: only keys that exist under the same name on an AZERTY file.
+     */
+    private static final List<String> AZERTY_BASE_KEYS = concat(LAYOUT_STABLE_LETTERS, FUNCTION_KEYS);
 
-    private static List<String> buildBaseKeys() {
-        List<String> keys = new ArrayList<>(LAYOUT_STABLE_KEYS);
-        keys.addAll(LAYOUT_VARIABLE_KEYS); // remove this line to restore the strict AZERTY guard
-        return List.copyOf(keys);
-    }
+    private static final List<String> RELAXED_BASE_KEYS =
+            concat(LAYOUT_STABLE_LETTERS, TOP_ROW_DIGITS, FUNCTION_KEYS, LAYOUT_VARIABLE_KEYS);
 
     // RightAlt is omitted: it is AltGr on AZERTY/QWERTZ.
     private static final List<BindingModifier> SAFE_MODIFIERS = List.of(
@@ -92,17 +107,18 @@ public final class SafeKeyboardKeys {
             new BindingModifier("Keyboard", "Key_RightShift")
     );
 
-    private static final List<Chord> ORDERED_CHORDS = buildOrderedChords();
+    private static final List<Chord> AZERTY_CHORDS = buildOrderedChords(AZERTY_BASE_KEYS);
+    private static final List<Chord> RELAXED_CHORDS = buildOrderedChords(RELAXED_BASE_KEYS);
 
     private SafeKeyboardKeys() {
     }
 
     /**
-     * Every base key auto-assignment may use, in allocation order (layout-stable first, then
-     * the relaxed layout-variable ones). The numpad is not in here and never is.
+     * Every base key auto-assignment may use on a file of this layout, in allocation order. The numpad is
+     * not in here and never is.
      */
-    public static List<String> baseKeys() {
-        return BASE_KEYS;
+    public static List<String> baseKeys(GameKeyboardLayout layout) {
+        return layout == GameKeyboardLayout.AZERTY ? AZERTY_BASE_KEYS : RELAXED_BASE_KEYS;
     }
 
     public static List<BindingModifier> safeModifiers() {
@@ -110,24 +126,33 @@ public final class SafeKeyboardKeys {
     }
 
     /**
-     * Returns every assignable chord in allocation order: modifier combos first (each base
-     * key paired with every safe modifier), then the plain unmodified keys as a fallback.
-     * Combos come first so unmodified keys stay free for the controls a commander reaches
-     * for most often. Every chord has a real main key, and a modifier - when present - is
-     * always one concrete supported keyboard modifier; there is no blank-modifier chord.
+     * Returns every assignable chord for a file of this layout, in allocation order: modifier combos first
+     * (each base key paired with every safe modifier), then the plain unmodified keys as a fallback.
+     * Combos come first so unmodified keys stay free for the controls a commander reaches for most often.
+     * Every chord has a real main key, and a modifier - when present - is always one concrete supported
+     * keyboard modifier; there is no blank-modifier chord.
      */
-    public static List<Chord> orderedChords() {
-        return ORDERED_CHORDS;
+    public static List<Chord> orderedChords(GameKeyboardLayout layout) {
+        return layout == GameKeyboardLayout.AZERTY ? AZERTY_CHORDS : RELAXED_CHORDS;
     }
 
-    private static List<Chord> buildOrderedChords() {
+    @SafeVarargs
+    private static List<String> concat(List<String>... groups) {
+        List<String> keys = new ArrayList<>();
+        for (List<String> group : groups) {
+            keys.addAll(group);
+        }
+        return List.copyOf(keys);
+    }
+
+    private static List<Chord> buildOrderedChords(List<String> baseKeys) {
         List<Chord> chords = new ArrayList<>();
-        for (String key : BASE_KEYS) {
+        for (String key : baseKeys) {
             for (BindingModifier modifier : SAFE_MODIFIERS) {
                 addUnlessReserved(chords, new Chord(key, modifier));
             }
         }
-        for (String key : BASE_KEYS) {
+        for (String key : baseKeys) {
             addUnlessReserved(chords, new Chord(key, null));
         }
         return List.copyOf(chords);

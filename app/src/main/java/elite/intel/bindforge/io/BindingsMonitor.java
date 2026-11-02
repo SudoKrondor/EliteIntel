@@ -84,8 +84,9 @@ public class BindingsMonitor {
 
     /**
      * The Elite controls a built-in command presses - {@link Bindings.GameCommand#isDrivenByApp()}.
-     * The single source for both things this class reports on: which unbound controls are worth naming
-     * at startup, and which conflicts are worth interrupting the commander about.
+     * Half of {@link #requiredControls()}, the single source for everything this class reports on: which
+     * unbound controls are worth naming at startup, which conflicts are worth interrupting the commander
+     * about, and which controls "auto-assign VEGA required binds" fills.
      * <p>
      * Deliberately NOT the whole {@code GameCommand} list. That list is Elite's entire control set, carried
      * so the bindings editor can show every control and a custom command step can name any of them; measured
@@ -94,19 +95,37 @@ public class BindingsMonitor {
      * commander rebinding their controls then heard "a hundred and forty-two required bindings unassigned",
      * and read a wall of names that buried the seventeen actually stopping a command from working.
      * <p>
-     * A binding a <em>custom</em> command taps is not included: the commander is told about that one by name
-     * at the moment the sequence runs (see {@code InputSequenceExecutor#handleNoKeyBindingFound}), which is
-     * both later and more precise than a startup list, and reaching the custom command registry from here
-     * would point {@code ai.hands} back at {@code ai.brain}. The bindings panel still shows every control and
-     * every conflict, which is where a commander goes looking for the full picture.
+     * The other half is the controls the commander's own custom commands press - see
+     * {@link #useCustomCommandControls}. The bindings panel still shows every control and every conflict,
+     * which is where a commander goes looking for the full picture.
      */
     private static final Set<String> APP_DRIVEN_ACTIONS = appDrivenActions();
 
     /**
-     * The controls a built-in command presses - see {@link #APP_DRIVEN_ACTIONS}.
+     * The controls the commander's custom commands tap or hold, handed over by the custom command registry
+     * whenever its set loads or changes. Pushed in rather than read from here so {@code bindforge} does not
+     * reach back into {@code ai.brain}.
      */
-    public static Set<String> appDrivenControls() {
-        return Collections.unmodifiableSet(APP_DRIVEN_ACTIONS);
+    private static volatile Set<String> customCommandControls = Set.of();
+
+    /**
+     * Every control VEGA needs bound: what a built-in command presses ({@link #APP_DRIVEN_ACTIONS}), then what
+     * the commander's custom commands press. A custom command's control is required from the moment it is
+     * saved - the commander chose it, so it counts as missing, is filled by auto-assign, and its conflicts are
+     * reported like a built-in one's.
+     */
+    public static Set<String> requiredControls() {
+        Set<String> required = new LinkedHashSet<>(APP_DRIVEN_ACTIONS);
+        required.addAll(customCommandControls);
+        return Collections.unmodifiableSet(required);
+    }
+
+    /**
+     * Replaces the custom-command half of {@link #requiredControls()}. Called by the custom command registry
+     * with every binding id its steps use, each time its set loads or is replaced.
+     */
+    public static void useCustomCommandControls(Collection<String> bindingIds) {
+        customCommandControls = bindingIds == null ? Set.of() : Set.copyOf(bindingIds);
     }
 
     private static Set<String> appDrivenActions() {
@@ -362,13 +381,13 @@ public class BindingsMonitor {
 
         Set<String> currentConflictKeys = new HashSet<>();
         Map<String, BindingConflictScanner.Conflict> currentConflictDescriptions = new LinkedHashMap<>();
+        Set<String> required = requiredControls();
         for (BindingConflictScanner.Conflict c : detectConflicts()) {
             // Announce only conflicts that touch a control EliteIntel presses, so voice alerts stay
             // meaningful and do not flood on unrelated vanilla-vs-vanilla overlaps. The UI surfaces
             // the full set live. Rows persisted for pairs that no longer pass this filter are swept
             // out by the stale-row pass below, so the store follows the scope on its own.
-            if (!APP_DRIVEN_ACTIONS.contains(c.actionA())
-                    && !APP_DRIVEN_ACTIONS.contains(c.actionB()))
+            if (!required.contains(c.actionA()) && !required.contains(c.actionB()))
                 continue;
             String conflictKey = BindingConflictRules.makeKey(c.actionA(), c.actionB());
             if (currentConflictKeys.add(conflictKey) && !c.blocking()) {
@@ -459,10 +478,22 @@ public class BindingsMonitor {
     }
 
     /**
+     * Which of {@code controls} have no binding EliteIntel can press in the active binds file, in the order
+     * given. Empty when the file has not been parsed - nothing can be judged then.
+     */
+    public List<String> unboundAmong(Collection<String> controls) {
+        Map<String, KeyBindingsParser.KeyBinding> currentBindings = getBindings();
+        if (currentBindings == null || controls == null) {
+            return List.of();
+        }
+        return controls.stream().distinct().filter(control -> currentBindings.get(control) == null).toList();
+    }
+
+    /**
      * The controls the startup missing-binding check measures the binds file against - see
-     * {@link #APP_DRIVEN_ACTIONS}.
+     * {@link #requiredControls()}.
      */
     private List<String> requiredGameBindings() {
-        return new ArrayList<>(APP_DRIVEN_ACTIONS);
+        return new ArrayList<>(requiredControls());
     }
 }

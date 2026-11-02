@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.custom;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.bindforge.io.BindingsMonitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -188,6 +189,25 @@ class CustomCommandRegistryTest {
     }
 
     // --- helpers ---
+
+    // --- required controls ---
+
+    @Test
+    void aControlACustomCommandPressesBecomesRequired() {
+        // A control a saved custom command taps is one VEGA needs bound: it joins the startup missing check, the
+        // conflict report and "Auto-Assign VEGA Required Binds".
+        assertFalse(BindingsMonitor.requiredControls().contains("FriendsMenu"), "precondition: not built-in");
+
+        registry.setCustomCommands(List.of(GSON.fromJson(
+                "{\"id\":\"custom_command_friends\",\"name\":\"friends\",\"phrases\":\"friends\","
+                        + "\"steps\":[{\"type\":\"BINDING_TAP\",\"bindingId\":\"FriendsMenu\"}]}",
+                CustomCommandDefinition.class)));
+        assertTrue(BindingsMonitor.requiredControls().contains("FriendsMenu"));
+        assertTrue(BindingsMonitor.requiredControls().contains("Hyperspace"), "the built-in half stays");
+
+        registry.setCustomCommands(List.of());
+        assertFalse(BindingsMonitor.requiredControls().contains("FriendsMenu"), "a deleted command's control stays required");
+    }
 
     private CustomCommandDefinition buildCustomCommand(String id, String phrases) {
         return GSON.fromJson(

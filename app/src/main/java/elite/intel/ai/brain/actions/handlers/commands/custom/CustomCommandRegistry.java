@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.commands.custom;
 
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import org.apache.logging.log4j.LogManager;
@@ -41,7 +42,7 @@ public final class CustomCommandRegistry {
      * {@code ResponseRouter} (and therefore {@code CommandHandlerFactory}) is first used.
      */
     public void load() {
-        customCommands = repository.load();
+        setCustomCommands(repository.load());
         log.info("Custom command registry: {} command(s) loaded, {} skipped",
                 customCommands.size(), repository.getLastSkippedCount());
     }
@@ -116,6 +117,11 @@ public final class CustomCommandRegistry {
         this.customCommands = customCommands == null
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(new ArrayList<>(customCommands));
+        // A control a custom command presses is one VEGA needs bound: it joins the missing-binding check, the
+        // conflict report and auto-assign. Handed over on every change so that list never trails the set.
+        BindingsMonitor.useCustomCommandControls(this.customCommands.stream()
+                .flatMap(customCommand -> customCommand.distinctBindingIds().stream())
+                .toList());
     }
 
     /**

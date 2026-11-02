@@ -5,9 +5,11 @@ import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.commands.custom.*;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.ui.dialog.*;
 import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
+import elite.intel.ui.support.CustomCommandStepPickerItem;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudSearchToolbar;
@@ -263,8 +265,10 @@ public class CustomCommandsTabPanel extends JPanel {
             return;
         }
         Path backup = backupCurrentSet(existing);
-        persistAndRefresh(toImport);
-        showImportSuccess(toImport.size(), backup);
+        if (persistAndRefresh(toImport)) {
+            showImportSuccess(toImport.size(), backup);
+            warnAboutUnboundControls(toImport);
+        }
     }
 
     /**
@@ -381,7 +385,9 @@ public class CustomCommandsTabPanel extends JPanel {
         List<CustomCommandDefinition> customCommands = new java.util.ArrayList<>(
                 CustomCommandRegistry.getInstance().getCustomCommands());
         customCommands.add(saved);
-        persistAndRefresh(customCommands);
+        if (persistAndRefresh(customCommands)) {
+            warnAboutUnboundControls(List.of(saved));
+        }
     }
 
     private void editCustomCommand(CustomCommandRow row) {
@@ -394,7 +400,9 @@ public class CustomCommandsTabPanel extends JPanel {
                 .map(customCommand -> customCommand.getId().equalsIgnoreCase(row.customCommand().getId()) ? saved
                         : customCommand)
                 .toList();
-        persistAndRefresh(customCommands);
+        if (persistAndRefresh(customCommands)) {
+            warnAboutUnboundControls(List.of(saved));
+        }
     }
 
     private void deleteCustomCommand(CustomCommandRow row) {
@@ -414,18 +422,48 @@ public class CustomCommandsTabPanel extends JPanel {
         persistAndRefresh(customCommands);
     }
 
-    private void persistAndRefresh(List<CustomCommandDefinition> customCommands) {
+    /**
+     * Saves the set and makes it live. Returns false (after telling the commander) when the file could not be written.
+     */
+    private boolean persistAndRefresh(List<CustomCommandDefinition> customCommands) {
         if (!customCommandRepository.trySave(customCommands)) {
             JOptionPane.showMessageDialog(
                     this,
                     getText("actions.customCommands.save.error", AppPaths.CUSTOM_COMMANDS_FILE_NAME),
                     getText("actions.customCommands.title"),
                     JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
         CustomCommandRegistry.getInstance().replaceCustomCommands(customCommands);
         CommandHandlerFactory.getInstance().refreshCustomCommandHandlers();
         initData();
+        return true;
+    }
+
+    /**
+     * Names every control the just-saved commands tap or hold that has no keyboard binding VEGA can press.
+     * <p>
+     * WHY at save time: until now the commander learned it only when the command ran and a step found nothing
+     * to press. Saving made each of those controls required ({@link BindingsMonitor#requiredControls()}), so
+     * "Auto-Assign VEGA Required Binds" fills them - the warning says so while the commander is still here.
+     * Silent when the binds file has not been read yet: nothing can be judged then.
+     */
+    private void warnAboutUnboundControls(List<CustomCommandDefinition> saved) {
+        List<String> controls = saved.stream()
+                .flatMap(customCommand -> customCommand.distinctBindingIds().stream())
+                .toList();
+        List<String> unbound = BindingsMonitor.getInstance().unboundAmong(controls);
+        if (unbound.isEmpty()) {
+            return;
+        }
+        String names = unbound.stream()
+                .map(id -> "- " + CustomCommandStepPickerItem.inGameLabel(id))
+                .collect(Collectors.joining("\n"));
+        JOptionPane.showMessageDialog(
+                this,
+                getText("actions.customCommands.unboundControls.text", names),
+                getText("actions.customCommands.unboundControls.title"),
+                JOptionPane.WARNING_MESSAGE);
     }
 
     private void styleTable(JTable table) {

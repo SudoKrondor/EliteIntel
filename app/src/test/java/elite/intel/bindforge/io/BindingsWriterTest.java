@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,7 +119,120 @@ class BindingsWriterTest {
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_NotReal"));
 
         assertEquals(BindingSaveResult.UNKNOWN_KEY, result);
+        assertEquals(0, backups(file).size());
     }
+
+    @Test
+    void staleTimestampOrSizeReturnsStaleFile() throws Exception {
+        Path file = writeBinds(minimalBinds());
+        KeyboardBindingEdit staleEdit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M");
+        Files.writeString(file, minimalBinds() + "\n<!-- changed by game -->", StandardCharsets.UTF_8);
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(staleEdit);
+
+        assertEquals(BindingSaveResult.STALE_FILE, result);
+        assertEquals(0, backups(file).size());
+    }
+
+    @Test
+    void staleSizeMismatchReturnsStaleFile() throws Exception {
+        Path file = writeBinds(minimalBinds());
+        KeyboardBindingEdit edit = new KeyboardBindingEdit(
+                file,
+                "GalaxyMapOpen",
+                BindingSlotType.PRIMARY,
+                "Key_M",
+                Files.getLastModifiedTime(file),
+                Files.size(file) + 1
+        );
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(edit);
+
+        assertEquals(BindingSaveResult.STALE_FILE, result);
+        assertEquals(0, backups(file).size());
+    }
+
+    @Test
+    void staleTimestampMismatchReturnsStaleFile() throws Exception {
+        Path file = writeBinds(minimalBinds());
+        KeyboardBindingEdit edit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M");
+        Files.setLastModifiedTime(file, FileTime.fromMillis(edit.expectedLastModified().toMillis() + 5_000));
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(edit);
+
+        assertEquals(BindingSaveResult.STALE_FILE, result);
+        assertEquals(0, backups(file).size());
+    }
+
+
+    ///MERGE CONFLICT NEED FIXING -->
+
+    @Test
+    void aKeyAnAzertyFileCannotNameIsRefused() throws Exception {
+        // An AZERTY file names the number row by its unshifted symbols: Key_9 there is no key the game can tell
+        // apart (an auto-assigned Shift+Key_9 Hyperspace opened the Friends menu on Shift+Key_1).
+        Path file = writeBinds(minimalBinds().replace("<Root>", "<Root>\n    <KeyboardLayout>fr-FR</KeyboardLayout>"));
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+                edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_9"));
+
+        assertEquals(BindingSaveResult.UNKNOWN_KEY, result);
+        assertEquals(0, backups(file).size());
+    }
+
+    @Test
+    void anAzertyFileStillTakesAKeyItNames() throws Exception {
+        Path file = writeBinds(minimalBinds().replace("<Root>", "<Root>\n    <KeyboardLayout>fr-FR</KeyboardLayout>"));
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+                edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_K"));
+
+        assertEquals(BindingSaveResult.SAVED, result);
+    }
+
+    @Test
+    void staleTimestampOrSizeReturnsStaleFile() throws Exception {
+        Path file = writeBinds(minimalBinds());
+        KeyboardBindingEdit staleEdit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M");
+        Files.writeString(file, minimalBinds() + "\n<!-- changed by game -->", StandardCharsets.UTF_8);
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(staleEdit);
+
+        assertEquals(BindingSaveResult.STALE_FILE, result);
+        assertEquals(0, backups(file).size());
+    }
+
+    @Test
+    void staleSizeMismatchReturnsStaleFile() throws Exception {
+        Path file = writeBinds(minimalBinds());
+        KeyboardBindingEdit edit = new KeyboardBindingEdit(
+                file,
+                "GalaxyMapOpen",
+                BindingSlotType.PRIMARY,
+                "Key_M",
+                Files.getLastModifiedTime(file),
+                Files.size(file) + 1
+        );
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(edit);
+
+        assertEquals(BindingSaveResult.STALE_FILE, result);
+        assertEquals(0, backups(file).size());
+    }
+
+    @Test
+    void staleTimestampMismatchReturnsStaleFile() throws Exception {
+        Path file = writeBinds(minimalBinds());
+        KeyboardBindingEdit edit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M");
+        Files.setLastModifiedTime(file, FileTime.fromMillis(edit.expectedLastModified().toMillis() + 5_000));
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(edit);
+
+        assertEquals(BindingSaveResult.STALE_FILE, result);
+        assertEquals(0, backups(file).size());
+    }
+    ///<---
+
 
     @Test
     void writerChangesOnlySelectedSlotAndRemovesSupportedModifierForPlainSave() throws Exception {
