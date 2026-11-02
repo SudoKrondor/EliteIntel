@@ -189,8 +189,12 @@ public class KeyBindingsParser {
      * The layout the game names this file's keys by - its {@code <KeyboardLayout>} element, e.g.
      * {@code fr-FR}. A file without one reads as {@link GameKeyboardLayout#OTHER}.
      */
-    public GameKeyboardLayout parseKeyboardLayout(File file) throws Exception {
-        return keyboardLayout(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file));
+    public GameKeyboardLayout parseKeyboardLayout(byte[] binds) throws IOException {
+        try {
+            return keyboardLayout(SafeXml.documentBuilder().parse(new ByteArrayInputStream(binds)));
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException("The binds file could not be parsed: " + e.getMessage(), e);
+        }
     }
 
     private static GameKeyboardLayout keyboardLayout(Document doc) {

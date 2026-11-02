@@ -46,11 +46,13 @@ public class BindingsWriter {
     private static final Pattern DEVICE_ATTRIBUTE = Pattern.compile("(?<![A-Za-z0-9_.:-])Device\\s*=\\s*([\"'])(.*?)\\1");
     private static final Pattern VALUE_ATTRIBUTE = Pattern.compile("(?<![A-Za-z0-9_.:-])Value\\s*=\\s*([\"'])(.*?)\\1");
 
+    // The binds file's own layout, which decides what a keyboard key may be called - see namedOnFileLayout.
+    private static final Pattern KEYBOARD_LAYOUT = Pattern.compile("<KeyboardLayout>\\s*([^<]*?)\\s*</KeyboardLayout>");
+
     // The tokens the user-edit path writes, by device - the vocabulary the game itself writes.
     // Characters that would need escaping in an attribute are never part of one.
     // WHY no list of keys: a non-English layout writes the character itself (Key_ß, Key_é), so
     // EliteKeyboardKeys cannot hold every key the game writes; any Key_ name with something after it is a key.
-    private static final Pattern KEYBOARD_LAYOUT = Pattern.compile("<KeyboardLayout>\\s*([^<]*?)\\s*</KeyboardLayout>");
     private static final Pattern KEYBOARD_TOKEN = Pattern.compile("Key_[^\\s\"'<>&]+");
     private static final Pattern MOUSE_BUTTON_TOKEN = Pattern.compile("Mouse_[1-9][0-9]*|(?:Pos|Neg)_Mouse_ZAxis");
     private static final String GAME_AXIS = "(?:X|Y|Z|RX|RY|RZ|U|V)Axis";
@@ -135,9 +137,10 @@ public class BindingsWriter {
         EncodedXml encodedXml = decode(binds);
         String xml = encodedXml.xml();
         if (!edit.clearsSlot() && BindingInput.KEYBOARD.equals(edit.input().device())
-                    && !namedOnFileLayout(xml, edit.input().key())) {
-                return BindingSaveResult.UNKNOWN_KEY;
-            }LocatedAction action = locateAction(xml, edit.bindingId());
+                && !namedOnFileLayout(xml, edit.input().key())) {
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
+        }
+        LocatedAction action = locateAction(xml, edit.bindingId());
         if (action.result() != null) {
             return EditedBinds.unchanged(action.result(), binds);
         }
@@ -239,7 +242,7 @@ public class BindingsWriter {
         try {
             EncodedXml encodedXml = decode(binds);
             if (!edit.clearsSlot() && !namedOnFileLayout(encodedXml.xml(), edit.key())) {
-                return BindingSaveResult.UNKNOWN_KEY;
+                return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
             }
             LocatedAction action = locateAction(encodedXml.xml(), edit.bindingId());
             if (action.result() != null) {
@@ -282,11 +285,7 @@ public class BindingsWriter {
         }
     }
 
-    private EncodedXml readXml(Path file) throws IOException {
-        return decode(Files.readAllBytes(file));
-    }
-
-    /** MERGE CONFLIC NEED FIXING
+    /**
      * False when the file's {@code <KeyboardLayout>} has no key of that name - {@code Key_9} or {@code Key_Period}
      * in an AZERTY file. Written anyway, the game could not tell it apart from its neighbours (an auto-assigned
      * Hyperspace on Shift+{@code Key_9} opened the Friends menu on Shift+{@code Key_1}), and the parser would
@@ -296,7 +295,6 @@ public class BindingsWriter {
         Matcher layout = KEYBOARD_LAYOUT.matcher(xml);
         return GameKeyboardLayout.fromBindsTag(layout.find() ? layout.group(1) : null).namesKey(key);
     }
-
 
     private boolean hasUtf8Bom(byte[] bytes) {
         return bytes.length >= UTF_8_BOM.length

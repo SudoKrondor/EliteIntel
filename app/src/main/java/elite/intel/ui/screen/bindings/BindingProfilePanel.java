@@ -1,8 +1,6 @@
 package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.io.*;
 import elite.intel.bindforge.model.*;
@@ -329,19 +327,12 @@ public class BindingProfilePanel extends JPanel {
      * @param asked the file this read was asked for, LOAD's or the one shown - {@code null} for neither
      */
     private record Loaded(String asked, List<String> files, String file, byte[] content,
-                          Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, EditedDeviceLabels labels) {
+                          Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, GameKeyboardLayout layout,
+                          EditedDeviceLabels labels) {
         static Loaded nothing(String asked) {
-            return new Loaded(asked, List.of(), null, null, Map.of(), EditedDeviceLabels.NONE);
+            return new Loaded(asked, List.of(), null, null, Map.of(), GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE);
         }
     }
-    /// missing in 1.2. merge conflic need fixing:
-            currentSlots = slots;
-            currentKeyboardLayout = parser.parseKeyboardLayout(workingCopyPath.toFile());
-            activeBindingsFile = workingCopyPath.toFile();
-            activeBindingsLastModified = Files.getLastModifiedTime(workingCopyPath);
-            activeBindingsFileSize = Files.size(workingCopyPath);
-            gameBindingsFile = resolvedGameFile;
-            activePresetFileName = presetFileName;
 
     /**
      * Reads the edits and parses the file to show. Off the EDT.
@@ -357,7 +348,7 @@ public class BindingProfilePanel extends JPanel {
                 : BindsEdits.generalFile(current).orElse(files.getFirst());
         byte[] content = current.bindings().get(file);
         return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
-                EditedDeviceLabels.of(current));
+                parser.parseKeyboardLayout(content), EditedDeviceLabels.of(current));
     }
 
     /** Shows what {@link #read} found. On the EDT. */
@@ -375,6 +366,7 @@ public class BindingProfilePanel extends JPanel {
         labels = read.labels();
         slotFormatter = new BindingSlotDisplayFormatter(labels);
         currentSlots = read.slots();
+        currentKeyboardLayout = read.layout();
         if (!any) {
             conflicts = ConflictIndex.empty();
             recommendationsByBinding = Map.of();
@@ -788,13 +780,10 @@ public class BindingProfilePanel extends JPanel {
     /**
      * The controls VEGA presses: its built-in commands' controls, and every binding a custom command taps -
      * a custom command on a stick-only control fails just the same, so the commander is warned about it too.
+     * The same list auto-assign fills and the startup check measures - {@link BindingsMonitor#requiredControls()}.
      */
     private static AiAccess currentAiAccess() {
-        Set<String> vegaControls = new HashSet<>(BindingsMonitor.appDrivenControls());
-        for (CustomCommandDefinition command : CustomCommandRegistry.getInstance().getCustomCommands()) {
-            vegaControls.addAll(command.distinctBindingIds());
-        }
-        return new AiAccess(vegaControls);
+        return new AiAccess(BindingsMonitor.requiredControls());
     }
 
     /**
@@ -967,7 +956,7 @@ public class BindingProfilePanel extends JPanel {
     /**
      * The view filters, in one place so the two tables always narrow the same way: the conflicts-only and
      * required-by-Vega checkboxes, and the search field. Purely a view concern - the tab counts and the
-     * Auto-Assign Missing Binds enabled state are computed from the unfiltered lists.
+     * Auto-Assign VEGA Required Binds enabled state are computed from the unfiltered lists.
      */
     private List<String> filterRows(List<String> bindingIds, AiAccess aiAccess) {
         return filterBySearch(filterVegaOnly(filterConflictsOnly(bindingIds), aiAccess));
@@ -989,15 +978,6 @@ public class BindingProfilePanel extends JPanel {
     /**
      * When the filter is on, narrows the ids to those that participate in a conflict; otherwise a no-op.
      */
-    /**
-     * Both view filters, in one place so the two tables always narrow the same way: the
-     * conflicts-only checkbox and the search field. Purely a view concern - the tab counts and the
-     * Auto-Assign VEGA Required Binds enabled state are computed from the unfiltered lists.
-     */
-    private List<String> filterRows(List<String> bindingIds) {
-        return filterBySearch(filterConflictsOnly(bindingIds));
-    }
-
     private List<String> filterConflictsOnly(List<String> bindingIds) {
         if (conflictsOnlyCheck == null || !conflictsOnlyCheck.isSelected()) {
             return bindingIds;
@@ -1356,24 +1336,5 @@ public class BindingProfilePanel extends JPanel {
             return;
         }
         onEdt.run();
-    }
-
-    private boolean isBasicEditableSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return slot == null || slot.editable() || isClearedSlot(slot);
-    }
-
-    private boolean isClearedSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return "{NoDevice}".equals(slot.device())
-                && (slot.key() == null || slot.key().isBlank());
-    }
-
-    private void clearLoadedBindingsSnapshot() {
-        currentSlots = Map.of();
-        currentKeyboardLayout = GameKeyboardLayout.OTHER;
-        activeBindingsFile = null;
-        activeBindingsLastModified = null;
-        activeBindingsFileSize = -1;
-        gameBindingsFile = null;
-        activePresetFileName = null;
     }
 }
