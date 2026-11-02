@@ -150,8 +150,8 @@ Controls screen writes a `Custom.#.#.binds` into the *user* folder instead, and 
 the game is overwritten by the next update anyway. Backing them up would archive Frontier's files, which
 Frontier already ships.
 
-**They are still read**, as the templates [First-Time Startup](#create--a-new-players-first-binds-file--2026-10-24) copies a factory binds file
-from. Whether that copy works byte for byte is [testing item 7](../../00-overview/testing-required.md).
+**They are still read**, as the templates [CREATE](#create--a-new-players-first-binds-file--2026-10-24) copies a factory binds file
+from. The copy works with its `PresetName` changed to the new name ([testing item 7](../../00-overview/testing-required.md), answered 2026-11-02).
 
 **The working copy holds whole files.** APPLY writes `DeviceMappings.xml` and the `.buttonMap`s whole to every
 installation, Frontier's entries in `DeviceMappings.xml` with them: every installation runs the same game version,
@@ -203,8 +203,11 @@ reset it, and offers putting the working copy back first. Without `DeviceMapping
 ### When a game update brings a newer version — 2026-10-23
 
 **A working copy is never written over a game file of a newer version** (Krondor, 2026-09-24; Alan, 2026-10-23). A
-newer version — `DualVirpilDawnTreader.4.2.binds` becoming `.4.3.binds`, or a newer version on the file's XML root —
-means a reconcile, never an overwrite. This holds for every one of the files: `.binds` certainly,
+newer version — `DualVirpilDawnTreader.4.2.binds` becoming `.4.3.binds` — means a reconcile, never an overwrite.
+*Only the file name's version counts* (Alan, 2026-10-31, Storage S10): the version on the XML root names the tool that
+last wrote the file ([bind-editor.md](bind-editor.md#a-fourth-source-48354-community-configs--2026-09-17)), so a
+higher one under the same name is an ordinary difference. How it is asked is in [storage.md](storage.md#when-a-live-copy-differs),
+*Settled with Storage S10's sources*. This holds for every one of the files: `.binds` certainly,
 `DeviceMappings.xml` and `StartPreset.4.start` possibly one day, `.buttonMap`s probably never.
 
 **The quick way, when nothing of the user's was lost.** The game carries the user's bindings into the new version
@@ -277,8 +280,9 @@ A user who already has a custom binds file never sees CREATE; a section still on
 custom one in the Preset Editor. *Until 2026-10-24 this was a prompt asking per section — Create / Choose sections /
 Not now — and before 2026-10-23 it wrote straight into the game's folders.*
 
-Whether a factory file copied byte for byte is a valid custom binds file is still
-[testing item 7](../../00-overview/testing-required.md).
+**A factory file copied with its `PresetName` changed is a valid custom binds file** (Alan, 2026-11-02,
+[testing item 7](../../00-overview/testing-required.md)): the copy keeps every other byte. How it is named and offered
+was settled with Storage S11's sources ([storage.md](storage.md#create--a-new-players-first-binds-file), rule 16).
 
 #### Writes outside Apply — none
 

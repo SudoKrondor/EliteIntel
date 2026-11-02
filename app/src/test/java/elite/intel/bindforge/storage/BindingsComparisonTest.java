@@ -6,6 +6,7 @@ import elite.intel.bindforge.storage.BindingsComparison.Factory;
 import elite.intel.bindforge.storage.BindingsComparison.FileDifference;
 import elite.intel.bindforge.storage.BindingsComparison.Kind;
 import elite.intel.bindforge.storage.BindingsComparison.LineItem;
+import elite.intel.bindforge.storage.BindingsComparison.NewerVersion;
 import elite.intel.bindforge.storage.BindingsComparison.Presence;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import org.junit.jupiter.api.Test;
@@ -22,12 +23,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The check's comparison for the binds and preset files (storage.md rule 14; Storage S8a): by value, a row per slot,
- * a file on one side only, a newer version left out, a reset named - and the files a set of answers settles on. At
- * APPLY (Storage S8b): the rows the edits change left out of what is asked, and the edits put on top.
+ * a file on one side only, a reset named - and the files a set of answers settles on. At APPLY (Storage S8b): the rows
+ * the edits change left out of what is asked, and the edits put on top. A newer version (Storage S10): reconciled,
+ * never overwritten.
  */
 class BindingsComparisonTest {
 
     private static final String CUSTOM = "Custom.4.2.binds";
+    private static final String NEWER = "Custom.4.3.binds";
+    private static final String NEW_THING = "\t<NewThing Value=\"1\" />\r\n";
+    private static final String SETTING = "\t<MouseSensitivity Value=\"1.00000000\" />\r\n";
     private static final String PRESET = "StartPreset.4.start";
     private static final String YAW_PRIMARY = CUSTOM + "|YawLeftButton/Primary";
     private static final String AXIS = CUSTOM + "|YawAxisRaw";
@@ -142,38 +147,165 @@ class BindingsComparisonTest {
         assertEquals("Spare 4.2", added.live());
     }
 
-    /** A newer version beside an older one is Storage S10's - both left out, and named (Alan, 2026-10-30). */
-    @Test
-    void aNewerVersionAndTheOneItReplacesAreLeftOut() {
-        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
-                Map.of("Custom.4.3.binds", binds("Custom", "Key_A", "Joy_XAxis", "")));
+    // ---- a newer version (Storage S10)
 
-        assertTrue(differences.none());
-        assertEquals(List.of(CUSTOM, "Custom.4.3.binds"), differences.leftOut());
+    /**
+     * Every binding carried over unchanged: no row to answer, the new slots listed, and the file is no warning row - it
+     * is approved on its own (Alan, 2026-10-31, D1, D4).
+     */
+    @Test
+    void aNewerVersionWithEveryBindingCarriedOverHasNoRowsAndListsItsNewSlots() {
+        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
+                Map.of(NEWER, binds43("Custom", "Key_A", "Joy_XAxis", NEW_THING)));
+
+        assertFalse(differences.none());
+        assertEquals(List.of(), differences.files(), "never a live-only row, which Put mine back would delete");
+        NewerVersion version = differences.newer().getFirst();
+        assertEquals(CUSTOM, version.older());
+        assertEquals(NEWER, version.newer());
+        assertTrue(version.carriedOver());
+        assertEquals(List.of("NewThing"), version.newSlots());
+    }
+
+    /** Approved: the game's file as it is, under its name, the older gone from the working copy. */
+    @Test
+    void anApprovedNewerVersionBecomesTheWorkingCopysFileUnderItsName() throws IOException {
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> live = files(Map.of(NEWER, binds43("Custom", "Key_A", "Joy_XAxis", NEW_THING)));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
+
+        BindingsComparison.Settled settled = BindingsComparison.settle(workingCopy, live, differences, Map.of());
+
+        assertEquals(Set.of(NEWER), settled.bindings().keySet());
+        assertArrayEquals(live.get(NEWER), settled.bindings().get(NEWER));
+        assertEquals(Set.of(), settled.removeFromLive(), "the game's folder never held the older one");
+        assertEquals(Map.of(CUSTOM, NEWER), settled.renamed());
     }
 
     /**
-     * With both versions in the game's folder, the newer is still left out - otherwise it is a live-only row, and
-     * keeping the working copy's side deletes it - and the older is compared as usual (Alan, 2026-10-31, Storage S8R).
+     * With the older one still in the game's folder, it is not compared, and goes after the backup - as a rename's old
+     * name does (Alan, 2026-10-31, D3).
      */
     @Test
-    void aNewerVersionIsLeftOutWhenTheGamesFolderStillHoldsTheOlderOne() {
-        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
-                Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""),
-                        "Custom.4.3.binds", binds("Custom", "Key_A", "Joy_XAxis", "")));
+    void theOlderNameInTheGamesFolderIsRemovedNotCompared() throws IOException {
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> live = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", ""),
+                NEWER, binds43("Custom", "Key_A", "Joy_XAxis", "")));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
 
-        assertEquals(List.of("Custom.4.3.binds"), differences.leftOut());
-        assertEquals(YAW_PRIMARY, only(differences).id());
+        assertEquals(List.of(), differences.files());
+        BindingsComparison.Settled settled = BindingsComparison.settle(workingCopy, live, differences, Map.of());
+        assertEquals(Set.of(CUSTOM), settled.removeFromLive());
+    }
+
+    /**
+     * A line the game changed is a row, and so is one it dropped; the new slot is not. Keeping mine on every row puts
+     * my lines into the game's file - its new slot and its root kept, the dropped setting inserted before
+     * {@code </Root>}: the newer file is never written over.
+     */
+    @Test
+    void keepingMineOnANewerVersionPutsMyLinesIntoTheGamesFile() throws IOException {
+        String theirs = withoutSetting(binds43("Custom", "Key_Q", "Joy_XAxis", ""), NEW_THING);
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> live = files(Map.of(NEWER, theirs));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
+        NewerVersion version = differences.newer().getFirst();
+        assertEquals(List.of(NEWER + "|YawLeftButton/Primary", NEWER + "|MouseSensitivity"),
+                version.items().stream().map(LineItem::id).toList());
+        assertNull(version.items().get(1).live());
+
+        Map<String, Side> mine = new HashMap<>();
+        version.items().forEach(item -> mine.put(item.id(), Side.WORKING_COPY));
+        byte[] merged = BindingsComparison.settle(workingCopy, live, differences, mine).bindings().get(NEWER);
+
+        assertEquals(withoutSetting(binds43("Custom", "Key_A", "Joy_XAxis", ""),
+                NEW_THING + "\t<MouseSensitivity Value=\"1.00000000\" />\r\n"), text(merged));
     }
 
     @Test
-    void anOlderVersionInTheGamesFolderIsNotLeftOut() {
+    void takingTheGamesLinesOnANewerVersionTakesItsFileAsItIs() throws IOException {
+        String theirs = binds43("Custom", "Key_Q", "Joy_XAxis", NEW_THING);
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> live = files(Map.of(NEWER, theirs));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
+
+        byte[] merged = BindingsComparison.settle(workingCopy, live, differences,
+                Map.of(NEWER + "|YawLeftButton/Primary", Side.LIVE)).bindings().get(NEWER);
+
+        assertEquals(theirs, text(merged));
+    }
+
+    /** A newer version's row needs an answer like any other. */
+    @Test
+    void aNewerVersionsRowWithNoAnswerIsRefused() {
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> live = files(Map.of(NEWER, binds43("Custom", "Key_Q", "Joy_XAxis", "")));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> BindingsComparison.settle(workingCopy, live, differences, Map.of()));
+    }
+
+    /**
+     * Only the file name's version counts: a higher version on the root under the same name is the file's details row
+     * - the root names the tool that wrote it (bind-editor.md, A fourth source; Alan, 2026-10-31, D2).
+     */
+    @Test
+    void aHigherRootVersionUnderTheSameNameIsTheDetailsRow() {
+        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
+                Map.of(CUSTOM, binds43("Custom", "Key_A", "Joy_XAxis", "")));
+
+        assertEquals(List.of(), differences.newer());
+        assertEquals(Kind.DETAILS, only(differences).kind());
+    }
+
+    /** One that cannot be read element by element is left as it is and named, as before S10 - never a row. */
+    @Test
+    void aNewerVersionThatCannotBeReadIsLeftOut() {
+        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
+                Map.of(NEWER, "<Root><broken></Root>"));
+
+        assertTrue(differences.none());
+        assertEquals(List.of(CUSTOM, NEWER), differences.leftOut());
+    }
+
+    @Test
+    void anOlderVersionInTheGamesFolderIsNoNewerVersion() {
         Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
                 Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""),
                         "Custom.4.1.binds", binds("Custom", "Key_A", "Joy_XAxis", "")));
 
         assertEquals(List.of("Custom.4.1.binds"), differences.files().stream().map(FileDifference::file).toList());
-        assertEquals(List.of(), differences.leftOut());
+        assertEquals(List.of(), differences.newer());
+    }
+
+    /** At APPLY an edit on the older file covers the same line of the newer, so it is not asked; the version stays. */
+    @Test
+    void anEditOnTheOlderFileCoversTheNewerVersionsRow() {
+        Map<String, String> workingCopy = Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        Differences differences = compare(workingCopy, Map.of(NEWER, binds43("Custom", "Key_Q", "Joy_XAxis", "")));
+        List<LineItem> edits = BindingsComparison.edited(files(workingCopy),
+                files(Map.of(CUSTOM, binds("Custom", "Key_W", "Joy_XAxis", ""))));
+
+        Differences asked = BindingsComparison.without(differences, edits);
+
+        assertEquals(1, asked.newer().size());
+        assertTrue(asked.newer().getFirst().carriedOver());
+        assertEquals(List.of(), asked.rows());
+    }
+
+    /** The edits on the older file go on top of the newer one it was renamed to - never both files written. */
+    @Test
+    void theEditsOnTheOlderFileGoOnTopOfTheNewerOne() throws IOException {
+        Map<String, byte[]> applied = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> current = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_YAxis", "")));
+        Map<String, byte[]> settled = files(Map.of(NEWER, binds43("Custom", "Key_Q", "Joy_XAxis", NEW_THING)));
+
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, Map.of(CUSTOM, NEWER), applied,
+                current);
+
+        assertEquals(Set.of(NEWER), onTop.keySet());
+        assertEquals(binds43("Custom", "Key_Q", "Joy_YAxis", NEW_THING), text(onTop.get(NEWER)));
     }
 
     @Test
@@ -366,7 +498,7 @@ class BindingsComparisonTest {
         Map<String, byte[]> current = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_YAxis", "")));
         Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
 
-        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, applied, current);
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, Map.of(), applied, current);
 
         assertEquals(binds("Custom", "Key_Q", "Joy_YAxis", ""), text(onTop.get(CUSTOM)));
     }
@@ -378,7 +510,7 @@ class BindingsComparisonTest {
         Map<String, byte[]> current = files(Map.of(CUSTOM, binds("Custom", "Key_W", "Joy_XAxis", "")));
         Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
 
-        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, applied, current);
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, Map.of(), applied, current);
 
         assertEquals(binds("Custom", "Key_W", "Joy_XAxis", ""), text(onTop.get(CUSTOM)));
     }
@@ -391,7 +523,7 @@ class BindingsComparisonTest {
                 "Spare.4.2.binds", binds("Spare", "Key_A", "Joy_XAxis", "")));
         Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
 
-        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, applied, current);
+        Map<String, byte[]> onTop = BindingsComparison.withEditsOnTop(settled, Map.of(), applied, current);
 
         assertEquals(Set.of(CUSTOM, "Spare.4.2.binds"), onTop.keySet());
         assertEquals(binds("Custom", "Key_Q", "Joy_XAxis", ""), text(onTop.get(CUSTOM)));
@@ -402,7 +534,7 @@ class BindingsComparisonTest {
         Map<String, byte[]> applied = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
         Map<String, byte[]> settled = files(Map.of(CUSTOM, binds("Custom", "Key_Q", "Joy_XAxis", "")));
 
-        assertSame(settled, BindingsComparison.withEditsOnTop(settled, applied, applied));
+        assertSame(settled, BindingsComparison.withEditsOnTop(settled, Map.of(), applied, applied));
     }
 
     /** At APPLY a row the edits change is not asked about; the others are, and a file left with none is left out. */
@@ -467,6 +599,16 @@ class BindingsComparisonTest {
                 + "\t<MouseSensitivity Value=\"1.00000000\" />\r\n"
                 + extra
                 + "</Root>\r\n";
+    }
+
+    /** {@link #binds} as the game's next version writes it: {@code MinorVersion="3"} on the root. */
+    static String binds43(String presetName, String yawKey, String axisKey, String extra) {
+        return binds(presetName, yawKey, axisKey, extra).replace("MinorVersion=\"2\"", "MinorVersion=\"3\"");
+    }
+
+    /** {@code text} without its {@code MouseSensitivity} setting, with {@code extra} before {@code </Root>}. */
+    private static String withoutSetting(String text, String extra) {
+        return text.replace(SETTING, "").replace("</Root>", extra + "</Root>");
     }
 
     private static Differences compare(Map<String, String> workingCopy, Map<String, String> live) {

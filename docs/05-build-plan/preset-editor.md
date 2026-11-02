@@ -136,6 +136,11 @@ below follow the rest of that order.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-11-02 — Storage S11 (CREATE) done: P4 needs its tab greyed with the other editors.** While the working copy
+  holds no binds file of the user's, `BindingsTabPanel.editorsUsable` greys the Bind Editor and Alias Designer tabs
+  until CREATE is pressed (storage.md rule 16, *Settled with Storage S11's sources*). P4's new tab joins that list.
+  CREATE's four preset lines are an edit, so the dropdowns show them pointing at the new file.
+
 - **2026-10-28 — Storage S6 done: the preset file on the bar.** The preset file is an edit, and APPLY refuses first a
   line that is empty or names no binds file the BindName list offers - on every APPLY (preset-editor.md *What APPLY
   checks and writes*). P2's and P3's classes are removed. **P4 needs:** the dropdowns from `PresetEdits.sections`

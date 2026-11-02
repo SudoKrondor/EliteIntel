@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static elite.intel.bindforge.storage.BindingsComparisonTest.binds;
+import static elite.intel.bindforge.storage.BindingsComparisonTest.binds43;
 import static elite.intel.bindforge.storage.WorkingCopyTest.bytes;
 import static elite.intel.bindforge.storage.WorkingCopyTest.text;
 import static org.junit.jupiter.api.Assertions.*;
@@ -132,6 +133,41 @@ class BindingsCheckTest {
 
         assertEquals(List.of(), written);
         assertEquals("Key_W", changed.now().differences().items().getFirst().live());
+    }
+
+    /**
+     * A newer version approved (Storage S10): the game's file becomes the working copy's under its name, the older
+     * name removed from the game's folder after the backup, which holds the working copy.
+     */
+    @Test
+    void anApprovedNewerVersionIsWrittenUnderItsNameAndTheOlderOneRemoved() throws IOException {
+        String newer = "Custom.4.3.binds";
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live(newer, binds43("Custom", "Key_A", "Joy_XAxis", "\t<NewThing Value=\"1\" />\r\n"));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+        assertTrue(found.anythingToAsk());
+        assertEquals(List.of(), found.differences().files());
+
+        check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(Set.of(newer), written.getFirst().bindings().keySet());
+        assertEquals(List.of(Set.of(CUSTOM)), removed);
+        assertSame(workingCopy, backedUpWorkingCopies.getFirst());
+    }
+
+    /** A newer version the game changes again after its question was answered stops the write, as a row does. */
+    @Test
+    void aNewerVersionChangedMeanwhileStopsTheWrite() throws IOException {
+        String newer = "Custom.4.3.binds";
+        live(newer, binds43("Custom", "Key_A", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+        live(newer, binds43("Custom", "Key_A", "Joy_XAxis", "\t<NewThing Value=\"1\" />\r\n"));
+
+        assertThrows(BindingsCheck.ChangedMeanwhileException.class,
+                () -> check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK));
+        assertEquals(List.of(), written);
     }
 
     /** A change in how the file is written, not what it says, is not a change - the write goes ahead. */

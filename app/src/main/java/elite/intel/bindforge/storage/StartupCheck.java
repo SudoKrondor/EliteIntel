@@ -82,8 +82,9 @@ public final class StartupCheck {
                     BindingsComparison.compare(files.bindings(), live, BindingsComparison.Factory.NONE);
             List<DeviceCheck.Judged> installations = devices.find(files).asked();
             if (differences.none() && installations.isEmpty()) return false;
-            log.info("Your control files were changed outside BindForge: {}; installations: {}",
+            log.info("Your control files were changed outside BindForge: {}; newer versions: {}; installations: {}",
                     differences.files().stream().map(BindingsComparison.FileDifference::file).toList(),
+                    differences.newer().stream().map(BindingsComparison.NewerVersion::newer).toList(),
                     installations.stream().map(judged -> judged.row().storefront() + " (" + judged.row().rootPath()
                             + "): " + judged.state()).toList());
             return true;

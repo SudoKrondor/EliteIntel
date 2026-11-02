@@ -38,7 +38,13 @@ extra comparison — and never writes hex at all. What remains is the numbering 
 **6. Consolidated bind data table — done, but still carries unresolved spot-checks.** [`BindForge_ConsolidatedActionTable.xlsx`](../02-features/bindforge/reference-data/BindForge_ConsolidatedActionTable.xlsx) now merges all three sources with no data discarded; the reconciliation itself is complete. What's still testing-required: 62 rows where `ActionCatalog.json` disagreed with the other two sources on an action's name — spot-check any still-uncertain ones against real screenshots the same way "UI Panel Select" was confirmed, per the table's own Row Notes.
 → [BindForge Roadmap](../02-features/bindforge/roadmap.md#formerly-needed-before-v1-can-be-built--now-resolved)
 
-**7. First-Time Startup's file copy** — confirm whether a factory binds file from `ControlSchemes` can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy (e.g. a header/version rewrite) that a plain copy would miss.
+**7. ~~First-Time Startup's file copy~~ — ANSWERED 2026-11-02 (Alan): it works.** He copied a factory binds file
+into the bindings folder, renamed it (`DawnTreaderKMO.binds`) and changed its `PresetName` to match; the game took it,
+and wrote it out again as `DawnTreaderKMO.4.2.binds`, treating the unversioned name as an older version and leaving
+the copy beside it. So a user can make their own copy of a factory file by hand, and CREATE's copy - factory bytes,
+`PresetName` changed, named `.4.2.binds` from the start - needs nothing more (Storage S11). *No longer a testing item.*
+
+*Original question, for the record:* confirm whether a factory binds file from `ControlSchemes` can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy (e.g. a header/version rewrite) that a plain copy would miss.
 → [BindForge Overview — First-Time Startup](../02-features/bindforge/overview.md#create--a-new-players-first-binds-file--2026-10-24)
 
 **9. ~~Does `.binds` reference a `DeviceMappings.xml` device by name or by hex?~~ ANSWERED 2026-09-08 —

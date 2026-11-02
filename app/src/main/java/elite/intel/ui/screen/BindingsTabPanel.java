@@ -23,6 +23,9 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * <strong>The one APPLY / DISCARD bar sits above the sub-tabs</strong>, beneath Elite-Intel's main tabs, where the mouse
  * goes to leave BindForge (overview.md, <em>APPLY and DISCARD - one pair</em>; Storage S4a). Leaving it with edits not
  * applied asks first ({@link #leave}; Storage S7).
+ * <p>
+ * <strong>While the user has no binds file of their own, the editors are greyed</strong> until CREATE is pressed on the
+ * bar; File Manager stays usable, so a returning player can restore a backup instead (storage.md rule 16; Storage S11).
  */
 public class BindingsTabPanel extends JPanel {
 
@@ -41,6 +44,7 @@ public class BindingsTabPanel extends JPanel {
         addHierarchyListener(event -> {
             if ((event.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0 || !isShowing()) return;
             firstTimeStartup.offerIfNeeded();
+            applyBar.refreshCreate();
         });
     }
 
@@ -60,6 +64,23 @@ public class BindingsTabPanel extends JPanel {
 
         add(applyBar, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
+        applyBar.onCreateState(state -> editorsUsable(tabs, state.editors()));
+    }
+
+    /**
+     * Greys the editor tabs, or brings them back. A greyed tab that is showing gives way to File Manager, so no editor
+     * is left on screen with nothing of the user's to edit (Alan, 2026-11-02, Storage S11). The Preset Editor's tab,
+     * when it is built (P4), is greyed with these.
+     */
+    private void editorsUsable(JTabbedPane tabs, boolean usable) {
+        for (Component editor : new Component[]{bindingProfilePanel, aliasDesignerPanel}) {
+            int index = tabs.indexOfComponent(editor);
+            tabs.setEnabledAt(index, usable);
+            tabs.setToolTipTextAt(index, usable ? null : getText("bindings.create.tabLocked"));
+        }
+        if (!usable && tabs.getSelectedComponent() != bindingManagementPanel) {
+            tabs.setSelectedComponent(bindingManagementPanel);
+        }
     }
 
     /**

@@ -226,7 +226,7 @@ public final class Apply {
             // WHY: with nothing settled the edits go out byte for byte, as they always have.
             ConfigurationFiles onTop = bindsSettled
                     ? snapshot.current().withBindings(BindingsComparison.withEditsOnTop(settled.bindings(),
-                    snapshot.applied().bindings(), snapshot.current().bindings()))
+                    settled.renamed(), snapshot.applied().bindings(), snapshot.current().bindings()))
                     : snapshot.current();
             // WHY: the edits' device files are the user's side of the reconcile (Alan, 2026-10-31, Storage S9b), so a
             // reconciled answer replaces them whole - its moves made in the binds files, edits included.
@@ -250,7 +250,7 @@ public final class Apply {
             }, found.devices().leavingAlone(comparison, reader), remove);
             log.info("Applied: {} binds and preset files, {} button maps; the check settled {} rows and {} "
                             + "installations that differed, their device files {}; installations updated {} of {}",
-                    files.bindings().size(), files.buttonMaps().size(), found.differences().items().size(),
+                    files.bindings().size(), files.buttonMaps().size(), found.differences().rows().size(),
                     found.devices().asked().size(), reconciled ? "reconciled" : "the edits'",
                     report.installationsUpdated(), report.installations().size());
             return new Written(report, taken.get());
