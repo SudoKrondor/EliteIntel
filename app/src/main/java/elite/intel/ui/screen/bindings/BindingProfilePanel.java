@@ -2,10 +2,7 @@ package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.io.*;
-import elite.intel.bindforge.model.BindingDisplayNames;
-import elite.intel.bindforge.model.BindingModifier;
-import elite.intel.bindforge.model.BindingSection;
-import elite.intel.bindforge.model.BindingSlotType;
+import elite.intel.bindforge.model.*;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
@@ -44,7 +41,7 @@ import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * The "Binding Profile" sub-tab of BIND FORGE: bindings directory/profile/file fields, the
- * Used/Missing Bindings tables, conflict detection, hover callouts, and the Auto-Assign Missing Binds/Revert/Apply
+ * Used/Missing Bindings tables, conflict detection, hover callouts, and the Auto-Assign VEGA Required Binds/Revert/Apply
  * footer. Extracted from the former monolithic {@code BindingsTabPanel}.
  */
 public class BindingProfilePanel extends JPanel {
@@ -88,6 +85,7 @@ public class BindingProfilePanel extends JPanel {
     private JTextField bindingSearchField;
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
+    private GameKeyboardLayout currentKeyboardLayout = GameKeyboardLayout.OTHER;
     /**
      * Every conflict in the loaded file, indexed for the two things this panel asks: whether a row
      * is in conflict (RED coloring) and what to say in its hover callout. Recomputed on each load.
@@ -296,7 +294,7 @@ public class BindingProfilePanel extends JPanel {
         conflictsOnlyCheck = makeCheckBox(getText("bindings.filter.conflictsOnly"), false);
         conflictsOnlyCheck.addActionListener(e -> renderBindingTables());
 
-        // Non-modal footer: sync status on the left, then the conflicts-only filter, AUTO-ASSIGN MISSING BINDS,
+        // Non-modal footer: sync status on the left, then the conflicts-only filter, AUTO-ASSIGN VEGA REQUIRED BINDS,
         // REVERT and APPLY (primary) on the right, no BACK.
         return HudFooter.build(false, null, syncStatusBadge,
                 List.of(conflictsOnlyCheck, fixAllButton, revertButton, applyButton));
@@ -319,6 +317,7 @@ public class BindingProfilePanel extends JPanel {
             recommendationsByBinding = computeRecommendations(parsedSlots);
 
             currentSlots = slots;
+            currentKeyboardLayout = parser.parseKeyboardLayout(workingCopyPath.toFile());
             activeBindingsFile = workingCopyPath.toFile();
             activeBindingsLastModified = Files.getLastModifiedTime(workingCopyPath);
             activeBindingsFileSize = Files.size(workingCopyPath);
@@ -396,7 +395,7 @@ public class BindingProfilePanel extends JPanel {
             return;
         }
 
-        MissingBindingAutoAssigner.Plan plan = autoAssigner.planAll(currentSlots, BindingsMonitor.appDrivenControls());
+        MissingBindingAutoAssigner.Plan plan = autoAssigner.planAll(currentSlots, BindingsMonitor.requiredControls(), currentKeyboardLayout);
         applyPlanInBackground(plan, outcome -> showBatchSummary(outcome, plan));
     }
 
@@ -404,7 +403,7 @@ public class BindingProfilePanel extends JPanel {
         if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || autoFixInProgress) {
             return;
         }
-        MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots);
+        MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots, currentKeyboardLayout);
         if (plan.edits().isEmpty() && plan.skipped().isEmpty()) {
             return; // already bound or unknown - nothing to do
         }
@@ -825,7 +824,8 @@ public class BindingProfilePanel extends JPanel {
     /**
      * Splits all keyboard-capable controls into those that already have a usable
      * keyboard binding and those that do not, using the same definition of "bound"
-     * the auto-assigner targets, so the Missing tab and Auto-Assign Missing Binds never diverge.
+     * the auto-assigner uses. The Missing tab lists every such control; Auto-Assign VEGA Required Binds fills
+     * only the ones in {@link BindingsMonitor#requiredControls()}, and each row can still be filled on its own.
      */
     private BindingPartition partitionByKeyboardBinding(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
         List<String> used = new ArrayList<>();
@@ -897,7 +897,7 @@ public class BindingProfilePanel extends JPanel {
 
     /**
      * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. Tab
-     * counts and the Auto-Assign Missing Binds enabled state always reflect the full (unfiltered) data, so the
+     * counts and the Auto-Assign VEGA Required Binds enabled state always reflect the full (unfiltered) data, so the
      * filter is a pure view toggle. Called on load and whenever the filter checkbox changes.
      */
     private void renderBindingTables() {
@@ -929,7 +929,10 @@ public class BindingProfilePanel extends JPanel {
                 getText("bindings.column.secondary"),
                 getText("bindings.column.autofix"));
         tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
-        fixAllButton.setEnabled(!missingBindings.isEmpty());
+        // Enabled only when a control VEGA presses is missing: the button fills those and nothing else, so with
+        // only emotes and the like left in the Missing tab a click could do nothing.
+        Set<String> required = BindingsMonitor.requiredControls();
+        fixAllButton.setEnabled(missingBindings.stream().anyMatch(required::contains));
     }
 
     /**
@@ -976,7 +979,7 @@ public class BindingProfilePanel extends JPanel {
     /**
      * Both view filters, in one place so the two tables always narrow the same way: the
      * conflicts-only checkbox and the search field. Purely a view concern - the tab counts and the
-     * Auto-Assign Missing Binds enabled state are computed from the unfiltered lists.
+     * Auto-Assign VEGA Required Binds enabled state are computed from the unfiltered lists.
      */
     private List<String> filterRows(List<String> bindingIds) {
         return filterBySearch(filterConflictsOnly(bindingIds));
@@ -1271,6 +1274,7 @@ public class BindingProfilePanel extends JPanel {
 
     private void clearLoadedBindingsSnapshot() {
         currentSlots = Map.of();
+        currentKeyboardLayout = GameKeyboardLayout.OTHER;
         activeBindingsFile = null;
         activeBindingsLastModified = null;
         activeBindingsFileSize = -1;

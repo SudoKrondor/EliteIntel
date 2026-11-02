@@ -1,9 +1,6 @@
 package elite.intel.bindforge.io;
 
-import elite.intel.bindforge.model.BindingInput;
-import elite.intel.bindforge.model.BindingModifier;
-import elite.intel.bindforge.model.BindingSlotType;
-import elite.intel.bindforge.model.EliteKeyboardKeys;
+import elite.intel.bindforge.model.*;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.io.AtomicFiles;
 import elite.intel.io.TimestampedBackups;
@@ -54,6 +51,7 @@ public class BindingsWriter {
     // Characters that would need escaping in an attribute are never part of one.
     // WHY no list of keys: a non-English layout writes the character itself (Key_ß, Key_é), so
     // EliteKeyboardKeys cannot hold every key the game writes; any Key_ name with something after it is a key.
+    private static final Pattern KEYBOARD_LAYOUT = Pattern.compile("<KeyboardLayout>\\s*([^<]*?)\\s*</KeyboardLayout>");
     private static final Pattern KEYBOARD_TOKEN = Pattern.compile("Key_[^\\s\"'<>&]+");
     private static final Pattern MOUSE_BUTTON_TOKEN = Pattern.compile("Mouse_[1-9][0-9]*|(?:Pos|Neg)_Mouse_ZAxis");
     private static final String GAME_AXIS = "(?:X|Y|Z|RX|RY|RZ|U|V)Axis";
@@ -158,6 +156,10 @@ public class BindingsWriter {
 
             EncodedXml encodedXml = readXml(edit.file());
             String xml = encodedXml.xml();
+            if (!edit.clearsSlot() && BindingInput.KEYBOARD.equals(edit.input().device())
+                    && !namedOnFileLayout(xml, edit.input().key())) {
+                return BindingSaveResult.UNKNOWN_KEY;
+            }
             LocatedAction action = locateAction(xml, edit.bindingId());
             if (action.result() != null) {
                 return action.result();
@@ -391,6 +393,9 @@ public class BindingsWriter {
             }
 
             EncodedXml encodedXml = readXml(edit.file());
+            if (!edit.clearsSlot() && !namedOnFileLayout(encodedXml.xml(), edit.key())) {
+                return BindingSaveResult.UNKNOWN_KEY;
+            }
             LocatedAction action = locateAction(encodedXml.xml(), edit.bindingId());
             if (action.result() != null) {
                 return action.result();
@@ -435,6 +440,17 @@ public class BindingsWriter {
         } catch (Exception e) {
             return BindingSaveResult.UNSUPPORTED_XML;
         }
+    }
+
+    /**
+     * False when the file's {@code <KeyboardLayout>} has no key of that name - {@code Key_9} or {@code Key_Period}
+     * in an AZERTY file. Written anyway, the game could not tell it apart from its neighbours (an auto-assigned
+     * Hyperspace on Shift+{@code Key_9} opened the Friends menu on Shift+{@code Key_1}), and the parser would
+     * not press it. See {@link GameKeyboardLayout}.
+     */
+    private static boolean namedOnFileLayout(String xml, String key) {
+        Matcher layout = KEYBOARD_LAYOUT.matcher(xml);
+        return GameKeyboardLayout.fromBindsTag(layout.find() ? layout.group(1) : null).namesKey(key);
     }
 
     private EncodedXml readXml(Path file) throws IOException {

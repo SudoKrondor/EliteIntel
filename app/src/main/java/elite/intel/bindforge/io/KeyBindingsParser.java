@@ -1,6 +1,7 @@
 package elite.intel.bindforge.io;
 
 import elite.intel.bindforge.model.BindingModifier;
+import elite.intel.bindforge.model.GameKeyboardLayout;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 
 import org.apache.logging.log4j.LogManager;
@@ -183,6 +184,20 @@ public class KeyBindingsParser {
     }
 
     /**
+     * The layout the game names this file's keys by - its {@code <KeyboardLayout>} element, e.g.
+     * {@code fr-FR}. A file without one reads as {@link GameKeyboardLayout#OTHER}.
+     */
+    public GameKeyboardLayout parseKeyboardLayout(File file) throws Exception {
+        return keyboardLayout(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file));
+    }
+
+    private static GameKeyboardLayout keyboardLayout(Document doc) {
+        NodeList layouts = doc.getDocumentElement().getElementsByTagName("KeyboardLayout");
+        String tag = layouts.getLength() == 0 ? null : layouts.item(0).getTextContent();
+        return GameKeyboardLayout.fromBindsTag(tag);
+    }
+
+    /**
      * Parses Primary and Secondary slots exactly enough for the read-only Bindings tab.
      * <p>
      * The returned model includes raw device ids such as {@code 044F0422}. These values are diagnostic
@@ -195,6 +210,7 @@ public class KeyBindingsParser {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(file);
         doc.getDocumentElement().normalize();
+        GameKeyboardLayout layout = keyboardLayout(doc);
 
         NodeList nodes = doc.getDocumentElement().getChildNodes();
         for (int i = 0; i < nodes.getLength(); i++) {
@@ -210,14 +226,14 @@ public class KeyBindingsParser {
 
                 if (primaryList.getLength() > 0) {
                     Element primary = (Element) primaryList.item(0);
-                    primaryBinding = readOnlySlot(primary, BindingSlotType.PRIMARY);
+                    primaryBinding = readOnlySlot(actionName, primary, BindingSlotType.PRIMARY, layout);
                     log.debug("Parsed primary binding for {}: device={}, key={}, hold={}",
                             actionName, primaryBinding.device(), primaryBinding.key(), primaryBinding.hold());
                 }
 
                 if (secondaryList.getLength() > 0) {
                     Element secondary = (Element) secondaryList.item(0);
-                    secondaryBinding = readOnlySlot(secondary, BindingSlotType.SECONDARY);
+                    secondaryBinding = readOnlySlot(actionName, secondary, BindingSlotType.SECONDARY, layout);
                     log.debug("Parsed secondary binding for {}: device={}, key={}, hold={}",
                             actionName, secondaryBinding.device(), secondaryBinding.key(), secondaryBinding.hold());
                 }
@@ -278,11 +294,23 @@ public class KeyBindingsParser {
         return slot.device() + ":" + slot.key();
     }
 
-    private ReadOnlyBindingSlot readOnlySlot(Element slot, BindingSlotType slotType) {
+    /**
+     * WHY the layout: on an AZERTY file a keyboard slot on a name that layout cannot have ({@code Key_9},
+     * {@code Key_Period}...) is not a key the game tells apart - one commander's auto-assigned Hyperspace on
+     * Shift+{@code Key_9} opened the Friends menu on Shift+{@code Key_1}. Such a slot is kept and shown, but is
+     * not usable: VEGA does not press it, the control reads as missing, and auto-assign may fill the other slot.
+     */
+    private ReadOnlyBindingSlot readOnlySlot(String actionName, Element slot, BindingSlotType slotType,
+                                             GameKeyboardLayout layout) {
         String device = slot.getAttribute("Device");
         String key = slot.getAttribute("Key");
         boolean hold = readHoldFlag(slot);
         List<BindingModifier> bindingModifiers = getBindingModifiers(slot);
+        boolean namedOnLayout = !hasKeyboardMainKey(device, key) || layout.namesKey(key);
+        if (!namedOnLayout) {
+            log.warn("'{}' {} is on {}, which a {} binds file cannot name as a key of its own - not pressed; rebind it",
+                    actionName, slotType, key, layout);
+        }
         return new ReadOnlyBindingSlot(
                 device,
                 key,
@@ -290,7 +318,7 @@ public class KeyBindingsParser {
                 bindingModifiers,
                 hold,
                 slotType,
-                isKeyboardUsable(device, key, bindingModifiers),
+                namedOnLayout && isKeyboardUsable(device, key, bindingModifiers),
                 isEditableKeyboardSlot(device, key, bindingModifiers)
         );
     }

@@ -45,7 +45,7 @@ public record CustomCommandStepPickerItem(String id, String label, boolean known
     /**
      * "Ship controls / Weapons / Primary Fire" - the section is localized, the control name is not.
      */
-    private static String inGameLabel(String bindingId) {
+    public static String inGameLabel(String bindingId) {
         BindingDisplayNames.ControlName control = BindingDisplayNames.lookup(bindingId);
         return getText(control.section().getLabelKey()) + " / " + control.label();
     }

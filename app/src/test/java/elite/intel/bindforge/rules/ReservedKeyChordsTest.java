@@ -1,6 +1,7 @@
 package elite.intel.bindforge.rules;
 
 import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.GameKeyboardLayout;
 
 import org.junit.jupiter.api.Test;
 
@@ -228,7 +229,7 @@ class ReservedKeyChordsTest {
 
     @Test
     void autoFixPoolNeverOffersAltF4() {
-        boolean hasAltF4 = SafeKeyboardKeys.orderedChords().stream().anyMatch(c ->
+        boolean hasAltF4 = SafeKeyboardKeys.orderedChords(GameKeyboardLayout.OTHER).stream().anyMatch(c ->
                 "Key_F4".equals(c.key())
                         && c.modifier() != null
                         && ("Key_LeftAlt".equals(c.modifier().key()) || "Key_RightAlt".equals(c.modifier().key())));

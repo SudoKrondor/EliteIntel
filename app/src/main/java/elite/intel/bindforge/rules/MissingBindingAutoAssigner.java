@@ -5,6 +5,7 @@ import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlot;
 import elite.intel.bindforge.io.KeyBindingsParser.ReadOnlyBindingSlots;
 import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.model.BindingSlotType;
+import elite.intel.bindforge.model.GameKeyboardLayout;
 
 import java.util.*;
 
@@ -99,25 +100,27 @@ public class MissingBindingAutoAssigner {
     }
 
     /**
-     * Plans assignments for every unbound keyboard-capable action in the file: the controls in
-     * {@code assignFirst} first, then the rest, each group in stable (case-insensitive bindingId) order.
+     * Plans assignments for the unbound controls VEGA needs - {@code required} - and nothing else, in stable
+     * (case-insensitive bindingId) order.
      * <p>
-     * The order matters because the safe pool is smaller than Elite's control set. A binds file made for
-     * a HOTAS or a gamepad has no keyboard bindings at all, so every control is a target and the pool runs
-     * out before the end of the list. Handed out alphabetically, the keys went to emotes and vanity cameras
-     * while controls VEGA presses were skipped as {@link SkipReason#NO_FREE_KEY}. Whatever the pool cannot
-     * cover should be a control VEGA never touches.
+     * WHY only those: this used to fill every unbound control in the file. A binds file made for a HOTAS or a
+     * gamepad has no keyboard bindings at all, so a commander's file came back with two hundred-odd chords on
+     * emotes, vanity cameras and Galnet audio that nothing presses and nobody chose - and they later asked who
+     * bound them. A control VEGA does not press gains nothing from a key. The commander can still fill any
+     * single control from its row ({@link #planOne}), which is a choice they make one control at a time.
      *
-     * @param assignFirst the binding ids served before any other - the controls VEGA presses
+     * @param required the controls VEGA presses: the built-in ones and those the commander's custom commands use
+     * @param layout   the layout the file names its keys by; it decides the key pool (see {@link SafeKeyboardKeys})
      */
-    public Plan planAll(Map<String, ReadOnlyBindingSlots> slots, Set<String> assignFirst) {
+    public Plan planAll(Map<String, ReadOnlyBindingSlots> slots, Set<String> required, GameKeyboardLayout layout) {
+        List<SafeKeyboardKeys.Chord> pool = SafeKeyboardKeys.orderedChords(layout);
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
         Set<String> gameMenuKeys = ReservedKeyChords.gameMenuKeysFromSlots(slots);
         Map<String, Set<String>> bareModifierOwners = bareModifierOwners(slots);
         List<PlannedEdit> edits = new ArrayList<>();
         List<SkippedBinding> skipped = new ArrayList<>();
-        for (String bindingId : unboundTargets(slots, assignFirst)) {
-            assignOne(bindingId, slots.get(bindingId), occupied, gameMenuKeys, bareModifierOwners, edits, skipped);
+        for (String bindingId : unboundTargets(slots, required)) {
+            assignOne(bindingId, slots.get(bindingId), pool, occupied, gameMenuKeys, bareModifierOwners, edits, skipped);
         }
         return new Plan(edits, skipped);
     }
@@ -135,7 +138,7 @@ public class MissingBindingAutoAssigner {
      * Plans an assignment for a single binding (the per-row "auto fix" action).
      * Returns an empty plan if the binding is unknown or already keyboard-bound.
      */
-    public Plan planOne(String bindingId, Map<String, ReadOnlyBindingSlots> slots) {
+    public Plan planOne(String bindingId, Map<String, ReadOnlyBindingSlots> slots, GameKeyboardLayout layout) {
         List<PlannedEdit> edits = new ArrayList<>();
         List<SkippedBinding> skipped = new ArrayList<>();
         ReadOnlyBindingSlots binding = slots.get(bindingId);
@@ -143,7 +146,7 @@ public class MissingBindingAutoAssigner {
             return new Plan(edits, skipped);
         }
         Set<SafeKeyboardKeys.Chord> occupied = new HashSet<>(occupiedChords(slots));
-        assignOne(bindingId, binding, occupied, ReservedKeyChords.gameMenuKeysFromSlots(slots),
+        assignOne(bindingId, binding, SafeKeyboardKeys.orderedChords(layout), occupied, ReservedKeyChords.gameMenuKeysFromSlots(slots),
                 bareModifierOwners(slots), edits, skipped);
         return new Plan(edits, skipped);
     }
@@ -151,6 +154,7 @@ public class MissingBindingAutoAssigner {
     private void assignOne(
             String bindingId,
             ReadOnlyBindingSlots binding,
+            List<SafeKeyboardKeys.Chord> pool,
             Set<SafeKeyboardKeys.Chord> occupied,
             Set<String> gameMenuKeys,
             Map<String, Set<String>> bareModifierOwners,
@@ -176,7 +180,7 @@ public class MissingBindingAutoAssigner {
             skipped.add(new SkippedBinding(bindingId, slotSkipReason(binding)));
             return;
         }
-        SafeKeyboardKeys.Chord chord = firstFreeChord(occupied, gameMenuKeys,
+        SafeKeyboardKeys.Chord chord = firstFreeChord(pool, occupied, gameMenuKeys,
                 shadowedModifiers(bindingId, bareModifierOwners));
         if (chord == null) {
             skipped.add(new SkippedBinding(bindingId, SkipReason.NO_FREE_KEY));
@@ -186,15 +190,14 @@ public class MissingBindingAutoAssigner {
         edits.add(new PlannedEdit(bindingId, slotType, chord.key(), chord.modifier()));
     }
 
-    private List<String> unboundTargets(Map<String, ReadOnlyBindingSlots> slots, Set<String> assignFirst) {
+    private List<String> unboundTargets(Map<String, ReadOnlyBindingSlots> slots, Set<String> required) {
         List<String> targets = new ArrayList<>();
         for (Map.Entry<String, ReadOnlyBindingSlots> entry : slots.entrySet()) {
-            if (!isKeyboardBound(entry.getValue())) {
+            if (required.contains(entry.getKey()) && !isKeyboardBound(entry.getValue())) {
                 targets.add(entry.getKey());
             }
         }
-        targets.sort(Comparator.comparing((String id) -> !assignFirst.contains(id))
-                .thenComparing(String.CASE_INSENSITIVE_ORDER));
+        targets.sort(String.CASE_INSENSITIVE_ORDER);
         return targets;
     }
 
@@ -236,9 +239,9 @@ public class MissingBindingAutoAssigner {
         return slot != null && !isWritableEmpty(slot);
     }
 
-    private SafeKeyboardKeys.Chord firstFreeChord(Set<SafeKeyboardKeys.Chord> occupied, Set<String> gameMenuKeys,
-                                                  Set<String> shadowedModifiers) {
-        for (SafeKeyboardKeys.Chord chord : SafeKeyboardKeys.orderedChords()) {
+    private SafeKeyboardKeys.Chord firstFreeChord(List<SafeKeyboardKeys.Chord> pool, Set<SafeKeyboardKeys.Chord> occupied,
+                                                  Set<String> gameMenuKeys, Set<String> shadowedModifiers) {
+        for (SafeKeyboardKeys.Chord chord : pool) {
             if (!occupied.contains(chord) && isAssignable(chord, gameMenuKeys)
                     && (chord.modifier() == null || !shadowedModifiers.contains(chord.modifier().key()))) {
                 return chord;
