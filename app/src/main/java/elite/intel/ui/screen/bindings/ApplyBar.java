@@ -20,6 +20,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -40,6 +41,11 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * <p>
  * The leave prompt's Apply ({@link LeavePrompt}, storage.md rule 9) is this APPLY, with its confirmation and report,
  * told when it has finished so it can leave once the edits are gone.
+ * <p>
+ * <strong>CREATE sits at the bar's left end while the working copy holds no binds file of the user's</strong>
+ * (storage.md rule 16; Storage S11): lit until it is pressed, dimmed while its file waits for APPLY, gone once APPLY has
+ * written it. DISCARD lights it again. What it shows is worked out off the EDT, from the edits, and handed to
+ * {@link #onCreateState} so BindForge's tabs can follow.
  */
 public final class ApplyBar extends JPanel {
 
@@ -48,6 +54,11 @@ public final class ApplyBar extends JPanel {
     private final JButton apply = makeButton(getText("bindings.applyBar.apply"));
     private final JButton discard = makeButtonSubtle(getText("bindings.applyBar.discard"));
     private final JLabel status = AppTheme.hudReadoutValue(" ", HudPalette.HUD_COLOR_ROLE_WARNING);
+    private final JButton create = makeButton(getText("bindings.create.button"));
+    private final RefreshCoalescer createRefresh = new RefreshCoalescer();
+    private Create.State createState = Create.State.NOT_SET_UP;
+    private Consumer<Create.State> createListener = state -> {
+    };
 
     public ApplyBar() {
         super(new BorderLayout());
@@ -55,9 +66,59 @@ public final class ApplyBar extends JPanel {
         apply.addActionListener(e -> apply(() -> {
         }));
         discard.addActionListener(e -> discard());
-        add(HudFooter.build(false, null, status, List.of(discard, apply)), BorderLayout.CENTER);
+        create.addActionListener(e -> create());
+        create.setVisible(false);
+        JPanel leading = new JPanel(new FlowLayout(FlowLayout.LEFT, HudPalette.HUD_GAP, 0));
+        leading.setOpaque(false);
+        leading.add(create);
+        leading.add(status);
+        add(HudFooter.build(false, null, leading, List.of(discard, apply)), BorderLayout.CENTER);
         refresh();
         UiBus.register(this);
+    }
+
+    /**
+     * Tells {@code listener} what CREATE shows now and whenever it changes - whether the editor tabs are usable. On the
+     * EDT.
+     */
+    public void onCreateState(Consumer<Create.State> listener) {
+        createListener = listener;
+        listener.accept(createState);
+        refreshCreate();
+    }
+
+    /**
+     * Works out again what CREATE shows, off the EDT - the working copy may be read from disk. Before first-time
+     * startup, or while the working copy cannot be read, CREATE is not shown: first-time startup and RESTORE come
+     * first.
+     */
+    public void refreshCreate() {
+        if (!createRefresh.tryStart()) return;
+        Thread.ofPlatform().name("BindForge-CreateState").start(() -> {
+            Create.State state;
+            try {
+                state = Create.State.of(Edits.stored().snapshot());
+            } catch (IOException e) {
+                // WHY: no working copy yet, or one that cannot be read - the tab click offers first-time startup or
+                // RESTORE for those, and CREATE would be an edit on nothing.
+                log.debug("CREATE not offered: the working copy could not be read: {}", e.getMessage());
+                state = Create.State.NOT_SET_UP;
+            } catch (RuntimeException e) {
+                // WHY: broad on purpose - a thread boundary; the bar must not stay without an answer.
+                log.error("Could not work out whether to offer CREATE", e);
+                state = Create.State.NOT_SET_UP;
+            }
+            Create.State found = state;
+            SwingUtilities.invokeLater(() -> showCreate(found));
+            if (createRefresh.finish()) refreshCreate();
+        });
+    }
+
+    private void showCreate(Create.State state) {
+        createState = state;
+        create.setVisible(state.offered());
+        create.setEnabled(state.offered() && !state.editors() && !Edits.stored().writing());
+        createListener.accept(state);
     }
 
     public void dispose() {
@@ -67,6 +128,7 @@ public final class ApplyBar extends JPanel {
     @Subscribe
     public void onEditsChanged(BindForgeEditsChangedEvent event) {
         SwingUtilities.invokeLater(this::refresh);
+        refreshCreate();
     }
 
     /** Lit when there are edits not applied and no write is running. On the EDT; reads nothing from disk. */
@@ -225,6 +287,43 @@ public final class ApplyBar extends JPanel {
         return getText("bindings.applyBar.result", written.backup().zip().toString(), report.installationsUpdated(),
                 report.installations().size()) + FirstTimeStartupFlow.placeFailures(report)
                 + CheckFlow.keptReadOnly(report);
+    }
+
+    /**
+     * CREATE: the factory files offered, read off the EDT; the two questions; then the new file and the four preset lines
+     * made one edit not applied (storage.md rule 16). Nothing is written to a file.
+     */
+    private void create() {
+        String title = getText("bindings.create.title");
+        Runnable done = () -> showCreate(createState);
+        create.setEnabled(false);
+        FlowSteps.inBackground("BindForge-Create", log, "CREATE", () -> {
+            Create.Choices choices = Create.choices();
+            if (choices.factories().isEmpty()) {
+                log.warn("CREATE: no factory binds file found; {} installation(s) not reachable",
+                        choices.unreachable().size());
+                return () -> FlowSteps.tell(this, title, getText("bindings.create.noFactory"), done);
+            }
+            return () -> new CreateDialog(this, choices).showDialog().ifPresentOrElse(
+                    answer -> made(answer, title, done), done);
+        }, reason -> () -> FlowSteps.tell(this, title, getText("bindings.create.failed", reason), done),
+                reason -> () -> FlowSteps.tell(this, title, getText("bindings.change.stopped", reason), done), done);
+    }
+
+    /** The user's answer made an edit: the factory file read and changed off the EDT. */
+    private void made(CreateDialog.Answer answer, String title, Runnable done) {
+        FlowSteps.inBackground("BindForge-Create", log, "CREATE", () -> {
+            byte[] factory = Create.read(answer.factory());
+            try {
+                Edits.stored().change((current, applied) -> Create.create(current, applied, answer.name(), factory));
+            } catch (Edits.WriteRunningException e) {
+                log.info("CREATE not made: {}", e.getMessage());
+                return () -> FlowSteps.tell(this, title, getText("bindings.writeRunning"), done);
+            }
+            log.info("CREATE: {} from {}, an edit not applied", answer.name(), answer.factory().file());
+            return null;
+        }, reason -> () -> FlowSteps.tell(this, title, getText("bindings.create.failed", reason), done),
+                reason -> () -> FlowSteps.tell(this, title, getText("bindings.change.stopped", reason), done), done);
     }
 
     private void discard() {

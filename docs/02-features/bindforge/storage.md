@@ -457,3 +457,26 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     a name, pre-filled `Custom`. The new binds file and all four lines of `StartPreset.4.start` pointing at it are
     edits not applied: APPLY writes them and CREATE disappears; DISCARD puts the user back where they started, CREATE
     lit (2026-10-24, Alan). See [overview](overview.md#create--a-new-players-first-binds-file--2026-10-24).
+
+    **Settled with Storage S11's sources (Alan, 2026-11-02):**
+
+    - **"No custom binds file" means the working copy holds no `<name>.<major>.<minor>.binds`.** CREATE is shown while
+      that is so, lit until pressed and dimmed while its file waits for APPLY; the editor tabs are greyed while the
+      edits hold none. Before first-time startup, or while the working copy cannot be read, CREATE is not shown -
+      first-time startup or RESTORE comes first.
+    - **The new file is named with the version on the factory file's root** (`MajorVersion`, `MinorVersion`), else
+      `4.2`, the Live game's: `Custom.4.2.binds`. It only names the file; nothing is decided by it (rule 14, *only the
+      file name's version counts*).
+    - **A factory file in several installations is taken from the first reachable one** - every installation runs one
+      game version. Only reachable installations' factory files are offered; with none, CREATE says so and changes
+      nothing.
+    - **The name is held to the controller name's rule**, compared as it is - ignoring case, `-` and `_` - against every
+      factory BindName and the set's own, so `custom` is refused beside `Custom`.
+    - **The copy is the factory file's bytes with only the root's `PresetName` changed** to the new name, since a file
+      whose `PresetName` differs from its name is not offered ([preset-editor.md](preset-editor.md#the-bindname-list--settled-2026-10-17-alan-p1)).
+      Alan confirmed the game takes such a file (2026-11-02, [testing item 7](../../00-overview/testing-required.md)).
+    - **Decided while building:** a greyed editor tab that is showing gives way to File Manager, so no editor is left on
+      screen with nothing to edit.
+
+    Built in Storage S11 as `bindforge.storage.Create`, `ui.screen.bindings.CreateDialog` and CREATE on `ApplyBar`;
+    `BindingsTabPanel` greys the Bind Editor and Alias Designer tabs (the Preset Editor's joins them at P4).

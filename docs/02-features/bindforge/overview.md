@@ -150,8 +150,8 @@ Controls screen writes a `Custom.#.#.binds` into the *user* folder instead, and 
 the game is overwritten by the next update anyway. Backing them up would archive Frontier's files, which
 Frontier already ships.
 
-**They are still read**, as the templates [First-Time Startup](#create--a-new-players-first-binds-file--2026-10-24) copies a factory binds file
-from. Whether that copy works byte for byte is [testing item 7](../../00-overview/testing-required.md).
+**They are still read**, as the templates [CREATE](#create--a-new-players-first-binds-file--2026-10-24) copies a factory binds file
+from. The copy works with its `PresetName` changed to the new name ([testing item 7](../../00-overview/testing-required.md), answered 2026-11-02).
 
 **The working copy holds whole files.** APPLY writes `DeviceMappings.xml` and the `.buttonMap`s whole to every
 installation, Frontier's entries in `DeviceMappings.xml` with them: every installation runs the same game version,
@@ -280,8 +280,9 @@ A user who already has a custom binds file never sees CREATE; a section still on
 custom one in the Preset Editor. *Until 2026-10-24 this was a prompt asking per section — Create / Choose sections /
 Not now — and before 2026-10-23 it wrote straight into the game's folders.*
 
-Whether a factory file copied byte for byte is a valid custom binds file is still
-[testing item 7](../../00-overview/testing-required.md).
+**A factory file copied with its `PresetName` changed is a valid custom binds file** (Alan, 2026-11-02,
+[testing item 7](../../00-overview/testing-required.md)): the copy keeps every other byte. How it is named and offered
+was settled with Storage S11's sources ([storage.md](storage.md#create--a-new-players-first-binds-file), rule 16).
 
 #### Writes outside Apply — none
 
