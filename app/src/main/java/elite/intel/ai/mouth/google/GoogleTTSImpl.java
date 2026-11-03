@@ -203,7 +203,8 @@ public class GoogleTTSImpl implements MouthInterface {
         try {
             // Google's neural voices use punctuation for intonation, so keep it (no espeak-ng hardening);
             // GoogleSsml turns it into explicit SSML pauses at synthesis time (and normalizes "!" to ".").
-            String text = StringUtls.sanitizeTts(event.getText(), false);
+            // Google has no emotes: a tag would be read out as the word.
+            String text = SpeechEmotes.strip(StringUtls.sanitizeTts(event.getText(), false));
             if (text == null || text.isBlank()) {
                 handle.fail(new IllegalArgumentException("Vocalisation text is blank after TTS sanitization"));
                 return;
@@ -225,7 +226,7 @@ public class GoogleTTSImpl implements MouthInterface {
             }
 
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-            UiBus.publish(new AiResponseLogEvent(event.getText(), event.getSpeaker()));
+            UiBus.publish(new AiResponseLogEvent(SpeechEmotes.strip(event.getText()), event.getSpeaker()));
             log.debug("Added VoiceRequest to queue: text='{}', voice='{}'", event.getText(), voiceName);
         } catch (InterruptedException e) {
             handle.complete();

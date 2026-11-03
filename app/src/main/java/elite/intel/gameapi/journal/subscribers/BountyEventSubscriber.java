@@ -3,6 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaNarrator;
 import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.ai.brain.vega.prompt.VoiceCues;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.db.managers.MissionManager;
@@ -103,10 +104,10 @@ public class BountyEventSubscriber {
         if (event.getVictimFaction() != null && !event.getVictimFaction().isBlank())
             data.append(". Faction: ").append(event.getVictimFaction());
         data.append('.');
-        narrator.narrate(data.toString(),
+        narrator.narrate(data.toString(), VoiceCues.withLaughInvited(
                 "Gloat over the defeated target with one short, sarcastic and vitriolic remark. "
                         + "Mock the dead pilot or their ship, never the commander. One sentence, no profanity. "
-                        + "Do not repeat the bounty amount.");
+                        + "Do not repeat the bounty amount."));
     }
 
     private static List<String> missingIdentityComponents(BountyEvent event) {

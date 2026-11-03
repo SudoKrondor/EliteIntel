@@ -111,4 +111,12 @@ public enum ShipPersonality {
     public String getPersonalityClause() {
         return behaviorClause;
     }
+
+    /**
+     * Whether this personality may sigh, breathe and laugh aloud, where the voice engine can. The military
+     * professional and the drone have no business doing either; every other personality is meant to sound human.
+     */
+    public boolean allowsEmotes() {
+        return this != PROFESSIONAL && this != SEVEN_OF_NINE;
+    }
 }

@@ -39,8 +39,12 @@ public final class VegaSystemPrompt implements SystemPromptText {
         return SystemSession.getInstance().getLanguage().displayName();
     }
 
+    /**
+     * The personality's clause, followed by the voice-cue line when this personality may emote and the voice can
+     * make the sound. Both prompts take it here, so a spoken reply and a narrated event follow the same rule.
+     */
     static String personalityClause() {
-        return SystemSession.getInstance().getAIPersonality().getPersonalityClause();
+        return SystemSession.getInstance().getAIPersonality().getPersonalityClause() + VoiceCues.rule();
     }
 
     /**

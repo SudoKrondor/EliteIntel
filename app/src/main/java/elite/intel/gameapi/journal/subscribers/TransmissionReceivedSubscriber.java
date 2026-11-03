@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.ai.brain.vega.prompt.VoiceCues;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
@@ -110,7 +111,7 @@ public class TransmissionReceivedSubscriber {
     private static void retortToPirateScan(String pirate, String hail) {
         VegaRuntime.narrator().narrateTo(pirate,
                 "Pirate " + pirate + " is scanning our cargo hold and radioed us: \"" + hail + "\"",
-                "One short, sarcastic and vitriolic retort to " + pirate + " about their scan of our hold. "
-                        + "One sentence, no profanity.");
+                VoiceCues.withLaughInvited("One short, sarcastic and vitriolic retort to " + pirate
+                        + " about their scan of our hold. One sentence, no profanity."));
     }
 }

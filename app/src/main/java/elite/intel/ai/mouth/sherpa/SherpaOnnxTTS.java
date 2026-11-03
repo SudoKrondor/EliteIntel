@@ -323,18 +323,28 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
         try {
             String sanitizedText = StringUtls.sanitizeTts(event.getText());
-            if (sanitizedText == null || sanitizedText.isBlank()) {
+            String shownText = SpeechEmotes.strip(sanitizedText);
+            if (shownText.isBlank()) {
                 handle.fail(new IllegalArgumentException("Vocalisation text is blank after TTS sanitization"));
                 return;
             }
+            // WHY never on radio: the emotes are VEGA's, asked for by her personality - a stranger's
+            // transmission has no reason to carry one, and nothing would have asked for it.
+            String spokenText = event.isRadio() ? shownText : SpeechEmotes.voice(sanitizedText);
 
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-            UiBus.publish(new AiResponseLogEvent(sanitizedText, event.getSpeaker()));
+            UiBus.publish(new AiResponseLogEvent(shownText, event.getSpeaker()));
 
-            String[] allSentences = sanitizedText.split(sentenceBoundary());
+            String[] allSentences = spokenText.split(sentenceBoundary());
             List<String> sentences = new ArrayList<>();
             for (String sentence : allSentences) {
-                if (!sentence.isBlank()) sentences.add(sentence);
+                if (sentence.isBlank()) continue;
+                // A laugh after the full stop splits off on its own; it belongs to the sentence it reacts to.
+                if (!sentences.isEmpty() && SpeechEmotes.isEmoteOnly(sentence)) {
+                    sentences.set(sentences.size() - 1, sentences.getLast() + " " + sentence);
+                } else {
+                    sentences.add(sentence);
+                }
             }
             if (sentences.isEmpty()) {
                 handle.fail(new IllegalArgumentException("Vocalisation contains no speakable sentences"));

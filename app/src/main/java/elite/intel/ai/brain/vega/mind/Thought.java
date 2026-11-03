@@ -18,6 +18,7 @@ import elite.intel.ai.brain.vega.prompt.Fact;
 import elite.intel.ai.brain.vega.prompt.PromptXml;
 import elite.intel.ai.brain.vega.tools.SpeakFunction;
 import elite.intel.ai.brain.vega.tools.SystemFunctionResultFields;
+import elite.intel.ai.mouth.SpeechEmotes;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.json.JsonUtils;
@@ -427,7 +428,8 @@ public abstract class Thought {
         if (isStopped() || reply == null || reply.isBlank()) {
             return;
         }
-        MemoryRecord record = MemoryRecord.dialogue(Instant.now(), context.memoryInput(), reply);
+        // WHY stripped: a remembered emote is copied into the next reply, and the next, until every line laughs.
+        MemoryRecord record = MemoryRecord.dialogue(Instant.now(), context.memoryInput(), SpeechEmotes.strip(reply));
         boolean recorded = publishSettlement(() -> dependencies.memoryGateway().write(record));
         if (recorded) {
             VegaDiagnostics.debug(trace, "memory", "record dialogue");
