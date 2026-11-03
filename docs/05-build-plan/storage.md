@@ -172,8 +172,8 @@ S2 makes the working copy, which everything else reads and writes. S3 is File Ma
 only S1 and S2. S4–S6 move each tab onto the bar, S4 first because it carries the most old machinery. S7 closes the
 edit model. S8–S10 are the check, which APPLY then runs. S11 and S12 are new features on top.
 
-**After these:** Preset Editor P4 (S6 done 2026-10-28); Bind Editor E2–E6 (after S5); Alias Designer A19, CLEAR moving bindings
-to a hardware ID (after S4b); A18 and E7 stay blocked on [testing item 27](../00-overview/testing-required.md#bindforge).
+**After
+these:** Preset Editor P4 (S6 done 2026-10-28); Bind Editor E2's sign-off and E3–E6 (after S5); Alias Designer A19, CLEAR moving bindings to a hardware ID (after S4b); what is left of A18 and E7 stays blocked on [testing item 27](../00-overview/testing-required.md#bindforge). Tasks and who takes them: [v1.2-remaining-work.md](v1.2-remaining-work.md).
 
 ## Krondor's review — 2026-10-27
 

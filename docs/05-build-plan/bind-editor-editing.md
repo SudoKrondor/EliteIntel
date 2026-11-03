@@ -25,6 +25,8 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | Which controllers, under which name (E1) | `bindforge.devices.CaptureControllers.all` — connected ones, plus every one the master or the bindings name (click-only when unplugged); the master's name, else Frontier's; unnamed connected ones get a greyed tab |
 | Press-to-capture (E1) | `bindforge.devices.ControllerCapture` — held inputs on any controller become modifiers (up to three); hats as `Joy_POV` tokens. Fed from `DeviceBus` while the dialog is open |
 | Input already held elsewhere (E1) | `bindforge.rules.SlotInputConflicts` — exact chord, same Hold, `isSafeOverlap` contexts. Blocks SAVE |
+| Axis directions on a button slot (mostly E2) | `bindforge.devices.ControllerCapture.axis`, measured from where the axis rests; `ui.dialog.ControllerInputsPanel`'s AXES page, for show only. Built outside this brief by Andrea (`847987878`, 2026-10-25), rest rule from Storage S4R. See [E2](#slices) |
+| Gamepad inputs (part of E7) | `ControllerCapture.gamepadAxis`, `buttonToken`, `gamepadDPadTokens`; `bindforge.devices.GamepadSupport`. Buttons, D-pad and triggers under `GamePad_` tokens; sticks not captured. Same commit |
 | Saving (E1; on the edits since Storage S5) | `ui.support.AssignSelection` — `AssignKeyboardBindingSelection` (keyboard path, unchanged) or `AssignSlotSelection` → `BindingsWriter.assignSlot`, on the binds file's bytes; `BindingProfilePanel.saveSelections` makes them one edit through `BindsEdits.change`, all or none, Hold kept from each slot |
 | Required-by-Vega filter | `BindingProfilePanel.filterVegaOnly`, a footer checkbox beside *Show conflicts only*. It keeps the rows whose AI ACCESS state is not `NOT_USED`, and combines with the conflicts filter and search |
 | Clear column | `ui.dialog.ClearKeyboardBindingDialog` — keyboard slots only, as V1.1 shipped it |
@@ -51,12 +53,11 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 - **Losing Vega's access is a warning, not a
   block** (amber banner above the tabs). The user can save past it. The grid's AI ACCESS column shows the result afterwards.
   *Raise with Alan:* it is the kind of message he says nobody reads.
-- **A gamepad is captured as a joystick** (found 2026-10-23, Krondor). An Xbox pad on `<GamePad>` gets `Joy_N`
-  and hat tokens under `Device="GamePad"`, where the game binds `Pad_…`/`GamePad_…` tokens, so its bindings most likely do nothing in game. E7 fixes it. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
+- **Which tokens a gamepad should get is not
+  measured** (found 2026-10-23, Krondor; updated 2026-11-03). A pad's buttons, D-pad and triggers are captured under `GamePad_` tokens since `847987878`, no longer `Joy_N`, and its sticks are not captured. Whether the game reads those tokens waits on testing item 27. E7 finishes it. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
 - **18 `JOptionPane` uses in the Bind Editor, against hard rule 16** (`HudConfirmDialog`, never `JOptionPane`) - in
   `BindingProfilePanel` (the Auto-Assign confirm and its results among them), `ClearKeyboardBindingDialog.onCleared`
-  and `BindingSaveResultPresenter`. Older than S5; found in the S5/S6 review (Alan, 2026-10-29, D8). Its own item -
-  move them to `HudConfirmDialog` when a slice is in those files, E2 first.
+  and `BindingSaveResultPresenter`. Older than S5; found in the S5/S6 review (Alan, 2026-10-29, D8). Its own item - move them to `HudConfirmDialog` when a slice is in those files, the first one first.
 - **The controller conflict check matches exact chords
   only.** The keyboard check also flags a modifier that another control binds on its own (`shadowedModifier`). Whether that holds for controller buttons is unmeasured.
 
@@ -72,14 +73,18 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | # | Slice | Status |
 |---|---|---|
 | E1 | **Controller buttons and hats in the capture dialog.** The gate is removed, there is a tab per connected controller, capture by press or click, held buttons become modifiers, an input in use blocks SAVE, the AI-access warning shows, and saving goes through `assignSlot` | **done 2026-10-15** |
-| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **next** ([Storage S5](storage.md#slices) done 2026-10-28) |
-| E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, both inline and in the dialog. The AXES page is captured by moving an axis, and saving goes through `assignAxis`. The grid needs the axis-row column shape (spec § *Modifiers, Hold, Inverted, Deadzone*) | ready after E2 |
+| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **capture built, sign-off next** (corrected 2026-11-03). Left: decide whether the page gets the spec's clickable *+* and *−* or the [spec](../02-features/bindforge/bind-editor.md#axis-directions-and-hats-are-button-inputs) is amended, and run it on real hardware |
+| E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, both inline and in the dialog. The AXES page is captured by moving an axis, and saving goes through `assignAxis`. The grid needs the axis-row column shape (spec § *Modifiers, Hold, Inverted, Deadzone*) | ready. `assignAxis` has no caller yet |
 | E4 | **MOUSE tab.** Buttons and the wheel half-axes are chosen, never captured (spec § *MOUSE is chosen, not captured*) | ready |
 | E5 | **Cross-device chords.** A keyboard key with controller buttons held, and a controller input with keyboard modifiers held | ready |
 | E6 | **Game Mode and Settings rows** — the spec's grid modes. Read the spec first: scope the slice before building | not scoped |
-| E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **blocked** on A18 |
+| E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **part built, the rest blocked** on A18 and testing item 27 (updated 2026-11-03): buttons, D-pad and triggers capture today, unmeasured |
 
 ## Hand-off notes — newest first
+
+**2026-11-03, status corrected against the
+code.** E2's capture and part of E7 were built outside this brief (`847987878`, Andrea, 2026-10-25). The rows above now say so. The work left and how it is split are in
+[v1.2-remaining-work.md](v1.2-remaining-work.md).
 
 **2026-10-29, Storage S6R tidied this screen.** One failure message for a change the edits could not take
 (`bindings.change.failed`; `BindingSaveResult.WRITE_FAILED` gone); `ClearOutcome` says `CLEARED`, `REFUSED` or

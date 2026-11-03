@@ -1258,8 +1258,11 @@ generated labels all need to.
 
 ### A gamepad is not a joystick — found 2026-10-23 (Krondor)
 
-**Not built. A design to settle before [A18](../../05-build-plan/alias-designer.md#slices) and
-[E7](../../05-build-plan/bind-editor-editing.md#slices).** A tester reported in the dev chat that the Device Editor *"
+**Partly built, checked 2026-11-03; the rest is a design to settle
+before [A18](../../05-build-plan/alias-designer.md#slices) and
+[E7](../../05-build-plan/bind-editor-editing.md#slices).** The table below is what was found on 2026-10-23, with its capture rows since changed;
+*Settled
+2026-10-27* below says what the capture dialog does now. A tester reported in the dev chat that the Device Editor *"
 doesn't recognize my Xbox controller
 triggers"*. Krondor has no Xbox pad; this was worked out from the code and from Frontier's shipped presets, not on hardware.
 
@@ -1281,8 +1284,8 @@ vocabulary.** The game does not bind a pad on `<GamePad>` by `Joy_` tokens: it w
 
 | Where | What happens with a pad on `<GamePad>` | Cost |
 |---|---|---|
-| Capture dialog (E1) | a button press is captured as `Joy_N`, the D-pad as `Joy_POVnUp`… and written under `GamePad` | **a binding the game most likely ignores** — not measured |
-| Capture dialog, triggers | axes are not captured at all until E2/E3 | a trigger cannot be bound as a button |
+| Capture dialog (E1) | ~~a button press is captured as `Joy_N`, the D-pad as `Joy_POVnUp`… and written under `GamePad`~~ *Changed 2026-10-25: `GamePad_` tokens* | ~~**a binding the game most likely ignores**~~ whether the game reads the new tokens is still not measured |
+| Capture dialog, triggers | ~~axes are not captured at all until E2/E3~~ *Changed 2026-10-25: captured under their own tokens* | ~~a trigger cannot be bound as a button~~ |
 | Device Editor (A9) | `Joy_` label boxes for a device the game draws itself ([`gameDrawsIt`](#default-labels-for-every-connected-named-controller)) | labels that never show in game |
 | Device Editor lights | axes unknown, so nothing is lit | the reported bug |
 
@@ -1293,7 +1296,10 @@ which of its own tokens the game writes for half a stick. So the capture dialog 
 (`ControllerCapture.gamepadAxis`), and nothing is guessed into a binds file. The answers to the open questions below
 decide what replaces this.
 
-**Proposed (Krondor, 2026-10-23) — to settle with Alan before building:**
+**Proposed (Krondor, 2026-10-23) — to settle with Alan before building.** *Checked 2026-11-03: not built as proposed.
+`DeviceService` tells a pad by its joystick type and does not read it through SDL's Gamepad API, so there are no gamepad
+events, and the Device Editor has no read-only view for a pad. The token table exists only as far as `ControllerCapture`
+goes above.*
 
 - **Read a gamepad as a
   gamepad.** When `SDL_IsGamepad` holds, `DeviceService` also opens it with SDL's Gamepad API and polls its named inputs (`SDL_GetGamepadAxis`, `SDL_GetGamepadButton`): south/east/west/north, the bumpers, both sticks and thumbs, both triggers, the D-pad, back and start. They are published as new gamepad events keyed by a `devices.model` enum. The raw joystick events go on as now, so the input monitor and push-to-talk are unchanged. The flag is a lookup, `DeviceService.isGamepad(id)`, like `description(id)` — not a widened `Device`. In this API a trigger runs 0 to 32767 and rests at 0.

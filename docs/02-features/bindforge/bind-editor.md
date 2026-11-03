@@ -68,13 +68,13 @@ cross-verified section/subgroup/action inventory.
 
 ### What Game Mode still needs
 
-| Addition | Where it is specified |
-|---|---|
-| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) |
-| The 93 **settings entries**, which appear nowhere today | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) |
-| The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) |
-| Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) |
-| The in-game name and the XML tag in the capture dialog | [What the dialog shows](#what-the-dialog-shows) |
+| Addition | Where it is specified | State, checked against the code 2026-11-03 |
+|---|---|---|
+| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) | **Partly built:** keyboard, buttons, hats and axis directions. Axis rows, mouse and cross-device chords are E3-E5 |
+| The 93 **settings entries**, which appear nowhere today | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) | **Not built** (E6) |
+| The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) | **Built**, as AI ACCESS |
+| Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) | **Not built:** the action name still carries the status for the whole row (`BindingSlotCellRenderer`). FN-1 fixed the scan, not the colouring |
+| The in-game name and the XML tag in the capture dialog | [What the dialog shows](#what-the-dialog-shows) | **Built** (E1) |
 
 ### Settings entries are rows too — settled 2026-09-16
 
@@ -649,6 +649,13 @@ and real files use it: `DualVirpilDawnTreader.4.1.binds` puts `Neg_Joy_YAxis` on
 slot and `Neg_Joy_RYAxis` on Toggle HUD. The AXIS DIRECTIONS page offers a *+* and a *−* for every axis the
 device reports.
 
+**Built differently, checked 2026-11-03 -
+undecided.** Capturing a direction by moving the axis works and is tested (`ControllerCapture.axis`, Andrea's `847987878`, 2026-10-25, with the rest rule below from Storage S4R). The page is not what this section describes: the controller tab has an AXES page with
+**one cell per axis, for show only**
+(`ControllerInputsPanel`), so there is no *+* or
+*−* to click, and a user without the hardware attached cannot pick a direction. Either build the two cells or amend this section; [E2](../../05-build-plan/bind-editor-editing.md#slices)
+holds the question.
+
 **An axis is captured by how far it moves from where it rests, not from centre** (Alan, 2026-10-27, from Krondor's
 storage review; Storage S4R). Measured from centre, a throttle, slider or toe brake resting at one end was captured as
 soon as it jittered. Where an axis rests is the first value reported after capture begins, the same rule as the
@@ -724,9 +731,9 @@ still holds one name, and making it a list is what remains.*
 | ~~**A HOTAS slot never opens the dialog.**~~ **Closed 2026-10-15 (E1):** the gate is gone; a slot the writer cannot parse is refused at SAVE | `BindingProfilePanel.openAssignKeyboardBindingDialog` | — |
 | ~~**The dialog says keyboard throughout**~~ **Closed 2026-10-15 (E1):** *Assign control*, *New input*; the KEYBOARD tab keeps *New key*. The class name is unchanged | `bindings.assign.*` in the seven `gui*.properties` bundles | — |
 | ~~**Hats cannot be captured.**~~ **Closed 2026-10-15 (E1):** `DeviceHatEvent` (polled since A9) through `ControllerCapture` to `Joy_POVnUp`…`Left` | `elite.intel.devices`, `bindforge.devices.ControllerCapture` | — |
-| **U and V axes cannot be captured.** `AXIS_TOKENS` is exactly X, Y, Z, RX, RY, RZ, so a panel's A1/A2 dials make `axisToBindsToken` throw | ~~`ButtonInputMapper`~~ the capture dialog | ~~the token list grows to `Joy_UAxis` and `Joy_VAxis`~~ the dialog maps SDL's axis through `devices.hid.AxisSlots` to `GameAxis`, which names all eight. **Corrected 2026-10-12 (Alan, Foundation F5 withdrawn):** `axisToBindsToken` has no caller on either line, and taking SDL's axis number as the slot is wrong whenever a controller skips a slot — `AxisSlots` matches them by DirectInput slot. No V1.1 file changes |
+| ~~**U and V axes cannot be captured.**~~ **Closed for axis directions, checked 2026-11-03:** the dialog takes each axis from the controller's description as a `GameAxis`, and the writer takes `Pos_Joy_UAxis` and the like. A whole axis waits for E3. *As found:* `AXIS_TOKENS` is exactly X, Y, Z, RX, RY, RZ, so a panel's A1/A2 dials make `axisToBindsToken` throw | ~~`ButtonInputMapper`~~ the capture dialog | ~~the token list grows to `Joy_UAxis` and `Joy_VAxis`~~ the dialog maps SDL's axis through `devices.hid.AxisSlots` to `GameAxis`, which names all eight. **Corrected 2026-10-12 (Alan, Foundation F5 withdrawn):** `axisToBindsToken` has no caller on either line, and taking SDL's axis number as the slot is wrong whenever a controller skips a slot — `AxisSlots` matches them by DirectInput slot. No V1.1 file changes |
 | ~~**SELECTED BINDING shows the raw tag**~~ **Closed 2026-10-15 (E1):** the title is the in-game name, with CONTROL and XML BINDING beneath | `AssignKeyboardBindingDialog.buildUi` | — |
-| **A gamepad is captured as a joystick** (found 2026-10-23, Krondor). A pad on `<GamePad>` gets `Joy_N` and `Joy_POVn…` tokens under `Device="GamePad"`, where the game binds `Pad_…`/`GamePad_…` tokens; its triggers cannot be captured at all | `ControllerCapture`, `ControllerInputsPanel` | E7 — [A gamepad is not a joystick](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) |
+| ~~**A gamepad is captured as a joystick**~~ (found 2026-10-23, Krondor). **Partly closed, checked 2026-11-03:** Andrea's `847987878` captures a pad's buttons, D-pad and triggers under `GamePad_` tokens, and its sticks are not captured (Storage S4R). Whether the game reads those tokens is still unmeasured. *As found:* a pad on `<GamePad>` got `Joy_N` and `Joy_POVn…` tokens under `Device="GamePad"`, where the game binds `Pad_…`/`GamePad_…` tokens, and its triggers could not be captured at all | `ControllerCapture`, `ControllerInputsPanel` | E7, on testing item 27 — [A gamepad is not a joystick](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) |
 
 ### Open items — capture dialog
 
@@ -1126,6 +1133,10 @@ grid, for the same reason: two lists that can drift are two bugs waiting.*
 drives controls, not sliders. No capture button, no Primary/Secondary, no conflict state: a setting has no
 input to collide with. The shell's Search reaches it like every other list.
 
+*Corrected 2026-11-03: the paragraph below assumes the inline rows exist. They do not yet: nothing shows a settings
+entry, and `BindingsWriter` has no method that writes one. This tab is cheap only
+once [E6](../../05-build-plan/bind-editor-editing.md#slices) has built them.*
+
 **It fits a trimmed release because it costs almost nothing.** The editors, the value shapes and the
 [vocabularies](reference-data/settings-choice-fields.md) are all built for the inline rows already. This tab is
 a second view over them — which is the only kind of tab worth adding to a mode bar that was just cut to
@@ -1432,7 +1443,7 @@ same `BindingConflictRules.isSafeOverlap()` underneath and diverge in scope:
 | # | Path | Scope |
 |---|---|---|
 | 1 | **Database / voice / log** — `BindingsMonitor.checkForConflictsAndPersist()` → `binding_conflicts` table, driven by `KeyBindCheck` | Narrow. Filters to pairs touching a control Elite-Intel drives, deliberately, to keep the spoken warning quiet. |
-| 2 | **The Binding Profile UI** — `BindingProfilePanel` calls `BindingConflictScanner.scan()` directly | Broad. Every conflict the scanner finds, unfiltered. |
+| 2 | **The Binding Profile UI** — `BindingProfilePanel` calls `BindingConflictScanner.scanReadOnlySlots()` directly (`scan()` until 2026-10-31) | Broad. Every conflict the scanner finds, unfiltered, on every slot in the file. |
 | 3 | **The assign dialog and keyboard map** — `candidateConflict()` | Per-candidate. Colours each key while a user is choosing one. |
 
 **The screen a user actually looks at does not read the database at all.** Only `BindingsMonitor`,
@@ -1446,12 +1457,14 @@ than a second computation arriving at a different answer to "is this a conflict"
 a filtering decision into the computation path, which is the SRP/DRY objection
 Elite-Intel's own `CODING_STANDARD.md` raises directly.
 
-### Known scanner defects — FN-1 fixed, three still open
+### Known scanner defects — all four fixed
+
+**Updated 2026-11-03: all four are
+fixed.** FP-1 in `c2f287996` (2026-10-02); FP-3 and FN-6 in `e43d73196` (2026-10-31), each with tests in `BindingConflictScannerTest` and `BindingConflictPipelineTest`. What follows is the record of the defects as they were found.
 
 **Updated 2026-09-20: FN-1 is fixed** — shipped in the V1.1 maintenance line and merged into
-`V1.2-BindForge` the same day. See [FN-1 in detail](#fn-1-in-detail--scoped-2026-09-12) for what shipped and
-where the build departed from the design. **FP-1, FP-3 and FN-6 are still open**, and nothing below about
-them has changed.
+`V1.2-BindForge` the same day. See [FN-1 in detail](#fn-1-in-detail--scoped-2026-09-12) for what shipped and where the build departed from the design.
+~~**FP-1, FP-3 and FN-6 are still open**, and nothing below about them has changed.~~
 
 *As recorded before the fix:* **All four are live work rather than history.** FN-1, FP-1 and FP-3 were each confirmed against the game
 itself rather than suspected, and verified against the code on 2026-09-09. FN-6 was a suspicion until
@@ -1466,11 +1479,13 @@ change.** FN-6, never checked before, is now confirmed rather than suspected.
 | ID | Defect | What the game actually does | Still open? |
 |---|---|---|---|
 | **FN-1** | **Secondary-slot blindness.** One slot per action is kept and the other discarded before any conflict check runs. | Treats a Secondary-vs-Primary collision as **a real conflict**. | **No — fixed 2026-09-20.** The scan keys each chord by action *and* slot, so both slots are compared. `toKeysets()` is gone. |
-| **FP-1** | **Hold and tap are not part of combo identity.** | Does **not** warn when a hold-bound and a tap-bound action share a key. | **Yes.** `buildKeyset()` and `keysetOf()` read `key` and `modifiers` only — never `hold`, although `KeyBinding` carries it. |
-| **FP-3** | **Sub-state over-suppression.** Any `ExplorationFSS*` / `ExplorationSAA*` action is blanket-treated as safe. | **Does** warn — `ExplorationFSSEnter` sharing a key with `DeployHardpointToggle` is a genuine conflict. | **Yes.** `isSubStateModeAction()` still matches on those prefixes and `isSafeOverlap()` returns true for either side. |
-| **FN-6** | **A non-keyboard modifier drops the whole slot.** Not just the modifier — the entire binding never reaches the conflict map. | Warns normally; the chord exists as far as the game is concerned. | **Yes, and confirmed 2026-09-12** — no longer a suspicion. `isKeyboardUsable()` requires the main key be `Keyboard` **and every modifier** be `Keyboard`, so one HOTAS modifier voids the slot. |
+| **FP-1** | **Hold and tap are not part of combo identity.** | Does **not** warn when a hold-bound and a tap-bound action share a key. | **No — fixed 2026-10-02.** Each slot now carries its Hold, and a press and a hold on one chord are not reported as a clash. |
+| **FP-3** | **Sub-state over-suppression.** Any `ExplorationFSS*` / `ExplorationSAA*` action is blanket-treated as safe. | **Does** warn — `ExplorationFSSEnter` sharing a key with `DeployHardpointToggle` is a genuine conflict. | **No — fixed 2026-10-31.** `isScannerScreenControl` goes by the group the game lists a control under, not the prefix, so `ExplorationFSSEnter` is no longer excused. |
+| **FN-6** | **A non-keyboard modifier drops the whole slot.** Not just the modifier — the entire binding never reaches the conflict map. | Warns normally; the chord exists as far as the game is concerned. | **No — fixed 2026-10-31.** The Bindings tab scans the whole file through `scanReadOnlySlots`, and a controller modifier is named with its device. **What is still not scanned:** a slot whose main input is on a controller, so a clash between two controller inputs is not reported here. |
 
-**FN-6 in full, since it was the unknown.** The gate is `isKeyboardUsable(device, key, modifiers)`:
+**FN-6 in full, since it was the unknown.** *Fixed 2026-10-31 as this section proposes: the execution gate stays where
+it is for the spoken warning, and the editor reads the full file. The rest of this section is the defect as recorded.*
+The gate is `isKeyboardUsable(device, key, modifiers)`:
 a keyboard main key **plus** `modifiers.stream().allMatch(m -> "Keyboard".equals(m.device()))`. A slot
 failing it becomes `null` in `toExecutableBinding()`, so `parseBindings()` falls through to the other
 slot — or drops the action entirely when neither survives. **Shift+Joystick_1 on a keyboard key is not
@@ -1642,6 +1657,9 @@ each on `ReservedKeyChords` and `UiNavigationTextTrap`, one duplicate removed fr
 and one decision for Krondor about the spoken warning. An earlier version said *"the scanner and its
 callers"*; the audit found the two detectors. **Still no schema change, still no test assertions
 rewritten** — which is what keeps FN-1 a reasonable first slice rather than a refactor to be feared.
+
+*Updated 2026-11-03:* FP-3's recorded case is fixed, and the two scanner prefixes are gone. `Wheel`, `MultiCrew`,
+`Store` and `Cam` are still on the list, now with a reason beside most of them in `isSubStateModeAction`. Nothing has tested them against the game since this note was written, so the paragraph below stands for those four.
 
 **FP-3's suppression list has grown since it was first recorded**, now also matching `Wheel`, `MultiCrew`,
 `Store` and anything containing `Cam`. Each addition widens a rule already known to be too broad. The fix
