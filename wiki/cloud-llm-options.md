@@ -52,12 +52,20 @@ Cost will be different depending on which Cloud service you choose, and how long
 4. Go to **API Keys** and create a key.
 5. In **Settings → AI Services → Cloud Setup**, pick **Anthropic (Claude)** as the provider, paste the key into **API Key**, tick **Locked**, press **Save**, then start or restart services on the Vega tab.
 
+### Option D: Google Gemini API Key
+1. Go to [Google AI Studio](https://aistudio.google.com/api-keys) and sign in with your Google account.
+2. Click the **key icon** at the bottom left.
+3. Click **Create API key**. If it asks you to create a project, create one with any name you like.
+4. It will ask for a payment (billing) account. Your Google account can be used for this.
+5. Copy the key.
+6. In **Settings → AI Services → Cloud Setup**, pick **Google (Gemini)** as the provider, paste the key into **API Key**, tick **Locked**, press **Save**, then start or restart services on the Vega tab.
+
 ### Getting a Google TTS Key
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
 2. Sign in or create an account.
 3. Create a new project.
-4. Enable the **Generative Language API** for LLM and/or **Cloud Text-to-Speech API** for TTS.
+4. Enable the **Cloud Text-to-Speech API**.
 5. Go to **Credentials**, create an API key, and copy it.
 6. **Restrict the key**: Click the key you just created. On the key detail page, click **Restrict key**. A dropdown appears. Check each API you enabled (STT and/or TTS), then click **Save**.
 7. Paste the key into **Settings → AI Services → Speech (TTS) → Google TTS Key**, tick **Locked**, and press **Save**.

@@ -52,12 +52,20 @@ Die Kosten hängen davon ab, welchen Cloud-Dienst du wählst und wie lange du sp
 4. Gehe zu **API Keys** und erstelle einen Schlüssel.
 5. Wähle unter **Einstellungen → KI-Dienste → Cloud-Einrichtung** den Anbieter **Anthropic (Claude)**, füge den Schlüssel in **API-Schlüssel** ein, setze den Haken bei **Gesperrt**, drücke **Speichern** und starte dann die Dienste im Reiter Vega (neu).
 
+### Option D: Google-Gemini-API-Schlüssel
+1. Gehe zu [Google AI Studio](https://aistudio.google.com/api-keys) und melde dich mit deinem Google-Konto an.
+2. Klicke unten links auf das **Schlüssel-Symbol**.
+3. Klicke auf **Create API key**. Falls du aufgefordert wirst, ein Projekt zu erstellen, erstelle eines mit einem beliebigen Namen.
+4. Du wirst nach einem Zahlungskonto (Billing) gefragt. Dafür kannst du dein Google-Konto verwenden.
+5. Kopiere den Schlüssel.
+6. Wähle unter **Einstellungen → KI-Dienste → Cloud-Einrichtung** den Anbieter **Google (Gemini)**, füge den Schlüssel in **API-Schlüssel** ein, setze den Haken bei **Gesperrt**, drücke **Speichern** und starte dann die Dienste im Reiter Vega (neu).
+
 ### Einen Google-TTS-Schlüssel besorgen
 
 1. Gehe zur [Google Cloud Console](https://console.cloud.google.com/).
 2. Melde dich an oder erstelle ein Konto.
 3. Erstelle ein neues Projekt.
-4. Aktiviere die **Generative Language API** für das LLM und/oder die **Cloud Text-to-Speech API** für TTS.
+4. Aktiviere die **Cloud Text-to-Speech API**.
 5. Gehe zu **Credentials**, erstelle einen API-Schlüssel und kopiere ihn.
 6. **Schränke den Schlüssel ein**: Klicke auf den eben erstellten Schlüssel. Klicke auf der Detailseite auf **Restrict key**. Eine Auswahlliste erscheint. Hake jede API an, die du aktiviert hast (STT und/oder TTS), und klicke auf **Save**.
 7. Füge den Schlüssel unter **Einstellungen → KI-Dienste → Sprache (TTS) → Google-TTS-Schlüssel** ein, setze den Haken bei **Gesperrt** und drücke **Speichern**.

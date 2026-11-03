@@ -165,12 +165,21 @@ choisissez pas de modèle : Elite Intel le sélectionne pour votre fournisseur :
 <li>Allez dans <strong>API Keys</strong> et créez une clé.</li>
 <li>Dans <strong>Paramètres → Services IA → Configuration cloud</strong>, choisissez <strong>Anthropic (Claude)</strong> comme fournisseur, collez la clé dans <strong>Clé API</strong>, cochez <strong>Verrouillé</strong>, cliquez sur <strong>Enregistrer</strong>, puis démarrez ou redémarrez les services dans l&#39;onglet Vega.</li>
 </ol>
+<h3>Option D : clé API Google Gemini</h3>
+<ol>
+<li>Allez sur <a href="https://aistudio.google.com/api-keys">Google AI Studio</a> et connectez-vous avec votre compte Google.</li>
+<li>Cliquez sur l&#39;<strong>icône de clé</strong> en bas à gauche.</li>
+<li>Cliquez sur <strong>Create API key</strong>. S&#39;il vous demande de créer un projet, créez-en un avec le nom de votre choix.</li>
+<li>Un compte de paiement (facturation) vous sera demandé. Vous pouvez utiliser votre compte Google.</li>
+<li>Copiez la clé.</li>
+<li>Dans <strong>Paramètres → Services IA → Configuration cloud</strong>, choisissez <strong>Google (Gemini)</strong> comme fournisseur, collez la clé dans <strong>Clé API</strong>, cochez <strong>Verrouillé</strong>, cliquez sur <strong>Enregistrer</strong>, puis démarrez ou redémarrez les services dans l&#39;onglet Vega.</li>
+</ol>
 <h3>Obtenir une clé Google TTS</h3>
 <ol>
 <li>Allez sur la <a href="https://console.cloud.google.com/">Google Cloud Console</a>.</li>
 <li>Connectez-vous ou créez un compte.</li>
 <li>Créez un nouveau projet.</li>
-<li>Activez la <strong>Generative Language API</strong> pour le LLM et/ou la <strong>Cloud Text-to-Speech API</strong> pour le TTS.</li>
+<li>Activez la <strong>Cloud Text-to-Speech API</strong>.</li>
 <li>Allez dans <strong>Credentials</strong>, créez une clé API et copiez-la.</li>
 <li><strong>Restreignez la clé</strong> : cliquez sur la clé que vous venez de créer. Sur la page de détails, cliquez sur <strong>Restrict key</strong>. Une liste déroulante apparaît. Cochez chaque API que vous avez activée (STT et/ou TTS), puis cliquez sur <strong>Save</strong>.</li>
 <li>Collez la clé dans <strong>Paramètres → Services IA → Voix (TTS) → Clé Google TTS</strong>, cochez <strong>Verrouillé</strong> et cliquez sur <strong>Enregistrer</strong>.</li>

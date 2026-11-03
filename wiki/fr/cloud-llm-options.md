@@ -52,12 +52,20 @@ Le coût dépend du service cloud choisi et de votre temps de jeu.
 4. Allez dans **API Keys** et créez une clé.
 5. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **Anthropic (Claude)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé**, cliquez sur **Enregistrer**, puis démarrez ou redémarrez les services dans l'onglet Vega.
 
+### Option D : clé API Google Gemini
+1. Allez sur [Google AI Studio](https://aistudio.google.com/api-keys) et connectez-vous avec votre compte Google.
+2. Cliquez sur l'**icône de clé** en bas à gauche.
+3. Cliquez sur **Create API key**. S'il vous demande de créer un projet, créez-en un avec le nom de votre choix.
+4. Un compte de paiement (facturation) vous sera demandé. Vous pouvez utiliser votre compte Google.
+5. Copiez la clé.
+6. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **Google (Gemini)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé**, cliquez sur **Enregistrer**, puis démarrez ou redémarrez les services dans l'onglet Vega.
+
 ### Obtenir une clé Google TTS
 
 1. Allez sur la [Google Cloud Console](https://console.cloud.google.com/).
 2. Connectez-vous ou créez un compte.
 3. Créez un nouveau projet.
-4. Activez la **Generative Language API** pour le LLM et/ou la **Cloud Text-to-Speech API** pour le TTS.
+4. Activez la **Cloud Text-to-Speech API**.
 5. Allez dans **Credentials**, créez une clé API et copiez-la.
 6. **Restreignez la clé** : cliquez sur la clé que vous venez de créer. Sur la page de détails, cliquez sur **Restrict key**. Une liste déroulante apparaît. Cochez chaque API que vous avez activée (STT et/ou TTS), puis cliquez sur **Save**.
 7. Collez la clé dans **Paramètres → Services IA → Voix (TTS) → Clé Google TTS**, cochez **Verrouillé** et cliquez sur **Enregistrer**.
