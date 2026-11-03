@@ -4,6 +4,7 @@ import elite.intel.i18n.Language;
 import elite.intel.util.SignedAndDecimalNumbers;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,6 +16,11 @@ final class SupertonicTextNormalizer {
 
     // Long uppercase words are emphasis, not acronyms: "RIATTIVA" must stay one word.
     private static final Pattern UPPERCASE_ACRONYM = Pattern.compile("(?<![\\p{L}])([A-Z]{2,4})(?![\\p{L}])");
+    private static final Pattern MARK_NUMBER = Pattern.compile(
+            "(?i)(?<![\\p{L}\\p{M}\\p{N}_])mk\\s*(III|IV|II|I|V)(?![\\p{L}\\p{M}\\p{N}_])");
+    private static final Pattern ELITE_RANK_NUMBER = Pattern.compile(
+            "(?<![\\p{L}\\p{M}\\p{N}_])((?iu:elite|élite|элита|еліта)\\s+)"
+                    + "(III|IV|II|I|V)(?![\\p{L}\\p{M}\\p{N}_])");
     private static final Pattern ITALIAN_CLASS_LETTER =
             Pattern.compile("(?i)(?<=\\bclasse\\s)([A-Z])(?![\\p{L}])");
     private static final Pattern DECIMAL_WITH_UNIT = Pattern.compile(
@@ -63,7 +69,9 @@ final class SupertonicTextNormalizer {
     }
 
     static String normalize(String text, Language language) {
-        String withSectorCodes = sectorCodesInWords(text, language);
+        String withMarkNumbers = markNumbersInWords(text, language);
+        String withEliteRanks = eliteRankNumbersInWords(withMarkNumbers);
+        String withSectorCodes = sectorCodesInWords(withEliteRanks, language);
         String withSpokenCodes = letterHyphenatedNumbersInWords(withSectorCodes, language);
         String withGroupedNumbers = groupedNumbersInWords(withSpokenCodes, language);
         String withDecimalUnits = decimalUnitsInWords(withGroupedNumbers, language);
@@ -87,6 +95,38 @@ final class SupertonicTextNormalizer {
             return withClassLetters.toString();
         }
         return result.toString();
+    }
+
+    private static String markNumbersInWords(String text, Language language) {
+        Matcher matcher = MARK_NUMBER.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String number = romanRankNumber(matcher.group(1));
+            matcher.appendReplacement(result, Matcher.quoteReplacement(spokenLetters("MK", language) + " " + number));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String eliteRankNumbersInWords(String text) {
+        Matcher matcher = ELITE_RANK_NUMBER.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(1) + romanRankNumber(matcher.group(2))));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String romanRankNumber(String roman) {
+        return switch (roman.toUpperCase(Locale.ROOT)) {
+            case "I" -> "1";
+            case "II" -> "2";
+            case "III" -> "3";
+            case "IV" -> "4";
+            case "V" -> "5";
+            default -> throw new IllegalStateException("Unexpected Roman numeral: " + roman);
+        };
     }
 
     private static String commaDecimalsInWords(String text, Language language) {

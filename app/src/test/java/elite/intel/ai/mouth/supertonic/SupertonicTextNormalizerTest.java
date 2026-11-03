@@ -31,6 +31,63 @@ class SupertonicTextNormalizerTest {
     }
 
     @Test
+    void spellsMarkNumbersInEverySupportedLanguage() {
+        assertEquals("em kay one, em kay two", SupertonicTextNormalizer.normalize("MK I, MK II", Language.EN));
+        assertEquals("emm kah eins, emm kah zwei", SupertonicTextNormalizer.normalize("MK I, MK II", Language.DE));
+        assertEquals("emme ka un, emme ka deux", SupertonicTextNormalizer.normalize("MK I, MK II", Language.FR));
+        assertEquals("eme ka uno, eme ka dos", SupertonicTextNormalizer.normalize("MK I, MK II", Language.ES));
+        assertEquals("emme cappa uno, emme cappa due", SupertonicTextNormalizer.normalize("MK I, MK II", Language.IT));
+        assertEquals("eme capa um, eme capa dois", SupertonicTextNormalizer.normalize("MK I, MK II", Language.PT));
+        assertEquals("eme cá um, eme cá dois", SupertonicTextNormalizer.normalize("MK I, MK II", Language.PTBZ));
+        assertEquals("эм ка один, эм ка два", SupertonicTextNormalizer.normalize("MK I, MK II", Language.RU));
+        assertEquals("ем ка один, ем ка два", SupertonicTextNormalizer.normalize("MK I, MK II", Language.UK));
+    }
+
+    @Test
+    void spellsShipMarkNumbersWithOrWithoutSpacesAndRegardlessOfCase() {
+        assertEquals("Kestrel em kay two, Krait em kay two, Cobra em kay three, Viper em kay four, "
+                        + "Cobra em kay five.",
+                SupertonicTextNormalizer.normalize(
+                        "Kestrel Mk II, Krait MkII, Cobra MkIII, Viper MKIV, Cobra mkv.", Language.EN));
+    }
+
+    @Test
+    void doesNotMatchPartsOfLongerWordsOrUnsupportedRomanNumerals() {
+        assertEquals("remark MkIIx MkII2 _MkII MkII_ MkVI",
+                SupertonicTextNormalizer.normalize("remark MkIIx MkII2 _MkII MkII_ MkVI", Language.EN));
+        assertEquals("em kay vee eye eye eye",
+                SupertonicTextNormalizer.normalize("MK VIII", Language.EN));
+    }
+
+    @Test
+    void spellsEliteRanksInEverySupportedLanguage() {
+        assertEquals("Elite one, Elite two", SupertonicTextNormalizer.normalize("Elite I, Elite II", Language.EN));
+        assertEquals("Elite eins, Elite zwei", SupertonicTextNormalizer.normalize("Elite I, Elite II", Language.DE));
+        assertEquals("Élite un, Élite deux", SupertonicTextNormalizer.normalize("Élite I, Élite II", Language.FR));
+        assertEquals("Élite uno, Élite dos", SupertonicTextNormalizer.normalize("Élite I, Élite II", Language.ES));
+        assertEquals("Elite uno, Elite due", SupertonicTextNormalizer.normalize("Elite I, Elite II", Language.IT));
+        assertEquals("Elite um, Elite dois", SupertonicTextNormalizer.normalize("Elite I, Elite II", Language.PT));
+        assertEquals("Elite um, Elite dois", SupertonicTextNormalizer.normalize("Elite I, Elite II", Language.PTBZ));
+        assertEquals("Элита один, Элита два", SupertonicTextNormalizer.normalize("Элита I, Элита II", Language.RU));
+        assertEquals("Еліта один, Еліта два", SupertonicTextNormalizer.normalize("Еліта I, Еліта II", Language.UK));
+    }
+
+    @Test
+    void spellsAllEliteRanksAndKeepsTheUnnumberedRank() {
+        assertEquals("Elite, Elite one, Elite two, Elite three, Elite four, ELITE five.",
+                SupertonicTextNormalizer.normalize(
+                        "Elite, Elite I, Elite II, Elite III, Elite IV, ELITE V.", Language.EN));
+        assertEquals("élite три, ÉLITE четыре, ЭЛИТА пять",
+                SupertonicTextNormalizer.normalize("élite III, ÉLITE IV, ЭЛИТА V", Language.RU));
+    }
+
+    @Test
+    void doesNotTreatOtherWordsOrIncompleteEliteRankMatchesAsRanks() {
+        assertEquals("Superelite IIx, Elite i piloti, Elite IIx, Elite vi i",
+                SupertonicTextNormalizer.normalize("Superelite IIx, Elite i piloti, Elite IIx, Elite VI", Language.IT));
+    }
+
+    @Test
     void spellsNumbersInHyphenatedSystemCodes() {
         assertEquals("see twelve dash thirty-four",
                 SupertonicTextNormalizer.normalize("c12-34", Language.EN));
