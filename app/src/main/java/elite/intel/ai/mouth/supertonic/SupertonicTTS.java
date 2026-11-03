@@ -28,6 +28,8 @@ import java.util.function.Consumer;
  */
 public class SupertonicTTS extends SherpaOnnxTTS {
 
+    // WHY not after "Mk.": the split runs before the normalizer, which must see "Cobra Mk. III" whole to read the mark.
+    static final String SENTENCE_BOUNDARY = "(?<=[.!?])(?<!(?iu:mk|мк)\\.)\\s+(?=\\S)";
     private static final int NUM_STEPS = 10;
     private static final float SPEED_MULTIPLIER = 0.85f;
 
@@ -90,7 +92,7 @@ public class SupertonicTTS extends SherpaOnnxTTS {
      */
     @Override
     protected String sentenceBoundary() {
-        return "(?<=[.!?])\\s+(?=\\S)";
+        return SENTENCE_BOUNDARY;
     }
 
     @Override

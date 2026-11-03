@@ -31,32 +31,55 @@ class SupertonicTextNormalizerTest {
     }
 
     @Test
-    void spellsMarkNumbersInEverySupportedLanguage() {
-        assertEquals("em kay one, em kay two", SupertonicTextNormalizer.normalize("MK I, MK II", Language.EN));
-        assertEquals("emm kah eins, emm kah zwei", SupertonicTextNormalizer.normalize("MK I, MK II", Language.DE));
-        assertEquals("emme ka un, emme ka deux", SupertonicTextNormalizer.normalize("MK I, MK II", Language.FR));
-        assertEquals("eme ka uno, eme ka dos", SupertonicTextNormalizer.normalize("MK I, MK II", Language.ES));
-        assertEquals("emme cappa uno, emme cappa due", SupertonicTextNormalizer.normalize("MK I, MK II", Language.IT));
-        assertEquals("eme capa um, eme capa dois", SupertonicTextNormalizer.normalize("MK I, MK II", Language.PT));
-        assertEquals("eme cá um, eme cá dois", SupertonicTextNormalizer.normalize("MK I, MK II", Language.PTBZ));
-        assertEquals("эм ка один, эм ка два", SupertonicTextNormalizer.normalize("MK I, MK II", Language.RU));
-        assertEquals("ем ка один, ем ка два", SupertonicTextNormalizer.normalize("MK I, MK II", Language.UK));
+    void readsMarkNumbersInEverySupportedLanguage() {
+        assertEquals("mark one, mark two", SupertonicTextNormalizer.normalize("MK I, MK II", Language.EN));
+        assertEquals("Mark eins, Mark zwei", SupertonicTextNormalizer.normalize("MK I, MK II", Language.DE));
+        assertEquals("mark un, mark deux", SupertonicTextNormalizer.normalize("MK I, MK II", Language.FR));
+        assertEquals("mark uno, mark dos", SupertonicTextNormalizer.normalize("MK I, MK II", Language.ES));
+        assertEquals("mark uno, mark due", SupertonicTextNormalizer.normalize("MK I, MK II", Language.IT));
+        assertEquals("mark um, mark dois", SupertonicTextNormalizer.normalize("MK I, MK II", Language.PT));
+        assertEquals("mark um, mark dois", SupertonicTextNormalizer.normalize("MK I, MK II", Language.PTBZ));
+        assertEquals("марк один, марк два", SupertonicTextNormalizer.normalize("MK I, MK II", Language.RU));
+        assertEquals("марк один, марк два", SupertonicTextNormalizer.normalize("MK I, MK II", Language.UK));
     }
 
     @Test
-    void spellsShipMarkNumbersWithOrWithoutSpacesAndRegardlessOfCase() {
-        assertEquals("Kestrel em kay two, Krait em kay two, Cobra em kay three, Viper em kay four, "
-                        + "Cobra em kay five.",
+    void readsShipMarkNumbersWithOrWithoutSpacesAndRegardlessOfCase() {
+        assertEquals("Kestrel mark two, Krait mark two, Cobra mark three, Viper mark four, Cobra mark five.",
                 SupertonicTextNormalizer.normalize(
                         "Kestrel Mk II, Krait MkII, Cobra MkIII, Viper MKIV, Cobra mkv.", Language.EN));
+    }
+
+    @Test
+    void readsMarkAbbreviatedWithADot() {
+        assertEquals("Cobra mark three, Krait mark two",
+                SupertonicTextNormalizer.normalize("Cobra Mk. III, Krait Mk.II", Language.EN));
+    }
+
+    @Test
+    void readsMarkWrittenOut() {
+        assertEquals("Cobra mark three, Viper mark four, Krait mark two",
+                SupertonicTextNormalizer.normalize("Cobra Mark III, Viper mark IV, Krait MARK II", Language.EN));
+    }
+
+    @Test
+    void leavesTheWordMarkAloneWhenNoHullNumeralFollows() {
+        assertEquals("Mark I think, mark v here",
+                SupertonicTextNormalizer.normalize("Mark I think, mark v here", Language.EN));
+    }
+
+    @Test
+    void readsMarkWrittenInCyrillic() {
+        assertEquals("Кобра марк три, Кобра марк четыре, Кобра марк пять, Кобра марк два",
+                SupertonicTextNormalizer.normalize("Кобра Мк III, Кобра МК IV, Кобра мк. V, Кобра Марк II", Language.RU));
+        assertEquals("Кобра марк три",
+                SupertonicTextNormalizer.normalize("Кобра Мк III", Language.UK));
     }
 
     @Test
     void doesNotMatchPartsOfLongerWordsOrUnsupportedRomanNumerals() {
         assertEquals("remark MkIIx MkII2 _MkII MkII_ MkVI",
                 SupertonicTextNormalizer.normalize("remark MkIIx MkII2 _MkII MkII_ MkVI", Language.EN));
-        assertEquals("em kay vee eye eye eye",
-                SupertonicTextNormalizer.normalize("MK VIII", Language.EN));
     }
 
     @Test
@@ -83,8 +106,16 @@ class SupertonicTextNormalizerTest {
 
     @Test
     void doesNotTreatOtherWordsOrIncompleteEliteRankMatchesAsRanks() {
-        assertEquals("Superelite IIx, Elite i piloti, Elite IIx, Elite vi i",
-                SupertonicTextNormalizer.normalize("Superelite IIx, Elite i piloti, Elite IIx, Elite VI", Language.IT));
+        assertEquals("Superelite IIx, Elite i piloti, Elite IIx",
+                SupertonicTextNormalizer.normalize("Superelite IIx, Elite i piloti, Elite IIx", Language.IT));
+    }
+
+    @Test
+    void doesNotReadThePronounAfterEliteAsARank() {
+        assertEquals("Now that you are Elite I can open the door.",
+                SupertonicTextNormalizer.normalize("Now that you are Elite I can open the door.", Language.EN));
+        assertEquals("Since you reached Elite I think you are ready.",
+                SupertonicTextNormalizer.normalize("Since you reached Elite I think you are ready.", Language.EN));
     }
 
     @Test

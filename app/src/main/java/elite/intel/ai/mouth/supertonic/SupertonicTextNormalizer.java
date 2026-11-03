@@ -16,11 +16,17 @@ final class SupertonicTextNormalizer {
 
     // Long uppercase words are emphasis, not acronyms: "RIATTIVA" must stay one word.
     private static final Pattern UPPERCASE_ACRONYM = Pattern.compile("(?<![\\p{L}])([A-Z]{2,4})(?![\\p{L}])");
-    private static final Pattern MARK_NUMBER = Pattern.compile(
-            "(?i)(?<![\\p{L}\\p{M}\\p{N}_])mk\\s*(III|IV|II|I|V)(?![\\p{L}\\p{M}\\p{N}_])");
+    private static final String WORD_START = "(?<![\\p{L}\\p{M}\\p{N}_])";
+    private static final String WORD_END = "(?![\\p{L}\\p{M}\\p{N}_])";
+    private static final String ROMAN_II_TO_V = "III|IV|II|V";
+    // WHY the written-out "mark" takes no I and an upper case numeral only: "mark I" and "mark v" are ordinary text.
+    private static final Pattern MARK_NUMBER = Pattern.compile(WORD_START + "(?:"
+            + "(?iu:(?:mk|мк)\\.?\\s*(" + ROMAN_II_TO_V + "|I))"
+            + "|(?iu:mark|марк)\\s+(" + ROMAN_II_TO_V + "))" + WORD_END);
+    // WHY I needs no lower case word after it: "you are Elite I can help" is the pronoun, not the rank.
     private static final Pattern ELITE_RANK_NUMBER = Pattern.compile(
-            "(?<![\\p{L}\\p{M}\\p{N}_])((?iu:elite|élite|элита|еліта)\\s+)"
-                    + "(III|IV|II|I|V)(?![\\p{L}\\p{M}\\p{N}_])");
+            WORD_START + "((?iu:elite|élite|элита|еліта)\\s+)"
+                    + "(" + ROMAN_II_TO_V + "|I(?!\\s+\\p{Ll}))" + WORD_END);
     private static final Pattern ITALIAN_CLASS_LETTER =
             Pattern.compile("(?i)(?<=\\bclasse\\s)([A-Z])(?![\\p{L}])");
     private static final Pattern DECIMAL_WITH_UNIT = Pattern.compile(
@@ -69,8 +75,10 @@ final class SupertonicTextNormalizer {
     }
 
     static String normalize(String text, Language language) {
-        String withMarkNumbers = markNumbersInWords(text, language);
-        String withEliteRanks = eliteRankNumbersInWords(withMarkNumbers);
+        // WHY first: left as Roman numerals the acronym pass spells them ("eye eye eye"). As digits, the
+        // whole-number pass below says them in the voice's language.
+        String withMarkNumbers = markNumbersToSpokenForm(text, language);
+        String withEliteRanks = eliteRankNumeralsToDigits(withMarkNumbers);
         String withSectorCodes = sectorCodesInWords(withEliteRanks, language);
         String withSpokenCodes = letterHyphenatedNumbersInWords(withSectorCodes, language);
         String withGroupedNumbers = groupedNumbersInWords(withSpokenCodes, language);
@@ -97,28 +105,29 @@ final class SupertonicTextNormalizer {
         return result.toString();
     }
 
-    private static String markNumbersInWords(String text, Language language) {
+    private static String markNumbersToSpokenForm(String text, Language language) {
         Matcher matcher = MARK_NUMBER.matcher(text);
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
-            String number = romanRankNumber(matcher.group(1));
-            matcher.appendReplacement(result, Matcher.quoteReplacement(spokenLetters("MK", language) + " " + number));
+            String numeral = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            matcher.appendReplacement(result, Matcher.quoteReplacement(
+                    markWord(language) + " " + romanNumeralToDigit(numeral)));
         }
         matcher.appendTail(result);
         return result.toString();
     }
 
-    private static String eliteRankNumbersInWords(String text) {
+    private static String eliteRankNumeralsToDigits(String text) {
         Matcher matcher = ELITE_RANK_NUMBER.matcher(text);
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
-            matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(1) + romanRankNumber(matcher.group(2))));
+            matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(1) + romanNumeralToDigit(matcher.group(2))));
         }
         matcher.appendTail(result);
         return result.toString();
     }
 
-    private static String romanRankNumber(String roman) {
+    private static String romanNumeralToDigit(String roman) {
         return switch (roman.toUpperCase(Locale.ROOT)) {
             case "I" -> "1";
             case "II" -> "2";
@@ -126,6 +135,14 @@ final class SupertonicTextNormalizer {
             case "IV" -> "4";
             case "V" -> "5";
             default -> throw new IllegalStateException("Unexpected Roman numeral: " + roman);
+        };
+    }
+
+    private static String markWord(Language language) {
+        return switch (language) {
+            case EN, FR, ES, IT, PT, PTBZ -> "mark";
+            case DE -> "Mark";
+            case RU, UK -> "марк";
         };
     }
 
