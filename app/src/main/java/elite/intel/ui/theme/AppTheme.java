@@ -514,10 +514,9 @@ public class AppTheme {
             return;   // combo editor is fully styled by picker(); palette must not re-border it
         }
         tc.setBackground(HUD_COLOR_ROLE_FIELD_BACKGROUND);
-        // Field value text - HUD_COLOR_ROLE_PRIMARY_ACTION (vanilla-ED: light label, orange value), the same for single-line
-        // and multi-line FIELD areas; only enabled/disabled differs. The live console/log is a
-        // separate role (HudLogArea, a JPanel) and is not styled here.
-        tc.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        // Field value text - the same for single-line and multi-line FIELD areas; only enabled/disabled
+        // differs. The live console/log is a separate role (HudLogArea, a JPanel) and is not styled here.
+        tc.setForeground(HUD_COLOR_ROLE_VALUE_TEXT);
         tc.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED); // section 0.6: disabled text dims to the warm muted tone
         tc.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         tc.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
@@ -567,12 +566,12 @@ public class AppTheme {
      */
     public static void styleComboBox(JComboBox<?> comboBox) {
         comboBox.setBackground(HUD_COLOR_ROLE_FIELD_BACKGROUND);
-        comboBox.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION); // collapsed value - same HUD_COLOR_ROLE_PRIMARY_ACTION as the popup items (section 5.3)
+        comboBox.setForeground(HUD_COLOR_ROLE_VALUE_TEXT); // collapsed value - same HUD_COLOR_ROLE_VALUE_TEXT as the popup items (section 5.3)
         comboBox.setBorder(hudComboBorder());
         comboBox.setFocusable(true);
         comboBox.setFont(comboBox.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
         // BasicComboBoxUI.paintCurrentValue paints the collapsed value in comboBox.getForeground(),
-        // so the orange value is lost if applyDarkPalette overwrites the foreground during the tree
+        // so the value colour is lost if applyDarkPalette overwrites the foreground during the tree
         // walk. Lock it (same opt-out the editable picker editor uses) to keep the canon value colour.
         comboBox.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
     }
@@ -584,7 +583,7 @@ public class AppTheme {
      * editor, not through the renderer used by non-editable combos. This is the single place that
      * subdues that editor to the HUD canon so both combo types read identically (section 5.3):
      * <ul>
-     *   <li>Value colour {@link #HUD_COLOR_ROLE_PRIMARY_ACTION} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) - matches the
+     *   <li>Value colour {@link #HUD_COLOR_ROLE_VALUE_TEXT} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) - matches the
      *       renderer-painted value of non-editable combos.</li>
      *   <li>Horizontal text inset {@link #HUD_COMBO_ITEM_INSET_H}, equal to the renderer item inset.
      *       No vertical inset: a picker is held to {@link #HUD_FIELD_HEIGHT}, so a vertical inset here
@@ -600,7 +599,7 @@ public class AppTheme {
      */
     public static void styleComboEditor(JTextComponent editor) {
         editor.setBackground(HUD_COLOR_ROLE_FIELD_BACKGROUND);
-        editor.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        editor.setForeground(HUD_COLOR_ROLE_VALUE_TEXT);
         editor.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED);
         editor.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         editor.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);

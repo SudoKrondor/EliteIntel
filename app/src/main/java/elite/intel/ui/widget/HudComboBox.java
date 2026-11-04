@@ -163,7 +163,7 @@ public class HudComboBox<E> extends JComboBox<E> {
                     @SuppressWarnings("unchecked") E item = (E) value;
                     muted = mutedWhen.test(item);
                 }
-                label.setForeground(muted ? HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT : HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(muted ? HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT : HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
             }
 
             label.setBorder(new EmptyBorder(

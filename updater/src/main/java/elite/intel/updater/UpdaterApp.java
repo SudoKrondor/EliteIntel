@@ -43,15 +43,15 @@ import java.util.zip.ZipInputStream;
 public class UpdaterApp {
 
     private static final String ICON_AI = "/images/update.png";
-    // -- Palette (mirrors AppView exactly) ------------------------------------
-    private static final Color BG = new Color(0x151519);
-    private static final Color BG_PANEL = new Color(0x1F2032);
+    // -- Palette (a copy of the app's HudPalette values: this module cannot depend on the app) --
+    private static final Color BG = new Color(0x0B0F14);
+    private static final Color BG_PANEL = new Color(0x161F29);
     private static final Color FG = new Color(0xE6E6E6);
-    private static final Color FG_MUTED = new Color(0xB0B0B0);
-    private static final Color ACCENT = new Color(0xFF8C00);
-    private static final Color BUTTON_FG = new Color(0xFFFFFF);
-    private static final Color BUTTON_BG = new Color(0x03529F);
-    private static final Color CONSOLE_FG = new Color(0xE0FFEF);
+    private static final Color FG_MUTED = new Color(0xA9B8C2);
+    private static final Color ACCENT = new Color(0x33D7E8);
+    private static final Color BUTTON_FG = new Color(0xE6E6E6);
+    private static final Color BUTTON_BG = new Color(0x1B6F7B);
+    private static final Color CONSOLE_FG = new Color(0xE6E6E6);
 
     private static final String GITHUB_API = "https://api.github.com/repos/SudoKrondor/EliteIntel/releases/latest";
     private static final String MAIN_JAR = "elite_intel.jar";

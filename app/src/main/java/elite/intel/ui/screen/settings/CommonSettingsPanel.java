@@ -58,7 +58,7 @@ public class CommonSettingsPanel extends JPanel {
         // The globe stays recognisable whatever language the labels have switched to, so a commander who
         // changed language by accident can still find the way back.
         JLabel languageLabel = addLabel(body, getText("player.commandLanguage"), g);
-        languageLabel.setIcon(scaledIcon(getClass(), ICON_LANGUAGE, HUD_ICON_NAV));
+        languageLabel.setIcon(accentIcon(ICON_LANGUAGE));
         languageLabel.setIconTextGap(HUD_PADDING);
 
         languageCombo = makeLanguageCombo(systemSession.getLanguage());
@@ -113,12 +113,16 @@ public class CommonSettingsPanel extends JPanel {
         add(section, BorderLayout.CENTER);
     }
 
+    private ImageIcon accentIcon(String resource) {
+        return tintIcon(scaledIcon(getClass(), resource, HUD_ICON_NAV), HUD_ICON_NAV, HUD_ICON_NAV, HUD_COLOR_ROLE_PRIMARY_ACTION);
+    }
+
     /**
      * The lock glyph beside the LOCKED box: full strength while locked, receded while open, and a click on it
      * toggles the box too.
      */
     private JLabel makeLockIcon(JCheckBox lockCheck) {
-        ImageIcon locked = scaledIcon(getClass(), ICON_LOCKED, HUD_ICON_NAV);
+        ImageIcon locked = accentIcon(ICON_LOCKED);
         ImageIcon open = dimIcon(locked, 0.35f);
         JLabel icon = new JLabel(lockCheck.isSelected() ? locked : open);
         icon.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));

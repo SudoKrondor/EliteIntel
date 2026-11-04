@@ -39,7 +39,9 @@ public class HudCommanderBlock extends JPanel {
 
         // --- muted logo ---
         ImageIcon rawIcon = loadLogoSafe(72);
-        JLabel logoLabel = new JLabel(rawIcon != null ? HudGlyphs.dimIcon(rawIcon, 0.45f) : null);
+        JLabel logoLabel = new JLabel(rawIcon != null
+                ? HudGlyphs.dimIcon(HudGlyphs.tintIcon(rawIcon, 72, 72, HUD_COLOR_ROLE_CONTROL_DECORATION), 0.45f)
+                : null);
         logoLabel.setAlignmentX(CENTER_ALIGNMENT);
         add(logoLabel);
 

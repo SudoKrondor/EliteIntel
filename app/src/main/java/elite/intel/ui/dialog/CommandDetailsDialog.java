@@ -169,8 +169,8 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
         addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), HudPalette.HUD_COLOR_ROLE_INFORMATION);
-        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
+        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
         addDescription(panel, gbc);
         addPhrases(panel, gbc);
         addSequence(panel, gbc);
