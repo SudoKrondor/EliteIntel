@@ -53,7 +53,7 @@ class HudTabbedPaneTest {
         Rectangle unselected = tabs.getBoundsAt(1);
         int lastRowAboveRail = unselected.y + unselected.height - rail - 1;
 
-        assertEquals(box.getRGB(), painted.getRGB(selected.x + 3, lastRowAboveRail));
+        PaintedColours.assertInkOver(box, HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND, painted, selected.x + 3, lastRowAboveRail);
         assertEquals(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND.getRGB(), painted.getRGB(unselected.x + 3, lastRowAboveRail));
     }
 

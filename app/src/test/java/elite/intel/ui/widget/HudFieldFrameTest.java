@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 
+import static elite.intel.ui.widget.PaintedColours.assertInkOver;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -34,8 +35,8 @@ class HudFieldFrameTest {
         BufferedImage painted = paint(new HudTextField());
 
         assertColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER, painted, WIDTH / 2, 0);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, 1, 1);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, WIDTH - 2, HEIGHT - 2);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, 1, 1);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, WIDTH - 2, HEIGHT - 2);
     }
 
     @Test
@@ -55,7 +56,7 @@ class HudFieldFrameTest {
 
         BufferedImage painted = withFocusOn(field, () -> paint(field));
 
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION, painted, WIDTH / 2, 0);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, WIDTH / 2, 0);
     }
 
     @Test
@@ -63,7 +64,7 @@ class HudFieldFrameTest {
         BufferedImage painted = paint(new HudPasswordField());
 
         assertColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER, painted, WIDTH / 2, 0);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, 1, 1);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, 1, 1);
     }
 
     @Test
@@ -71,8 +72,8 @@ class HudFieldFrameTest {
         BufferedImage painted = paint(new HudComboBox<>(new String[]{"value"}));
 
         assertColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER, painted, WIDTH / 2, 0);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, 1, 1);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, WIDTH - 2, HEIGHT - 2);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, 1, 1);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND, painted, WIDTH - 2, HEIGHT - 2);
         int divider = arrowCellX(painted);
         assertColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER, painted, divider, 1);
         assertColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER, painted, divider, HEIGHT - 2);
@@ -82,11 +83,11 @@ class HudFieldFrameTest {
     void aPickerKeepsItsMarksOverItsEditorAndFramesFocusOnTheEditor() {
         HudComboBox<String> picker = HudComboBox.picker(new String[]{"value"}, s -> s, (s, q) -> true);
 
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, paint(picker), 1, 1);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, paint(picker), 1, 1);
 
         Component editor = picker.getEditor().getEditorComponent();
         BufferedImage focused = withFocusOn(editor, () -> paint(picker));
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION, focused, WIDTH / 2, 0);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, focused, WIDTH / 2, 0);
     }
 
     @Test
@@ -128,8 +129,8 @@ class HudFieldFrameTest {
         BufferedImage painted = paint(new HudSpinner(100, 0, 600, 10));
 
         assertColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER, painted, WIDTH / 2, 0);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, 1, 1);
-        assertColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, painted, WIDTH - 2, HEIGHT - 2);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, 1, 1);
+        assertInkOver(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND, painted, WIDTH - 2, HEIGHT - 2);
     }
 
     @Test
