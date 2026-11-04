@@ -1,5 +1,4 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
@@ -25,6 +24,8 @@ import java.awt.event.FocusEvent;
  * {@link Variant#EMBEDDED} uses the same segmented layout as {@code TABLE_FILTER} but paints
  * no outer border at all. Use it inside a {@link HudConnectedToolbar} or any other container
  * that already provides the outer frame.
+ * <p>
+ * {@link #setInfoAction} adds an info cell before the clear cell, for a search that needs explaining.
  */
 public class HudSearchField extends JPanel {
 
@@ -55,6 +56,10 @@ public class HudSearchField extends JPanel {
 
     private final JTextField textField;
     private final Variant variant;
+    /**
+     * What sits at the right end, inside the frame: the clear action, after the info cell when there is one.
+     */
+    private final JPanel trailingCells;
     /**
      * Whether the inner text field currently holds keyboard focus. Drives the cyan focus accent
      * on the framed variants ({@link Variant#TABLE_FILTER}, {@link Variant#TABLE_FILTER_CONNECTED}):
@@ -123,18 +128,30 @@ public class HudSearchField extends JPanel {
         clearButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         clearButton.addActionListener(e -> textField.setText(""));
 
+        trailingCells = new JPanel(new BorderLayout());
+        trailingCells.setOpaque(false);
+        add(trailingCells, BorderLayout.EAST);
+
         if (filter) {
             add(iconSegment(), BorderLayout.WEST);
             add(textField, BorderLayout.CENTER);
-            add(clearSegment(clearButton), BorderLayout.EAST);
+            trailingCells.add(clearSegment(clearButton), BorderLayout.EAST);
         } else {
             JLabel iconLabel = new JLabel(new SearchIcon());
             iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 9));
             clearButton.setMargin(new Insets(0, 8, 0, 8));
             add(iconLabel, BorderLayout.WEST);
             add(textField, BorderLayout.CENTER);
-            add(clearButton, BorderLayout.EAST);
+            trailingCells.add(clearButton, BorderLayout.EAST);
         }
+    }
+
+    /**
+     * Adds the info cell, whose glyph runs {@code action} on click.
+     */
+    public void setInfoAction(Runnable action) {
+        trailingCells.add(infoSegment(action), BorderLayout.WEST);
+        revalidate();
     }
 
     /** Returns the underlying text field so callers can attach document listeners. */
@@ -152,6 +169,19 @@ public class HudSearchField extends JPanel {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 10, 0, 10);
         panel.add(new JLabel(new SearchIcon()), gbc);
+        return panel;
+    }
+
+    private static JPanel infoSegment(Runnable action) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(true);
+        panel.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        panel.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER));
+        panel.add(new HudGlyphButton(HudGlyphs::paintHudInfoGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION,
+                HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                null,
+                action));
         return panel;
     }
 

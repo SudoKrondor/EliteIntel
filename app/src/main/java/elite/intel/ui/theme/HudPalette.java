@@ -46,6 +46,10 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_APPLICATION_BACKGROUND = HUD_COLOR_090D12;
     public static final Color HUD_COLOR_ROLE_PANEL_BACKGROUND = HUD_COLOR_101721;
     public static final Color HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND = HUD_COLOR_1A1206;
+    /**
+     * Text cell of an input outside a grid: text fields, text areas, combos. A grid's combo stays on the table cell's.
+     */
+    public static final Color HUD_COLOR_ROLE_FIELD_BACKGROUND = HUD_COLOR_090D12;
     public static final Color HUD_COLOR_ROLE_LOG_BACKGROUND = HUD_COLOR_101721;
     public static final Color HUD_COLOR_ROLE_PRIMARY_TEXT = HUD_COLOR_E6E6E6;
     /** Ship name readout in the top status bar. */

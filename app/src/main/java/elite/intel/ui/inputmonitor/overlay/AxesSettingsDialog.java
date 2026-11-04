@@ -6,6 +6,8 @@ import elite.intel.ui.inputmonitor.InputMonitorPalette;
 import elite.intel.ui.inputmonitor.model.DeviceAxis;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
+import elite.intel.ui.widget.HudComboBox;
+import elite.intel.ui.widget.HudSpinner;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -49,7 +51,7 @@ public class AxesSettingsDialog extends JDialog {
         // Device
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.axes.device"), gbc);
-        deviceCombo = new JComboBox<>();
+        deviceCombo = new HudComboBox<>(new DefaultComboBoxModel<>());
         DeviceService.getInstance().getConnectedDevices().forEach(d -> deviceCombo.addItem(d));
         addField(root, deviceCombo, gbc);
         deviceCombo.addActionListener(e -> repopulateAxes());
@@ -57,13 +59,13 @@ public class AxesSettingsDialog extends JDialog {
         // X Axis
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.axes.xAxis"), gbc);
-        xAxisCombo = new JComboBox<>();
+        xAxisCombo = new HudComboBox<>(new DefaultComboBoxModel<>());
         addField(root, xAxisCombo, gbc);
 
         // Y Axis
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.axes.yAxis"), gbc);
-        yAxisCombo = new JComboBox<>();
+        yAxisCombo = new HudComboBox<>(new DefaultComboBoxModel<>());
         addField(root, yAxisCombo, gbc);
 
         // Dot color
@@ -84,19 +86,19 @@ public class AxesSettingsDialog extends JDialog {
         // Dot shape
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.axes.dotShape"), gbc);
-        shapeCombo = new JComboBox<>(AxesReadout.DotShape.values());
+        shapeCombo = new HudComboBox<>(AxesReadout.DotShape.values());
         addField(root, shapeCombo, gbc);
 
         // Width
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.axes.width"), gbc);
-        widthSpinner = new JSpinner(new SpinnerNumberModel(readout.getWidth(), 80, 600, 10));
+        widthSpinner = new HudSpinner(readout.getWidth(), 80, 600, 10);
         addField(root, widthSpinner, gbc);
 
         // Height
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.axes.height"), gbc);
-        heightSpinner = new JSpinner(new SpinnerNumberModel(readout.getHeight(), 80, 600, 10));
+        heightSpinner = new HudSpinner(readout.getHeight(), 80, 600, 10);
         addField(root, heightSpinner, gbc);
 
         // Buttons

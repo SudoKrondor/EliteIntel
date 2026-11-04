@@ -1,9 +1,7 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
@@ -73,6 +71,17 @@ public class HudTabbedPane extends JTabbedPane {
         private static final int TINT_INACTIVE = 1;
         private static final int TINT_DISABLED = 2;
 
+        /**
+         * Space above the active box, and the rail it sits on, in the main navigation row.
+         */
+        private static final int MAIN_NAV_BOX_TOP_GAP = 8;
+        private static final int MAIN_NAV_RAIL = 3;
+        /**
+         * Space above the active box, and the rail it sits on, in a section tab row.
+         */
+        private static final int SECTION_BOX_TOP_GAP = 4;
+        private static final int SECTION_RAIL = 2;
+
         private final boolean flatContent;
         private final boolean compact;
         private final boolean mainNavigation;
@@ -97,13 +106,12 @@ public class HudTabbedPane extends JTabbedPane {
                 // with the inner panels' content inset from the window edge (hudScreenBorder). The
                 // rail still spans full width, so the boxes read as inset from the line.
                 tabAreaInsets = new Insets(0, HudPalette.SHELL_GAP, 0, HudPalette.SHELL_GAP);
-                tabInsets = new Insets(12, 14, 12, 14);
+                tabInsets = new Insets(12, 14, 6, 14);
             } else if (section) {
-                // Small left indent so the first tab label is offset from the rail's start. The extra
-                // bottom inset makes the row 5px taller so a transparent gap opens between the active
-                // box and the bottom rail while the box keeps its height. Roomier horizontal tab insets.
+                // Small left indent so the first tab label is offset from the rail's start. Roomier
+                // horizontal tab insets.
                 tabAreaInsets = new Insets(0, HudPalette.HUD_GAP, 0, 0);
-                tabInsets = new Insets(6, 14, 11, 14);
+                tabInsets = new Insets(6, 14, 6, 14);
             } else if (compact) {
                 tabInsets = new Insets(3, 9, 3, 9);
             } else {
@@ -124,13 +132,13 @@ public class HudTabbedPane extends JTabbedPane {
                 // top rail - muted warm, 2px
                 g.setColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
                 g.fillRect(0, 0, width, 2);
-                // bottom rail - same accent as the active tab box, 3px; flush to tab-area bottom
+                // bottom rail - same accent as the active tab box; flush to tab-area bottom
                 g.setColor(HudPalette.HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND);
-                g.fillRect(0, tabAreaHeight - 3, width, 3);
+                g.fillRect(0, tabAreaHeight - MAIN_NAV_RAIL, width, MAIN_NAV_RAIL);
             } else if (section) {
                 // Underline rail under the section tab row (section 11), paired with the active box fill.
                 g.setColor(HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE);
-                g.fillRect(0, tabAreaHeight - 2, tabPane.getWidth(), 2);
+                g.fillRect(0, tabAreaHeight - SECTION_RAIL, tabPane.getWidth(), SECTION_RAIL);
             }
         }
 
@@ -139,13 +147,9 @@ public class HudTabbedPane extends JTabbedPane {
                                           int x, int y, int w, int h, boolean isSelected) {
             if (mainNavigation) {
                 if (isSelected) {
-                    int gap = 8;
-                    int bottomRail = 3;
-                    int bottomGap = gap - 2; // box extends 2px lower, closing the gap to the rail (nav height unchanged)
-                    int fillH = h - gap - bottomGap - bottomRail;
-                    if (fillH < 1) fillH = 1;
+                    // The box sits on the rail, joined to it: the two are one accent shape.
                     g.setColor(HudPalette.HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND);
-                    g.fillRect(x, y + gap, w, fillH);
+                    g.fillRect(x, y + MAIN_NAV_BOX_TOP_GAP, w, Math.max(1, h - MAIN_NAV_BOX_TOP_GAP - MAIN_NAV_RAIL));
                 }
                 // unselected: no fill - paintTabArea already painted HUD_COLOR_ROLE_APPLICATION_BACKGROUND
                 return;
@@ -153,13 +157,9 @@ public class HudTabbedPane extends JTabbedPane {
             if (section) {
                 // Active = filled accent box (inversion, section 11).
                 if (isSelected) {
-                    int gap = 4;
-                    int bottomRail = 2;
-                    int separator = 5;   // transparent gap between the box and the bottom rail
-                    int fillH = h - gap - separator - bottomRail;
-                    if (fillH < 1) fillH = 1;
+                    // The box sits on the rail, joined to it: the two are one accent shape.
                     g.setColor(HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND);
-                    g.fillRect(x, y + gap, w, fillH);
+                    g.fillRect(x, y + SECTION_BOX_TOP_GAP, w, Math.max(1, h - SECTION_BOX_TOP_GAP - SECTION_RAIL));
                 }
                 // unselected: leave the HUD_COLOR_ROLE_APPLICATION_BACKGROUND painted by paintTabArea
                 return;
@@ -219,9 +219,8 @@ public class HudTabbedPane extends JTabbedPane {
 
             if (!mainNavigation && !section) return;
 
-            // Re-center the icon+label group vertically in the active box. The `- 3` exclusion matches
-            // both MAIN_NAV (3px underline at the bottom) and SECTION (whose top gap minus bottom
-            // separator+rail nets the same offset), keeping the label centered in the visible box.
+            // Re-center the icon+label group vertically in the active box, selected or not, so a label
+            // does not move when its tab is chosen.
             boolean hasIcon = icon != null && iconRect.width > 0;
             boolean hasText = title != null && !title.isEmpty() && textRect.width > 0;
             int groupTop, groupBottom;
@@ -238,8 +237,9 @@ public class HudTabbedPane extends JTabbedPane {
                 return;
             }
 
-            // Usable area excludes the 3px underline painted at the tab bottom.
-            int usableCenterY = (tabRect.y + tabRect.y + tabRect.height - 3) / 2;
+            int topGap = mainNavigation ? MAIN_NAV_BOX_TOP_GAP : SECTION_BOX_TOP_GAP;
+            int rail = mainNavigation ? MAIN_NAV_RAIL : SECTION_RAIL;
+            int usableCenterY = tabRect.y + (topGap + tabRect.height - rail) / 2;
             int groupCenterY = (groupTop + groupBottom) / 2;
             int delta = usableCenterY - groupCenterY;
             if (delta != 0) {

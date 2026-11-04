@@ -184,13 +184,13 @@ For "label → field" rows in forms (the reference is TRADE PROFILE):
 - **The
   label** is light `HUD_COLOR_ROLE_PRIMARY_TEXT` caps (as in vanilla ED: light label, orange value), at `HUD_FONT_SM`, with NO colon, and NOT mixed case. Strip colons coming from i18n in the bundles (ALL languages), not in the code. One style, `styleFieldLabel` (a single source for `addLabel` and `hudReadoutLabel`); colour and size change centrally inside it.
 - **The
-  field** is a `HudTextField`, with a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` border (§8) and a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background. The value text is
+  field** is a `HudTextField` with the look of the table filter bar (`HudSearchField`): a `HUD_COLOR_ROLE_FIELD_BACKGROUND` background, a teal `HUD_COLOR_ROLE_FRAME_BORDER` frame and `HUD_COLOR_ROLE_INFORMATION_MARK` corner marks at top-left and bottom-right. While it holds focus the frame brightens to `HUD_COLOR_ROLE_INFORMATION` and the marks lengthen (`hudFieldLine`). The value text is
   `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange, pairing with the light label; `styleTextComponent`), the same for single-line and multi-line fields; the only difference is enabled/disabled (`HUD_COLOR_ROLE_DISABLED`). The colour does NOT depend on editable/read-only. A live console or log is its own role (`HudLogArea`), not a field.
 - **Disabled (§0.6)** is centralized, with no local hacks: the border follows `isEnabled()` and dims to
   `HUD_COLOR_ROLE_DISABLED` (`hudFieldLine` inside `hudFieldBorder()`/`…WithInfo()`); the text in the field uses `disabledTextColor=HUD_COLOR_ROLE_DISABLED`
   (`styleTextComponent`); and the row label (`addLabel`) dims together with the field to `HUD_COLOR_ROLE_DISABLED`. A group is dimmed by one `setEnabled(false)` on the controls, each of which draws its own disabled state.
 - **The info "i" (
-  optional)** is a zone INSIDE the field on the right, separated by a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap. Tints: at rest
+  optional)** is a cell INSIDE the field on the right: a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` fill, divided from the text by a 1 px `HUD_COLOR_ROLE_SECONDARY_BORDER` line. Tints: at rest
   `HUD_COLOR_ROLE_CONTROL_DECORATION`; hover `HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled `HUD_COLOR_ROLE_DISABLED`. The glyph is `paintHudInfoGlyph`. A click opens the help and does not place the caret. NOT a separate external button and NOT a Unicode glyph.
 - **A picker at the field's edge** (choosing a directory or file) is a compact square button, §4.
 
@@ -205,6 +205,9 @@ Blue underlined action "links" are an ANTI-PATTERN: help is carried by the info 
 
 **The row
 layout** "label→field[→picker/i]" uses the `baseGbc` / `addLabel` / `addField` helpers (see below), not a raw `GridBagConstraints` in place.
+
+**A number that is also
+typed** (the Input Monitor's widths and heights) is a `HudSpinner`: the field's look with ▲▼ in a cell of their own. Where typing is not wanted, `HudStepper` (§4).
 
 **→ Anchors:** `AppTheme.hudReadoutLabel`, `HudTextField.setInfoAction` / `makeTextField(infoAction)`,
 `hudFieldBorderWithInfo()`, `HUD_SEP_W`; read-only is `hudReadoutValue` (§7.2) / `makeMetadataField`
@@ -231,19 +234,21 @@ A `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap divides the marker from the text. 
 
 ### 5.3 Combo
 
-The reference is the ED combo (PRIMARY/BORDERLESS): a warm dark background, orange text, and a flat ▼ with no button box. NOT the native LAF.
+The look of the field (§5.1) with a ▼ cell, the segments of the table filter bar. NOT the native LAF. A combo in a table cell is the exception, and keeps the warm look of its grid: a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, a warm line and a warm list, a bare ▼ with no cell.
 
 -
-**Collapsed** — a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, `HUD_COLOR_ROLE_PRIMARY_ACTION` text (the value is orange, as in vanilla ED; placeholder and muted text are `HUD_COLOR_ROLE_SECONDARY_TEXT`), and a `hudFieldBorder()` border (`HUD_COLOR_ROLE_CONTROL_DECORATION`). The ▼ is flat (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
-`HUD_COLOR_ROLE_DISABLED`) at the edge, with no box or separator. The grey editor↔▼ separator is a FlatLaf bug, suppressed globally with `ComboBox.buttonSeparatorWidth=0`.
+
+**Collapsed** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` background, `HUD_COLOR_ROLE_PRIMARY_ACTION` text (the value is orange, as in vanilla ED; placeholder and muted text are `HUD_COLOR_ROLE_SECONDARY_TEXT`), and the field frame with its corner marks (`hudComboBorder()`). The ▼ is flat (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
+`HUD_COLOR_ROLE_DISABLED`) in a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` cell behind a 1 px `HUD_COLOR_ROLE_SECONDARY_BORDER` line, which `HudComboBoxUI` draws. FlatLaf's own grey editor↔▼ separator is a bug, suppressed globally with `ComboBox.buttonSeparatorWidth=0`.
 - **The list (
-  popup)** — a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` backing; `HUD_COLOR_ROLE_PRIMARY_ACTION` items; the selected one `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
+  popup)** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` backing; `HUD_COLOR_ROLE_PRIMARY_ACTION` items; the selected one `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a `HUD_COLOR_ROLE_FRAME_BORDER` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
 - **A combo is an INPUT
   field**: on a selected table row it stays warm and is not repainted `HUD_COLOR_ROLE_PRIMARY_ACTION`.
 - **Text selection** is warm: `ComboBox.selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`,
   `selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT` (globally).
 -
-**Disabled** is warm and dimmed (§0.6): a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, with the text and ▼ in `HUD_COLOR_ROLE_DISABLED`.
+
+**Disabled** is dimmed (§0.6): the text, frame and ▼ in `HUD_COLOR_ROLE_DISABLED`, and no corner marks.
 
 **One
 API.** A combo goes ONLY through `HudComboBox`, never `new JComboBox` plus a manual `styleComboBox`. Item text comes from `labelFn`, not an external `setRenderer`. Three entry points:
@@ -503,7 +508,7 @@ References: the Ship panel tabs, the ED top nav, Station Services.
 **Active**: a bright box fill (SUB-TARGETS) or a `HUD_COLOR_ROLE_PRIMARY_ACTION` underline; the inactive ones are dimmer.
 - **`SECTION` (the second level,
   ACTIONS/SETTINGS)**: the active one is a filled box, `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND`+`HUD_COLOR_ROLE_SELECTED_TEXT`
-  (the inversion in §0.4). The box reaches the bottom rail; NOT an underline, because against a background of many section rails the tab strip would be lost. Beneath the row runs a full-width `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE` rail. The first tab carries a light left inset from the start of the rail (`tabAreaInsets.left`).
+  (the inversion in §0.4). The box sits on the bottom rail with no gap; NOT an underline, because against a background of many section rails the tab strip would be lost. Beneath the row runs a full-width `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE` rail. The first tab carries a light left inset from the start of the rail (`tabAreaInsets.left`).
   `COMPACT` (the dense inner ones) keeps the underline.
 - Icon tabs: the active one has a solid fill and a dark icon.
 
@@ -529,7 +534,7 @@ rails:** the upper one (header↔tabs) is `HUD_COLOR_ROLE_CONTROL_DECORATION` an
 `HUD_COLOR_ROLE_PRIMARY_ACTION` and thicker. Do NOT use the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`.
 
 **The active tab is an
-inversion**: a `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND` fill plus `HUD_COLOR_ROLE_SELECTED_TEXT`. The fill has a vertical gap from the rails. There is NO underline (that belongs to SECTION/COMPACT, §11).
+inversion**: a `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND` fill plus `HUD_COLOR_ROLE_SELECTED_TEXT`. The fill has a gap from the upper rail and sits on the lower one, joined to it. There is NO underline (that belongs to SECTION/COMPACT, §11).
 
 **Inactive
 ones:** `HUD_COLOR_ROLE_SECONDARY_TEXT` text with a `HUD_COLOR_ROLE_CONTROL_DECORATION` icon. Disabled is `HUD_COLOR_ROLE_DISABLED`.

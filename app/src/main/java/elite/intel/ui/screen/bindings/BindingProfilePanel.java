@@ -165,26 +165,14 @@ public class BindingProfilePanel extends JPanel {
      * footer the search would vanish with it on the other tabs.
      */
     private JPanel footer() {
-        JPanel search = transparentPanel(new BorderLayout(7, 0));
-        search.add(hudReadoutLabel(getText("bindings.search.label")), BorderLayout.WEST);
-        search.add(bindingSearchField(), BorderLayout.CENTER);
-        // WHY a wrapper: the field keeps its own height when the buttons beside it make the line taller.
-        JPanel searchLine = transparentPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        searchLine.add(search, gbc);
-
         JComponent controls = gameMode.footerControls();
-        // WHY the buttons' height: the footer keeps it on every tab, so the grid above does not shift between modes.
-        searchLine.setPreferredSize(new Dimension(0, controls.getPreferredSize().height));
-        searchLine.setBorder(new EmptyBorder(0, 6, 0, 0));
-        modeTabs.addChangeListener(e -> controls.setVisible(modeTabs.getSelectedComponent() == gameMode));
-
-        JPanel footer = transparentPanel(new BorderLayout(HUD_GAP, 0));
+        HudSearchToolbar footer = HudSearchToolbar.tableFilter(
+                getText("bindings.search.placeholder"),
+                getText("actions.commands.search.clearTooltip"),
+                controls);
         footer.setBorder(hudFooterBorder());
-        footer.add(searchLine, BorderLayout.CENTER);
-        footer.add(controls, BorderLayout.EAST);
+        wireSearch(footer.textField());
+        modeTabs.addChangeListener(e -> controls.setVisible(modeTabs.getSelectedComponent() == gameMode));
         return footer;
     }
 
@@ -469,8 +457,8 @@ public class BindingProfilePanel extends JPanel {
      * Search-as-you-type over what the modes show. Every keystroke re-renders; the tables are rebuilt from an in-memory
      * map, so there is nothing to debounce.
      */
-    private JTextField bindingSearchField() {
-        bindingSearchField = makeTextField();
+    private void wireSearch(JTextField field) {
+        bindingSearchField = field;
         bindingSearchField.setToolTipText(getText("bindings.search.tooltip"));
         bindingSearchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -488,7 +476,6 @@ public class BindingProfilePanel extends JPanel {
                 searchModes();
             }
         });
-        return bindingSearchField;
     }
 
     private void searchModes() {

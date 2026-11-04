@@ -1,6 +1,5 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
@@ -102,6 +101,13 @@ public class HudSearchToolbar extends JPanel {
             add(searchField);
             add(Box.createHorizontalGlue());
         }
+    }
+
+    /**
+     * Adds the search field's info cell, whose glyph runs {@code action} on click.
+     */
+    public void setInfoAction(Runnable action) {
+        searchField.setInfoAction(action);
     }
 
     /**

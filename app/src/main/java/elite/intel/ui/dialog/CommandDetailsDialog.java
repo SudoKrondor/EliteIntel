@@ -282,7 +282,7 @@ public final class CommandDetailsDialog extends JDialog {
         JTextArea area = AppTheme.makeTextArea(0, 0);
         area.setText(text);
         area.setEditable(false);
-        area.setCaretColor(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        area.setCaretColor(HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND);
         area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }

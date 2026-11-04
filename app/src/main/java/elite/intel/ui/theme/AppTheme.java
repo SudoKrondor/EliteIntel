@@ -356,17 +356,19 @@ public class AppTheme {
     private static final int HUD_FIELD_INSET_H = 8;
 
     /**
-     * Outer field line that follows the component's enabled state: warm {@code HUD_COLOR_ROLE_CONTROL_DECORATION}
-     * when enabled, dimmed {@code HUD_COLOR_ROLE_DISABLED} when disabled (section 0.6). Shared by all HUD fields and
-     * combo boxes so the disabled look is consistent app-wide.
+     * Outer field frame, the look of the table filter bar ({@link HudSearchField}): a teal line with cyan corner marks,
+     * both brightening while the control holds keyboard focus, dimmed to {@code HUD_COLOR_ROLE_DISABLED} with no marks
+     * when disabled (section 0.6). A combo inside a table cell keeps the warm line of the grid around it. Shared by all
+     * HUD fields and combo boxes so the look is consistent app-wide.
      */
     private static Border hudFieldLine() {
         return new javax.swing.border.AbstractBorder() {
             @Override public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-                g.setColor(c.isEnabled() ? HUD_COLOR_ROLE_CONTROL_DECORATION : HUD_COLOR_ROLE_DISABLED);
+                g.setColor(hudFieldLineColor(c));
                 for (int i = 0; i < HUD_BORDER_THICKNESS; i++) {
                     g.drawRect(x + i, y + i, width - 1 - 2 * i, height - 1 - 2 * i);
                 }
+                paintHudFieldCornerMarks(c, g);
             }
             @Override public Insets getBorderInsets(Component c) {
                 int t = HUD_BORDER_THICKNESS;
@@ -378,6 +380,49 @@ public class AppTheme {
                 return insets;
             }
         };
+    }
+
+    private static Color hudFieldLineColor(Component c) {
+        if (!c.isEnabled()) {
+            return HUD_COLOR_ROLE_DISABLED;
+        }
+        if (isTableCellCombo(c)) {
+            return HUD_COLOR_ROLE_CONTROL_DECORATION;
+        }
+        return holdsKeyboardFocus(c) ? HUD_COLOR_ROLE_INFORMATION : HUD_COLOR_ROLE_FRAME_BORDER;
+    }
+
+    /**
+     * Paints the field's cyan corner marks. A control with children that reach the frame, as a combo's do, calls this
+     * again after painting them, or they cover the marks the border drew.
+     */
+    public static void paintHudFieldCornerMarks(Component c, Graphics g) {
+        if (!c.isEnabled() || isTableCellCombo(c)) {
+            return;
+        }
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            HudGlyphs.paintHudFocusCornerMarks(g2, c.getWidth(), c.getHeight(), holdsKeyboardFocus(c), HUD_COLOR_ROLE_INFORMATION_MARK);
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * Whether this combo is a table cell's editor: {@link DefaultCellEditor} marks the combo it wraps with this
+     * property. Such a combo keeps the look of the grid it sits in.
+     */
+    public static boolean isTableCellCombo(Component c) {
+        return c instanceof JComboBox<?> combo
+                && Boolean.TRUE.equals(combo.getClientProperty("JComboBox.isTableCellEditor"));
+    }
+
+    /**
+     * WHY the descendant test: the focus of an editable combo or a framed scroll pane sits on the text inside it.
+     */
+    private static boolean holdsKeyboardFocus(Component c) {
+        Component owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+        return owner != null && (owner == c || SwingUtilities.isDescendingFrom(owner, c));
     }
 
     /**
@@ -392,15 +437,13 @@ public class AppTheme {
     }
 
     /**
-     * Combo frame border: the warm field line plus the vertical inset only. The horizontal content
-     * inset is owned by the cell renderer / editor ({@link #HUD_COMBO_ITEM_INSET_H}), so the collapsed
-     * value lines up with plain HUD text fields instead of double-counting the field horizontal inset.
+     * Combo frame border: the field line and no inset. The horizontal content inset is owned by the cell renderer /
+     * editor ({@link #HUD_COMBO_ITEM_INSET_H}), so the collapsed value lines up with plain HUD text fields instead of
+     * double-counting the field horizontal inset. WHY no vertical inset: the ▼ cell must reach the frame, and the
+     * value is centred in the fixed {@link #HUD_FIELD_HEIGHT} without one.
      */
     public static Border hudComboBorder() {
-        return BorderFactory.createCompoundBorder(
-                hudFieldLine(),
-                new EmptyBorder(HUD_FIELD_INSET_V, 0, HUD_FIELD_INSET_V, 0)
-        );
+        return hudFieldLine();
     }
 
     /**
@@ -470,7 +513,7 @@ public class AppTheme {
                 && Boolean.TRUE.equals(jce.getClientProperty(HUD_COMBO_EDITOR_LOCKED))) {
             return;   // combo editor is fully styled by picker(); palette must not re-border it
         }
-        tc.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        tc.setBackground(HUD_COLOR_ROLE_FIELD_BACKGROUND);
         // Field value text - HUD_COLOR_ROLE_PRIMARY_ACTION (vanilla-ED: light label, orange value), the same for single-line
         // and multi-line FIELD areas; only enabled/disabled differs. The live console/log is a
         // separate role (HudLogArea, a JPanel) and is not styled here.
@@ -523,7 +566,7 @@ public class AppTheme {
      * replacing the model or renderer. The UI delegate is installed by HudComboBox itself.
      */
     public static void styleComboBox(JComboBox<?> comboBox) {
-        comboBox.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        comboBox.setBackground(HUD_COLOR_ROLE_FIELD_BACKGROUND);
         comboBox.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION); // collapsed value - same HUD_COLOR_ROLE_PRIMARY_ACTION as the popup items (section 5.3)
         comboBox.setBorder(hudComboBorder());
         comboBox.setFocusable(true);
@@ -544,9 +587,8 @@ public class AppTheme {
      *   <li>Value colour {@link #HUD_COLOR_ROLE_PRIMARY_ACTION} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) - matches the
      *       renderer-painted value of non-editable combos.</li>
      *   <li>Horizontal text inset {@link #HUD_COMBO_ITEM_INSET_H}, equal to the renderer item inset.
-     *       No vertical inset: the combo's own {@link #hudComboBorder()} already pads the field, and a
-     *       picker is held to {@link #HUD_FIELD_HEIGHT}, so a second vertical inset here leaves the
-     *       text field too short and clips the typed text. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
+     *       No vertical inset: a picker is held to {@link #HUD_FIELD_HEIGHT}, so a vertical inset here
+     *       leaves the text field too short and clips the typed text. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
      *       on top of our border - FlatLaf computes that padding once, before our border exists, and
      *       would otherwise shift the value text to the right.</li>
      *   <li>{@link #HUD_COMBO_EDITOR_LOCKED} + {@link #HUD_LOCKED_FOREGROUND} so {@link #applyDarkPalette}
@@ -557,13 +599,13 @@ public class AppTheme {
      * HUD border is already in place when the FlatLaf padding is neutralised.
      */
     public static void styleComboEditor(JTextComponent editor) {
-        editor.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        editor.setBackground(HUD_COLOR_ROLE_FIELD_BACKGROUND);
         editor.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
         editor.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED);
         editor.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         editor.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         editor.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
-        // Horizontal inset only: the combo border already supplies the vertical padding.
+        // Horizontal inset only: the fixed field height centres the text.
         editor.setBorder(new EmptyBorder(0, HUD_COMBO_ITEM_INSET_H, 0, HUD_COMBO_ITEM_INSET_H));
         // Neutralise FlatLaf's injected editor padding so only our border defines the inset.
         editor.putClientProperty(FlatClientProperties.TEXT_FIELD_PADDING, new Insets(0, 0, 0, 0));
@@ -750,7 +792,7 @@ public class AppTheme {
             c.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             if (!lockForeground) c.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         } else {
-            c.setBackground(c instanceof JTextComponent ? HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND : HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            c.setBackground(c instanceof JTextComponent ? HUD_COLOR_ROLE_FIELD_BACKGROUND : HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             if (!lockForeground) c.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         }
 
