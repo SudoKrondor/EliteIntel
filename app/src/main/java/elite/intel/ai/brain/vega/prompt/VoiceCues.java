@@ -4,6 +4,8 @@ import elite.intel.ai.ApiFactory;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.session.SystemSession;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Whether VEGA may sigh, breathe and laugh in this reply, and the prompt line that lets her.
  * <p>
@@ -42,10 +44,30 @@ public final class VoiceCues {
     }
 
     /**
-     * Event instructions for a line made to mock - a gloat over a wreck, a retort to a pirate - with the laugh
-     * invited, since a mocking line is where it is most at home. Unchanged when emotes are not available.
+     * Event instructions for a line made to mock - a retort to a pirate - with the laugh invited, since a mocking
+     * line is where it is most at home. Unchanged when emotes are not available.
      */
     public static String withLaughInvited(String instructions) {
-        return available() ? instructions + " You may end it with <laugh>." : instructions;
+        return available() ? invited(instructions) : instructions;
+    }
+
+    /**
+     * Event instructions for a line that lands either way: half the time the laugh is invited, half the time the
+     * line is delivered dry. Unchanged when emotes are not available.
+     */
+    public static String withLaughOnCoinFlip(String instructions) {
+        return available() ? coinFlipped(instructions, ThreadLocalRandom.current().nextBoolean()) : instructions;
+    }
+
+    /**
+     * WHY the dry side says so: leaving the invitation out is not enough, because the voice-cue rule in the system
+     * prompt still allows a laugh, and a mocking line is exactly where the model takes it.
+     */
+    static String coinFlipped(String instructions, boolean laugh) {
+        return laugh ? invited(instructions) : instructions + " Deliver it dry, with no voice cue.";
+    }
+
+    private static String invited(String instructions) {
+        return instructions + " You may end it with <laugh>.";
     }
 }
