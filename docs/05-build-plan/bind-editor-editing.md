@@ -82,6 +82,9 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 
 ## Hand-off notes — newest first
 
+**2026-11-03, shell layout (
+Krondor).** The search moved to a footer owned by `BindingProfilePanel`, left of Game Mode's filters and Auto-Assign (`GameModePanel.footerControls`), which show only on that tab, so Anomalies and Settings keep the search. The keyboard hint sits left of the pacing slider on one row.
+
 **2026-11-03, the game's conflict matrix added to our rules (
 Krondor).** `BindingConflictRules.isSafeOverlap` now also reports any identical-chord pair the game warns about (`GameConflictMatrix`); `isSafeShadow` is the same check without the matrix, for modifier shadows. This reaches everything that asks: the red rows, Anomalies, the startup check, SAVE in the capture dialog and auto-assign.
 **SAVE now refuses these

@@ -147,16 +147,45 @@ public class BindingProfilePanel extends JPanel {
         JPanel details = compactProfilePanel();
         JPanel header = transparentPanel(new BorderLayout(0, 2));
         header.add(bindingProfileCard(details), BorderLayout.NORTH);
-        header.add(pacingAndSearchRow(), BorderLayout.CENTER);
+        header.add(hintAndPacingRow(), BorderLayout.CENTER);
         add(header, BorderLayout.NORTH);
 
-        // WHY the search is the shell's and the footer the mode's: every mode shares the search, and brings its own
-        // filters.
         modeTabs = AppTheme.makeSectionTabs();
         modeTabs.addTab(getText("bindings.mode.gameMode"), gameMode);
         modeTabs.addTab(getText("bindings.mode.anomalies", 0), gameMode.anomaliesView());
         modeTabs.addTab(getText("bindings.mode.settings"), settingsMode);
         add(modeTabs, BorderLayout.CENTER);
+        add(footer(), BorderLayout.SOUTH);
+    }
+
+    /**
+     * The search, then what the mode on screen adds to it.
+     * <p>
+     * WHY the shell's and not Game Mode's: every mode is searched, and only Game Mode has filters. In Game Mode's own
+     * footer the search would vanish with it on the other tabs.
+     */
+    private JPanel footer() {
+        JPanel search = transparentPanel(new BorderLayout(7, 0));
+        search.add(hudReadoutLabel(getText("bindings.search.label")), BorderLayout.WEST);
+        search.add(bindingSearchField(), BorderLayout.CENTER);
+        // WHY a wrapper: the field keeps its own height when the buttons beside it make the line taller.
+        JPanel searchLine = transparentPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        searchLine.add(search, gbc);
+
+        JComponent controls = gameMode.footerControls();
+        // WHY the buttons' height: the footer keeps it on every tab, so the grid above does not shift between modes.
+        searchLine.setPreferredSize(new Dimension(0, controls.getPreferredSize().height));
+        searchLine.setBorder(new EmptyBorder(0, 6, 0, 0));
+        modeTabs.addChangeListener(e -> controls.setVisible(modeTabs.getSelectedComponent() == gameMode));
+
+        JPanel footer = transparentPanel(new BorderLayout(HUD_GAP, 0));
+        footer.setBorder(hudFooterBorder());
+        footer.add(searchLine, BorderLayout.CENTER);
+        footer.add(controls, BorderLayout.EAST);
+        return footer;
     }
 
     private JPanel compactProfilePanel() {
@@ -202,7 +231,6 @@ public class BindingProfilePanel extends JPanel {
                 HudPanel.Variant.FLAT,
                 6);
         card.body().add(body, BorderLayout.CENTER);
-        card.setFooter(keyboardOnlyWarningStrip(), HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND);
 
         JPanel wrapper = transparentPanel(new BorderLayout());
         wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
@@ -379,26 +407,31 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * The row under the profile: the keystroke pacing, and the search over what the modes show.
+     * The row under the profile: what VEGA presses with, and how fast - the pacing governs exactly what the hint
+     * describes.
      * <p>
      * Pacing of the keystrokes this app sends to the game. The slider sets the floor of the pause held after each
      * keystroke of a sequence; the executor adds its own randomised spread on top. FAST is the pacing every build so
      * far has used and stays the default - SLOW is for machines where the game drops keystrokes out of a sequence it
      * cannot keep up with.
      */
-    private JPanel pacingAndSearchRow() {
+    private JPanel hintAndPacingRow() {
         JPanel row = transparentPanel(new GridBagLayout());
         row.setBorder(new EmptyBorder(0, 6, 2, 6));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.SOUTH;
-        gbc.insets = new Insets(0, 0, 0, 7);
+        gbc.insets = new Insets(0, 0, 0, 16);
 
         gbc.gridx = 0;
-        row.add(sliderRowLabel(getText("bindings.keyInputPacing")), gbc);
+        row.add(keyboardOnlyWarningStrip(), gbc);
 
         gbc.gridx = 1;
+        gbc.insets = new Insets(0, 0, 0, 7);
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing")), gbc);
+
+        gbc.gridx = 2;
         row.add(sliderRowLabel(getText("bindings.keyInputPacing.fast")), gbc);
 
         HudSlider slider = new HudSlider(
@@ -408,32 +441,22 @@ public class BindingProfilePanel extends JPanel {
                 systemSession.getKeyInputDelayMs());
         slider.setToolTipText(getText("bindings.keyInputPacing.tooltip"));
         slider.addChangeListener(e -> systemSession.setKeyInputDelayMs(slider.getValue()));
-        gbc.gridx = 2;
-        gbc.weightx = 0.5;
+        gbc.gridx = 3;
+        gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         row.add(slider, gbc);
 
-        gbc.gridx = 3;
+        gbc.gridx = 4;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(0, 0, 0, 16);
-        row.add(sliderRowLabel(getText("bindings.keyInputPacing.slow")), gbc);
-
-        gbc.gridx = 4;
-        gbc.insets = new Insets(0, 0, 0, 7);
-        row.add(sliderRowLabel(getText("bindings.search.label")), gbc);
-
-        gbc.gridx = 5;
-        gbc.weightx = 0.5;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, 0, 0);
-        row.add(bindingSearchField(), gbc);
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing.slow")), gbc);
 
         return row;
     }
 
     /**
-     * A label on the pacing and search row, dropped by the slider's value area so it sits level with the track rather
+     * A label on the pacing row, dropped by the slider's value area so it sits level with the track rather
      * than with the value printed above the thumb.
      */
     private static JLabel sliderRowLabel(String text) {

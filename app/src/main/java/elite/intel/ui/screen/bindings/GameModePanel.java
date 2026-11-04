@@ -16,7 +16,6 @@ import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
 import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 
 import javax.swing.*;
@@ -130,6 +129,7 @@ class GameModePanel extends JPanel {
      */
     private final IntConsumer anomalyCount;
     private JButton fixAllButton;
+    private JComponent footerControls;
     private JCheckBox conflictsOnlyCheck;
     /**
      * Narrows the grid to the controls Vega uses - the ones with something in the AI ACCESS column.
@@ -215,7 +215,7 @@ class GameModePanel extends JPanel {
         });
         add(sectionTabs, BorderLayout.NORTH);
 
-        add(buildFooter(), BorderLayout.SOUTH);
+        footerControls = buildFooterControls();
 
         anomaliesPanel = groupedTablesPanel();
         anomaliesScrollPane = groupedTablesScrollPane(anomaliesPanel);
@@ -273,7 +273,15 @@ class GameModePanel extends JPanel {
         fixAllButton.setEnabled(false);
     }
 
-    private JPanel buildFooter() {
+    /**
+     * This mode's filters and Auto-Assign, for the shell's footer: it shares that line with the search, and shows them
+     * only while this mode is up.
+     */
+    JComponent footerControls() {
+        return footerControls;
+    }
+
+    private JPanel buildFooterControls() {
         fixAllButton = makeButtonSubtle(getText("bindings.button.fixAll.short"));
         fixAllButton.setToolTipText(getText("bindings.button.fixAll.tooltip"));
         fixAllButton.addActionListener(e -> fixAllMissing());
@@ -285,10 +293,13 @@ class GameModePanel extends JPanel {
         vegaOnlyCheck.setToolTipText(getText("bindings.filter.vegaOnly.tooltip"));
         vegaOnlyCheck.addActionListener(e -> renderBindingTables());
 
-        // Non-modal footer: the filters and AUTO-ASSIGN VEGA REQUIRED BINDS on the right, no BACK. APPLY and DISCARD are
-        // the bar's, above BindForge's tabs (Storage S5).
-        return HudFooter.build(false, null, null,
-                List.of(conflictsOnlyCheck, vegaOnlyCheck, fixAllButton));
+        // The filters and AUTO-ASSIGN VEGA REQUIRED BINDS. APPLY and DISCARD are the bar's, above BindForge's tabs (Storage S5).
+        JPanel filters = new JPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
+        filters.setOpaque(false);
+        filters.add(conflictsOnlyCheck);
+        filters.add(vegaOnlyCheck);
+        filters.add(fixAllButton);
+        return filters;
     }
 
     private void fixAllMissing() {
