@@ -1,12 +1,16 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.devices.DeviceNames;
 import elite.intel.bindforge.io.StartPresetSections;
+import elite.intel.bindforge.preseteditor.BindNameCatalog;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
 import elite.intel.bindforge.preseteditor.BindNameList;
 import elite.intel.bindforge.preseteditor.BindsFileOrigin;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -108,10 +112,65 @@ class RenameTest {
                         List.of(Path.of("Steam/ControlSchemes/KeyboardMouseOnly.binds"))),
                 new BindNameEntry("Custom", BindsFileOrigin.USER, List.of(Path.of("Custom.4.2.binds")))), List.of());
 
-        Rename.Names names = Rename.names(current, new Apply.Offered(list, List.of()));
+        Rename.Names names = Rename.names(current, current, new Apply.Offered(list, List.of()));
 
         assertEquals(List.of("KeyboardMouseOnly"), names.factory());
         assertEquals(List.of("Custom", "Spare"), names.own());
+    }
+
+    /**
+     * The file the warning was written for: the game's own {@code KeyboardMouseOnly.4.2.binds}, from a real folder.
+     */
+    @Test
+    void aBindsFileNamedExactlyLikeAFactoryOneIsWarnedOf(@TempDir Path controlSchemes) throws IOException {
+        Files.writeString(controlSchemes.resolve("KeyboardMouseOnly.binds"),
+                binds("KeyboardMouseOnly", "Key_A", "Joy_XAxis", ""));
+        ConfigurationFiles current = set(Map.of("KeyboardMouseOnly.4.2.binds",
+                binds("KeyboardMouseOnly", "Key_A", "Joy_XAxis", "")));
+        BindNameList list = BindNameCatalog.list(PresetEdits.bindsFiles(current), List.of(controlSchemes));
+
+        Rename.Names names = Rename.names(current, current, new Apply.Offered(list, List.of()));
+
+        assertTrue(Rename.factoryNamed("KeyboardMouseOnly.4.2.binds", names.factory()));
+    }
+
+    /**
+     * Custom to Mine, then Mine to custom, is the case-only rename refused straight away. Back to Custom is not.
+     */
+    @Test
+    void aCaseOnlyRenameByWayOfAnotherNameIsRefusedAndARenameBackIsNot() throws IOException {
+        ConfigurationFiles applied = set(Map.of("Custom.4.2.binds", binds("Custom", "Key_A", "Joy_XAxis", "")));
+        ConfigurationFiles away = Rename.rename(applied, applied, "Custom.4.2.binds", "Mine");
+
+        Rename.Names names = Rename.names(away, applied, new Apply.Offered(new BindNameList(List.of(), List.of()), List.of()));
+
+        assertEquals(DeviceNames.Problem.CLASHES, DeviceNames.validate("custom", names.taken("custom")).problem());
+        assertEquals(DeviceNames.Problem.CLASHES, DeviceNames.validate("Cus_tom", names.taken("Cus_tom")).problem());
+        assertTrue(DeviceNames.validate("Custom", names.taken("Custom")).valid());
+        assertThrows(IllegalArgumentException.class, () -> Rename.rename(away, applied, "Mine.4.2.binds", "custom"));
+        assertTrue(Rename.rename(away, applied, "Mine.4.2.binds", "Custom").sameAs(applied));
+    }
+
+    @Test
+    void theRenamesAreFoundFromTheFiles() throws IOException {
+        Map<String, byte[]> applied = set(Map.of("Custom.4.2.binds", binds("Custom", "Key_A", "Joy_XAxis", ""),
+                "Spare.4.2.binds", binds("Spare", "Key_B", "Joy_YAxis", ""),
+                "Same.4.2.binds", binds("Same", "Key_C", "Joy_XAxis", ""))).bindings();
+
+        Map<String, byte[]> current = set(Map.of("Zed.4.2.binds", binds("Zed", "Key_A", "Joy_XAxis", ""),
+                "Abe.4.2.binds", binds("Abe", "Key_B", "Joy_YAxis", ""),
+                "Same.4.2.binds", binds("Same", "Key_C", "Joy_XAxis", ""))).bindings();
+
+        assertEquals(Map.of("Custom.4.2.binds", "Zed.4.2.binds", "Spare.4.2.binds", "Abe.4.2.binds"),
+                Rename.between(applied, current), "each goes with the new file closest to it");
+        assertEquals(Map.of(), Rename.between(applied, applied));
+    }
+
+    @Test
+    void aNewFileWithNothingGoneIsNoRename() {
+        Map<String, byte[]> current = set(Map.of("Custom.4.2.binds", "<Root/>")).bindings();
+
+        assertEquals(Map.of(), Rename.between(Map.of(), current));
     }
 
     @Test

@@ -7,12 +7,8 @@ import elite.intel.bindforge.preseteditor.BindsFileOrigin;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Renaming a binds file - the Bind Editor's Name box (bind-editor.md, <em>Shell</em>; storage.md rule 7; Storage S12).
@@ -36,32 +32,78 @@ public final class Rename {
      * @param own     the BindNames of the set's binds files, the file being renamed included - compared loosely, so a
      *                rename that changes only case, {@code -} or {@code _} is refused (Alan, 2026-11-03, Storage S12
      *                D3: APPLY writes the new file and removes the old, and on Windows the two would be one file)
+     * @param applied the BindNames of the working copy's binds files - what is live until APPLY, so a rename by way of
+     *                another name is held to the same rule (review, 2026-11-03)
      */
-    public record Names(List<String> factory, List<String> own) {
+    public record Names(List<String> factory, List<String> own, List<String> applied) {
         public Names {
             factory = List.copyOf(factory);
             own = List.copyOf(own);
+            applied = List.copyOf(applied);
         }
 
-        public static final Names NONE = new Names(List.of(), List.of());
+        public static final Names NONE = new Names(List.of(), List.of(), List.of());
+
+        /**
+         * The names {@code typed} must not be loosely the same as. A working-copy name exactly is a rename back.
+         */
+        public List<String> taken(String typed) {
+            return Stream.concat(own.stream(), applied.stream().filter(name -> !name.equals(typed))).toList();
+        }
     }
 
-    /** The names for {@code current}, from every installation Elite-Intel knows. Touches the disk - not for the EDT. */
-    public static Names names(ConfigurationFiles current) {
-        return names(current, Apply.offered(current, BindForgeInstallationsManager.getInstance().findAll()));
+    /**
+     * The names for the edits, from every installation Elite-Intel knows. Touches the disk - not for the EDT.
+     */
+    public static Names names(Edits.Snapshot snapshot) {
+        return names(snapshot.current(), snapshot.applied(),
+                Apply.offered(snapshot.current(), BindForgeInstallationsManager.getInstance().findAll()));
     }
 
-    static Names names(ConfigurationFiles current, Apply.Offered offered) {
+    static Names names(ConfigurationFiles current, ConfigurationFiles applied, Apply.Offered offered) {
         // WHY: an installation that cannot be reached is left out, and nothing more is done about it (principle 13).
         List<String> factory = offered.list().entries().stream()
-                .filter(entry -> entry.origin() == BindsFileOrigin.FACTORY)
+                .filter(entry -> entry.origin() == BindsFileOrigin.FACTORY || entry.shadowsFactory())
                 .map(BindNameEntry::bindName)
                 .toList();
-        List<String> own = BindsEdits.bindsFiles(current).stream()
+        return new Names(factory, bindNames(current), bindNames(applied));
+    }
+
+    private static List<String> bindNames(ConfigurationFiles files) {
+        return BindsEdits.bindsFiles(files).stream()
                 .flatMap(file -> FileNames.bindName(file).stream())
                 .distinct()
                 .toList();
-        return new Names(factory, own);
+    }
+
+    /**
+     * Each binds file of {@code applied} the edits renamed, to its new name.
+     * <p>
+     * WHY worked out from the files: the edits hold only what the files will be (storage.md rule 7), and only a rename
+     * takes a binds file out of them. It keeps the version, so that is the first test; with several renames not applied,
+     * each old file goes with the new one closest to it, since either may carry other edits as well.
+     */
+    static Map<String, String> between(Map<String, byte[]> applied, Map<String, byte[]> current) {
+        List<String> arrived = new ArrayList<>(new TreeMap<>(current).keySet().stream()
+                .filter(name -> FileNames.isBindsFile(name) && !applied.containsKey(name))
+                .toList());
+        Map<String, String> renamed = new TreeMap<>();
+        new TreeMap<>(applied).keySet().stream()
+                .filter(name -> FileNames.isBindsFile(name) && !current.containsKey(name))
+                .forEach(older -> arrived.stream()
+                        .filter(newer -> suffix(newer).equals(suffix(older)))
+                        .min(Comparator.comparingInt(newer -> differences(applied.get(older), current.get(newer))))
+                        .ifPresent(newer -> {
+                            renamed.put(older, newer);
+                            arrived.remove(newer);
+                        }));
+        return renamed;
+    }
+
+    private static int differences(byte[] older, byte[] newer) {
+        String sameName = "file.4.2.binds";
+        return BindingsComparison.compare(Map.of(sameName, older), Map.of(sameName, newer),
+                BindingsComparison.Factory.NONE).items().size();
     }
 
     /** The factory BindName {@code typed} is, ignoring case only - {@code Keyboard_Mouse_Only} is not one. */
@@ -97,7 +139,8 @@ public final class Rename {
      * @param newBindName a name {@code DeviceNames.validate} accepts, checked by the screen
      * @return {@code current} unchanged when {@code newBindName} is the file's own BindName
      * @throws IllegalArgumentException if the set holds no such binds file, the name is not a binds file name, or the
-     *                                  set already holds a binds file the new name would be, ignoring case
+     *                                  set already holds a binds file the new name would be, ignoring case, or the
+     *                                  working copy holds one differing from it only in case
      * @throws IOException              if the file has no {@code <Root>} element to name
      */
     public static ConfigurationFiles rename(ConfigurationFiles current, ConfigurationFiles applied, String bindsFile,
@@ -116,6 +159,10 @@ public final class Rename {
         // WHY: on Windows a name differing only in case is the same file, so APPLY would remove the one it wrote.
         if (current.bindings().keySet().stream().anyMatch(name -> name.toLowerCase(Locale.ROOT).equals(newKey))) {
             throw new IllegalArgumentException("the set already holds " + newFile);
+        }
+        if (applied.bindings().keySet().stream()
+                .anyMatch(name -> !name.equals(newFile) && name.toLowerCase(Locale.ROOT).equals(newKey))) {
+            throw new IllegalArgumentException("the working copy holds a file differing from " + newFile + " only in case");
         }
         byte[] renamed = Create.withPresetName(content, newBindName);
         byte[] inWorkingCopy = applied.bindings().get(newFile);

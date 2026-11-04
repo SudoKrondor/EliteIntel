@@ -16,8 +16,10 @@ import java.util.Objects;
  * @param origin   the player's folder, or an installation's
  * @param files    every file answering to the BindName, never empty: a factory one by its full path, the player's by
  *                 its file name alone, since it is in the set APPLY writes, not yet necessarily on disk
+ * @param shadowsFactory the player's file has the BindName of a factory one, which the game makes of a hand-copied
+ *                       factory file - the Bind Editor warns of it
  */
-public record BindNameEntry(String bindName, BindsFileOrigin origin, List<Path> files) {
+public record BindNameEntry(String bindName, BindsFileOrigin origin, List<Path> files, boolean shadowsFactory) {
 
     public BindNameEntry {
         Objects.requireNonNull(bindName, "bindName");
@@ -26,5 +28,9 @@ public record BindNameEntry(String bindName, BindsFileOrigin origin, List<Path> 
         if (files.isEmpty()) {
             throw new IllegalArgumentException("A BindName with no file: " + bindName);
         }
+    }
+
+    public BindNameEntry(String bindName, BindsFileOrigin origin, List<Path> files) {
+        this(bindName, origin, files, false);
     }
 }

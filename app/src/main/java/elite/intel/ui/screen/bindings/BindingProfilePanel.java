@@ -14,11 +14,7 @@ import elite.intel.bindforge.rules.AiAccess;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
-import elite.intel.bindforge.storage.BindsEdits;
-import elite.intel.bindforge.storage.ConfigurationFiles;
-import elite.intel.bindforge.storage.EditedDeviceLabels;
-import elite.intel.bindforge.storage.Edits;
-import elite.intel.bindforge.storage.Rename;
+import elite.intel.bindforge.storage.*;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -341,7 +337,7 @@ public class BindingProfilePanel extends JPanel {
     private Optional<String> nameRefusal(String typed) {
         String file = loadedFile;
         if (file == null || typed.equals(Rename.bindName(file).orElse(null))) return Optional.empty();
-        DeviceNames.Verdict verdict = DeviceNames.validate(typed, names.own());
+        DeviceNames.Verdict verdict = DeviceNames.validate(typed, names.taken(typed));
         if (!verdict.valid()) return Optional.of(OnboardingDialog.problemText(verdict));
         return Rename.factoryClash(typed, names.factory())
                 .map(factory -> OnboardingDialog.problemText(
@@ -468,7 +464,8 @@ public class BindingProfilePanel extends JPanel {
      * @throws IOException if the edits, the file or the device files cannot be read
      */
     private Loaded read(String asked) throws IOException {
-        ConfigurationFiles current = Edits.stored().snapshot().current();
+        Edits.Snapshot snapshot = Edits.stored().snapshot();
+        ConfigurationFiles current = snapshot.current();
         List<String> files = BindsEdits.bindsFiles(current);
         if (files.isEmpty()) return Loaded.nothing(asked);
         String file = asked != null && files.contains(asked)
@@ -476,7 +473,7 @@ public class BindingProfilePanel extends JPanel {
                 : BindsEdits.generalFile(current).orElse(files.getFirst());
         byte[] content = current.bindings().get(file);
         return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
-                EditedDeviceLabels.of(current), Rename.names(current));
+                EditedDeviceLabels.of(current), Rename.names(snapshot));
     }
 
     /** Shows what {@link #read} found. On the EDT. */

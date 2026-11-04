@@ -126,8 +126,13 @@ stops first-time startup, with its message and its code.
    **A binds file renamed in the Bind Editor** goes out under its new name, and APPLY removes the old-named file
    from the live bindings folder, after the backup (2026-10-24, Alan). **It is written as a new file and the old one
    removed, not renamed in place** (2026-11-03, Alan, Storage S12): the edits hold only what the files will be, with
-   no record of which was which. So a rename that changes only case, `-` or `_` is refused in the Name box - on
-   Windows the old name and the new would be one file, and removing the old would remove the one just written.
+   no record of which was which. So a rename that changes only case, `-` or `_` is refused in the Name box - on Windows the old name and the new would be one file, and removing the old would remove the one just written.
+   **That holds across renames not
+   applied:** the working copy's names count too, so `Custom` to `Mine` to `custom` is refused;
+   `Custom` exactly is a rename back. **A rename changes the name, not the
+   bindings** (review, 2026-11-03): a binding changed in-game while it waits is asked about at APPLY like any other, and what is settled goes out under the new name.
+   **If a binds file cannot be written, the preset file is not written and nothing is
+   removed,** so the game is never left on a line naming a file that is not there; the report says what was held back.
 
    **Before anything is backed up or written, APPLY checks that every one of the four lines of
    `StartPreset.4.start` names a binds file that exists.** If one does not — or is empty — APPLY refuses as a whole

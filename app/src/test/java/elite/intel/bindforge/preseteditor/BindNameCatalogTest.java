@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * The list the four dropdowns offer: the player's binds files, from the set APPLY writes (Storage S6), the factory ones,
@@ -88,7 +88,7 @@ class BindNameCatalogTest {
         BindNameList list = BindNameCatalog.list(set, List.of(controlSchemes));
 
         assertEquals(List.of(new BindNameEntry("KeyboardMouseOnly", BindsFileOrigin.USER,
-                List.of(Path.of("KeyboardMouseOnly.4.2.binds")))), list.entries());
+                List.of(Path.of("KeyboardMouseOnly.4.2.binds")), true)), list.entries());
     }
 
     /** Not expected - the game upgrades the old one in place - but not silently halved if it happens. */

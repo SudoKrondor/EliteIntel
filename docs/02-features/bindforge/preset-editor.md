@@ -31,8 +31,8 @@ Built as `elite.intel.bindforge.preseteditor.BindNameCatalog`.
   entry is marked as the player's or factory. The same factory binds file in several installations is **one** entry,
   holding a file from each; an installation whose folder is missing or cannot be listed is skipped, so an
   unplugged drive does not empty the list.
-- **A player's binds file with the BindName of a factory one is offered as the player's**, and a warning is logged. No
-  factory binds file has a version suffix, so it is not expected.
+- **A player's binds file with the BindName of a factory one is offered as the player'
+  s.** The game makes one when a hand-copied factory file is edited in-game, and the [Bind Editor warns of it](bind-editor.md#shell-common-to-all-modes).
 - **Two of the player's files for one BindName cannot happen** in a live folder (Alan: the game upgrades
   `Custom.3.0.binds` to `Custom.4.2.binds` in place). If the list meets it anyway, it keeps both files under
   the one BindName and logs a warning, rather than letting one silently replace the other.
