@@ -41,8 +41,8 @@ class PersonalitySwitchEvalTest {
             case CASUAL -> "like a colleague";
             case FRIENDLY -> "close friend";
             case UNHINGED -> "chaotic energy";
-            case SEVEN_OF_NINE -> "former Borg drone";
-            case MOUTHY_MERC -> "fourth-wall-breaking gun-for-hire";
+            case SEVEN_OF_NINE -> "Tertiary Adjunct";
+            case MOUTHY_MERC -> "hyper-verbal gun-for-hire";
             case YOUR_EX_BF -> "emotionally avoidant";
             case YOUR_EX_GF -> "boundary-free ex-partner";
             case ROGUE -> "comedic mayhem";

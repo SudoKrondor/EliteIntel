@@ -321,6 +321,7 @@ class VegaSystemPromptTest {
         String normalized = prompt.narrationRulesTo("RayRay").replaceAll("\\s+", " ");
         assertTrue(normalized.contains("speak directly to RayRay over comms"), normalized);
         assertTrue(normalized.contains("Never address or name the commander."), normalized);
+        assertTrue(normalized.contains("Aim any mockery the personality calls for at RayRay."), normalized);
         assertFalse(normalized.contains("address the commander directly"), normalized);
         assertFalse(normalized.contains("When addressing the commander"), normalized);
         assertTrue(prompt.staticRules(ThoughtSource.EVENT).replaceAll("\\s+", " ")

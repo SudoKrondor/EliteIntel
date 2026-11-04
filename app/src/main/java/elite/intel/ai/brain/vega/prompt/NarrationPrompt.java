@@ -47,7 +47,8 @@ final class NarrationPrompt {
      */
     static String renderTo(String addressee) {
         return render("speak directly to " + addressee + " over comms: \"you\" is " + addressee + ".",
-                "The commander hears this but is not the listener. Never address or name the commander.\n");
+                "The commander hears this but is not the listener. Never address or name the commander. "
+                        + "Aim any mockery the personality calls for at " + addressee + ".\n");
     }
 
     private static String render(String addresseeClause, String addressRule) {
