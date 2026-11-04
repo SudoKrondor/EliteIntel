@@ -34,6 +34,8 @@ makes them cheap to build when they come back — each mode's own section below 
   this screen's edits; the AI tab's KEYMAP readout is removed. **They are published on their own thread at every
   read, whether the read works or not** (Alan, 2026-10-31, Storage S8R3): a read that fails does not skip them, and a
   failure in them does not blank a read that worked.
+- **The Name box was removed from this screen (2026-11-03, Krondor), so nothing on screen renames a binds file
+  now.** The factory-name warning went with it. `bindforge.storage.Rename` is unchanged, and a rename already in the edits still applies. The rest of this item records how renaming worked.
 - **A Name box beside the Bindings File dropdown — renaming a binds file (2026-10-24, Alan).** It shows the selected
   file's BindName, editable, with the game's version and extension after it as fixed text — `DualVirpilDawnTreader`
   `.4.2.binds`. A name the user types is held to the same rules as a controller name: letters, digits, `-` and `_`,

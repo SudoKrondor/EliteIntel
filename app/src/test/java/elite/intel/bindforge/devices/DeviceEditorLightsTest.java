@@ -8,9 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /** Live highlighting: lit only while the input is active, axes by which axis they are. */
 class DeviceEditorLightsTest {
@@ -38,6 +36,17 @@ class DeviceEditorLightsTest {
         lights.axis(2, 0.5f);
 
         assertEquals(Set.of("Joy_RZAxis"), lights.lit());
+    }
+
+    /**
+     * What the axis meters go by: the same mapping as the lights, so a meter never moves on the wrong row.
+     */
+    @Test
+    void anAxisTokenIsWhichAxisItIs() {
+        DeviceEditorLights lights = new DeviceEditorLights(TWIST_ON_RZ, false);
+
+        assertEquals("Joy_RZAxis", lights.axisToken(2).orElseThrow());
+        assertTrue(lights.axisToken(3).isEmpty());
     }
 
     @Test

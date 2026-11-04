@@ -45,8 +45,8 @@ import static elite.intel.ui.theme.HudPalette.*;
  * Axis rows sit among the button rows, as the game lists them. VEGA never presses one and no keyboard key can go on one,
  * so they have no AI access, take no auto-fix, and open {@link AssignAxisDialog} rather than the button dialog.
  * <p>
- * Nothing here writes a file (storage.md rule 6), and one change runs at a time across the whole Bind Editor, the
- * shell's rename included - so changes go through {@link EditRunner}, the shell's.
+ * Nothing here writes a file (storage.md rule 6), and one change runs at a time across the whole Bind Editor - so
+ * changes go through {@link EditRunner}, the shell's.
  */
 class GameModePanel extends JPanel {
 
@@ -55,7 +55,7 @@ class GameModePanel extends JPanel {
      */
     interface EditRunner {
         /**
-         * A change to the edits is running - SAVE, CLEAR, Auto-Assign or a rename; a second waits for it.
+         * A change to the edits is running - SAVE, CLEAR or Auto-Assign; a second waits for it.
          */
         boolean running();
 

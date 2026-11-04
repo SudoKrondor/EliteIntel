@@ -5,12 +5,7 @@ import elite.intel.devices.events.DeviceHatEvent;
 import elite.intel.devices.model.DeviceDescription;
 import elite.intel.devices.model.GameAxis;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Which of the open device's inputs are active right now - the Device Editor's live highlighting
@@ -52,6 +47,13 @@ public final class DeviceEditorLights {
     /** @return whether anything lit or went out */
     public boolean button(int sdlIndex, boolean pressed) {
         return set(ButtonMapLabels.buttonToken(sdlIndex + 1), pressed);
+    }
+
+    /**
+     * The token of the axis behind SDL's index; empty where the numbering is not matched.
+     */
+    public Optional<String> axisToken(int sdlIndex) {
+        return description.axisAt(sdlIndex).map(GameAxis::token);
     }
 
     /** @return whether anything lit or went out */

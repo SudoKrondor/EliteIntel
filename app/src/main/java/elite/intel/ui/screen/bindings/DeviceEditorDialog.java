@@ -16,6 +16,7 @@ import elite.intel.eventbus.DeviceBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudAxisMeter;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudTextField;
 import elite.intel.ui.widget.HudUnsavedHint;
@@ -119,6 +120,7 @@ final class DeviceEditorDialog extends JDialog {
     private final Map<String, String> starting;
     private final Map<String, HudTextField> boxes = new LinkedHashMap<>();
     private final DeviceEditorLights lights;
+    private final Map<String, HudAxisMeter> axisMeters = new LinkedHashMap<>();
     private final Map<String, Color[]> restingColours = new LinkedHashMap<>();
     private final HudUnsavedHint unsavedHint = new HudUnsavedHint();
     private JButton save;
@@ -387,7 +389,11 @@ final class DeviceEditorDialog extends JDialog {
         JPanel grid = transparentPanel(new GridBagLayout());
         List<String> axes = opening.inputs().axes();
         for (int i = 0; i < axes.size(); i++) {
-            addBox(grid, axes.get(i), (i / AXES_PER_COLUMN) * 2, i % AXES_PER_COLUMN);
+            int column = (i / AXES_PER_COLUMN) * 3;
+            int row = i % AXES_PER_COLUMN;
+            addBox(grid, axes.get(i), column, row);
+            // WHY only for a live controller: an unplugged one never moves, and an empty meter would read as broken.
+            if (opening.liveId() != null) addAxisMeter(grid, axes.get(i), column + 2, row);
         }
         JPanel panel = transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         panel.add(grid, BorderLayout.NORTH);
@@ -463,6 +469,17 @@ final class DeviceEditorDialog extends JDialog {
         grid.add(box, c);
         boxes.put(token, box);
         restingColours.put(token, new Color[]{box.getBackground(), box.getForeground()});
+    }
+
+    /**
+     * Where the axis is now, to the right of its label box.
+     */
+    private void addAxisMeter(JPanel grid, String token, int column, int row) {
+        HudAxisMeter meter = new HudAxisMeter();
+        GridBagConstraints c = cell(column, row);
+        c.insets = new Insets(HudPalette.HUD_GAP / 2, 0, HudPalette.HUD_GAP / 2, HudPalette.HUD_GAP * 2);
+        grid.add(meter, c);
+        axisMeters.put(token, meter);
     }
 
     /** Every edit to {@code field} - the name or a label - re-reads whether there is anything to SAVE. */
@@ -691,7 +708,13 @@ final class DeviceEditorDialog extends JDialog {
 
     @Subscribe
     public void onAxis(DeviceAxisEvent event) {
-        if (isThisDevice(event.deviceId())) onEdt(() -> lights.axis(event.axisIndex(), event.value()));
+        if (isThisDevice(event.deviceId())) {
+            onEdt(() -> {
+                lights.axisToken(event.axisIndex()).map(axisMeters::get)
+                        .ifPresent(meter -> meter.setValue(event.value()));
+                return lights.axis(event.axisIndex(), event.value());
+            });
+        }
     }
 
     @Subscribe
@@ -704,6 +727,7 @@ final class DeviceEditorDialog extends JDialog {
         if (isThisDevice(event.deviceId())) {
             onEdt(() -> {
                 lights.clear();
+                axisMeters.values().forEach(meter -> meter.setValue(null));
                 return true;
             });
         }
