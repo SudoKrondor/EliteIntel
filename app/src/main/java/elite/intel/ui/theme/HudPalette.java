@@ -23,7 +23,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_1B6F7B = new Color(0x1B6F7B);
     public static final Color HUD_COLOR_24313A = new Color(0x24313A);
     public static final Color HUD_COLOR_2D5C66 = new Color(0x2D5C66);
-    public static final Color HUD_COLOR_33D7E8 = new Color(0x33D7E8);
+    public static final Color HUD_COLOR_33D7E8 = new Color(0xA633D7E8, true);
     public static final Color HUD_COLOR_3A4C58 = new Color(0x3A4C58);
     public static final Color HUD_COLOR_4FC56B = new Color(0x4FC56B);
     public static final Color HUD_COLOR_566874 = new Color(0x566874);
@@ -38,7 +38,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_BB7A32 = new Color(0xBB7A32);
     public static final Color HUD_COLOR_D94F4F = new Color(0xD94F4F);
     public static final Color HUD_COLOR_E6E6E6 = new Color(0xE6E6E6);
-    public static final Color HUD_COLOR_6EA7FF = new Color(0x6EA7FF);
+    public static final Color HUD_COLOR_6EA7FF = new Color(0xBF6EA7FF, true);
 
     // -- HUD semantic color roles ---------------------------------------------
     // 60-30-10: dark blue-grey surfaces, cool grey lines and text, and one cyan accent (33D7E8).
