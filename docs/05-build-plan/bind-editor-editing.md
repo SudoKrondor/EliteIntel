@@ -74,13 +74,38 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 |---|---|---|
 | E1 | **Controller buttons and hats in the capture dialog.** The gate is removed, there is a tab per connected controller, capture by press or click, held buttons become modifiers, an input in use blocks SAVE, the AI-access warning shows, and saving goes through `assignSlot` | **done 2026-10-15** |
 | E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **capture built, sign-off next** (corrected 2026-11-03). Left: decide whether the page gets the spec's clickable *+* and *−* or the [spec](../02-features/bindforge/bind-editor.md#axis-directions-and-hats-are-button-inputs) is amended, and run it on real hardware |
-| E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, both inline and in the dialog. The AXES page is captured by moving an axis, and saving goes through `assignAxis`. The grid needs the axis-row column shape (spec § *Modifiers, Hold, Inverted, Deadzone*) | ready. `assignAxis` has no caller yet |
+| E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, edited in `AssignAxisDialog`, not inline (Krondor and Alan, 2026-11-03). An axis is picked by moving it or clicking it, and saving goes through `assignAxis`. The throttle axes also carry Full Range / Forward Only | **built 2026-11-03, needs a run on real hardware** |
 | E4 | **MOUSE tab.** Buttons and the wheel half-axes are chosen, never captured (spec § *MOUSE is chosen, not captured*) | ready |
 | E5 | **Cross-device chords.** A keyboard key with controller buttons held, and a controller input with keyboard modifiers held | ready |
-| E6 | **Game Mode and Settings rows** — the spec's grid modes. Read the spec first: scope the slice before building | not scoped |
+| E6 | **Game Mode and Settings rows** — the spec's grid modes. Read the spec first: scope the slice before building | **Settings tab's number rows built 2026-11-03.** Not built: booleans, dropdowns and the inline rows in Game Mode. Still unscoped |
 | E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **part built, the rest blocked** on A18 and testing item 27 (updated 2026-11-03): buttons, D-pad and triggers capture today, unmeasured |
 
 ## Hand-off notes — newest first
+
+**2026-11-03, the game's conflict matrix added to our rules (
+Krondor).** `BindingConflictRules.isSafeOverlap` now also reports any identical-chord pair the game warns about (`GameConflictMatrix`); `isSafeShadow` is the same check without the matrix, for modifier shadows. This reaches everything that asks: the red rows, Anomalies, the startup check, SAVE in the capture dialog and auto-assign.
+**SAVE now refuses these
+pairs**, as it does any other conflict. `MouseReset` and `BlockMouseDecay` gained names under Mouse Controls so the matrix can place them. [Rules](../02-features/bindforge/domain-knowledge/EliteDangerous-ConflictRules.md#4-implication-for-bindforges-own-conflict-detection-algorithm)
+
+**2026-11-03, Binding Profile re-scoped and built (Krondor and Alan).**
+
+-
+**Tabs:** `BindingProfilePanel` holds Game Mode, Anomalies and Settings under the shared search. Game Mode has section tabs (All, General, Ship, SRV, On-Foot), each with a count of what the filters and the search leave, over the Used and Missing tabs, which stay. A control the name table does not know shows under All only: `MouseReset`, `BlockMouseDecay` and `HumanoidPing` in `Custom.4.2.binds`.
+- **Axis
+  rows:** read by `BindsValues`, never by `KeyBindingsParser`. Their second column shows Normal or Inverted, the dead zone and any throttle range. `ed_control_names.properties` gained the 70 axis tags and 22 number settings, from the Action Catalog; those names were not read off the game screen for this.
+- **Anomalies is a view of `GameModePanel`'s
+  rows**, narrowed to the ones in its conflict index, so it cannot disagree with the red rows.
+- **Settings slider limits are not known.** Frontier's `Help.txt` gives only *greater than 0.0* for sensitivity and
+  *between 0.0 and
+  1.0* for a deadzone, and no public source states them. So the tab is checked number fields (`SettingNumbers`). To make them sliders, read each limit off the game's options screen.
+- **The axis dialog's dead zone slider runs 0 to
+  100%**, the range the writer accepts. Whether the game's own stops lower is also unread. The highest value in the local specimens is 0.677.
+- **A shared axis does not block
+  SAVE.** The dialog names the other controls instead, because `YawAxisRaw` and `YawAxis_Landing` are normally on one stick. This differs from buttons, on purpose.
+-
+**Gamepads:** a pad's tab is greyed in the axis dialog, since its stick tokens are E7's. Inverted and Deadzone can still change on a row already holding one: `assignAxis` now accepts the input the element already holds.
+- **Not run on real hardware or in the running
+  app.** Layout was checked by rendering the panels; moving a real axis, and the game reading the result, are not checked.
 
 **2026-11-03, status corrected against the
 code.** E2's capture and part of E7 were built outside this brief (`847987878`, Andrea, 2026-10-25). The rows above now say so. The work left and how it is split are in

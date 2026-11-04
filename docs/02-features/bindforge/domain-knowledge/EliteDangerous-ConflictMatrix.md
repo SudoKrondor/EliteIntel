@@ -2,7 +2,8 @@
 
 **Scope:** Raw results of in-game conflict testing, section by section. For the analysis of what
 these results mean and how BindForge's own conflict-detection algorithm should use them, see
-`EliteDangerous-ConflictRules.md`. This doc is data only.
+`EliteDangerous-ConflictRules.md`. This doc is data only. **`GameConflictMatrix` copies these tables, and a test holds
+the copy to them: change a cell here and change it there.**
 
 **Method:** for each pair of subgroups listed below, bind the same key to one action in each
 subgroup via the in-game rebind dialog and observe whether the game warns. Tested 2026-07-30

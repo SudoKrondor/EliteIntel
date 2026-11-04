@@ -41,6 +41,8 @@ public final class CaptureControllers {
     private static final Pattern HAT = Pattern.compile("Joy_POV(\\d)(?:Up|Down|Left|Right)");
     // A hardware id: .binds names an unnamed controller by VID+PID until BindForge moves it to a name.
     private static final Pattern HARDWARE_ID = Pattern.compile("[0-9A-Fa-f]{8}");
+    // The game's literal for a gamepad on an axis row: not one of the commander's controllers to pick from.
+    private static final String GAMEPAD_DEVICE = "GamePad";
 
     /**
      * @param name    the controller's {@code .binds} name, or {@code null} when it has none yet
@@ -104,6 +106,34 @@ public final class CaptureControllers {
             absent.add(new Controller(name, -1, name, counts[0], counts[1], List.of(), false));
         }
         controllers.addAll(absent);
+        return List.copyOf(controllers);
+    }
+
+    /**
+     * The controllers an axis row can pick from: the connected ones, then every other one the working copy or the
+     * bindings name. Which axes an unplugged controller has is not known, so it offers all eight the game names; a
+     * controller used only by axis rows has no buttons to count, which is why {@link #all} would drop it.
+     *
+     * @param axisDevices the devices the axis rows name, hardware ids and game literals left out here
+     */
+    public static List<Controller> forAxes(Map<String, ReadOnlyBindingSlots> bindings, Collection<String> axisDevices,
+                                           EditedDeviceLabels labels) {
+        FrontierStockDevices stock = FrontierStockDevices.getInstance();
+        List<Controller> controllers = new ArrayList<>(connected(labels));
+        Set<String> present = new HashSet<>();
+        controllers.stream().filter(Controller::named).forEach(c -> present.add(c.name().toLowerCase(Locale.ROOT)));
+
+        Set<String> known = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        labels.names().stream().filter(name -> !stock.ships(name)).forEach(known::add);
+        known.addAll(tokensByDevice(bindings).keySet());
+        axisDevices.stream()
+                .filter(device -> BindingInput.isDeviceName(device) && !HARDWARE_ID.matcher(device).matches())
+                .filter(device -> !GAMEPAD_DEVICE.equalsIgnoreCase(device))
+                .forEach(known::add);
+        for (String name : known) {
+            if (present.contains(name.toLowerCase(Locale.ROOT))) continue;
+            controllers.add(new Controller(name, -1, name, 0, 0, List.of(GameAxis.values()), false));
+        }
         return List.copyOf(controllers);
     }
 

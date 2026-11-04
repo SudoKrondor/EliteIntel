@@ -107,14 +107,37 @@ class BindingConflictScannerTest {
     }
 
     @Test
-    void scannerScreenControlsStillDoNotConflictWithShipActions() {
+    void scannerScreenControlsStillDoNotConflictWithMostShipActions() {
         // Inside the FSS or the Detailed Surface Scanner nothing else fires, so their own controls - the DSS's
-        // third-person camera included, which drops the Exploration prefix - stay clear of the ship's.
+        // third-person camera included, which drops the Exploration prefix - stay clear of the ship's, except the
+        // two groups the game itself complains about.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "ExplorationFSSDiscoveryScan", Set.of("Key_U"),
                 "ExplorationSAANextGenus", Set.of("Key_U"),
                 "SAAThirdPersonYawLeftButton", Set.of("Key_U"),
-                "DeployHardpointToggle", Set.of("Key_U")));
+                "ToggleCargoScoop", Set.of("Key_U")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
+    }
+
+    @Test
+    void theGameComplainsAboutTheSurfaceScannerAgainstWeaponsAndModeSwitches() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ExplorationSAANextGenus", Set.of("Key_U"),
+                "DeployHardpointToggle", Set.of("Key_U"),
+                "SAAThirdPersonYawLeftButton", Set.of("Key_I"),
+                "FocusLeftPanel", Set.of("Key_I")));
+
+        assertEquals(2, conflicts.size(), conflicts.toString());
+        assertTrue(conflicts.stream().noneMatch(Conflict::blocking), "a warning from the game, not a blocked walk");
+    }
+
+    @Test
+    void theGamesMatrixDoesNotReachAModifierShadow() {
+        // Mode Switches and the Detailed Surface Scanner warn on the identical key, not on a chord over a bare modifier.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "FocusLeftPanel", Set.of("Key_LeftShift"),
+                "SAAThirdPersonFovInButton", Set.of("Key_LeftShift", "Key_F3")));
 
         assertTrue(conflicts.isEmpty(), conflicts.toString());
     }
@@ -390,19 +413,26 @@ class BindingConflictScannerTest {
 
     @Test
     void unrelatedCameraFamiliesStillDoNotConflictWithUiNavigation() {
-        // FreeCam / placement / store / vanity cameras cannot be open alongside a UI panel, so they
-        // keep their sub-state exemption; only the map camera loses it.
+        // FreeCam / placement cameras cannot be open alongside a UI panel, so they keep their sub-state
+        // exemption; only the map camera loses it to our rule, and the store camera to the game's.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "MoveFreeCamForward", Set.of("Key_W"),
                 "MovePlacementCamForward", Set.of("Key_E"),
-                "StoreCamZoomIn", Set.of("Key_R"),
                 "PitchCameraUp", Set.of("Key_T"),
                 "UI_Up", Set.of("Key_W"),
                 "UI_Down", Set.of("Key_E"),
-                "UI_Left", Set.of("Key_R"),
                 "UI_Right", Set.of("Key_T")));
 
         assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void theGameComplainsAboutTheStoreCameraAgainstInterfaceMode() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "StoreCamZoomIn", Set.of("Key_R"),
+                "UI_Left", Set.of("Key_R")));
+
+        assertEquals(1, conflicts.size(), conflicts.toString());
     }
 
     @Test
@@ -438,15 +468,23 @@ class BindingConflictScannerTest {
     }
 
     @Test
+    void theGameComplainsAboutAnEmoteOnAnOnFootKey() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "HumanoidEmoteWheelButton", Set.of("Key_B"),
+                "HumanoidEmoteSlot1", Set.of("Key_B")));
+
+        assertEquals(1, conflicts.size(), conflicts.toString());
+    }
+
+    @Test
     void emoteSlotsBelongToTheEmoteWheel() {
-        // The commander's own layout: the slots sit on modified 0 and 1, and on the wheel's key. They are
-        // picked from the wheel, so neither the bare modifiers under them nor the wheel key is a clash.
+        // The commander's own layout: the slots sit on modified 0 and 1. They are picked from the wheel, so the
+        // bare modifiers under them are no clash. The identical key on another on-foot control is, since the game
+        // complains: see theGameComplainsAboutAnEmoteOnAnOnFootKey.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "HumanoidCrouchButton", Set.of("Key_LeftControl"),
                 "HumanoidSprintButton", Set.of("Key_LeftShift"),
                 "HumanoidWalkButton", Set.of("Key_LeftAlt"),
-                "HumanoidEmoteWheelButton", Set.of("Key_B"),
-                "HumanoidEmoteSlot1", Set.of("Key_B"),
                 "HumanoidEmoteSlot2", Set.of("Key_LeftControl", "Key_0"),
                 "HumanoidEmoteSlot3", Set.of("Key_LeftShift", "Key_0"),
                 "HumanoidEmoteSlot4", Set.of("Key_LeftAlt", "Key_0")));

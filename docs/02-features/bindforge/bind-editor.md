@@ -682,13 +682,17 @@ buttons instead (the throttle's `R POV1 Forward` is `Joy_9`), and those appear u
 
 #### Axis slots take an axis only
 
-**An axis row is never bound to a keyboard key** (Alan, 2026-09-13), and never to the mouse — which is why
-both tabs grey out. Keys go on the matching button rows — *Yaw Left* and *Yaw Right* beside *Yaw Axis*. Axis
-bindings take no modifiers.
+**An axis row is never bound to a keyboard
+key** (Alan, 2026-09-13), and never to the mouse. Keys go on the matching button rows — *Yaw Left* and *Yaw
+Right* beside *Yaw Axis*. Axis bindings take no modifiers, and VEGA never uses them.
 
-**Inverted and Deadzone live in both places.** They stay inline on the axis row for a quick adjustment, and
-they appear in the dialog beside the axis they belong to. It is one value in each case, so saving from either
-leaves the other showing the same thing.
+**An axis row opens its own dialog, which offers axes and nothing else — settled 2026-11-03 (Krondor and Alan).**
+It holds the axis, a Normal / Inverted toggle and a dead zone slider. **This replaces the earlier plan of greyed
+keyboard and mouse tabs and of inline Inverted and Deadzone
+controls:** the grid row shows those values, and a click edits them, as on every other row.
+
+**A throttle axis also has a Full Range / Forward Only toggle.** `ThrottleAxis` writes `ThrottleRange`,
+`DriveSpeedAxis` writes `BuggyThrottleRange` and `MoveFreeCamY` writes `ThrottleRangeFreeCam`. The Forward Only Throttle Reverse control beside them, and its `ToggleOn`, stay a button row.
 
 #### Capture-control colour, and no skip option
 
@@ -876,6 +880,11 @@ capture is the shared dialog. Input Mode is an input-first reverse lookup — pr
 This is distinct from [Control Types](#control-types) below, which groups by input *category* (all axes together, all buttons together) rather than looking up one *specific* physical input. Input Mode absorbed what was judged the one genuinely useful idea from Control Types' original concept when Control Types itself was parked.
 
 ## Anomalies
+
+**Scope for V1.2, settled 2026-11-03 (Krondor and Alan): the tab lists every row Game Mode draws red as a conflict,**
+laid out as Game Mode's
+*All*, and a click opens the same editor. There are no sub-tabs. The four kinds below, their severity order and the ON PURPOSE mark are the earlier, larger design:
+**not built, and not in the V1.2 plan unless raised again.**
 
 *(Named "Conflicts" until 2026-09-07. Renamed because the mode outgrew the word — see
 [Four kinds, one question](#four-kinds-one-question) below. "Conflict" remains exactly right for the kind
@@ -1121,6 +1130,12 @@ it puts the control back on the list.
 **Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving an anomaly never requires leaving the Anomalies tab and jumping to Game Mode.
 
 ## Settings — settled 2026-09-19
+
+**Scope for V1.2, settled 2026-11-03 (Krondor and Alan): the sensitivities, dead zones and power curves, as checked
+number
+fields.** The booleans and dropdowns described below are not on the tab yet, and no inline rows exist in Game Mode.
+**Why not sliders:** no source states the game's limits. `ControlSchemes/Help.txt` says only *any number greater than
+0.0* for mouse sensitivity and *any number between 0.0 and 1.0* for a mouse deadzone.
 
 **Status: in scope for V1.2.** A third mode tab, after Anomalies, listing **every [settings entry](#settings-entries-are-rows-too--settled-2026-09-16) in the file at once** — all 93 of
 them in a real 4.2 file, grouped the way the game groups them. Alan: *“in the game mode the settings show

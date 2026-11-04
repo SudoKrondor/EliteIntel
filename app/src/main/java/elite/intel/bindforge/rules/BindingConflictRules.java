@@ -157,7 +157,10 @@ public class BindingConflictRules {
      * Unsafe first: {@link #isMapVersusUiNavigation}, {@link #isSelectVersusQuickComms} and
      * {@link #isInterfaceSwitchVersusUiNavigation} - the three cases where families the context model
      * treats as mutually exclusive are in fact live <em>simultaneously</em>, so they are checked before
-     * the mutual-exclusion rules below (which would otherwise clear them twice over).
+     * the mutual-exclusion rules below (which would otherwise clear them twice over) - and any pair the game's own
+     * rebind check warns about ({@link GameConflictMatrix}), whatever the rules below would say about it. The matrix
+     * only adds: a pair it lets through still falls to the rules here. For the two actions holding the identical
+     * chord; a modifier shadow is {@link #isSafeShadow}.
      * <p>
      * Safe cases:
      * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
@@ -171,6 +174,18 @@ public class BindingConflictRules {
      * modes are only active inside a specific overlay and cannot fire alongside regular actions.
      */
     public static boolean isSafeOverlap(String a, String b) {
+        return !GameConflictMatrix.warns(a, b) && isSafeShadow(a, b);
+    }
+
+    /**
+     * {@link #isSafeOverlap} for a modifier shadow: one action holds a modifier as part of a chord and the other binds
+     * that modifier alone.
+     * <p>
+     * WHY the game's matrix has no say here: it was measured by binding the identical key to both controls, and the
+     * game's rebind check does not treat Ctrl+0 as a clash with bare Ctrl. A commander's emotes on Ctrl+0 under Crouch
+     * on bare Ctrl draw no complaint and are picked from a wheel that blocks Crouch anyway.
+     */
+    public static boolean isSafeShadow(String a, String b) {
         if (isMapVersusUiNavigation(a, b)) return false;
         if (isSelectVersusQuickComms(a, b)) return false;
         if (isInterfaceSwitchVersusUiNavigation(a, b)) return false;
@@ -404,7 +419,9 @@ public class BindingConflictRules {
 
     /**
      * The groups the game lists the two scanner screens under. The Detailed Surface Scanner is a screen of its own -
-     * while it is up, nothing else fires, not even from a HOTAS - so none of its controls can clash with a ship one.
+     * while it is up, nothing else fires, not even from a HOTAS - so its controls do not clash with a ship one in play.
+     * The game's rebind check still complains about it against Weapons and Mode Switches: {@link GameConflictMatrix}
+     * reports those, ahead of this.
      */
     private static final Set<String> SCANNER_SCREEN_GROUPS = Set.of(
             "Full Spectrum System Scanner", "Detailed Surface Scanner");
