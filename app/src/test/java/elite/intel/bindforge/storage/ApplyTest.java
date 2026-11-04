@@ -13,11 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static elite.intel.bindforge.storage.BindingsComparisonTest.binds;
@@ -394,6 +390,127 @@ class ApplyTest {
         assertEquals(List.of(Set.of("Spare.4.2.binds")), removed);
         assertFalse(written.getFirst().bindings().containsKey("Spare.4.2.binds"));
         assertEquals(binds("Custom", "Key_A", "Joy_YAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
+    }
+
+    /** A renamed binds file goes out under its new name, and the old one is removed after the backup (Storage S12). */
+    @Test
+    void aRenamedBindsFileIsWrittenAndTheOldOneRemoved() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+        Apply apply = new Apply(edits, (current, applied) -> Map.of(), this::write, backUp,
+                installation -> live(LVWAP), files -> Apply.offered(files, List.of()), check());
+
+        apply.apply(apply.check(), Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(List.of("APPLY"), backedUp);
+        assertEquals(List.of(Set.of(CUSTOM_BINDS)), removed);
+        assertEquals(binds("Mine", "Key_A", "Joy_XAxis", ""), text(written.getFirst().bindings().get("Mine.4.2.binds")));
+        assertEquals("Mine\r\nMine\r\nMine\r\nMine", text(written.getFirst().bindings().get("StartPreset.4.start")));
+    }
+
+    /**
+     * A rename changes the name, not the bindings: one changed in-game meanwhile is asked about (review, 2026-11-03).
+     */
+    @Test
+    void aBindingChangedInGameDuringARenameIsAskedAndCarriedToTheNewFile() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        liveBindings = bindsSet(binds("Custom", "Key_B", "Joy_XAxis", "")).bindings();
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+        Apply apply = renameApply();
+
+        BindingsCheck.Found found = apply.check();
+        assertEquals(1, found.differences().rows().size());
+        apply.apply(found, allAnswered(found, Side.LIVE), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        ConfigurationFiles out = written.getFirst();
+        assertEquals(binds("Mine", "Key_B", "Joy_XAxis", ""), text(out.bindings().get("Mine.4.2.binds")));
+        assertFalse(out.bindings().containsKey(CUSTOM_BINDS));
+        assertEquals("Mine\r\nMine\r\nMine\r\nMine", text(out.bindings().get("StartPreset.4.start")));
+        assertTrue(removed.getFirst().contains(CUSTOM_BINDS));
+    }
+
+    @Test
+    void aBindingChangedInGameDuringARenameCanBeRefused() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        liveBindings = bindsSet(binds("Custom", "Key_B", "Joy_XAxis", "")).bindings();
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+        Apply apply = renameApply();
+
+        BindingsCheck.Found found = apply.check();
+        apply.apply(found, allAnswered(found, Side.WORKING_COPY), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(binds("Mine", "Key_A", "Joy_XAxis", ""), text(written.getFirst().bindings().get("Mine.4.2.binds")));
+    }
+
+    /**
+     * An edit on the renamed file goes on top as any other: it wins its line, and the in-game change keeps its own.
+     */
+    @Test
+    void anEditOnARenamedFileGoesOnTopOfAnInGameChange() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        liveBindings = bindsSet(binds("Custom", "Key_B", "Joy_XAxis", "")).bindings();
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS, bytes(binds("Custom", "Key_A", "Joy_YAxis", ""))));
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+        Apply apply = renameApply();
+
+        BindingsCheck.Found found = apply.check();
+        assertEquals(1, found.differences().rows().size(), "only the line the edit leaves alone is asked");
+        apply.apply(found, allAnswered(found, Side.LIVE), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(binds("Mine", "Key_B", "Joy_YAxis", ""), text(written.getFirst().bindings().get("Mine.4.2.binds")));
+    }
+
+    /**
+     * With no difference to settle, a rename goes out as before: asked nothing.
+     */
+    @Test
+    void aRenameWithTheFileUnchangedInGameAsksNothing() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+
+        assertTrue(renameApply().check().differences().none());
+    }
+
+    /**
+     * The old file gone from the bindings folder meanwhile is what the rename does anyway: not asked.
+     */
+    @Test
+    void anOldFileGoneFromTheBindingsFolderDuringARenameIsNotAsked() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        liveBindings = Map.of("StartPreset.4.start", bytes(ALL_CUSTOM));
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+
+        assertTrue(renameApply().check().differences().none());
+    }
+
+    /**
+     * D1: no guard for the game updating a file mid-rename. The newer version is approved, no line of it asked.
+     */
+    @Test
+    void aNewerVersionDuringARenameAsksNoLine() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        liveBindings = Map.of("Custom.4.3.binds", bytes(binds("Custom", "Key_B", "Joy_XAxis", "")),
+                "StartPreset.4.start", bytes(ALL_CUSTOM));
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+        Apply apply = renameApply();
+
+        BindingsCheck.Found found = apply.check();
+        assertEquals(1, found.differences().newer().size());
+        assertEquals(0, found.differences().rows().size());
+        apply.apply(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(binds("Mine", "Key_A", "Joy_XAxis", ""), text(written.getFirst().bindings().get("Mine.4.2.binds")));
+    }
+
+    private Apply renameApply() {
+        return new Apply(edits, (current, applied) -> Map.of(), this::write, backUp, installation -> live(LVWAP),
+                files -> Apply.offered(files, List.of()), check());
+    }
+
+    private static Map<String, Side> allAnswered(BindingsCheck.Found found, Side side) {
+        Map<String, Side> answers = new HashMap<>();
+        found.differences().items().forEach(row -> answers.put(row.id(), side));
+        return answers;
     }
 
     /** Nothing watches the files: a change after the warning opened stops APPLY, nothing written, the edits kept. */

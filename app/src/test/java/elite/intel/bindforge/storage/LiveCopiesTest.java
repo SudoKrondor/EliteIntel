@@ -255,6 +255,61 @@ class LiveCopiesTest {
         assertFalse(report.bindings().updated());
     }
 
+    /**
+     * A removal differing only in case from a file written is skipped: on Windows it is the file just written
+     * (Storage S12).
+     */
+    @Test
+    void aRemovalDifferingOnlyInCaseFromAFileWrittenIsSkipped() {
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("custom.4.2.binds"));
+
+        assertTrue(Files.exists(bindings.resolve("Custom.4.2.binds")));
+        assertEquals(List.of(), report.bindings().removed());
+    }
+
+    /**
+     * A removal differing only in case from a file written leaves one file on any file system: on Windows it is the file
+     * written, kept; on Linux it is another, removed (review, 2026-11-03).
+     */
+    @Test
+    void aCaseOnlyChangeLeavesOneFile() throws IOException {
+        write(bindings.resolve("Custom.4.2.binds"), "<Custom/>");
+        ConfigurationFiles renamed = new ConfigurationFiles(
+                Map.of("custom.4.2.binds", bytes("<custom/>"), "StartPreset.4.start", bytes("custom")),
+                bytes("<Mappings/>"), Map.of());
+
+        WriteReport report = liveCopies().write(renamed, LiveCopies.LeaveAlone.NONE, Set.of("Custom.4.2.binds"));
+
+        try (Stream<Path> files = Files.list(bindings)) {
+            assertEquals(1, files.filter(file -> file.getFileName().toString().endsWith(".binds")).count());
+        }
+        assertEquals("<custom/>", Files.readString(bindings.resolve("custom.4.2.binds")));
+        assertTrue(report.bindings().updated(), report.bindings().failures().toString());
+    }
+
+    /**
+     * A new file that cannot be written: the old one stays, and the preset file keeps naming it, so the game is not left
+     * on a line naming a file that is not there (review, 2026-11-03).
+     */
+    @Test
+    void aBindsFileThatFailsHoldsBackThePresetFileAndTheRemoval() throws IOException {
+        write(bindings.resolve("Custom.4.2.binds"), "<Custom/>");
+        write(bindings.resolve("StartPreset.4.start"), "Custom");
+        write(bindings.resolve("Mine.4.2.binds").resolve("blocker"), "a folder sits where the new file goes");
+        ConfigurationFiles renamed = new ConfigurationFiles(
+                Map.of("Mine.4.2.binds", bytes("<Mine/>"), "StartPreset.4.start", bytes("Mine")), bytes("<Mappings/>"),
+                Map.of());
+
+        WriteReport report = liveCopies().write(renamed, LiveCopies.LeaveAlone.NONE, Set.of("Custom.4.2.binds"));
+
+        assertEquals("<Custom/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
+        assertEquals("Custom", Files.readString(bindings.resolve("StartPreset.4.start")));
+        assertEquals(List.of(), report.bindings().removed());
+        assertFalse(report.bindings().updated());
+        assertTrue(report.bindings().failures().contains("StartPreset.4.start: " + LiveCopies.HELD_BACK));
+        assertTrue(report.bindings().failures().contains("Custom.4.2.binds: " + LiveCopies.HELD_BACK));
+    }
+
     /** A name that is not a binds or preset file's is refused - the removal never leaves the bindings folder. */
     @Test
     void aRemovalThatIsNotABindsFileNameIsRefused() {

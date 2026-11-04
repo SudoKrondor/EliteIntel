@@ -2,16 +2,14 @@ package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devices.CaptureControllers;
+import elite.intel.bindforge.devices.DeviceNames;
 import elite.intel.bindforge.io.*;
 import elite.intel.bindforge.model.*;
 import elite.intel.bindforge.rules.AiAccess;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
-import elite.intel.bindforge.storage.BindsEdits;
-import elite.intel.bindforge.storage.ConfigurationFiles;
-import elite.intel.bindforge.storage.EditedDeviceLabels;
-import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.*;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -86,6 +84,16 @@ public class BindingProfilePanel extends JPanel {
 
     private HudComboBox<String> bindsFileBox;
     private JButton loadButton;
+    /** The shown file's BindName, editable - renaming it (Storage S12). */
+    private HudTextField nameField;
+    /** The shown file's version and extension, fixed text after the Name box. */
+    private JLabel nameSuffix;
+    /** Why a typed name is refused, or that the file is named like a factory one - warning text colour. */
+    private JLabel nameProblem;
+    /** Set while {@link #showName} fills the box, so filling it is not judged as typing. */
+    private boolean showingName;
+    /** What a typed name is checked against, read with the binds file. */
+    private Rename.Names names = Rename.Names.NONE;
     private JTextField bindingsDirField;
     private JPanel keyboardOnlyBanner;
     private BindingSaveResultPresenter saveResultPresenter;
@@ -233,7 +241,12 @@ public class BindingProfilePanel extends JPanel {
         addProfileLabel(details, getText("bindings.bindsFile"), gbc, 0, LABEL_COL_WIDTH);
         bindsFileBox = new HudComboBox<>(new DefaultComboBoxModel<>());
         bindsFileBox.setToolTipText(getText("bindings.bindsFile.tooltip"));
-        addProfileField(details, bindsFileBox, gbc, 1, 1, 1.0);
+        // WHY: the Name box sits beside the dropdown, the version and extension after it as fixed text (bind-editor.md,
+        // Shell; Storage S12). A text box, so picking a file can never rename one.
+        JPanel fileAndName = transparentPanel(new BorderLayout(7, 0));
+        fileAndName.add(bindsFileBox, BorderLayout.CENTER);
+        fileAndName.add(nameRow(), BorderLayout.EAST);
+        addProfileField(details, fileAndName, gbc, 1, 1, 1.0);
 
         loadButton = makeButtonSubtle(getText("bindings.bindsFile.load"));
         loadButton.setToolTipText(getText("bindings.bindsFile.load.tooltip"));
@@ -245,8 +258,114 @@ public class BindingProfilePanel extends JPanel {
         gbc.insets = new Insets(2, 0, 6, 7);
         details.add(loadButton, gbc);
 
+        // Row 2 - why a typed name is refused, or that the file is named like a factory one; empty otherwise
+        gbc.gridy = 2;
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 4, 7);
+        nameProblem = hudReadoutValue(" ", HUD_COLOR_ROLE_WARNING);
+        details.add(nameProblem, gbc);
+
         profileCardBody.add(details, BorderLayout.CENTER);
         return profileCardBody;
+    }
+
+    /** The Name box, its label and the fixed version text (Storage S12). Enter renames; Esc puts the name back. */
+    private JPanel nameRow() {
+        nameField = new HudTextField();
+        nameField.setColumns(16);
+        nameField.setToolTipText(getText("bindings.bindsFile.name.tooltip"));
+        nameField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                judgeName();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                judgeName();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                judgeName();
+            }
+        });
+        nameField.addActionListener(e -> renameLoaded());
+        nameField.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "bindforge.name.revert");
+        nameField.getActionMap().put("bindforge.name.revert", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                showName();
+            }
+        });
+        nameSuffix = hudReadoutLabel("");
+        JPanel row = transparentPanel(new BorderLayout(4, 0));
+        row.add(hudReadoutLabel(getText("bindings.bindsFile.name")), BorderLayout.WEST);
+        row.add(nameField, BorderLayout.CENTER);
+        row.add(nameSuffix, BorderLayout.EAST);
+        return row;
+    }
+
+    /** The loaded file's BindName in the box, and the version after it. On the EDT. */
+    private void showName() {
+        String file = loadedFile;
+        showingName = true;
+        try {
+            nameField.setText(file == null ? "" : Rename.bindName(file).orElse(""));
+        } finally {
+            showingName = false;
+        }
+        nameSuffix.setText(file == null ? "" : Rename.suffix(file));
+        nameField.setEnabled(file != null);
+        judgeName();
+    }
+
+    /**
+     * The typed name, judged: the controller name's rule against the set's own BindNames, loosely, the file's own
+     * included - and a factory BindName refused whatever its case (bind-editor.md, Shell; Alan, 2026-11-03). Empty when
+     * it may be used or is the file's own name.
+     */
+    private Optional<String> nameRefusal(String typed) {
+        String file = loadedFile;
+        if (file == null || typed.equals(Rename.bindName(file).orElse(null))) return Optional.empty();
+        DeviceNames.Verdict verdict = DeviceNames.validate(typed, names.taken(typed));
+        if (!verdict.valid()) return Optional.of(OnboardingDialog.problemText(verdict));
+        return Rename.factoryClash(typed, names.factory())
+                .map(factory -> OnboardingDialog.problemText(
+                        new DeviceNames.Verdict(DeviceNames.Problem.CLASHES, factory)));
+    }
+
+    /** Shows why the typed name is refused, else the factory-name warning for the file shown, else nothing. */
+    private void judgeName() {
+        if (showingName) return;
+        String file = loadedFile;
+        Optional<String> refusal = nameRefusal(nameField.getText().strip());
+        if (refusal.isPresent()) {
+            nameProblem.setText(refusal.get());
+        } else if (file != null && Rename.factoryNamed(file, names.factory())) {
+            nameProblem.setText(getText("bindings.bindsFile.name.factoryNamed"));
+        } else {
+            nameProblem.setText(" ");
+        }
+    }
+
+    /** Enter: the rename, as an edit not applied, when the typed name may be used and differs from the file's. */
+    private void renameLoaded() {
+        String file = loadedFile;
+        String typed = nameField.getText().strip();
+        if (file == null || changeRunning || nameRefusal(typed).isPresent()) return;
+        if (typed.equals(Rename.bindName(file).orElse(null))) return;
+        String renamed = typed + Rename.suffix(file);
+        offEdt(getText("bindings.bindsFile.name"), () -> {
+            Edits.stored().change((current, applied) -> Rename.rename(current, applied, file, typed));
+            // WHY: before the screen reads again, so the renamed file stays the one shown.
+            wantedFile = renamed;
+        }, () -> {
+        }, this::showName);
     }
 
     private JComponent bindingProfileCard(JPanel body) {
@@ -328,9 +447,10 @@ public class BindingProfilePanel extends JPanel {
      */
     private record Loaded(String asked, List<String> files, String file, byte[] content,
                           Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, GameKeyboardLayout layout,
-                          EditedDeviceLabels labels) {
+                          EditedDeviceLabels labels,
+                          Rename.Names names) {
         static Loaded nothing(String asked) {
-            return new Loaded(asked, List.of(), null, null, Map.of(), GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE);
+            return new Loaded(asked, List.of(), null, null, Map.of(), GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE, Rename.Names.NONE);
         }
     }
 
@@ -340,7 +460,8 @@ public class BindingProfilePanel extends JPanel {
      * @throws IOException if the edits, the file or the device files cannot be read
      */
     private Loaded read(String asked) throws IOException {
-        ConfigurationFiles current = Edits.stored().snapshot().current();
+        Edits.Snapshot snapshot = Edits.stored().snapshot();
+        ConfigurationFiles current = snapshot.current();
         List<String> files = BindsEdits.bindsFiles(current);
         if (files.isEmpty()) return Loaded.nothing(asked);
         String file = asked != null && files.contains(asked)
@@ -348,7 +469,7 @@ public class BindingProfilePanel extends JPanel {
                 : BindsEdits.generalFile(current).orElse(files.getFirst());
         byte[] content = current.bindings().get(file);
         return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
-                parser.parseKeyboardLayout(content), EditedDeviceLabels.of(current));
+                parser.parseKeyboardLayout(content), EditedDeviceLabels.of(current), Rename.names(snapshot));
     }
 
     /** Shows what {@link #read} found. On the EDT. */
@@ -363,6 +484,8 @@ public class BindingProfilePanel extends JPanel {
         if (Objects.equals(wantedFile, read.asked())) wantedFile = null;
         loadedFile = read.file();
         loadedContent = read.content();
+        names = read.names();
+        showName();
         labels = read.labels();
         slotFormatter = new BindingSlotDisplayFormatter(labels);
         currentSlots = read.slots();

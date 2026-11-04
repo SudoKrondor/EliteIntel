@@ -10,11 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -32,7 +28,9 @@ import java.util.stream.Stream;
  *     ({@link ReadOnlyFlag}) - cleared for the write and set again (storage.md rule 10, 2026-10-25). A read-only
  *     {@code .buttonMap} the set lacks is kept, on every system, and reported with what to do.</li>
  *     <li><strong>Everything it can</strong>: a file or an installation that cannot be written is reported, the rest
- *     are still written, and nothing is rolled back.</li>
+ *     are still written, and nothing is rolled back. <strong>In the bindings folder the binds files go first</strong>:
+ *     if one fails, the preset file is not written and nothing is removed, so the game is never left on a preset line
+ *     naming a file that is not there (review, 2026-11-03).</li>
  * </ul>
  * A {@code .binds} the set lacks is left in the bindings folder - removing an old-named one is a rename's (Storage
  * S12). Only {@link WritePath} calls this, after the backup. Touches the disk - not for the EDT.
@@ -45,6 +43,11 @@ final class LiveCopies {
 
     /** A failure line: a .buttonMap the set lacks was kept because its read-only flag could not be read. */
     static final String NOT_REMOVED_FLAG_UNREADABLE = "not removed: whether it is read-only could not be read";
+
+    /**
+     * A failure line: a file held back because an earlier file in the bindings folder could not be written.
+     */
+    static final String HELD_BACK = "left as it is, because another file could not be written";
 
     /**
      * Decides, just before an installation is written, whether to leave it alone - APPLY's for an installation whose
@@ -96,13 +99,25 @@ final class LiveCopies {
         }
         // WHY: the one folder Elite-Intel is set to, on Linux too, where each installation has its own - every .binds
         // read and write in BindForge uses it (input-environment.md section 7; storage brief, Known issues).
-        writing.writeAll(folder, files.bindings());
+        Map<String, byte[]> presetFiles = new TreeMap<>(files.bindings());
+        presetFiles.keySet().removeIf(name -> !FileNames.isPresetFile(name));
+        Map<String, byte[]> bindsFiles = new TreeMap<>(files.bindings());
+        bindsFiles.keySet().removeAll(presetFiles.keySet());
+        writing.writeAll(folder, bindsFiles);
+        if (writing.failures.isEmpty()) {
+            writing.writeAll(folder, presetFiles);
+        } else {
+            writing.heldBack(presetFiles.keySet());
+        }
+        if (!writing.failures.isEmpty()) {
+            writing.heldBack(remove);
+            return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
+        }
         for (String name : remove) {
-            if (files.bindings().containsKey(name)) continue;
             if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
                 throw new IllegalArgumentException("not a binds or preset file name: " + name);
             }
-            writing.remove(folder.resolve(name));
+            if (!writing.isWritten(folder, name, files.bindings().keySet())) writing.remove(folder.resolve(name));
         }
         return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
     }
@@ -134,6 +149,30 @@ final class LiveCopies {
         final List<String> removed = new ArrayList<>();
         final List<String> keptReadOnly = new ArrayList<>();
         final List<String> failures = new ArrayList<>();
+
+        void heldBack(Set<String> names) {
+            names.forEach(name -> failures.add(name + ": " + HELD_BACK));
+        }
+
+        /**
+         * Whether removing {@code name} would remove a file just written.
+         * WHY: asked of the file system - on Windows a name differing only in case is that file, on Linux it is another
+         * (Storage S12). A file that cannot be told apart is kept and reported.
+         */
+        boolean isWritten(Path folder, String name, Set<String> written) {
+            Path target = folder.resolve(name);
+            if (!Files.exists(target)) return false;
+            for (String file : written) {
+                if (!file.equalsIgnoreCase(name)) continue;
+                try {
+                    if (Files.isSameFile(target, folder.resolve(file))) return true;
+                } catch (IOException e) {
+                    fail(target, e);
+                    return true;
+                }
+            }
+            return false;
+        }
 
         void writeAll(Path folder, Map<String, byte[]> files) {
             files.forEach((name, content) -> writeIfDifferent(folder.resolve(name), content));

@@ -15,14 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -208,13 +201,13 @@ public final class BindingsCheck {
         }
         all.newer().forEach(version -> log.info("The game has a newer version of {}: {}, {} new slots, {} lines that "
                 + "differ", version.older(), version.newer(), version.newSlots().size(), version.items().size()));
-        Differences asked = BindingsComparison.without(all, edited(snapshot));
+        Differences asked = BindingsComparison.without(all, edited(all, snapshot));
         DeviceCheck.Found judged = devices.find(workingCopy);
         return new Found(workingCopy, live, asked, all.rows().size() - asked.rows().size(), judged);
     }
 
-    private static List<BindingsComparison.LineItem> edited(Edits.Snapshot snapshot) {
-        return BindingsComparison.edited(snapshot.applied().bindings(), snapshot.current().bindings());
+    private static List<BindingsComparison.LineItem> edited(Differences found, Edits.Snapshot snapshot) {
+        return BindingsComparison.editedAtTheCheck(found, snapshot.applied().bindings(), snapshot.current().bindings());
     }
 
     /**
@@ -232,8 +225,8 @@ public final class BindingsCheck {
     BindingsComparison.Settled settled(Edits.Snapshot snapshot, Found found, Map<String, Side> answers)
             throws IOException {
         Map<String, byte[]> live = liveReader.read(bindingsFolder.get());
-        Differences now = BindingsComparison.without(
-                BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE), edited(snapshot));
+        Differences compared = BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE);
+        Differences now = BindingsComparison.without(compared, edited(compared, snapshot));
         if (!snapshot.applied().sameAs(found.workingCopy()) || !now.sameRows(found.differences())
                 || !devices.find(snapshot.applied()).sameAs(found.devices())) {
             throw new ChangedMeanwhileException(find(snapshot, live));

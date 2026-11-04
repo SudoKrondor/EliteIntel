@@ -8,18 +8,7 @@ import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * The check's comparison for the binds and preset files: every live copy in the bindings folder against the working
@@ -567,13 +556,33 @@ public final class BindingsComparison {
     // ---- the edits, at APPLY
 
     /**
-     * The line items the edits change: the working copy against the working copy with the edits on it.
+     * The line items the edits change: the working copy against the working copy with the edits on it. A binds file
+     * the edits renamed is compared with the file it was, under its old name ({@link Rename#between}), so a rename
+     * covers what it changed and not every line of the file: a binding changed in-game meanwhile is still asked about
+     * (review, 2026-11-03).
      *
      * @param applied the working copy's binds and preset files
      * @param current the same with the edits on them
      */
     public static List<LineItem> edited(Map<String, byte[]> applied, Map<String, byte[]> current) {
-        return compare(applied, current, Factory.NONE).items();
+        Map<String, String> oldNames = new TreeMap<>();
+        Rename.between(applied, current).forEach((older, newer) -> oldNames.put(newer, older));
+        return compare(applied, named(current, oldNames), Factory.NONE).items();
+    }
+
+    /**
+     * {@link #edited} as the check needs it, knowing what it found: a binds file renamed while the game made a newer
+     * version of it stays covered whole, so nothing is asked that would only be thrown away (Alan, 2026-11-03, Storage
+     * S12 D1: no guard for the game updating a file mid-rename).
+     */
+    static List<LineItem> editedAtTheCheck(Differences found, Map<String, byte[]> applied, Map<String, byte[]> current) {
+        List<LineItem> edits = new ArrayList<>(edited(applied, current));
+        Map<String, String> renamed = Rename.between(applied, current);
+        for (NewerVersion version : found.newer()) {
+            if (!renamed.containsKey(version.older())) continue;
+            edits.addAll(oneSide(version.older(), Presence.WORKING_COPY_ONLY, null, null).items());
+        }
+        return edits;
     }
 
     /**
@@ -631,18 +640,21 @@ public final class BindingsComparison {
      * @param renamed each file a newer version replaced, to its new name ({@link Settled#renamed()}): the edits on the
      *                older go on top of the newer (Storage S10)
      * @param applied the working copy's, which the edits started from
-     * @param current the working copy's with the edits on them
+     * @param current the working copy's with the edits on them. A binds file they renamed takes what was settled for
+     *                the file it was, under its new name and {@code PresetName}
      * @throws IOException if a file could not be merged, or the edits are on a binds file whose newer version the
      *                     check left out - the message names it
      */
     public static Map<String, byte[]> withEditsOnTop(Map<String, byte[]> settled, Map<String, String> renamed,
                                                      Map<String, byte[]> applied, Map<String, byte[]> current)
             throws IOException {
-        Map<String, byte[]> appliedNamed = named(applied, renamed);
+        Map<String, String> renamedByEdits = Rename.between(applied, current);
+        Map<String, byte[]> settledNamed = withRenamesMade(settled, renamedByEdits);
+        Map<String, byte[]> appliedNamed = named(named(applied, renamed), renamedByEdits);
         Map<String, byte[]> currentNamed = named(current, renamed);
         List<LineItem> edits = edited(appliedNamed, currentNamed);
-        if (edits.isEmpty()) return settled;
-        Differences between = compare(settled, currentNamed, Factory.NONE);
+        if (edits.isEmpty()) return settledNamed;
+        Differences between = compare(settledNamed, currentNamed, Factory.NONE);
         // WHY: a row left out or asked as a newer version is never merged here, so an edit on it would be dropped
         // unseen. Edits never make a newer version, so this is a broken invariant rather than something the user did.
         if (!between.leftOut().isEmpty() || !between.newer().isEmpty()) {
@@ -655,7 +667,24 @@ public final class BindingsComparison {
             boolean edited = edits.stream().anyMatch(edit -> covers(edit, row));
             answers.put(row.id(), edited ? Side.LIVE : Side.WORKING_COPY);
         }
-        return settle(settled, currentNamed, between, answers).bindings();
+        return settle(settledNamed, currentNamed, between, answers).bindings();
+    }
+
+    /**
+     * {@code settled} with each binds file the edits renamed under its new name and {@code PresetName}.
+     */
+    private static Map<String, byte[]> withRenamesMade(Map<String, byte[]> settled, Map<String, String> renamedByEdits)
+            throws IOException {
+        if (renamedByEdits.isEmpty()) return settled;
+        Map<String, byte[]> named = new TreeMap<>(settled);
+        for (Map.Entry<String, String> rename : renamedByEdits.entrySet()) {
+            byte[] content = named.get(rename.getKey());
+            if (content == null || named.containsKey(rename.getValue())) continue;
+            named.remove(rename.getKey());
+            named.put(rename.getValue(),
+                    Create.withPresetName(content, FileNames.bindName(rename.getValue()).orElseThrow()));
+        }
+        return named;
     }
 
     /** {@code files} with each older name in {@code renamed} under its newer one - the bytes unchanged. */

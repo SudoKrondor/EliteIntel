@@ -6,13 +6,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * The BindNames a line of {@code StartPreset.4.start} can hold: the player's own binds files, from the set APPLY writes,
@@ -36,8 +30,9 @@ public final class BindNameCatalog {
      * Every binds file in {@code userFiles} and the given {@code ControlSchemes} folders, by BindName.
      * <p>
      * <strong>A BindName is offered once.</strong> The same factory binds file in several installations is one
-     * entry with a file from each. A player's binds file with the BindName of a factory one shadows it, with a
-     * warning - no factory binds file has a version suffix, so the case is not expected.
+     * entry with a file from each. A player's binds file with the BindName of a factory one shadows it, and the entry
+     * says so ({@link BindNameEntry#shadowsFactory()}): the game writes {@code KeyboardMouseOnly.4.2.binds} when a
+     * hand-copied {@code KeyboardMouseOnly.binds} is edited in-game.
      *
      * @param userFiles             the player's binds files from the set, by file name - every name of the form
      *                              {@code <name>.<major>.<minor>.binds}, since the set holds no other (Storage S6R2).
@@ -67,7 +62,7 @@ public final class BindNameCatalog {
         }
 
         List<BindNameEntry> entries = byName.values().stream()
-                .map(gathered -> new BindNameEntry(gathered.name, gathered.origin, gathered.files))
+                .map(gathered -> new BindNameEntry(gathered.name, gathered.origin, gathered.files, gathered.shadowsFactory))
                 .sorted(Comparator.comparing(BindNameEntry::bindName, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(BindNameEntry::bindName))
                 .toList();
@@ -96,8 +91,9 @@ public final class BindNameCatalog {
             }
             existing.files.add(file);
         } else {
-            log.warn("BindName '{}' is both the player's ({}) and factory ({}); offering the player's",
+            log.info("BindName '{}' is both the player's ({}) and factory ({}); offering the player's",
                     name, existing.files.getFirst(), file);
+            existing.shadowsFactory = true;
         }
     }
 
@@ -116,6 +112,7 @@ public final class BindNameCatalog {
         private final String name;
         private final BindsFileOrigin origin;
         private final List<Path> files = new ArrayList<>();
+        private boolean shadowsFactory;
 
         private Gathered(String name, BindsFileOrigin origin, Path first) {
             this.name = name;

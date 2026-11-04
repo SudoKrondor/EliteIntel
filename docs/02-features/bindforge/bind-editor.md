@@ -43,7 +43,16 @@ makes them cheap to build when they come back — each mode's own section below 
   [not offered](preset-editor.md#the-bindname-list--settled-2026-10-17-alan-p1)), and every line of
   `StartPreset.4.start` naming the old one — because a section left pointing at the old name makes the game load
   something else without a word. APPLY writes the renamed file and removes the old one from the live bindings folder
-  ([storage.md](storage.md) rule 7). **For a Frontier factory binds file the box is read-only.** A text box rather
+  ([storage.md](storage.md) rule 7). **A factory BindName is refused by its characters, whatever their case**
+  (2026-11-03, Alan, replacing *"for a Frontier factory binds file the box is read-only"*, which no file in the
+  dropdown could reach): `KeyboardMouseOnly` and `keyboardmouseonly` are refused, `KeyboardMouseOnly2` and
+  `Keyboard_Mouse_Only` are not. Only the BindName, before the first period, counts. The factory BindNames are those
+  of the installations that are there. **The set's own binds files are compared loosely, as CREATE does** -
+  ignoring case, `-` and `_` - **the file's own name included**, so a rename that changes only those is refused
+  (2026-11-03, Alan: APPLY writes the new file and removes the old, and on Windows the two would be one file -
+  [storage.md](storage.md) rule 7). **A binds file already named like a factory one** - the game writes
+  `KeyboardMouseOnly.4.2.binds` when a hand-copied `KeyboardMouseOnly.binds` is edited in-game - **is warned in the
+  Bind Editor**, and renaming it in this box is the way out; APPLY is not blocked. A text box rather
   than an editable dropdown, so picking a file can never rename one by accident. *Until 2026-10-24 renaming was
   deferred; duplicating a binds file still is.*
 - A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
