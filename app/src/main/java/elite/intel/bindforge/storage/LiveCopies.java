@@ -13,8 +13,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -97,8 +99,12 @@ final class LiveCopies {
         // WHY: the one folder Elite-Intel is set to, on Linux too, where each installation has its own - every .binds
         // read and write in BindForge uses it (input-environment.md section 7; storage brief, Known issues).
         writing.writeAll(folder, files.bindings());
+        Set<String> writtenIgnoringCase = files.bindings().keySet().stream()
+                .map(name -> name.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
         for (String name : remove) {
-            if (files.bindings().containsKey(name)) continue;
+            // WHY: ignoring case - on Windows a name differing only in case is the file just written (Storage S12).
+            if (writtenIgnoringCase.contains(name.toLowerCase(Locale.ROOT))) continue;
             if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
                 throw new IllegalArgumentException("not a binds or preset file name: " + name);
             }

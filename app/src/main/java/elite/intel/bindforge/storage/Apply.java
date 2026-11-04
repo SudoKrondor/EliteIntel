@@ -239,6 +239,12 @@ public final class Apply {
             ConfigurationFiles files = withDefaults(onTop, defaults.of(onTop, snapshot.applied()));
             boolean checkSettled = bindsSettled || reconciled;
             Set<String> remove = new TreeSet<>(settled.removeFromLive());
+            // WHY: a binds file the edits renamed goes from the bindings folder after the backup, which holds it
+            // (storage.md rule 7; Storage S12). Only a rename takes a binds file out of the edits.
+            snapshot.applied().bindings().keySet().stream()
+                    .filter(FileNames::isBindsFile)
+                    .filter(name -> !snapshot.current().bindings().containsKey(name))
+                    .forEach(remove::add);
             // WHY: a file the edits hold is written, never removed - the edit wins.
             remove.removeAll(files.bindings().keySet());
             AtomicReference<Backup> taken = new AtomicReference<>();

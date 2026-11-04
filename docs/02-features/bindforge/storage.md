@@ -50,7 +50,8 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
 - **The flag is `bindforge_activation.activated_at`**, set in the step that writes the working copy and cleared by
   Run first-time startup again; the "before BindForge" backup's `backup_folder` is dropped. **The migration clears
   it**, so every tester already set up the old way goes through first-time startup again.
-- **Every known installation unreachable stops it** (Alan, 2026-10-25, from the S2b review) - a drive unplugged. BindForge
+- *Replaced 2026-11-03 by [read only while an installation is missing](#an-installation-missing--read-only-2026-11-03-alan):*
+  **Every known installation unreachable stops it** (Alan, 2026-10-25, from the S2b review) - a drive unplugged. BindForge
   names them, says to plug the drive in or Remove the installation, and leaves the flag unset; a working copy with no
   device files would otherwise go over theirs when they come back. With no installation known at all it runs, with
   the binds and preset files alone.
@@ -75,6 +76,32 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
 - **If the flag cannot be set after the write,** the user is told the files were written and that first-time startup
   will be offered again at the next click. RESTORE already says this (rule 10). It never says *"Nothing was written"*.
 
+## An installation missing — read only (2026-11-03, Alan)
+
+[Principle 13](principles.md)'s first use. It replaces the S2b rule above that every known installation unreachable
+stops first-time startup, with its message and its code.
+
+- **Checked at every Elite-Intel start.** An installation is missing when it fails the one *reachable* test above:
+  the stored list does not mark it removed, and its `ControlSchemes` folder is there. Nothing checks again while
+  Elite-Intel runs.
+- **Before first-time startup has ever completed it does not apply.** The very first setup runs with the
+  installations that are there. After that — a later run of first-time startup included — any one listed
+  installation missing puts BindForge in **read only**. It is never taken off the list for being missing.
+- **The user is warned at start**, once: BindForge is read only because an installation of Elite Dangerous is
+  missing, naming it.
+- **Read only turns off every change; every screen stays viewable**, down to its dialogs. The Bind Editor's bind
+  dialogs open and show what is bound, with nothing changeable; the Alias Designer's name dialogs open, the names not
+  editable; the Preset Editor shows its four lines, the dropdowns locked. CREATE, RESTORE and first-time startup are
+  off. The backup at every start still runs (it only reads), and Game Install Locations stays usable.
+- **The bar carries it.** No edits exist while read only, so the message takes the bar's left side in warning text
+  colour, naming every missing installation and the ways out — plug the drive in, or **Remove** it in Game Install
+  Locations — and one **OVERRIDE** button takes the place of DISCARD and APPLY. The bar is above the tabs, not an
+  editor, so it may name installations ([principle 12](principles.md)).
+- **OVERRIDE** asks first (`HudConfirmDialog`): editing is turned on, and when the missing installation is back it
+  is compared and reconciled at the next Elite-Intel start, as rule 1 says for one that comes back. An override
+  lasts until Elite-Intel closes; the next start checks and warns again. After it the bar is the normal DISCARD /
+  APPLY, and APPLY writes to the installations that are there.
+
 ## Opening BindForge
 
 5. The first time the user clicks the BindForge tab in an Elite-Intel session, [the check](#when-a-live-copy-differs)
@@ -97,7 +124,10 @@ to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
    (2026-10-24, Alan).
 
    **A binds file renamed in the Bind Editor** goes out under its new name, and APPLY removes the old-named file
-   from the live bindings folder, after the backup (2026-10-24, Alan).
+   from the live bindings folder, after the backup (2026-10-24, Alan). **It is written as a new file and the old one
+   removed, not renamed in place** (2026-11-03, Alan, Storage S12): the edits hold only what the files will be, with
+   no record of which was which. So a rename that changes only case, `-` or `_` is refused in the Name box - on
+   Windows the old name and the new would be one file, and removing the old would remove the one just written.
 
    **Before anything is backed up or written, APPLY checks that every one of the four lines of
    `StartPreset.4.start` names a binds file that exists.** If one does not — or is empty — APPLY refuses as a whole

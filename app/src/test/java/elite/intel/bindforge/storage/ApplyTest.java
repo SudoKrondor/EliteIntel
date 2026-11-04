@@ -396,6 +396,22 @@ class ApplyTest {
         assertEquals(binds("Custom", "Key_A", "Joy_YAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
     }
 
+    /** A renamed binds file goes out under its new name, and the old one is removed after the backup (Storage S12). */
+    @Test
+    void aRenamedBindsFileIsWrittenAndTheOldOneRemoved() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change((current, applied) -> Rename.rename(current, applied, CUSTOM_BINDS, "Mine"));
+        Apply apply = new Apply(edits, (current, applied) -> Map.of(), this::write, backUp,
+                installation -> live(LVWAP), files -> Apply.offered(files, List.of()), check());
+
+        apply.apply(apply.check(), Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(List.of("APPLY"), backedUp);
+        assertEquals(List.of(Set.of(CUSTOM_BINDS)), removed);
+        assertEquals(binds("Mine", "Key_A", "Joy_XAxis", ""), text(written.getFirst().bindings().get("Mine.4.2.binds")));
+        assertEquals("Mine\r\nMine\r\nMine\r\nMine", text(written.getFirst().bindings().get("StartPreset.4.start")));
+    }
+
     /** Nothing watches the files: a change after the warning opened stops APPLY, nothing written, the edits kept. */
     @Test
     void aFileChangedAfterTheCheckStopsApplyWithNothingWritten() throws IOException {

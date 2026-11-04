@@ -255,6 +255,18 @@ class LiveCopiesTest {
         assertFalse(report.bindings().updated());
     }
 
+    /**
+     * A removal differing only in case from a file written is skipped: on Windows it is the file just written
+     * (Storage S12).
+     */
+    @Test
+    void aRemovalDifferingOnlyInCaseFromAFileWrittenIsSkipped() {
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("custom.4.2.binds"));
+
+        assertTrue(Files.exists(bindings.resolve("Custom.4.2.binds")));
+        assertEquals(List.of(), report.bindings().removed());
+    }
+
     /** A name that is not a binds or preset file's is refused - the removal never leaves the bindings folder. */
     @Test
     void aRemovalThatIsNotABindsFileNameIsRefused() {
