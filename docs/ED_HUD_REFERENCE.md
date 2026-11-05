@@ -429,6 +429,9 @@ References: Universal Cartographics, Promotion to Master, Community Goal.
   standard `HudUnsavedHint`** (`HUD_COLOR_ROLE_WARNING` plus the ⚠ glyph, hidden by default, `status.unsavedChanges`), immediately LEFT of `SAVE` in the right-hand group; shown and hidden by dirty state, with `SAVE` dimmed when there are no edits. NOT a full-width banner plate above the buttons.
 - **Dismiss is
   always `BACK`** (the `button.back` key, subtle), not `CLOSE` or `CANCEL`. NOT a primary fill. Only in a modal footer.
+- **A tab's SAVE footer may
+  carry `CANCEL`** (`button.cancel`, subtle), immediately left of `SAVE` and dimmed when there are no edits. It puts the saved values back and leaves the tab open, so it is not a dismiss. It is needed wherever an edit can leave `SAVE` greyed out, as a cleared key does on AI Services.
+  *Added 2026-11-05.*
 - **The default
   button** is set by the dialog ITSELF after `setContentPane`. Usually primary; it may choose otherwise, and a dialog with no primary uses `BACK` (the reference is `CommandDetailsDialog`).
 - **The object's title

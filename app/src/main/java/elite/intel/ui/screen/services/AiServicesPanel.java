@@ -86,6 +86,10 @@ public class AiServicesPanel extends JPanel {
     private HudBanner ttsSupertonicHint;
     private HudBanner ttsGoogleHint;
     private JButton saveButton;
+    /**
+     * Puts the last saved values back. A cleared key can leave SAVE greyed out with no other way off the edit.
+     */
+    private JButton cancelButton;
     private JLabel unsavedLabel;
 
     // -- Working copy (in memory, committed only by save) ----------------------
@@ -240,15 +244,19 @@ public class AiServicesPanel extends JPanel {
         saveButton = makeButton(getText("button.save"));
         saveButton.addActionListener(e -> save());
         saveButton.setEnabled(false); // nothing to save until something changes
+        cancelButton = makeButtonSubtle(getText("button.cancel"));
+        cancelButton.addActionListener(e -> reload());
+        cancelButton.setEnabled(false); // nothing to cancel until something changes
         JButton restoreButton = makeButtonSubtle(getText("button.restoreDefaults"));
         restoreButton.addActionListener(e -> SwingUtilities.invokeLater(this::restoreDefaults));
 
         // Unsaved-changes hint as a footer status (section 10): shared HudUnsavedHint, just left of SAVE.
         unsavedLabel = new HudUnsavedHint();
 
-        // Restore on the left; the status + Save (primary) grouped at the right edge (section 10).
+        // Restore on the left; the status + Cancel + Save (primary) grouped at the right edge (section 10).
         JPanel rightGroup = transparentPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
         rightGroup.add(unsavedLabel);
+        rightGroup.add(cancelButton);
         rightGroup.add(saveButton);
         JPanel buttons = transparentPanel(new BorderLayout());
         buttons.add(restoreButton, BorderLayout.WEST);
@@ -351,9 +359,12 @@ public class AiServicesPanel extends JPanel {
     }
 
     /**
-     * Discards unsaved edits by reloading from the session.
+     * Discards unsaved edits by reloading from the session, and locks both key fields again so the slip that
+     * started this cannot repeat on the restored key.
      */
     public void reload() {
+        llmLockCheck.setSelected(true);
+        ttsLockCheck.setSelected(true);
         initData();
     }
 
@@ -435,6 +446,7 @@ public class AiServicesPanel extends JPanel {
         if (dirty == modified) return;
         dirty = modified;
         unsavedLabel.setVisible(modified);
+        cancelButton.setEnabled(modified);
         updateSaveEnablement();
         revalidate();
         repaint();
