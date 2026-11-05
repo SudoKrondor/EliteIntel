@@ -1,14 +1,17 @@
 package elite.intel.ui.overlay;
 
+import elite.intel.ui.dialog.HudColorChooserDialog;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudColorSwatch;
 import elite.intel.ui.widget.HudComboBox;
+import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSlider;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -23,9 +26,11 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * low-opacity overlay unreadable over a bright planet surface.
  * <p>
  * Built from the shared HUD widgets ({@link HudComboBox}, {@link HudSlider},
- * {@link AppTheme#makeButtonSubtle}) rather than plain Swing components: this
- * dialog is opened from the overlay toggle in the main window and sits beside
- * it, so a stock combo box here reads as a different application.
+ * {@link AppTheme#makeButtonSubtle}) rather than plain Swing components, on the
+ * standard modal scaffold.
+ * <p>
+ * Being modal costs the live preview nothing: the overlay is another process, so
+ * it keeps repainting behind the veil, and the header drags this window off it.
  */
 public class HudOverlaySettingsDialog extends JDialog {
 
@@ -43,8 +48,8 @@ public class HudOverlaySettingsDialog extends JDialog {
     private static final int DIALOG_WIDTH = 560;
 
     /**
-     * Text width for the wrapped VR hint, inside the dialog's 16px side borders
-     * and the row insets.
+     * Text width for the wrapped VR hint, inside the scaffold's side insets and
+     * the row insets.
      */
     private static final int HINT_TEXT_WIDTH = DIALOG_WIDTH - 90;
 
@@ -54,13 +59,6 @@ public class HudOverlaySettingsDialog extends JDialog {
      * "still adjusting" flag to test, so the quiet period is the seam.
      */
     private static final int SCALE_COMMIT_MS = 200;
-
-    /**
-     * Colour swatch size. Wide enough to judge a tone rather than a speck, and
-     * short enough that two columns of four still fit the dialog's own width.
-     */
-    private static final int SWATCH_WIDTH = 46;
-    private static final int SWATCH_HEIGHT = 18;
 
     /**
      * Colour roles laid out in two columns, so eight of them cost four rows.
@@ -77,24 +75,48 @@ public class HudOverlaySettingsDialog extends JDialog {
     private HudSlider alphaSlider;
     private HudSlider scaleSlider;
     private Timer scaleCommit;
-    private final Map<HudOverlayColor, Swatch> swatches = new EnumMap<>(HudOverlayColor.class);
+    private final Map<HudOverlayColor, HudColorSwatch> swatches = new EnumMap<>(HudOverlayColor.class);
     private JButton resetColors;
 
-    public HudOverlaySettingsDialog(NativeHudOverlay overlay) {
-        super((Frame) null, getText("overlay.settings.title"), false);
+    private HudOverlaySettingsDialog(Window owner, NativeHudOverlay overlay) {
+        super(owner, getText("overlay.settings.title"), ModalityType.APPLICATION_MODAL);
         this.overlay = overlay;
-        AppTheme.applyAppIcon(this);
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setUndecorated(true);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         buildUi();
         showVrRows(overlay.getDisplayMode());
         fitToContent();
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(owner);
+    }
+
+    /**
+     * Shows the dialog over {@code parent}'s window and waits for it to close.
+     */
+    public static void open(Component parent, NativeHudOverlay overlay) {
+        Window owner = SwingUtilities.getWindowAncestor(parent);
+        HudOverlaySettingsDialog dialog = new HudOverlaySettingsDialog(owner, overlay);
+        AppTheme.runWithModalScrim(owner, () -> dialog.setVisible(true));
     }
 
     private void buildUi() {
-        JPanel root = new JPanel(new GridBagLayout());
-        root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        setContentPane(root);
+        JButton close = AppTheme.makeButtonSubtle(getText("button.close"));
+        close.addActionListener(e -> dispose());
+
+        HudModalSpec spec = HudModalSpec.builder()
+                .title(getText("overlay.settings.title"))
+                .onClose(this::dispose)
+                .body(form())
+                .dismiss(close)
+                .build();
+        setContentPane(AppTheme.hudModalScaffold(spec));
+
+        getRootPane().registerKeyboardAction(e -> dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+        getRootPane().setDefaultButton(close);
+    }
+
+    private JPanel form() {
+        JPanel root = AppTheme.transparentPanel(new GridBagLayout());
 
         GridBagConstraints gbc = HudForms.baseGbc();
 
@@ -175,11 +197,7 @@ public class HudOverlaySettingsDialog extends JDialog {
         gbc.gridy++;
         HudForms.addSpanComponent(root, colorGrid(), gbc);
         showResetState();
-
-        JButton close = AppTheme.makeButtonSubtle(getText("button.close"));
-        close.addActionListener(e -> dispose());
-        gbc.gridy++;
-        HudForms.addField(root, close, gbc, 1, 1.0);
+        return root;
     }
 
     /**
@@ -200,7 +218,7 @@ public class HudOverlaySettingsDialog extends JDialog {
     }
 
     private JPanel colorRow(HudOverlayColor role) {
-        Swatch swatch = new Swatch(overlay.getColor(role));
+        HudColorSwatch swatch = new HudColorSwatch(overlay.getColor(role));
         swatch.addActionListener(e -> chooseColor(role, swatch));
         swatches.put(role, swatch);
 
@@ -221,8 +239,8 @@ public class HudOverlaySettingsDialog extends JDialog {
      * swatch in front of the commander, and repainting the card for each drag of
      * a hue slider is a write per pixel of travel.
      */
-    private void chooseColor(HudOverlayColor role, Swatch swatch) {
-        Color chosen = AppTheme.showColorChooser(this, getText("overlay.settings.color.choose"), swatch.getColor());
+    private void chooseColor(HudOverlayColor role, HudColorSwatch swatch) {
+        Color chosen = HudColorChooserDialog.choose(this, getText("overlay.settings.color.choose"), swatch.getColor());
         if (chosen == null) return;
         overlay.setColor(role, chosen);
         swatch.setColor(overlay.getColor(role));
@@ -246,50 +264,6 @@ public class HudOverlaySettingsDialog extends JDialog {
      */
     private void showResetState() {
         resetColors.setEnabled(overlay.hasCustomColors());
-    }
-
-    /**
-     * A block of one colour, clickable.
-     * <p>
-     * A button so it is reachable by keyboard and announces itself as something
-     * to press, but painted rather than themed: the HUD button styling would
-     * cover the very thing the control exists to show.
-     */
-    private static final class Swatch extends JButton {
-
-        private Color color;
-
-        Swatch(Color color) {
-            this.color = color;
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setFocusPainted(false);
-            setPreferredSize(new Dimension(SWATCH_WIDTH, SWATCH_HEIGHT));
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        }
-
-        Color getColor() {
-            return color;
-        }
-
-        void setColor(Color color) {
-            this.color = color;
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setColor(color);
-            g2.fillRect(1, 1, getWidth() - 2, getHeight() - 2);
-            // Framed, because a swatch set to the dialog's own background would
-            // otherwise look like a missing control rather than a dark colour.
-            g2.setColor(hasFocus()
-                    ? HudPalette.HUD_COLOR_ROLE_INPUT_FOCUS
-                    : HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
-            g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
-            g2.dispose();
-        }
     }
 
     /**

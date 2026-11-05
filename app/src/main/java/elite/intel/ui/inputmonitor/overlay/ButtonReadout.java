@@ -172,9 +172,6 @@ public class ButtonReadout extends ReadoutWindow {
 
     @Override
     protected void openSettings() {
-        SwingUtilities.invokeLater(() -> {
-            ButtonSettingsDialog dlg = new ButtonSettingsDialog(this);
-            dlg.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new ButtonSettingsDialog(this).open());
     }
 }

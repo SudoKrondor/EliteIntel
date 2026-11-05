@@ -161,7 +161,7 @@ public class AiTabPanel extends JPanel {
         hudOverlaySettingsButton = makeButtonSubtle(getText("ai.hudOverlay.settings"));
         hudOverlaySettingsButton.setToolTipText(getText("ai.hudOverlay.settings.tooltip"));
         hudOverlaySettingsButton.addActionListener(e ->
-                SwingUtilities.invokeLater(() -> new HudOverlaySettingsDialog(hudOverlay.overlay()).setVisible(true)));
+                SwingUtilities.invokeLater(() -> HudOverlaySettingsDialog.open(AiTabPanel.this, hudOverlay.overlay())));
 
         recalibrateAudioButton = makeButtonSubtle(getText("button.calibrateAudio"));
         recalibrateAudioButton.setEnabled(false);

@@ -266,7 +266,7 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("TabbedPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         UIManager.put("TabbedPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("TabbedPane.contentAreaColor", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        // The selected tab of a STOCK JTabbedPane - the ones inside dialogs the JDK builds for us, such
+        // The selected tab of a STOCK JTabbedPane - the ones inside components the JDK builds for us, such
         // as JColorChooser. FlatLaf paints the selected tab in TabbedPane.focusColor, a pale blue, and
         // leaves selectedForeground unset so the label falls back to the near-white foreground above:
         // white on white, and the tab a commander is looking at is the one they cannot read. The app's
@@ -281,7 +281,7 @@ public class AppView extends JFrame implements AppViewInterface {
         // Same story one control along: a TitledBorder built by the JDK - the "Preview" frame inside
         // JColorChooser is the only one in the app - takes its title from TitledBorder.titleColor, which
         // the light look-and-feel leaves black, on our dark background. The app draws its own titled
-        // frames with HudTitledCard and never builds one of these, so this only ever dresses a dialog we
+        // frames with HudTitledCard and never builds one of these, so this only ever dresses a component we
         // did not lay out ourselves.
         UIManager.put("TitledBorder.titleColor", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
         UIManager.put("TitledBorder.border", new BorderUIResource(
