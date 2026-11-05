@@ -299,6 +299,21 @@ until this slice.
 - **While CREATE has the editors greyed, the dropdown and LOAD are disabled too** (there is no binds file of the user's
   to choose then); they come back with the editors. The bindings folder's ⋮ is always usable, as File Manager is.
 
+**Renaming a binds file comes back, in the Bindings File section — settled 2026-11-04 (Alan), to be built in Storage
+S16.** The section's row is two equal halves: the dropdown and LOAD on the left, a name box and **RENAME** on the right
+(laid out in S15, RENAME disabled until S16). The rename left the Bind Editor with its Name box on 2026-11-03
+(Krondor); Alan puts it back here.
+
+- **R1 - what RENAME does:** the S12 rename, unchanged ([bind-editor.md *Shell*](bind-editor.md#shell-common-to-all-modes)
+  records how it works): one edit not applied, lighting the APPLY / DISCARD bar, changing the file name, its
+  `PresetName` and every `StartPreset.4.start` line naming it together; APPLY writes the new file and removes the old
+  one after the backup ([storage.md](storage.md) rule 7). Nothing is renamed on disk at the press.
+- **R2 - the box:** the chosen file's BindName, filled in and editable, with the version and extension after it as
+  fixed text - `DualVirpilDawnTreader` `.4.2.binds`.
+- **R3 - which file:** the one selected in the dropdown, loaded or not.
+- **R4 - a name the rules refuse** (characters, length, a name already taken, a factory BindName): pressing RENAME says
+  why in a `HudConfirmDialog`, and nothing changes. The reasons are S12's.
+
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*
 
