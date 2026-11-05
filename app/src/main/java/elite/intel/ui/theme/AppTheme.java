@@ -121,6 +121,13 @@ public class AppTheme {
     }
 
     /**
+     * Creates the checkbox that guards a field against stray edits: a padlock for a label, checked means locked.
+     */
+    public static JCheckBox makeLockCheckBox(boolean locked) {
+        return new HudLockCheckBox(locked);
+    }
+
+    /**
      * Creates a HUD-styled checkbox with an optional info-zone that runs {@code infoAction}
      * on click without toggling the checkbox state.
      * Pass {@code null} for {@code infoAction} to get identical behaviour to

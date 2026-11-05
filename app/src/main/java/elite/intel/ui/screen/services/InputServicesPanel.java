@@ -1,4 +1,4 @@
-package elite.intel.ui.screen.settings;
+package elite.intel.ui.screen.services;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.PushToTalkService;
@@ -42,9 +42,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * from {@code SystemSession}: a controller button must keep working whether or not this tab was ever opened,
  * and the microphone gate is not something anyone should have to find inside a settings screen.
  */
-public class InputSettingsPanel extends JPanel {
+public class InputServicesPanel extends JPanel {
 
-    private static final Logger log = LogManager.getLogger(InputSettingsPanel.class);
+    private static final Logger log = LogManager.getLogger(InputServicesPanel.class);
 
     private JCheckBox enablePushToTalkCheck;
     private HudComboBox<Object> controllerCombo;
@@ -71,7 +71,7 @@ public class InputSettingsPanel extends JPanel {
     // (initial load, or reacting to DeviceConnected/DeviceDisconnectedEvent) rather than by the user.
     private boolean suppressPersistence = false;
 
-    public InputSettingsPanel() {
+    public InputServicesPanel() {
         UiBus.register(this);
         DeviceBus.register(this);
         buildUi();

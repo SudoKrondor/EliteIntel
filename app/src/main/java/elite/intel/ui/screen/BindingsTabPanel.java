@@ -1,12 +1,6 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.screen.bindings.AliasDesignerPanel;
-import elite.intel.ui.screen.bindings.ApplyBar;
-import elite.intel.ui.screen.bindings.BindingManagementPanel;
-import elite.intel.ui.screen.bindings.BindingProfilePanel;
-import elite.intel.ui.screen.bindings.BindsFileSection;
-import elite.intel.ui.screen.bindings.FirstTimeStartupFlow;
-import elite.intel.ui.screen.bindings.LeavePrompt;
+import elite.intel.ui.screen.bindings.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 
@@ -19,7 +13,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 /**
  * Outer BIND FORGE tab shell hosting the "Binding Profile", "Binding Management" and "Alias Designer" sub-tabs,
  * matching the {@code AppTheme.makeSectionTabs()} pattern already used by
- * {@link ActionsTabPanel} and {@link SettingsTabPanel}.
+ * {@link ActionsTabPanel} and {@link ServicesTabPanel}.
  * <p>
  * <strong>The one APPLY / DISCARD bar sits above the sub-tabs</strong>, beneath Elite-Intel's main tabs, where the mouse
  * goes to leave BindForge (overview.md, <em>APPLY and DISCARD - one pair</em>; Storage S4a). Leaving it with edits not

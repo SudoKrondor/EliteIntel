@@ -1,4 +1,4 @@
-package elite.intel.ui.screen.settings;
+package elite.intel.ui.screen.services;
 
 import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.mouth.TtsProvider;
@@ -36,7 +36,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  * that fires {@link RestartBrainEvent}/{@link RestartMouthEvent}). This removes the previous
  * cross-panel "Use" checkbox synchronisation and the risk of half-saved, inconsistent state.
  */
-public class AiServicesSettingsPanel extends JPanel {
+public class AiServicesPanel extends JPanel {
 
     private static final String DEFAULT_MODEL = "google/gemma-4-e4b";
     /**
@@ -104,11 +104,13 @@ public class AiServicesSettingsPanel extends JPanel {
     private int savedGoogleWaveNetPitch;
     private int savedGoogleSpeechSpeed;
 
-    /** Suppresses dirty-marking while controls are populated programmatically. */
+    /**
+     * Suppresses dirty-marking while controls are populated programmatically.
+     */
     private boolean loading = false;
     private boolean dirty = false;
 
-    public AiServicesSettingsPanel() {
+    public AiServicesPanel() {
         buildUi();
         wireListeners();
     }
@@ -155,9 +157,9 @@ public class AiServicesSettingsPanel extends JPanel {
 
         nextRow(rgc);
         apiKeyField = makePasswordField();
-        llmLockCheck = makeCheckBox(getText("settings.cloud.locked"), true);
+        llmLockCheck = makeLockCheckBox(true);
         // Field + lock in one BorderLayout cell: EAST reserves the checkbox's full width
-        // (incl. "LOCKED" text) regardless of GridBag column sizing; field takes the rest.
+        // regardless of GridBag column sizing; field takes the rest.
         JPanel apiKeyRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
         apiKeyRow.add(apiKeyField, BorderLayout.CENTER);
         apiKeyRow.add(llmLockCheck, BorderLayout.EAST);
@@ -205,7 +207,7 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel ttsKeyForm = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
         ttsKeyField = makePasswordField();
-        ttsLockCheck = makeCheckBox(getText("settings.cloud.locked"), true);
+        ttsLockCheck = makeLockCheckBox(true);
         JPanel ttsKeyRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
         ttsKeyRow.add(ttsKeyField, BorderLayout.CENTER);
         ttsKeyRow.add(ttsLockCheck, BorderLayout.EAST);
@@ -251,7 +253,7 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel buttons = transparentPanel(new BorderLayout());
         buttons.add(restoreButton, BorderLayout.WEST);
         buttons.add(rightGroup, BorderLayout.EAST);
-        // Footer buttons anchor to the bottom of the tab, just above the SettingsTabPanel footer rail,
+        // Footer buttons anchor to the bottom of the tab, just above the ServicesTabPanel footer rail,
         // with the standard padding: HUD_PADDING sides (aligns with content) + a gap above the rail.
         buttons.setBorder(BorderFactory.createEmptyBorder(0, HUD_PADDING, HUD_PADDING, HUD_PADDING));
 
@@ -289,9 +291,17 @@ public class AiServicesSettingsPanel extends JPanel {
 
     private void onTextChange(JTextComponent c) {
         c.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { recomputeDirty(); }
-            public void removeUpdate(DocumentEvent e) { recomputeDirty(); }
-            public void changedUpdate(DocumentEvent e) { recomputeDirty(); }
+            public void insertUpdate(DocumentEvent e) {
+                recomputeDirty();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                recomputeDirty();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                recomputeDirty();
+            }
         });
     }
 
@@ -299,7 +309,9 @@ public class AiServicesSettingsPanel extends JPanel {
     // State
     // -------------------------------------------------------------------------
 
-    /** Re-seeds the working copy and all controls from the session, clearing the dirty flag. */
+    /**
+     * Re-seeds the working copy and all controls from the session, clearing the dirty flag.
+     */
     public void initData() {
         loading = true;
         try {
@@ -338,7 +350,9 @@ public class AiServicesSettingsPanel extends JPanel {
         clearDirty();
     }
 
-    /** Discards unsaved edits by reloading from the session. */
+    /**
+     * Discards unsaved edits by reloading from the session.
+     */
     public void reload() {
         initData();
     }
@@ -357,7 +371,9 @@ public class AiServicesSettingsPanel extends JPanel {
         commandModelField.setText(lmCommand);
     }
 
-    /** Enables the active source's controls and dims the unused source (section 0.6). */
+    /**
+     * Enables the active source's controls and dims the unused source (section 0.6).
+     */
     private void updateEnablement() {
         // Whole left column dims together (labels and fields) via each control's own
         // section 0.6 disabled rendering.
@@ -389,7 +405,9 @@ public class AiServicesSettingsPanel extends JPanel {
         googleSpeechSpeedSlider.setEnabled(ttsCloud);
     }
 
-    /** Re-evaluates whether the working copy differs from the last saved snapshot. */
+    /**
+     * Re-evaluates whether the working copy differs from the last saved snapshot.
+     */
     private void recomputeDirty() {
         if (loading) return;
         setDirty(isModified());
@@ -527,7 +545,9 @@ public class AiServicesSettingsPanel extends JPanel {
         return true;
     }
 
-    /** Resets the LLM configuration to defaults and commits immediately. */
+    /**
+     * Resets the LLM configuration to defaults and commits immediately.
+     */
     private void restoreDefaults() {
         loading = true;
         try {

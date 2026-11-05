@@ -1,4 +1,4 @@
-package elite.intel.ui.screen.settings;
+package elite.intel.ui.screen.services;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.UiBus;
@@ -20,12 +20,14 @@ import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudForms.baseGbc;
 import static elite.intel.ui.theme.HudPalette.*;
 
-public class AudioSettingsPanel extends JPanel {
+public class AudioServicesPanel extends JPanel {
 
     private final SystemSession systemSession = SystemSession.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
-    /** Shared left label-column width so device and level controls start at the same x (fits the longest label). */
+    /**
+     * Shared left label-column width so device and level controls start at the same x (fits the longest label).
+     */
     private static final int LABEL_COL_WIDTH = 170;
 
     private HudSlider voiceVolumeSlider;
@@ -38,7 +40,9 @@ public class AudioSettingsPanel extends JPanel {
     private HudSlider sttThreadsSlider;
     private HudComboBox<String> inputCombo;
     private HudComboBox<String> outputCombo;
-    /** Guards the combo listeners from persisting while we programmatically re-sync the selection. */
+    /**
+     * Guards the combo listeners from persisting while we programmatically re-sync the selection.
+     */
     private boolean syncingDevices;
 
     private JCheckBox noiseReductionCheck;
@@ -48,7 +52,7 @@ public class AudioSettingsPanel extends JPanel {
     private static final int STRENGTH_MEDIUM = 1;
     private static final int STRENGTH_HIGH = 2;
 
-    public AudioSettingsPanel() {
+    public AudioServicesPanel() {
         buildUi();
         UiBus.register(this);
     }
@@ -126,8 +130,8 @@ public class AudioSettingsPanel extends JPanel {
 
     /**
      * 4-column layout:
-     *   Row 0 — Mic [dropdown]   Speaker [dropdown]
-     *   Row 1 — [☑ Enable Noise Reduction]   [Low][Medium][High]
+     * Row 0 — Mic [dropdown]   Speaker [dropdown]
+     * Row 1 — [☑ Enable Noise Reduction]   [Low][Medium][High]
      * <p>
      * There is no "changes take effect on next service start" banner: picking a device now restarts the
      * one service that reads it (see {@link #onInputDeviceSelected()}). The banner sat under the whole
@@ -349,7 +353,9 @@ public class AudioSettingsPanel extends JPanel {
         UiBus.publish(new RestartMouthEvent());
     }
 
-    /** Re-reads the persisted device selection into the pickers without re-triggering a save. */
+    /**
+     * Re-reads the persisted device selection into the pickers without re-triggering a save.
+     */
     private void syncDevices() {
         syncingDevices = true;
         try {
@@ -373,7 +379,9 @@ public class AudioSettingsPanel extends JPanel {
                 ? AudioDeviceCombo.SYSTEM_DEFAULT_LABEL : savedName);
     }
 
-    /** Adds one full-width level row: label in the shared column + slider stretched to panel width. */
+    /**
+     * Adds one full-width level row: label in the shared column + slider stretched to panel width.
+     */
     private static void addLevelRow(JPanel grid, GridBagConstraints ag, int row, String label, HudSlider slider) {
         ag.gridy = row;
         ag.gridx = 0;
@@ -388,7 +396,9 @@ public class AudioSettingsPanel extends JPanel {
         grid.add(slider, ag);
     }
 
-    /** Creates a HUD slider snapping to integer steps; the value is shown above the thumb. */
+    /**
+     * Creates a HUD slider snapping to integer steps; the value is shown above the thumb.
+     */
     private static HudSlider makeSlider(int min, int max, int value) {
         return new HudSlider(min, max, 1, value);
     }

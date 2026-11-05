@@ -1,4 +1,4 @@
-package elite.intel.ui.screen.settings;
+package elite.intel.ui.screen.services;
 
 import elite.intel.appdata.AppDataBackup;
 import elite.intel.appdata.AppDataRestore;
@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * The Settings footer's Backup Settings and Data and Restore buttons: the dialogs around {@link AppDataBackup} and
+ * The Services footer's Backup Settings and Data and Restore buttons: the dialogs around {@link AppDataBackup} and
  * {@link AppDataRestore}.
  * <p>
  * Choosing files and passwords happens on the EDT; the disk work does not, because a database snapshot runs to

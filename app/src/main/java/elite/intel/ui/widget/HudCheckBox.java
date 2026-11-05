@@ -70,16 +70,20 @@ public class HudCheckBox extends JCheckBox {
 
     @Override
     public Dimension getPreferredSize() {
-        Font f = getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
-        FontMetrics fm = getFontMetrics(f);
         int markerSize  = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
         int markerZoneW = markerSize + 2 * HudPalette.HUD_PADDING_SMALL;
-        int textW = HudPalette.HUD_PADDING
-                + (fm != null ? fm.stringWidth(labelText) : 120)
-                + HudPalette.HUD_PADDING;
+        int textW = HudPalette.HUD_PADDING + labelWidth() + HudPalette.HUD_PADDING;
         int infoExtra = infoAction != null ? (HudPalette.HUD_SEP_W + HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT) : 0;
         return new Dimension(markerZoneW + HudPalette.HUD_SEP_W + textW + infoExtra,
                 HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
+    }
+
+    /**
+     * The width of what {@link #paintLabel} paints.
+     */
+    protected int labelWidth() {
+        FontMetrics fm = getFontMetrics(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX));
+        return fm != null ? fm.stringWidth(labelText) : 120;
     }
 
     /**
@@ -150,13 +154,7 @@ public class HudCheckBox extends JCheckBox {
             // as "off" when it is on. Greying is already carried by markerColor.
             HudGlyphs.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on);
 
-            // Label text in the text zone, vertically centred
-            Font f = getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
-            g2.setFont(f);
-            FontMetrics fm   = g2.getFontMetrics();
-            int baseline     = (h - fm.getHeight()) / 2 + fm.getAscent();
-            g2.setColor(textColor);
-            g2.drawString(labelText, markerZoneW + HudPalette.HUD_SEP_W + HudPalette.HUD_PADDING, baseline);
+            paintLabel(g2, markerZoneW + HudPalette.HUD_SEP_W + HudPalette.HUD_PADDING, h, textColor);
 
             // Info-zone (optional)
             if (infoAction != null) {
@@ -188,6 +186,19 @@ public class HudCheckBox extends JCheckBox {
         } finally {
             g2.dispose();
         }
+    }
+
+    /**
+     * Paints the label in the text zone, vertically centred.
+     *
+     * @param x left edge of the label
+     * @param h height of the control
+     */
+    protected void paintLabel(Graphics2D g2, int x, int h, Color textColor) {
+        g2.setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX));
+        FontMetrics fm = g2.getFontMetrics();
+        g2.setColor(textColor);
+        g2.drawString(labelText, x, (h - fm.getHeight()) / 2 + fm.getAscent());
     }
 
     // -------------------------------------------------------------------------
