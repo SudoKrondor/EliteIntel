@@ -314,6 +314,21 @@ S16.** The section's row is two equal halves: the dropdown and LOAD on the left,
 - **R4 - a name the rules refuse** (characters, length, a name already taken, a factory BindName): pressing RENAME says
   why in a `HudConfirmDialog`, and nothing changes. The reasons are S12's.
 
+**Built in Storage S16 (2026-11-04), with four more decisions settled by Alan that day:**
+
+- **Q1 - the rename is followed.** The dropdown selects the file under its new name, and the Bind Editor, if it was
+  showing that file, keeps showing it under the new name; the tab does not switch. Otherwise both would fall back to
+  the General line's file, since the old name is gone from the edits.
+- **Q2 - no factory-name warning.** A binds file already named like a factory one is not warned of here; S12's
+  warning left with the Name box and does not come back.
+- **Q3 - Enter renames, Esc puts the file's own name back**, as S12's Name box did.
+- **Q4 - RENAME is lit whenever the section is usable**, dark only while a rename runs; a refused name is said when it
+  is pressed (R4), and the file's own name does nothing.
+
+Built as `ui.screen.bindings.BindsFileSection` (the judgement in `refusal`, S12's order: the controller name's rule
+against `Rename.Names.taken`, then `Rename.factoryClash`), calling `bindforge.storage.Rename.rename` through the edits
+off the EDT; a failed change says the Bind Editor's words (`bindings.change.failed`, `.stopped`, `bindings.writeRunning`).
+
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*
 

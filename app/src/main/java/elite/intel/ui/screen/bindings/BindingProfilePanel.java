@@ -231,7 +231,8 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * File Manager's LOAD: shows {@code file} at the next read, if the edits still hold it. On the EDT.
+     * File Manager's LOAD, or a rename there of the file shown: shows {@code file} at the next read, if the edits still
+     * hold it. On the EDT.
      */
     public void load(String file) {
         wantedFile = file;

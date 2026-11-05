@@ -11,13 +11,14 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * Renaming a binds file - the Bind Editor's Name box (bind-editor.md, <em>Shell</em>; storage.md rule 7; Storage S12).
+ * Renaming a binds file - File Manager's name box and RENAME (file-manager.md, <em>Game Install Locations</em>; storage.md
+ * rule 7; built in Storage S12 for the Bind Editor's Name box, called from File Manager since Storage S16).
  * One edit not applied changes three things together: the file name, the {@code PresetName} inside it, and every line
  * of the preset file naming the old BindName. APPLY writes the new file and removes the old one from the bindings
  * folder ({@link Apply}).
  * <p>
  * Pure except where it says it touches the disk. The name rule is the controller name's ({@code DeviceNames.validate}),
- * checked by the screen against {@link Names#own()}; {@link #factoryClash} is checked as well, since a factory
+ * checked by the screen against {@link Names#taken}; {@link #factoryClash} is checked as well, since a factory
  * BindName is refused by its characters, whatever their case, and not loosely (Alan, 2026-11-03).
  */
 public final class Rename {
@@ -26,7 +27,7 @@ public final class Rename {
     }
 
     /**
-     * What the Name box checks a typed name against.
+     * What the name box checks a typed name against.
      *
      * @param factory the factory BindNames of the installations that are there
      * @param own     the BindNames of the set's binds files, the file being renamed included - compared loosely, so a
@@ -121,7 +122,7 @@ public final class Rename {
         return FileNames.bindName(bindsFile);
     }
 
-    /** What follows the BindName: the version and extension, fixed text in the Name box - {@code .4.2.binds}. */
+    /** What follows the BindName: the version and extension, fixed text after the name box - {@code .4.2.binds}. */
     public static String suffix(String bindsFile) {
         String bindName = FileNames.bindName(bindsFile)
                 .orElseThrow(() -> new IllegalArgumentException("not a binds file name: " + bindsFile));

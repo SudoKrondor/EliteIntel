@@ -75,6 +75,13 @@ public class BindingsTabPanel extends JPanel {
                 bindingProfilePanel.load(file);
                 tabs.setSelectedComponent(bindingProfilePanel);
             }
+
+            @Override
+            public void showRenamed(String file) {
+                // WHY no tab switch: the rename was pressed in File Manager, and its result is shown there (Storage
+                // S16, Q1, Alan, 2026-11-04).
+                bindingProfilePanel.load(file);
+            }
         });
 
         add(applyBar, BorderLayout.NORTH);
