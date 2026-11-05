@@ -212,7 +212,7 @@ public final class BindingConflictScanner {
                 if (!sameChord && shadowed == null) {
                     continue; // ED matches the exact chord; only identical chords or a shadowed modifier clash
                 }
-                if (BindingConflictRules.isSafeOverlap(a, b)) {
+                if (sameChord ? BindingConflictRules.isSafeOverlap(a, b) : BindingConflictRules.isSafeShadow(a, b)) {
                     continue; // different vehicle state or a sub-mode overlay → never co-fire
                 }
                 Set<String> chordA = Set.copyOf(ksA);
@@ -381,7 +381,8 @@ public final class BindingConflictScanner {
             if (sameChord && candidateHold != e.getKey().hold()) {
                 continue; // a tap and a long press on one key are two controls
             }
-            if (BindingConflictRules.isSafeOverlap(bindingId, other)) {
+            if (sameChord ? BindingConflictRules.isSafeOverlap(bindingId, other)
+                    : BindingConflictRules.isSafeShadow(bindingId, other)) {
                 continue;
             }
             return new CandidateConflict(other);

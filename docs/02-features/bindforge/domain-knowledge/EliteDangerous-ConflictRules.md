@@ -338,11 +338,20 @@ correctly exempt, and would incorrectly clear DSS since it looks like FSS's sibl
 
 Concretely: BindForge's scanner needs a subgroup tag per action (most already derivable from the
 binding zone map reference) and a lookup against these matrices to decide whether a same-key hit
-between two subgroups is a real conflict, before it ever reaches the pub/sub architecture already
-decided in BindForge-Spec.md §5.2.1. The known Multi-Crew bug is a case where BindForge should
-**not** mirror the game's own (wrong) answer — same principle as the FSS/Hardpoints and
-UI-vs-ship suppression work in §5.2.2's algorithm-gaps table, generalized to a full lookup table
-instead of a handful of special cases.
+between two subgroups is a real conflict, before it ever reaches the pub/sub architecture already decided in BindForge-Spec.md §5.2.1.
+
+**What was built — settled 2026-11-03 (
+Krondor).** A matrix `YES` is added to BindForge's own rules; it replaces none of them. If our rule reports a pair, it stays reported, whatever the matrix says about it. If the game warns about a pair our rules clear, it is now a conflict too (`GameConflictMatrix`, tested cell by cell against the matrix).
+
+- **This reverses the Multi-Crew position written here
+  earlier,** that BindForge should not mirror the game's wrong answer. The state is still mutually exclusive in play, but the game still complains, so the user is told first.
+- **It also reports the Detailed Surface Scanner against Weapons and Mode Switches, and emotes against other on-foot
+  controls, on the identical key.** Our rules cleared both.
+- **Identical chords only.** The matrix was measured by binding one key to two controls, so it says nothing about a
+  [modifier shadow](../bind-editor.md#shared-conflict-detection): emotes on `Ctrl+0` under Crouch on bare `Ctrl` stay clear.
+- **Same section
+  only**, and a pair inside one group has no answer: the tests did not cover them, so our rules decide. This departs from the
+  *untested means conflict* wording above, which was never built.
 
 **Not yet resolved:**
 - §3's Ship×SRV cross-section question.

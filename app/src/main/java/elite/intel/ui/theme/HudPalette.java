@@ -17,71 +17,83 @@ public final class HudPalette {
 
     public static final Color HUD_COLOR_000000 = new Color(0x000000);
     public static final Color HUD_COLOR_8C000000 = new Color(0x8C000000, true);
-    public static final Color HUD_COLOR_090D12 = new Color(0x090D12);
-    public static final Color HUD_COLOR_101721 = new Color(0x101721);
-    public static final Color HUD_COLOR_151519 = new Color(0x151519);
-    public static final Color HUD_COLOR_1A1206 = new Color(0x1A1206);
+    public static final Color HUD_COLOR_0B0F14 = new Color(0x0B0F14);
+    public static final Color HUD_COLOR_111820 = new Color(0x111820);
+    public static final Color HUD_COLOR_161F29 = new Color(0x161F29);
+    public static final Color HUD_COLOR_1B6F7B = new Color(0x1B6F7B);
     public static final Color HUD_COLOR_24313A = new Color(0x24313A);
     public static final Color HUD_COLOR_2D5C66 = new Color(0x2D5C66);
-    public static final Color HUD_COLOR_33D7E8 = new Color(0x33D7E8);
+    public static final Color HUD_COLOR_33D7E8 = new Color(0xA633D7E8, true);
+    public static final Color HUD_COLOR_3A4C58 = new Color(0x3A4C58);
     public static final Color HUD_COLOR_4FC56B = new Color(0x4FC56B);
+    public static final Color HUD_COLOR_566874 = new Color(0x566874);
     public static final Color HUD_COLOR_5A6368 = new Color(0x5A6368);
-    public static final Color HUD_COLOR_6E4A28 = new Color(0x6E4A28);
+    public static final Color HUD_COLOR_5CE1EE = new Color(0x5CE1EE);
+    public static final Color HUD_COLOR_5F7480 = new Color(0x5F7480);
     public static final Color HUD_COLOR_72A2B4 = new Color(0x72A2B4);
+    public static final Color HUD_COLOR_7F909B = new Color(0x7F909B);
     public static final Color HUD_COLOR_8B0101 = new Color(0x8B0101);
+    public static final Color HUD_COLOR_A9B8C2 = new Color(0xA9B8C2);
     public static final Color HUD_COLOR_B78CD9 = new Color(0xB78CD9);
-    public static final Color HUD_COLOR_9A6A3C = new Color(0x9A6A3C);
-    public static final Color HUD_COLOR_B85A14 = new Color(0xB85A14);
     public static final Color HUD_COLOR_BB7A32 = new Color(0xBB7A32);
-    public static final Color HUD_COLOR_C2C2C2 = new Color(0xC2C2C2);
     public static final Color HUD_COLOR_D94F4F = new Color(0xD94F4F);
     public static final Color HUD_COLOR_E6E6E6 = new Color(0xE6E6E6);
-    public static final Color HUD_COLOR_FF2E00 = new Color(0xFF2E00);
-    public static final Color HUD_COLOR_FF7100 = new Color(0xFF7100);
-    public static final Color HUD_COLOR_FF822E = new Color(0xFF822E);
-    public static final Color HUD_COLOR_6EA7FF = new Color(0x6EA7FF);
+    public static final Color HUD_COLOR_6EA7FF = new Color(0xBF6EA7FF, true);
 
     // -- HUD semantic color roles ---------------------------------------------
+    // 60-30-10: dark blue-grey surfaces, cool grey lines and text, and one cyan accent (33D7E8).
 
-    public static final Color HUD_COLOR_ROLE_APPLICATION_BACKGROUND = HUD_COLOR_090D12;
-    public static final Color HUD_COLOR_ROLE_PANEL_BACKGROUND = HUD_COLOR_101721;
-    public static final Color HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND = HUD_COLOR_1A1206;
-    public static final Color HUD_COLOR_ROLE_LOG_BACKGROUND = HUD_COLOR_101721;
+    public static final Color HUD_COLOR_ROLE_APPLICATION_BACKGROUND = HUD_COLOR_0B0F14;
+    public static final Color HUD_COLOR_ROLE_PANEL_BACKGROUND = HUD_COLOR_111820;
+    public static final Color HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND = HUD_COLOR_161F29;
+    /**
+     * Text cell of an input outside a grid: text fields, text areas, combos. A grid's combo stays on the table cell's.
+     */
+    public static final Color HUD_COLOR_ROLE_FIELD_BACKGROUND = HUD_COLOR_0B0F14;
+    public static final Color HUD_COLOR_ROLE_LOG_BACKGROUND = HUD_COLOR_111820;
     public static final Color HUD_COLOR_ROLE_PRIMARY_TEXT = HUD_COLOR_E6E6E6;
     /** Ship name readout in the top status bar. */
     public static final Color HUD_COLOR_ROLE_SHIP_NAME_TEXT = HUD_COLOR_33D7E8;
-    public static final Color HUD_COLOR_ROLE_DIALOG_TITLE_TEXT = HUD_COLOR_C2C2C2;
+    public static final Color HUD_COLOR_ROLE_DIALOG_TITLE_TEXT = HUD_COLOR_A9B8C2;
     public static final Color HUD_COLOR_ROLE_BUTTON_TEXT = HUD_COLOR_E6E6E6;
-    public static final Color HUD_COLOR_ROLE_SECONDARY_TEXT = HUD_COLOR_9A6A3C;
-    /** Muted key label in key→value readouts and telemetry blocks (§7). Same tone as the
-     *  secondary text, but a distinct semantic role so the two can diverge later. */
-    public static final Color HUD_COLOR_ROLE_READOUT_LABEL = HUD_COLOR_9A6A3C;
-    /** CMDR credit-balance readout (e.g. commander block, §7). Same tone as the secondary
-     *  text today, but a distinct semantic role so the two can diverge later. */
+    public static final Color HUD_COLOR_ROLE_SECONDARY_TEXT = HUD_COLOR_A9B8C2;
+    /**
+     * Muted key label in key→value readouts and telemetry blocks (§7). A step quieter than the secondary text.
+     */
+    public static final Color HUD_COLOR_ROLE_READOUT_LABEL = HUD_COLOR_7F909B;
+    /**
+     * CMDR credit-balance readout (e.g. commander block, §7).
+     */
     public static final Color HUD_COLOR_ROLE_CREDITS_TEXT = HUD_COLOR_33D7E8;
-    public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = HUD_COLOR_FF7100;
+    public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = HUD_COLOR_33D7E8;
+    /**
+     * A value at rest: field and combo text, table cells, read-only readouts. Neutral so the accent stays for what is active or selected.
+     */
+    public static final Color HUD_COLOR_ROLE_VALUE_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_MONOSPACE_TEXT = HUD_COLOR_E6E6E6;
-    public static final Color HUD_COLOR_ROLE_SELECTED_TEXT = HUD_COLOR_101721;
+    public static final Color HUD_COLOR_ROLE_SELECTED_TEXT = HUD_COLOR_0B0F14;
     public static final Color HUD_COLOR_ROLE_STREAM_OVERLAY_BACKGROUND = HUD_COLOR_000000;
     /** Semi-transparent dark veil placed on the owner window glass pane while a modal dialog is open. */
     public static final Color HUD_COLOR_ROLE_MODAL_SCRIM = HUD_COLOR_8C000000;
-    public static final Color HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND = HUD_COLOR_101721;
-    public static final Color HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND = HUD_COLOR_090D12;
-    public static final Color HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND = HUD_COLOR_101721;
-    /** Accent frame around an undecorated modal dialog window (section 7.2). */
-    public static final Color HUD_COLOR_ROLE_DIALOG_FRAME_BORDER = HUD_COLOR_FF7100;
-    public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_2D5C66;
+    public static final Color HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND = HUD_COLOR_111820;
+    public static final Color HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND = HUD_COLOR_0B0F14;
+    public static final Color HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND = HUD_COLOR_111820;
+    /**
+     * Frame around an undecorated modal dialog window (section 7.2).
+     */
+    public static final Color HUD_COLOR_ROLE_DIALOG_FRAME_BORDER = HUD_COLOR_3A4C58;
+    public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_3A4C58;
     public static final Color HUD_COLOR_ROLE_SECONDARY_BORDER = HUD_COLOR_24313A;
-    public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_B85A14;
+    public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_5F7480;
     /** Semi-transparent selection surface derived from the standard HUD frame blue. */
     public static final Color HUD_COLOR_ROLE_SELECTION_BACKGROUND = new Color(
             HUD_COLOR_2D5C66.getRed(), HUD_COLOR_2D5C66.getGreen(), HUD_COLOR_2D5C66.getBlue(), 128);
     /** Bright accent painted on an input frame and its corner marks while it holds keyboard focus. */
-    public static final Color HUD_COLOR_ROLE_INPUT_FOCUS = HUD_COLOR_FF822E;
-    public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_6E4A28;
-    public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND = HUD_COLOR_B85A14;
-    public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_HOVER_BACKGROUND = HUD_COLOR_B85A14;
-    public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_PRESSED_BACKGROUND = HUD_COLOR_FF7100;
+    public static final Color HUD_COLOR_ROLE_INPUT_FOCUS = HUD_COLOR_5CE1EE;
+    public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_3A4C58;
+    public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND = HUD_COLOR_1B6F7B;
+    public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_HOVER_BACKGROUND = HUD_COLOR_1B6F7B;
+    public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_PRESSED_BACKGROUND = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_INFORMATION = HUD_COLOR_33D7E8;
     /**
      * Background of an input a binding holds right now, in the bindings capture dialog: the HUD frame blue.
@@ -90,20 +102,22 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_SUCCESS = HUD_COLOR_4FC56B;
     public static final Color HUD_COLOR_ROLE_WARNING = HUD_COLOR_6EA7FF;
     public static final Color HUD_COLOR_ROLE_DANGER = HUD_COLOR_D94F4F;
-    public static final Color HUD_COLOR_ROLE_DISABLED = HUD_COLOR_6E4A28;
+    public static final Color HUD_COLOR_ROLE_DISABLED = HUD_COLOR_566874;
     /** More receded disabled tint for icon affordances, derived from the shared disabled role. */
     public static final Color HUD_COLOR_ROLE_DISABLED_ICON = new Color(
             HUD_COLOR_ROLE_DISABLED.getRed(), HUD_COLOR_ROLE_DISABLED.getGreen(), HUD_COLOR_ROLE_DISABLED.getBlue(), 128);
-    public static final Color HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND = HUD_COLOR_1A1206;
+    public static final Color HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND = HUD_COLOR_161F29;
     public static final Color HUD_COLOR_ROLE_INFORMATION_MARK = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_6EA7FF;
-    public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FF7100;
-    public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE = HUD_COLOR_FF7100;
-    public static final Color HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND = HUD_COLOR_1A1206;
+    public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND = HUD_COLOR_33D7E8;
+    public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE = HUD_COLOR_33D7E8;
+    public static final Color HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND = HUD_COLOR_161F29;
     /** Active left-of-thumb portion of a HudSlider track; this is a level indicator, not a danger signal. */
-    public static final Color HUD_COLOR_ROLE_SLIDER_VALUE_TRACK = HUD_COLOR_FF2E00;
-    /** Warm brown plaque behind a HudSlider track, on which the rail and value fill are drawn. */
-    public static final Color HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND = HUD_COLOR_151519;
+    public static final Color HUD_COLOR_ROLE_SLIDER_VALUE_TRACK = HUD_COLOR_33D7E8;
+    /**
+     * Plaque behind a HudSlider track, on which the rail and value fill are drawn.
+     */
+    public static final Color HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND = HUD_COLOR_161F29;
     /** Commander chat lane text (left cards + input caret). Green, distinct from the AI (blue) lane. */
     public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_4FC56B;
     /** Commander chat lane marker/rail (left rail + bottom prompt glyph); own role so it can diverge from text. */

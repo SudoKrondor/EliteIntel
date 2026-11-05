@@ -1,6 +1,6 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
@@ -73,9 +73,11 @@ public class HudTelemetryBlock extends JPanel {
         valueLabel.setForeground(placeholder ? HudPalette.HUD_COLOR_ROLE_DISABLED : HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
     }
 
-    /** Wraps a pre-tinted native-size icon in a vertically centered JLabel. */
+    /**
+     * Tints a native-size icon to the accent and wraps it in a vertically centered JLabel.
+     */
     private static JComponent buildIconMarker(ImageIcon icon) {
-        JLabel label = new JLabel(icon);
+        JLabel label = new JLabel(HudGlyphs.tintIcon(icon, ICON_SIZE, ICON_SIZE, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION));
         label.setOpaque(false);
         label.setVerticalAlignment(SwingConstants.CENTER);
         label.setPreferredSize(new Dimension(ICON_SIZE, ICON_SIZE));

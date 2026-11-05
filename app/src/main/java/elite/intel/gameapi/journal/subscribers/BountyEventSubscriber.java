@@ -104,7 +104,7 @@ public class BountyEventSubscriber {
         if (event.getVictimFaction() != null && !event.getVictimFaction().isBlank())
             data.append(". Faction: ").append(event.getVictimFaction());
         data.append('.');
-        narrator.narrate(data.toString(), VoiceCues.withLaughInvited(
+        narrator.narrate(data.toString(), VoiceCues.withLaughOnCoinFlip(
                 "Gloat over the defeated target with one short, sarcastic and vitriolic remark. "
                         + "Mock the dead pilot or their ship, never the commander. One sentence, no profanity. "
                         + "Do not repeat the bounty amount."));

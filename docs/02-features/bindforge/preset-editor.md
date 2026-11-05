@@ -216,7 +216,10 @@ built on the [foundation branch](../../05-build-plan/foundation.md) because `Bin
 
 ## Deferred
 
-**Binds File Duplicate** — copying a binds file under a new BindName — is out of scope, tracked as Preset Editor's own future item. *Renaming a binds file is no longer deferred: it is the Bind Editor's [Name box](bind-editor.md#shell-common-to-all-modes) (2026-10-24, Alan).*
+**Binds File
+Duplicate** — copying a binds file under a new BindName — is out of scope, tracked as Preset Editor's own future item.
+*Renaming a binds file was the Bind Editor's [Name box](bind-editor.md#shell-common-to-all-modes) (2026-10-24, Alan),
+removed from the screen 2026-11-03 (Krondor).*
 
 ## Scope, Confirmed
 

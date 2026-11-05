@@ -18,10 +18,7 @@ import elite.intel.session.Status;
 import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudTable;
-import elite.intel.ui.widget.HudTwoColumns;
+import elite.intel.ui.widget.*;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -171,14 +168,14 @@ public class BuiltInCommandsTabPanel extends JPanel {
         placeWrap.add(placeCol, BorderLayout.NORTH);
         addSpanComponent(top, new HudTwoColumns(situationWrap, placeWrap), gbc);
 
-        // Search row - the same nested label+field column as the two above, added full-width, so its input's
-        // left edge lines up exactly with the situation combo's (identical label width and nesting insets).
+        // Search row - the shared filter bar, full-width over the list it narrows, with the in-field info cell
+        // explaining what it searches.
         nextRow(gbc);
-        JPanel searchCol = transparentPanel(new GridBagLayout());
-        GridBagConstraints fgc = baseGbc();
-        addLabel(searchCol, getText("actions.commands.search.label"), fgc);
-        // In-field info-"i" (HUD section 5.1) explaining what this field searches.
-        searchField = makeTextField(this::showSearchInfo);
+        HudSearchToolbar searchBar = HudSearchToolbar.tableFilter(
+                getText("actions.commands.search.placeholder"),
+                getText("actions.commands.search.clearTooltip"));
+        searchBar.setInfoAction(this::showSearchInfo);
+        searchField = searchBar.textField();
         // Plain text search: every edit narrows the list below to the actions whose name, id, or spoken
         // phrases contain what was typed. Literal substring matching, so what is typed is what is looked for.
         searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -196,8 +193,7 @@ public class BuiltInCommandsTabPanel extends JPanel {
             public void changedUpdate(DocumentEvent e) { applyActionRows();
             }
         });
-        addField(searchCol, searchField, fgc, 1, 1.0);
-        addSpanComponent(top, searchCol, gbc);
+        addSpanComponent(top, searchBar, gbc);
 
         add(top, BorderLayout.NORTH);
 

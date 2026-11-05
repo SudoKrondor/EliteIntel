@@ -1,7 +1,7 @@
 package elite.intel.bindforge.devices;
 
-import elite.intel.bindforge.devices.ControllerCapture.Captured;
 import elite.intel.bindforge.devicefiles.ButtonMapLabels;
+import elite.intel.bindforge.devices.ControllerCapture.Captured;
 import elite.intel.bindforge.model.BindingInput;
 import elite.intel.devices.events.DeviceHatEvent;
 import elite.intel.devices.model.GameAxis;
@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Capture is a single motion, as in the game: whatever is held when the completing input arrives becomes its
@@ -222,5 +223,19 @@ class ControllerCaptureTest {
 
     private static String gamepadButton(int sdlIndex) {
         return ControllerCapture.buttonToken(true, sdlIndex).orElseThrow();
+    }
+
+    @Test
+    void aWholeAxisIsCapturedFromRestWithNoDirectionAndNoModifiers() {
+        ControllerCapture capture = new ControllerCapture();
+        capture.button("Stick", "Joy_1", true);
+
+        assertTrue(capture.wholeAxis("Stick", GameAxis.Z, -1f).isEmpty(), "parked at one end");
+        assertTrue(capture.wholeAxis("Stick", GameAxis.Z, -0.9f).isEmpty(), "a jitter");
+        ControllerCapture.Captured captured = capture.wholeAxis("Stick", GameAxis.Z, -0.5f).orElseThrow();
+
+        assertEquals("Joy_ZAxis", captured.input().key());
+        assertTrue(captured.modifiers().isEmpty());
+        assertTrue(capture.wholeAxis("Stick", GameAxis.Z, 0.5f).isEmpty(), "still moved");
     }
 }

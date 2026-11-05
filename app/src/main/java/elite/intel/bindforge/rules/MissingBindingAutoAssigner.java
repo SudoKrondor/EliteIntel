@@ -255,7 +255,7 @@ public class MissingBindingAutoAssigner {
      * control that is live alongside it - pressing the chord would fire that control first.
      * <p>
      * Judged per target with the same context rule the conflict scan uses
-     * ({@link BindingConflictRules#isSafeOverlap}), so on-foot Sprint on {@code Left Shift} does not
+     * ({@link BindingConflictRules#isSafeShadow}), so on-foot Sprint on {@code Left Shift} does not
      * take Shift away from a ship control. A context-blind version of a guard like this once emptied
      * the pool on real files; this one only ever removes a modifier the scan would report.
      */
@@ -263,7 +263,7 @@ public class MissingBindingAutoAssigner {
         Set<String> shadowed = new HashSet<>();
         for (Map.Entry<String, Set<String>> entry : bareModifierOwners.entrySet()) {
             for (String owner : entry.getValue()) {
-                if (!owner.equals(bindingId) && !BindingConflictRules.isSafeOverlap(bindingId, owner)) {
+                if (!owner.equals(bindingId) && !BindingConflictRules.isSafeShadow(bindingId, owner)) {
                     shadowed.add(entry.getKey());
                     break;
                 }

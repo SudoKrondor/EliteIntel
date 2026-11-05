@@ -1,5 +1,4 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -228,7 +227,7 @@ public final class HudTable {
                 Object hoveredObj = table.getClientProperty(HOVER_ROW_PROPERTY);
                 boolean hovered = hoveredObj instanceof Integer h && h == row;
                 label.setBackground(hovered ? HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-                label.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
             }
             label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
             label.setHorizontalAlignment(SwingConstants.LEFT);
@@ -241,14 +240,16 @@ public final class HudTable {
      * alignment. Use for columns where the value is an identifier (pass {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_TEXT}),
      * a numeric (pass {@link SwingConstants#RIGHT}), or needs explicit caps without global impact.
      *
-     * @param fg        non-selected foreground; {@code null} keeps the default {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}
+     * @param fg        non-selected foreground; {@code null} keeps the default {@link HudPalette#HUD_COLOR_ROLE_VALUE_TEXT}
      * @param alignment {@link SwingConstants#LEFT} or {@link SwingConstants#RIGHT}
      */
     public static class ValueCellRenderer extends CellRenderer {
         private final java.awt.Color fg;
         private final int alignment;
 
-        /** Creates a renderer with caps, default HUD_COLOR_ROLE_PRIMARY_ACTION foreground, and LEFT alignment. */
+        /**
+         * Creates a renderer with caps, default HUD_COLOR_ROLE_VALUE_TEXT foreground, and LEFT alignment.
+         */
         public ValueCellRenderer() {
             this(null, SwingConstants.LEFT);
         }

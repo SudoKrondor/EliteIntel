@@ -1482,6 +1482,8 @@ its folder and M / differs — and before that a tab per installation.*
     text** (Alan, 2026-10-15). The half-transparent selection blue it used first was too faint to notice.
   - Axes are lit by which axis they are, so axis highlighting needs [A8b](../../05-build-plan/alias-designer.md#slices)
     — SDL numbers a controller's axes without gaps, and its axis 2 may be Z or RZ.
+  - **A meter to the right of each axis's box shows where the axis
+    is** (Krondor, 2026-11-03), on a connected controller: a track with a centre tick, a fill from the centre to the value, and a marker on the value (`HudAxisMeter`). Unlike the light it has no margin, so it shows jitter too. It stays empty until the axis first moves, because the Device Service reports an axis only when it moves.
 
 ### Actions, and what each one reaches
 

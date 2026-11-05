@@ -3,6 +3,7 @@ package elite.intel.ui.inputmonitor.overlay;
 import elite.intel.ui.inputmonitor.InputMonitorPalette;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
+import elite.intel.ui.widget.HudSpinner;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -74,13 +75,13 @@ public class KeyboardSettingsDialog extends JDialog {
         // Width
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.keyboard.width"), gbc);
-        widthSpinner = new JSpinner(new SpinnerNumberModel(readout.getWidth(), 80, 600, 10));
+        widthSpinner = new HudSpinner(readout.getWidth(), 80, 600, 10);
         addField(root, widthSpinner, gbc);
 
         // Height
         nextRow(gbc);
         addLabel(root, getText("inputMonitor.keyboard.height"), gbc);
-        heightSpinner = new JSpinner(new SpinnerNumberModel(readout.getHeight(), 80, 600, 10));
+        heightSpinner = new HudSpinner(readout.getHeight(), 80, 600, 10);
         addField(root, heightSpinner, gbc);
 
         // Buttons

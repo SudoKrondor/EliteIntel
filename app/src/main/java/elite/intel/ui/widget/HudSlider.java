@@ -13,7 +13,7 @@ import java.util.function.IntFunction;
 /**
  * HUD range slider rendered in the in-game Elite Dangerous form (HUD section 4).
  * <p>
- * Layout: a warm brown track plaque ({@link HudPalette#HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND}) spans the full
+ * Layout: a track plaque ({@link HudPalette#HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND}) spans the full
  * width; a dim rail ({@link HudPalette#HUD_COLOR_ROLE_CONTROL_DECORATION}) with a horizontal edge inset runs through
  * its centre; the active portion left of the thumb is a saturated red fill
  * ({@link HudPalette#HUD_COLOR_ROLE_SLIDER_VALUE_TRACK}) drawn over a tall vertical start tick. The thumb is a round

@@ -11,11 +11,11 @@ import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.ui.dialog.AssignAxisDialog;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
 import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 
 import javax.swing.*;
@@ -26,18 +26,26 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * The Bind Editor's Game Mode: the Used/Missing Bindings tables, conflict detection, hover callouts, the view filters
- * and Auto-Assign VEGA Required Binds. {@link BindingProfilePanel}, the shell, reads the binds file and hands over what
- * it found ({@link #show}); this panel shows it and turns what the commander does into edits not applied.
+ * The Bind Editor's Game Mode: the Used/Missing Bindings tables, split by the game's sections, with conflict detection,
+ * hover callouts, the view filters and Auto-Assign VEGA Required Binds. {@link BindingProfilePanel}, the shell, reads the
+ * binds file and hands over what it found ({@link #show}); this panel shows it and turns what the commander does into
+ * edits not applied.
  * <p>
- * Nothing here writes a file (storage.md rule 6), and one change runs at a time across the whole Bind Editor, the
- * shell's rename included - so changes go through {@link EditRunner}, the shell's.
+ * It also supplies the Anomalies mode's view ({@link #anomaliesView()}): the same rows and the same dialogs, narrowed to
+ * the rows drawn red, so that a row can never be red in one place and missing from the other.
+ * <p>
+ * Axis rows sit among the button rows, as the game lists them. VEGA never presses one and no keyboard key can go on one,
+ * so they have no AI access, take no auto-fix, and open {@link AssignAxisDialog} rather than the button dialog.
+ * <p>
+ * Nothing here writes a file (storage.md rule 6), and one change runs at a time across the whole Bind Editor - so
+ * changes go through {@link EditRunner}, the shell's.
  */
 class GameModePanel extends JPanel {
 
@@ -46,7 +54,7 @@ class GameModePanel extends JPanel {
      */
     interface EditRunner {
         /**
-         * A change to the edits is running - SAVE, CLEAR, Auto-Assign or a rename; a second waits for it.
+         * A change to the edits is running - SAVE, CLEAR or Auto-Assign; a second waits for it.
          */
         boolean running();
 
@@ -68,8 +76,22 @@ class GameModePanel extends JPanel {
      * What the shell's read found. {@code file} is {@code null} when nothing could be shown.
      */
     record Shown(String file, byte[] content, Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots,
-                 GameKeyboardLayout layout, EditedDeviceLabels labels) {
+                 GameKeyboardLayout layout, EditedDeviceLabels labels, BindsValues values) {
     }
+
+    /**
+     * A section tab. {@code section} is {@code null} for All, the one tab that also lists a control the name table does
+     * not know yet, which has no section of its own to be found under.
+     */
+    private record SectionTab(String titleKey, BindingSection section) {
+    }
+
+    private static final List<SectionTab> SECTION_TABS = List.of(
+            new SectionTab("bindings.sectionTab.all", null),
+            new SectionTab("bindings.sectionTab.general", BindingSection.GENERAL),
+            new SectionTab("bindings.sectionTab.ship", BindingSection.SHIP),
+            new SectionTab("bindings.sectionTab.srv", BindingSection.SRV),
+            new SectionTab("bindings.sectionTab.onFoot", BindingSection.ON_FOOT));
 
     private static final int SCROLL_UNIT_ROWS = 2;
 
@@ -99,7 +121,15 @@ class GameModePanel extends JPanel {
     private JScrollPane usedBindingsScrollPane;
     private JScrollPane missingBindingsScrollPane;
     private JTabbedPane tabs;
+    private JTabbedPane sectionTabs;
+    private JPanel anomaliesPanel;
+    private JScrollPane anomaliesScrollPane;
+    /**
+     * Told how many rows are in conflict, for the Anomalies tab's title.
+     */
+    private final IntConsumer anomalyCount;
     private JButton fixAllButton;
+    private JComponent footerControls;
     private JCheckBox conflictsOnlyCheck;
     /**
      * Narrows the grid to the controls Vega uses - the ones with something in the AI ACCESS column.
@@ -111,6 +141,7 @@ class GameModePanel extends JPanel {
     private String searchQuery = "";
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
+    private BindsValues currentValues = BindsValues.NONE;
     private GameKeyboardLayout currentKeyboardLayout = GameKeyboardLayout.OTHER;
     /**
      * Every conflict in the loaded file, indexed for the two things this panel asks: whether a row
@@ -137,13 +168,14 @@ class GameModePanel extends JPanel {
     private byte[] loadedContent;
     private boolean assignDialogOpen;
 
-    GameModePanel(JComponent dialogOwner, EditRunner editRunner) {
+    GameModePanel(JComponent dialogOwner, EditRunner editRunner, IntConsumer anomalyCount) {
         this.dialogOwner = dialogOwner;
         this.editRunner = editRunner;
+        this.anomalyCount = anomalyCount;
         selectionController = new BindingsSelectionController();
         tableFactory = new BindingsGroupTableFactory(
                 selectionController, this::openCapture, this::autoFixSingleBinding,
-                this::openClearKeyboardBindingDialog,
+                this::openClearDialog,
                 // Lambda (not a bound method ref) so it reads the field live: the map is
                 // reassigned on each load, and a bound method ref would pin the initial empty map.
                 id -> conflicts.contains(id),
@@ -168,7 +200,33 @@ class GameModePanel extends JPanel {
         tabs.addChangeListener(e -> selectionController.clearSelection());
         add(tabs, BorderLayout.CENTER);
 
-        add(buildFooter(), BorderLayout.SOUTH);
+        // WHY a tab bar over one set of tables, its tabs empty: a tab per section would mean a Used and a Missing table
+        // per section, and what they show is one list narrowed. Tabs rather than a segmented bar, for the counts: with a
+        // search typed, the counts say which section holds the hits.
+        sectionTabs = AppTheme.makeCompactTabs();
+        for (SectionTab tab : SECTION_TABS) {
+            sectionTabs.addTab(getText(tab.titleKey(), 0), transparentPanel(null));
+        }
+        sectionTabs.addChangeListener(e -> {
+            selectionController.clearSelection();
+            renderBindingTables();
+            usedBindingsScrollPane.getVerticalScrollBar().setValue(0);
+            missingBindingsScrollPane.getVerticalScrollBar().setValue(0);
+        });
+        add(sectionTabs, BorderLayout.NORTH);
+
+        footerControls = buildFooterControls();
+
+        anomaliesPanel = groupedTablesPanel();
+        anomaliesScrollPane = groupedTablesScrollPane(anomaliesPanel);
+    }
+
+    /**
+     * The Anomalies mode: every row in conflict, whichever section or tab it is in. It takes the same search and opens
+     * the same dialogs, because it is a view of this panel's rows.
+     */
+    JComponent anomaliesView() {
+        return nestedTabContent(anomaliesScrollPane);
     }
 
     /**
@@ -181,6 +239,7 @@ class GameModePanel extends JPanel {
         labels = read.labels();
         slotFormatter = new BindingSlotDisplayFormatter(labels);
         currentSlots = read.slots();
+        currentValues = read.values();
         currentKeyboardLayout = read.layout();
         if (read.file() == null) {
             conflicts = ConflictIndex.empty();
@@ -189,6 +248,8 @@ class GameModePanel extends JPanel {
             renderGroupedTables(missingBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
             tabs.setTitleAt(0, getText("bindings.usedBindings", 0));
             tabs.setTitleAt(1, getText("bindings.missingBindings", 0));
+            showSectionCounts(List.of());
+            renderAnomalies(currentAiAccess());
             fixAllButton.setEnabled(false);
             return;
         }
@@ -212,7 +273,15 @@ class GameModePanel extends JPanel {
         fixAllButton.setEnabled(false);
     }
 
-    private JPanel buildFooter() {
+    /**
+     * This mode's filters and Auto-Assign, for the shell's footer: it shares that line with the search, and shows them
+     * only while this mode is up.
+     */
+    JComponent footerControls() {
+        return footerControls;
+    }
+
+    private JPanel buildFooterControls() {
         fixAllButton = makeButtonSubtle(getText("bindings.button.fixAll.short"));
         fixAllButton.setToolTipText(getText("bindings.button.fixAll.tooltip"));
         fixAllButton.addActionListener(e -> fixAllMissing());
@@ -224,10 +293,13 @@ class GameModePanel extends JPanel {
         vegaOnlyCheck.setToolTipText(getText("bindings.filter.vegaOnly.tooltip"));
         vegaOnlyCheck.addActionListener(e -> renderBindingTables());
 
-        // Non-modal footer: the filters and AUTO-ASSIGN VEGA REQUIRED BINDS on the right, no BACK. APPLY and DISCARD are
-        // the bar's, above BindForge's tabs (Storage S5).
-        return HudFooter.build(false, null, null,
-                List.of(conflictsOnlyCheck, vegaOnlyCheck, fixAllButton));
+        // The filters and AUTO-ASSIGN VEGA REQUIRED BINDS. APPLY and DISCARD are the bar's, above BindForge's tabs (Storage S5).
+        JPanel filters = new JPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
+        filters.setOpaque(false);
+        filters.add(conflictsOnlyCheck);
+        filters.add(vegaOnlyCheck);
+        filters.add(fixAllButton);
+        return filters;
     }
 
     private void fixAllMissing() {
@@ -249,7 +321,8 @@ class GameModePanel extends JPanel {
     }
 
     private void autoFixSingleBinding(String bindingId) {
-        if (bindingId == null || bindingId.isBlank() || loadedFile == null || editRunner.running()) {
+        if (bindingId == null || bindingId.isBlank() || loadedFile == null || editRunner.running()
+                || isAxis(bindingId)) {
             return;
         }
         MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots, currentKeyboardLayout);
@@ -400,12 +473,15 @@ class GameModePanel extends JPanel {
         Map<BindingSection, List<Object[]>> grouped = groupedRows();
         for (String bindingId : inGameOrder(bindingIds)) {
             KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
-            SlotCell primary = slotCell(bindingSlots == null ? null : bindingSlots.primary());
-            SlotCell secondary = slotCell(bindingSlots == null ? null : bindingSlots.secondary());
-            AiAccessCell ai = aiAccessCell(aiAccess.stateOf(bindingId, bindingSlots), bindingSlots);
+            BindsValues.Axis axis = currentValues.axes().get(bindingId);
+            SlotCell primary = axis != null ? axisInputCell(axis) : slotCell(bindingSlots == null ? null : bindingSlots.primary());
+            SlotCell secondary = axis != null ? axisSettingsCell(axis) : slotCell(bindingSlots == null ? null : bindingSlots.secondary());
+            AiAccessCell ai = axis != null
+                    ? aiAccessCell(AiAccess.State.NOT_USED, null)
+                    : aiAccessCell(aiAccess.stateOf(bindingId, bindingSlots), bindingSlots);
             Object[] row = switch (rowAction) {
-                case AUTO_FIX ->
-                        new Object[]{bindingId, primary, secondary, ai, getText("bindings.column.autofix.action")};
+                case AUTO_FIX -> new Object[]{bindingId, primary, secondary, ai,
+                        axis != null ? "" : getText("bindings.column.autofix.action")};
                 case CLEAR -> new Object[]{bindingId, primary, secondary, ai, getText("bindings.column.clear.action")};
                 case NONE -> new Object[]{bindingId, primary, secondary, ai};
             };
@@ -416,6 +492,50 @@ class GameModePanel extends JPanel {
 
     private SlotCell slotCell(KeyBindingsParser.ReadOnlyBindingSlot slot) {
         return new SlotCell(slotFormatter.formatSlot(slot), slotFormatter.rawTokens(slot));
+    }
+
+    private boolean isAxis(String bindingId) {
+        return currentValues.axes().containsKey(bindingId);
+    }
+
+    /**
+     * An axis row's first cell: the axis it is on.
+     */
+    private SlotCell axisInputCell(BindsValues.Axis axis) {
+        return axis.input()
+                .map(input -> new SlotCell(slotFormatter.formatInputs(input.device(), List.of(), input.key()),
+                        input.device() + " " + input.key()))
+                .orElseGet(() -> new SlotCell(getText("bindings.status.notDefined"), null));
+    }
+
+    /**
+     * An axis row's second cell. An axis has one binding, not two slots, so this column carries what varies on it
+     * instead: Normal or Inverted, the dead zone and any throttle range. Blank while nothing is bound.
+     */
+    private SlotCell axisSettingsCell(BindsValues.Axis axis) {
+        if (!axis.bound()) return new SlotCell("", null);
+        List<String> parts = new ArrayList<>();
+        parts.add(getText(axis.inverted() ? "bindings.axis.inverted" : "bindings.axis.normal"));
+        if (axis.editable()) {
+            parts.add(getText("bindings.axis.deadzone.value",
+                    AssignAxisDialog.deadzoneText(Math.round(axis.deadzone() * 1000))));
+        }
+        rangeChoice(axis.id()).ifPresent(choice -> parts.add(switch (choice.range().read(choice.value())) {
+            case FULL_RANGE -> getText("bindings.axis.throttleRange.full");
+            case FORWARD_ONLY -> getText("bindings.axis.throttleRange.forward");
+            case UNRECOGNISED -> getText("bindings.axis.throttleRange.unknown", choice.value());
+        }));
+        return new SlotCell(String.join(" \u00B7 ", parts), null);
+    }
+
+    /**
+     * The throttle range that goes with this axis, when the file holds one that can be written.
+     */
+    private Optional<AssignAxisDialog.RangeChoice> rangeChoice(String axisId) {
+        return ThrottleRanges.forAxis(axisId).flatMap(range ->
+                Optional.ofNullable(currentValues.settings().get(range.setting()))
+                        .filter(BindsValues.Setting::editable)
+                        .map(setting -> new AssignAxisDialog.RangeChoice(range, setting.value())));
     }
 
     /**
@@ -476,6 +596,10 @@ class GameModePanel extends JPanel {
         }
         // Left unsorted on purpose: groupedBindings puts them in the game's own row order, and the
         // counts these lists also feed do not care about order.
+        // An axis has no keyboard binding to have or to miss, so it is used once it is on an axis.
+        for (BindsValues.Axis axis : currentValues.axes().values()) {
+            (axis.bound() ? used : missing).add(axis.id());
+        }
         return new BindingPartition(used, missing);
     }
 
@@ -535,9 +659,10 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. Tab
-     * counts and the Auto-Assign VEGA Required Binds enabled state always reflect the full (unfiltered) data, so the
-     * filter is a pure view toggle. Called on load and whenever the filter checkbox changes.
+     * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. The Used and Missing
+     * counts are of the selected section, ignoring the filters and the search; the Auto-Assign VEGA Required Binds enabled
+     * state always reflects the whole file, so the filters and tabs are pure view toggles. Called on load and whenever a
+     * filter or section tab changes.
      */
     private void renderBindingTables() {
         // Drop any open conflict callout before the tables (and their hover listeners) are rebuilt.
@@ -549,32 +674,86 @@ class GameModePanel extends JPanel {
         List<String> usedBindings = partition.used();
         List<String> missingBindings = partition.missing();
         AiAccess aiAccess = currentAiAccess();
+        List<String> usedShown = filterRows(usedBindings, aiAccess);
+        List<String> missingShown = filterRows(missingBindings, aiAccess);
+        List<String> allShown = new ArrayList<>(usedShown);
+        allShown.addAll(missingShown);
+        showSectionCounts(allShown);
 
         renderGroupedTables(
                 usedBindingsPanel,
-                groupedBindings(filterRows(usedBindings, aiAccess), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR, aiAccess),
+                groupedBindings(inSelectedSection(usedShown), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR, aiAccess),
                 BindingsGroupTableFactory.RowAction.CLEAR,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
                 getText("bindings.column.secondary"),
                 getText("bindings.column.aiAccess"),
                 getText("bindings.column.clear"));
-        tabs.setTitleAt(0, getText("bindings.usedBindings", usedBindings.size()));
+        tabs.setTitleAt(0, getText("bindings.usedBindings", inSelectedSection(usedBindings).size()));
 
         renderGroupedTables(
                 missingBindingsPanel,
-                groupedBindings(filterRows(missingBindings, aiAccess), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX, aiAccess),
+                groupedBindings(inSelectedSection(missingShown), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX, aiAccess),
                 BindingsGroupTableFactory.RowAction.AUTO_FIX,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
                 getText("bindings.column.secondary"),
                 getText("bindings.column.aiAccess"),
                 getText("bindings.column.autofix"));
-        tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
+        tabs.setTitleAt(1, getText("bindings.missingBindings", inSelectedSection(missingBindings).size()));
         // Enabled only when a control VEGA presses is missing: the button fills those and nothing else, so with
         // only emotes and the like left in the Missing tab a click could do nothing.
         Set<String> required = BindingsMonitor.requiredControls();
-        fixAllButton.setEnabled(missingBindings.stream().anyMatch(required::contains));
+        fixAllButton.setEnabled(missingBindings.stream().anyMatch(id -> !isAxis(id) && required.contains(id)));
+        renderAnomalies(aiAccess);
+    }
+
+    /**
+     * The rows the selected section tab keeps. A pure view of the filtered list, as the other filters are.
+     */
+    private List<String> inSelectedSection(List<String> bindingIds) {
+        BindingSection section = SECTION_TABS.get(sectionTabs.getSelectedIndex()).section();
+        return section == null ? bindingIds : bindingIds.stream()
+                .filter(id -> BindingDisplayNames.lookup(id).section() == section)
+                .toList();
+    }
+
+    /**
+     * Each section tab's count of the rows the filters leave, so a search shows where its hits are from any tab.
+     */
+    private void showSectionCounts(List<String> shown) {
+        for (int i = 0; i < SECTION_TABS.size(); i++) {
+            SectionTab tab = SECTION_TABS.get(i);
+            long count = tab.section() == null ? shown.size() : shown.stream()
+                    .filter(id -> BindingDisplayNames.lookup(id).section() == tab.section())
+                    .count();
+            sectionTabs.setTitleAt(i, getText(tab.titleKey(), count));
+        }
+    }
+
+    /**
+     * Every row drawn red, by the same conflict index that draws it. Only the search narrows them: the section tab and
+     * the footer's filters belong to Game Mode.
+     */
+    private void renderAnomalies(AiAccess aiAccess) {
+        List<String> inConflict = currentSlots.keySet().stream().filter(conflicts::contains).toList();
+        anomalyCount.accept(inConflict.size());
+        renderGroupedTables(
+                anomaliesPanel,
+                groupedBindings(filterBySearch(inConflict), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR, aiAccess),
+                BindingsGroupTableFactory.RowAction.CLEAR,
+                getText("bindings.column.action"),
+                getText("bindings.column.primary"),
+                getText("bindings.column.secondary"),
+                getText("bindings.column.aiAccess"),
+                getText("bindings.column.clear"));
+        if (inConflict.isEmpty()) {
+            JLabel none = hudReadoutLabel(getText("bindings.anomalies.none"));
+            none.setBorder(new EmptyBorder(10, 8, 10, 0));
+            none.setAlignmentX(Component.LEFT_ALIGNMENT);
+            anomaliesPanel.add(none, 0);
+            anomaliesPanel.revalidate();
+        }
     }
 
     /**
@@ -633,7 +812,7 @@ class GameModePanel extends JPanel {
             return bindingIds;
         }
         return bindingIds.stream()
-                .filter(id -> aiAccess.stateOf(id, currentSlots.get(id)) != AiAccess.State.NOT_USED)
+                .filter(id -> !isAxis(id) && aiAccess.stateOf(id, currentSlots.get(id)) != AiAccess.State.NOT_USED)
                 .toList();
     }
 
@@ -668,6 +847,13 @@ class GameModePanel extends JPanel {
 
     private String searchText(String bindingId) {
         String text = BindingDisplayNames.searchText(bindingId, sectionLabelFor(bindingId));
+        BindsValues.Axis axis = currentValues.axes().get(bindingId);
+        if (axis != null) {
+            return axis.input()
+                    .map(input -> text + " " + (slotFormatter.formatInputs(input.device(), List.of(), input.key())
+                            + " " + input.device() + " " + input.key()).toLowerCase())
+                    .orElse(text);
+        }
         KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
         if (slots == null) {
             return text;
@@ -801,6 +987,7 @@ class GameModePanel extends JPanel {
     }
 
     private JScrollPane outerScrollPaneFor(JPanel targetPanel) {
+        if (targetPanel == anomaliesPanel) return anomaliesScrollPane;
         return targetPanel == usedBindingsPanel ? usedBindingsScrollPane : missingBindingsScrollPane;
     }
 
@@ -815,6 +1002,10 @@ class GameModePanel extends JPanel {
 
     private void openCapture(String bindingId, BindingSlotType slotType) {
         if (bindingId == null || bindingId.isBlank() || loadedFile == null || assignDialogOpen || editRunner.running()) {
+            return;
+        }
+        if (isAxis(bindingId)) {
+            openAxisEditor(bindingId);
             return;
         }
         // Opening the dialog comes from a row click, so no mouseExited fires to dismiss the hover
@@ -848,6 +1039,67 @@ class GameModePanel extends JPanel {
                     () -> saveSelections(file, bindingId, dialog.showDialog(), slots));
         } finally {
             assignDialogOpen = false;
+        }
+    }
+
+    /**
+     * Opens the axis editor for an axis row, whichever of the row's cells was clicked.
+     */
+    private void openAxisEditor(String bindingId) {
+        tableFactory.hideConflictPopup();
+        BindsValues.Axis axis = currentValues.axes().get(bindingId);
+        String file = loadedFile;
+        Set<String> axisDevices = new HashSet<>();
+        currentValues.axes().values().forEach(a -> a.input().ifPresent(input -> axisDevices.add(input.device())));
+        AssignAxisDialog dialog = new AssignAxisDialog(
+                dialogOwner,
+                axis,
+                rangeChoice(bindingId).orElse(null),
+                CaptureControllers.forAxes(currentSlots, axisDevices, labels),
+                labels,
+                input -> currentValues.axes().values().stream()
+                        .filter(other -> !other.id().equals(bindingId))
+                        .filter(other -> other.input().filter(input::sameInputAs).isPresent())
+                        .map(other -> BindingDisplayNames.label(other.id()))
+                        .sorted()
+                        .toList());
+        assignDialogOpen = true;
+        try {
+            AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(dialogOwner),
+                    () -> dialog.showDialog().ifPresent(choice -> saveAxis(file, choice)));
+        } finally {
+            assignDialogOpen = false;
+        }
+    }
+
+    /**
+     * Keeps the axis and its throttle range as one edit not applied, both or neither.
+     */
+    private void saveAxis(String file, AssignAxisDialog.Choice choice) {
+        List<BindsEdits.SlotChange> changes = new ArrayList<>();
+        changes.add(binds -> bindingsWriter.assignAxis(binds, choice.axis()));
+        if (choice.rangeSetting() != null) {
+            changes.add(binds -> bindingsWriter.assignSetting(binds, choice.rangeSetting(), choice.rangeValue()));
+        }
+        AtomicReference<BindingSaveResult> result = new AtomicReference<>();
+        editRunner.run(getText("bindings.assign.dialogTitle"),
+                () -> Edits.stored().change(current -> {
+                    BindsEdits.Changed changed = BindsEdits.change(current, file, changes);
+                    result.set(changed.result());
+                    return changed.files();
+                }),
+                () -> saveResultPresenter.show(result.get()), () -> {
+                });
+    }
+
+    /**
+     * The row's Clear: the keyboard dialog, or the axis editor, whose CLEAR is the only clear an axis has.
+     */
+    private void openClearDialog(String bindingId) {
+        if (isAxis(bindingId)) {
+            openCapture(bindingId);
+        } else {
+            openClearKeyboardBindingDialog(bindingId);
         }
     }
 

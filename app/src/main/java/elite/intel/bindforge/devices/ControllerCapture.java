@@ -159,6 +159,23 @@ public final class ControllerCapture {
     }
 
     /**
+     * A whole axis, for an axis row: the same movement from rest as {@link #axis}, with no direction and no modifiers,
+     * since an axis binding can take none (bind-editor.md, <em>Modifiers, Hold, Inverted, Deadzone</em>).
+     *
+     * @return what to assign when the axis has moved far enough from rest; empty until it comes back and moves again
+     */
+    public Optional<Captured> wholeAxis(String device, GameAxis axis, float value) {
+        Objects.requireNonNull(axis, "axis");
+        String key = device + "#" + axis.token();
+        boolean moved = Math.abs(value - rests.computeIfAbsent(key, k -> value)) >= AXIS_ACTIVATION_THRESHOLD;
+        boolean before = axisDirections.getOrDefault(key, 0) != 0;
+        axisDirections.put(key, moved ? 1 : 0);
+        return moved && !before
+                ? Optional.of(new Captured(new BindingInput(device, axis.token()), List.of()))
+                : Optional.empty();
+    }
+
+    /**
      * A GamePad's axes: its triggers are captured under their own tokens, one direction each. <strong>Its sticks are
      * not captured</strong> (Alan, 2026-10-27, from Krondor's review): a pad never uses {@code Joy_} tokens, and which
      * of its own the game writes for a stick pushed one way is not measured yet (testing item 27) - so nothing is

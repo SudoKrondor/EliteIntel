@@ -13,7 +13,7 @@ for the
 > layer classes (`HudPalette`, `HudGlyphs`, `HudForms`, `AppTheme`) and the sources. Constant and
 > component names are the design→code anchors.
 
-> **How to use it.** Colours are named in words (orange, green…); take the concrete values
+> **How to use it.** Colours are named in words (cyan, green…); take the concrete values
 > from `HudPalette` by name. If you change the palette or the components, update the matching
 > section of this file in the same commit.
 
@@ -40,20 +40,20 @@ for the
 1. **Dark background, thin lines, no
    depth.** A flat style ("Flat 2.0"). No gradients, shadows or rounded "pills". Frames are thin straight lines.
 2. **Colour carries
-   meaning.** Orange is the primary working colour. State is expressed by a CHANGE of colour (green/yellow/red/cyan), not by an icon or a pill fill.
+   meaning.** Cyan is the accent: what is active, selected or can be acted on. The palette follows 60-30-10 (dark blue-grey surfaces, cool grey lines and text, one accent), so a value at rest is neutral text, not accent. State is expressed by a CHANGE of colour (green/blue/red), not by an icon or a pill fill.
 3. **Caps plus letter-spacing.** Labels, titles and values are uppercase; section titles carry light letter-spacing.
 4. **Selection means
    inversion.** The active or selected row is a solid bright fill with DARK text. This is the main "focus" device in every list and menu.
 5. **Values to the right.** In key→value pairs and numeric columns the value is flushed right.
 6. **Dimming means
-   inactive.** Disabled is the same colour, heavily dimmed (`HUD_COLOR_ROLE_DISABLED`), never a grey "from another palette". Text and icon both fade in one warm tone.
+   inactive.** Disabled is the same colour, heavily dimmed (`HUD_COLOR_ROLE_DISABLED`), never a grey "from another palette". Text and icon both fade in one cool tone.
 
 ## 1. Colour coding
 
 The ED canon (the Odyssey radar: friendly=green, neutral=blue, alerted=yellow, hostile=red):
 
-- `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange) — normal/working · `HUD_COLOR_ROLE_SUCCESS` (green) — positive/OK/profit ·
-  `HUD_COLOR_ROLE_WARNING` (yellow) — attention/expected waiting · `HUD_COLOR_ROLE_DANGER` (red) — danger/ failure/hostile · `HUD_COLOR_ROLE_INFORMATION` (blue) — neutral informational · `HUD_COLOR_ROLE_DISABLED`/`HUD_COLOR_ROLE_SECONDARY_TEXT` — inactive · `HUD_COLOR_ROLE_READOUT_LABEL` — the dimmed label in key→value readout and telemetry blocks (`HudTelemetryBlock`, §7); the same tone as `HUD_COLOR_ROLE_SECONDARY_TEXT` but a separate semantic — do NOT confuse it with disabled · `HUD_COLOR_ROLE_CREDITS_TEXT` — the CMDR credit balance (`HudCommanderBlock`, §7); the same tone as `HUD_COLOR_ROLE_SECONDARY_TEXT`, separate semantic.
+- `HUD_COLOR_ROLE_PRIMARY_ACTION` (cyan) — the accent: active/selected/actionable · `HUD_COLOR_ROLE_VALUE_TEXT` (light) — a value at rest: field and combo text, table cells, read-only readouts · `HUD_COLOR_ROLE_SUCCESS` (green) — positive/OK/profit ·
+  `HUD_COLOR_ROLE_WARNING` (blue) — attention/expected waiting · `HUD_COLOR_ROLE_DANGER` (red) — danger/ failure/hostile · `HUD_COLOR_ROLE_INFORMATION` (cyan, the accent's value) — neutral informational · `HUD_COLOR_ROLE_DISABLED`/`HUD_COLOR_ROLE_SECONDARY_TEXT` — inactive · `HUD_COLOR_ROLE_READOUT_LABEL` — the dimmed label in key→value readout and telemetry blocks (`HudTelemetryBlock`, §7); a step quieter than `HUD_COLOR_ROLE_SECONDARY_TEXT` — do NOT confuse it with disabled · `HUD_COLOR_ROLE_CREDITS_TEXT` — the CMDR credit balance (`HudCommanderBlock`, §7).
 - Backings: `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` (the row plate) · `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` (hover state) ·
   `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (the table body background and gaps, darker than the plate) · `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND` (the modal body, between `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` and the plate, §10.1) · `HUD_COLOR_ROLE_MODAL_SCRIM` (the veil under a modal, §10.1).
 
@@ -62,21 +62,18 @@ rule:** a status colour is the colour of the value TEXT, not a background fill. 
 
 **`StatusBadge.State`** (the value colour plus the left tick in `HudStatusReadout`):
 `OK`→`HUD_COLOR_ROLE_SUCCESS`, `STANDBY`→`HUD_COLOR_ROLE_WARNING`, `OFFLINE`→`HUD_COLOR_ROLE_DANGER`, `INFO`→`HUD_COLOR_ROLE_INFORMATION`,
-`IDLE`→`HUD_COLOR_ROLE_DISABLED`. `STANDBY` (yellow) means normally waiting for the user; "asleep/switched off/ not initialized" is `IDLE` (§0.6). STT `SLEEPING` and stopped LLM/TTS are `IDLE`.
+`IDLE`→`HUD_COLOR_ROLE_DISABLED`. `STANDBY` (blue) means normally waiting for the user; "asleep/switched off/ not initialized" is `IDLE` (§0.6). STT `SLEEPING` and stopped LLM/TTS are `IDLE`.
 
 **A command name in a
-dialog** (built-in or custom; the reference is `CommandDetailsDialog`) uses `HUD_COLOR_ROLE_INFORMATION`, a deliberate exception (a name would be `HUD_COLOR_ROLE_PRIMARY_TEXT` under §0.2/§11.1) to take load off the orange. NOT for the id or action key, NOT for the catalog table (§6), NOT for a binding id.
+dialog** (built-in or custom; the reference is `CommandDetailsDialog`) uses `HUD_COLOR_ROLE_INFORMATION`, a deliberate exception (a name would be `HUD_COLOR_ROLE_PRIMARY_TEXT` under §0.2/§11.1). NOT for the id or action key, NOT for the catalog table (§6), NOT for a binding id.
 
-**A panel's contextual mode.** Orange and cyan by default; red and blue only if the task demands them.
+**A panel's contextual mode.** Cyan by default; red and blue only if the task demands them.
 
 **An indicator glyph in a status cell is a deliberate
-exception.** The canon is status as text colour, with no icon. The exception is SPECIFIC: `CONFLICT` in `StatusCellRenderer` (the Import dialog) carries an orange `HUD_COLOR_ROLE_PRIMARY_ACTION` triangle plus "!" as REINFORCEMENT (the text is still `HUD_COLOR_ROLE_WARNING`). `INVALID`/`OK`
+exception.** The canon is status as text colour, with no icon. The exception is SPECIFIC: `CONFLICT` in `StatusCellRenderer` (the Import dialog) carries a `HUD_COLOR_ROLE_PRIMARY_ACTION` triangle plus "!" as REINFORCEMENT (the text is still `HUD_COLOR_ROLE_WARNING`). `INVALID`/`OK`
 carry no glyph. Do not extend this to other cells without an explicit decision.
 > **TODO.** The glyph is a raster (`ImageIcon`/`BufferedImage`). Move it to a `paintHud*` glyph
 > the next time this is touched (§13).
-
-**The red slider fill is a deliberate exception.** The canon is red = `HUD_COLOR_ROLE_DANGER`
-(danger/failure). The exception is SPECIFIC: the active part of the `HudSlider` track (§4) is saturated red `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` as a LEVEL INDICATOR (it follows vanilla ED, chosen for readability on the warm track), not a danger signal. Do not extend it to other controls.
 
 ## 2. Typography
 
@@ -149,7 +146,7 @@ stepper `◄ value ►`** (`HudStepper`). Horizontal FILLED triangles at the LEF
 `getValue()`/`setValue(int)`; in layout, a fixed width (`fill=NONE`/`weightx=0`).
 
 **The `HudSlider`
-scale** (the vanilla ED form; the reference is Options→Audio). A warm brown track plate `HUD_COLOR_ROLE_PANEL_SEPARATOR` across the full width; a dimmed `HUD_COLOR_ROLE_CONTROL_DECORATION` rail with an EDGE inset (`HUD_SLIDER_EDGE_INSET`, it does not touch the edges); the active part from the left up to the knob is a saturated red `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` fill (the deliberate exception in §1, a level indicator), drawn OVER the tall vertical start tick (0); the knob is a round `HUD_COLOR_ROLE_PRIMARY_ACTION` disc with a `HUD_COLOR_ROLE_BUTTON_TEXT` ring. The value sits above the knob (`HUD_COLOR_ROLE_PRIMARY_ACTION`, travelling with it); it switches easily to showing only while dragging. Snaps to the step. Disabled dims everything to `HUD_COLOR_ROLE_DISABLED` (§0.6). All metrics are `HUD_SLIDER_*` tokens; hardcoding is forbidden. Anchor: `HudSlider(min, max, step, value)`,
+scale** (the vanilla ED form; the reference is Options→Audio). A track plate `HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND` across the full width; a dimmed `HUD_COLOR_ROLE_CONTROL_DECORATION` rail with an EDGE inset (`HUD_SLIDER_EDGE_INSET`, it does not touch the edges); the active part from the left up to the knob is a `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` accent fill (a level indicator), drawn OVER the tall vertical start tick (0); the knob is a round `HUD_COLOR_ROLE_PRIMARY_ACTION` disc with a `HUD_COLOR_ROLE_BUTTON_TEXT` ring. The value sits above the knob (`HUD_COLOR_ROLE_PRIMARY_ACTION`, travelling with it); it switches easily to showing only while dragging. Snaps to the step. Disabled dims everything to `HUD_COLOR_ROLE_DISABLED` (§0.6). All metrics are `HUD_SLIDER_*` tokens; hardcoding is forbidden. Anchor: `HudSlider(min, max, step, value)`,
 `getValue()`/`setValue(int)`/`addChangeListener(ChangeListener)`; in layout, `fill=HORIZONTAL`
 (it stretches across the width). NOT a raw `JSlider`.
 
@@ -172,7 +169,7 @@ meter** (a vertical LED VU; the reference is the microphone monitor). It INDICAT
 field** (choosing a directory or file, to the right of the field). A square whose side equals the height of the ADJACENT field (it follows the field, NOT `HUD_BUTTON_HEIGHT`), and narrow. The glyph is a PRIMITIVE (§13), not Unicode text (the symbol depends on the font and breaks). On a primary fill the glyph is DARK (the inversion in §0.4), not white. The button's side text insets are zeroed in square mode — otherwise the glyph shifts. Add it to the layout with `fill=NONE`/`weightx=0`, or the square will stretch.
 
 **→
-Anchors:** `HudButton(label, boolean primary)` (primary=true is the orange fill, false the outline); navigation lists use `HudTabbedPane` (§11) / `HudSection` (§9); two-line items use `HudCommandNameCellRenderer`; the compact picker is `makeFieldButton(glyph|Icon, fieldHeight)` + `HudButton.setSquareSide`, with the ⋮ glyph as `verticalEllipsisIcon` / `paintHudVerticalEllipsis`; an affordance icon (close ×, save-to-file) is `HudGlyphButton(painter, restTint, hoverTint, tooltip, onClick)`
+Anchors:** `HudButton(label, boolean primary)` (primary=true is the accent fill, false the outline); navigation lists use `HudTabbedPane` (§11) / `HudSection` (§9); two-line items use `HudCommandNameCellRenderer`; the compact picker is `makeFieldButton(glyph|Icon, fieldHeight)` + `HudButton.setSquareSide`, with the ⋮ glyph as `verticalEllipsisIcon` / `paintHudVerticalEllipsis`; an affordance icon (close ×, save-to-file) is `HudGlyphButton(painter, restTint, hoverTint, tooltip, onClick)`
 (a glyph primitive, §13, with a `HUD_TABLE_ROW_HEIGHT_COMPACT` footprint and a `HUD_ICON_TABLE` glyph; its only owner is `HudDialogHeader`, and the section header reuses it); into a section header it goes through `HudSection.setHeaderActions` (§9); the slider scale is `HudSlider(min, max, step, value)` (the `HUD_SLIDER_*` tokens, fill colour `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK`); the segmented level meter is `HudMicMeter` (the `HUD_METER_*` tokens; subscribes to `AudioMonitorBus`).
 
 ## 5. Form fields
@@ -182,15 +179,15 @@ Anchors:** `HudButton(label, boolean primary)` (primary=true is the orange fill,
 For "label → field" rows in forms (the reference is TRADE PROFILE):
 
 - **The
-  label** is light `HUD_COLOR_ROLE_PRIMARY_TEXT` caps (as in vanilla ED: light label, orange value), at `HUD_FONT_SM`, with NO colon, and NOT mixed case. Strip colons coming from i18n in the bundles (ALL languages), not in the code. One style, `styleFieldLabel` (a single source for `addLabel` and `hudReadoutLabel`); colour and size change centrally inside it.
+  label** is light `HUD_COLOR_ROLE_PRIMARY_TEXT` caps at `HUD_FONT_SM`, with NO colon, and NOT mixed case. Strip colons coming from i18n in the bundles (ALL languages), not in the code. One style, `styleFieldLabel` (a single source for `addLabel` and `hudReadoutLabel`); colour and size change centrally inside it.
 - **The
-  field** is a `HudTextField`, with a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` border (§8) and a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background. The value text is
-  `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange, pairing with the light label; `styleTextComponent`), the same for single-line and multi-line fields; the only difference is enabled/disabled (`HUD_COLOR_ROLE_DISABLED`). The colour does NOT depend on editable/read-only. A live console or log is its own role (`HudLogArea`), not a field.
+  field** is a `HudTextField` with the look of the table filter bar (`HudSearchField`): a `HUD_COLOR_ROLE_FIELD_BACKGROUND` background, a teal `HUD_COLOR_ROLE_FRAME_BORDER` frame and `HUD_COLOR_ROLE_INFORMATION_MARK` corner marks at top-left and bottom-right. While it holds focus the frame brightens to `HUD_COLOR_ROLE_INFORMATION` and the marks lengthen (`hudFieldLine`). The value text is
+  `HUD_COLOR_ROLE_VALUE_TEXT` (`styleTextComponent`), the same for single-line and multi-line fields; the only difference is enabled/disabled (`HUD_COLOR_ROLE_DISABLED`). The colour does NOT depend on editable/read-only. A live console or log is its own role (`HudLogArea`), not a field.
 - **Disabled (§0.6)** is centralized, with no local hacks: the border follows `isEnabled()` and dims to
   `HUD_COLOR_ROLE_DISABLED` (`hudFieldLine` inside `hudFieldBorder()`/`…WithInfo()`); the text in the field uses `disabledTextColor=HUD_COLOR_ROLE_DISABLED`
   (`styleTextComponent`); and the row label (`addLabel`) dims together with the field to `HUD_COLOR_ROLE_DISABLED`. A group is dimmed by one `setEnabled(false)` on the controls, each of which draws its own disabled state.
 - **The info "i" (
-  optional)** is a zone INSIDE the field on the right, separated by a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap. Tints: at rest
+  optional)** is a cell INSIDE the field on the right: a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` fill, divided from the text by a 1 px `HUD_COLOR_ROLE_SECONDARY_BORDER` line. Tints: at rest
   `HUD_COLOR_ROLE_CONTROL_DECORATION`; hover `HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled `HUD_COLOR_ROLE_DISABLED`. The glyph is `paintHudInfoGlyph`. A click opens the help and does not place the caret. NOT a separate external button and NOT a Unicode glyph.
 - **A picker at the field's edge** (choosing a directory or file) is a compact square button, §4.
 
@@ -205,6 +202,9 @@ Blue underlined action "links" are an ANTI-PATTERN: help is carried by the info 
 
 **The row
 layout** "label→field[→picker/i]" uses the `baseGbc` / `addLabel` / `addField` helpers (see below), not a raw `GridBagConstraints` in place.
+
+**A number that is also
+typed** (the Input Monitor's widths and heights) is a `HudSpinner`: the field's look with ▲▼ in a cell of their own. Where typing is not wanted, `HudStepper` (§4).
 
 **→ Anchors:** `AppTheme.hudReadoutLabel`, `HudTextField.setInfoAction` / `makeTextField(infoAction)`,
 `hudFieldBorderWithInfo()`, `HUD_SEP_W`; read-only is `hudReadoutValue` (§7.2) / `makeMetadataField`
@@ -231,19 +231,21 @@ A `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap divides the marker from the text. 
 
 ### 5.3 Combo
 
-The reference is the ED combo (PRIMARY/BORDERLESS): a warm dark background, orange text, and a flat ▼ with no button box. NOT the native LAF.
+The look of the field (§5.1) with a ▼ cell, the segments of the table filter bar. NOT the native LAF. A combo in a table cell is the exception, and keeps the look of its grid: a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, a `HUD_COLOR_ROLE_CONTROL_DECORATION` line and a matching list, a bare ▼ with no cell.
 
 -
-**Collapsed** — a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, `HUD_COLOR_ROLE_PRIMARY_ACTION` text (the value is orange, as in vanilla ED; placeholder and muted text are `HUD_COLOR_ROLE_SECONDARY_TEXT`), and a `hudFieldBorder()` border (`HUD_COLOR_ROLE_CONTROL_DECORATION`). The ▼ is flat (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
-`HUD_COLOR_ROLE_DISABLED`) at the edge, with no box or separator. The grey editor↔▼ separator is a FlatLaf bug, suppressed globally with `ComboBox.buttonSeparatorWidth=0`.
+
+**Collapsed** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` background, `HUD_COLOR_ROLE_VALUE_TEXT` text (placeholder and muted text are `HUD_COLOR_ROLE_SECONDARY_TEXT`), and the field frame with its corner marks (`hudComboBorder()`). The ▼ is flat (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
+`HUD_COLOR_ROLE_DISABLED`) in a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` cell behind a 1 px `HUD_COLOR_ROLE_SECONDARY_BORDER` line, which `HudComboBoxUI` draws. FlatLaf's own grey editor↔▼ separator is a bug, suppressed globally with `ComboBox.buttonSeparatorWidth=0`.
 - **The list (
-  popup)** — a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` backing; `HUD_COLOR_ROLE_PRIMARY_ACTION` items; the selected one `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
+  popup)** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` backing; `HUD_COLOR_ROLE_VALUE_TEXT` items; the selected one `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a `HUD_COLOR_ROLE_FRAME_BORDER` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
 - **A combo is an INPUT
-  field**: on a selected table row it stays warm and is not repainted `HUD_COLOR_ROLE_PRIMARY_ACTION`.
-- **Text selection** is warm: `ComboBox.selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`,
+  field**: on a selected table row it keeps its plate and is not repainted `HUD_COLOR_ROLE_PRIMARY_ACTION`.
+- **Text selection** is the accent: `ComboBox.selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`,
   `selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT` (globally).
 -
-**Disabled** is warm and dimmed (§0.6): a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` background, with the text and ▼ in `HUD_COLOR_ROLE_DISABLED`.
+
+**Disabled** is dimmed (§0.6): the text, frame and ▼ in `HUD_COLOR_ROLE_DISABLED`, and no corner marks.
 
 **One
 API.** A combo goes ONLY through `HudComboBox`, never `new JComboBox` plus a manual `styleComboBox`. Item text comes from `labelFn`, not an external `setRenderer`. Three entry points:
@@ -265,7 +267,7 @@ API.** A combo goes ONLY through `HudComboBox`, never `new JComboBox` plus a man
 
 **→
 Anchors:** `HudComboBox` (constructors `E[]`/`ComboBoxModel` × `[labelFn][, mutedWhen]`; the `picker(E[], labelFn, matches)` factory) plus `HudComboBoxUI`. The ▼ is `paintHudArrowDown`. The style is `styleComboBox` (idempotent). The cell is `HudComboCellEditor<E>`. Globally in
-`AppView.installDarkDefaults`: `ComboBox.disabled*` → warm, `selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`/
+`AppView.installDarkDefaults`: `ComboBox.disabled*` → the disabled tone, `selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`/
 `selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT`, `buttonSeparatorWidth=0`. Tokens: `HUD_COMBO_ITEM_INSET_V/H`,
 `HUD_PICKER_FIELD_WIDTH/HEIGHT`, opt-out `HUD_COMBO_EDITOR_LOCKED`.
 
@@ -290,17 +292,18 @@ No outline around the control itself (as with the checkbox; a box frame is an ac
 References: Commodities Market, Sub-Targets.
 
 - **Column
-  headers** are `HUD_COLOR_ROLE_SECONDARY_TEXT` caps with a thin warm `HUD_COLOR_ROLE_CONTROL_DECORATION` rail under the header (NOT the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`). Mandatory on ALL tables.
+  headers** are `HUD_COLOR_ROLE_SECONDARY_TEXT` caps with a thin `HUD_COLOR_ROLE_CONTROL_DECORATION` rail under the header (NOT `HUD_COLOR_ROLE_SECONDARY_BORDER`). Mandatory on ALL tables.
 - **Group separators** (CHEMICALS/FOODS) are bright caps with no fill, on their own row.
 - **Data rows** sit on a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` plate. NOT zebra, NOT a grid.
 - **The body
   background** is `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (darker than the plate). The division is a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap via `intercellSpacing`
   (horizontal and vertical). NOT transparency — the background is set explicitly.
 -
-**Values** are uppercased in the RENDERER (`toUpperCase`). Colour: a parameter or setting → `HUD_COLOR_ROLE_PRIMARY_ACTION`; an identifying name → `HUD_COLOR_ROLE_PRIMARY_TEXT`. Status data follows §1.
+
+**Values** are uppercased in the RENDERER (`toUpperCase`). Colour: a parameter or setting → `HUD_COLOR_ROLE_VALUE_TEXT`; an identifying name → `HUD_COLOR_ROLE_PRIMARY_TEXT`. Status data follows §1.
 - **Numeric columns** align right; text columns align left.
 - **A combo
-  column** uses a renderer with a dimmed ▼ (`HUD_COLOR_ROLE_CONTROL_DECORATION`; `HUD_COLOR_ROLE_SELECTED_TEXT` on the selected row); the editor is `HudComboBox` (§5.3), always warm, and does NOT invert with the row selection.
+  column** uses a renderer with a dimmed ▼ (`HUD_COLOR_ROLE_CONTROL_DECORATION`; `HUD_COLOR_ROLE_SELECTED_TEXT` on the selected row); the editor is `HudComboBox` (§5.3), and does NOT invert with the row selection.
 - **An affordance icon** (the gear) is small, below the row height. Its tint follows the row:
   at rest `HUD_COLOR_ROLE_CONTROL_DECORATION`, on the selected row `HUD_COLOR_ROLE_SELECTED_TEXT`. The size is `HUD_ICON_TABLE`.
 
@@ -333,7 +336,7 @@ and puts the value on the RIGHT). Two columns:
 
 - **The label** is caps with no colon (`hudReadoutLabel`).
 - **The
-  value** is flat text with NO border, aligned left (NOT right). Colour: a name → `HUD_COLOR_ROLE_INFORMATION` (§1), anything else → `HUD_COLOR_ROLE_PRIMARY_ACTION` (orange, like field values). Do NOT force caps in the renderer — if caps are needed, uppercase at the source.
+  value** is flat text with NO border, aligned left (NOT right). Colour: a name → `HUD_COLOR_ROLE_INFORMATION` (§1), anything else → `HUD_COLOR_ROLE_VALUE_TEXT` (like field values). Do NOT force caps in the renderer — if caps are needed, uppercase at the source.
 - **A border means INPUT**: read-only is flat text; multi-line or editable is an area with `hudFieldBorder()` (§5.1).
 
 **→
@@ -348,7 +351,7 @@ References: Quick Status, Community Goal tiers, market profit bars.
 - Rating rows (S/A/B/C/D/E/F) are a letter in a box plus a line to the right; a failure (`INSUFFICIENT`) is red.
 
 **A notification banner or a hint at the bottom of a panel is
-ONLY `HudBanner`.** A left accent rail plus text in the state colour (`StatusBadge.State`). A caution hint is `STANDBY` (yellow) with a leading ⚠ glyph (the 3-argument constructor, `leadingWarnGlyph=true`). Hand-built warning strips (`JLabel` + a Unicode "⚠" + `HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND`)
+ONLY `HudBanner`.** A left accent rail plus text in the state colour (`StatusBadge.State`). A caution hint is `STANDBY` (blue) with a leading ⚠ glyph (the 3-argument constructor, `leadingWarnGlyph=true`). Hand-built warning strips (`JLabel` + a Unicode "⚠" + `HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND`)
 are an ANTI-PATTERN: both the bindings hint and the "changes take effect" note go through `HudBanner`.
 
 **A long hint in a narrow
@@ -369,11 +372,11 @@ column** uses `HudBanner.multiline(text, state)`: the text wraps by word (a `JTe
 
 Service chrome, not a carrier of meaning. Status colour (cyan included) does NOT apply.
 
-- **The thumb** is a flat `fillRect` in warm `HUD_COLOR_ROLE_DISABLED`. **The
+- **The thumb** is a flat `fillRect` in `HUD_COLOR_ROLE_DISABLED`. **The
   track** is a `fillRect` in `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. Hover does not "light up". The arrow buttons are removed and the bar is narrow.
 
-> **Warm thumb, cold frames.** `HUD_COLOR_ROLE_FRAME_BORDER` (cold) is only for button and toolbar frames;
-> do NOT use it for the thumb. **Field borders** are the warm `HUD_COLOR_ROLE_CONTROL_DECORATION`. **A table's
+> `HUD_COLOR_ROLE_FRAME_BORDER` is for input, button and toolbar frames;
+> do NOT use it for the thumb. **A table's
 > scroll wrapper has no
 border**: the table "floats" on `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. Framing is the §9 device (FRAMED),
 > and is not applied to tables by default.
@@ -392,7 +395,7 @@ A box frame is an ACCENT, not the default (several in a row become a "box in a b
 - **FRAMED** (`new HudSection`, `compactCard`) is a `HUD_COLOR_ROLE_CONTROL_DECORATION` frame plus a
   `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` header fill. For separated accent widgets: sidebars, the commander block, cards.
 - **FLAT** (`HudSection.flat`, `compactFlat`) has no frame or fill. A caps title (`HUD_COLOR_ROLE_PRIMARY_ACTION`)
-  plus a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` rail; the body background is TRANSPARENT. For a tab's working sections.
+  plus a `HUD_COLOR_ROLE_CONTROL_DECORATION` rail; the body background is TRANSPARENT. For a tab's working sections.
 
 **The rule:** a working area is FLAT; a separated accent is FRAMED.
 
@@ -400,7 +403,7 @@ A box frame is an ACCENT, not the default (several in a row become a "box in a b
 FLAT.** The window frame comes from the §10.1 scaffold; a FRAMED section under it is a second frame ("a box in a box"), an anti-pattern.
 
 **Two columns side by
-side** use `HudTwoColumns(left, right)`: equal halves (`GridLayout 1×2`) plus a central vertical `HUD_COLOR_ROLE_PANEL_SEPARATOR` divider (warm, quieter than the section rail in §10.1; NOT the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`), drawn in `paintComponent` so the palette does not overwrite it. Children fill their half; to align content to the top, wrap the column in a `BorderLayout` and add it to `NORTH`. References: AI Services (local/cloud setup), `CustomCommandEditorDialog` (identity/steps). Do NOT build a local `GridBag` equal-column hack in place.
+side** use `HudTwoColumns(left, right)`: equal halves (`GridLayout 1×2`) plus a central vertical `HUD_COLOR_ROLE_PANEL_SEPARATOR` divider (quieter than the section rail in §10.1), drawn in `paintComponent` so the palette does not overwrite it. Children fill their half; to align content to the top, wrap the column in a `BorderLayout` and add it to `NORTH`. References: AI Services (local/cloud setup), `CustomCommandEditorDialog` (identity/steps). Do NOT build a local `GridBag` equal-column hack in place.
 
 **Actions in a section
 header** use `HudSection.setHeaderActions(JComponent...)`: one or more affordance icons (`HudGlyphButton`, §4) at the right edge of the title strip, opposite the title, left to right in argument order (the last one sits at the right inset), for actions over the section's content (for example save plus clear on a log panel). They go into a `GridLayout` strip with a `HUD_GAP_TIGHT` gap; the STRIP is pinned to the title row height (the header does not grow), while
@@ -455,9 +458,9 @@ scaffold.** `AppTheme.hudModalScaffold(HudModalSpec)` returns a wrapper `JPanel`
 **The side inset** is the single `HUD_DIALOG_BODY_INSET` token (`HUD_GAP×2`). With `scrollBody`
 the `body` itself carries no border of its own. The 18/16/12 literals are revoked.
 
-**The header is a cold anchor over a warm body** (separated by a change of temperature, not brightness).
+**The header is a raised surface over a darker body.**
 
-- **Background** — `HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND`. NOT `HUD_COLOR_ROLE_PRIMARY_ACTION`, NOT warm tones.
+- **Background** — `HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND`. NOT `HUD_COLOR_ROLE_PRIMARY_ACTION`.
 - **Accent** — a bottom `HUD_COLOR_ROLE_PRIMARY_ACTION` rail (`HUD_BORDER_THICKNESS_ACCENT`).
 - **Title** — bold caps `HUD_FONT_APP_TITLE` in `HUD_COLOR_ROLE_DIALOG_TITLE_TEXT`.
 - **The logo anchor on the
@@ -473,7 +476,7 @@ rail** is `HUD_COLOR_ROLE_PANEL_SEPARATOR` (quieter than the section rail `HUD_C
 and the header rail `HUD_COLOR_ROLE_PRIMARY_ACTION` — three lines of different weight). `hudFooterBorder()`: side inset 0.
 
 **The window
-frame** is `HUD_COLOR_ROLE_PANEL_SEPARATOR` at `HUD_BORDER_THICKNESS_ACCENT`. NOT `HUD_COLOR_ROLE_PRIMARY_ACTION`
+frame** is `HUD_COLOR_ROLE_DIALOG_FRAME_BORDER` at `HUD_BORDER_THICKNESS_ACCENT`. NOT `HUD_COLOR_ROLE_PRIMARY_ACTION`
 (it competes with the header rail), NOT `HUD_COLOR_ROLE_CONTROL_DECORATION` at 1px (it merges at the corners). A `MatteBorder`
 on the scaffold wrapper. Drag by the header; the close × intercepts its own events.
 
@@ -503,7 +506,7 @@ References: the Ship panel tabs, the ED top nav, Station Services.
 **Active**: a bright box fill (SUB-TARGETS) or a `HUD_COLOR_ROLE_PRIMARY_ACTION` underline; the inactive ones are dimmer.
 - **`SECTION` (the second level,
   ACTIONS/SETTINGS)**: the active one is a filled box, `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND`+`HUD_COLOR_ROLE_SELECTED_TEXT`
-  (the inversion in §0.4). The box reaches the bottom rail; NOT an underline, because against a background of many section rails the tab strip would be lost. Beneath the row runs a full-width `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE` rail. The first tab carries a light left inset from the start of the rail (`tabAreaInsets.left`).
+  (the inversion in §0.4). The box sits on the bottom rail with no gap; NOT an underline, because against a background of many section rails the tab strip would be lost. Beneath the row runs a full-width `HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE` rail. The first tab carries a light left inset from the start of the rail (`tabAreaInsets.left`).
   `COMPACT` (the dense inner ones) keeps the underline.
 - Icon tabs: the active one has a solid fill and a dark icon.
 
@@ -526,10 +529,10 @@ header (`TopStatusBar`).** On the left, the application name in caps (`HUD_COLOR
 
 **The navbar
 rails:** the upper one (header↔tabs) is `HUD_COLOR_ROLE_CONTROL_DECORATION` and thinner; the lower one (navbar↔body) is
-`HUD_COLOR_ROLE_PRIMARY_ACTION` and thicker. Do NOT use the cold `HUD_COLOR_ROLE_SECONDARY_BORDER`.
+`HUD_COLOR_ROLE_PRIMARY_ACTION` and thicker. Do NOT use `HUD_COLOR_ROLE_SECONDARY_BORDER`.
 
 **The active tab is an
-inversion**: a `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND` fill plus `HUD_COLOR_ROLE_SELECTED_TEXT`. The fill has a vertical gap from the rails. There is NO underline (that belongs to SECTION/COMPACT, §11).
+inversion**: a `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND` fill plus `HUD_COLOR_ROLE_SELECTED_TEXT`. The fill has a gap from the upper rail and sits on the lower one, joined to it. There is NO underline (that belongs to SECTION/COMPACT, §11).
 
 **Inactive
 ones:** `HUD_COLOR_ROLE_SECONDARY_TEXT` text with a `HUD_COLOR_ROLE_CONTROL_DECORATION` icon. Disabled is `HUD_COLOR_ROLE_DISABLED`.
@@ -549,6 +552,7 @@ A component that carries its own background or foreground marks itself with an o
 
 ## 13. Checklist
 
+- Raster icons in `images/` are baked orange artwork: draw them through `tintIcon` with a palette role, never as loaded. The exception is the OS window and taskbar icon (`applyAppIcon`), the app's brand mark.
 - Colours, fonts, heights, icons and border thicknesses come ONLY from `HudPalette` by name. Hardcoding is forbidden. Raw colours are only `HUD_COLOR_<HEX>`; roles are only `HUD_COLOR_ROLE_<SEMANTIC_NAME>` as a direct alias of `HUD_COLOR_*`.
 - Font size comes ONLY from the `HUD_FONT_*` roles (§2); a hardcoded size is forbidden.
 - Icon size comes from a `HUD_ICON_*` role (§3); hardcoded pixels are forbidden.
@@ -556,28 +560,28 @@ A component that carries its own background or foreground marks itself with an o
 - UI text comes only from `MultiLingualTextProvider.getText("key")`, with no literals.
 - Row selection is `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`. State is text colour (§1). Disabled is dimming in the same colour (`HUD_COLOR_ROLE_DISABLED`), not a "grey from another palette" (§0.6).
 - Flat straight forms: no pills, gradients or shadows. Scrollbars are `fillRect`, with no cyan.
-- Chrome and secondary labels use `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_DISABLED`, not a status colour and not the cold
-  `HUD_COLOR_ROLE_FRAME_BORDER` (field borders are the warm `HUD_COLOR_ROLE_CONTROL_DECORATION`).
+- Chrome and secondary labels use `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_DISABLED`, not a status colour and not
+  `HUD_COLOR_ROLE_FRAME_BORDER`. A value at rest is `HUD_COLOR_ROLE_VALUE_TEXT`, not the accent (§0.2).
 - Tables (§6) are a `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` plate on `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`, with no zebra or grid; division by `intercellSpacing`; selection set EXPLICITLY as `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT` in the renderer; hover `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`; caps, colour and alignment in the renderer.
 - An affordance icon in a cell is `HUD_ICON_TABLE`, tinted by the row (`HUD_COLOR_ROLE_CONTROL_DECORATION` at rest, `HUD_COLOR_ROLE_SELECTED_TEXT` when selected).
-- A combo (§5.3) is `HudComboBox`: warm background, flat ▼, warm list; it does NOT invert with the row selection. No `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
+- A combo (§5.3) is `HudComboBox`: flat ▼, field or table-cell surface; it does NOT invert with the row selection. No `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
 - Primitives needed in more than one place live in `HudGlyphs`: ▼ `paintHudArrowDown`; ▲ `paintHudArrowUp`; ◄ `paintHudArrowLeft`; ► `paintHudArrowRight`;
   "i" `paintHudInfoGlyph`; × `paintHudCloseGlyph`; the checkbox marker `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`; ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; the caret `paintHudTextCaret`; tinting `tintIcon`; alpha dimming `dimIcon`. Glyphs are primitives, NOT `drawString`/Unicode and NOT rasters.
 - The info "i" lives INSIDE the control (§5.2/§5.1) through `setInfoAction`. Blue links are an anti-pattern.
 - Tooltips (`setToolTipText`) are styled GLOBALLY through the `UIManager` `ToolTip.*` keys in `AppView.installDarkDefaults`
-  (a dark `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` plus a warm `HUD_COLOR_ROLE_CONTROL_DECORATION` rail at `HUD_BORDER_THICKNESS`,
+  (a dark `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` plus a `HUD_COLOR_ROLE_CONTROL_DECORATION` rail at `HUD_BORDER_THICKNESS`,
   `HUD_COLOR_ROLE_PRIMARY_TEXT` text, and the `HUD_FONT_TOOLTIP` font — otherwise it inherits the large `HUD_FONT_UI_DEFAULT`); popup shadows are removed with `Popup.dropShadowPainted=false` (the HUD has no shadows). A custom tooltip in place is an anti-pattern.
 - A key label is `hudReadoutLabel` (`HUD_COLOR_ROLE_SECONDARY_TEXT` caps with no colon). Strip colons in i18n (ALL languages).
 - Read-only key→value (§7.2) is `hudReadoutValue(value, color)`: flat text, mixed case. A field border belongs only to an input or an area.
 - A dialog's title block (§10) is `commandTitleBlock(name, id)` in NORTH.
 - A modal dialog (§10.1): ONLY `AppTheme.hudModalScaffold(HudModalSpec)`. Undecorated. Dismiss=`BACK` subtle on the left, primary on the right. The scrim from outside is `runWithModalScrim` (the TARGET is all of them at once).
 - Confirm, yes/no and save-discard use `HudConfirmDialog` (§10), NOT `JOptionPane.showConfirmDialog`/`showOptionDialog`.
-- Warm styling outside the palette default is protected by an opt-out client property (§12).
+- Styling outside the palette default is protected by an opt-out client property (§12).
 - A modal body's sections are `HudSection.flat` (§9). FRAMED inside a modal is an anti-pattern.
 - A shortcut panel uses `HudButton(primary=false)`, with the toggle changing the action text (§4).
 - On/off in a form is `HudCheckBox` (§5.2), with no LAF tick.
 - A "one of" choice is `HudSegmentedControl` (§5.4): a segmented bar, inversion fill on the selected one, divided by `HUD_COLOR_ROLE_APPLICATION_BACKGROUND`. NOT a round LAF `JRadioButton`.
-- A range on a scale is `HudSlider` (§4): a brown track, a red `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` fill (the §1 exception), a round `HUD_COLOR_ROLE_PRIMARY_ACTION` knob with a `HUD_COLOR_ROLE_BUTTON_TEXT` ring, and the value above the knob; metrics `HUD_SLIDER_*`. NOT a raw `JSlider`.
+- A range on a scale is `HudSlider` (§4): a dark track, an accent `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK` fill, a round `HUD_COLOR_ROLE_PRIMARY_ACTION` knob with a `HUD_COLOR_ROLE_BUTTON_TEXT` ring, and the value above the knob; metrics `HUD_SLIDER_*`. NOT a raw `JSlider`.
 - A realtime level meter is `HudMicMeter` (§4): segmented LIVE plus a PEAK trail, `HUD_COLOR_ROLE_DANGER`/`HUD_COLOR_ROLE_WARNING`/`HUD_COLOR_ROLE_SUCCESS` zones,
   `HUD_COLOR_ROLE_SECONDARY_TEXT`/`HUD_COLOR_ROLE_INFORMATION` threshold rails, and labels on the control; metrics `HUD_METER_*`. NOT a hardcoded palette or fonts.
 - A pattern needed on more than one screen belongs in the HUD layer.

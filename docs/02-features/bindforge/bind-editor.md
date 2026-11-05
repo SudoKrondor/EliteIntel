@@ -34,6 +34,8 @@ makes them cheap to build when they come back — each mode's own section below 
   this screen's edits; the AI tab's KEYMAP readout is removed. **They are published on their own thread at every
   read, whether the read works or not** (Alan, 2026-10-31, Storage S8R3): a read that fails does not skip them, and a
   failure in them does not blank a read that worked.
+- **The Name box was removed from this screen (2026-11-03, Krondor), so nothing on screen renames a binds file
+  now.** The factory-name warning went with it. `bindforge.storage.Rename` is unchanged, and a rename already in the edits still applies. The rest of this item records how renaming worked.
 - **A Name box beside the Bindings File dropdown — renaming a binds file (2026-10-24, Alan).** It shows the selected
   file's BindName, editable, with the game's version and extension after it as fixed text — `DualVirpilDawnTreader`
   `.4.2.binds`. A name the user types is held to the same rules as a controller name: letters, digits, `-` and `_`,
@@ -131,16 +133,16 @@ than written by hand: 34 token choices, 3 numeric choices, 45 booleans and 21 fr
 | Shape | Count | Editor | Examples |
 |---|---|---|---|
 | **Boolean** | 36 | checkbox | `DeployHardpointsOnFire` (Firing Deploys Hardpoints), `EnableRumbleTrigger` — every one holds `0` or `1` |
-| **Float** | 25 | numeric field | `MouseSensitivity` `1.00000000`, `MouseDeadzone` `0.05000000`, `FreeCamMouseSensitivity` `5.00000000` |
+| **Float** | 25 | slider and numeric field, or a dropdown for the three increments | `MouseSensitivity` `1.00000000`, `MouseDeadzone` `0.05000000`, `FreeCamMouseSensitivity` `5.00000000` |
 | **Enum** | 31 | dropdown | `YawToRollMode` `Bindings_YawIntoRollNone`, `MouseYMode` `Bindings_MousePitch`; **23 of the 31 hold an empty value**, which is the game's default rather than a missing one |
 
 `KeyboardLayout` is the one entry with no `Value` attribute at all — it carries the layout as element text.
 It is read-only: the game writes it from the OS keyboard layout, and nothing a user does in a bind
 editor should claim to change that.
 
-**Floats are a plain numeric field, not a slider.** A slider has to know its range, and nothing in any of the
-five specimen files tells us what the maximum sensitivity is. A field writes exactly what the user
-typed, which is the same contract the rest of BindForge keeps with the file.
+**Floats are a slider with the number beside it (changed
+2026-11-04).** A slider has to know its range, and no specimen file or Frontier document gives one, so these were first a plain numeric field. Krondor then saved binds files with every slider in the game at its minimum and at its maximum, which measured the
+[stops](reference-data/settings-choice-fields.md#free-numbers--slider-or-typed-value). The number stays because players' files go past those stops: a value outside them is written as typed, pins the thumb to the end of its track, and is left alone until someone moves it.
 
 **Except that three of them are not really floats — found 2026-09-16.** The game's options screen shows
 **Headlook Button Increments** as a four-choice dropdown — CONTINUOUS, SMALL INCREMENTS, MEDIUM INCREMENTS,
@@ -682,13 +684,17 @@ buttons instead (the throttle's `R POV1 Forward` is `Joy_9`), and those appear u
 
 #### Axis slots take an axis only
 
-**An axis row is never bound to a keyboard key** (Alan, 2026-09-13), and never to the mouse — which is why
-both tabs grey out. Keys go on the matching button rows — *Yaw Left* and *Yaw Right* beside *Yaw Axis*. Axis
-bindings take no modifiers.
+**An axis row is never bound to a keyboard
+key** (Alan, 2026-09-13), and never to the mouse. Keys go on the matching button rows — *Yaw Left* and *Yaw
+Right* beside *Yaw Axis*. Axis bindings take no modifiers, and VEGA never uses them.
 
-**Inverted and Deadzone live in both places.** They stay inline on the axis row for a quick adjustment, and
-they appear in the dialog beside the axis they belong to. It is one value in each case, so saving from either
-leaves the other showing the same thing.
+**An axis row opens its own dialog, which offers axes and nothing else — settled 2026-11-03 (Krondor and Alan).**
+It holds the axis, a Normal / Inverted toggle and a dead zone slider. **This replaces the earlier plan of greyed
+keyboard and mouse tabs and of inline Inverted and Deadzone
+controls:** the grid row shows those values, and a click edits them, as on every other row.
+
+**A throttle axis also has a Full Range / Forward Only toggle.** `ThrottleAxis` writes `ThrottleRange`,
+`DriveSpeedAxis` writes `BuggyThrottleRange` and `MoveFreeCamY` writes `ThrottleRangeFreeCam`. The Forward Only Throttle Reverse control beside them, and its `ToggleOn`, stay a button row.
 
 #### Capture-control colour, and no skip option
 
@@ -876,6 +882,11 @@ capture is the shared dialog. Input Mode is an input-first reverse lookup — pr
 This is distinct from [Control Types](#control-types) below, which groups by input *category* (all axes together, all buttons together) rather than looking up one *specific* physical input. Input Mode absorbed what was judged the one genuinely useful idea from Control Types' original concept when Control Types itself was parked.
 
 ## Anomalies
+
+**Scope for V1.2, settled 2026-11-03 (Krondor and Alan): the tab lists every row Game Mode draws red as a conflict,**
+laid out as Game Mode's
+*All*, and a click opens the same editor. There are no sub-tabs. The four kinds below, their severity order and the ON PURPOSE mark are the earlier, larger design:
+**not built, and not in the V1.2 plan unless raised again.**
 
 *(Named "Conflicts" until 2026-09-07. Renamed because the mode outgrew the word — see
 [Four kinds, one question](#four-kinds-one-question) below. "Conflict" remains exactly right for the kind
@@ -1121,6 +1132,13 @@ it puts the control back on the list.
 **Editing from here:** clicking a row opens the same [capture dialog](#capture-dialog--settled-2026-09-13) used everywhere else, right in place — resolving an anomaly never requires leaving the Anomalies tab and jumping to Game Mode.
 
 ## Settings — settled 2026-09-19
+
+**Scope for V1.2, settled 2026-11-03 (Krondor and Alan): the sensitivities, dead zones and power
+curves.** The booleans and dropdowns described below are not on the tab yet, and no inline rows exist in Game Mode.
+**Sliders, since 2026-11-04:** each row has a slider over the
+[measured range](reference-data/settings-choice-fields.md#free-numbers--slider-or-typed-value) and the number beside it. The number is checked only against `ControlSchemes/Help.txt`:
+*any number greater than 0.0* for mouse sensitivity and *any number between 0.0 and
+1.0* for a mouse deadzone. A value past the game's stops is accepted, and the row names the range. `HeadlookMotionSensitivity` has no measured range and keeps the number alone.
 
 **Status: in scope for V1.2.** A third mode tab, after Anomalies, listing **every [settings entry](#settings-entries-are-rows-too--settled-2026-09-16) in the file at once** — all 93 of
 them in a real 4.2 file, grouped the way the game groups them. Alan: *“in the game mode the settings show

@@ -74,7 +74,7 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
             } else if (value instanceof AiAccessCell cell) {
                 label.setForeground(aiAccessColor(cell));
             } else {
-                label.setForeground(notDefined ? HUD_COLOR_ROLE_DISABLED : HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(notDefined ? HUD_COLOR_ROLE_DISABLED : HUD_COLOR_ROLE_VALUE_TEXT);
             }
         }
         return label;

@@ -62,6 +62,7 @@ public class BindingsWriter {
             Pattern.compile("Joy_[1-9][0-9]*|Joy_POV[1-4](?:Up|Down|Left|Right)|(?:Pos|Neg)_Joy_" + GAME_AXIS
                     + "|" + GAMEPAD_TOKEN);
     private static final Pattern CONTROLLER_AXIS_TOKEN = Pattern.compile("Joy_" + GAME_AXIS);
+    private static final Pattern SETTING_VALUE = Pattern.compile("[^\"'<>&]*");
 
     // Any child element of a slot, by name - comments, processing instructions and closing tags excluded.
     private static final Pattern SLOT_CHILD = Pattern.compile("<(?![/!?])([A-Za-z_][A-Za-z0-9_.:-]*)(?=[\\s>/])");
@@ -166,21 +167,25 @@ public class BindingsWriter {
      * {@code <Deadzone>} - or clears its binding, keeping Inverted and Deadzone as given. The user-edit path, as
      * {@link #assignSlot(byte[], SlotAssignment)}.
      * <p>
-     * Takes a controller's whole axis only, {@code Joy_XAxis} to {@code Joy_VAxis} ({@code UNKNOWN_KEY} otherwise).
-     * An element without exactly one of each of the three, or with any of them in a shape it does not know, is
-     * refused ({@code UNSUPPORTED_XML}). A deadzone equal, as a float, to the one already there keeps its text.
+     * Takes a controller's whole axis only, {@code Joy_XAxis} to {@code Joy_VAxis} ({@code UNKNOWN_KEY} otherwise) -
+     * or the input the element already holds, whatever it is, so Inverted and Deadzone can change on a gamepad's stick
+     * without the stick being refused. An element without exactly one of each of the three, or with any of them in a
+     * shape it does not know, is refused ({@code UNSUPPORTED_XML}). A deadzone equal, as a float, to the one already
+     * there keeps its text.
      */
     public EditedBinds assignAxis(byte[] binds, AxisAssignment edit) {
-        if (!edit.clearsSlot() && !isAxisInput(edit.axis())) {
-            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
-        }
         EncodedXml encodedXml = decode(binds);
         String xml = encodedXml.xml();
         LocatedAction action = locateAction(xml, edit.bindingId());
         if (action.result() != null) {
-            return EditedBinds.unchanged(action.result(), binds);
+            return edit.clearsSlot() || isAxisInput(edit.axis())
+                    ? EditedBinds.unchanged(action.result(), binds)
+                    : EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
         AxisParts parts = locateAxisParts(xml, action.range());
+        if (!edit.clearsSlot() && !isAxisInput(edit.axis()) && !holds(parts, edit.axis())) {
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
+        }
         if (parts == null) {
             return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
         }
@@ -196,6 +201,40 @@ public class BindingsWriter {
             updatedXml = replaceRange(updatedXml, replacement.range(), replacement.text());
         }
         return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
+    }
+
+    private static boolean holds(AxisParts parts, BindingInput input) {
+        return parts != null && input.device().equals(parts.device()) && input.key().equals(parts.key());
+    }
+
+    /**
+     * Writes the value of one bare setting, {@code <MouseSensitivity Value="1.00000000" />}. The user-edit path: nothing
+     * automatic calls it. An empty value is a real one - it is the game's default choice - so it is written, never
+     * removed.
+     * <p>
+     * Refuses a setting the file does not hold ({@code BINDING_NOT_FOUND}), and one it repeats or holds in any other
+     * shape ({@code UNSUPPORTED_XML}): which of two copies the game reads is not known, so neither is guessed at.
+     *
+     * @param value what to write; characters that would need escaping in an attribute are refused ({@code UNKNOWN_KEY})
+     */
+    public EditedBinds assignSetting(byte[] binds, String setting, String value) {
+        if (!SETTING_VALUE.matcher(value).matches()) {
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
+        }
+        EncodedXml encodedXml = decode(binds);
+        String xml = encodedXml.xml();
+        if (openingTagStarts(xml, setting, 0, xml.length()).isEmpty()) {
+            return EditedBinds.unchanged(BindingSaveResult.BINDING_NOT_FOUND, binds);
+        }
+        TextRange tag = singleSelfClosingTag(xml, setting, new TextRange(0, xml.length()), Set.of("Value"));
+        TextRange current = tag == null ? null : valueRange(xml, tag);
+        if (current == null) {
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+        }
+        if (value.equals(xml.substring(current.start(), current.end()))) {
+            return EditedBinds.unchanged(BindingSaveResult.NO_CHANGE, binds);
+        }
+        return EditedBinds.saved(encode(new EncodedXml(replaceRange(xml, current, value), encodedXml.hasUtf8Bom())));
     }
 
     /**

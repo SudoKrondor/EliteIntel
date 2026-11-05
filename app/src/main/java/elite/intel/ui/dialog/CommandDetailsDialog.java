@@ -169,8 +169,8 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
         addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), HudPalette.HUD_COLOR_ROLE_INFORMATION);
-        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
+        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
         addDescription(panel, gbc);
         addPhrases(panel, gbc);
         addSequence(panel, gbc);
@@ -282,7 +282,7 @@ public final class CommandDetailsDialog extends JDialog {
         JTextArea area = AppTheme.makeTextArea(0, 0);
         area.setText(text);
         area.setEditable(false);
-        area.setCaretColor(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        area.setCaretColor(HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND);
         area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }
