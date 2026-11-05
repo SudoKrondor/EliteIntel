@@ -99,6 +99,23 @@ Every one holds `0` or `1`. A checkbox writes exactly what the game writes, so n
 
 ## Free numbers — slider or typed value
 
+**The game's slider stops, measured
+2026-11-04** from files Krondor saved with every slider at its minimum and at its maximum. Sliders leave noise in the file (`0.10009507`, `0.00100000`, `0.99900001`), which is rounded here. These are the slider's limits rather than the file's: players' files go past them. `SettingNumbers` holds this table.
+
+| Setting | Min | Max |
+|---|---|---|
+| `MouseSensitivity`, `MouseHeadlookSensitivity`, `MouseHumanoidSensitivity`, `BuggyTurretMouseSensitivity`, `FSSTuningSensitivity` | 0.1 | 10 |
+| `FreeCamMouseSensitivity`, `PlacementCamMouseSensitivity` | 0.1 | 20 |
+| `FSSMouseSensitivity` | 0.1 | 40 |
+| `MultiCrewThirdPersonMouseSensitivity`, `SAAThirdPersonMouseSensitivity` | 0.1 | 200 |
+| `HeadlookSensitivity`, `HumanoidPitchSensitivity`, `HumanoidRotateSensitivity` | 0.25 | 4 |
+| `YawToRollSensitivity` | 0.1 | 0.9 |
+| `MouseLinearity`, `BuggyTurretMouseLinearity`, `FSSMouseLinearity` | 1 | 3 |
+| `MouseDecayRate` | 1 | 10 |
+| `MouseDeadzone`, `BuggyTurretMouseDeadzone`, `FSSMouseDeadzone` | 0 | 0.2 |
+| Any axis `Deadzone` (61 measured, the rest taken to match) | 0 | 1 |
+| `HeadlookMotionSensitivity` | not measured | not measured |
+
 Sensitivities, deadzones and power curves, each with hundreds of distinct values across the corpus, which
 is what tells them apart from a list: `BuggyTurretMouseDeadzone` (297 distinct), `BuggyTurretMouseLinearity` (182 distinct), `BuggyTurretMouseSensitivity` (488 distinct), `FSSMouseDeadzone` (174 distinct), `FSSMouseLinearity` (455 distinct), `FSSMouseSensitivity` (1240 distinct), `FSSTuningSensitivity` (1161 distinct), `FreeCamMouseSensitivity` (272 distinct), `HeadlookSensitivity` (557 distinct), `HumanoidPitchSensitivity` (217 distinct), `HumanoidRotateSensitivity` (324 distinct), `MouseDeadzone` (499 distinct), `MouseDecayRate` (472 distinct), `MouseHeadlookSensitivity` (366 distinct), `MouseHumanoidSensitivity` (657 distinct), `MouseLinearity` (186 distinct), `MouseSensitivity` (793 distinct), `SAAThirdPersonMouseSensitivity` (628 distinct), `YawToRollSensitivity` (512 distinct).
 

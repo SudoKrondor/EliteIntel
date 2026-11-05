@@ -128,7 +128,7 @@ canon's.
 |---|---|
 | All ~93 entries, grouped as the game groups them | the Game Mode grid's rows ✓ — and **GAP 1** if its groups collapse too |
 | Toggle, choice, numeric choice | `HudBooleanCellEditor`, `HudComboCellEditor` ✓ — the three *numeric choices* are a dropdown wearing numbers |
-| Free numbers | **GAP 2** |
+| Free numbers | `HudSlider` beside a text field, on a scale of thousandths (`SettingNumbers.Range`) ✓ |
 
 **Free numbers are floats**, and both range controls in the kit are integer-only: `HudSlider(min, max, step,
 value)` and `HudStepper` take and return `int`. A settings value such as a deadzone can be carried on an

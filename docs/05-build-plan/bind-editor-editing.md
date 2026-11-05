@@ -98,11 +98,9 @@ pairs**, as it does any other conflict. `MouseReset` and `BlockMouseDecay` gaine
   rows:** read by `BindsValues`, never by `KeyBindingsParser`. Their second column shows Normal or Inverted, the dead zone and any throttle range. `ed_control_names.properties` gained the 70 axis tags and 22 number settings, from the Action Catalog; those names were not read off the game screen for this.
 - **Anomalies is a view of `GameModePanel`'s
   rows**, narrowed to the ones in its conflict index, so it cannot disagree with the red rows.
-- **Settings slider limits are not known.** Frontier's `Help.txt` gives only *greater than 0.0* for sensitivity and
-  *between 0.0 and
-  1.0* for a deadzone, and no public source states them. So the tab is checked number fields (`SettingNumbers`). To make them sliders, read each limit off the game's options screen.
-- **The axis dialog's dead zone slider runs 0 to
-  100%**, the range the writer accepts. Whether the game's own stops lower is also unread. The highest value in the local specimens is 0.677.
+- **Settings sliders use measured limits (
+  2026-11-04).** Krondor saved binds files with every slider at its minimum and maximum, and `SettingNumbers.range` holds the result. A typed number is still checked only against Frontier's `Help.txt`, so a value past a stop is kept and the row names the range. `HeadlookMotionSensitivity` stayed at 1 in both passes, so it has no slider.
+- **The axis dialog's dead zone slider runs 0 to 100%**, which is also the game's own range, measured the same way.
 - **A shared axis does not block
   SAVE.** The dialog names the other controls instead, because `YawAxisRaw` and `YawAxis_Landing` are normally on one stick. This differs from buttons, on purpose.
 -
