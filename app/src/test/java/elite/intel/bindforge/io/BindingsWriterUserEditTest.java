@@ -95,6 +95,20 @@ class BindingsWriterUserEditTest {
     }
 
     @Test
+    void writingTheSlotsInTurnSwapsThemAndHoldGoesWithItsInput() throws IOException {
+        Path file = binds();
+
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("UpThrustButton", BindingSlotType.PRIMARY,
+                new BindingInput("Keyboard", "Key_R"), List.of(), true)));
+        assertEquals(BindingSaveResult.SAVED, assignSlot(file, slot("UpThrustButton", BindingSlotType.SECONDARY,
+                new BindingInput("Throttle", "Joy_5"), List.of(), false)));
+
+        String xml = read(file);
+        assertTrue(xml.contains("\t\t<Primary Device=\"Keyboard\" Key=\"Key_R\">\n\t\t\t<Hold Value=\"1\" />\n\t\t</Primary>"), xml);
+        assertTrue(xml.contains("\t\t<Secondary Device=\"Throttle\" Key=\"Joy_5\" />\n\t</UpThrustButton>"), xml);
+    }
+
+    @Test
     void aChordAnotherSlotUsesIsNotRefused() throws IOException {
         Path file = binds();
 

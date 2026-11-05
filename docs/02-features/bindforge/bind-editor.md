@@ -532,6 +532,9 @@ once** (Alan, 2026-10-15). The slot keeps what it had, and its card says in red 
 *assigned to this control*. **Each changed card has
 UNDO**, which returns that slot to what it held without leaving the dialog.
 
+**A square button between the cards swaps the
+slots** (2026-11-04): what Primary and Secondary will hold change places, picks not yet saved included, each input taking its modifiers and its Hold with it, because Hold decides how that input behaves. The orange card stays the orange card, nothing is kept until SAVE, and pressing it again puts them back. It is dimmed while both slots are empty. Its one word is its tooltip.
+
 **A control can always go back to what it
 had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is green for this control and is never refused, even when another control shares it. That chord is what the file says today, so putting it back adds no clash. Without this rule, clearing a slot painted its own key red and SAVE refused to restore it: `UpArrow` on UI Panel Up is shared with FreeCamZoomIn and others in a real file. This replaces the single SLOT / CURRENT VALUE / NEW INPUT rows in [What the dialog shows](#what-the-dialog-shows).
 
