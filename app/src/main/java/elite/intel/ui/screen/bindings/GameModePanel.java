@@ -1036,7 +1036,7 @@ class GameModePanel extends JPanel {
         try {
             AppTheme.runWithModalScrim(
                     SwingUtilities.getWindowAncestor(dialogOwner),
-                    () -> saveSelections(file, bindingId, dialog.showDialog(), slots));
+                    () -> saveSelections(file, bindingId, dialog.showDialog()));
         } finally {
             assignDialogOpen = false;
         }
@@ -1127,8 +1127,7 @@ class GameModePanel extends JPanel {
      * Keeps what the dialog changed as one edit not applied, every changed slot or none (Storage S5): the first slot
      * the writer refuses leaves the edits as they were, and says why.
      */
-    private void saveSelections(String file, String bindingId, List<AssignSelection> selections,
-                                KeyBindingsParser.ReadOnlyBindingSlots slots) {
+    private void saveSelections(String file, String bindingId, List<AssignSelection> selections) {
         if (selections.isEmpty()) return;
         List<BindsEdits.SlotChange> changes = new ArrayList<>();
         for (AssignSelection selection : selections) {
@@ -1136,9 +1135,7 @@ class GameModePanel extends JPanel {
                 case AssignKeyboardBindingSelection keyboard -> binds -> saveKeyboardBinding(binds,
                         new KeyboardBindingEdit(bindingId, keyboard.slotType(), keyboard.key()), keyboard.modifiers());
                 case AssignSlotSelection any -> binds -> bindingsWriter.assignSlot(binds, new SlotAssignment(
-                        bindingId, any.slotType(), any.input(), any.modifiers(),
-                        // The slot keeps its Hold - an inline setting of the slot, not part of what was captured.
-                        any.input() != null && holds(slots, any.slotType())));
+                        bindingId, any.slotType(), any.input(), any.modifiers(), any.input() != null && any.hold()));
             };
             changes.add(change);
         }
@@ -1151,12 +1148,6 @@ class GameModePanel extends JPanel {
                 }),
                 () -> saveResultPresenter.show(result.get()), () -> {
                 });
-    }
-
-    private static boolean holds(KeyBindingsParser.ReadOnlyBindingSlots slots, BindingSlotType type) {
-        if (slots == null) return false;
-        KeyBindingsParser.ReadOnlyBindingSlot slot = type == BindingSlotType.PRIMARY ? slots.primary() : slots.secondary();
-        return slot != null && slot.hold();
     }
 
     private EditedBinds saveKeyboardBinding(byte[] binds, KeyboardBindingEdit edit, List<BindingModifier> modifiers) {

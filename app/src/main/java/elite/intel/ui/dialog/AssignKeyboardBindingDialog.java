@@ -20,6 +20,7 @@ import elite.intel.ui.support.AssignSelection;
 import elite.intel.ui.support.AssignSlotSelection;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.widget.*;
 import elite.intel.util.KeyCaptureMapper;
 import org.apache.logging.log4j.LogManager;
@@ -62,7 +63,10 @@ import static elite.intel.ui.theme.HudPalette.*;
  */
 public class AssignKeyboardBindingDialog extends JDialog {
     private static final Logger log = LogManager.getLogger(AssignKeyboardBindingDialog.class);
-    private static final int MIN_WIDTH = 760;
+    /**
+     * Wide enough for both cards to show UNDO and CLEAR with the swap between them, as a swap makes them do.
+     */
+    private static final int MIN_WIDTH = 800;
     /**
      * Room left around the dialog on a screen it would otherwise fill.
      */
@@ -74,12 +78,18 @@ public class AssignKeyboardBindingDialog extends JDialog {
     public record ExistingConflict(String chord, Set<String> partners) {
     }
 
-    private enum Kind {UNCHANGED, CLEAR, KEYBOARD, CONTROLLER}
+    enum Kind {UNCHANGED, CLEAR, KEYBOARD, CONTROLLER, SWAPPED}
+
+    /**
+     * What a slot would hold after SAVE, whole, so it can move to the other slot.
+     */
+    private record SlotContents(BindingInput input, List<BindingInput> modifiers, boolean hold, boolean keyboard) {
+    }
 
     /**
      * One slot: what it holds, and what the commander has chosen for it so far.
      */
-    private static final class SlotEdit {
+    static final class SlotEdit {
         final BindingSlotType type;
         final KeyBindingsParser.ReadOnlyBindingSlot original;
         final ExistingConflict existingConflict;
@@ -87,6 +97,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
         String key;
         List<BindingModifier> keyboardModifiers = List.of();
         ControllerCapture.Captured control;
+        /**
+         * What came over from the other slot; read only while {@link #kind} is {@link Kind#SWAPPED}.
+         */
+        SlotContents swapped;
         /** Why the last pick for this slot was turned away, shown on its card until the next pick. */
         String rejected;
 
@@ -96,8 +110,39 @@ public class AssignKeyboardBindingDialog extends JDialog {
             this.existingConflict = existingConflict;
         }
 
+        /**
+         * Exchanges what the two slots will hold, picks not yet saved included.
+         * <p>
+         * WHY Hold moves with the input: it decides how that input behaves, so leaving it behind would change the
+         * control. WHY no check here: an input moved between one control's slots, with its Hold, adds no clash.
+         */
+        static void swap(SlotEdit first, SlotEdit second) {
+            SlotContents fromFirst = first.contentsAfter();
+            SlotContents fromSecond = second.contentsAfter();
+            first.receive(fromSecond);
+            second.receive(fromFirst);
+        }
+
+        private SlotContents contentsAfter() {
+            return new SlotContents(inputAfter(), modifiersAfter(), holdAfter(), keyboardAfter());
+        }
+
+        private void receive(SlotContents contents) {
+            undo();
+            if (contents.input() == null) {
+                kind = Kind.CLEAR;
+            } else {
+                kind = Kind.SWAPPED;
+                swapped = contents;
+            }
+        }
+
         boolean hold() {
             return original != null && original.hold();
+        }
+
+        boolean holdAfter() {
+            return kind == Kind.SWAPPED ? swapped.hold() : hold();
         }
 
         boolean originallyEmpty() {
@@ -118,6 +163,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 case CLEAR -> null;
                 case KEYBOARD -> new BindingInput(BindingInput.KEYBOARD, key);
                 case CONTROLLER -> control.input();
+                case SWAPPED -> swapped.input();
             };
         }
 
@@ -129,6 +175,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 case CLEAR -> List.of();
                 case KEYBOARD -> keyboardModifiers.stream().map(m -> new BindingInput(m.device(), m.key())).toList();
                 case CONTROLLER -> control.modifiers();
+                case SWAPPED -> swapped.modifiers();
             };
         }
 
@@ -140,6 +187,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 case UNCHANGED -> original != null && original.keyboardUsable();
                 case KEYBOARD -> true;
                 case CLEAR, CONTROLLER -> false;
+                case SWAPPED -> swapped.keyboard();
             };
         }
 
@@ -153,7 +201,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             if (kind == Kind.CLEAR) return !originallyEmpty();
             if (originallyEmpty()) return true;
             BindingInput was = new BindingInput(original.device(), original.key());
-            if (!was.sameInputAs(inputAfter())) return true;
+            if (!was.sameInputAs(inputAfter()) || holdAfter() != hold()) return true;
             Set<String> before = new HashSet<>();
             original.bindingModifiers().stream().filter(m -> m.key() != null && !m.key().isBlank())
                     .forEach(m -> before.add(identity(m.device(), m.key())));
@@ -165,14 +213,17 @@ public class AssignKeyboardBindingDialog extends JDialog {
         AssignSelection selection() {
             return switch (kind) {
                 case CLEAR -> holdsController()
-                        ? new AssignSlotSelection(type, null, List.of())
+                        ? new AssignSlotSelection(type, null, List.of(), false)
                         : new AssignKeyboardBindingSelection(type, null, List.of());
                 case KEYBOARD -> holdsController()
                         // WHY: the keyboard path never writes over a controller slot, so a key on one goes
                         // through the user-edit path - after every keyboard check, exactly as on any other slot.
-                        ? new AssignSlotSelection(type, inputAfter(), modifiersAfter())
+                        ? new AssignSlotSelection(type, inputAfter(), modifiersAfter(), holdAfter())
                         : new AssignKeyboardBindingSelection(type, key, keyboardModifiers);
-                case CONTROLLER -> new AssignSlotSelection(type, control.input(), control.modifiers());
+                case CONTROLLER -> new AssignSlotSelection(type, control.input(), control.modifiers(), holdAfter());
+                // WHY the user-edit path even for two keys: the slots are written one after the other, and the
+                // keyboard path carries no Hold over.
+                case SWAPPED -> new AssignSlotSelection(type, swapped.input(), swapped.modifiers(), holdAfter());
                 case UNCHANGED -> throw new IllegalStateException("An unchanged slot has nothing to save");
             };
         }
@@ -185,6 +236,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             key = null;
             keyboardModifiers = List.of();
             control = null;
+            swapped = null;
             rejected = null;
         }
 
@@ -223,6 +275,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final KeyboardAvailabilityView keyboardView;
     private final HudBanner aiAccessBanner;
     private final JButton saveButton;
+    private final JButton swapButton;
     private final Set<String> dialogHeldModifiers = new LinkedHashSet<>();
     private KeyEventDispatcher modifierTracker;
     /**
@@ -279,6 +332,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.keyboardView = new KeyboardAvailabilityView(bindingId, active, this.existingSlots);
         this.aiAccessBanner = HudBanner.multiline(getText("bindings.assign.aiAccessLoss"), StatusBadge.State.STANDBY);
         this.saveButton = makeButton(getText("button.save"));
+        this.swapButton = makeSwapButton();
         buildUi();
         keyboardView.setOwnChords(ownKeyboardChords());
         showSourceOf(edits.get(active));
@@ -389,13 +443,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
         addLabel(content, getText("bindings.assign.control"), gbc);
         addValue(content, controlPath(control) + "   \u00B7   " + bindingId, gbc);
 
-        // The row's two slots, side by side as in the grid.
-        JPanel cardRow = transparentPanel(new GridLayout(1, 2, 12, 0));
-        for (BindingSlotType type : List.of(BindingSlotType.PRIMARY, BindingSlotType.SECONDARY)) {
-            SlotCard card = new SlotCard(edits.get(type));
-            cards.put(type, card);
-            cardRow.add(card);
-        }
+        // The row's two slots, side by side as in the grid, with the swap between them.
+        JPanel cardRow = transparentPanel(new SlotRowLayout());
+        cardRow.add(slotCard(BindingSlotType.PRIMARY));
+        cardRow.add(swapButton);
+        cardRow.add(slotCard(BindingSlotType.SECONDARY));
         wide(content, gbc, cardRow, new Insets(10, 6, 3, 6));
         wide(content, gbc, HudBanner.multiline(getText("bindings.assign.slotHint"), StatusBadge.State.INFO), null);
         aiAccessBanner.setVisible(false);
@@ -448,6 +500,27 @@ public class AssignKeyboardBindingDialog extends JDialog {
         fitToScreen();
         setLocationRelativeTo(getOwner());
         setResizable(false);
+    }
+
+    private SlotCard slotCard(BindingSlotType type) {
+        SlotCard card = new SlotCard(edits.get(type));
+        cards.put(type, card);
+        return card;
+    }
+
+    /**
+     * The square icon button between the cards. The word lives in the tooltip, as on the jukebox's transport.
+     */
+    private JButton makeSwapButton() {
+        HudButton button = new HudButton("", false);
+        button.setSquareSide(HUD_BUTTON_HEIGHT);
+        ImageIcon icon = HudGlyphs.scaledIcon(getClass(), "/images/swap.png", HUD_ICON_TABLE);
+        button.setIcon(icon);
+        // WHY: a pressed subtle button fills with the same orange as the icon, which would vanish into it.
+        button.setPressedIcon(HudGlyphs.tintIcon(icon, HUD_ICON_TABLE, HUD_ICON_TABLE, HUD_COLOR_ROLE_SELECTED_TEXT));
+        button.setToolTipText(getText("bindings.assign.swap.tooltip"));
+        button.addActionListener(e -> onSwap());
+        return button;
     }
 
     /**
@@ -599,6 +672,15 @@ public class AssignKeyboardBindingDialog extends JDialog {
         setActive(type);
         edits.get(type).undo();
         showSourceOf(edits.get(type));
+        refresh(true);
+    }
+
+    /**
+     * The orange card stays orange; only what the two slots hold changes places.
+     */
+    private void onSwap() {
+        SlotEdit.swap(edits.get(BindingSlotType.PRIMARY), edits.get(BindingSlotType.SECONDARY));
+        showSourceOf(edits.get(active));
         refresh(true);
     }
 
@@ -773,8 +855,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         // reads as if the slot were empty. With no key in the orange slot, it invites one.
         captureField.showIdleText(activeKey == null
                 ? getText("bindings.assign.capture.idle")
-                : slotFormatter.formatChord(activeEdit.kind == Kind.KEYBOARD ? activeEdit.keyboardModifiers
-                : keyboardModifiersOf(activeEdit.original), activeKey));
+                : slotFormatter.formatChord(keyboardModifiersAfter(activeEdit), activeKey));
         keyboardView.setCurrentKey(activeKey);
         keyboardView.setAssigned(heldOn(BindingInput.KEYBOARD, false), heldOn(BindingInput.KEYBOARD, true));
 
@@ -786,9 +867,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
         aiAccessBanner.setVisible(takesControlFromVega());
         saveButton.setEnabled(anyChanged && !anyBlocked);
-        // Grow when a message needs the room, up to the screen; never shrink, so the dialog does not jump while
-        // choosing. Past the screen's height the body scrolls.
-        if (isDisplayable() && getPreferredSize().height > getHeight()) {
+        swapButton.setEnabled(edits.values().stream().anyMatch(edit -> edit.inputAfter() != null));
+        // Grow when a message or a longer translation needs the room, up to the screen; never shrink, so the dialog
+        // does not jump while choosing. Past the screen's size the body scrolls.
+        Dimension preferred = getPreferredSize();
+        if (isDisplayable() && (preferred.height > getHeight() || preferred.width > getWidth())) {
             Point at = getLocation();
             pack();
             fitToScreen();
@@ -831,8 +914,9 @@ public class AssignKeyboardBindingDialog extends JDialog {
         return after != null && after.device().equalsIgnoreCase(device) ? after.key() : null;
     }
 
-    private static List<BindingModifier> keyboardModifiersOf(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return slot == null ? List.of() : slot.bindingModifiers().stream()
+    private static List<BindingModifier> keyboardModifiersAfter(SlotEdit edit) {
+        return edit.modifiersAfter().stream()
+                .map(m -> new BindingModifier(m.device(), m.key()))
                 .filter(BindingModifier::isSupportedKeyboardModifier).toList();
     }
 
@@ -866,6 +950,50 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     // ------------------------------------------------------------------ the slot cards
+
+    /**
+     * Two cards of equal width with a fixed-size component centred between them. WHY its own layout: a GridLayout
+     * would make the middle cell as wide as a card, and a GridBagLayout shares out only the spare width, so a card
+     * with a longer binding in it would come out wider than the other.
+     */
+    private static final class SlotRowLayout implements LayoutManager {
+        private static final int GAP = 8;
+
+        @Override
+        public void addLayoutComponent(String name, Component component) {
+        }
+
+        @Override
+        public void removeLayoutComponent(Component component) {
+        }
+
+        @Override
+        public Dimension preferredLayoutSize(Container row) {
+            Dimension left = row.getComponent(0).getPreferredSize();
+            Dimension middle = row.getComponent(1).getPreferredSize();
+            Dimension right = row.getComponent(2).getPreferredSize();
+            return new Dimension(2 * Math.max(left.width, right.width) + middle.width + 2 * GAP,
+                    Math.max(middle.height, Math.max(left.height, right.height)));
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container row) {
+            Dimension left = row.getComponent(0).getMinimumSize();
+            Dimension middle = row.getComponent(1).getMinimumSize();
+            Dimension right = row.getComponent(2).getMinimumSize();
+            return new Dimension(2 * Math.max(left.width, right.width) + middle.width + 2 * GAP,
+                    Math.max(middle.height, Math.max(left.height, right.height)));
+        }
+
+        @Override
+        public void layoutContainer(Container row) {
+            Dimension middle = row.getComponent(1).getPreferredSize();
+            int cardWidth = (row.getWidth() - middle.width - 2 * GAP) / 2;
+            row.getComponent(0).setBounds(0, 0, cardWidth, row.getHeight());
+            row.getComponent(1).setBounds(cardWidth + GAP, (row.getHeight() - middle.height) / 2, middle.width, middle.height);
+            row.getComponent(2).setBounds(row.getWidth() - cardWidth, 0, cardWidth, row.getHeight());
+        }
+    }
 
     /**
      * One slot of the row: its name, what it holds now and - once changed - what it will hold, its CLEAR, and

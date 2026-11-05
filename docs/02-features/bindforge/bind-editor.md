@@ -10,6 +10,11 @@ makes them cheap to build when they come back — each mode's own section below 
 
 ## Shell (Common to All Modes)
 
+- **The Bindings Directory row, the Bindings File dropdown and LOAD move to File Manager — settled 2026-11-04 (Alan,
+  Storage S15)** ([file-manager.md, *Game Install Locations*](file-manager.md#game-install-locations)). In their place
+  this screen shows **a read-only line naming the binds file being edited** — `EDITING  DualVirpilDawnTreader.4.2.binds`
+  — so the user always sees what the grid holds; choosing another file is File Manager, LOAD, then back. Until S15 is
+  built the items below describe the dropdown where it is; what it lists and what LOAD does are unchanged by the move.
 - A Bindings File dropdown plus Load button, above everything. Load opens the file from the working copy; a live copy that differs from it is [the check's](storage.md) to raise (rule 14).
   **Built on the edits — 2026-10-28 (Alan, Storage S5).** The list offers **every binds file in the working copy**,
   with the edits not applied on it — not only the active one, and not filtered to the files the Preset Editor's
@@ -27,9 +32,9 @@ makes them cheap to build when they come back — each mode's own section below 
   runs at every refresh, and a bug is logged as an error there too. The screen's own
   APPLY, REVERT, its draft badge and its close prompt are gone, with the launch-time copy of the active `.binds` and
   its checksum; leaving BindForge or closing Elite-Intel with edits not applied asks first ([Storage S7](../../05-build-plan/storage.md#slices),
-  [storage.md rule 9](storage.md#editing-and-applying)). **Elite-Intel's
-  Bindings Directory row stays on this screen for now**, though [principle 12](principles.md) puts folders in File
-  Manager only: it is Elite-Intel's setting for Vega, not the editor's, and moving it is a slice of its own. **The AI
+  [storage.md rule 9](storage.md#editing-and-applying)). *Until Storage S15 (settled 2026-11-04),
+  Elite-Intel's Bindings Directory row stayed on this screen*, though [principle 12](principles.md) puts folders in
+  File Manager only: it is Elite-Intel's setting for Vega, not the editor's, and moving it was a slice of its own. **The AI
   tab's Missing / Found counts come from the live bindings** `BindingsMonitor` reads — what Vega presses — not from
   this screen's edits; the AI tab's KEYMAP readout is removed. **They are published on their own thread at every
   read, whether the read works or not** (Alan, 2026-10-31, Storage S8R3): a read that fails does not skip them, and a
@@ -526,6 +531,9 @@ picker:** what the control holds right now, in either slot and its modifiers inc
 once** (Alan, 2026-10-15). The slot keeps what it had, and its card says in red what was pressed and why it was refused. A refused pick left in the card read as assigned, and the user's next pick then landed in the other slot beside it. So a card only ever holds a choice that SAVE can write, and blue only ever means
 *assigned to this control*. **Each changed card has
 UNDO**, which returns that slot to what it held without leaving the dialog.
+
+**A square button between the cards swaps the
+slots** (2026-11-04): what Primary and Secondary will hold change places, picks not yet saved included, each input taking its modifiers and its Hold with it, because Hold decides how that input behaves. The orange card stays the orange card, nothing is kept until SAVE, and pressing it again puts them back. It is dimmed while both slots are empty. Its one word is its tooltip.
 
 **A control can always go back to what it
 had** (Alan, 2026-10-15). A chord either slot held when the dialog opened is green for this control and is never refused, even when another control shares it. That chord is what the file says today, so putting it back adds no clash. Without this rule, clearing a slot painted its own key red and SAVE refused to restore it: `UpArrow` on UI Panel Up is shared with FreeCamZoomIn and others in a real file. This replaces the single SLOT / CURRENT VALUE / NEW INPUT rows in [What the dialog shows](#what-the-dialog-shows).
