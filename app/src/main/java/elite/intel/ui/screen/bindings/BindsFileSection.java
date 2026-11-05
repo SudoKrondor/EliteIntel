@@ -20,9 +20,10 @@ import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
+import static elite.intel.ui.theme.AppTheme.makeTextField;
 
 /**
- * File Manager's <em>Bindings File</em> section: the binds files in the working copy, with the edits not applied on them,
+ * File Manager's <em>Bindings File</em> section, between the bindings folder and the installations: the binds files in the working copy, with the edits not applied on them,
  * and LOAD, which opens the chosen one in the Bind Editor (file-manager.md, <em>Game Install Locations</em>; Storage S15,
  * Alan, 2026-11-04). It moved here from the Bind Editor's shell, because only File Manager shows folders and files
  * (principle 12).
@@ -45,6 +46,9 @@ public final class BindsFileSection extends HudSection {
 
     private final HudComboBox<String> fileBox = new HudComboBox<>(new DefaultComboBoxModel<>());
     private final JButton loadButton = makeButtonSubtle(getText("bindings.bindsFile.load"));
+    /** The new name for the chosen binds file. */
+    private final JTextField nameField = makeTextField();
+    private final JButton renameButton = makeButtonSubtle(getText("bindings.bindsFile.rename"));
     private final RefreshCoalescer refreshes = new RefreshCoalescer();
 
     private BindEditor bindEditor;
@@ -54,12 +58,15 @@ public final class BindsFileSection extends HudSection {
     private boolean anyFile;
 
     BindsFileSection() {
-        super(getText("bindings.bindsFile"), new BorderLayout(7, 0), HudPanel.Variant.FLAT, 6);
+        super(getText("bindings.bindsFile"), new GridLayout(1, 2, 14, 0), HudPanel.Variant.FLAT, 6);
         fileBox.setToolTipText(getText("bindings.bindsFile.tooltip"));
         loadButton.setToolTipText(getText("bindings.bindsFile.load.tooltip"));
         loadButton.addActionListener(e -> loadSelected());
-        body().add(fileBox, BorderLayout.CENTER);
-        body().add(loadButton, BorderLayout.EAST);
+        nameField.setToolTipText(getText("bindings.bindsFile.newName.tooltip"));
+        renameButton.setToolTipText(getText("bindings.bindsFile.rename.tooltip"));
+        // WHY two equal halves: choosing a file on the left, renaming it on the right (Alan, 2026-11-04).
+        body().add(half(fileBox, loadButton));
+        body().add(half(nameField, renameButton));
         updateEnabled();
         // WHY: LOAD changes the file the Bind Editor shows while this section is off screen, and nothing announces it -
         // coming back is when it is looked at, so that is when it is read again.
@@ -127,6 +134,19 @@ public final class BindsFileSection extends HudSection {
         boolean usable = editorsUsable && anyFile;
         fileBox.setEnabled(usable);
         loadButton.setEnabled(usable);
+        nameField.setEnabled(usable);
+        // WHY always off: what RENAME does is still to be settled with Alan (2026-11-04) - the box and button are laid
+        // out first.
+        renameButton.setEnabled(false);
+    }
+
+    /** One half of the row: a field taking the width, its button after it. */
+    private static JPanel half(JComponent field, JButton button) {
+        JPanel half = new JPanel(new BorderLayout(7, 0));
+        half.setOpaque(false);
+        half.add(field, BorderLayout.CENTER);
+        half.add(button, BorderLayout.EAST);
+        return half;
     }
 
     /** LOAD: the file chosen, in the Bind Editor (D1, Alan, 2026-11-04). */

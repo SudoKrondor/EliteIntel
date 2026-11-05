@@ -54,7 +54,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_FIELD_HEIGHT;
  * installation</strong>. Presenting them as one flat list of "locations" would imply otherwise, and that is
  * the thing people get wrong.
  * <p>
- * <strong>The bindings folder's ⋮ and the Bindings File section under the installations</strong> moved here from the
+ * <strong>The bindings folder's ⋮ and the Bindings File section under it</strong> moved here from the
  * Bind Editor in Storage S15 (Alan, 2026-11-04): only File Manager shows folders and files (principle 12). LOAD there
  * opens the chosen binds file in the Bind Editor ({@link BindsFileSection}).
  * <p>
@@ -106,13 +106,15 @@ public class GameInstallLocationsPanel extends JPanel {
         setBorder(hudSubtabContentBorder());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        add(buildConfigFolderSection(), BorderLayout.NORTH);
+        // WHY the binds file under the folder, not under the table: it is in that folder, and the table takes the
+        // height left over, which put the section at the foot of the screen (Alan, 2026-11-04).
+        JPanel north = new JPanel(new BorderLayout());
+        north.setOpaque(false);
+        north.add(buildConfigFolderSection(), BorderLayout.NORTH);
+        north.add(bindsFileSection, BorderLayout.SOUTH);
+        add(north, BorderLayout.NORTH);
         add(buildInstallationsSection(), BorderLayout.CENTER);
-        JPanel south = new JPanel(new BorderLayout());
-        south.setOpaque(false);
-        south.add(bindsFileSection, BorderLayout.NORTH);
-        south.add(buildFooter(), BorderLayout.SOUTH);
-        add(south, BorderLayout.SOUTH);
+        add(buildFooter(), BorderLayout.SOUTH);
     }
 
     /**

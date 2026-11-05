@@ -282,10 +282,12 @@ until this slice.
 - **The bindings folder row gets the ⋮ button that changes the folder** — the one the Bind Editor's Bindings Directory
   row had, setting the same Elite-Intel setting Vega reads. There is **one row**, not the Bind Editor's field beside
   this one: both always showed the same folder (Alan: *"just add the button to change the directory"*).
-- **A Bindings File section, below Game Installations**, holds the Bindings File dropdown and **LOAD**, moved whole
+- **A Bindings File section, between the bindings folder and Game Installations** (moved up from below Game
+  Installations, Alan, 2026-11-04: there the table's spare height pushed it to the foot of the screen), holds the
+  Bindings File dropdown and **LOAD**, moved whole
   from the Bind Editor: the same list, the same file shown first, and LOAD opening the file in the Bind Editor
   ([bind-editor.md *Shell*](bind-editor.md#shell-common-to-all-modes)). It is laid out as a section of its own, like
-  the two above it, not as the Bind Editor's row dropped in.
+  the other two, not as the Bind Editor's row dropped in.
 
 **Built in Storage S15 (2026-11-04), with three decisions settled by Alan that day:**
 

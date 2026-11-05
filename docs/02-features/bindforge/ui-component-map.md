@@ -201,7 +201,7 @@ installations could be a `COMPACT` tab row inside the inline editor, which the k
 | Element | Built from |
 |---|---|
 | Three sub-tabs | `HudTabbedPane` `SECTION` ✓ |
-| Game Install Locations — three sections: the bindings folder (read-only, with its ⋮), the installations, and Bindings File (dropdown and Load; S15, 2026-11-04) | `HudSection.flat`, `HudMetadataField`, `HudComboBox`, `HudButton` ✓ |
+| Game Install Locations — three sections: the bindings folder (read-only, with its ⋮), Bindings File (dropdown and Load; S15, 2026-11-04), and the installations | `HudSection.flat`, `HudMetadataField`, `HudComboBox`, `HudButton` ✓ |
 | Player Backups | exists today as Binding Management ✓ |
 | The restore checklist — *Everything* forcing the four domains on and disabled | `HudCheckBox` ✓ — the dependent-disable shape `SettingToggle` / `ToggleTreePanel` already express |
 | Ticking device entries in a foreign archive | `HudBooleanCellEditor` with `HudCheckBoxHeaderRenderer` ✓ — the selector-column pattern the Import dialog already uses |
