@@ -13,9 +13,11 @@ makes them cheap to build when they come back — each mode's own section below 
 - **The Bindings Directory row, the Bindings File dropdown and LOAD move to File Manager — settled 2026-11-04 (Alan,
   Storage S15)** ([file-manager.md, *Game Install Locations*](file-manager.md#game-install-locations)). In their place
   this screen shows **a read-only line naming the binds file being edited** — `EDITING  DualVirpilDawnTreader.4.2.binds`
-  — so the user always sees what the grid holds; choosing another file is File Manager, LOAD, then back. Until S15 is
-  built the items below describe the dropdown where it is; what it lists and what LOAD does are unchanged by the move.
-- A Bindings File dropdown plus Load button, above everything. Load opens the file from the working copy; a live copy that differs from it is [the check's](storage.md) to raise (rule 14).
+  — so the user always sees what the grid holds; choosing another file is File Manager, LOAD, which brings this screen
+  back showing it. **Built in S15 (2026-11-04).** When there is no file to show - a read that failed, or no binds file
+  of the user's - the line reads `EDITING  No binds file` (Alan, 2026-11-04). The items below that speak of the
+  dropdown describe it in its new place; what it lists and what LOAD does were unchanged by the move.
+- The Bindings File dropdown plus Load button (in File Manager since S15). Load opens the file from the working copy; a live copy that differs from it is [the check's](storage.md) to raise (rule 14).
   **Built on the edits — 2026-10-28 (Alan, Storage S5).** The list offers **every binds file in the working copy**,
   with the edits not applied on it — not only the active one, and not filtered to the files the Preset Editor's
   BindName list offers, which is the preset file's rule, not the editor's. The file shown first is the one the preset
@@ -32,7 +34,7 @@ makes them cheap to build when they come back — each mode's own section below 
   runs at every refresh, and a bug is logged as an error there too. The screen's own
   APPLY, REVERT, its draft badge and its close prompt are gone, with the launch-time copy of the active `.binds` and
   its checksum; leaving BindForge or closing Elite-Intel with edits not applied asks first ([Storage S7](../../05-build-plan/storage.md#slices),
-  [storage.md rule 9](storage.md#editing-and-applying)). *Until Storage S15 (settled 2026-11-04),
+  [storage.md rule 9](storage.md#editing-and-applying)). *Until Storage S15 (built 2026-11-04),
   Elite-Intel's Bindings Directory row stayed on this screen*, though [principle 12](principles.md) puts folders in
   File Manager only: it is Elite-Intel's setting for Vega, not the editor's, and moving it was a slice of its own. **The AI
   tab's Missing / Found counts come from the live bindings** `BindingsMonitor` reads — what Vega presses — not from

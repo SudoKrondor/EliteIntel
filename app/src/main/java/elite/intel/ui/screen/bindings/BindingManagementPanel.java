@@ -209,6 +209,20 @@ public class BindingManagementPanel extends JPanel {
         gameInstallLocationsPanel.initData();
     }
 
+    /** Wired by the BindForge tab: the Bind Editor that Game Install Locations' LOAD opens a file in (Storage S15). */
+    public void setBindEditor(BindsFileSection.BindEditor bindEditor) {
+        gameInstallLocationsPanel.setBindEditor(bindEditor);
+    }
+
+    /** CREATE greyed the editors, or brought them back. On the EDT. */
+    public void setEditorsUsable(boolean usable) {
+        gameInstallLocationsPanel.setEditorsUsable(usable);
+    }
+
+    public void dispose() {
+        gameInstallLocationsPanel.dispose();
+    }
+
     /** Takes a user backup off the EDT - it runs installation detection and copies every file. */
     private void performBackup() {
         if (operationInProgress) {

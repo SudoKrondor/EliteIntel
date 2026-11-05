@@ -287,6 +287,16 @@ until this slice.
   ([bind-editor.md *Shell*](bind-editor.md#shell-common-to-all-modes)). It is laid out as a section of its own, like
   the two above it, not as the Bind Editor's row dropped in.
 
+**Built in Storage S15 (2026-11-04), with three decisions settled by Alan that day:**
+
+- **LOAD opens the Bind Editor.** It brings the Bind Editor's tab on screen showing the file chosen, rather than
+  leaving the user in File Manager - otherwise pressing LOAD shows no result where it was pressed.
+- **The file selected is the one the Bind Editor shows.** Which file that is stays the Bind Editor's rule (the General
+  line's file first, then whatever LOAD picked); the section reads the list again whenever the edits change and
+  whenever it comes back on screen.
+- **While CREATE has the editors greyed, the dropdown and LOAD are disabled too** (there is no binds file of the user's
+  to choose then); they come back with the editors. The bindings folder's ⋮ is always usable, as File Manager is.
+
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*
 

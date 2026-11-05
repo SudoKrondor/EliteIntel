@@ -10,8 +10,6 @@ import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.bindforge.storage.Edits;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.DataDirectoryValidator;
-import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
@@ -27,7 +25,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +33,12 @@ import java.util.Objects;
 import static elite.intel.ui.dialog.HudConfirmDialog.info;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * The "Binding Profile" sub-tab of BIND FORGE - the Bind Editor's shell: the binds file chosen from the working copy, its
- * name, the search field and the modes under it. Extracted from the former monolithic {@code BindingsTabPanel}. The modes
+ * The "Binding Profile" sub-tab of BIND FORGE - the Bind Editor's shell: the EDITING line naming the binds file shown,
+ * the search field and the modes under it. The file is chosen in File Manager (Storage S15). Extracted from the former
+ * monolithic {@code BindingsTabPanel}. The modes
  * are Game Mode ({@link GameModePanel}), Anomalies (its view of the rows in conflict) and Settings
  * ({@link SettingsModePanel}).
  * <p>
@@ -60,13 +57,11 @@ public class BindingProfilePanel extends JPanel {
 
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
-    private final PlayerSession playerSession = PlayerSession.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
     private final RefreshCoalescer refreshes = new RefreshCoalescer();
 
-    private HudComboBox<String> bindsFileBox;
-    private JButton loadButton;
-    private JTextField bindingsDirField;
+    /** The binds file shown, on the EDITING line. */
+    private JLabel editingValue;
     private JPanel keyboardOnlyBanner;
     private JTextField bindingSearchField;
     private final GameModePanel gameMode;
@@ -176,39 +171,19 @@ public class BindingProfilePanel extends JPanel {
         return footer;
     }
 
+    /**
+     * The one read-only line naming the binds file shown: {@code EDITING  DualVirpilDawnTreader.4.2.binds}. Choosing
+     * another is File Manager's Bindings File section and its LOAD - the folder and the dropdown moved there, because
+     * only File Manager shows folders and files (principle 12; Storage S15, Alan, 2026-11-04).
+     */
     private JPanel compactProfilePanel() {
-        JPanel profileCardBody = transparentPanel(new BorderLayout(0, 0));
-        JPanel details = transparentPanel(new GridBagLayout());
+        JPanel details = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         details.setBorder(BorderFactory.createEmptyBorder(2, 0, 6, 0));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridy = 0;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        // One row, to leave the grid the height: [label | folder | picker | label | file | LOAD].
-        // WHY the folder gets the larger share: a path runs far longer than a file name.
-        addProfileLabel(details, getText("player.bindingsDirectory"), gbc, 0);
-        bindingsDirField = readOnlyField();
-        bindingsDirField.setToolTipText(getText("player.bindingsDirectory.tooltip"));
-        addProfileField(details, bindingsDirField, gbc, 1, DIRECTORY_SHARE);
-
-        JButton selectBindingsDirButton = compactDirectoryChooserButton();
-        selectBindingsDirButton.addActionListener(e -> selectBindingsDirectory());
-        addProfileButton(details, selectBindingsDirButton, gbc, 2);
-
-        // The binds file, from the working copy with the edits on it, and LOAD (bind-editor.md, Shell)
-        addProfileLabel(details, getText("bindings.bindsFile"), gbc, 3);
-        bindsFileBox = new HudComboBox<>(new DefaultComboBoxModel<>());
-        bindsFileBox.setToolTipText(getText("bindings.bindsFile.tooltip"));
-        addProfileField(details, bindsFileBox, gbc, 4, 1.0 - DIRECTORY_SHARE);
-
-        loadButton = makeButtonSubtle(getText("bindings.bindsFile.load"));
-        loadButton.setToolTipText(getText("bindings.bindsFile.load.tooltip"));
-        loadButton.addActionListener(e -> loadSelected());
-        addProfileButton(details, loadButton, gbc, 5);
-
-        profileCardBody.add(details, BorderLayout.CENTER);
-        return profileCardBody;
+        details.add(hudReadoutLabel(getText("bindings.editing")));
+        details.add(Box.createHorizontalStrut(7));
+        editingValue = hudReadoutValue(getText("bindings.editing.none"), HUD_COLOR_ROLE_PRIMARY_TEXT);
+        details.add(editingValue);
+        return details;
     }
 
     private JComponent bindingProfileCard(JPanel body) {
@@ -233,7 +208,6 @@ public class BindingProfilePanel extends JPanel {
      * A read already in flight is left to finish, and one more follows it - see {@link RefreshCoalescer}.
      */
     public void initData() {
-        bindingsDirField.setText(playerSession.getBindingsDir().toString());
         if (!refreshes.tryStart()) return;
         String wanted = wantedFile != null ? wantedFile : loadedFile;
         // WHY: the grid shows nothing when the read fails. A file the read could not use is logged as a warning -
@@ -256,12 +230,17 @@ public class BindingProfilePanel extends JPanel {
         if (refreshes.finish()) initData();
     }
 
-    /** LOAD: the file chosen in the list. */
-    private void loadSelected() {
-        Object chosen = bindsFileBox.getSelectedItem();
-        if (chosen == null) return;
-        wantedFile = chosen.toString();
+    /**
+     * File Manager's LOAD: shows {@code file} at the next read, if the edits still hold it. On the EDT.
+     */
+    public void load(String file) {
+        wantedFile = file;
         initData();
+    }
+
+    /** The binds file shown, by file name - {@code null} when none could be read. */
+    public String shownFile() {
+        return loadedFile;
     }
 
     /**
@@ -269,11 +248,11 @@ public class BindingProfilePanel extends JPanel {
      *
      * @param asked the file this read was asked for, LOAD's or the one shown - {@code null} for neither
      */
-    private record Loaded(String asked, List<String> files, String file, byte[] content,
+    private record Loaded(String asked, String file, byte[] content,
                           Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, GameKeyboardLayout layout,
                           EditedDeviceLabels labels, BindsValues values) {
         static Loaded nothing(String asked) {
-            return new Loaded(asked, List.of(), null, null, Map.of(), GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE, BindsValues.NONE);
+            return new Loaded(asked, null, null, Map.of(), GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE, BindsValues.NONE);
         }
     }
 
@@ -290,17 +269,13 @@ public class BindingProfilePanel extends JPanel {
                 ? asked
                 : BindsEdits.generalFile(current).orElse(files.getFirst());
         byte[] content = current.bindings().get(file);
-        return new Loaded(asked, files, file, content, parser.parseReadOnlyBindingSlots(content),
+        return new Loaded(asked, file, content, parser.parseReadOnlyBindingSlots(content),
                 parser.parseKeyboardLayout(content), EditedDeviceLabels.of(current), BindsValues.of(content));
     }
 
     /** Shows what {@link #read} found. On the EDT. */
     private void show(Loaded read) {
-        bindsFileBox.setModel(new DefaultComboBoxModel<>(read.files().toArray(String[]::new)));
-        bindsFileBox.setSelectedItem(read.file());
-        boolean any = read.file() != null;
-        bindsFileBox.setEnabled(any);
-        loadButton.setEnabled(any);
+        editingValue.setText(read.file() != null ? read.file() : getText("bindings.editing.none"));
         // WHY only when this read was LOAD's: a LOAD pressed while an older read ran is read next, not forgotten.
         if (Objects.equals(wantedFile, read.asked())) wantedFile = null;
         loadedFile = read.file();
@@ -321,70 +296,6 @@ public class BindingProfilePanel extends JPanel {
         UiBus.publish(new BindingsSummaryChangedEvent(
                 monitor.findMissingGameBindings(live).size(),
                 monitor.findFoundGameBindings(live).size()));
-    }
-
-    private void selectBindingsDirectory() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setDialogTitle(getText("player.bindingsDirectory.dialog"));
-        String current = playerSession.getBindingsDir().toString();
-        if (!current.isBlank())
-            chooser.setCurrentDirectory(new File(current).getParentFile());
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            String path = chooser.getSelectedFile().getAbsolutePath();
-            if (!playerSession.setBindingsDir(path)) {
-                DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.BINDINGS);
-                return;
-            }
-            bindingsDirField.setText(playerSession.getBindingsDir().toString());
-            DataDirectoryValidator.validateAndWarn(playerSession.getBindingsDir(), DataDirectoryValidator.DirectoryKind.BINDINGS);
-            initData();
-        }
-    }
-
-    private void addProfileLabel(JPanel panel, String text, GridBagConstraints gbc, int column) {
-        gbc.gridx = column;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        panel.add(hudReadoutLabel(text), gbc);
-    }
-
-    private void addProfileField(JPanel panel, JComponent component, GridBagConstraints gbc, int column, double weightX) {
-        gbc.gridx = column;
-        gbc.gridwidth = 1;
-        gbc.weightx = weightX;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        component.setPreferredSize(new Dimension(0, component.getPreferredSize().height));
-        panel.add(component, gbc);
-    }
-
-    private void addProfileButton(JPanel panel, JComponent button, GridBagConstraints gbc, int column) {
-        gbc.gridx = column;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        panel.add(button, gbc);
-    }
-
-    /**
-     * The folder's share of the width the profile row's two fields divide between them.
-     */
-    private static final double DIRECTORY_SHARE = 0.6;
-
-    private JTextField readOnlyField() {
-        JTextField field = makeTextField();
-        field.setEditable(false);
-        return field;
-    }
-
-    private JButton compactDirectoryChooserButton() {
-        JButton button = makeFieldButton(verticalEllipsisIcon(HUD_FIELD_HEIGHT), HUD_FIELD_HEIGHT);
-        button.setToolTipText(getText("player.bindingsDirectory.select.tooltip"));
-        return button;
     }
 
     private JPanel keyboardOnlyWarningStrip() {

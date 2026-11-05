@@ -4,6 +4,7 @@ import elite.intel.ui.screen.bindings.AliasDesignerPanel;
 import elite.intel.ui.screen.bindings.ApplyBar;
 import elite.intel.ui.screen.bindings.BindingManagementPanel;
 import elite.intel.ui.screen.bindings.BindingProfilePanel;
+import elite.intel.ui.screen.bindings.BindsFileSection;
 import elite.intel.ui.screen.bindings.FirstTimeStartupFlow;
 import elite.intel.ui.screen.bindings.LeavePrompt;
 import elite.intel.ui.theme.AppTheme;
@@ -61,6 +62,20 @@ public class BindingsTabPanel extends JPanel {
         // WHY: a retarget keeps bindings by button number, so on another model some land on other buttons - the
         // notice after it offers the bindings for review (A12).
         aliasDesignerPanel.setReviewBindings(() -> tabs.setSelectedComponent(bindingProfilePanel));
+        // WHY: the binds file is chosen in File Manager and shown in the Bind Editor - LOAD opens it there, so the press
+        // shows its result (Storage S15, D1, Alan, 2026-11-04).
+        bindingManagementPanel.setBindEditor(new BindsFileSection.BindEditor() {
+            @Override
+            public String shown() {
+                return bindingProfilePanel.shownFile();
+            }
+
+            @Override
+            public void load(String file) {
+                bindingProfilePanel.load(file);
+                tabs.setSelectedComponent(bindingProfilePanel);
+            }
+        });
 
         add(applyBar, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
@@ -78,6 +93,8 @@ public class BindingsTabPanel extends JPanel {
             tabs.setEnabledAt(index, usable);
             tabs.setToolTipTextAt(index, usable ? null : getText("bindings.create.tabLocked"));
         }
+        // WHY: File Manager's Bindings File section opens a file in an editor, so it is greyed with them (S15, D3).
+        bindingManagementPanel.setEditorsUsable(usable);
         if (!usable && tabs.getSelectedComponent() != bindingManagementPanel) {
             tabs.setSelectedComponent(bindingManagementPanel);
         }
@@ -93,6 +110,7 @@ public class BindingsTabPanel extends JPanel {
 
     public void dispose() {
         bindingProfilePanel.dispose();
+        bindingManagementPanel.dispose();
         aliasDesignerPanel.dispose();
         applyBar.dispose();
     }
