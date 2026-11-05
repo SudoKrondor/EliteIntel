@@ -429,7 +429,7 @@ References: Universal Cartographics, Promotion to Master, Community Goal.
 - **Dismiss is
   always `BACK`** (the `button.back` key, subtle), not `CLOSE` or `CANCEL`. NOT a primary fill. Only in a modal footer.
 - **The default
-  button** is set by the dialog ITSELF after `setContentPane`. Usually primary; it may choose otherwise (the reference is `CommandDetailsDialog`: default=`BACK`, so that Enter does not run the command).
+  button** is set by the dialog ITSELF after `setContentPane`. Usually primary; it may choose otherwise, and a dialog with no primary uses `BACK` (the reference is `CommandDetailsDialog`).
 - **The object's title
   block** goes in NORTH: the name in `HUD_COLOR_ROLE_INFORMATION` bold and large (`HUD_FONT_APP_TITLE`, caps)
   plus the id or key in `HUD_COLOR_ROLE_SECONDARY_TEXT` (`HUD_FONT_READOUT_KEY`) beneath it. Duplicating it in the key→value body is situational (a form whose name is already in the title removes it from key→value).

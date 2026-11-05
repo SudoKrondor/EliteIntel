@@ -1,11 +1,8 @@
 package elite.intel.ui.dialog;
 
-import com.google.gson.JsonObject;
-import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntryType;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
-import elite.intel.ui.support.GuiCommandRunner;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
@@ -15,17 +12,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Displays command metadata and provides a GUI entry point into post-LLM command dispatch.
+ * Displays command metadata. Commands run by voice only, so nothing here executes one.
  */
 public final class CommandDetailsDialog extends JDialog {
 
@@ -41,7 +34,6 @@ public final class CommandDetailsDialog extends JDialog {
         }
     }
 
-    private static final Pattern PARAMETER_BLOCK = Pattern.compile("\\{([^}]+)}");
     private final CommandCatalogEntry entry;
     private final List<String> phrases;
     private final boolean showPhraseCorrection;
@@ -116,13 +108,6 @@ public final class CommandDetailsDialog extends JDialog {
         detailsSection.body().add(details(), BorderLayout.CENTER);
         content.add(detailsSection, BorderLayout.CENTER);
 
-        JButton run = runButton();
-        run.addActionListener(event -> runCommand());
-        // Queries are information requests that need live game data + LLM formatting; they are not
-        // directly runnable from the catalog, so keep Run disabled for them.
-        if (entry.type() == CommandCatalogEntryType.BUILT_IN_QUERY) {
-            run.setEnabled(false);
-        }
         JButton close = AppTheme.makeButtonSubtle(getText("button.back"));
         close.addActionListener(event -> dispose());
 
@@ -131,10 +116,9 @@ public final class CommandDetailsDialog extends JDialog {
                 .onClose(this::dispose)
                 .body(content)
                 .scrollBody(true)
-                .primary(run)            // right side, outermost
                 .dismiss(close);         // left side
 
-        // edit/duplicate/delete are custom-command extras, grouped on the right to the left of primary (run)
+        // edit/duplicate/delete are custom-command extras, grouped on the right
         if (customCommandActions != null) {
             b.extra(actionButton("actions.customCommands.action.edit", customCommandActions.edit()));
             b.extra(actionButton("actions.customCommands.action.duplicate", customCommandActions.duplicate()));
@@ -149,7 +133,7 @@ public final class CommandDetailsDialog extends JDialog {
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        getRootPane().setDefaultButton(close);   // Enter = close, NOT run (window-specific)
+        getRootPane().setDefaultButton(close);   // Enter = close
         pack();
         setMinimumSize(new Dimension(720, 520));
         setLocationRelativeTo(getOwner());
@@ -302,116 +286,12 @@ public final class CommandDetailsDialog extends JDialog {
         action.run();
     }
 
-    private JButton runButton() {
-        JButton button = AppTheme.makeButton(getText("actions.commands.details.run"));
-        button.setIcon(new PlayIcon());
-        button.setIconTextGap(8);
-        return button;
-    }
-
-    private void runCommand() {
-        JsonObject params = promptForParams();
-        if (params == null) {
-            return;
-        }
-
-        GuiCommandRunner.runAfterClosingWindow(this, entry.id(), params, !entry.isCustomCommand());
-    }
-
     private void openPhraseCorrectionDialog() {
         new PhraseCorrectionSuggestionDialog(this, entry, currentPhrases()).showDialog();
     }
 
     private List<String> currentPhrases() {
         return phrases;
-    }
-
-    private JsonObject promptForParams() {
-        // Custom commands are keystroke sequences and take no arguments.
-        if (entry.isCustomCommand()) {
-            return new JsonObject();
-        }
-        List<CommandParameter> parameters = commandParameters();
-        JsonObject params = new JsonObject();
-        if (parameters.isEmpty()) {
-            return params;
-        }
-
-        JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING));
-        Map<CommandParameter, JComponent> fields = new LinkedHashMap<>();
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridy = 0;
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        for (CommandParameter parameter : parameters) {
-            gbc.gridx = 0;
-            gbc.weightx = 0.0;
-            JLabel label = new JLabel(parameter.name());
-            label.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-            panel.add(label, gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 1.0;
-            JComponent field = parameter.isBoolean()
-                    ? AppTheme.makeComboBox(new String[]{"", "true", "false"})
-                    : AppTheme.makeTextField();
-            field.setToolTipText(parameter.hint());
-            panel.add(field, gbc);
-            fields.put(parameter, field);
-            gbc.gridy++;
-        }
-
-        int result = JOptionPane.showConfirmDialog(
-                this,
-                panel,
-                getText("actions.commands.details.parameters.title"),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE
-        );
-        if (result != JOptionPane.OK_OPTION) {
-            return null;
-        }
-
-        for (Map.Entry<CommandParameter, JComponent> entry : fields.entrySet()) {
-            CommandParameter parameter = entry.getKey();
-            JComponent field = entry.getValue();
-            if (field instanceof JComboBox<?> comboBox) {
-                Object selected = comboBox.getSelectedItem();
-                if (selected != null && !selected.toString().isBlank()) {
-                    params.addProperty(parameter.name(), Boolean.parseBoolean(selected.toString()));
-                }
-            } else if (field instanceof JTextField textField) {
-                String value = textField.getText().trim();
-                if (!value.isBlank()) {
-                    params.addProperty(parameter.name(), value);
-                }
-            }
-        }
-        return params;
-    }
-
-    private List<CommandParameter> commandParameters() {
-        Map<String, CommandParameter> parameters = new LinkedHashMap<>();
-        AiActionsMap.getInstance().actionMap(true).forEach((phraseGroup, action) -> {
-            if (!entry.id().equalsIgnoreCase(action)) {
-                return;
-            }
-
-            // Command aliases are the existing source of truth for LLM parameter names.
-            Matcher matcher = PARAMETER_BLOCK.matcher(phraseGroup);
-            while (matcher.find()) {
-                for (String rawParameter : matcher.group(1).split(",")) {
-                    CommandParameter parameter = CommandParameter.from(rawParameter);
-                    if (parameter != null) {
-                        parameters.putIfAbsent(parameter.name(), parameter);
-                    }
-                }
-            }
-        });
-        return List.copyOf(parameters.values());
     }
 
     private String readableType(CommandCatalogEntryType type) {
@@ -427,56 +307,5 @@ public final class CommandDetailsDialog extends JDialog {
         return entry != null && entry.isCustomCommand()
                 ? getText("actions.customCommands.details.title")
                 : getText("actions.commands.details.title");
-    }
-
-    private record CommandParameter(String name, String hint) {
-        private boolean isBoolean() {
-            return "true/false".equalsIgnoreCase(hint);
-        }
-
-        private static CommandParameter from(String rawParameter) {
-            if (rawParameter == null || rawParameter.isBlank()) {
-                return null;
-            }
-            String[] parts = rawParameter.trim().split(":", 2);
-            String name = parts[0].trim();
-            if (name.isBlank()) {
-                return null;
-            }
-            String hint = parts.length > 1 ? parts[1].trim() : "X";
-            return new CommandParameter(name, hint);
-        }
-    }
-
-    private static final class PlayIcon implements Icon {
-        private static final int WIDTH = 11;
-        private static final int HEIGHT = 12;
-
-        @Override
-        public void paintIcon(Component component, Graphics graphics, int x, int y) {
-            Graphics2D g2 = (Graphics2D) graphics.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT);
-                Polygon triangle = new Polygon(
-                        new int[]{x, x, x + WIDTH},
-                        new int[]{y, y + HEIGHT, y + HEIGHT / 2},
-                        3
-                );
-                g2.fill(triangle);
-            } finally {
-                g2.dispose();
-            }
-        }
-
-        @Override
-        public int getIconWidth() {
-            return WIDTH;
-        }
-
-        @Override
-        public int getIconHeight() {
-            return HEIGHT;
-        }
     }
 }
