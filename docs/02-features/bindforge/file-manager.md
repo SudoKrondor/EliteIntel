@@ -282,10 +282,52 @@ until this slice.
 - **The bindings folder row gets the ⋮ button that changes the folder** — the one the Bind Editor's Bindings Directory
   row had, setting the same Elite-Intel setting Vega reads. There is **one row**, not the Bind Editor's field beside
   this one: both always showed the same folder (Alan: *"just add the button to change the directory"*).
-- **A Bindings File section, below Game Installations**, holds the Bindings File dropdown and **LOAD**, moved whole
+- **A Bindings File section, between the bindings folder and Game Installations** (moved up from below Game
+  Installations, Alan, 2026-11-04: there the table's spare height pushed it to the foot of the screen), holds the
+  Bindings File dropdown and **LOAD**, moved whole
   from the Bind Editor: the same list, the same file shown first, and LOAD opening the file in the Bind Editor
   ([bind-editor.md *Shell*](bind-editor.md#shell-common-to-all-modes)). It is laid out as a section of its own, like
-  the two above it, not as the Bind Editor's row dropped in.
+  the other two, not as the Bind Editor's row dropped in.
+
+**Built in Storage S15 (2026-11-04), with three decisions settled by Alan that day:**
+
+- **LOAD opens the Bind Editor.** It brings the Bind Editor's tab on screen showing the file chosen, rather than
+  leaving the user in File Manager - otherwise pressing LOAD shows no result where it was pressed.
+- **The file selected is the one the Bind Editor shows.** Which file that is stays the Bind Editor's rule (the General
+  line's file first, then whatever LOAD picked); the section reads the list again whenever the edits change and
+  whenever it comes back on screen.
+- **While CREATE has the editors greyed, the dropdown and LOAD are disabled too** (there is no binds file of the user's
+  to choose then); they come back with the editors. The bindings folder's ⋮ is always usable, as File Manager is.
+
+**Renaming a binds file comes back, in the Bindings File section — settled 2026-11-04 (Alan), to be built in Storage
+S16.** The section's row is two equal halves: the dropdown and LOAD on the left, a name box and **RENAME** on the right
+(laid out in S15, RENAME disabled until S16). The rename left the Bind Editor with its Name box on 2026-11-03
+(Krondor); Alan puts it back here.
+
+- **R1 - what RENAME does:** the S12 rename, unchanged ([bind-editor.md *Shell*](bind-editor.md#shell-common-to-all-modes)
+  records how it works): one edit not applied, lighting the APPLY / DISCARD bar, changing the file name, its
+  `PresetName` and every `StartPreset.4.start` line naming it together; APPLY writes the new file and removes the old
+  one after the backup ([storage.md](storage.md) rule 7). Nothing is renamed on disk at the press.
+- **R2 - the box:** the chosen file's BindName, filled in and editable, with the version and extension after it as
+  fixed text - `DualVirpilDawnTreader` `.4.2.binds`.
+- **R3 - which file:** the one selected in the dropdown, loaded or not.
+- **R4 - a name the rules refuse** (characters, length, a name already taken, a factory BindName): pressing RENAME says
+  why in a `HudConfirmDialog`, and nothing changes. The reasons are S12's.
+
+**Built in Storage S16 (2026-11-04), with four more decisions settled by Alan that day:**
+
+- **Q1 - the rename is followed.** The dropdown selects the file under its new name, and the Bind Editor, if it was
+  showing that file, keeps showing it under the new name; the tab does not switch. Otherwise both would fall back to
+  the General line's file, since the old name is gone from the edits.
+- **Q2 - no factory-name warning.** A binds file already named like a factory one is not warned of here; S12's
+  warning left with the Name box and does not come back.
+- **Q3 - Enter renames, Esc puts the file's own name back**, as S12's Name box did.
+- **Q4 - RENAME is lit whenever the section is usable**, dark only while a rename runs; a refused name is said when it
+  is pressed (R4), and the file's own name does nothing.
+
+Built as `ui.screen.bindings.BindsFileSection` (the judgement in `refusal`, S12's order: the controller name's rule
+against `Rename.Names.taken`, then `Rename.factoryClash`), calling `bindforge.storage.Rename.rename` through the edits
+off the EDT; a failed change says the Bind Editor's words (`bindings.change.failed`, `.stopped`, `bindings.writeRunning`).
 
 *Until 2026-10-24 (morning) it had Rescan, Add, Relocate and Remove; for a few hours that day it was an Installations…
 button instead of a sub-tab, before Alan settled that File Manager is where installations live.*

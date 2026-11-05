@@ -91,7 +91,7 @@ canon's.
 
 | Element | Built from |
 |---|---|
-| Bindings File dropdown and Load | `HudComboBox`, `HudButton` ✓ |
+| EDITING line naming the binds file shown (the dropdown and Load moved to File Manager, S15, 2026-11-04) | `hudReadoutLabel`, `hudReadoutValue` ✓ |
 | Search, clearing with × | `HudSearchField` ✓ |
 | Search, clearing with Esc | **GAP 6** — the widget has no Esc handling |
 | Show Anomalies Only | `HudCheckBox` ✓ — exists today as SHOW CONFLICTS ONLY |
@@ -201,7 +201,7 @@ installations could be a `COMPACT` tab row inside the inline editor, which the k
 | Element | Built from |
 |---|---|
 | Three sub-tabs | `HudTabbedPane` `SECTION` ✓ |
-| Game Install Locations — two sections, read-only paths | `HudSection.flat`, `HudMetadataField` ✓ |
+| Game Install Locations — three sections: the bindings folder (read-only, with its ⋮), Bindings File (dropdown and Load; S15, 2026-11-04), and the installations | `HudSection.flat`, `HudMetadataField`, `HudComboBox`, `HudButton` ✓ |
 | Player Backups | exists today as Binding Management ✓ |
 | The restore checklist — *Everything* forcing the four domains on and disabled | `HudCheckBox` ✓ — the dependent-disable shape `SettingToggle` / `ToggleTreePanel` already express |
 | Ticking device entries in a foreign archive | `HudBooleanCellEditor` with `HudCheckBoxHeaderRenderer` ✓ — the selector-column pattern the Import dialog already uses |
