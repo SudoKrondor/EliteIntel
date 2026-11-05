@@ -1,21 +1,12 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
 
-import javax.swing.JComponent;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -23,7 +14,7 @@ import java.awt.event.MouseEvent;
  * HUD discrete numeric stepper rendered as "< value >" (HUD section 4).
  * <p>
  * Triangle buttons sit at the left/right edges of a borderless warm slab
- * ({@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND}, like the HUD checkbox OFF state, section 5.2), separated from the
+ * ({@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND}), separated from the
  * centred value by {@link HudPalette#HUD_COLOR_ROLE_APPLICATION_BACKGROUND} dividers. Clicking a triangle steps the value by
  * {@code step}, clamped to {@code [min, max]}.
  * <p>
@@ -200,7 +191,7 @@ public class HudStepper extends JComponent {
             int h = getHeight();
             int zw = zoneWidth();
 
-            // Borderless warm slab, like the HUD checkbox in its OFF state (section 5.2).
+            // Borderless warm slab.
             g2.setColor(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
             g2.fillRect(0, 0, w, h);
 
@@ -208,7 +199,7 @@ public class HudStepper extends JComponent {
             paintArrowZone(g2, -1, 0, zw, h, value > min);
             paintArrowZone(g2, 1, w - zw, zw, h, value < max);
 
-            // Vertical dividers (HUD_COLOR_ROLE_APPLICATION_BACKGROUND) between arrow zones and the value, as in the checkbox gap.
+            // Vertical dividers (HUD_COLOR_ROLE_APPLICATION_BACKGROUND) between arrow zones and the value.
             g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g2.fillRect(zw, 0, HudPalette.HUD_SEP_W, h);
             g2.fillRect(w - zw - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
