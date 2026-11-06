@@ -175,6 +175,8 @@ announcements off"*), so the page re-reads them whenever you open the tab.
 
 ## Exo-Mastery
 
+![Exo-Mastery](images/ui-tab-exo-mastery.png)
+
 A catalogue of star systems near the bubble whose planets carry high-value exobiology,
 crowd-sourced from Spansh.
 
