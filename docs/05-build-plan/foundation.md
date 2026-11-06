@@ -1,5 +1,14 @@
 # Foundation — V1.2's changes to files V1.1 ships
 
+**Current branch rules:**
+
+- Branch `V1.1-Release` is frozen (bug fixes only).
+- Branch `master` is current production (V1.1-Release).
+- Parent branch for 1.2 is `V1.2`.
+- All changes are merged in to `V1.2` after a review by project maintainer.
+
+**Everything below is the closed 2026-10 record and describes the old `V1.1-Release` flow; it isn't current process.**
+
 > **Closed 2026-10-20.** Krondor repealed the foundation branch (*"we are now solid on 1.2"*): shared files are
 > now changed on `V1.2-BindForge`. This brief is the record of F1-F4; do not start a foundation session.
 

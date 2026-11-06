@@ -7,6 +7,7 @@ import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.ears.MicDiagnosticsReport;
 import elite.intel.bindforge.storage.BackupDestination;
+import elite.intel.bindforge.storage.BindForgeSupport;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -400,7 +401,8 @@ public class AiTabPanel extends JPanel {
                 MicDiagnosticsReport::render,
                 customCommandsFile(),
                 AiSetupReport::render,
-                bindingsBackupDir());
+                bindingsBackupDir(),
+                BindForgeSupport::collect);
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }

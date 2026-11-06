@@ -97,9 +97,9 @@ public class ExoMasteryTabPanel extends JPanel {
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, null);
         bodiesCell = new HudStatCell(getText("exoMastery.stat.bodies"), "/images/stats.png",
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, null);
-        valueCell = new HudStatCell(getText("exoMastery.stat.value"), "/images/coins.png",
+        valueCell = new HudStatCell(getText("exoMastery.stat.value"), "/images/credits.png",
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION, getText("exoMastery.unit.credits"));
-        harvestedCell = new HudStatCell(getText("exoMastery.stat.harvested"), "/images/coins.png",
+        harvestedCell = new HudStatCell(getText("exoMastery.stat.harvested"), "/images/credits.png",
                 HudPalette.HUD_COLOR_ROLE_SUCCESS, getText("exoMastery.unit.credits"));
         statsSection = section(getText("exoMastery.section.stats"), List.of(systemsCell, bodiesCell, valueCell, harvestedCell));
         statsSection.setVisible(false);

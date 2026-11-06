@@ -1,11 +1,12 @@
 package elite.intel.ui.support;
 
 import elite.intel.bindforge.io.BindingsLoader;
-import elite.intel.gameapi.GameClock;
-import elite.intel.gameapi.JournalFiles;
 import elite.intel.bindforge.storage.Backup;
 import elite.intel.bindforge.storage.BackupContents;
 import elite.intel.bindforge.storage.Backups;
+import elite.intel.bindforge.storage.BindForgeSupport;
+import elite.intel.gameapi.GameClock;
+import elite.intel.gameapi.JournalFiles;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +24,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -96,6 +98,8 @@ public final class SupportBundle {
      */
     static final long MAX_SOURCE_BYTES = 32L * 1024 * 1024;
 
+    private static final String BINDFORGE_LOG = "bindforge.log";
+
     private SupportBundle() {
     }
 
@@ -122,11 +126,26 @@ public final class SupportBundle {
      * @param bindingsBackupDir BindForge's backup folder, whose before-changes backups hold the game's {@code .binds}
      *                          as it was before every write (see {@link #previousBindings}). Null when the caller
      *                          cannot resolve it.
+     * @param bindForge         BindForge's report and raw files (see {@link BindForgeSupport}). Deferred for the same
+     *                          reason as {@code micDiagnostics}: it reads the game's folders and the database. Null
+     *                          when the caller has no BindForge to report.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
                           @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
-                          @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir) {
+                          @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
+                          @Nullable Supplier<BindForgeSupport.Contents> bindForge) {
+
+        /**
+         * Sources with no BindForge report to carry.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    bindingsBackupDir, null);
+        }
 
         /**
          * Sources with no bindings backups to report.
@@ -206,7 +225,9 @@ public final class SupportBundle {
             }
 
             copy(zip, "application log", appLog(sources.appLog()), included, omitted);
-            copy(zip, "previous application log", previousAppLog(sources.appLog()), included, omitted);
+            copy(zip, "previous application log", previousLog(sources.appLog()), included, omitted);
+            copy(zip, "BindForge log", bindForgeLog(sources.appLog()), included, omitted);
+            copy(zip, "previous BindForge log", previousLog(bindForgeLogPath(sources.appLog())), included, omitted);
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
             Collected activeBindings = activeBindings(sources.bindingsDir());
@@ -215,6 +236,7 @@ public final class SupportBundle {
                     included, omitted);
             copy(zip, "custom commands", customCommands(sources.customCommands()), included, omitted);
             writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
+            writeBindForge(zip, sources.bindForge(), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
         }
@@ -287,6 +309,31 @@ public final class SupportBundle {
         }
         writeEntry(zip, MIC_DIAGNOSTICS_ENTRY, report.getBytes(StandardCharsets.UTF_8));
         included.add(MIC_DIAGNOSTICS_ENTRY);
+    }
+
+    /**
+     * Adds BindForge's report and raw files, or records why there are none. The supplier is called inside the try for
+     * the reason {@link #writeMicDiagnostics} gives: this source is computed, and the fault being reported may be what
+     * breaks it.
+     */
+    private static void writeBindForge(ZipOutputStream zip, @Nullable Supplier<BindForgeSupport.Contents> bindForge,
+                                       List<String> included, List<String> omitted) throws IOException {
+        if (bindForge == null) return;
+        BindForgeSupport.Contents contents;
+        try {
+            contents = bindForge.get();
+        } catch (RuntimeException | LinkageError e) {
+            log.warn("Diagnostics bundle: could not collect the BindForge report", e);
+            omitted.add("BindForge report - could not be collected: " + e);
+            return;
+        }
+        writeEntry(zip, BindForgeSupport.REPORT_ENTRY, contents.report().getBytes(StandardCharsets.UTF_8));
+        included.add(BindForgeSupport.REPORT_ENTRY);
+        // WHY: sorted so that two bundles of one state list their entries alike, and can be compared by eye.
+        for (var file : new TreeMap<>(contents.files()).entrySet()) {
+            writeEntry(zip, file.getKey(), file.getValue());
+            included.add(file.getKey());
+        }
     }
 
     /**
@@ -406,7 +453,26 @@ public final class SupportBundle {
     }
 
     /**
-     * The newest rolled sibling of the application log, e.g. {@code elite-intel_2026-08-04_1.log}.
+     * BindForge's own log, written beside the application log (see {@code log4j2.xml}).
+     * <p>
+     * WHY a second log rather than the lines already in the first: the application log rolls at every start and shares
+     * its megabyte with the keystroke trail, so an APPLY from a few sessions ago has gone from it by the time anything
+     * goes wrong in the game. This one holds BindForge's lines alone and rolls only on size.
+     * <p>
+     * Absent is silent, like the rolled log: a caller with no such file has no BindForge log to report.
+     */
+    private static Collected bindForgeLog(@Nullable Path appLog) {
+        Path log = bindForgeLogPath(appLog);
+        return log != null && Files.isRegularFile(log) ? Collected.of(log) : Collected.absent();
+    }
+
+    @Nullable
+    private static Path bindForgeLogPath(@Nullable Path appLog) {
+        return appLog == null ? null : appLog.resolveSibling(BINDFORGE_LOG);
+    }
+
+    /**
+     * The newest rolled sibling of a log, e.g. {@code elite-intel_2026-08-04_1.log}.
      * <p>
      * WHY this is worth a second file: the appender rolls on startup, so {@code elite-intel.log} only ever
      * holds the current session. A commander who hits a problem, restarts the app and then saves a bundle -
@@ -416,11 +482,11 @@ public final class SupportBundle {
      * Absent is not a failure here: on a first-ever run nothing has rolled yet, and a bundle carrying only
      * the current log is complete. Only an unreadable directory is reported.
      */
-    private static Collected previousAppLog(@Nullable Path appLog) {
-        if (appLog == null) return Collected.absent();
-        Path dir = appLog.toAbsolutePath().getParent();
+    private static Collected previousLog(@Nullable Path currentLog) {
+        if (currentLog == null) return Collected.absent();
+        Path dir = currentLog.toAbsolutePath().getParent();
         if (dir == null || !Files.isDirectory(dir)) return Collected.absent();
-        String stem = rolledPrefix(appLog);
+        String stem = rolledPrefix(currentLog);
         try (var files = Files.list(dir)) {
             return files
                     .filter(p -> {

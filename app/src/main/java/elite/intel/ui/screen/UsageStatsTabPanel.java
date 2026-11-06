@@ -114,9 +114,9 @@ public class UsageStatsTabPanel extends JPanel {
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION, null);
         cellCompletion = new HudStatCell(getText("stats.chart.lastCompletion"), "/images/ai.png",
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, null);
-        cellHits = new HudStatCell(getText("stats.chart.cacheHits"), "/images/file-recycle.png",
+        cellHits = new HudStatCell(getText("stats.chart.cacheHits"), "/images/cache-hits.png",
                 HudPalette.HUD_COLOR_ROLE_SUCCESS, null);
-        cellWritten = new HudStatCell(getText("stats.chart.cacheWritten"), "/images/file-recycle.png",
+        cellWritten = new HudStatCell(getText("stats.chart.cacheWritten"), "/images/cache-written.png",
                 HudPalette.HUD_COLOR_ROLE_SUCCESS, null);
         cellSpeed = new HudStatCell(getText("stats.chart.lastSpeed"), "/images/tachometer-fast.png",
                 HudPalette.HUD_COLOR_ROLE_INFORMATION, "t/s");
