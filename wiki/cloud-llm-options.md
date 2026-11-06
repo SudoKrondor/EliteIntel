@@ -13,7 +13,6 @@ selects it for your provider:
 
 | Provider | Model used |
 |----------|------------|
-| **Mistral** *(free tier)* | `mistral-small-2506` |
 | **xAI** | `grok-4-1-fast-non-reasoning` |
 | **OpenAI** | `gpt-5.4-mini` |
 | **Gemini** (Generative Language API) | `gemini-3.1-flash-lite-preview` |
@@ -22,15 +21,6 @@ selects it for your provider:
 
 
 Cost will be different depending on which Cloud service you choose, and how long you play.
-
-### FREE CLOUD Option: Mistral
-1. Go to [Mistral Console](https://console.mistral.ai/)
-2. Create account with a valid email you can verify.
-3. NO CREDIT CARD NECESSARY
-4. Create a "Organisation" (Call it whatever you want. For example "Elite Intel")
-5. Generate an API key.
-6. In **Services → AI Services → Cloud Setup**, pick **Mistral** as the provider, paste the key, press **Save**, and restart services on the Vega tab.
-
 
 ### Option A: xAI API Key
 1. Go to the [xAI Console](https://console.x.ai/).

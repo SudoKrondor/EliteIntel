@@ -7,7 +7,7 @@ Sprachmodell (LLM)** ein:
 | Option | Was du brauchst | Kosten |
 |--------|-----------------|--------|
 | **Lokal: LM Studio** | Eine leistungsfähige GPU, [LM Studio](https://lmstudio.ai) und das Modell `google/gemma-4-e4b` | Kostenlos. Alles bleibt auf deinem PC |
-| **Cloud** | Ein Konto und einen API-Schlüssel bei einem unterstützten Anbieter | Mit Mistral kostenlos. Die anderen Anbieter berechnen dir deine Nutzung |
+| **Cloud** | Ein Konto und einen API-Schlüssel bei einem unterstützten Anbieter | Der Anbieter berechnet dir deine Nutzung |
 
 ![LLM-Einrichtung](images/llm-setup.png)
 
@@ -85,7 +85,6 @@ nicht: Elite Intel nimmt das passende für deinen Anbieter.
 
 | Anbieter | Hinweise |
 |----------|----------|
-| **Mistral** | Kostenloses Kontingent, keine Kreditkarte nötig. Der einfachste Einstieg |
 | **Anthropic (Claude)** | Kostenpflichtig |
 | **OpenAI** | Kostenpflichtig |
 | **Google (Gemini)** | Kostenpflichtig |
@@ -106,8 +105,7 @@ Wie du bei jedem Anbieter einen Schlüssel bekommst: [Cloud-LLM einrichten](clou
 - deine GPU nicht genug VRAM hat, um ein Modell neben dem Spiel zu betreiben
 - du überhaupt keinen Inferenzserver betreiben willst
 
-Unsicher? Fang mit dem kostenlosen Kontingent von Mistral an. Das dauert ein paar Minuten, und du
-kannst jederzeit ohne Neuinstallation auf lokal umsteigen.
+Unsicher? Du kannst mit beidem anfangen und jederzeit ohne Neuinstallation wechseln.
 
 ---
 

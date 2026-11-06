@@ -13,7 +13,6 @@ Intel wählt es für deinen Anbieter aus:
 
 | Anbieter | Verwendetes Modell |
 |----------|--------------------|
-| **Mistral** *(kostenloses Kontingent)* | `mistral-small-2506` |
 | **xAI** | `grok-4-1-fast-non-reasoning` |
 | **OpenAI** | `gpt-5.4-mini` |
 | **Gemini** (Generative Language API) | `gemini-3.1-flash-lite-preview` |
@@ -22,15 +21,6 @@ Intel wählt es für deinen Anbieter aus:
 
 
 Die Kosten hängen davon ab, welchen Cloud-Dienst du wählst und wie lange du spielst.
-
-### KOSTENLOSE Cloud-Option: Mistral
-1. Gehe zur [Mistral Console](https://console.mistral.ai/)
-2. Erstelle ein Konto mit einer gültigen E-Mail-Adresse, die du bestätigen kannst.
-3. KEINE KREDITKARTE NÖTIG
-4. Erstelle eine „Organisation“ (Name beliebig, zum Beispiel „Elite Intel“)
-5. Generiere einen API-Schlüssel.
-6. Wähle unter **Dienste → KI-Dienste → Cloud-Einrichtung** den Anbieter **Mistral**, füge den Schlüssel ein, drücke **Speichern** und starte die Dienste im Reiter Vega neu.
-
 
 ### Option A: xAI-API-Schlüssel
 1. Gehe zur [xAI Console](https://console.x.ai/).

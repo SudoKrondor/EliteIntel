@@ -22,7 +22,7 @@ UI-Jukebox-Tab: Вкладка «Музика»
 UI-Stats-Tab: Вкладка «Статистика»
 UI-HUD-Overlay: HUD-накладка
 installing-local-llms: Обрати LLM
-cloud-llm-options: 🆓 Безкоштовний хмарний LLM
+cloud-llm-options: Хмарний LLM
 Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series

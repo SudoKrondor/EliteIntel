@@ -14,9 +14,8 @@ Daten werden in Echtzeit von [Spansh](https://spansh.co.uk/) und [EDSM](https://
 
 > ### ⚠️ Ein Sprachmodell (LLM) wird benötigt
 > Elite Intel ist Stimme und Hände — das LLM ist das Gehirn. Ohne LLM läuft die App nicht.
-> Betreibe ein Modell lokal auf deiner GPU oder nutze den **kostenlosen** Cloud-Tarif unter
-> 👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — keine Kreditkarte nötig.
-> Siehe [Kostenloses Cloud-LLM](cloud-llm-options) oder [LLM auswählen](installing-local-llms).
+> Betreibe ein Modell lokal auf deiner GPU oder nutze einen Cloud-Anbieter mit deinem eigenen API-Schlüssel.
+> Siehe [Cloud-LLM](cloud-llm-options) oder [LLM auswählen](installing-local-llms).
 
 ---
 
@@ -66,7 +65,6 @@ Eine aufwendige Belegung kostet Stunden, und ein Spiel-Update kann sie zurückse
 Elite Intel funktioniert mit dem Sprachmodell, das zu deinem Setup passt:
 
 **Kostenlos und offline** - [LM Studio](https://lmstudio.ai/) mit einem lokalen Modell  
-**Kostenlose Cloud** - [Mistral](https://console.mistral.ai/) - kostenloser Tarif, ohne Kreditkarte  
 **Kostenpflichtige Cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Wechsle den Anbieter jederzeit im Reiter Dienste. Keine Neuinstallation erforderlich.

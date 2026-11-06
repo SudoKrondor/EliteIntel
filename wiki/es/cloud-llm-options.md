@@ -13,7 +13,6 @@ no lo eliges: Elite Intel lo selecciona para tu proveedor:
 
 | Proveedor | Modelo usado |
 |-----------|--------------|
-| **Mistral** *(nivel gratuito)* | `mistral-small-2506` |
 | **xAI** | `grok-4-1-fast-non-reasoning` |
 | **OpenAI** | `gpt-5.4-mini` |
 | **Gemini** (Generative Language API) | `gemini-3.1-flash-lite-preview` |
@@ -22,15 +21,6 @@ no lo eliges: Elite Intel lo selecciona para tu proveedor:
 
 
 El coste varía según el servicio en la nube que elijas y el tiempo que juegues.
-
-### Opción GRATUITA en la nube: Mistral
-1. Ve a la [Mistral Console](https://console.mistral.ai/)
-2. Crea una cuenta con un correo válido que puedas verificar.
-3. NO HACE FALTA TARJETA DE CRÉDITO
-4. Crea una «Organización» (llámala como quieras, por ejemplo «Elite Intel»)
-5. Genera una clave API.
-6. En **Servicios → Servicios de IA → Configuración en la nube**, elige **Mistral** como proveedor, pega la clave, pulsa **Guardar** y reinicia los servicios en la pestaña Vega.
-
 
 ### Opción A: clave API de xAI
 1. Ve a la [xAI Console](https://console.x.ai/).

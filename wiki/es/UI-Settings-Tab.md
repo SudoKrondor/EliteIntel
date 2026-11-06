@@ -56,7 +56,7 @@ Guías: [LM Studio en Linux](Install-LM-Studio-Linux) ·
 
 | Campo | Notas |
 |-------|-------|
-| **Proveedor** | Elige uno: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek**, **Mistral** |
+| **Proveedor** | Elige uno: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek** |
 | **Clave API** | Tu clave para ese proveedor, con una casilla **Bloqueado** al lado para que una clave guardada no se edite por accidente. Desmárcala para cambiarla |
 
 No eliges modelo — se selecciona automáticamente el adecuado para tu proveedor.
@@ -66,7 +66,6 @@ que pegues la de ese proveedor, y al volver a elegir el proveedor guardado vuelv
 que un clic accidental no cuesta nada. **Guardar** sigue en gris hasta que proveedor y clave
 están rellenos.
 
-Mistral tiene un nivel gratuito y es la forma más fácil de empezar.
 Cómo conseguir una clave de cada proveedor: [Opciones de LLM en la nube](cloud-llm-options).
 
 ### Voz (TTS)

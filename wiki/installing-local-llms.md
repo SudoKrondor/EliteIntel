@@ -6,7 +6,7 @@ There are two ways to get one, and both are set up in **Services → AI Services
 | Option | What you need | Cost |
 |--------|---------------|------|
 | **Local: LM Studio** | A capable GPU, [LM Studio](https://lmstudio.ai) and the `google/gemma-4-e4b` model | Free. Everything stays on your PC |
-| **Cloud** | An account and an API key from a supported provider | Free with Mistral. The other providers bill you for what you use |
+| **Cloud** | An account and an API key from a supported provider | The provider bills you for what you use |
 
 ![LLM setup](images/llm-setup.png)
 
@@ -82,7 +82,6 @@ Elite Intel picks the right one for your provider.
 
 | Provider | Notes |
 |----------|-------|
-| **Mistral** | Free tier, no credit card required. The easiest way to start |
 | **Anthropic (Claude)** | Paid |
 | **OpenAI** | Paid |
 | **Google (Gemini)** | Paid |
@@ -103,8 +102,7 @@ How to get a key from each provider: [Cloud LLM setup](cloud-llm-options).
 - Your GPU doesn't have enough VRAM to run a model alongside the game
 - You'd rather not run an inference server at all
 
-Not sure? Start with Mistral's free tier. It takes a few minutes, and you can switch to local any
-time without reinstalling.
+Not sure? You can start with either one and switch any time without reinstalling.
 
 ---
 

@@ -7,7 +7,7 @@ Services IA → Modèle de langage (LLM)** :
 | Option | Ce qu'il vous faut | Coût |
 |--------|--------------------|------|
 | **Local : LM Studio** | Un GPU puissant, [LM Studio](https://lmstudio.ai) et le modèle `google/gemma-4-e4b` | Gratuit. Tout reste sur votre PC |
-| **Cloud** | Un compte et une clé API chez un fournisseur pris en charge | Gratuit avec Mistral. Les autres fournisseurs facturent votre consommation |
+| **Cloud** | Un compte et une clé API chez un fournisseur pris en charge | Le fournisseur facture votre consommation |
 
 ![Configuration du LLM](images/llm-setup.png)
 
@@ -86,7 +86,6 @@ Vous ne choisissez pas de modèle : Elite Intel prend celui qui convient à votr
 
 | Fournisseur | Remarques |
 |-------------|-----------|
-| **Mistral** | Offre gratuite, sans carte bancaire. Le moyen le plus simple de commencer |
 | **Anthropic (Claude)** | Payant |
 | **OpenAI** | Payant |
 | **Google (Gemini)** | Payant |
@@ -107,8 +106,7 @@ Comment obtenir une clé chez chaque fournisseur : [Configurer un LLM cloud](clo
 - votre GPU n'a pas assez de VRAM pour faire tourner un modèle à côté du jeu
 - vous préférez ne pas gérer de serveur d'inférence du tout
 
-Vous hésitez ? Commencez par l'offre gratuite de Mistral. Cela prend quelques minutes, et vous
-pouvez passer en local à tout moment sans réinstaller.
+Vous hésitez ? Vous pouvez commencer par l'une ou l'autre option et en changer à tout moment sans réinstaller.
 
 ---
 
