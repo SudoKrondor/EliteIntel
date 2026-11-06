@@ -21,7 +21,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -107,7 +110,8 @@ public final class FirstTimeStartup {
      * the APPLY / DISCARD bar is dimmed and no APPLY can start: one started meanwhile would write the edits it read
      * before this write, over the set this write leaves (review, 2026-10-27).
      *
-     * @throws Edits.WriteRunningException if an APPLY or another write is already running - nothing is written
+     * @throws Edits.RefusedException if an APPLY or another write is already running, or BindForge is read only -
+     *                                nothing is written
      */
     static Writer storedWriter() {
         return (files, places, backUp) -> Edits.stored()
@@ -210,11 +214,12 @@ public final class FirstTimeStartup {
      * set is reported, not thrown</strong> (Krondor's review, 2026-10-27): the files are written by then, so the result
      * says so, with {@link Written#setUpAskedAgain()} - as RESTORE does.
      *
-     * @throws IllegalStateException       if {@link #read()} has not read the files first
-     * @throws IOException                 if the backup cannot be taken - {@link Backups.NothingToBackUpException} when
-     *                                     there is nothing at all - or the working copy cannot be saved. Nothing was
-     *                                     written, and the flag stays unset
-     * @throws Edits.WriteRunningException if an APPLY or another write is running - nothing was written
+     * @throws IllegalStateException  if {@link #read()} has not read the files first
+     * @throws IOException            if the backup cannot be taken - {@link Backups.NothingToBackUpException} when
+     *                                there is nothing at all - or the working copy cannot be saved. Nothing was
+     *                                written, and the flag stays unset
+     * @throws Edits.RefusedException if an APPLY or another write is running, or BindForge is read only - nothing was
+     *                                written
      */
     public Written write(ConfigurationFiles files) throws IOException {
         BackupSources places = read;

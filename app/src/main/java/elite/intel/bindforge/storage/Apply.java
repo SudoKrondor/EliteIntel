@@ -12,13 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -211,6 +205,8 @@ public final class Apply {
      *                                                 file that can be found - nothing was backed up or written, and
      *                                                 the edits are still on screen. It names the installations that
      *                                                 could not be reached, if any
+     * @throws Edits.RefusedException                  if another write is running, or BindForge is read only - nothing
+     *                                                 was written, and the edits are still on screen
      * @throws IOException                             if the game's files or the working copy's own device files cannot
      *                                                 be read, a merge cannot be made, the backup cannot be taken, or
      *                                                 the working copy cannot be saved - no live copy was written, and

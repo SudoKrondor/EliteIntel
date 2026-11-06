@@ -1,9 +1,5 @@
 ---
-description: Draft a human-readable commit message describing what changed, written to commit-message.txt
-
-This file is for me to work with. I will copy and paste the parts where they need to go.
-
-The commit-message.txt will contain two parts. One will be pasted in to the commit message, the other will be used during the version bump tag to let users know what changes where introduced.
+description: Draft a human-readable commit message describing what changed, written to commit-message.txt This file is for me to work with. I will copy and paste the parts where they need to go. The commit-message.txt will contain two parts. One will be pasted in to the commit message, the other will be used during the version bump tag to let users know what changes where introduced.
 
 argument-hint: "[ticket key e.g. KAN-XYZ] [--staged]"
 ---
@@ -67,5 +63,5 @@ This record is instructions Users in plain English explaining what functionality
 ```
 # 5. Output
 
-Write the message to `commit-message.txt` in the repo root and print it inline. Do not run `git add` or
+Write the message to `change-summary.txt` in the repo root and print it inline. Do not run `git add` or
 `git commit`. Mention that the draft is ready for the user to review and commit. Allways overrie `commit-message.txt`

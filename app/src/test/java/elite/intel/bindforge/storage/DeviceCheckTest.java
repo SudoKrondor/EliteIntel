@@ -1,6 +1,8 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.devicefiles.FirstSetupPlan;
+import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
+import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.storage.DeviceCheck.State;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
@@ -12,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static elite.intel.bindforge.storage.BindingsComparisonTest.binds;
@@ -160,6 +163,50 @@ class DeviceCheckTest {
         assertTrue(leaveAlone.leaveAlone(place(epic)), "the one it could not read is left as it is");
         assertTrue(leaveAlone.leaveAlone(place(differsUnseen)));
         assertFalse(leaveAlone.leaveAlone(place(matchesUnseen)));
+    }
+
+    /**
+     * Storage S14a removed the stop that kept a working copy with no device files from being made, because "it would go
+     * over theirs when they come back". This is what stands in its place: a label of the user's is asked about at the
+     * check, and left alone by a write that never read it.
+     */
+    @Test
+    void anInstallationBackAfterASetupWithNothingReachableIsAskedAboutItsLabels() throws IOException {
+        ConfigurationFiles none = madeWithNothingReachable();
+        InstallationRow steam = installation(1, "STEAM", "<Root>" + LVWAP + RUDDER + "</Root>");
+        buttonMap(steam, "LVWAP.buttonMap");
+
+        DeviceCheck.Found found = DeviceCheck.judge(none, List.of(steam), DeviceFiles::read, SHIPS);
+
+        assertEquals(List.of(steam), found.asked().stream().map(DeviceCheck.Judged::row).toList());
+        assertEquals(State.DIFFERS, found.installations().getFirst().state());
+        LiveCopies.LeaveAlone unseen = DeviceCheck.judge(none, List.of(), DeviceFiles::read, SHIPS).leavingAlone(
+                DeviceFilesComparison.of(none, SHIPS), installation -> DeviceFiles.read(installation.root()));
+        assertTrue(unseen.leaveAlone(place(steam)), "back only by the write, so it is left as it is");
+    }
+
+    /**
+     * The same guarantee for the file S2b's stop named: a set holding no DeviceMappings.xml never touches theirs.
+     */
+    @Test
+    void aSetupWithNothingReachableNeverWritesOverAnInstallationsDeviceMappings() throws IOException {
+        ConfigurationFiles none = madeWithNothingReachable();
+        String theirs = "<Root>" + LVWAP + RUDDER + "</Root>";
+        InstallationRow steam = installation(1, "STEAM", theirs);
+        Path bindings = Files.createDirectories(temp.resolve("Bindings"));
+
+        new LiveCopies(new BackupSources(bindings, List.of(place(steam))))
+                .write(none, LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertEquals(theirs, Files.readString(GameInstallation.deviceMappingsIn(
+                GameInstallation.controlSchemesUnder(Path.of(steam.rootPath())))));
+    }
+
+    private ConfigurationFiles madeWithNothingReachable() throws IOException {
+        InstallationRow unplugged = new InstallationRow(9, "OCULUS", temp.resolve("Oculus").toString(), false, true);
+        return FirstSetupFiles.identical(FirstSetupReading.of(temp.resolve("Bindings"),
+                Map.of(CUSTOM, bytes(binds("Custom", "Key_A", "Joy_XAxis", ""))), List.of(), List.of(unplugged),
+                FrontierStockDevices.getInstance(), FrontierStockButtonMaps.getInstance()));
     }
 
     @Test

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -133,10 +134,8 @@ public final class ReadOnlyMode {
 
     /** Whether every change is off now. Works out {@link #missing()} first if it has not been - not for the EDT. */
     public boolean active() {
-        List<InstallationRow> gone = missing();
-        synchronized (this) {
-            return !overridden && !gone.isEmpty();
-        }
+        missing();
+        return activeIfKnown();
     }
 
     /**
@@ -181,8 +180,15 @@ public final class ReadOnlyMode {
      * installations when BindForge is read only.
      */
     public void warnInBackground(Consumer<List<InstallationRow>> warn) {
+        warnOnce(warn, task -> Thread.ofPlatform().name("BindForge-ReadOnlyCheck").start(task));
+    }
+
+    /**
+     * {@link #warnInBackground}, on the executor given.
+     */
+    void warnOnce(Consumer<List<InstallationRow>> warn, Executor on) {
         if (!warned.compareAndSet(false, true)) return;
-        Thread.ofPlatform().name("BindForge-ReadOnlyCheck").start(() -> {
+        on.execute(() -> {
             if (active()) warn.accept(missing());
         });
     }

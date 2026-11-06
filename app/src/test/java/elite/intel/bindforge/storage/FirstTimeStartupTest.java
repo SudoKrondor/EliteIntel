@@ -83,6 +83,28 @@ class FirstTimeStartupTest {
         assertEquals(List.of(1L), reading.unreachable().stream().map(InstallationRow::id).toList());
     }
 
+    /**
+     * Storage S14a: with nothing reachable the write still runs and first-time startup completes, on a set holding no
+     * device files, with the installation left out of it. {@code DeviceCheckTest} covers what happens when it comes back.
+     */
+    @Test
+    void withNothingReachableTheWriteCompletesAndLeavesTheInstallationOut() throws IOException {
+        rows.add(new InstallationRow(1, "STEAM", temp.resolve("unplugged").toString(), false, true));
+        List<BackupSources> written = new ArrayList<>();
+        FirstTimeStartup startup = startup(bindingsFolder(), (files, places, backUp) -> {
+            written.add(places);
+            return writerThatWrites().write(files, places, backUp);
+        });
+
+        ConfigurationFiles set = FirstSetupFiles.identical(startup.read());
+        startup.write(set);
+
+        assertFalse(set.hasDeviceMappings());
+        assertTrue(flag.complete);
+        assertEquals(List.of(true), written.getFirst().installations().stream()
+                .map(BackupSources.Installation::missing).toList());
+    }
+
     @Test
     void withNoInstallationKnownTheReadingGoesOn() throws IOException {
         Path bindings = Files.createDirectories(temp.resolve("Bindings"));
