@@ -246,6 +246,8 @@ public final class OverlayProtocol {
             case GOOD -> "good";
             case WARN -> "warn";
             case CRITICAL -> "critical";
+            case BLUE -> "blue";
+            case WHITE -> "white";
             case NORMAL -> "normal";
         };
     }

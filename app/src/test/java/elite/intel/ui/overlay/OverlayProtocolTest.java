@@ -51,6 +51,14 @@ class OverlayProtocolTest {
     }
 
     @Test
+    void trackColoursGoOutUnderTheNamesTheOverlayParses() {
+        List<String> lines = OverlayProtocol.objective(new HudObjective("id", "T", null, List.of(
+                HudRow.track("JUMPS", "2", List.of(HudRow.State.BLUE, HudRow.State.WHITE))), 0));
+
+        assertTrue(lines.contains("ROW\tJUMPS\t2\tnormal\tblue,white"), lines.toString());
+    }
+
+    @Test
     void aTrackKeepsOnlyAsManyStopsAsTheRendererHasSlots() {
         HudRow row = HudRow.track("JUMPS", "40", java.util.Collections.nCopies(40, HudRow.State.GOOD));
 
