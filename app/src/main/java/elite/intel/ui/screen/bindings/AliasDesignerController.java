@@ -547,11 +547,11 @@ final class AliasDesignerController {
             T result;
             try {
                 result = work.call();
-            } catch (Edits.WriteRunningException e) {
-                // WHY: a write is running - said in the user's language, not the exception's, and shown alone, as the
+            } catch (Edits.RefusedException e) {
+                // WHY: refused - a write running, or read only - said in the user's language, shown alone, as the
                 // Device Editor does: wrapped in actionFailed it would say "could not be done" twice.
                 log.info("{} not done: {}", title, e.getMessage());
-                return told.apply(getText("bindings.writeRunning"));
+                return told.apply(getText(e.messageKey()));
             }
             return () -> {
                 actionRunning = false;

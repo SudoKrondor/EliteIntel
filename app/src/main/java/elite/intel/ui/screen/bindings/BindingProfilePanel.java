@@ -408,10 +408,10 @@ public class BindingProfilePanel extends JPanel {
         FlowSteps.inBackground("BindForge-BindEditorChange", log, title, () -> {
                     try {
                         change.run();
-                    } catch (Edits.WriteRunningException e) {
-                        // WHY: a write is running - said in the user's language, not the exception's.
+                    } catch (Edits.RefusedException e) {
+                        // WHY: refused - a write running, or read only - said in the user's language.
                         log.info("{} not done: {}", title, e.getMessage());
-                        return () -> changed(title, getText("bindings.writeRunning"), onEdt, afterFailure);
+                        return () -> changed(title, getText(e.messageKey()), onEdt, afterFailure);
                     }
                     return () -> changed(title, null, onEdt, afterFailure);
                 }, reason -> () -> changed(title, getText("bindings.change.failed"), onEdt, afterFailure),

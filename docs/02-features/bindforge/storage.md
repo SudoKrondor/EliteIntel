@@ -102,6 +102,33 @@ stops first-time startup, with its message and its code.
   lasts until Elite-Intel closes; the next start checks and warns again. After it the bar is the normal DISCARD /
   APPLY, and APPLY writes to the installations that are there.
 
+**Settled with Storage S14a's sources (Alan, 2026-11-05):**
+
+- **Three slices.** S14a: the state, the warning at start, the bar and OVERRIDE, the refusal, and what writes turned
+  off. S14b: each editor screen and its dialogs viewable with nothing changeable. S14c: the startup notice.
+- **"First-time startup has ever completed" is: a working copy exists** - its `Bindings` folder is there
+  (`WorkingCopy.exists`). Only first-time startup and RESTORE make one, and Run first-time startup again leaves it, so a
+  user who set up before is read only even with the flag cleared; a new user is not.
+- **The check does not run while read only** - its three choices all write. Nor does first-time startup, or the offer
+  of RESTORE for a working copy that cannot be read. *Decided while building:* they run as soon as the user presses
+  OVERRIDE, on screen, rather than at the next click on the BindForge tab.
+- **Remove in Game Install Locations takes that installation off the missing list**, and read only ends when none is
+  left, without a restart. Plugging the drive back in is noticed only at the next start, so the bar says to restart.
+- **Run first-time startup again is greyed while read only**, since first-time startup is off. RESTORE and Browse for
+  Backup File are greyed too, and RENAME in the Bindings File section; the dropdown and LOAD stay, for viewing. **Backup
+  Now, deleting a user backup and the backup settings stay usable** - they touch no game file.
+- **The warning at start is spoken and logged once**, as rule 15's line is, naming each missing installation; the bar
+  carries it after that. No dialog.
+- **CREATE is not shown while read only.**
+- **The edits refuse every change and write while read only**, whichever screen offered it, and the screen says
+  *"BindForge is read only while an installation is missing, so nothing was changed."* The screens' own controls are
+  turned off in S14b; the refusal stays behind them.
+- **Worked out once a run, at the first ask**, from the stored list after this run's detection; a fault working it out
+  is logged and BindForge is not read only - every write still backs up first.
+
+Built in Storage S14a as `bindforge.storage.ReadOnlyMode`, `Edits.ReadOnlyException`, the bar's line and OVERRIDE in
+`ui.screen.bindings.ApplyBar`, and the warning in `AppController`.
+
 ## Opening BindForge
 
 5. The first time the user clicks the BindForge tab in an Elite-Intel session, [the check](#when-a-live-copy-differs)

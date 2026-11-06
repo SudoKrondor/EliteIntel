@@ -87,6 +87,9 @@ public class BindingsTabPanel extends JPanel {
         add(applyBar, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
         applyBar.onCreateState(state -> editorsUsable(tabs, state.editors()));
+        // WHY: first-time startup and the check held back while read only run once the user overrides it, on screen
+        // now rather than at the next tab click (Storage S14a, Q3).
+        applyBar.onOverride(firstTimeStartup::offerIfNeeded);
     }
 
     /**

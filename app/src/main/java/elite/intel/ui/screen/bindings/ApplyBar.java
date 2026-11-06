@@ -3,10 +3,12 @@ package elite.intel.ui.screen.bindings;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.storage.*;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
@@ -46,6 +48,11 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * (storage.md rule 16; Storage S11): lit until it is pressed, dimmed while its file waits for APPLY, gone once APPLY has
  * written it. DISCARD lights it again. What it shows is worked out off the EDT, from the edits, and handed to
  * {@link #onCreateState} so BindForge's tabs can follow.
+ * <p>
+ * <strong>While BindForge is read only</strong> - an installation missing ({@link ReadOnlyMode}; storage.md, <em>An
+ * installation missing - read only</em>; Storage S14a) - there are no edits, so the bar's left side names every missing
+ * installation and the ways out, in warning colour, and <strong>OVERRIDE</strong> takes the place of DISCARD and APPLY.
+ * CREATE is not shown. The bar is above the tabs, not an editor, so it may name installations (principle 12).
  */
 public final class ApplyBar extends JPanel {
 
@@ -55,6 +62,9 @@ public final class ApplyBar extends JPanel {
     private final JButton discard = makeButtonSubtle(getText("bindings.applyBar.discard"));
     private final JLabel status = AppTheme.hudReadoutValue(" ", HudPalette.HUD_COLOR_ROLE_WARNING);
     private final JButton create = makeButton(getText("bindings.create.button"));
+    private final JButton override = makeButton(getText("bindings.readOnly.override"));
+    private Runnable overridden = () -> {
+    };
     private final RefreshCoalescer createRefresh = new RefreshCoalescer();
     private Create.State createState = Create.State.NOT_SET_UP;
     private Consumer<Create.State> createListener = state -> {
@@ -68,11 +78,13 @@ public final class ApplyBar extends JPanel {
         discard.addActionListener(e -> discard());
         create.addActionListener(e -> create());
         create.setVisible(false);
+        override.addActionListener(e -> override());
+        override.setVisible(false);
         JPanel leading = new JPanel(new FlowLayout(FlowLayout.LEFT, HudPalette.HUD_GAP, 0));
         leading.setOpaque(false);
         leading.add(create);
         leading.add(status);
-        add(HudFooter.build(false, null, leading, List.of(discard, apply)), BorderLayout.CENTER);
+        add(HudFooter.build(false, null, leading, List.of(discard, apply, override)), BorderLayout.CENTER);
         refresh();
         UiBus.register(this);
     }
@@ -87,6 +99,11 @@ public final class ApplyBar extends JPanel {
         refreshCreate();
     }
 
+    /** Runs {@code then} on the EDT once the user has overridden read only - the BindForge tab offers what it held back. */
+    public void onOverride(Runnable then) {
+        overridden = then;
+    }
+
     /**
      * Works out again what CREATE shows, off the EDT - the working copy may be read from disk. Before first-time
      * startup, or while the working copy cannot be read, CREATE is not shown: first-time startup and RESTORE come
@@ -96,6 +113,9 @@ public final class ApplyBar extends JPanel {
         if (!createRefresh.tryStart()) return;
         Thread.ofPlatform().name("BindForge-CreateState").start(() -> {
             Create.State state;
+            // WHY here: off the EDT, so the first ask in a run - which reads the stored list and the disk - never holds
+            // the screen; the bar shows the answer when it comes.
+            ReadOnlyMode.stored().missing();
             try {
                 state = Create.State.of(Edits.stored().snapshot());
             } catch (IOException e) {
@@ -116,7 +136,7 @@ public final class ApplyBar extends JPanel {
 
     private void showCreate(Create.State state) {
         createState = state;
-        create.setVisible(state.offered());
+        create.setVisible(state.offered() && !ReadOnlyMode.stored().activeIfKnown());
         create.setEnabled(state.offered() && !state.editors() && !Edits.stored().writing());
         createListener.accept(state);
     }
@@ -131,8 +151,31 @@ public final class ApplyBar extends JPanel {
         refreshCreate();
     }
 
-    /** Lit when there are edits not applied and no write is running. On the EDT; reads nothing from disk. */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            refresh();
+            showCreate(createState);
+        });
+    }
+
+    /**
+     * Lit when there are edits not applied and no write is running; the read-only message and OVERRIDE instead while
+     * BindForge is read only. On the EDT; reads nothing from disk.
+     */
     private void refresh() {
+        boolean readOnly = ReadOnlyMode.stored().activeIfKnown();
+        override.setVisible(readOnly);
+        apply.setVisible(!readOnly);
+        discard.setVisible(!readOnly);
+        if (readOnly) {
+            String message = readOnlyText(ReadOnlyMode.stored().missingIfKnown());
+            status.setText(message);
+            // WHY: the line may be cut short on a narrow window - the tooltip carries all of it.
+            status.setToolTipText(message);
+            return;
+        }
+        status.setToolTipText(null);
         Edits edits = Edits.stored();
         boolean writing = edits.writing();
         boolean lit = edits.hasEdits() && !writing;
@@ -142,6 +185,28 @@ public final class ApplyBar extends JPanel {
         apply.setToolTipText(lit ? null : getText("bindings.applyBar.nothing"));
         status.setText(writing ? getText("bindings.applyBar.writing")
                 : lit ? getText("bindings.applyBar.pending") : " ");
+    }
+
+    /** The bar's read-only line, naming every missing installation and the ways out. */
+    static String readOnlyText(List<InstallationRow> missing) {
+        String installations = missing.stream()
+                .map(row -> getText("bindings.firstTimeStartup.place.installation", row.storefront(), row.rootPath()))
+                .collect(Collectors.joining(", "));
+        return getText("bindings.readOnly.bar", installations);
+    }
+
+    /**
+     * OVERRIDE: asks first, then turns editing on until Elite-Intel closes (storage.md, <em>An installation missing -
+     * read only</em>). A missing installation that comes back is compared and reconciled at the next start (rule 1).
+     */
+    private void override() {
+        if (!HudConfirmDialog.confirm(this, getText("bindings.readOnly.override.title"),
+                getText("bindings.readOnly.override.confirm"), getText("bindings.readOnly.override"),
+                getText("button.cancel"))) {
+            return;
+        }
+        ReadOnlyMode.stored().override();
+        overridden.run();
     }
 
     /** The leave prompt, asking over {@code parent}, whose Apply is this bar's APPLY. */
@@ -234,10 +299,11 @@ public final class ApplyBar extends JPanel {
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("APPLY wrote nothing: there was nothing to back up");
                 return getText(Backups.NothingToBackUpException.ADVICE_KEY);
-            } catch (Edits.WriteRunningException e) {
-                // WHY: RESTORE or first-time startup is writing - nothing was written, and the edits are still on screen.
+            } catch (Edits.RefusedException e) {
+                // WHY: refused - another write running, or read only - nothing was written, and the edits are still on
+                // screen.
                 log.info("APPLY not run: {}", e.getMessage());
-                return getText("bindings.writeRunning");
+                return getText(e.messageKey());
             } catch (PresetRefusedException e) {
                 // WHY: refused before anything was backed up or written - a line naming nothing real fails silently in
                 // the game (preset-editor.md, What APPLY checks and writes for the preset file). Checked again on the
@@ -316,9 +382,9 @@ public final class ApplyBar extends JPanel {
             byte[] factory = Create.read(answer.factory());
             try {
                 Edits.stored().change((current, applied) -> Create.create(current, applied, answer.name(), factory));
-            } catch (Edits.WriteRunningException e) {
+            } catch (Edits.RefusedException e) {
                 log.info("CREATE not made: {}", e.getMessage());
-                return () -> FlowSteps.tell(this, title, getText("bindings.writeRunning"), done);
+                return () -> FlowSteps.tell(this, title, getText(e.messageKey()), done);
             }
             log.info("CREATE: {} from {}, an edit not applied", answer.name(), answer.factory().file());
             return null;

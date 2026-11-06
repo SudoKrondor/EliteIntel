@@ -20,7 +20,9 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
 import elite.intel.bindforge.rules.KeyBindCheck;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.bindforge.storage.StartupCheck;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.devices.DeviceService;
 import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
@@ -47,6 +49,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class AppController {
 
@@ -345,6 +348,8 @@ public class AppController {
                 // WHY: read only, on its own thread - the files compared are a few megabytes at most, but startup
                 // never waits on the disk for a hint (storage.md rule 15).
                 StartupCheck.stored().runInBackground(AppController::sayControlFilesChangedOutside);
+                // WHY: once a run, on its own thread - reads the stored list and looks for each folder (Storage S14a).
+                ReadOnlyMode.stored().warnInBackground(AppController::sayReadOnly);
                 KeyBindCheck.getInstance().check();
                 CustomCommandLoadAnnouncement.getInstance().announce();
                 LocalLlmModelCheck.getInstance().check();
@@ -367,6 +372,19 @@ public class AppController {
         GameEventBus.publish(new VocalisationRequestEvent(StringUtls.localizedSpeech(StartupCheck.SPEECH_KEY),
                 MissionCriticalAnnouncementEvent.class, false));
         UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech(StartupCheck.SPEECH_KEY)));
+    }
+
+    /**
+     * BindForge is read only because an installation is missing: said once, spoken and logged, naming each one
+     * (storage.md, <em>An installation missing - read only</em>; Storage S14a). The bar says it again in BindForge.
+     */
+    private static void sayReadOnly(List<InstallationRow> missing) {
+        String installations = missing.stream()
+                .map(row -> row.storefront() + " (" + row.rootPath() + ")")
+                .collect(Collectors.joining(", "));
+        String line = StringUtls.localizedSpeech(ReadOnlyMode.SPEECH_KEY, installations);
+        GameEventBus.publish(new VocalisationRequestEvent(line, MissionCriticalAnnouncementEvent.class, false));
+        UiBus.publish(new AppLogEvent(line));
     }
 
     /**

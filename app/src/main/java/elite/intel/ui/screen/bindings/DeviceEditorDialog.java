@@ -678,10 +678,10 @@ final class DeviceEditorDialog extends JDialog {
                 Edits.stored().change(edit);
             } catch (Stale e) {
                 return () -> notChanged(getText("bindings.aliasDesigner.editor.stale", opening.deviceName()));
-            } catch (Edits.WriteRunningException e) {
+            } catch (Edits.RefusedException e) {
                 // WHY: shown alone, like a stale device - wrapped in failedKey it would say "could not be done" twice.
                 log.info("The Device Editor did not change {}: {}", opening.deviceName(), e.getMessage());
-                return () -> notChanged(getText("bindings.writeRunning"));
+                return () -> notChanged(getText(e.messageKey()));
             }
             return () -> {
                 busy = false;

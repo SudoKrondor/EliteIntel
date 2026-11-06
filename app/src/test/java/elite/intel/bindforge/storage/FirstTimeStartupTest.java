@@ -69,20 +69,18 @@ class FirstTimeStartupTest {
     }
 
     /**
-     * Review, 2026-10-25 (Alan): installations known but none reachable - a drive unplugged - stop first-time startup,
-     * naming them. A working copy with no device files would otherwise go over theirs when they come back.
+     * Storage S14a (storage.md, An installation missing - read only): the very first setup runs with the installations
+     * that are there, even when none of the known ones is - S2b's stop is gone. The one missing is named in the reading.
      */
     @Test
-    void installationsKnownButNoneReachableStopTheReadingAndAreNamed() throws IOException {
+    void installationsKnownButNoneReachableStillLetTheReadingGoOn() throws IOException {
         Path bindings = Files.createDirectories(temp.resolve("Bindings"));
         rows.add(new InstallationRow(1, "STEAM", temp.resolve("unplugged").toString(), false, true));
 
-        FirstTimeStartup.NoInstallationReachableException thrown = assertThrows(
-                FirstTimeStartup.NoInstallationReachableException.class,
-                () -> startup(bindings, writerThatWrites()).read());
+        FirstSetupReading reading = startup(bindings, writerThatWrites()).read();
 
-        assertEquals(List.of(1L), thrown.unreachable().stream().map(InstallationRow::id).toList());
-        assertFalse(flag.complete);
+        assertTrue(reading.installations().isEmpty());
+        assertEquals(List.of(1L), reading.unreachable().stream().map(InstallationRow::id).toList());
     }
 
     @Test

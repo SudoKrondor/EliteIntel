@@ -1,5 +1,6 @@
 package elite.intel.ui.screen.bindings;
 
+import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devicefiles.ButtonMapAudit;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
@@ -9,11 +10,14 @@ import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceCheck;
 import elite.intel.bindforge.storage.FirstTimeStartup;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
@@ -90,6 +94,7 @@ public class GameInstallLocationsPanel extends JPanel {
     private Long pendingSelection;
 
     private JButton removeButton;
+    private JButton runAgainButton;
 
     public GameInstallLocationsPanel() {
         this(new InstallationRegistry(
@@ -99,6 +104,9 @@ public class GameInstallLocationsPanel extends JPanel {
     GameInstallLocationsPanel(InstallationRegistry registry) {
         this.registry = registry;
         buildUi();
+        UiBus.register(this);
+        // WHY after registering: read only may have been worked out before this screen existed.
+        showReadOnly();
     }
 
     private void buildUi() {
@@ -170,7 +178,20 @@ public class GameInstallLocationsPanel extends JPanel {
         bindsFileSection.setEditorsUsable(usable);
     }
 
+    /** Run first-time startup again is off while BindForge is read only, since first-time startup is (S14a, Q5). */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(this::showReadOnly);
+    }
+
+    private void showReadOnly() {
+        boolean readOnly = ReadOnlyMode.stored().activeIfKnown();
+        runAgainButton.setEnabled(!readOnly);
+        runAgainButton.setToolTipText(readOnly ? getText("bindings.readOnly.tooltip") : null);
+    }
+
     public void dispose() {
+        UiBus.unregister(this);
         bindsFileSection.dispose();
     }
 
@@ -203,7 +224,7 @@ public class GameInstallLocationsPanel extends JPanel {
 
         // WHY: shown to every user, because Elite-Intel cannot tell a tester from anyone else - to be hidden or removed
         // before V1.2 ships (Alan, 2026-10-24; build plan, storage.md, Before V1.2 ships).
-        JButton runAgainButton = makeButtonSubtle(getText("bindings.installLocations.button.runFirstTimeStartupAgain"));
+        runAgainButton = makeButtonSubtle(getText("bindings.installLocations.button.runFirstTimeStartupAgain"));
         runAgainButton.addActionListener(e -> performRunAgain());
 
         return HudFooter.build(false, null, null, List.of(addButton, removeButton, runAgainButton));
@@ -280,6 +301,9 @@ public class GameInstallLocationsPanel extends JPanel {
                 getText("button.cancel"));
         if (!confirmed) return;
         registry.remove(row.id());
+        // WHY: a missing installation the user removes no longer holds BindForge read only - read only ends when none
+        // is left (Alan, 2026-11-05, S14a Q4). Plugging a drive back in waits for the next start.
+        ReadOnlyMode.stored().removed(row.id());
         initData();
     }
 

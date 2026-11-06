@@ -5,9 +5,11 @@ import elite.intel.bindforge.devices.DeviceNames;
 import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.bindforge.storage.Rename;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
@@ -136,6 +138,12 @@ public final class BindsFileSection extends HudSection {
         SwingUtilities.invokeLater(this::refresh);
     }
 
+    /** RENAME is off while BindForge is read only; the list and LOAD stay, for viewing (Storage S14a). */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(this::updateEnabled);
+    }
+
     /**
      * Reads the binds files off the EDT, then shows them. A read already in flight is left to finish, and one more
      * follows it. A read that fails shows an empty, disabled list - the log says why, and before first-time startup
@@ -169,12 +177,14 @@ public final class BindsFileSection extends HudSection {
 
     private void updateEnabled() {
         boolean usable = editorsUsable && anyFile;
+        boolean renamable = usable && !ReadOnlyMode.stored().activeIfKnown();
         fileBox.setEnabled(usable);
         loadButton.setEnabled(usable);
-        nameField.setEnabled(usable && !renameRunning);
-        nameSuffix.setEnabled(usable);
+        nameField.setEnabled(renamable && !renameRunning);
+        nameSuffix.setEnabled(renamable);
         // WHY lit for any name: a name the rules refuse is said when RENAME is pressed (Q4, Alan, 2026-11-04).
-        renameButton.setEnabled(usable && !renameRunning);
+        renameButton.setEnabled(renamable && !renameRunning);
+        renameButton.setToolTipText(usable && !renamable ? getText("bindings.readOnly.tooltip") : null);
     }
 
     /**
@@ -240,10 +250,10 @@ public final class BindsFileSection extends HudSection {
                     }
                     try {
                         Edits.stored().change((current, applied) -> Rename.rename(current, applied, file, typed));
-                    } catch (Edits.WriteRunningException e) {
-                        // WHY: a write is running - said in the user's language, not the exception's.
+                    } catch (Edits.RefusedException e) {
+                        // WHY: refused - a write running, or read only - said in the user's language.
                         log.info("The binds file's rename not done: {}", e.getMessage());
-                        return () -> renameEnded(title, getText("bindings.writeRunning"));
+                        return () -> renameEnded(title, getText(e.messageKey()));
                     }
                     return () -> {
                         // WHY: the old name is gone from the edits, so without this both would fall back to the

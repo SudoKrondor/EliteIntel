@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
@@ -30,7 +31,7 @@ public final class Edits {
     private static final Logger log = LogManager.getLogger(Edits.class);
 
     private static final Edits STORED = new Edits(() -> WorkingCopy.stored().read(),
-            () -> UiBus.publish(new BindForgeEditsChangedEvent()));
+            () -> UiBus.publish(new BindForgeEditsChangedEvent()), () -> ReadOnlyMode.stored().active());
 
     /** Reads the working copy. */
     @FunctionalInterface
@@ -68,14 +69,45 @@ public final class Edits {
      * since its set would drop the change; and by {@link #whileWriting} when one is already running. The message is for
      * the log: a screen says it in the user's language ({@code bindings.writeRunning}).
      */
-    public static final class WriteRunningException extends IllegalStateException {
+    public static final class WriteRunningException extends RefusedException {
         WriteRunningException() {
-            super("your control files are being written - try again when it has finished");
+            super("your control files are being written - try again when it has finished", "bindings.writeRunning");
+        }
+    }
+
+    /**
+     * Thrown by {@link #change} and {@link #whileWriting} while BindForge is read only - an installation is missing and
+     * the user has not overridden it ({@link ReadOnlyMode}; Storage S14a). Every change and write is off then, whichever
+     * screen offered it.
+     */
+    public static final class ReadOnlyException extends RefusedException {
+        ReadOnlyException() {
+            super("BindForge is read only while an installation is missing", "bindings.readOnly.refused");
+        }
+    }
+
+    /**
+     * A change or write the edits did not run: {@link WriteRunningException} or {@link ReadOnlyException}. The message is
+     * for the log; a screen says {@link #messageKey()} in the user's language.
+     */
+    public abstract static sealed class RefusedException extends IllegalStateException
+            permits WriteRunningException, ReadOnlyException {
+        private final String messageKey;
+
+        RefusedException(String message, String messageKey) {
+            super(message);
+            this.messageKey = messageKey;
+        }
+
+        /** The bundle key a screen tells the user. */
+        public String messageKey() {
+            return messageKey;
         }
     }
 
     private final Source source;
     private final Runnable changed;
+    private final BooleanSupplier readOnly;
 
     private ConfigurationFiles applied;
     private ConfigurationFiles edited;
@@ -86,9 +118,16 @@ public final class Edits {
         return STORED;
     }
 
+    /** Edits that are never read only - for tests of everything else. */
     Edits(Source source, Runnable changed) {
+        this(source, changed, () -> false);
+    }
+
+    /** @param readOnly whether every change and write is off now - may touch the disk, so asked outside the lock */
+    Edits(Source source, Runnable changed, BooleanSupplier readOnly) {
         this.source = source;
         this.changed = changed;
+        this.readOnly = readOnly;
     }
 
     /**
@@ -138,9 +177,11 @@ public final class Edits {
      * Changes the edits with a change that needs the working copy too.
      *
      * @throws WriteRunningException while a write runs
+     * @throws ReadOnlyException     while BindForge is read only
      * @throws IOException           if the working copy cannot be read, or the edit cannot be made - nothing changes
      */
     public void change(EditFromApplied edit) throws IOException {
+        if (readOnly.getAsBoolean()) throw new ReadOnlyException();
         synchronized (this) {
             if (writing) throw new WriteRunningException();
             ConfigurationFiles current = currentLocked();
@@ -169,8 +210,10 @@ public final class Edits {
      * nothing the user does while it runs is dropped by the set it leaves, and no APPLY writes edits read before it.
      *
      * @throws WriteRunningException if a write is already running - {@code write} is not run
+     * @throws ReadOnlyException     while BindForge is read only - {@code write} is not run
      */
     public <T> T whileWriting(WriteStep<T> write) throws IOException {
+        if (readOnly.getAsBoolean()) throw new ReadOnlyException();
         synchronized (this) {
             if (writing) throw new WriteRunningException();
             writing = true;
