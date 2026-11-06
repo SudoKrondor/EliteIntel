@@ -10,7 +10,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -58,10 +60,21 @@ public final class ReadOnlyMode {
     private final Predicate<InstallationRow> reachable;
     private final Runnable changed;
     private final AtomicBoolean warned = new AtomicBoolean();
+    /**
+     * One work-out at a time, held across the disk and the database. Apart from this object's own monitor because the
+     * EDT takes that one: it must never wait on the work (a stalled drive is what this class is for).
+     */
+    private final Object workingOut = new Object();
 
-    /** The missing installations, or {@code null} until worked out. */
+    /**
+     * The missing installations, or {@code null} until worked out. Guarded by this object's monitor.
+     */
     private List<InstallationRow> missing;
     private boolean overridden;
+    /**
+     * Removed before {@link #missing} was known: the work-out under way may have read them before they went.
+     */
+    private final Set<Long> removedBeforeKnown = new HashSet<>();
 
     /** The one every BindForge screen and {@link Edits} share. */
     public static ReadOnlyMode stored() {
@@ -82,15 +95,23 @@ public final class ReadOnlyMode {
      * database then - not for the EDT.
      */
     public List<InstallationRow> missing() {
-        boolean first;
-        List<InstallationRow> found;
-        synchronized (this) {
-            first = missing == null;
-            if (first) missing = workOut();
-            found = missing;
+        boolean first = false;
+        synchronized (workingOut) {
+            if (!known()) {
+                publish(workOut());
+                first = true;
+            }
         }
         if (first) changed.run();
-        return found;
+        return missingIfKnown();
+    }
+
+    private synchronized boolean known() {
+        return missing != null;
+    }
+
+    private synchronized void publish(List<InstallationRow> gone) {
+        missing = gone.stream().filter(row -> !removedBeforeKnown.contains(row.id())).toList();
     }
 
     private List<InstallationRow> workOut() {
@@ -144,7 +165,11 @@ public final class ReadOnlyMode {
     /** The user removed this installation in Game Install Locations - it no longer counts as missing (Q4). */
     public void removed(long id) {
         synchronized (this) {
-            if (missing == null || missing.stream().noneMatch(row -> row.id() == id)) return;
+            if (missing == null) {
+                removedBeforeKnown.add(id);
+                return;
+            }
+            if (missing.stream().noneMatch(row -> row.id() == id)) return;
             missing = missing.stream().filter(row -> row.id() != id).toList();
         }
         log.info("A missing installation was removed; installations still missing: {}", missingIfKnown().size());

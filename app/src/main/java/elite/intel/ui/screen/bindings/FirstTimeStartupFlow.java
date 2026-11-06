@@ -158,9 +158,7 @@ public final class FirstTimeStartupFlow {
                            Map<String, String> names) {
         Optional<FirstSetupDialog.Choice> choice;
         if (identical != null) {
-            String summary = getText("bindings.firstTimeStartup.summary.identical", identical.buttonMaps().size())
-                    + "\n\n" + getText("bindings.firstTimeStartup.summary.installations",
-                    reading.installations().size());
+            String summary = identicalSummary(reading, identical, names);
             choice = HudConfirmDialog.confirm(parent, getText("bindings.firstTimeStartup.summary.title"), summary,
                     getText("bindings.firstTimeStartup.summary.create"),
                     getText("button.cancel"))
@@ -199,6 +197,25 @@ public final class FirstTimeStartupFlow {
             String told = message;
             return () -> tell(told);
         });
+    }
+
+    /**
+     * The summary when there is nothing to reconcile. Names every installation left out, as {@link FirstSetupDialog} does
+     * when there is: with a drive unplugged this is the last thing said before the working copy is made without it.
+     */
+    static String identicalSummary(FirstSetupReading reading, ConfigurationFiles identical, Map<String, String> names) {
+        StringBuilder text = new StringBuilder(reading.installations().isEmpty()
+                ? getText("bindings.firstTimeStartup.summary.noInstallations")
+                : getText("bindings.firstTimeStartup.summary.identical", identical.buttonMaps().size()));
+        if (!reading.unreachable().isEmpty()) {
+            String skipped = reading.unreachable().stream()
+                    .map(row -> names.getOrDefault(String.valueOf(row.id()), row.storefront()))
+                    .collect(Collectors.joining(", "));
+            text.append("\n\n").append(getText("bindings.aliasDesigner.firstSetup.unreachable", skipped));
+        }
+        return text.append("\n\n")
+                .append(getText("bindings.firstTimeStartup.summary.installations", reading.installations().size()))
+                .toString();
     }
 
     /**

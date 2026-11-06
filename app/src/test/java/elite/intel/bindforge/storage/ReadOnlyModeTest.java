@@ -4,9 +4,12 @@ import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,7 +76,9 @@ class ReadOnlyModeTest {
         assertEquals(List.of("changed"), announced);
     }
 
-    /** The EDT never waits on the disk: until it is worked out, it reads as not read only. */
+    /**
+     * Until it is worked out, it reads as not read only.
+     */
     @Test
     void beforeItIsWorkedOutTheScreensSeeNothing() {
         ReadOnlyMode mode = mode(true, () -> List.of(STEAM, EPIC));
@@ -85,6 +90,40 @@ class ReadOnlyModeTest {
 
         assertTrue(mode.activeIfKnown());
         assertEquals(List.of(EPIC), mode.missingIfKnown());
+    }
+
+    /**
+     * The defect this pins: the work-out held the monitor the EDT's readers take, so a stalled drive froze the window.
+     * Remove runs on the EDT too, and must neither wait nor be lost: the work-out may have read the row before it went.
+     */
+    @Test
+    void whileItIsBeingWorkedOutTheEdtNeverWaitsAndARemoveCounts() throws InterruptedException {
+        CountDownLatch working = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ReadOnlyMode mode = mode(true, () -> {
+            working.countDown();
+            try {
+                release.await();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+            return List.of(STEAM, EPIC, FRONTIER);
+        });
+        Thread workOut = Thread.ofPlatform().start(mode::missing);
+        assertTrue(working.await(5, TimeUnit.SECONDS));
+
+        try {
+            assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+                assertFalse(mode.activeIfKnown());
+                assertEquals(List.of(), mode.missingIfKnown());
+                mode.removed(EPIC.id());
+            });
+        } finally {
+            release.countDown();
+        }
+        workOut.join();
+
+        assertEquals(List.of(FRONTIER), mode.missing(), "the row removed while it was worked out stays out");
     }
 
     @Test

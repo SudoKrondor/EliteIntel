@@ -125,6 +125,8 @@ stops first-time startup, with its message and its code.
   turned off in S14b; the refusal stays behind them.
 - **Worked out once a run, at the first ask**, from the stored list after this run's detection; a fault working it out
   is logged and BindForge is not read only - every write still backs up first.
+- **First-time startup's summary names every installation it leaves
+  out**, and with none read says the working copy will hold no device files, rather than that the installations match (S14a review, 2026-11-06). With S2b's stop gone, it is the last thing said before the working copy is made without them.
 
 Built in Storage S14a as `bindforge.storage.ReadOnlyMode`, `Edits.ReadOnlyException`, the bar's line and OVERRIDE in
 `ui.screen.bindings.ApplyBar`, and the warning in `AppController`.
