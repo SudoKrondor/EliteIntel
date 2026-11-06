@@ -15,6 +15,7 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.gameapi.carrier.OurCarriers;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
@@ -39,6 +40,7 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.io.File;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,6 +67,7 @@ public class CommanderTabPanel extends JPanel {
     private static final int COL_VOICE = 2;
     private static final int COL_PERSONALITY = 3;
     private static final int COL_GEAR = 4;
+    private static final int COMMANDER_NAME_COLUMNS = 24;
 
     /**
      * i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor.
@@ -150,6 +153,7 @@ public class CommanderTabPanel extends JPanel {
 
     private JTextField playerAltNameField;
     private JCheckBox addressMeBox;
+    private JTextField journalDirField;
     private ToggleTreePanel shipSettingsPanel;
     private ToggleTreePanel announcementsPanel;
     private ExoMasteryTabPanel exoMasteryPanel;
@@ -204,10 +208,14 @@ public class CommanderTabPanel extends JPanel {
         JPanel profile = profileSection.body();
         GridBagConstraints gbc = baseGbc();
 
-        addLabel(profile, getText("player.commanderName"), gbc);
+        addLabel(profile, getText("player.commanderName"), gbc, 0);
         playerAltNameField = makeTextField();
         playerAltNameField.setToolTipText(getText("player.commanderName.tooltip"));
-        addField(profile, playerAltNameField, gbc, 1, 1.0);
+        // Wide enough for a name and no wider: the journal folder on this row is the one that needs the room.
+        playerAltNameField.setColumns(COMMANDER_NAME_COLUMNS);
+        playerAltNameField.setMinimumSize(playerAltNameField.getPreferredSize());
+        gbc.gridx = 1;
+        profile.add(playerAltNameField, gbc);
         playerAltNameField.addActionListener(e -> saveCommanderName());
         playerAltNameField.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusLost(java.awt.event.FocusEvent e) { saveCommanderName(); }
@@ -218,15 +226,30 @@ public class CommanderTabPanel extends JPanel {
         addressMeBox = toggle("player.addressMe",
                 playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
         addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
-        addCheck(profile, addressMeBox, gbc);
+        gbc.gridx = 2;
+        profile.add(addressMeBox, gbc);
+
+        gbc.gridx = 3;
+        profile.add(makeFieldLabel(getText("player.journalDirectory")), gbc);
+
+        journalDirField = makeTextField();
+        journalDirField.setEditable(false);
+        addField(profile, journalDirField, gbc, 4, 1.0);
+
+        JButton selectJournalDirButton = makeFieldButton(HudGlyphs.verticalEllipsisIcon(HUD_FIELD_HEIGHT), HUD_FIELD_HEIGHT);
+        selectJournalDirButton.setToolTipText(getText("button.select"));
+        selectJournalDirButton.addActionListener(e -> chooseJournalDir());
+        // Compact square picker - fixed size, do not stretch like a field.
+        gbc.gridx = 5;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        profile.add(selectJournalDirButton, gbc);
 
         // On the commander's own row: what an import teaches - their contracts, discoveries, samples - is theirs.
         JButton importJournalsButton = AppTheme.makeButtonSubtle(getText("player.importJournals"));
         importJournalsButton.setToolTipText(getText("player.importJournals.tooltip"));
         importJournalsButton.addActionListener(e -> JournalImportDialog.open(this));
-        gbc.gridx = 3;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
+        gbc.gridx = 6;
         profile.add(importJournalsButton, gbc);
 
         fleetTableModel = new FleetTableModel(playerSession);
@@ -373,6 +396,7 @@ public class CommanderTabPanel extends JPanel {
         playerAltNameField.setText(
                 playerSession.getAlternativeName() != null ? playerSession.getAlternativeName() : "");
         addressMeBox.setSelected(playerSession.isAddressMeOn());
+        showJournalDir();
 
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
         shipSettingsPanel.refresh();
@@ -526,6 +550,38 @@ public class CommanderTabPanel extends JPanel {
         if (current.equals(stored == null ? "" : stored)) return;
         playerSession.setAlternativeName(current);
         UiBus.publish(new AppLogEvent("Commander name saved"));
+    }
+
+    /**
+     * The field shares its row with the rest of the profile and is read-only, so a long path can be clipped with
+     * no way to scroll it: the tooltip carries the whole of it.
+     */
+    private void showJournalDir() {
+        String path = playerSession.getJournalPath().toString();
+        journalDirField.setText(path);
+        journalDirField.setToolTipText(path + " - " + getText("player.journalDirectory.tooltip"));
+    }
+
+    private void chooseJournalDir() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setDialogTitle(getText("player.journalDirectory.dialog"));
+        String current = playerSession.getJournalPath().toString();
+        if (!current.isBlank()) chooser.setCurrentDirectory(new File(current).getParentFile());
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            String path = chooser.getSelectedFile().getAbsolutePath();
+            // A quoted path pasted into the chooser's file-name box comes back appended to the folder on
+            // show, quotes and all. Storing that made every later read throw and the window stop opening,
+            // so a choice that cannot be used is refused here rather than saved.
+            if (!playerSession.setJournalPath(path)) {
+                UiBus.publish(new AppLogEvent(getText("player.journalDirectory.unusable")));
+                DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.JOURNAL);
+                return;
+            }
+            showJournalDir();
+            UiBus.publish(new AppLogEvent("Journal directory updated"));
+            DataDirectoryValidator.validateAndWarn(playerSession.getJournalPath(), DataDirectoryValidator.DirectoryKind.JOURNAL);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -777,7 +833,7 @@ public class CommanderTabPanel extends JPanel {
         final JPanel panel = new JPanel(new BorderLayout());
         final JButton gear = new JButton();
         private final ImageIcon gearBase =
-                HudGlyphs.scaledIcon(CommanderTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
+                HudGlyphs.scaledIcon(CommanderTabPanel.class, "/images/setting.png", HUD_ICON_TABLE);
         private ImageIcon gearOrange;
         private ImageIcon gearDark;
 

@@ -18,6 +18,10 @@
 // and a colour picker on top of that would let a card be made opaque and bright
 // enough to hide the cockpit behind it.
 static const Rgb COL_PANEL    = {0.01569,  0.02745,  0.03529};
+// Fixed, not palette roles: bright blue with its hue kept clear of cyan so it
+// never reads as the success green, and plain white.
+static const Rgb COL_BLUE     = HUD_RGB(0x3D8BFF);
+static const Rgb COL_WHITE    = HUD_RGB(0xFFFFFF);
 
 static Rgb col(ColorRole role) {
     return model.palette[role];
@@ -42,6 +46,8 @@ static Rgb color_for(State s) {
         case ST_GOOD:     return col(HUD_COL_SUCCESS);
         case ST_WARN:     return col(HUD_COL_WARNING);
         case ST_CRITICAL: return col(HUD_COL_DANGER);
+        case ST_BLUE:     return COL_BLUE;
+        case ST_WHITE:    return COL_WHITE;
         default:          return col(HUD_COL_PRIMARY);
     }
 }

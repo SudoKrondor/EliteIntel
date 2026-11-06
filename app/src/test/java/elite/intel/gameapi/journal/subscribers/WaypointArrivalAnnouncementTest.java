@@ -80,6 +80,31 @@ class WaypointArrivalAnnouncementTest {
         assertTrue(line.endsWith("1 jump left to destination."), line);
     }
 
+    /**
+     * The heat warning stands apart from the fuel toggle: it matters just as much to a ship with no scoop.
+     */
+    @Test
+    void aWolfRayetStarIsCalledOutAsHotWithOrWithoutTheFuelClause() {
+        for (String starClass : List.of("W", "WN", "WNC", "WC", "WO")) {
+            String expected = "Next Waypoint: WR 1, Star Class: " + starClass + ". Caution! Wolf-Rayet star, very hot.";
+
+            String withoutFuel = JumpCompletedSubscriber.waypointArrival("Sol", List.of(leg("WR 1", starClass)), false, true, () -> false);
+            assertTrue(withoutFuel.startsWith(expected), withoutFuel);
+
+            String withFuel = JumpCompletedSubscriber.waypointArrival("Sol", List.of(leg("WR 1", starClass)), false, true, () -> true);
+            assertTrue(withFuel.startsWith(expected + " Warning! No fuel"), withFuel);
+        }
+    }
+
+    @Test
+    void aRareClassIsCalledOutAsRare() {
+        for (String starClass : List.of("X", "RoguePlanet", "Nebula", "StellarRemnantNebula")) {
+            String line = JumpCompletedSubscriber.waypointArrival("Sol", List.of(leg("Odd 1", starClass)), false, true, () -> false);
+
+            assertTrue(line.startsWith("Next Waypoint: Odd 1, Star Class: " + starClass + ". Extremely rare stellar object."), line);
+        }
+    }
+
     private static NavRouteDto leg(String name, String starClass) {
         NavRouteDto leg = new NavRouteDto();
         leg.setName(name);

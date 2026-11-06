@@ -73,7 +73,7 @@ public final class CustomCommandKeyGenerator {
         if (LlmProviderResolver.isCloudProviderMissing()) {
             // The factory would hand back the stand-in gateway, which answers nothing; say why instead.
             throw new KeyGenerationException(
-                    "No cloud AI provider is selected. Choose one on the AI Services settings tab, then try again.");
+                    "No cloud AI provider is selected. Choose one on the AI Services tab, then try again.");
         }
         LlmGateway gateway = VegaLlmGatewayFactory.create();
         // The gateway owns a single-thread executor; close it once the (single, blocking) call has returned

@@ -92,7 +92,7 @@ public final class JournalImportDialog extends JDialog {
                 HudPalette.HUD_COLOR_ROLE_INFORMATION, null);
         checkingCell = new HudStatCell(getText("journalImport.progress.checking"), "/images/stats.png",
                 HudPalette.HUD_COLOR_ROLE_INFORMATION, null);
-        readingCell = new HudStatCell(getText("journalImport.progress.reading"), "/images/manual.png",
+        readingCell = new HudStatCell(getText("journalImport.progress.reading"), "/images/journal.png",
                 HudPalette.HUD_COLOR_ROLE_INFORMATION, null);
         progressSection = section(getText("journalImport.section.progress"),
                 List.of(collectingCell, checkingCell, readingCell));

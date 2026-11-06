@@ -15,7 +15,10 @@ import elite.intel.ui.event.BindForgeEditsChangedEvent;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.*;
+import elite.intel.ui.widget.HudBanner;
+import elite.intel.ui.widget.HudSearchToolbar;
+import elite.intel.ui.widget.HudSlider;
+import elite.intel.ui.widget.StatusBadge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -139,9 +142,8 @@ public class BindingProfilePanel extends JPanel {
         setBorder(hudSubtabContentBorder());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        JPanel details = compactProfilePanel();
         JPanel header = transparentPanel(new BorderLayout(0, 2));
-        header.add(bindingProfileCard(details), BorderLayout.NORTH);
+        header.add(compactProfilePanel(), BorderLayout.NORTH);
         header.add(hintAndPacingRow(), BorderLayout.CENTER);
         add(header, BorderLayout.NORTH);
 
@@ -178,27 +180,12 @@ public class BindingProfilePanel extends JPanel {
      */
     private JPanel compactProfilePanel() {
         JPanel details = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        details.setBorder(BorderFactory.createEmptyBorder(2, 0, 6, 0));
+        details.setBorder(BorderFactory.createEmptyBorder(HUD_PADDING_SMALL, HUD_PADDING_SMALL, 6, HUD_PADDING_SMALL));
         details.add(hudReadoutLabel(getText("bindings.editing")));
         details.add(Box.createHorizontalStrut(7));
         editingValue = hudReadoutValue(getText("bindings.editing.none"), HUD_COLOR_ROLE_PRIMARY_TEXT);
         details.add(editingValue);
         return details;
-    }
-
-    private JComponent bindingProfileCard(JPanel body) {
-        // Working zone of the tab -> FLAT section (HUD section 9), not a framed accent box.
-        HudSection card = new HudSection(
-                getText("bindings.section.profile"),
-                new BorderLayout(),
-                HudPanel.Variant.FLAT,
-                6);
-        card.body().add(body, BorderLayout.CENTER);
-
-        JPanel wrapper = transparentPanel(new BorderLayout());
-        wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        wrapper.add(card, BorderLayout.CENTER);
-        return wrapper;
     }
 
     /**

@@ -3,6 +3,7 @@ package elite.intel.ui.widget;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -121,6 +122,41 @@ class ToggleTreePanelTest {
             return;
         }
         throw new AssertionError("expected IllegalArgumentException");
+    }
+
+    @Test
+    void columnsLineUpAcrossEveryLevelOfThePageWhateverTheLabelsSay() {
+        SettingToggle top1 = new Stored(true).toggle("announcements.discovery");
+        SettingToggle topSecondColumn = new Stored(true).toggle("announcements.mining");
+        SettingToggle nested1 = new Stored(true).toggle("automation.announceJumpRoute");
+        SettingToggle nestedSecondColumn = new Stored(true).toggle("automation.announceJumpDeaths");
+        SettingToggle deep1 = new Stored(true).toggle("automation.announceArrival");
+        SettingToggle deepSecondColumn = new Stored(true).toggle("automation.announceFuelAvailable");
+        SettingToggle deepParent = new Stored(true).toggle("automation.announceRemainingJumps", deep1, deepSecondColumn);
+        SettingToggle head = new Stored(true).toggle("announcements.route", nested1, nestedSecondColumn, deepParent);
+        ToggleTreePanel page = new ToggleTreePanel(List.of(top1, topSecondColumn, head));
+        page.setSize(1200, 600);
+        layOut(page);
+
+        int firstColumn = screenX(page, top1);
+        int secondColumn = screenX(page, topSecondColumn);
+        assertTrue(secondColumn > firstColumn);
+        assertEquals(firstColumn, screenX(page, head), "a group head sits in the first column");
+        assertEquals(secondColumn, screenX(page, nestedSecondColumn));
+        assertEquals(secondColumn, screenX(page, deepSecondColumn));
+        assertEquals(screenX(page, nested1) - firstColumn, screenX(page, deep1) - screenX(page, nested1),
+                "each level indents by the same amount");
+    }
+
+    private static int screenX(ToggleTreePanel page, SettingToggle toggle) {
+        return SwingUtilities.convertPoint(page.checkBox(toggle), 0, 0, page).x;
+    }
+
+    private static void layOut(Container container) {
+        container.doLayout();
+        for (Component child : container.getComponents()) {
+            if (child instanceof Container nested) layOut(nested);
+        }
     }
 
     private void click(SettingToggle toggle) {

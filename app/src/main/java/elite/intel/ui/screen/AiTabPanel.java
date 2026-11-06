@@ -26,11 +26,9 @@ import elite.intel.util.SleepNoThrow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -163,7 +161,7 @@ public class AiTabPanel extends JPanel {
         hudOverlaySettingsButton = makeButtonSubtle(getText("ai.hudOverlay.settings"));
         hudOverlaySettingsButton.setToolTipText(getText("ai.hudOverlay.settings.tooltip"));
         hudOverlaySettingsButton.addActionListener(e ->
-                SwingUtilities.invokeLater(() -> new HudOverlaySettingsDialog(hudOverlay.overlay()).setVisible(true)));
+                SwingUtilities.invokeLater(() -> HudOverlaySettingsDialog.open(AiTabPanel.this, hudOverlay.overlay())));
 
         recalibrateAudioButton = makeButtonSubtle(getText("button.calibrateAudio"));
         recalibrateAudioButton.setEnabled(false);
@@ -770,35 +768,11 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Loads a telemetry PNG via ImageIO into a decoded BufferedImage, then scales
-     * to {@link HudTelemetryBlock#ICON_SIZE} with high-quality Graphics2D hints if the
-     * source size differs. Returns {@code null} on failure so the block falls back to
-     * its diamond marker. Result is constructed once and cached by the caller.
+     * Loads a telemetry PNG reduced to {@link HudTelemetryBlock#ICON_SIZE}, or {@code null} when it is missing so
+     * the block falls back to its diamond marker.
      */
     private static ImageIcon tryLoadIcon(String resource) {
-        try {
-            var url = AiTabPanel.class.getResource(resource);
-            if (url == null) return null;
-            BufferedImage src = ImageIO.read(url);
-            if (src == null) return null;
-            int target = HudTelemetryBlock.ICON_SIZE;
-            if (src.getWidth() == target && src.getHeight() == target) {
-                return new ImageIcon(src);
-            }
-            // High-quality one-time scale; not needed for current 32x32 PNGs but kept as a safety net.
-            BufferedImage scaled = new BufferedImage(target, target, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = scaled.createGraphics();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                g2.setRenderingHint(RenderingHints.KEY_RENDERING,     RenderingHints.VALUE_RENDER_QUALITY);
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,  RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.drawImage(src, 0, 0, target, target, null);
-            } finally {
-                g2.dispose();
-            }
-            return new ImageIcon(scaled);
-        } catch (Exception e) {
-            return null;
-        }
+        if (AiTabPanel.class.getResource(resource) == null) return null;
+        return HudGlyphs.scaledIcon(AiTabPanel.class, resource, HudTelemetryBlock.ICON_SIZE);
     }
 }

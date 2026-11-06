@@ -9,15 +9,21 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 
 /**
- * HUD-styled checkbox rendered as a full-width cockpit control:
- * a square marker (Graphics2D primitives) + a narrow separator gap + a CAPS label
- * in one solid slab. No LAF rendering is used; super.paintComponent is not called.
+ * HUD-styled checkbox: a rounded square marker (Graphics2D primitives) and a CAPS label, painted straight on
+ * whatever panel it sits on. No LAF rendering is used; super.paintComponent is not called.
+ * <p>
+ * Only the marker and label are live, however wide a layout stretches the control: nothing marks the rest of
+ * the cell as part of it, so a click there must not flip a setting.
  * <p>
  * Optional info-zone: call {@link #setInfoAction(Runnable)} to append a square
- * info-glyph (info) zone on the right. Clicking it runs the action without toggling
+ * info-glyph (info) zone after the label. Clicking it runs the action without toggling
  * the checkbox state.
  */
 public class HudCheckBox extends JCheckBox {
+
+    private static final int MARKER_SIZE = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
+    private static final int LABEL_X = MARKER_SIZE + HudPalette.HUD_PADDING_SMALL;
+    private static final int INFO_ZONE_WIDTH = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
 
     private final String labelText;
 
@@ -48,7 +54,7 @@ public class HudCheckBox extends JCheckBox {
 
     /**
      * Attaches an info-zone to this checkbox. When {@code action} is non-null a square
-     * info-glyph appears on the right; clicking it runs {@code action} without toggling
+     * info-glyph appears after the label; clicking it runs {@code action} without toggling
      * the checkbox. Pass {@code null} to remove the info-zone and restore default behaviour.
      */
     public void setInfoAction(Runnable action) {
@@ -70,16 +76,24 @@ public class HudCheckBox extends JCheckBox {
 
     @Override
     public Dimension getPreferredSize() {
-        Font f = getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
-        FontMetrics fm = getFontMetrics(f);
-        int markerSize  = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
-        int markerZoneW = markerSize + 2 * HudPalette.HUD_PADDING_SMALL;
-        int textW = HudPalette.HUD_PADDING
-                + (fm != null ? fm.stringWidth(labelText) : 120)
-                + HudPalette.HUD_PADDING;
-        int infoExtra = infoAction != null ? (HudPalette.HUD_SEP_W + HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT) : 0;
-        return new Dimension(markerZoneW + HudPalette.HUD_SEP_W + textW + infoExtra,
-                HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
+        int infoExtra = infoAction != null ? INFO_ZONE_WIDTH : 0;
+        return new Dimension(LABEL_X + labelWidth() + infoExtra, HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
+    }
+
+    /**
+     * Limits the live area to what is painted, so the mouse passes through the stretched remainder of a cell.
+     */
+    @Override
+    public boolean contains(int x, int y) {
+        return x < getPreferredSize().width && super.contains(x, y);
+    }
+
+    /**
+     * The width of what {@link #paintLabel} paints.
+     */
+    protected int labelWidth() {
+        FontMetrics fm = getFontMetrics(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX));
+        return fm != null ? fm.stringWidth(labelText) : 120;
     }
 
     /**
@@ -102,74 +116,39 @@ public class HudCheckBox extends JCheckBox {
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int w = getWidth();
             int h = getHeight();
-
-            // Marker geometry: square sized to row height minus vertical padding
-            int markerSize  = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
-            int markerZoneW = markerSize + 2 * HudPalette.HUD_PADDING_SMALL;
-            int markerX     = HudPalette.HUD_PADDING_SMALL;
-            int markerY     = (h - markerSize) / 2;
-
             boolean on      = isSelected();
             boolean enabled = isEnabled();
 
-            Color fill;
             Color markerColor;
             Color textColor;
 
-            // The checked state is carried by the marker box alone. Filling the whole slab with
-            // HUD_COLOR_ROLE_PRIMARY_ACTION (and inverting the label to read against it) made a
-            // checked row shout far louder than its neighbours; on a panel of six toggles the
-            // orange blocks dominated the tab. The slab colour is now state-independent, and only
-            // the small box is tinted, with the label merely brightening from secondary to primary.
+            // The label only brightens with the state, so a page of checked rows stays calm: the
+            // filled marker is what says "on".
             if (!enabled) {
-                fill        = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
                 markerColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
                 textColor   = HudPalette.HUD_COLOR_ROLE_DISABLED;
             } else if (on) {
-                fill = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
                 markerColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
                 textColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT;
             } else {
-                fill        = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
                 markerColor = HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
                 textColor   = HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT;
             }
 
-            // Slab fill - no border outline on the control itself
-            g2.setColor(fill);
-            g2.fillRect(0, 0, w, h);
-
-            // Left separator: HUD_COLOR_ROLE_APPLICATION_BACKGROUND stripe between marker zone and text zone
-            g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-            g2.fillRect(markerZoneW, 0, HudPalette.HUD_SEP_W, h);
-
             // Pass `on` rather than `on && enabled`: a disabled toggle must still show whether it is
             // checked, or a setting that cannot be changed right now renders as an empty box and reads
             // as "off" when it is on. Greying is already carried by markerColor.
-            HudGlyphs.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on);
+            HudGlyphs.paintHudCheckMarker(g2, 0, (h - MARKER_SIZE) / 2, MARKER_SIZE,
+                    markerColor, HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT, on);
 
-            // Label text in the text zone, vertically centred
-            Font f = getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
-            g2.setFont(f);
-            FontMetrics fm   = g2.getFontMetrics();
-            int baseline     = (h - fm.getHeight()) / 2 + fm.getAscent();
-            g2.setColor(textColor);
-            g2.drawString(labelText, markerZoneW + HudPalette.HUD_SEP_W + HudPalette.HUD_PADDING, baseline);
+            paintLabel(g2, LABEL_X, h, textColor);
 
             // Info-zone (optional)
             if (infoAction != null) {
-                int infoZoneW = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
-                int infoZoneX = w - infoZoneW;
-
-                // Right separator: same width/colour as the left one
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-                g2.fillRect(infoZoneX - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
+                int infoZoneX = infoZoneX();
 
                 // Glyph tint: brightens for hover on the zone itself and for the checked state alike.
-                // The checked case previously used the dark HUD_COLOR_ROLE_SELECTED_TEXT because it sat on an
-                // orange slab; with the slab gone that would be near-invisible on the dark fill.
                 Color infoTint;
                 if (!enabled) {
                     infoTint = HudPalette.HUD_COLOR_ROLE_DISABLED;
@@ -181,13 +160,26 @@ public class HudCheckBox extends JCheckBox {
 
                 // Glyph box centred inside the info zone, sized to HUD_ICON_TABLE role
                 int gs  = HudPalette.HUD_ICON_TABLE;
-                int gx  = infoZoneX + (infoZoneW - gs) / 2;
+                int gx = infoZoneX + (INFO_ZONE_WIDTH - gs) / 2;
                 int gy  = (h - gs) / 2;
                 HudGlyphs.paintHudInfoGlyph(g2, gx, gy, gs, gs, infoTint);
             }
         } finally {
             g2.dispose();
         }
+    }
+
+    /**
+     * Paints the label in the text zone, vertically centred.
+     *
+     * @param x left edge of the label
+     * @param h height of the control
+     */
+    protected void paintLabel(Graphics2D g2, int x, int h, Color textColor) {
+        g2.setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX));
+        FontMetrics fm = g2.getFontMetrics();
+        g2.setColor(textColor);
+        g2.drawString(labelText, x, (h - fm.getHeight()) / 2 + fm.getAscent());
     }
 
     // -------------------------------------------------------------------------
@@ -238,7 +230,11 @@ public class HudCheckBox extends JCheckBox {
 
     /** Returns true when {@code mouseX} falls within the info-zone column. */
     private boolean isInInfoZone(int mouseX) {
-        return mouseX >= getWidth() - HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
+        return mouseX >= infoZoneX();
+    }
+
+    private int infoZoneX() {
+        return LABEL_X + labelWidth();
     }
 
     private void clearInfoHover() {

@@ -310,7 +310,7 @@ public class AliasDesignerPanel extends JPanel {
         final JPanel panel = new JPanel(new BorderLayout());
         final JButton gear = new JButton();
         private final ImageIcon gearBase =
-                HudGlyphs.scaledIcon(AliasDesignerPanel.class, "/images/settings.png", HUD_ICON_TABLE);
+                HudGlyphs.scaledIcon(AliasDesignerPanel.class, "/images/setting.png", HUD_ICON_TABLE);
         private ImageIcon gearOrange;
         private ImageIcon gearDark;
 

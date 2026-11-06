@@ -1,10 +1,8 @@
 package elite.intel.ui.render;
-import static elite.intel.ui.theme.HudGlyphs.*;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -21,6 +19,7 @@ public class HudBooleanCellRenderer extends JComponent implements TableCellRende
 
     private boolean filled;
     private Color markerColor;
+    private Color tickColor;
     private Color bgColor;
 
     public HudBooleanCellRenderer() {
@@ -36,12 +35,18 @@ public class HudBooleanCellRenderer extends JComponent implements TableCellRende
             bgColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
             // Marker must remain legible on the HUD_COLOR_ROLE_PRIMARY_ACTION background; HUD_COLOR_ROLE_SELECTED_TEXT provides the contrast.
             markerColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
+            tickColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
         } else {
             Object hoveredObj = table.getClientProperty(HudTable.HOVER_ROW_PROPERTY);
             boolean hovered = hoveredObj instanceof Integer h && h == row;
             bgColor = hovered ? HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND;
             boolean editable = table.getModel().isCellEditable(row, column);
-            markerColor = editable ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION : HudPalette.HUD_COLOR_ROLE_DISABLED;
+            if (!editable) {
+                markerColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
+            } else {
+                markerColor = filled ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
+            }
+            tickColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
         }
 
         return this;
@@ -60,7 +65,8 @@ public class HudBooleanCellRenderer extends JComponent implements TableCellRende
             int x = (w - size) / 2;
             int y = (h - size) / 2;
             HudGlyphs.paintHudCheckMarker(g2, x, y, size,
-                    markerColor != null ? markerColor : HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, filled);
+                    markerColor != null ? markerColor : HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION,
+                    tickColor != null ? tickColor : HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT, filled);
         } finally {
             g2.dispose();
         }

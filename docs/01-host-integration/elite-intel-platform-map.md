@@ -65,7 +65,7 @@ BindForge or StarVizion design that assumed a free hand with native code must be
 ## Feature Registration
 
 Elite-Intel has no manifest. A feature is a Swing tab registered in the UI layer alongside the existing ones —
-`ui.screen.BindingsTabPanel`, `ActionsTabPanel`, `CommanderTabPanel`, `SettingsTabPanel`, and so on.
+`ui.screen.BindingsTabPanel`, `ActionsTabPanel`, `CommanderTabPanel`, `ServicesTabPanel`, and so on.
 
 BindForge and StarVizion each become a top-level tab. There is no versioned self-description, no declared
 service list, and no required-services negotiation. The nav-order and settings-tab-ordering rules in the
@@ -471,11 +471,10 @@ ever changes instead of freezing whatever path it was on the day the row was wri
 - **"Settings" means two things in BindForge.** The Bind Editor's
   [Settings mode](../02-features/bindforge/bind-editor.md#settings--settled-2026-09-19) edits the game's own
   settings entries, which live in the `.binds` file and never touch SQLite. File Manager's *"BindForge's settings
-  tab"* means BindForge's own preferences, stored here. Per the paragraph below, those preferences belong as a
-  panel on Elite-Intel's Settings screen, not a tab inside BindForge — which also keeps the two apart.
+  tab"* means BindForge's own preferences, stored here. Per the paragraph below, those preferences belong as a panel on Elite-Intel's Services screen, not a tab inside BindForge — which also keeps the two apart.
 
-The Settings UI is `ui.screen.SettingsTabPanel` with panels under `ui.screen.settings/`
-(`AiServicesSettingsPanel`, `AudioSettingsPanel`, …). BindForge and StarVizion settings become additional
+The Services UI is `ui.screen.ServicesTabPanel` with panels under `ui.screen.services/`
+(`AiServicesPanel`, `AudioServicesPanel`, …). BindForge and StarVizion settings become additional
 panels there, following the existing pattern.
 
 ---

@@ -516,7 +516,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         button.setSquareSide(HUD_BUTTON_HEIGHT);
         ImageIcon icon = HudGlyphs.scaledIcon(getClass(), "/images/swap.png", HUD_ICON_TABLE);
         button.setIcon(icon);
-        // WHY: a pressed subtle button fills with the same orange as the icon, which would vanish into it.
+        // WHY: a pressed subtle button fills with the same colour as the icon, which would vanish into it.
         button.setPressedIcon(HudGlyphs.tintIcon(icon, HUD_ICON_TABLE, HUD_ICON_TABLE, HUD_COLOR_ROLE_SELECTED_TEXT));
         button.setToolTipText(getText("bindings.assign.swap.tooltip"));
         button.addActionListener(e -> onSwap());

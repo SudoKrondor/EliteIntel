@@ -1,7 +1,7 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.screen.settings.*;
+import elite.intel.ui.screen.services.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
@@ -14,14 +14,14 @@ import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
-public class SettingsTabPanel extends JPanel {
+public class ServicesTabPanel extends JPanel {
 
     private static final int AI_TAB_INDEX = 0;
 
-    private final CommonSettingsPanel commonPanel = new CommonSettingsPanel();
-    private final AiServicesSettingsPanel aiServicesPanel = new AiServicesSettingsPanel();
-    private final AudioSettingsPanel audioPanel = new AudioSettingsPanel();
-    private final InputSettingsPanel inputPanel = new InputSettingsPanel();
+    private final LanguagePanel languagePanel = new LanguagePanel();
+    private final AiServicesPanel aiServicesPanel = new AiServicesPanel();
+    private final AudioServicesPanel audioPanel = new AudioServicesPanel();
+    private final InputServicesPanel inputPanel = new InputServicesPanel();
 
     private HudUpdateButton updateAppButton;
 
@@ -29,7 +29,7 @@ public class SettingsTabPanel extends JPanel {
     private int lastTabIndex = AI_TAB_INDEX;
     private boolean tabGuardActive = false;
 
-    public SettingsTabPanel() {
+    public ServicesTabPanel() {
         buildUi();
     }
 
@@ -60,13 +60,13 @@ public class SettingsTabPanel extends JPanel {
         // Non-modal footer: no BACK, no status - the app-wide actions on the right (shared rail).
         JPanel footer = HudFooter.build(false, null, null, List.of(backupButton, restoreButton, updateAppButton));
 
-        add(commonPanel, BorderLayout.NORTH);
+        add(languagePanel, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);
     }
 
     public void initData() {
-        commonPanel.initData();
+        languagePanel.initData();
         aiServicesPanel.initData();
         audioPanel.initData();
         inputPanel.initData();

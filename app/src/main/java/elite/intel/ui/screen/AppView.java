@@ -33,10 +33,10 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final Logger log = LoggerFactory.getLogger(AppView.class);
     private static final String UI_FONT_FAMILY = Font.SANS_SERIF;
     private static final String ICON_AI = "/images/ai.png";
-    private static final String ICON_PLAYER = "/images/controller.png";
-    private static final String ICON_ACTIONS = "/images/keys-binding.png";
+    private static final String ICON_PLAYER = "/images/commander.png";
+    private static final String ICON_ACTIONS = "/images/actions.png";
     private static final String ICON_BINDINGS = "/images/keyboard.png";
-    private static final String ICON_SETTINGS = "/images/settings.png";
+    private static final String ICON_SERVICES = "/images/services.png";
     private static final String ICON_JUKEBOX = "/images/speaker.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
@@ -48,7 +48,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private CommanderTabPanel commanderTabPanel;
     private ActionsTabPanel actionsTabPanel;
     private BindingsTabPanel bindingsTabPanel;
-    private SettingsTabPanel settingsTabPanel;
+    private ServicesTabPanel servicesTabPanel;
     private JukeboxTabPanel jukeboxTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
@@ -101,7 +101,7 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
         ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
         ImageIcon bindingsIcon = scaledIcon(ICON_BINDINGS);
-        ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
+        ImageIcon servicesIcon = scaledIcon(ICON_SERVICES);
         ImageIcon jukeboxIcon = scaledIcon(ICON_JUKEBOX);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
@@ -112,7 +112,7 @@ public class AppView extends JFrame implements AppViewInterface {
         commanderTabPanel = new CommanderTabPanel();
         actionsTabPanel = new ActionsTabPanel();
         bindingsTabPanel = new BindingsTabPanel();
-        settingsTabPanel = new SettingsTabPanel();
+        servicesTabPanel = new ServicesTabPanel();
         jukeboxTabPanel = new JukeboxTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
@@ -122,7 +122,7 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.commander"), commanderIcon, commanderTabPanel);
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
         tabs.addTab(getText("tab.bindings"), bindingsIcon, bindingsTabPanel);
-        tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
+        tabs.addTab(getText("tab.services"), servicesIcon, servicesTabPanel);
         tabs.addTab(getText("tab.jukebox"), jukeboxIcon, jukeboxTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
@@ -179,7 +179,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     @Override
     public void initData() {
-        settingsTabPanel.initData();
+        servicesTabPanel.initData();
         commanderTabPanel.initData();
         actionsTabPanel.initData();
         bindingsTabPanel.initData();
@@ -210,7 +210,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (aiTabController != null) aiTabController.dispose();
         if (aiTabPanel != null) aiTabPanel.dispose();
         if (bindingsTabPanel != null) bindingsTabPanel.dispose();
-        if (settingsTabPanel != null) settingsTabPanel.dispose();
+        if (servicesTabPanel != null) servicesTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
         if (inputMonitorTabPanel != null) inputMonitorTabPanel.dispose();
         if (actionsTabPanel != null) actionsTabPanel.dispose();
@@ -266,7 +266,7 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("TabbedPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         UIManager.put("TabbedPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         UIManager.put("TabbedPane.contentAreaColor", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        // The selected tab of a STOCK JTabbedPane - the ones inside dialogs the JDK builds for us, such
+        // The selected tab of a STOCK JTabbedPane - the ones inside components the JDK builds for us, such
         // as JColorChooser. FlatLaf paints the selected tab in TabbedPane.focusColor, a pale blue, and
         // leaves selectedForeground unset so the label falls back to the near-white foreground above:
         // white on white, and the tab a commander is looking at is the one they cannot read. The app's
@@ -281,7 +281,7 @@ public class AppView extends JFrame implements AppViewInterface {
         // Same story one control along: a TitledBorder built by the JDK - the "Preview" frame inside
         // JColorChooser is the only one in the app - takes its title from TitledBorder.titleColor, which
         // the light look-and-feel leaves black, on our dark background. The app draws its own titled
-        // frames with HudTitledCard and never builds one of these, so this only ever dresses a dialog we
+        // frames with HudTitledCard and never builds one of these, so this only ever dresses a component we
         // did not lay out ourselves.
         UIManager.put("TitledBorder.titleColor", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
         UIManager.put("TitledBorder.border", new BorderUIResource(

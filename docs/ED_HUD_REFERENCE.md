@@ -142,7 +142,7 @@ TEXT** (what will happen: `SLEEP`/`WAKE UP`/`STOP SERVICES`). The source of trut
 button).** When ON/OFF/RETRACTED has to be shown, use a value text in the right-hand column, NOT a tick or a pill slider.
 
 **The discrete numeric
-stepper `◄ value ►`** (`HudStepper`). Horizontal FILLED triangles at the LEFT and RIGHT edges of a filled `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate with NO frame (like the OFF checkbox, §5.2), with the value centred. The arrow zones are separated from the value by vertical `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gaps (like the checkbox gap, §5.2). Arrow states: at rest `HUD_COLOR_ROLE_PRIMARY_ACTION`; on hover a light accent wash over the zone; on press a full `HUD_COLOR_ROLE_PRIMARY_ACTION` fill with the arrow inverted to `HUD_COLOR_ROLE_SELECTED_TEXT` (like a pressed subtle button, §4); at the end of the range the arrow dims to `HUD_COLOR_ROLE_DISABLED`. The value is centred text with NO free input (as in the game). NOT a native `JSpinner` with vertical ▲▼. The arrows are the `paintHudArrowLeft`/`paintHudArrowRight` primitives (§13). Anchor: `HudStepper(min, max, step, initial)`,
+stepper `◄ value ►`** (`HudStepper`). Horizontal FILLED triangles at the LEFT and RIGHT edges of a filled `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate with NO frame, with the value centred. The arrow zones are separated from the value by vertical `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gaps. Arrow states: at rest `HUD_COLOR_ROLE_PRIMARY_ACTION`; on hover a light accent wash over the zone; on press a full `HUD_COLOR_ROLE_PRIMARY_ACTION` fill with the arrow inverted to `HUD_COLOR_ROLE_SELECTED_TEXT` (like a pressed subtle button, §4); at the end of the range the arrow dims to `HUD_COLOR_ROLE_DISABLED`. The value is centred text with NO free input (as in the game). NOT a native `JSpinner` with vertical ▲▼. The arrows are the `paintHudArrowLeft`/`paintHudArrowRight` primitives (§13). Anchor: `HudStepper(min, max, step, initial)`,
 `getValue()`/`setValue(int)`; in layout, a fixed width (`fill=NONE`/`weightx=0`).
 
 **The `HudSlider`
@@ -212,22 +212,23 @@ typed** (the Input Monitor's widths and heights) is a `HudSpinner`: the field's 
 
 ### 5.2 Checkbox
 
-The ED checkbox is NOT a LAF tick but a control row `[marker | gap | text]` whose state is carried by the fill (the inversion in §0.4):
+The checkbox is NOT a LAF tick but our own `[marker] TEXT`, painted straight on the panel: no plate behind the text, no gap stripe, no outline around the row. The marker is a square with slightly rounded corners, and the state is carried by the marker:
 
 -
-**ON:** a `HUD_COLOR_ROLE_PRIMARY_ACTION` plate; the marker is a box outline plus a filled `HUD_COLOR_ROLE_SELECTED_TEXT` square; the text is `HUD_COLOR_ROLE_SELECTED_TEXT` caps.
--
-**OFF:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; the marker is an empty `HUD_COLOR_ROLE_CONTROL_DECORATION` box; the text is `HUD_COLOR_ROLE_SECONDARY_TEXT` caps.
--
-**Disabled:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; the marker is an empty `HUD_COLOR_ROLE_DISABLED` box; the text is `HUD_COLOR_ROLE_DISABLED`.
 
-A `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap divides the marker from the text. The marker is straight lines, with no tick shape or rounding.
+**ON:** a `HUD_COLOR_ROLE_PRIMARY_ACTION` filled marker with a `HUD_COLOR_ROLE_SELECTED_TEXT` tick; the text is `HUD_COLOR_ROLE_PRIMARY_TEXT` caps.
+-
+**OFF:** an empty marker outlined in `HUD_COLOR_ROLE_CONTROL_DECORATION`; the text is `HUD_COLOR_ROLE_SECONDARY_TEXT` caps.
+-
+**Disabled:** the same marker in `HUD_COLOR_ROLE_DISABLED`, still filled and ticked if the setting is on; the text is `HUD_COLOR_ROLE_DISABLED`.
 
-**The info "i" (optional)** makes the row `[marker | gap | text | gap | i]`. The tint follows the row: OFF
-`HUD_COLOR_ROLE_CONTROL_DECORATION`; ON `HUD_COLOR_ROLE_SELECTED_TEXT`; disabled `HUD_COLOR_ROLE_DISABLED`; hover over the zone `HUD_COLOR_ROLE_PRIMARY_ACTION`. A click opens the help and does NOT toggle. With no help the zone is not drawn.
+Only the marker, text and info "i" are clickable, however wide the layout stretches the control: nothing shows that the empty remainder of a cell belongs to it, so a click there must not flip a setting. In a table's selector column (§6) a selected row inverts the marker: a `HUD_COLOR_ROLE_SELECTED_TEXT` fill with a `HUD_COLOR_ROLE_PRIMARY_ACTION` tick.
+
+**The info "i" (optional)** follows the text: `[marker] TEXT i`. The tint: OFF
+`HUD_COLOR_ROLE_CONTROL_DECORATION`; ON or hover over the zone `HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled `HUD_COLOR_ROLE_DISABLED`. A click opens the help and does NOT toggle. With no help the zone is not drawn.
 
 **→ Anchors:** `HudCheckBox` (height `HUD_TABLE_ROW_HEIGHT_COMPACT`), `setInfoAction` /
-`makeCheckBox(label, sel, infoAction)`, `paintHudInfoGlyph`, `paintHudCheckMarker`, `HUD_SEP_W`.
+`makeCheckBox(label, sel, infoAction)`, `paintHudInfoGlyph`, `paintHudCheckMarker`.
 
 ### 5.3 Combo
 
@@ -274,14 +275,14 @@ Anchors:** `HudComboBox` (constructors `E[]`/`ComboBoxModel` × `[labelFn][, mut
 ### 5.4 Segmented selector (radio group)
 
 A mutually exclusive "one of" choice is NOT a round LAF `JRadioButton` (a circle breaks §0.1, and as a checkbox row a radio is indistinguishable from §5.2). The canon already knows how to say "pick exactly one":
-inversion by fill (§0.4, the selected row in §6, the active tab or item in §11). The control is a bar of equal segments separated by a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap (like marker↔text in §5.2 or `intercellSpacing` in §6), with exactly one filled. The height is `HUD_TABLE_ROW_HEIGHT_COMPACT` and the font `HUD_FONT_CHECKBOX` bold caps — a relative of the checkbox. The palette is identical to §5.2:
+inversion by fill (§0.4, the selected row in §6, the active tab or item in §11). The control is a bar of equal segments separated by a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gap (like `intercellSpacing` in §6), with exactly one filled. The height is `HUD_TABLE_ROW_HEIGHT_COMPACT` and the font `HUD_FONT_CHECKBOX` bold caps — the same type as the checkbox. The palette:
 
 - **Selected:** a `HUD_COLOR_ROLE_PRIMARY_ACTION` plate; `HUD_COLOR_ROLE_SELECTED_TEXT` text.
 - **Not selected:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; `HUD_COLOR_ROLE_SECONDARY_TEXT` text.
 - **Hover (unselected):** the text becomes `HUD_COLOR_ROLE_PRIMARY_ACTION` (the plate is unchanged).
 - **Disabled:** a `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate; `HUD_COLOR_ROLE_DISABLED` text (§0.6).
 
-No outline around the control itself (as with the checkbox; a box frame is an accent, §9, not the default). A programmatic
+No outline around the control itself (a box frame is an accent, §9, not the default). A programmatic
 `setSelectedIndex` does NOT fire `ChangeListener` (as `setSelected` does not on a button) — the listener fires on clicks only.
 
 **→ Anchors:** `HudSegmentedControl(String[] labels, int selectedIndex)`, `getSelectedIndex()` /
@@ -428,8 +429,11 @@ References: Universal Cartographics, Promotion to Master, Community Goal.
   standard `HudUnsavedHint`** (`HUD_COLOR_ROLE_WARNING` plus the ⚠ glyph, hidden by default, `status.unsavedChanges`), immediately LEFT of `SAVE` in the right-hand group; shown and hidden by dirty state, with `SAVE` dimmed when there are no edits. NOT a full-width banner plate above the buttons.
 - **Dismiss is
   always `BACK`** (the `button.back` key, subtle), not `CLOSE` or `CANCEL`. NOT a primary fill. Only in a modal footer.
+- **A tab's SAVE footer may
+  carry `CANCEL`** (`button.cancel`, subtle), immediately left of `SAVE` and dimmed when there are no edits. It puts the saved values back and leaves the tab open, so it is not a dismiss. It is needed wherever an edit can leave `SAVE` greyed out, as a cleared key does on AI Services.
+  *Added 2026-11-05.*
 - **The default
-  button** is set by the dialog ITSELF after `setContentPane`. Usually primary; it may choose otherwise (the reference is `CommandDetailsDialog`: default=`BACK`, so that Enter does not run the command).
+  button** is set by the dialog ITSELF after `setContentPane`. Usually primary; it may choose otherwise, and a dialog with no primary uses `BACK` (the reference is `CommandDetailsDialog`).
 - **The object's title
   block** goes in NORTH: the name in `HUD_COLOR_ROLE_INFORMATION` bold and large (`HUD_FONT_APP_TITLE`, caps)
   plus the id or key in `HUD_COLOR_ROLE_SECONDARY_TEXT` (`HUD_FONT_READOUT_KEY`) beneath it. Duplicating it in the key→value body is situational (a form whose name is already in the title removes it from key→value).

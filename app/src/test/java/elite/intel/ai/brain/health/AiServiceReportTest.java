@@ -29,7 +29,7 @@ class AiServiceReportTest {
                 new AiServiceVerdict.Refused("Mistral", Optional.of(Duration.ofMinutes(150)), true));
 
         assertEquals("Mistral is answering, but it has refused every request for 2 hours. "
-                + "If you changed your API key recently, check it on the AI Services settings tab.", spoken);
+                + "If you changed your API key recently, check it on the AI Services tab.", spoken);
     }
 
     @Test

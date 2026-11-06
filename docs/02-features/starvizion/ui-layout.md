@@ -81,7 +81,7 @@ Each expression field has a control that expands the field into a larger editing
 
 ## Global Settings (StarVizion Settings Tab)
 
-Available in Elite-Intel's Settings tab, under the StarVizion section: Vizlet storage folder (default: the `AppPaths` application data folder), HoloFrame storage folder, grid-snapping toggle (editor alignment aid), alignment-guides toggle (smart guides during drag/resize), default node opacity, and an attribution name that appears as the `author` field in new Vizlet files.
+Available in Elite-Intel's Services tab, under the StarVizion section: Vizlet storage folder (default: the `AppPaths` application data folder), HoloFrame storage folder, grid-snapping toggle (editor alignment aid), alignment-guides toggle (smart guides during drag/resize), default node opacity, and an attribution name that appears as the `author` field in new Vizlet files.
 
 ---
 

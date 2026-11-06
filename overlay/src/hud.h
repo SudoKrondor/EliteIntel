@@ -84,7 +84,7 @@ typedef enum {
 /// commander sees in the settings dialog rather than as three rounded decimals.
 #define HUD_RGB(hex) { ((hex) >> 16 & 0xFF) / 255.0, ((hex) >> 8 & 0xFF) / 255.0, ((hex) & 0xFF) / 255.0 }
 
-typedef enum { ST_NORMAL, ST_GOOD, ST_WARN, ST_CRITICAL } State;
+typedef enum { ST_NORMAL, ST_GOOD, ST_WARN, ST_CRITICAL, ST_BLUE, ST_WHITE } State;
 
 typedef struct {
     char  label[128];

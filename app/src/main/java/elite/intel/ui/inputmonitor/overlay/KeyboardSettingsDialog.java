@@ -1,125 +1,56 @@
 package elite.intel.ui.inputmonitor.overlay;
 
-import elite.intel.ui.inputmonitor.InputMonitorPalette;
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
+import elite.intel.ui.widget.HudColorSwatch;
 import elite.intel.ui.widget.HudSpinner;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
-public class KeyboardSettingsDialog extends JDialog {
+final class KeyboardSettingsDialog extends ReadoutSettingsDialog {
 
     private final KeyboardReadout readout;
 
-    private JButton  backgroundColorButton;
-    private Color    chosenBackgroundColor;
-    private JButton  textColorButton;
-    private Color    chosenTextColor;
+    private HudColorSwatch backgroundSwatch;
+    private HudColorSwatch textSwatch;
     private JSpinner widthSpinner;
     private JSpinner heightSpinner;
 
-    public KeyboardSettingsDialog(KeyboardReadout readout) {
-        super((Frame) null, getText("inputMonitor.keyboard.settings.title"), false);
+    KeyboardSettingsDialog(KeyboardReadout readout) {
+        super(readout, getText("inputMonitor.keyboard.settings.title"));
         this.readout = readout;
-        this.chosenBackgroundColor = readout.getBackgroundColor();
-        this.chosenTextColor = readout.getTextColor();
-        setSize(380, 280);
-        setLocationRelativeTo(null);
-        AppTheme.applyAppIcon(this);
-        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         buildUi();
     }
 
     private void buildUi() {
-        JPanel root = new JPanel(new GridBagLayout());
-        root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        root.setBackground(InputMonitorPalette.SETTINGS_DIALOG_BACKGROUND);
-        setContentPane(root);
-
+        JPanel form = newForm();
         GridBagConstraints gbc = HudForms.baseGbc();
 
-        // Background color
-        nextRow(gbc);
-        addLabel(root, getText("inputMonitor.keyboard.backgroundColor"), gbc);
-        backgroundColorButton = AppTheme.makeButton("  ");
-        backgroundColorButton.setBackground(chosenBackgroundColor);
-        backgroundColorButton.setOpaque(true);
-        backgroundColorButton.addActionListener(e -> {
-            Color c = AppTheme.showColorChooser(this, getText("inputMonitor.keyboard.chooseBackgroundColor"), chosenBackgroundColor);
-            if (c != null) {
-                chosenBackgroundColor = c;
-                backgroundColorButton.setBackground(c);
-            }
-        });
-        addField(root, backgroundColorButton, gbc);
+        backgroundSwatch = addColorRow(form, getText("inputMonitor.keyboard.backgroundColor"),
+                getText("inputMonitor.keyboard.chooseBackgroundColor"), readout.getBackgroundColor(), gbc);
 
-        // Text color
-        nextRow(gbc);
-        addLabel(root, getText("inputMonitor.keyboard.textColor"), gbc);
-        textColorButton = AppTheme.makeButton("  ");
-        textColorButton.setBackground(chosenTextColor);
-        textColorButton.setOpaque(true);
-        textColorButton.addActionListener(e -> {
-            Color c = AppTheme.showColorChooser(this, getText("inputMonitor.keyboard.chooseTextColor"), chosenTextColor);
-            if (c != null) {
-                chosenTextColor = c;
-                textColorButton.setBackground(c);
-            }
-        });
-        addField(root, textColorButton, gbc);
+        textSwatch = addColorRow(form, getText("inputMonitor.keyboard.textColor"),
+                getText("inputMonitor.keyboard.chooseTextColor"), readout.getTextColor(), gbc);
 
-        // Width
-        nextRow(gbc);
-        addLabel(root, getText("inputMonitor.keyboard.width"), gbc);
         widthSpinner = new HudSpinner(readout.getWidth(), 80, 600, 10);
-        addField(root, widthSpinner, gbc);
+        addRow(form, getText("inputMonitor.keyboard.width"), widthSpinner, gbc);
 
-        // Height
-        nextRow(gbc);
-        addLabel(root, getText("inputMonitor.keyboard.height"), gbc);
         heightSpinner = new HudSpinner(readout.getHeight(), 80, 600, 10);
-        addField(root, heightSpinner, gbc);
+        addRow(form, getText("inputMonitor.keyboard.height"), heightSpinner, gbc);
 
-        // Buttons
-        nextRow(gbc);
-        gbc.gridx = 0; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        btns.setOpaque(false);
-        JButton ok = AppTheme.makeButton(getText("button.save"));
-        ok.addActionListener(e -> apply());
-        JButton cancel = AppTheme.makeButtonSubtle(getText("button.cancel"));
-        cancel.addActionListener(e -> dispose());
-        btns.add(cancel);
-        btns.add(ok);
-        root.add(btns, gbc);
-
-        AppTheme.applyDarkPalette(root);
+        install(form);
     }
 
-    private void apply() {
-        readout.configure(chosenBackgroundColor, chosenTextColor);
+    @Override
+    void apply() {
+        readout.configure(backgroundSwatch.getColor(), textSwatch.getColor());
 
         int w = (int) widthSpinner.getValue();
         int h = (int) heightSpinner.getValue();
         readout.setSize(w, h);
 
         dispose();
-    }
-
-    // -- Layout helpers (mirrors AppTheme style) --------------------------------
-
-    private static void nextRow(GridBagConstraints gbc) { gbc.gridy++; gbc.gridwidth = 1; }
-
-    private static void addLabel(JPanel p, String text, GridBagConstraints gbc) {
-        HudForms.addLabel(p, text, gbc, 160); // central §5.1 field label
-    }
-
-    private static void addField(JPanel p, JComponent c, GridBagConstraints gbc) {
-        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
-        p.add(c, gbc);
     }
 }
