@@ -33,7 +33,6 @@ import javax.swing.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
-/// git test
 public class App {
 
     private static final Logger log = LogManager.getLogger(App.class);
