@@ -38,17 +38,16 @@ En la cabecera de la sección hay cuatro botones:
 
 ## Estado rápido
 
-Seis indicadores en vivo. Cada uno muestra un estado y un color, así que un vistazo basta para
+Cinco indicadores en vivo. Cada uno muestra un estado y un color, así que un vistazo basta para
 saber si la pila está sana.
 
 | Indicador | Estados |
 |---------|--------|
 | **STT** | `En espera` (servicios detenidos) · `Escuchando` · `En pausa` (te ignora) · `Push to Talk` (solo el botón asignado abre el micrófono) |
 | **LLM** | `En espera` · `Sin conexión` (no pudo conectar) · el nombre del proveedor que realmente respondió, o `Activo` |
-| **TTS** | `En espera` · `Local` (Kokoro / Supertonic) · `Nube` (Google / Microsoft Edge) |
+| **TTS** | `En espera` · `Local` (Supertonic) · `Nube` (Google) |
 | **Asignaciones** | `Todo correcto`, o `N sin asignar` |
 | **Comandos** | Cuántos comandos personalizados hay cargados |
-| **Mapa de teclas** | `Sincronizado` con el juego, o `Modificado` — tienes un borrador de bindings sin aplicar |
 
 Merece la pena vigilar el indicador **LLM**. No informa de lo que *configuraste*, sino de qué
 proveedor respondió de verdad.

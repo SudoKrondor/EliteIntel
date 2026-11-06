@@ -1,7 +1,7 @@
 # Choose your LLM
 
 Elite Intel needs a language model (LLM) to understand your commands and answer your questions.
-There are two ways to get one, and both are set up in **Settings → AI Services → Language Model (LLM)**:
+There are two ways to get one, and both are set up in **Services → AI Services → Language Model (LLM)**:
 
 | Option | What you need | Cost |
 |--------|---------------|------|

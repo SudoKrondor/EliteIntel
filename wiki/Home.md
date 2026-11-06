@@ -13,7 +13,7 @@ Data is sourced in real time from [Spansh](https://spansh.co.uk/) and [EDSM](htt
 
 [[youtube:fo9oIDTzJAs]]
 
-**Supported languages:** English, Spanish, French, German, Italian, Portuguese, Brazilian Portuguese
+**Supported languages:** English, Russian, Ukrainian, German, French, Spanish, Italian, Portuguese, Brazilian Portuguese
 
 > ### ⚠️ A language model (LLM) is required
 > Elite Intel is the voice and the hands — the LLM is the brain. Without one, the app cannot run.
@@ -50,14 +50,22 @@ If you have used voice recognition software with Elite Dangerous before, expect 
 
 ## A Voice That Fits the Cockpit
 
-**Kokoro TTS** is built in and works out of the box. No downloads, no API keys, no configuration. It provides 53 voices covering English, Spanish, French, Italian and Portuguese, and supports the full personality system.
+**Supertonic 3** is built in and works out of the box. No downloads, no API keys, no configuration, and nothing leaves your PC. It provides 45 voices built for Elite Intel, and every voice speaks every language Elite Intel supports. For Russian speech, the RUAccent library places the stress, so words whose meaning depends on it are pronounced correctly. You can [tune each voice](UI-Settings-Tab) to suit your ear.
 
-For German, **Google TTS** delivers natural-sounding speech in every language Elite Intel supports. An API key is required and is configured under [Settings → AI Services](UI-Settings-Tab).
+Prefer a cloud voice? **Google TTS** is available as an option. An API key is required and is configured under [Services → AI Services](UI-Settings-Tab).
 
 Each ship in your fleet gets its own voice and personality — see the [Commander tab](UI-Commander-Tab).
 
 ---
 
+
+## Your Controls, Protected
+
+**[BindForge](UI-Bindings-Tab)** edits your Elite Dangerous controls from outside the game: keyboard, mouse, joystick, HOTAS and pedals. Bind any device in any slot, repair conflicts, tune sensitivities and dead zones, and give your controllers real names and button labels.
+
+A complex binding set takes hours to build, and a game update can reset it. BindForge backs up your control files every day and before every change, and can put them back when you need them.
+
+---
 
 ## Choose Your LLM
 
@@ -67,7 +75,7 @@ Elite Intel works with the language model that suits your setup:
 **Free cloud** - [Mistral](https://console.mistral.ai/) - free tier, no credit card  
 **Paid cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
-Switch providers at any time in settings. No reinstallation required.
+Switch providers at any time on the Services tab. No reinstallation required.
 
 ---
 

@@ -2,13 +2,13 @@
 
 This policy explains what data is handled, how it is used, and what choices are available.
 
-*Last Updated: October 25, 2025*
+*Last Updated: November 5, 2026*
 
 ## Overview
 
 EliteIntel is an open-source application available on [GitHub](https://github.com/stone-alex/EliteIntel). It uses speech-to-text (STT), text-to-speech (TTS), and large language models (LLM) to process game data.
 
-The app can run completely offline using local STT (NVIDIA Parakeet), local LLM (LM Studio), and local TTS (Kokoro). No data leaves the machine in this configuration. When cloud services are used, data is transmitted as described below.
+The app can run completely offline using local STT (NVIDIA Parakeet), local LLM (LM Studio), and local TTS (Supertonic). No data leaves the machine in this configuration. When cloud services are used, data is transmitted as described below.
 
 ## What Data Is Handled?
 
@@ -16,7 +16,7 @@ No personal information is collected, including names, addresses, or location da
 
 - **API Keys**: Used to authenticate requests to cloud TTS and LLM services. Stored encrypted in a local SQLite database. Transmitted only in request headers to the relevant services (Google for TTS; xAI, OpenAI, or Anthropic for LLM).
 
-- **Text Data (TTS)**: When using Google TTS, response text is sent to Google. When using Kokoro TTS, no data leaves the machine.
+- **Text Data (TTS)**: When using Google TTS, response text is sent to Google. When using Supertonic TTS, no data leaves the machine.
 
 - **Game Data (LLM)**: Relevant game data (mission details, market data, scan results, etc.) is sent to the configured LLM. The Commander name is never transmitted. The AI addresses you by your configured title, honorific, or nickname.
 
@@ -39,7 +39,7 @@ No personal information is collected, including names, addresses, or location da
 ## Rights and Choices
 
 - **Inspect the Code**: The full source code is available on GitHub.
-- **Go Fully Offline**: Use Parakeet, LM Studio, and Kokoro. No data is transmitted in this configuration.
+- **Go Fully Offline**: Use Parakeet, LM Studio, and Supertonic. No data is transmitted in this configuration.
 - **Configure Providers**: Select which cloud LLM to use, if any. API keys are managed in the local database.
 - **Delete Your Data**: No data is stored externally. For data held by Google, xAI, OpenAI, or Anthropic, refer to their respective policies.
 

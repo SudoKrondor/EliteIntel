@@ -27,15 +27,15 @@ Vega peut aussi simplement converser — lore du jeu, build de vaisseau, tout au
 connaissance du lore d'Elite Dangerous dépend du modèle : certains le connaissent, d'autres
 inventent une réponse.
 
-## Trois façons de donner un ordre
+## Deux façons de donner un ordre
 
 - **Parler.** Mains libres, ou en [push-to-talk](UI-Settings-Tab) sur un bouton de manette ou de
   souris.
 - **Le taper dans le chat du jeu.** Commencez la ligne par `@Vega` — *« @Vega trouve une
   marchandise tritium »*. Idéal pour les noms que la reconnaissance vocale comprend mal. Voir
   [Toutes les commandes](AllCommands).
-- **Cliquer.** Toute commande peut être lancée depuis l'[onglet Actions](UI-Actions-Tab), qui montre
-  aussi ce qui est disponible là où vous êtes.
+
+L'[onglet Actions](UI-Actions-Tab) montre toutes les commandes, et ce qui est disponible là où vous êtes.
 
 Voir [Toutes les commandes](AllCommands) pour ce que vous pouvez demander, et les autres pages et
 vidéos YouTube de ce site pour des sujets précis.

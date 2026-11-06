@@ -73,8 +73,7 @@ Use **Edit step**, **Remove step** and the **▲ ▼** buttons to fix the order.
 Press **Save**. If something is wrong, a validation message tells you what — see
 *Troubleshooting* at the bottom of this page. The command now appears in the list.
 
-Click its row, then **Run**, to test it without speaking. When it works, say it:
-*"Pop countermeasures."* You can also type it in the game chat: `@Vega pop countermeasures`.
+Test it by saying it: *"Pop countermeasures."* You can also type it in the game chat: `@Vega pop countermeasures`.
 
 ---
 

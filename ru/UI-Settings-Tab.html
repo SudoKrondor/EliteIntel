@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Сервисы»  EliteIntel</title>
+    <meta name="description" content="подвкладки: Сервисы ИИ, Аудио и Кнопка Ввода. В нижней панели находятся Резервная копия, Восстановить... и">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Settings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Settings-Tab.html">
+    <meta property="og:title" content="Вкладка «Сервисы»  EliteIntel">
+    <meta property="og:description" content="подвкладки: Сервисы ИИ, Аудио и Кнопка Ввода. В нижней панели находятся Резервная копия, Восстановить... и">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/UI-Settings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Settings-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Settings-Tab.html" class="locale-link">FR</a><a href="../es/UI-Settings-Tab.html" class="locale-link">ES</a><a href="../de/UI-Settings-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Settings-Tab.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бинды»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервисы»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Бесплатный облачный LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системные команды</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Свои команды</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонизация</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Впервые в Matrix? Начните здесь</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Сервисы»</h1>
+<p><img src="../images/services.png" class="inline" height="20" alt="Сервисы"> Инфраструктура. Выбор <strong>языка</strong> действует везде и находится сверху, а дальше три
+подвкладки: <strong>Сервисы ИИ</strong>, <strong>Аудио</strong> и <strong>Кнопка Ввода</strong>. В нижней панели находятся <a href="#backup-settings-and-data"><strong>Резервная копия</strong></a>, <strong>Восстановить...</strong> и
+кнопка обновления — <em>Приложение обновлено</em> или <em>Доступно обновление</em>.</p>
+<hr>
+<h2>Язык</h2>
+<p>Язык голосовых команд и интерфейса приложения. При выборе всё окно сразу перерисовывается, а «Вега» вслух объявляет о смене.</p>
+<p>Выбор <strong>заблокирован</strong>, чтобы случайный щелчок или прокрутка не сменили язык. Чтобы изменить его, снимите замок рядом; после этого он снова заблокируется сам.</p>
+<p>Поддерживаются: английский, русский, украинский, немецкий, французский, испанский, итальянский, португальский, бразильский португальский.</p>
+<blockquote>
+<p><strong>Папка журнала</strong> теперь находится на <a href="UI-Commander-Tab.html">вкладке «Командир»</a>, а <strong>папка привязок</strong> — на <a href="UI-Bindings-Tab.html">вкладке «Бинды»</a>.</p>
+</blockquote>
+<hr>
+<h2>Сервисы ИИ</h2>
+<p><img src="../images/ui-tab-settings-ai.png" alt="Сервисы ИИ"></p>
+<p>Два переключателя — для языковой модели и для речи, — а неиспользуемая сторона каждого
+приглушена, чтобы было видно, какая активна.</p>
+<p>Это единственная вкладка приложения, работающая с <strong>черновиком</strong>. Ничего не записывается, пока вы
+не нажмёте <strong>Сохранить</strong>, а при попытке уйти с несохранёнными правками появится выбор:
+<em>Сохранить</em>, <em>Отменить</em> или <em>Продолжить редактирование</em>.</p>
+<h3>Языковая модель (LLM)</h3>
+<p>Переключение между <strong>LMStudio</strong> (локально) и <strong>Облачная настройка</strong>.</p>
+<p><strong>LMStudio</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Адрес</strong></td>
+<td>По умолчанию — адрес LM Studio, <code>http://localhost:1234/v1/chat/completions</code>. Укажите IP другой машины, если модель работает на ней в вашей сети</td>
+</tr>
+<tr>
+<td><strong>Модель</strong></td>
+<td>Имя модели. Одна модель обслуживает и команды, и запросы</td>
+</tr>
+</tbody></table>
+<p>Поддерживаемая локальная модель — <strong><code>google/gemma-4-e4b</code></strong>. Если ваша локальная модель другая,
+Elite Intel предупредит при запуске; другие модели могут работать плохо или не работать вовсе.</p>
+<p>Руководства: <a href="Install-LM-Studio-Linux.html">LM Studio в Linux</a> ·
+<a href="Install-LM-Studio-Windows.html">LM Studio в Windows</a> ·
+<a href="AMD-RX-7800XT-LLM-Setup.html">Серия AMD RX</a> ·
+<a href="LM-Studio-Ubuntu-Server.html">Сервер Ubuntu без GUI</a></p>
+<p><strong>Облачная настройка</strong></p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Провайдер</strong></td>
+<td>Выберите одного: <strong>Anthropic (Claude)</strong>, <strong>OpenAI</strong>, <strong>Google (Gemini)</strong>, <strong>xAI (Grok)</strong>, <strong>DeepSeek</strong>, <strong>Mistral</strong></td>
+</tr>
+<tr>
+<td><strong>API-ключ</strong></td>
+<td>Ваш ключ этого провайдера, рядом флажок <strong>Заблокировано</strong>, чтобы сохранённый ключ не изменили случайно. Снимите флажок, чтобы поменять ключ</td>
+</tr>
+</tbody></table>
+<p>Модель вы не выбираете — нужная выбирается автоматически для вашего провайдера.</p>
+<p>Ключ принадлежит одному провайдеру: при выборе другого провайдера поле ключа очищается, чтобы
+вставить его ключ, а при возврате к сохранённому провайдеру его ключ возвращается — случайный клик
+ничего не стоит. <strong>Сохранить</strong> остаётся неактивной, пока не заполнены и провайдер, и ключ.</p>
+<p>У Mistral есть бесплатный тариф — самый простой способ начать.
+Как получить ключ у каждого провайдера: <a href="cloud-llm-options.html">Облачные LLM</a>.</p>
+<h3>Речь (TTS)</h3>
+<p>Переключение между <strong>Локальный синтез речи</strong> и <strong>Облако · Google</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Движок</th>
+<th>Где работает</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Supertonic 3</strong></td>
+<td>На вашем ПК</td>
+<td>По умолчанию. 45 голосов, и каждый говорит на всех языках приложения и игры. Без ключа, ничего не покидает ваш ПК</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td>Серверы Google</td>
+<td>Google Cloud Text-to-Speech. Нужен <strong>Ключ Google TTS</strong> (с тем же флажком «Заблокировано»). Есть ползунок <strong>Высота тона Google WaveNet</strong> для голосов WaveNet и ползунок <strong>Скорость речи Google</strong></td>
+</tr>
+</tbody></table>
+<p>Радиоэфир всегда озвучивает Supertonic 3, какой бы движок вы ни выбрали для «Веги».</p>
+<blockquote>
+<p>Смена движка сбрасывает голос каждого корабля на голос по умолчанию нового движка. Характеры сохраняются. Перед этим вас попросят подтвердить.</p>
+</blockquote>
+<p><a id="voice-tuning"></a></p>
+<h3>Настройка голосов</h3>
+<p><img src="../images/ui-voice-tuning.png" alt="Настройка голосов"></p>
+<p>Голоса немного различаются по громкости и темпу, поэтому <strong>Настройка голосов…</strong> позволяет настроить каждый отдельно. Список слева разделён на <strong>Женские голоса</strong> и
+<strong>Мужские голоса</strong>; выберите голос, чтобы увидеть его настройки.</p>
+<table>
+<thead>
+<tr>
+<th>Элемент</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Скорость</strong></td>
+<td>Насколько быстро говорит этот голос</td>
+</tr>
+<tr>
+<td><strong>Громкость</strong></td>
+<td>Поправка громкости для этого голоса</td>
+</tr>
+<tr>
+<td><strong>Эквалайзер</strong></td>
+<td>Шесть полос, чтобы придать форму звучанию этого голоса</td>
+</tr>
+<tr>
+<td><strong>Проверить</strong></td>
+<td>Воспроизводит фразу с текущими настройками</td>
+</tr>
+<tr>
+<td><strong>Сбросить голос</strong></td>
+<td>Возвращает этот голос к значениям по умолчанию</td>
+</tr>
+</tbody></table>
+<p>Кнопки «Сохранить» нет: изменение сохраняется, как только вы отпускаете ползунок. Настройку голосов можно открыть при любом движке для «Веги», потому что Supertonic 3 в
+любом случае озвучивает радио.</p>
+<h3>Нижняя панель</h3>
+<p><strong>Восстановить значения по умолчанию</strong> возвращает языковую модель к локальному LM Studio с адресом
+и моделью по умолчанию и сразу сохраняет. <strong>Сохранить</strong> фиксирует всё остальное; кнопка неактивна,
+пока ничего реально не изменилось, а когда изменилось, рядом появляется надпись <strong>Несохранённые
+изменения</strong>.</p>
+<p>При сохранении перезапускается только нужное — смена модели или ключа перезапускает «мозг», смена
+движка речи или его ключа — голос.</p>
+<hr>
+<h2>Аудио</h2>
+<p><img src="../images/ui-tab-settings-audio.png" alt="Настройки аудио"></p>
+<h3>Аудиоустройства</h3>
+<p>Списки <strong>Микр.</strong> и <strong>Динам.</strong>, или <em>(По умолчанию)</em>. Те же списки открываются кнопкой
+<strong>Аудиоустройства</strong> на вкладке «Вега». Изменение применяется сразу — перезапускается только сервис,
+использующий устройство.</p>
+<p><strong>Включить подавление шума</strong> с силой <strong>Низкий / Средний / Высокий</strong>. Начните со «Среднего».
+«Высокий» — для действительно шумных помещений: он агрессивен, и избыточная фильтрация может
+стоить точности распознавания.</p>
+<p>Под устройствами — две вкладки.</p>
+<h3>Уровни аудио</h3>
+<table>
+<thead>
+<tr>
+<th>Ползунок</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Громкость речи</strong></td>
+<td>Насколько громко говорит «Вега»</td>
+</tr>
+<tr>
+<td><strong>Громкость радио</strong></td>
+<td>Громкость радиопередач. Неактивен, пока радиопередачи выключены</td>
+</tr>
+<tr>
+<td><strong>Громкость сигнала</strong></td>
+<td>Сигнал подтверждения — звучит, когда распознавание закончено и запрос ушёл в языковую модель</td>
+</tr>
+<tr>
+<td><strong>Потоки STT</strong></td>
+<td>Потоки CPU для распознавания (4–11). Это минимальный запрос, а не резерв: приложение просит столько, использует то, что даёт процессор, и освобождает их по окончании работы</td>
+</tr>
+</tbody></table>
+<p>Насколько быстро говорит «Вега», задаётся для каждого голоса в разделе <a href="#voice-tuning">Настройка голосов</a> или ползунком <strong>Скорость речи Google</strong> для голоса Google. Громкость
+музыки находится на <a href="UI-Jukebox-Tab.html">вкладке «Музыка»</a>, чтобы вы никогда не убавили не ту.</p>
+<h3>Звук радиопередач</h3>
+<p>Как звучат радиосообщения.</p>
+<table>
+<thead>
+<tr>
+<th>Элемент</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Звуковой сигнал рации в начале и в конце каждого сообщения</strong></td>
+<td>Тональные сигналы вокруг каждой передачи, со своим ползунком громкости</td>
+</tr>
+<tr>
+<td><strong>Эффект рации</strong></td>
+<td>Более выраженный, «грязный» радиозвук</td>
+</tr>
+<tr>
+<td><strong>Применять выбранные эффекты к радиочату и сообщениям NPC</strong></td>
+<td>Сигналы и эффект рации выше применяются к радиоэфиру. Если выключено, радиоречь сохраняет стандартный фильтр</td>
+</tr>
+<tr>
+<td><strong>Применять выбранные эффекты к VEGA пешком или в SRV</strong></td>
+<td>«Вега» звучит как по рации, когда вы не в корабле</td>
+</tr>
+</tbody></table>
+<h3>Монитор микрофона</h3>
+<p>Живой индикатор уровня справа. Читается так:</p>
+<ul>
+<li><strong>FLOOR</strong> — уровень шума, когда вы <em>не</em> говорите.</li>
+<li><strong>GATE</strong> — порог. Звук выше порога записывается для распознавания; когда он опускается ниже,
+записанное распознаётся и отправляется в языковую модель.</li>
+<li><strong>CLIP</strong> — микрофон перегружен. Всё, что доходит до этой линии, распознаётся плохо.</li>
+</ul>
+<p>Статус показывает <strong>OPEN</strong>, <strong>MARGINAL</strong>, <strong>CLOSED</strong> или <strong>HOT</strong> (перегрузка). Под индикатором
+появляется подсказка простыми словами, если что-то не так: <em>Микрофон не откалиброван</em> или <em>Микрофон
+слишком тихий для этого помещения</em> — поднимите уровень входа в звуковых настройках ОС и
+откалибруйте заново. Если с микрофоном всё в порядке, подсказки нет.</p>
+<p>Если индикатор не показывает чёткого зазора между FLOOR и уровнем вашей речи, запустите
+<strong>КАЛИБРОВАТЬ АУДИО</strong> на вкладке «Вега» — она выставит порог за вас и предупредит, если зазор
+слишком мал для работы.</p>
+<hr>
+<h2>Кнопка Ввода</h2>
+<p><img src="../images/ui-tab-settings-push-to-talk.png" alt="Кнопка ввода"></p>
+<p>С включённой кнопкой ввода (push-to-talk) микрофон закрыт, пока вы не удерживаете кнопку. Всё, что
+он слышит без нажатой кнопки, отбрасывается как шум помещения.</p>
+<table>
+<thead>
+<tr>
+<th>Элемент</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Включить кнопку ввода</strong></td>
+<td>Главный переключатель</td>
+</tr>
+<tr>
+<td><strong>Контроллер</strong></td>
+<td>Любой подключённый геймпад или HOTAS. Сохранённый контроллер автоматически выбирается снова при переподключении</td>
+</tr>
+<tr>
+<td><strong>Кнопка</strong></td>
+<td>Какая кнопка на нём, с подписью из <a href="UI-Bindings-Tab.html">Конструктора псевдонимов</a></td>
+</tr>
+<tr>
+<td><strong>Кнопка мыши</strong></td>
+<td>Второй триггер: <em>Средняя кнопка</em>, <em>Кнопка 4 (назад)</em> или <em>Кнопка 5 (вперёд)</em>. Удобно пешком или в SRV, когда HOTAS вне досягаемости. Левая и правая не предлагаются — ими вы стреляете</td>
+</tr>
+</tbody></table>
+<p>Удерживайте кнопку, говорите, отпустите. Нажатие также <strong>обрывает «Вегу» на полуслове</strong>, так что
+ждать, пока она договорит, не нужно.</p>
+<p>Пока кнопка ввода включена, кнопка <strong>УСНУТЬ / ПРОСНУТЬСЯ</strong> на вкладке «Вега» недоступна — воротами
+служит кнопка. Изменение здесь действует со следующего нажатия, и кнопка работает независимо от
+того, открывали ли вы эту вкладку.</p>
+<hr>
+<p><a id="backup-settings-and-data"></a></p>
+<h2>Резервная копия</h2>
+<p>Для перехода на новый компьютер или просто на всякий случай. <strong>Резервная копия</strong> записывает один <code>.zip</code> с вашими настройками, базами данных, пользовательскими командами и
+копиями BindForge.</p>
+<p><strong>API-ключам нужен пароль.</strong> Придумайте его и нажмите <strong>Защитить ключи и сохранить</strong>, чтобы включить ключи в копию. Пароль понадобится для их восстановления. Если выбрать
+<strong>Без API-ключей</strong>, копия их не содержит, и после восстановления вы вводите их заново.</p>
+<p><strong>Восстановить...</strong> возвращает копию. То, что она заменяет, сохраняется в защитной папке внутри папки данных приложения, а Elite Intel перезапускается для завершения. Для копии из
+более новой версии сначала обновите приложение. Папки, которых нет на новом компьютере, сбрасываются, поэтому затем проверьте папку журнала на вкладке «Командир» и папку привязок
+на вкладке «Бинды».</p>
+<blockquote>
+<p>Это копия <strong>Elite Intel</strong>. Чтобы сохранить <strong>файлы управления игры</strong>, используйте <a href="UI-Bindings-Tab.html">Резервные копии игрока</a> на вкладке «Бинды».</p>
+</blockquote>
+<hr>
+<h2>Где хранятся настройки</h2>
+<p>Все настройки и данные хранятся на вашем ПК:</p>
+<ul>
+<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/</code> (или <code>$XDG_DATA_HOME/elite-intel/</code>)</li>
+<li><strong>Windows:</strong> <code>%LOCALAPPDATA%\elite-intel\</code></li>
+</ul>
+<p>База данных находится в <code>db</code>, пользовательские команды — в <code>custom-commands</code> (со своей <code>backups</code>), а копии файлов управления — в <code>playerbackups</code>, если вы не выбрали для них другую
+папку.</p>
+<hr>
+<p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 
 **LLM (cerveau de l'IA)**
 
-*Option cloud :* ouvrez **Paramètres → Services IA → Configuration cloud**, choisissez votre
+*Option cloud :* ouvrez **Services → Services IA → Configuration cloud**, choisissez votre
 fournisseur dans la liste **Fournisseur**, collez la clé API de ce fournisseur, cochez
 **Verrouillé** et cliquez sur **Enregistrer**.
 
@@ -29,7 +29,7 @@ Le coût dépend du service cloud choisi et de votre temps de jeu.
 3. AUCUNE CARTE BANCAIRE NÉCESSAIRE
 4. Créez une « Organisation » (nommez-la comme vous voulez, par exemple « Elite Intel »)
 5. Générez une clé API.
-6. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **Mistral** comme fournisseur, collez la clé, cliquez sur **Enregistrer** et redémarrez les services dans l'onglet Vega.
+6. Dans **Services → Services IA → Configuration cloud**, choisissez **Mistral** comme fournisseur, collez la clé, cliquez sur **Enregistrer** et redémarrez les services dans l'onglet Vega.
 
 
 ### Option A : clé API xAI
@@ -37,20 +37,20 @@ Le coût dépend du service cloud choisi et de votre temps de jeu.
 2. Inscrivez-vous ou connectez-vous.
 3. Accédez à la section API et générez une nouvelle clé API.
 4. Ajoutez des crédits à votre compte.
-5. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **xAI (Grok)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé** et cliquez sur **Enregistrer**.
+5. Dans **Services → Services IA → Configuration cloud**, choisissez **xAI (Grok)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé** et cliquez sur **Enregistrer**.
 
 ### Option B : clé API OpenAI
 1. Allez sur l'[OpenAI Platform](https://platform.openai.com/).
 2. Inscrivez-vous ou connectez-vous.
 3. Accédez à la section API et générez une nouvelle clé API.
-4. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **OpenAI** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé** et cliquez sur **Enregistrer**.
+4. Dans **Services → Services IA → Configuration cloud**, choisissez **OpenAI** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé** et cliquez sur **Enregistrer**.
 
 ### Option C : clé API Anthropic/Claude
 1. Allez sur la [Claude Platform](https://platform.claude.com).
 2. Connectez-vous par e-mail ou avec Google. Remarque : la connexion se fait par un lien magique envoyé à votre adresse e-mail.
 3. Allez dans **Settings → Billing** et ajoutez des crédits avant de créer une clé. Une clé créée sur un compte non approvisionné ne fonctionne pas, même si des crédits sont ajoutés ensuite.
 4. Allez dans **API Keys** et créez une clé.
-5. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **Anthropic (Claude)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé**, cliquez sur **Enregistrer**, puis démarrez ou redémarrez les services dans l'onglet Vega.
+5. Dans **Services → Services IA → Configuration cloud**, choisissez **Anthropic (Claude)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé**, cliquez sur **Enregistrer**, puis démarrez ou redémarrez les services dans l'onglet Vega.
 
 ### Option D : clé API Google Gemini
 1. Allez sur [Google AI Studio](https://aistudio.google.com/api-keys) et connectez-vous avec votre compte Google.
@@ -58,7 +58,7 @@ Le coût dépend du service cloud choisi et de votre temps de jeu.
 3. Cliquez sur **Create API key**. S'il vous demande de créer un projet, créez-en un avec le nom de votre choix.
 4. Un compte de paiement (facturation) vous sera demandé. Vous pouvez utiliser votre compte Google.
 5. Copiez la clé.
-6. Dans **Paramètres → Services IA → Configuration cloud**, choisissez **Google (Gemini)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé**, cliquez sur **Enregistrer**, puis démarrez ou redémarrez les services dans l'onglet Vega.
+6. Dans **Services → Services IA → Configuration cloud**, choisissez **Google (Gemini)** comme fournisseur, collez la clé dans **Clé API**, cochez **Verrouillé**, cliquez sur **Enregistrer**, puis démarrez ou redémarrez les services dans l'onglet Vega.
 
 ### Obtenir une clé Google TTS
 
@@ -68,4 +68,4 @@ Le coût dépend du service cloud choisi et de votre temps de jeu.
 4. Activez la **Cloud Text-to-Speech API**.
 5. Allez dans **Credentials**, créez une clé API et copiez-la.
 6. **Restreignez la clé** : cliquez sur la clé que vous venez de créer. Sur la page de détails, cliquez sur **Restrict key**. Une liste déroulante apparaît. Cochez chaque API que vous avez activée (STT et/ou TTS), puis cliquez sur **Save**.
-7. Collez la clé dans **Paramètres → Services IA → Voix (TTS) → Clé Google TTS**, cochez **Verrouillé** et cliquez sur **Enregistrer**.
+7. Collez la clé dans **Services → Services IA → Voix (TTS) → Clé Google TTS**, cochez **Verrouillé** et cliquez sur **Enregistrer**.

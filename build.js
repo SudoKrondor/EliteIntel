@@ -11,6 +11,8 @@
  *   ROOT/fr/*.html       ← French
  *   ROOT/es/*.html       ← Spanish
  *   ROOT/de/*.html       ← German
+ *   ROOT/uk/*.html       ← Ukrainian
+ *   ROOT/ru/*.html       ← Russian
  *   sitemap.xml          ← all locales, with hreflang
  *   robots.txt
  *
@@ -43,6 +45,8 @@ const LOCALES = [
     { code: 'fr', label: 'FR', wikiDir: path.join(WIKI_DIR, 'fr'),   outDir: path.join(ROOT, 'fr'),   urlBase: `${DOMAIN}/fr/`,  assetBase: '../', hreflang: 'fr' },
     { code: 'es', label: 'ES', wikiDir: path.join(WIKI_DIR, 'es'),   outDir: path.join(ROOT, 'es'),   urlBase: `${DOMAIN}/es/`,  assetBase: '../', hreflang: 'es' },
     { code: 'de', label: 'DE', wikiDir: path.join(WIKI_DIR, 'de'),   outDir: path.join(ROOT, 'de'),   urlBase: `${DOMAIN}/de/`,  assetBase: '../', hreflang: 'de' },
+    { code: 'uk', label: 'UK', wikiDir: path.join(WIKI_DIR, 'uk'),   outDir: path.join(ROOT, 'uk'),   urlBase: `${DOMAIN}/uk/`,  assetBase: '../', hreflang: 'uk' },
+    { code: 'ru', label: 'RU', wikiDir: path.join(WIKI_DIR, 'ru'),   outDir: path.join(ROOT, 'ru'),   urlBase: `${DOMAIN}/ru/`,  assetBase: '../', hreflang: 'ru' },
 ];
 
 /* ── download helper ─────────────────────────────────────── */
@@ -208,8 +212,8 @@ const DEFAULT_NAV = {
     'UI-Vega-Tab':                     'Vega Tab',
     'UI-Commander-Tab':                'Commander Tab',
     'UI-Actions-Tab':                  'Actions Tab',
-    'UI-Bindings-Tab':                 'Bindings Tab',
-    'UI-Settings-Tab':                 'Settings Tab',
+    'UI-Bindings-Tab':                 'BindForge (Bindings Tab)',
+    'UI-Settings-Tab':                 'Services Tab',
     'UI-Jukebox-Tab':                  'Jukebox Tab',
     'UI-Stats-Tab':                    'Stats Tab',
     'UI-HUD-Overlay':                  'HUD Overlay',
@@ -295,10 +299,10 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
             ${lnk('Installation',  'release.png')}
             ${lnk('UI',                'microchip-ai.png')}
             ${lnk('UI-Vega-Tab',       'ai.png',          ' nav-sub')}
-            ${lnk('UI-Commander-Tab',  'controller.png',  ' nav-sub')}
-            ${lnk('UI-Actions-Tab',    'keys-binding.png',' nav-sub')}
-            ${lnk('UI-Bindings-Tab',   'keys-binding.png',' nav-sub')}
-            ${lnk('UI-Settings-Tab',   'settings.png',    ' nav-sub')}
+            ${lnk('UI-Commander-Tab',  'commander.png',   ' nav-sub')}
+            ${lnk('UI-Actions-Tab',    'actions.png',     ' nav-sub')}
+            ${lnk('UI-Bindings-Tab',   'keyboard.png',    ' nav-sub')}
+            ${lnk('UI-Settings-Tab',   'services.png',    ' nav-sub')}
             ${lnk('UI-Jukebox-Tab',    'speaker.png',     ' nav-sub')}
             ${lnk('UI-Stats-Tab',      'stats.png',       ' nav-sub')}
             ${lnk('UI-HUD-Overlay',    'microchip-ai.png',' nav-sub')}
@@ -312,16 +316,16 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
             ${lnk('LM-Studio-Ubuntu-Server',           'ai.png', ' nav-sub')}
 
             ${sec('section_howdoi')}
-            ${lnk('General-Operation',                'manual.png')}
-            ${lnk('AllCommands',                      'manual.png')}
-            ${lnk('Obscure-System-Commands',          'manual.png')}
-            ${lnk('Custom-Commands',                  'manual.png')}
-            ${lnk('TradeRoutePlotting',               'manual.png')}
-            ${lnk('Search-galaxy-with-EliteIntel',    'manual.png')}
-            ${lnk('Discovery-Assistance',             'manual.png')}
-            ${lnk('Colonisation',                     'manual.png')}
-            ${lnk('Navigation-Assistance',            'manual.png')}
-            ${lnk('Pirate-Massacre-Mission-Tracking', 'manual.png')}
+            ${lnk('General-Operation',                'journal.png')}
+            ${lnk('AllCommands',                      'journal.png')}
+            ${lnk('Obscure-System-Commands',          'journal.png')}
+            ${lnk('Custom-Commands',                  'journal.png')}
+            ${lnk('TradeRoutePlotting',               'journal.png')}
+            ${lnk('Search-galaxy-with-EliteIntel',    'journal.png')}
+            ${lnk('Discovery-Assistance',             'journal.png')}
+            ${lnk('Colonisation',                     'journal.png')}
+            ${lnk('Navigation-Assistance',            'journal.png')}
+            ${lnk('Pirate-Massacre-Mission-Tracking', 'journal.png')}
 
             ${sec('section_community')}
             <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener">${img('communications.png', '')} ${esc(nav['link_matrix'])}</a>

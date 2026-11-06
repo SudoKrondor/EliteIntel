@@ -1,6 +1,6 @@
 # Actions Tab
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> Everything Elite
+<img src="images/actions.png" class="inline" height="20" alt="Actions"> Everything Elite
 Intel can do, and everything you have taught it to do. Two sub-tabs: **Built-in Commands** and
 **Custom Commands**.
 
@@ -58,8 +58,6 @@ tab is open — including a custom command you create while it is showing.
 
 Buttons:
 
-- **Run** — execute it right now from the app, without speaking. If the command takes
-  parameters, a small form appears first.
 - **Suggest a better translation** — opens a pre-filled GitHub issue with the command id, your
   language, the current phrases, and your suggested phrases, so you can propose better wording
   for your locale. This is how the non-English phrase sets get better; please use it.
@@ -79,8 +77,8 @@ Your own macros — a named sequence of steps, triggered by things you say (or t
 chat). Similar in spirit to VoiceAttack, but matched by meaning rather than by an exact phrase.
 
 The table lists each command's **Name** and its **Training phrases**, with a search box above
-it. **Click a row** to open its details, which show the step **Sequence** and offer **Run**,
-**Edit**, **Duplicate** and **Delete**.
+it. **Click a row** to open its details, which show the step **Sequence** and offer **Edit**,
+**Duplicate** and **Delete**.
 
 Along the top:
 

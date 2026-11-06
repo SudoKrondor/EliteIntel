@@ -1,13 +1,14 @@
 # Reiter Kommandant
 
-<img src="images/controller.png" class="inline" height="20" alt="Kommandant"> Wer du bist, mit
+<img src="images/commander.png" class="inline" height="20" alt="Kommandant"> Wer du bist, mit
 welcher Stimme jeder Rumpf deiner Flotte spricht, was dein Schiff automatisch für dich erledigt,
-was Vega dir ungefragt mitteilt, und der Exo-Meisterschaft-Katalog.
+was Vega dir ungefragt mitteilt, der Exo-Meisterschaft-Katalog und die Orte, die du dir gemerkt hast.
 
 ![Reiter Kommandant](images/ui-tab-commander.png)
 
-Oben sitzt der Streifen **Kommandantenprofil**; darunter liegen vier Unterreiter:
-**Flottenverwaltung**, **Globale Schiffseinstellungen**, **Ansagen** und **Exo-Meisterschaft**.
+Oben sitzt der Streifen **Kommandantenprofil**; darunter liegen fünf Unterreiter:
+**Flottenverwaltung**, **Globale Schiffseinstellungen**, **Ansagen**, **Exo-Meisterschaft** und
+**Lesezeichen**.
 
 ---
 
@@ -20,8 +21,34 @@ mit Enter oder beim Wegklicken.
 **Mich ansprechen** — ausgeschaltet spricht Vega dich gar nicht an: kein Name, kein Rang, kein
 Titel.
 
-> Der **Journal-Ordner** liegt unter [Einstellungen → Allgemein](UI-Settings-Tab), der
-> **Belegungsordner** im [Reiter Bindings](UI-Bindings-Tab).
+**Journal-Ordner** — wo Elite Dangerous seine Journaldateien schreibt. Optional: leer gelassen wird der
+Standardort deiner Plattform verwendet. So weiß Elite Intel, was um dein Schiff herum passiert; ist er
+falsch, ist die App praktisch blind und sagt das beim Start. Ein unbrauchbarer Ordner wird abgelehnt und
+die vorherige Einstellung bleibt.
+
+> Der **Belegungsordner** liegt im [Reiter Bindings](UI-Bindings-Tab) unter *Bindungsverwaltung*.
+
+### Alte Journale importieren
+
+![Alte Journale importieren](images/ui-journal-import.png)
+
+Elite Intel lernt beim Fliegen aus deinen Journalen: Anbieter von Piraten-Massaker-Missionen,
+Ressourcenabbaustätten, die Körper, die du entdeckt und kartiert hast, deine Exobiologie-Proben und die
+Namen neuer Materialien und Waren. Hast du ältere Journale woanders aufbewahrt oder Elite Intel gerade
+erst installiert, lernt es mit **Alte Journale importieren…** auch aus diesen.
+
+Drücke **Ordner oder Archiv hinzufügen…**, füge so viele hinzu, wie du willst, und drücke dann
+**Importieren**.
+
+- Zip-, 7z- und tar-Archive werden gelesen, unkomprimiert oder mit gzip, bzip2 oder xz. RAR-Archive
+  können nicht gelesen werden; packe sie als zip oder 7z neu.
+- Alles, was kein Journal ist, wird übersprungen, und eine beschädigte Datei wird bis zum Schaden gelesen.
+- **Jeder gefundene Kommandant wird in seine eigenen Daten importiert.**
+- Dein aktueller Standort und deine Fracht bleiben unverändert, und dieselben Journale zweimal zu
+  importieren schadet nicht.
+
+Am Ende listet eine Zusammenfassung, wie viele Journale gelesen wurden und was gelernt wurde. Brichst du
+ab, bleibt alles bis dahin Gelernte erhalten.
 
 ---
 
@@ -37,19 +64,20 @@ dem gerade im Spiel geladenen Kommandanten.
 | **Schiff** | Der Name deines Schiffs (bei einem Träger: Name und Rufzeichen) |
 | **Schiffsmodell** | Der Rumpftyp, oder *Flottenträger* / *Schwadronsträger* |
 | **Stimme** | Anklicken zum Auswählen. Eine Änderung spielt sofort eine Zeile in dieser Stimme ab, damit du sie probehören kannst |
-| **Persönlichkeit** | `Professionell` · `Locker` · `Freundlich` · `Unberechenbar` · `Seven of Nine` · `Großmaul-Söldner` · `Dein Ex-Freund` · `Deine Ex-Freundin` · `Draufgängerisch` |
+| **Persönlichkeit** | `Professionell` · `Locker` · `Freundlich` · `Unberechenbar` · `Seven of Nine` · `F.R.I.D.A.Y.` · `Großmaul-Söldner` · `Dein Ex-Freund` · `Deine Ex-Freundin` · `Draufgängerisch` |
 | **⚙** | Öffnet die Einstellungen dieses Schiffs (siehe unten) |
 
 **Zur Stimmenliste.** Angeboten wird jede Stimme der Sprachausgabe, die in
-[Einstellungen → KI-Dienste](UI-Settings-Tab) gewählt ist, männlich wie weiblich — die gewählte
+[Dienste → KI-Dienste](UI-Settings-Tab) gewählt ist, männlich wie weiblich — die gewählte
 Stimme entscheidet auch, ob Vega auf diesem Schiff von sich als *er* oder *sie* spricht.
 
-- **Kokoro** und **Supertonic 3** (lokal) — beschriftet als `Name - Akzent`.
+- **Supertonic 3** (lokal) — 45 Stimmen, aufgeführt mit Name und Geschlecht. Jede Stimme spricht jede
+  Sprache. Ein neues Schiff bekommt **Lily**, bis du etwas anderes wählst. Mit
+  [Stimmen abstimmen](UI-Settings-Tab) kannst du jede Stimme anpassen.
 - **Google** (Cloud) — beschriftet als `Name - Akzent · HD` oder `· Standard`. Auf Englisch
   unterscheidet der Akzent die Stimmen. In jeder anderen Sprache wird jede Stimme in dieser
   Sprache erzeugt, daher zeigt die Beschriftung Geschlecht und Qualitätsstufe statt eines
   irreführenden englischen Akzents.
-- **Microsoft Edge** (Cloud) — beschriftet als `Name - Akzent`.
 
 > Ein Wechsel der Sprachausgabe setzt die Stimme jedes Schiffs auf die Standardstimme der neuen
 > Engine zurück. Die **Persönlichkeiten bleiben erhalten**. Die App fragt vorher nach.
@@ -138,6 +166,8 @@ redet oder zu wenig.
 | **Frachtschaufel-Aufnahmen ansagen** | Was du gerade eingesammelt hast |
 | **Navigation ansagen** | Navigationsereignisse und Ankünfte |
 | **Funkübertragungen** | Funkverkehr in der Spielwelt, gesprochen mit eigenen Funkstimmen |
+| **KI antwortet auf Piratenscans** | Vega kontert, wenn ein Pirat deine Fracht scannt |
+| **KI verhöhnt Kopfgeld-Abschüsse** | Vega verhöhnt Kopfgeld-Abschüsse |
 | **Routenansagen** | Hauptschalter für alles, was rund um einen Sprung gesagt wird. Die Schalter darunter wirken nur, solange er an ist |
 | &nbsp;&nbsp;↳ **Sprungziel ansagen** | Was das nächste System ist |
 | &nbsp;&nbsp;↳ **Verkehr am Ziel ansagen** | Verkehrsberichte für dein Ziel |
@@ -170,6 +200,36 @@ für ein ganzes System *„markiere dieses System als abgeerntet“*.
 **Exo-Meisterschaft deaktivieren** entfernt den Katalog nach Rückfrage von deinem Rechner.
 Bereits abgeerntete Planeten bleiben gespeichert, damit ein späteres Aktivieren dich nicht wieder
 dorthin schickt.
+
+---
+
+## Lesezeichen
+
+![Lesezeichen](images/ui-tab-commander-bookmarks.png)
+
+Orte, zu denen du zurückkehren willst: ein Sternsystem, eine Station, ein Planetenhafen, ein Planet oder
+ein Punkt auf seiner Oberfläche. Jeder Kommandant hat seine eigene Liste.
+
+Sag *„merke dir diesen Ort“*, um zu speichern, wo du bist. Alles andere geht ebenfalls per Stimme, mit der
+Nummer aus der Liste:
+
+| Sag | Was passiert |
+|-----|--------------|
+| *„Lesezeichen anzeigen“* | Zeigt die nummerierte Liste im [HUD-Overlay](UI-HUD-Overlay). Sie wird nie vorgelesen |
+| *„Nächste Seite“* / *„vorherige Seite“* | Blättert im Overlay durch die Liste |
+| *„Navigiere zu Lesezeichen 3“* | Plottet eine Route dorthin |
+| *„Lösche Lesezeichen 3“* | Entfernt es |
+| *„Lesezeichen schließen“* | Nimmt die Liste vom Overlay |
+
+Der Reiter zeigt dieselbe Liste in derselben Reihenfolge, mit **Anzeigename** und **Sternsystem**.
+
+- **Doppelklicke eine Zeile**, um alles Bekannte über den Ort zu sehen und ihn umzubenennen. Der gewählte
+  Name erscheint im Overlay, und Vega verwendet ihn.
+- **Nach oben** / **Nach unten** (oder Alt+Hoch / Alt+Runter) verschieben die markierte Zeile. Eine Linie
+  zwischen Zeilen zeigt, wo eine Overlay-Seite endet und die nächste beginnt.
+- **Exportieren** und **Löschen** gelten für die angehakten Zeilen.
+- **Importieren** fügt Lesezeichen aus einer exportierten Datei unten an deine Liste an. Es ersetzt die
+  Liste nie, und jeder Eintrag wird vorher als *Neu*, *Duplikat* oder *Ungültig* markiert.
 
 ---
 

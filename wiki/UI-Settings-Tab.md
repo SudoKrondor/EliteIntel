@@ -1,25 +1,25 @@
-# Settings Tab
+# Services Tab
 
-<img src="images/settings.png" class="inline" height="20" alt="Settings"> The plumbing. A
-**Common** strip that applies everywhere, then three sub-tabs: **AI Services**, **Audio**, and
-**Push To Talk**. The update button sits in the footer — *App is Up to Date* or *Update
-Available*.
+<img src="images/services.png" class="inline" height="20" alt="Services"> The plumbing. The
+**Language** selector applies everywhere and sits at the top, then three sub-tabs: **AI Services**,
+**Audio**, and **Push To Talk**. The footer holds [**Backup Settings & Data**](#backup-settings-and-data),
+**Restore...** and the update button — *App is Up to Date* or *Update Available*.
 
 ---
 
-## Common
+## Language
 
-Shown above the sub-tabs, because it applies to all of them.
+The language of both your voice commands and the app's own interface. Choosing one re-renders the
+whole window immediately and Vega announces the change out loud.
 
-**Language** — the language of both your voice commands and the app's own interface. Choosing
-one re-renders the whole window immediately and Vega announces the change out loud.
+The selector is **locked** so a stray click or scroll cannot switch your language. Uncheck the lock
+beside it to change it, and it locks itself again afterwards.
 
-Supported: English, German, French, Spanish, Italian, Portuguese, Brazilian Portuguese.
+Supported: English, Russian, Ukrainian, German, French, Spanish, Italian, Portuguese, Brazilian
+Portuguese.
 
-**Journal Directory** — where Elite Dangerous writes its journal files. Optional: leave it
-blank and the standard location for your platform is used. This is how Elite Intel knows what
-is happening around your ship, so if it is wrong the app is effectively blind, and it will say
-so at startup. A folder that cannot be used is refused and the previous setting is kept.
+> The **journal folder** has moved to the [Commander tab](UI-Commander-Tab), and the **bindings
+> folder** to the [Bindings tab](UI-Bindings-Tab).
 
 ---
 
@@ -72,21 +72,38 @@ See [Cloud LLM options](cloud-llm-options) for how to obtain a key from each pro
 
 ### Speech (TTS)
 
-Switch between **Local · Kokoro / Supertonic** and **Cloud · Google / Edge**. Each side has a
-second switch to pick its engine.
+Switch between **Local Voice Synth** and **Cloud · Google**.
 
 | Engine | Where it runs | Notes |
 |--------|---------------|-------|
-| **Kokoro** | On your PC | The default. No key, nothing leaves your PC. Cannot pronounce Cyrillic — see below |
-| **Supertonic 3** | On your PC | Ten voices, every supported language. No key. Has a **Supertonic 3 boost (0–100%)** slider to raise its output level |
-| **Google** | Google's servers | Google Cloud Text-to-Speech. Needs a **Google TTS Key** (with the same Locked checkbox). Has a **Google WaveNet Pitch** slider, used by the WaveNet voices |
-| **Microsoft Edge** | Microsoft's servers | Microsoft's online Read Aloud voices. No key needed |
+| **Supertonic 3** | On your PC | The default. 45 voices, and every voice speaks every language of the app and the game. No key, and nothing leaves your PC |
+| **Google** | Google's servers | Google Cloud Text-to-Speech. Needs a **Google TTS Key** (with the same Locked checkbox). Has a **Google WaveNet Pitch** slider, used by the WaveNet voices, and a **Google Speech Speed** slider |
 
-**Kokoro and Cyrillic.** When your *game client* writes its radio chatter in Russian, the Kokoro segment is greyed out, a banner explains
-why, and Supertonic 3 speaks instead.
+Radio traffic is always spoken by Supertonic 3, whichever engine you choose for Vega.
 
 > Switching engines resets every ship's voice to the new engine's default voice. Ship
 > personalities are kept. You are asked to confirm before it happens.
+
+<a id="voice-tuning"></a>
+
+### Voice Tuning
+
+![Voice tuning](images/ui-voice-tuning.png)
+
+The voices differ a little in loudness and pace, so **Voice Tuning…** lets you adjust each one on its
+own. The list on the left is grouped into **Female voices** and **Male voices**; select one to see its
+settings.
+
+| Control | What it does |
+|---------|--------------|
+| **Speed** | How fast this voice speaks |
+| **Volume** | A volume trim for this voice |
+| **Equalizer** | Six bands, for shaping the sound of this voice |
+| **Test** | Plays a line with the current settings |
+| **Reset Voice** | Puts this voice back to its defaults |
+
+There is no Save button: a change is saved as soon as you let go of the slider. You can open Voice
+Tuning whichever engine speaks for Vega, because Supertonic 3 voices the radio either way.
 
 ### Footer
 
@@ -95,8 +112,7 @@ model, and saves immediately. **Save** commits everything else; it is greyed out
 actually changes, and an **Unsaved changes** hint appears next to it when it does.
 
 Saving restarts only what it has to — changing the model or key restarts the brain, changing
-the speech engine or its key restarts the voice. The pitch and boost sliders apply without a
-restart.
+the speech engine or its key restarts the voice.
 
 ---
 
@@ -122,12 +138,12 @@ Below the devices are two tabs.
 |--------|--------------|
 | **Speech Volume** | How loud Vega speaks |
 | **Radio Volume** | How loud radio transmissions are. Greyed out while radio transmissions are off |
-| **TTS Voice Speed** | How fast Vega speaks |
 | **Beep Volume** | The confirmation beep — it fires when speech-to-text has finished and the language model has your input |
 | **STT Threads** | CPU threads for transcription (4–11). A minimum request, not a reservation: the app asks for this many, uses what the processor gives it, and releases them when the work is done |
 
-Music volume is not here — it lives on the [Jukebox tab](UI-Jukebox-Tab), so you never turn the
-wrong one down.
+How fast Vega speaks is set per voice in [Voice Tuning](#voice-tuning), or with **Google Speech
+Speed** for a Google voice. Music volume lives on the [Jukebox tab](UI-Jukebox-Tab), so you never turn
+the wrong one down.
 
 ### Transmission Audio
 
@@ -171,7 +187,7 @@ without the button held is thrown away as room noise.
 |---------|-------|
 | **Enable Push to Talk** | The master switch |
 | **Controller** | Any connected game controller or HOTAS. Your saved controller is re-selected automatically when it reconnects |
-| **Button** | Which button on it |
+| **Button** | Which button on it, shown with the label you gave it in the [Alias Designer](UI-Bindings-Tab) |
 | **Mouse button** | A second trigger: *Middle button*, *Button 4 (back)* or *Button 5 (forward)*. Handy on foot or in the SRV, when your HOTAS is out of reach. Left and right are not offered — they fire your weapons |
 
 Hold the button, speak, release. Pressing it also **cuts Vega off mid-sentence**, so you never
@@ -183,6 +199,27 @@ whether or not you ever open this tab.
 
 ---
 
+<a id="backup-settings-and-data"></a>
+
+## Backup Settings & Data
+
+Moving to a new computer, or just being careful. **Backup Settings & Data** writes one `.zip` holding
+your settings, databases, custom commands and BindForge's backups.
+
+**API keys need a password.** Choose one and press **Lock Keys and Save** to lock your keys into the
+backup. You will need the password to restore them. Choose **Without API Keys** and the backup holds
+none, so you enter them again after restoring.
+
+**Restore...** puts a backup back. What it replaces is kept in a safety folder inside the app data
+folder, and Elite Intel restarts to finish. A backup made by a newer version needs the app updated
+first. Folders that do not exist on the new computer are reset, so check the journal folder on the
+Commander tab and the bindings folder on the Bindings tab afterwards.
+
+> This backs up **Elite Intel**. To back up your **game control files**, use
+> [Player Backups](UI-Bindings-Tab) on the Bindings tab.
+
+---
+
 ## Where the settings live
 
 All settings and data are stored on your PC:
@@ -190,9 +227,8 @@ All settings and data are stored on your PC:
 - **Linux:** `~/.local/share/elite-intel/` (or `$XDG_DATA_HOME/elite-intel/`)
 - **Windows:** `%LOCALAPPDATA%\elite-intel\`
 
-The database is in `db`, custom commands in `custom-commands` (with its own `backups`), your
-on-demand binding snapshots in `playerbackups`, and the automatic pre-Apply binding copies in
-`bindings/backups`.
+The database is in `db`, custom commands in `custom-commands` (with its own `backups`), and your
+control file backups in `playerbackups`, unless you chose another folder for them.
 
 ---
 

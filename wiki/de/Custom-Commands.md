@@ -77,8 +77,7 @@ Reihenfolge.
 Drück **Speichern**. Stimmt etwas nicht, sagt dir eine Prüfmeldung was — siehe *Fehlersuche* unten
 auf dieser Seite. Der Befehl erscheint jetzt in der Liste.
 
-Klick auf seine Zeile und dann **Ausführen**, um ihn ohne Sprechen zu testen. Funktioniert er, sag
-ihn: *„Gegenmaßnahmen los.“* Du kannst ihn auch im Spielchat tippen: `@Vega gegenmaßnahmen los`.
+Teste ihn, indem du ihn sagst: *„Gegenmaßnahmen los.“* Du kannst ihn auch im Spielchat tippen: `@Vega gegenmaßnahmen los`.
 
 ---
 

@@ -1,13 +1,13 @@
 # Commander Tab
 
-<img src="images/controller.png" class="inline" height="20" alt="Commander"> Who you are, which
+<img src="images/commander.png" class="inline" height="20" alt="Commander"> Who you are, which
 voice each hull in your fleet speaks with, what your ship does for you automatically, what Vega
-tells you about without being asked, and the Exo-Mastery catalogue.
+tells you about without being asked, the Exo-Mastery catalogue, and the places you have bookmarked.
 
 ![Commander tab](images/ui-tab-commander.png)
 
-The **Commander Profile** strip sits at the top; below it are four sub-tabs: **Fleet
-Management**, **Global Ship Settings**, **Announcements** and **Exo-Mastery**.
+The **Commander Profile** strip sits at the top; below it are five sub-tabs: **Fleet
+Management**, **Global Ship Settings**, **Announcements**, **Exo-Mastery** and **Bookmarks**.
 
 ---
 
@@ -19,8 +19,33 @@ click away.
 
 **Address Me** — when off, Vega never addresses you at all: no name, no rank, no title.
 
-> The **journal folder** lives in [Settings → Common](UI-Settings-Tab), and the **bindings
-> folder** in the [Bindings tab](UI-Bindings-Tab).
+**Journal Directory** — where Elite Dangerous writes its journal files. Optional: leave it blank
+and the standard location for your platform is used. This is how Elite Intel knows what is happening
+around your ship, so if it is wrong the app is effectively blind, and it will say so at startup. A
+folder that cannot be used is refused and the previous setting is kept.
+
+> The **bindings folder** is on the [Bindings tab](UI-Bindings-Tab), under *Binding Management*.
+
+### Import Old Journals
+
+![Import old journals](images/ui-journal-import.png)
+
+Elite Intel learns from your journals as you fly: pirate massacre mission providers, resource
+extraction sites, the bodies you discovered and mapped, the exobiology you sampled, and the names of
+new materials and goods. If you kept older journals elsewhere, or you have just installed Elite
+Intel, **Import Old Journals…** teaches it from those too.
+
+Press **Add Folder or Archive…**, add as many as you like, then press **Import**.
+
+- Zip, 7z and tar archives are read, plain or compressed with gzip, bzip2 or xz. RAR archives cannot
+  be read, so repack them as zip or 7z.
+- Anything that is not a journal is skipped, and a damaged file is read up to the damage.
+- **Every commander found is imported into their own records.**
+- Nothing about where you are or what you carry now is changed, and importing the same journals twice
+  does no harm.
+
+When it finishes, a summary lists how many journals were read and what was learned. If you cancel,
+everything learned so far is kept.
 
 ---
 
@@ -35,18 +60,19 @@ fly several commanders on one PC, the list follows whichever commander is loaded
 | **Ship** | Your ship's given name (for a carrier, its name and call sign) |
 | **Ship Make** | The hull type, or *Fleet Carrier* / *Squadron Carrier* |
 | **Voice** | Click to pick. Changing it immediately plays a line in that voice so you can audition it |
-| **Personality** | `Professional` · `Casual` · `Friendly` · `Unhinged` · `Seven of Nine` · `Mouthy Merc` · `Your Ex-Boyfriend` · `Your Ex-Girlfriend` · `Rogue` |
+| **Personality** | `Professional` · `Casual` · `Friendly` · `Unhinged` · `Seven of Nine` · `F.R.I.D.A.Y.` · `Mouthy Merc` · `Your Ex-Boyfriend` · `Your Ex-Girlfriend` · `Rogue` |
 | **⚙** | Opens that ship's settings (see below) |
 
 **About the voice list.** Every voice of the speech engine selected in
-[Settings → AI Services](UI-Settings-Tab) is offered, male and female alike — the voice you pick
+[Services → AI Services](UI-Settings-Tab) is offered, male and female alike — the voice you pick
 also decides whether Vega speaks of itself as *he* or *she* on that ship.
 
-- **Kokoro** and **Supertonic 3** (local) — labelled `Name - accent`.
+- **Supertonic 3** (local) — 45 voices, listed by name and gender. Every voice speaks every
+  language. A new ship is given **Lily** until you choose. You can adjust each voice with
+  [Voice Tuning](UI-Settings-Tab).
 - **Google** (cloud) — labelled `Name - accent · HD` or `· Standard`. In English the accent tells
   the voices apart. In every other language each voice is synthesised in that language, so the
   label shows gender and the quality tier instead of a misleading English accent.
-- **Microsoft Edge** (cloud) — labelled `Name - accent`.
 
 > Switching the speech engine resets every ship's voice to the new engine's default. Your ship
 > **personalities are kept**. The app asks before doing it.
@@ -132,6 +158,8 @@ something is talking too much, or not enough.
 | **Announce cargo scoop pickups** | What you just scooped |
 | **Announce navigation** | Navigation events and arrivals |
 | **Radio transmissions** | In-character radio chatter, spoken in distinct radio voices |
+| **AI responds to pirate scans** | Vega answers back when a pirate scans your cargo |
+| **AI bounty kill gloat** | Vega gloats over bounty kills |
 | **Route announcements** | Master switch for everything said around a jump. The toggles under it only work while it is on |
 | &nbsp;&nbsp;↳ **Announce jump destination** | What the next system is |
 | &nbsp;&nbsp;↳ **Announce destination traffic** | Traffic reports for where you are heading |
@@ -163,6 +191,36 @@ can be written off by voice — *"we have already sampled this body"*, or for a 
 
 **Disable Exo-Mastery** removes the catalogue from your computer, after asking. Planets you have
 already sampled stay recorded, so enabling it again later will not send you back to them.
+
+---
+
+## Bookmarks
+
+![Bookmarks](images/ui-tab-commander-bookmarks.png)
+
+Places you want to come back to: a star system, a station, a planetary port, a planet or a spot on
+its surface. Each commander has their own list.
+
+Say *"bookmark this location"* to save where you are. Everything else can be done by voice too, using
+the number on the list:
+
+| Say | What happens |
+|-----|--------------|
+| *"Show bookmarks"* | Puts the numbered list on the [HUD overlay](UI-HUD-Overlay). It is never read aloud |
+| *"Next page"* / *"previous page"* | Pages through the list on the overlay |
+| *"Navigate to bookmark 3"* | Plots a route there |
+| *"Delete bookmark 3"* | Removes it |
+| *"Close bookmarks"* | Takes the list off the overlay |
+
+The tab shows the same list in the same order, with its **Display Name** and **Star System**.
+
+- **Double-click a row** to see everything known about the place and rename it. The name you choose is
+  the one the overlay shows and the one Vega uses.
+- **Move Up** / **Move Down** (or Alt+Up / Alt+Down) move the highlighted row. A line between rows
+  marks where one overlay page ends and the next begins.
+- **Export** and **Delete** work on the rows you have ticked.
+- **Import** adds bookmarks from an exported file to the bottom of your list. It never replaces the
+  list, and each entry is marked *New*, *Duplicate* or *Invalid* before you commit.
 
 ---
 

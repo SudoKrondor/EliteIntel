@@ -64,7 +64,7 @@ A file that has disappeared from disk is marked **missing**.
 - **Previous · Play/Pause · Stop · Next** — the transport. **Stop** rewinds the current track
   to the start; **Pause** keeps your place.
 - **Order** — *Sequential* or *Random*.
-- **Volume** — the music's own level. It is here, not on the Audio settings tab, so you never
+- **Volume** — the music's own level. It is here, not on the Audio sub-tab of Services, so you never
   turn Vega down by mistake.
 
 Your place in a track is remembered between sessions — handy for audiobooks — but the Jukebox

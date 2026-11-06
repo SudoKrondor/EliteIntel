@@ -1,6 +1,6 @@
 # Onglet Actions
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> Tout ce qu'Elite Intel
+<img src="images/actions.png" class="inline" height="20" alt="Actions"> Tout ce qu'Elite Intel
 sait faire, et tout ce que vous lui avez appris. Deux sous-onglets : **Commandes intégrées** et
 **Commandes perso**.
 
@@ -59,8 +59,6 @@ macros personnalisées et les requêtes de la portée choisie. Elle se met à jo
 
 Boutons :
 
-- **Exécuter** — l'exécute tout de suite depuis l'application, sans parler. Si la commande prend
-  des paramètres, un petit formulaire apparaît d'abord.
 - **Suggérer une meilleure traduction** — ouvre un ticket GitHub prérempli avec l'id de la
   commande, votre langue, les phrases actuelles et vos suggestions, pour proposer une meilleure
   formulation dans votre langue. C'est ainsi que les phrases non anglaises s'améliorent ;
@@ -83,7 +81,7 @@ exacte.
 
 Le tableau affiche le **Nom** et les **Phrases d'entraînement** de chaque commande, avec un champ
 de recherche au-dessus. **Cliquez sur une ligne** pour ouvrir ses détails, qui montrent la
-**Séquence** d'étapes et proposent **Exécuter**, **Modifier**, **Dupliquer** et **Supprimer**.
+**Séquence** d'étapes et proposent **Modifier**, **Dupliquer** et **Supprimer**.
 
 En haut :
 
@@ -169,10 +167,10 @@ Conseils :
 
 - **Les phrases peuvent être séparées par des virgules** aussi bien que par des retours à la ligne.
 - **Les délais dépendent de votre PC.** Si la carte n'est pas prête quand l'étape suivante arrive,
-  augmentez les délais — ou poussez **Cadence des saisies clavier** de l'[onglet Bindings](UI-Bindings-Tab)
+  augmentez les délais — ou poussez **Cadence des saisies clavier** de l'[onglet Commandes](UI-Bindings-Tab)
   vers Lent.
 - **Chaque étape de raccourci exige une assignation clavier** dans le jeu. Si une commande n'est
-  pas assignée, l'[onglet Bindings](UI-Bindings-Tab) l'affiche sous *Commandes manquantes*.
+  pas assignée, l'[onglet Commandes](UI-Bindings-Tab) l'affiche sous *Commandes manquantes*.
 - Vega ouvre et lit la carte galactique de la même façon pour ses propres commandes de route ; une
   commande qui part d'une carte **fraîchement ouverte** est donc le modèle fiable — ne partez pas
   d'une carte déjà ouverte.

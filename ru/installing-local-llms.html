@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор LLM  EliteIntel</title>
+    <meta name="description" content="Elite Intel нужна языковая модель (LLM), чтобы понимать ваши команды и отвечать на вопросы.">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/installing-local-llms.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/installing-local-llms.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/installing-local-llms.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/installing-local-llms.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/installing-local-llms.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/installing-local-llms.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/installing-local-llms.html">
+    <meta property="og:title" content="Выбор LLM  EliteIntel">
+    <meta property="og:description" content="Elite Intel нужна языковая модель (LLM), чтобы понимать ваши команды и отвечать на вопросы.">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/installing-local-llms.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../installing-local-llms.html" class="locale-link">EN</a><a href="../fr/installing-local-llms.html" class="locale-link">FR</a><a href="../es/installing-local-llms.html" class="locale-link">ES</a><a href="../de/installing-local-llms.html" class="locale-link">DE</a><a href="../uk/installing-local-llms.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бинды»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервисы»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Бесплатный облачный LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системные команды</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Свои команды</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонизация</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Впервые в Matrix? Начните здесь</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Выбор LLM</h1>
+<p>Elite Intel нужна языковая модель (LLM), чтобы понимать ваши команды и отвечать на вопросы.
+Подключить её можно двумя способами, и оба настраиваются в разделе <strong>Сервисы → Сервисы ИИ →
+Языковая модель (LLM)</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Вариант</th>
+<th>Что нужно</th>
+<th>Стоимость</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Локально: LM Studio</strong></td>
+<td>Мощная видеокарта, <a href="https://lmstudio.ai">LM Studio</a> и модель <code>google/gemma-4-e4b</code></td>
+<td>Бесплатно. Всё остаётся на вашем ПК</td>
+</tr>
+<tr>
+<td><strong>Облако</strong></td>
+<td>Аккаунт и API-ключ у поддерживаемого провайдера</td>
+<td>Бесплатно с Mistral. Остальные провайдеры берут плату за использование</td>
+</tr>
+</tbody></table>
+<p><img src="../images/llm-setup.png" alt="Настройка LLM"></p>
+<hr>
+<h2>Вариант 1: локально (LM Studio)</h2>
+<p>Левая часть панели, <strong>LMStudio</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Адрес</strong></td>
+<td><code>http://localhost:1234/v1/chat/completions</code>. Если LM Studio работает на другом ПК в вашей сети, укажите IP-адрес этого ПК вместо <code>localhost</code></td>
+</tr>
+<tr>
+<td><strong>Модель</strong></td>
+<td><code>google/gemma-4-e4b</code></td>
+</tr>
+</tbody></table>
+<p>LM Studio — единственный локальный сервер инференции, который поддерживает Elite Intel, а
+<code>google/gemma-4-e4b</code> — единственная поддерживаемая локальная модель.</p>
+<h3>Требования к GPU</h3>
+<p>Железо, нужное для запуска игры и LLM на одной машине:</p>
+<ul>
+<li>RTX 3090 24 ГБ VRAM</li>
+<li>AMD RX 7800 XT</li>
+</ul>
+<p>Объём VRAM важнее скорости видеокарты. Карты с 12 ГБ VRAM недостаточно, какой бы новой она ни была.
+Если у вас есть второй ПК с мощной видеокартой, запустите LM Studio на нём и направьте на него
+Elite Intel. Тогда игровой ПК вообще не занимается инференцией.</p>
+<p>Справочная таблица по видеокартам от <strong>Kevin Rank</strong>:
+<a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">Справочник по GPU</a></p>
+<h3>Руководства по установке</h3>
+<table>
+<thead>
+<tr>
+<th>Руководство</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="Install-LM-Studio-Linux.html">LM Studio — Linux</a></td>
+<td>Установка на рабочий стол и запуск в режиме сервера</td>
+</tr>
+<tr>
+<td><a href="Install-LM-Studio-Windows.html">LM Studio — Windows</a></td>
+<td>Настольное приложение с графическим интерфейсом</td>
+</tr>
+<tr>
+<td><a href="AMD-RX-7800XT-LLM-Setup.html">LLM на видеокартах AMD RX</a></td>
+<td>Настройка для AMD</td>
+</tr>
+<tr>
+<td><a href="LM-Studio-Ubuntu-Server.html">LM Studio на Ubuntu Server</a></td>
+<td>Установка без GUI на отдельную машину для инференции</td>
+</tr>
+</tbody></table>
+<h3>Почему именно <code>google/gemma-4-e4b</code>?</h3>
+<p>Elite Intel — это парсер команд и инструмент анализа данных, а не чат-бот для бесед. Умения
+естественно поддерживать разговор недостаточно. Модель должна по вашим словам определить нужное
+действие, проанализировать игровые данные и вернуть структурированный результат, а не сочинение
+или HTML. Не все модели такого размера делают это надёжно.</p>
+<p>Жёсткое требование — <strong>вызов функций</strong> (function calling). Компаньон Elite Intel не просит модель
+описать, что она сделала бы. Он даёт ей набор инструментов и ожидает, что она вызовет один из них
+с аргументами. Модель, которая не умеет формировать корректный вызов инструмента, вообще не сможет
+управлять приложением, как бы хорошо она ни писала. <code>google/gemma-4-e4b</code> поддерживает вызов
+функций.</p>
+<p>При объёме около 6,3 ГБ она с запасом помещается в VRAM рядом с игрой на карте с 24 ГБ. Ничего не
+выгружается на CPU, поэтому ответы остаются быстрыми.</p>
+<blockquote>
+<p><strong>О снятой с поддержки модели V1.0.</strong> Ранние версии рекомендовали <code>tulu-3.1-8b-supernova</code>. Она
+не поддерживает вызов функций, поэтому не может работать с компаньоном и больше не подходит для
+Elite Intel. Если вы следуете старому руководству, не используйте его и установите
+<code>google/gemma-4-e4b</code>.</p>
+</blockquote>
+<hr>
+<h2>Вариант 2: облако</h2>
+<p>Правая часть панели, <strong>Облачная настройка</strong>:</p>
+<ol>
+<li>Выберите провайдера в списке <strong>Провайдер</strong>.</li>
+<li>Вставьте ключ этого провайдера в поле <strong>API-ключ</strong>.</li>
+<li>Установите флажок <strong>Заблокировано</strong>, чтобы сохранённый ключ нельзя было случайно изменить.</li>
+<li>Нажмите <strong>Сохранить</strong>, затем запустите или перезапустите сервисы на вкладке «Вега».</li>
+</ol>
+<p>Провайдера вы выбираете сами. Elite Intel не пытается определить его по ключу: провайдеры слишком
+часто меняют формат ключей, чтобы на это можно было полагаться. Модель вы не выбираете: Elite Intel
+берёт подходящую для вашего провайдера.</p>
+<table>
+<thead>
+<tr>
+<th>Провайдер</th>
+<th>Примечания</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Mistral</strong></td>
+<td>Бесплатный тариф, банковская карта не нужна. Самый простой способ начать</td>
+</tr>
+<tr>
+<td><strong>Anthropic (Claude)</strong></td>
+<td>Платно</td>
+</tr>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td>Платно</td>
+</tr>
+<tr>
+<td><strong>Google (Gemini)</strong></td>
+<td>Платно</td>
+</tr>
+<tr>
+<td><strong>xAI (Grok)</strong></td>
+<td>Платно</td>
+</tr>
+<tr>
+<td><strong>DeepSeek</strong></td>
+<td>Платно</td>
+</tr>
+</tbody></table>
+<p>Как получить ключ у каждого провайдера: <a href="cloud-llm-options.html">Настройка облачного LLM</a>.</p>
+<hr>
+<h2>Что выбрать?</h2>
+<p><strong>Запускайте LM Studio локально, если:</strong></p>
+<ul>
+<li>у вас RTX 3090 24 ГБ или аналог, либо второй ПК в сети с такой картой</li>
+<li>вы хотите, чтобы всё оставалось на вашем собственном железе</li>
+</ul>
+<p><strong>Используйте облачного провайдера, если:</strong></p>
+<ul>
+<li>вашей видеокарте не хватает VRAM, чтобы запускать модель рядом с игрой</li>
+<li>вы не хотите возиться с сервером инференции</li>
+</ul>
+<p>Сомневаетесь? Начните с бесплатного тарифа Mistral. Это займёт несколько минут, а перейти на
+локальную модель можно в любой момент без переустановки.</p>
+<hr>
+<p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

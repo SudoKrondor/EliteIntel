@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elite Intel anpassen  EliteIntel</title>
-    <meta name="description" content="Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Mit Kokoro als integrierter Standard-TTS-Engine und den meisten Nutzern im vollständig Offline-Betrieb (Ko">
+    <meta name="description" content="Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Diese Anleitung erklärt, wie du Stimme und Persönlichkeit anpasst. Jedes Schiff deiner Flotte kann seine e">
     <link rel="canonical" href="https://www.elite-intel.org/de/Customizing-your-AI.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Customizing-your-AI.html">
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Customizing-your-AI.html">
     <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Customizing-your-AI.html">
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Customizing-your-AI.html">
     <meta property="og:title" content="Elite Intel anpassen  EliteIntel">
-    <meta property="og:description" content="Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Mit Kokoro als integrierter Standard-TTS-Engine und den meisten Nutzern im vollständig Offline-Betrieb (Ko">
+    <meta property="og:description" content="Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Diese Anleitung erklärt, wie du Stimme und Persönlichkeit anpasst. Jedes Schiff deiner Flotte kann seine e">
     <meta property="og:url" content="https://www.elite-intel.org/de/Customizing-your-AI.html">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
@@ -35,7 +37,7 @@
         <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
         <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
-        <div class="locale-switcher"><a href="../Customizing-your-AI.html" class="locale-link">EN</a><a href="../fr/Customizing-your-AI.html" class="locale-link">FR</a><a href="../es/Customizing-your-AI.html" class="locale-link">ES</a><span class="locale-current">DE</span></div>
+        <div class="locale-switcher"><a href="../Customizing-your-AI.html" class="locale-link">EN</a><a href="../fr/Customizing-your-AI.html" class="locale-link">FR</a><a href="../es/Customizing-your-AI.html" class="locale-link">ES</a><span class="locale-current">DE</span><a href="../uk/Customizing-your-AI.html" class="locale-link">UK</a><a href="../ru/Customizing-your-AI.html" class="locale-link">RU</a></div>
     </nav>
 </header>
 
@@ -52,10 +54,10 @@
             <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
             <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Benutzeroberfläche</a>
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Reiter Vega</a>
-            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Reiter Kommandant</a>
-            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Reiter Bindings</a>
-            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Reiter Einstellungen</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Reiter Kommandant</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (Reiter Bindings)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Reiter Dienste</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-Overlay</a>
@@ -69,16 +71,16 @@
             <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Headless-Ubuntu-Server</a>
 
             <div class="nav-section">Wie mache ich...?</div>
-            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
-            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Alle Befehle</a>
-            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Systembefehle</a>
-            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
-            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
-            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
-            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
-            <a href="Colonisation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Kolonisierung</a>
-            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
-            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Piraten-Missionen</a>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Alle Befehle</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Systembefehle</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Eigene Befehle erstellen</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Kolonisierung</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Piraten-Missionen</a>
 
             <div class="nav-section">Community</div>
             <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Matrix-Chat ↗</a>
@@ -93,48 +95,40 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Elite Intel anpassen</h1>
-<p>Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Mit Kokoro als integrierter Standard-TTS-Engine und den meisten Nutzern im vollständig Offline-Betrieb (Kokoro TTS und ein lokales LLM via LM Studio) erklärt diese Anleitung, wie man Stimme und Persönlichkeitseinstellungen anpassen kann.</p>
+<p>Elite Intel fungiert als Schiffsstimme und KI-Gehirn. Diese Anleitung erklärt, wie du Stimme und Persönlichkeit anpasst. Jedes Schiff deiner Flotte kann seine eigenen haben, eingestellt im <a href="UI-Commander-Tab.html">Reiter Kommandant</a>.</p>
 <h2>Stimmen</h2>
-<p>Kokoro ist die Standard-TTS-Engine. Sie läuft offline ohne Cloud-Abhängigkeit. Verfügbare Stimmen:</p>
+<p><strong>Supertonic 3</strong> ist die integrierte Sprachausgabe. Sie läuft auf deinem PC ohne Cloud-Abhängigkeit, und jede Stimme spricht jede von Elite Intel unterstützte Sprache. Es gibt 45 Stimmen, darunter:</p>
 <ul>
-<li><strong>Amerikanisch weiblich</strong>: Heart, Bella, Nicole (flüsternd), Sky, Anna</li>
-<li><strong>Amerikanisch männlich</strong>: Michael</li>
-<li><strong>Britisch weiblich</strong>: Isabella, Emma</li>
-<li><strong>Britisch männlich</strong>: George, Jason, Daniel</li>
+<li><strong>Weiblich</strong>: Lily (Standard), Heart, Bella, Nicole, Sky, Emma, Isabella, Astra, Lyra</li>
+<li><strong>Männlich</strong>: George, Daniel, Michael, Lewis, Fable, Orion, Atlas, Draven</li>
 </ul>
-<p>Google TTS (Cloud) ist ebenfalls verfügbar, wenn aktiviert. Dessen Stimmensatz ist von dem von Kokoro getrennt.</p>
-<p><strong>Hinweis</strong>: Ab Version 0351 können Schiffsstimme, Persönlichkeit und Sprachrhythmus nur noch über die Benutzeroberfläche geändert werden, nicht mehr per Sprachbefehl. Die KI wählt aus der aktiven Engine (standardmäßig Kokoro).</p>
+<p>Deine Wahl entscheidet auch, ob Vega auf diesem Schiff von sich als <em>er</em> oder <em>sie</em> spricht.</p>
+<p>Ist dir eine Stimme etwas zu leise, zu schnell oder zu hell, passe sie mit <a href="UI-Settings-Tab.html">Stimmen abstimmen</a> an: Geschwindigkeit, Lautstärke und ein Sechs-Band-Equalizer für jede Stimme.</p>
+<p>Google TTS (Cloud) steht ebenfalls zur Verfügung, wenn du einen API-Schlüssel einträgst. Es hat eigene Stimmen.</p>
+<p><strong>Hinweis</strong>: Stimme und Persönlichkeit eines Schiffs lassen sich nur in der Oberfläche ändern, nicht per Sprachbefehl.</p>
 <h2>Schiffsidentität</h2>
-<p>Die KI spricht als das Schiff. Sie verwendet „Ich&quot;, „mein&quot; und „mir&quot;, wenn sie sich auf sich selbst bezieht.</p>
+<p>Die KI spricht als das Schiff. Sie verwendet „ich&quot;, „mein&quot; und „mir&quot;, wenn sie sich auf sich selbst bezieht.</p>
 <p>Beispiele:</p>
 <ul>
-<li>„Was ist deine Ausrüstung?&quot; gibt die aktuellen Schiffsmodule zurück.</li>
-<li>„Was ist deine Sprungreichweite?&quot; gibt die aktuelle beladene und unbeladene Reichweite zurück.</li>
-<li>„Wie viel Treibstoff habe ich?&quot; gibt den Treibstoffstand des Schiffes zurück.</li>
+<li>„Was ist deine Ausstattung?&quot; gibt die aktuellen Schiffsmodule zurück.</li>
+<li>„Wie groß ist deine Sprungreichweite?&quot; gibt die aktuelle Reichweite beladen und unbeladen zurück.</li>
+<li>„Wie viel Treibstoff habe ich?&quot; gibt den Treibstoffstand des Schiffs zurück.</li>
 </ul>
-<p>Um stattdessen Informationen über den Flottenträger abzufragen, sprich den Träger explizit an:</p>
+<p>Um stattdessen Informationen zum Flottenträger abzufragen, sprich den Träger ausdrücklich an:</p>
 <ul>
-<li>„Was ist die Reichweite des Flottenträgers?&quot;</li>
-<li>„Erzähl mir von der Sprungreichweite des Trägers.&quot;</li>
+<li>„Wie groß ist die Reichweite des Flottenträgers?&quot;</li>
+<li>„Sag mir die Sprungreichweite des Trägers.&quot;</li>
 </ul>
 <p>Andernfalls nimmt die KI an, dass sich die Abfrage auf das Schiff bezieht.</p>
-<h2>Persönlichkeiten, Profile und Sprachrhythmus</h2>
-<p><strong>Offline-Modus (Kokoro + lokales LLM)</strong> unterstützt keine benutzerdefinierten Persönlichkeiten, Fraktionsprofile (Imperial/Föderalistisch/Allianz) oder besondere Sprachrhythmuseinstellungen. Das lokale Modell antwortet in seinem standardmäßig trainierten Stil.</p>
-<p><strong>Cloud-LLM-Nutzer</strong> (Claude, Grok, OpenAI usw.) haben Zugang zum vollen Funktionsumfang:</p>
-<ul>
-<li>Professionell / Freundlich / Enthemmt / Rogue-Persönlichkeiten</li>
-<li>Imperiale / Föderalistische / Allianz-Profile (beeinflusst Ton und Formulierung)</li>
-<li>Temperatursteuerung (niedrig = schnell und präzise, hoch = kreativ und langsamer)</li>
-</ul>
-<p><strong>Hinweis</strong>: Ab Version 0351 können Persönlichkeit und Sprachrhythmus nur noch über die Benutzeroberfläche geändert werden.</p>
-<p>Der Offline-Modus bietet niedrige Latenz ohne API-Kosten, mit schlichten Antworten. Cloud-LLMs bieten zusätzliche Persönlichkeitsoptionen.</p>
+<h2>Persönlichkeiten</h2>
+<p>Jedes Schiff hat eine Persönlichkeit: Professionell, Locker, Freundlich, Unberechenbar, Seven of Nine, F.R.I.D.A.Y., Großmaul-Söldner, Dein Ex-Freund, Deine Ex-Freundin oder Draufgängerisch. Wie kreativ die Antworten sind, hängt von der gewählten Persönlichkeit und den Fähigkeiten deines Sprachmodells ab.</p>
+<p>Ein lokales Modell hat keine API-Kosten und eine geringe Latenz. Ein Cloud-Modell kann je nach Anbieter Geld kosten und ist meist einfallsreicher.</p>
 <h2>Tipps</h2>
 <ul>
-<li>Beginne mit den Kokoro-Standardeinstellungen. Probiere verschiedene Stimmen aus, um eine bevorzugte Option zu finden. Britisch männliche Stimmen (George, Jason, Daniel) passen gut zu einer imperialen Ästhetik, auch ohne Profilunterstützung.</li>
-<li>Der Offline-Modus ist schnell und kostenlos. Der Cloud-Modus bietet zusätzliche Persönlichkeitsoptionen, verursacht jedoch API-Kosten.</li>
-<li>Experimentieren mit Formulierungen kann das Erlebnis bei Schiff-als-Sprecher-Abfragen verbessern.</li>
+<li>Probiere im Reiter Kommandant mehrere Stimmen aus. Änderst du die Stimme eines Schiffs, wird sofort ein Satz damit abgespielt.</li>
+<li>Mit verschiedenen Formulierungen zu experimentieren kann das Erlebnis bei Abfragen an das Schiff verbessern.</li>
 </ul>
-<p>Probleme, unerwartetes Verhalten oder Vorschläge bitte auf Matrix melden.</p>
+<p>Melde Probleme, unerwartetes Verhalten oder Vorschläge auf Matrix.</p>
 <p>Community 👉 <a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a> 👈</p>
 
         </div>

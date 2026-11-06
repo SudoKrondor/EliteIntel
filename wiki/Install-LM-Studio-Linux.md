@@ -242,13 +242,12 @@ The timer waits 2 minutes after login, restarts the LM Studio service once, and 
 
 ### Step 5 - Configure Elite Intel
 
-Open the **Settings tab** in Elite Intel:
+Open **Services → AI Services** in Elite Intel and select **LMStudio Setup**:
 
-- Leave the **LLM Key** field blank (local LM Studio does not require one).
-- **LLM Address**: set to `http://localhost:1234/v1/chat/completions`. If LM Studio is on another machine, replace `localhost` with that machine's IP.
-- **LLM Model**: paste in the model ID string from `curl http://localhost:1234/v1/models`.
-- **Command LLM**: set to the same model ID.
-- **Query LLM**: set to the same model ID.
+- **Address**: set to `http://localhost:1234/v1/chat/completions`. If LM Studio is on another machine, replace `localhost` with that machine's IP.
+- **Model**: paste in the model ID string from `curl http://localhost:1234/v1/models`.
+
+Press **Save**.
 
 ---
 

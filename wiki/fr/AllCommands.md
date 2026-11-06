@@ -207,10 +207,23 @@ un lieu fréquent — une [commande perso qui trace la route pour vous](UI-Actio
   faire le réglage *Tracer le prochain saut neutronique* de l'[onglet Commandant](UI-Commander-Tab)).
 - *« Efface la route des étoiles à neutrons »*
 
+### Signets
+
+- *« Enregistre cet endroit »* : enregistre l'endroit où vous êtes.
+- *« Affiche les signets »* : la liste numérotée sur l'[overlay HUD](UI-HUD-Overlay). *« Page suivante »* /
+  *« page précédente »* · *« ferme les signets »*
+- *« Navigue vers le signet 3 »* · *« supprime le signet 3 »*
+
+Voir [onglet Commandant → Signets](UI-Commander-Tab).
+
 ### Trouver des lieux
 
 Chaque commande *trouve* trace une route vers ce qu'elle trouve et l'affiche sur
 l'[overlay HUD](UI-HUD-Overlay).
+
+- *« Trouve un chantier naval »* / *« trouve un chantier naval qui vend un Python »*
+- *« Trouve une zone de conflit powerplay »* : des systèmes avec des zones de conflit pour la puissance à laquelle
+  vous avez prêté allégeance.
 
 - *« Trouve un marchand de matériaux bruts / de données codées / de matériaux manufacturés »*
 - *« Trouve un courtier de technologies humaines / gardiennes »*
@@ -237,7 +250,7 @@ l'[overlay HUD](UI-HUD-Overlay).
 - *« Navigue vers le prochain arrêt commercial »*
 - *« Annule la route commerciale »*
 - *« Quels sont les marchés locaux »* · *« Détails de la station »* / *« quels services propose
-  cette station »* · *« Modules en vente »* · *« Quels vaisseaux sont à vendre »*
+  cette station »* · *« Modules en vente »*
 - *« Que contient la soute ? »*
 
 ### Profil commercial

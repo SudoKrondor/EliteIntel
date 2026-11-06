@@ -2,13 +2,13 @@
 
 Cette politique explique quelles données sont traitées, comment elles sont utilisées, et quels choix sont disponibles.
 
-*Dernière mise à jour : 25 octobre 2025*
+*Dernière mise à jour : 5 novembre 2026*
 
 ## Vue d'ensemble
 
 EliteIntel est une application open source disponible sur [GitHub](https://github.com/stone-alex/EliteIntel). Elle utilise la reconnaissance vocale (STT), la synthèse vocale (TTS) et des grands modèles de langage (LLM) pour traiter les données du jeu.
 
-L'application peut fonctionner entièrement hors ligne en utilisant un STT local (NVIDIA Parakeet), un LLM local (LM Studio) et un TTS local (Kokoro TTS). Aucune donnée ne quitte la machine dans cette configuration. Lorsque des services cloud sont utilisés, les données sont transmises comme décrit ci-dessous.
+L'application peut fonctionner entièrement hors ligne en utilisant un STT local (NVIDIA Parakeet), un LLM local (LM Studio) et un TTS local (Supertonic TTS). Aucune donnée ne quitte la machine dans cette configuration. Lorsque des services cloud sont utilisés, les données sont transmises comme décrit ci-dessous.
 
 ## Quelles données sont traitées ?
 
@@ -16,7 +16,7 @@ Aucune information personnelle n'est collectée, y compris les noms, adresses ou
 
 - **Clés API** : Utilisées pour authentifier les requêtes vers les services TTS et LLM cloud. Stockées de manière chiffrée dans une base de données SQLite locale. Transmises uniquement dans les en-têtes de requête aux services concernés (Google pour TTS ; xAI, OpenAI ou Anthropic pour LLM).
 
-- **Données textuelles (TTS)** : Lors de l'utilisation de Google TTS, le texte de la réponse est envoyé à Google. Lors de l'utilisation de Kokoro TTS, aucune donnée ne quitte la machine.
+- **Données textuelles (TTS)** : Lors de l'utilisation de Google TTS, le texte de la réponse est envoyé à Google. Lors de l'utilisation de Supertonic TTS, aucune donnée ne quitte la machine.
 
 - **Données de jeu (LLM)** : Les données de jeu pertinentes (détails des missions, données de marché, résultats de scan, etc.) sont envoyées au LLM configuré. Le nom du Commander n'est jamais transmis. L'IA vous désigne par le titre, le grade honorifique ou le surnom que vous avez configuré.
 
@@ -39,7 +39,7 @@ Aucune information personnelle n'est collectée, y compris les noms, adresses ou
 ## Droits et choix
 
 - **Inspecter le code** : Le code source complet est disponible sur GitHub.
-- **Passer entièrement hors ligne** : Utilisez Parakeet, LM Studio et Kokoro TTS. Aucune donnée n'est transmise dans cette configuration.
+- **Passer entièrement hors ligne** : Utilisez Parakeet, LM Studio et Supertonic TTS. Aucune donnée n'est transmise dans cette configuration.
 - **Configurer les fournisseurs** : Sélectionnez le LLM cloud à utiliser, le cas échéant. Les clés API sont gérées dans la base de données locale.
 - **Supprimer vos données** : Aucune donnée n'est stockée en externe. Pour les données détenues par Google, xAI, OpenAI ou Anthropic, référez-vous à leurs politiques respectives.
 

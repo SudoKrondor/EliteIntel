@@ -73,8 +73,7 @@ Usa **Editar paso**, **Quitar paso** y los botones **▲ ▼** para ajustar el o
 Pulsa **Guardar**. Si algo está mal, un mensaje de validación te dice qué — mira *Solución de
 problemas* al final de esta página. El comando aparece ahora en la lista.
 
-Haz clic en su fila y luego en **Ejecutar** para probarlo sin hablar. Cuando funcione, dilo:
-*«Lanza contramedidas.»* También puedes escribirlo en el chat del juego: `@Vega lanza contramedidas`.
+Pruébalo diciéndolo: *«Lanza contramedidas.»* También puedes escribirlo en el chat del juego: `@Vega lanza contramedidas`.
 
 ---
 

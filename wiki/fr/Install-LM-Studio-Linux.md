@@ -241,14 +241,12 @@ La minuterie attend 2 minutes après la connexion, redémarre le service LM Stud
 
 ### Étape 5 – Configurer Elite Intel
 
-Ouvrez l'**onglet Paramètres** dans Elite Intel :
+Ouvrez **Services → Services IA** dans Elite Intel et sélectionnez **LMStudio** :
 
-- Laissez le champ **LLM Key** vide (LM Studio local n'en requiert pas).
-- **LLM Address** : définissez sur `http://localhost:1234/v1/chat/completions`. Si LM Studio est sur une autre machine, remplacez `localhost` par l'adresse IP de cette machine.
-- **LLM Model** : collez la chaîne d'identifiant du modèle obtenue via `curl http://localhost:1234/v1/models`.
-- **Command LLM** : définissez sur le même identifiant de modèle.
-- **Query LLM** : définissez sur le même identifiant de modèle.
-- Cliquez sur **Stop** puis **Start** dans l'onglet AI pour appliquer les modifications.
+- **Adresse** : définissez sur `http://localhost:1234/v1/chat/completions`. Si LM Studio est sur une autre machine, remplacez `localhost` par l'IP de cette machine.
+- **Modèle** : collez la chaîne d'identifiant du modèle obtenue via `curl http://localhost:1234/v1/models`.
+
+Cliquez sur **Enregistrer**.
 
 ---
 

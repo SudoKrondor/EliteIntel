@@ -20,6 +20,11 @@ Activez-le avec **AFFICHER OVERLAY** dans l'[onglet Vega](UI-Vega-Tab), et confi
 **RÉGLAGES DE L'OVERLAY** juste à côté. L'application se souvient si vous l'avez laissé activé et
 le rétablit au lancement suivant.
 
+**Vous pouvez aussi le faire à la voix.** Dites *« affiche l'overlay »* ou *« masque l'overlay »*, et déplacez la carte sur
+votre moniteur avec *« déplace l'overlay en haut à droite »*, ou à la boussole : *« déplace l'overlay au nord-est »*.
+L'écran est découpé en huit sections autour du centre, et la carte grandit en s'éloignant du bord. Si vous ajustez sa place
+dans une section, elle est retenue pour la prochaine fois.
+
 > Si le binaire de l'overlay manque dans la distribution, l'interrupteur le signale dans le journal
 > de diagnostics. Il ne prétend pas afficher un overlay inexistant.
 
@@ -44,6 +49,7 @@ ordre :
 | 2 | **CHANTIER** | Vous transportez pour une construction de colonisation — avancement, ce qui reste, et quoi charger au prochain voyage |
 | 2 | **MARCHANDISE TROUVEE** / **LISTE D'ACHATS** / **VENDRE CARGO** | Une recherche de marchandise a trouvé un marché et une route y est tracée — quoi acheter (ou vendre), stock et prix |
 | 3 | **EXTRACTION** | Vous avez des cibles de minage, une raffinerie montée et n'êtes pas en supercroisière — soute, drones, cibles |
+| 3 | **NOUVELLE DÉCOUVERTE** | Vous êtes dans un système contenant quelque chose que personne n'avait découvert avant vous — progression du FSS, puis la valeur de vente estimée de ses données et échantillons |
 | 3 | **EXOBIOLOGIE** | Il reste des genres à prélever dans ce système — seulement si *Annoncer les découvertes* est activé |
 | 3 | **CHASSE AUX PRIMES** | Vous êtes dans un site d'extraction de ressources — type de site, primes en soute, éliminations |
 | 3 | **ZONE DE CONFLIT** | Vous êtes dans une zone de conflit — intensité, votre camp, obligations de combat en main |
@@ -51,12 +57,22 @@ ordre :
 
 La carte **itinéraire tracé** prend un titre plus précis quand Vega a déterminé la destination pour
 vous et que la route y mène toujours : **MARCHAND DE MATÉRIAUX**, **COURTIER EN TECHNOLOGIE**,
-**AGENTS INTERSTELLAIRES**, **VISTA GENOMICS**, **RAVITAILLEMENT** ou **ÉQUIPEMENT**, avec la
+**AGENTS INTERSTELLAIRES**, **VISTA GENOMICS**, **RAVITAILLEMENT**, **ÉQUIPEMENT** ou **CHANTIER NAVAL**, avec la
 station et le type. Un tracé ailleurs efface ce détail, donc une vieille course ne peut jamais
 s'accaparer la carte.
 
 La carte **mission** met en avant la mission dont la destination est le bout de votre route
 tracée ; sinon celle qui expire le plus tôt.
+
+Sur la carte **itinéraire tracé**, la piste des prochaines étoiles est colorée : vert là où vous pouvez écoper du
+carburant, rouge sinon, **bleu pour une étoile à neutrons** et **blanc pour une naine blanche**, car toutes deux offrent un
+boost de jet plutôt qu'une impasse.
+
+### Les cartes que vous demandez
+
+Dites *« affiche les signets »* et la carte **SIGNETS** se place au-dessus de la carte classée jusqu'à ce que vous ayez
+fini, avec vos [signets](UI-Commander-Tab) page par page. Elle se ferme quand vous dites *« ferme les signets »*, ou
+d'elle-même après un moment sans utilisation, et la carte classée revient.
 
 ### La conversation
 

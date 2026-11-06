@@ -25,7 +25,7 @@ Jede gesprochene Ansage hat einen Sprachschalter, und jeder entspricht einem Sch
 - **Frachtschaufel-Aufnahmen**: *„Frachtschaufel Ansagen an.“*
 - **Radarkontakte**: *„Radar Ansagen aus.“*
 - **Funk**: *„Funk an.“* Funkverkehr in der Spielwelt — Piratendrohungen, Flugkontrolle — mit
-  eigenen Funkstimmen. Lautstärke und Effekte liegen unter [Einstellungen → Audio](UI-Settings-Tab).
+  eigenen Funkstimmen. Lautstärke und Effekte liegen unter [Dienste → Audio](UI-Settings-Tab).
 - **Alles auf einmal**: *„Alle Ansagen ausschalten.“*
 - **Nachtsicht / Licht / Fahrassistenz**: *„Nachtsicht an.“* *„Licht.“* *„Fahrassistenz aus.“*
 

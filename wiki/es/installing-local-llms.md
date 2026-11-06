@@ -1,7 +1,7 @@
 # Elegir tu LLM
 
 Elite Intel necesita un modelo de lenguaje (LLM) para entender tus órdenes y responder a tus
-preguntas. Hay dos formas de conseguirlo, y las dos se configuran en **Ajustes → Servicios de IA →
+preguntas. Hay dos formas de conseguirlo, y las dos se configuran en **Servicios → Servicios de IA →
 Modelo de lenguaje (LLM)**:
 
 | Opción | Qué necesitas | Coste |

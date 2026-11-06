@@ -10,7 +10,7 @@ Elite Intel connecte votre voix à votre vaisseau. Aucune liste de commandes à 
 
 Les données sont récupérées en temps réel depuis [Spansh](https://spansh.co.uk/) et [EDSM](https://www.edsm.net/).
 
-**Langues supportées :** Anglais, Espagnol, Français, Allemand
+**Langues supportées :** anglais, russe, ukrainien, allemand, français, espagnol, italien, portugais, portugais du Brésil
 
 > ### ⚠️ Un modèle de langage (LLM) est indispensable
 > Elite Intel est la voix et les mains — le LLM est le cerveau. Sans lui, l'application ne peut pas fonctionner.
@@ -46,12 +46,20 @@ Si vous avez déjà utilisé un logiciel de reconnaissance vocale avec Elite Dan
 
 ## Une voix adaptée au cockpit
 
-**Kokoro TTS** est intégré et fonctionne directement. Pas de téléchargements, pas de clés API, pas de configuration. Il propose 53 voix en anglais, espagnol et français, et supporte le système de personnalités complet.
+**Supertonic 3** est intégré et fonctionne directement. Pas de téléchargements, pas de clés API, pas de configuration, et rien ne quitte votre PC. Il propose 45 voix créées pour Elite Intel, et chaque voix parle toutes les langues prises en charge. Pour le russe, la bibliothèque RUAccent place l'accent tonique, afin que les mots dont le sens en dépend soient prononcés correctement. Vous pouvez [régler chaque voix](UI-Settings-Tab) à votre goût.
 
-Pour toutes les autres langues supportées, **Google TTS** offre une synthèse vocale naturelle dans chaque langue prise en charge par Elite Intel. Une clé API est requise et peut être configurée dans Paramètres / Services cloud.
+Vous préférez une voix cloud ? **Google TTS** est disponible en option. Une clé API est requise ; elle se configure dans [Services → Services IA](UI-Settings-Tab).
 
 ---
 
+
+## Vos commandes, protégées
+
+**[BindForge](UI-Bindings-Tab)** modifie vos commandes Elite Dangerous depuis l'extérieur du jeu : clavier, souris, joystick, HOTAS et palonniers. Assignez n'importe quel périphérique à n'importe quel emplacement, réparez les conflits, réglez les sensibilités et les zones mortes, et donnez à vos contrôleurs de vrais noms et des libellés de boutons.
+
+Une configuration complexe demande des heures, et une mise à jour du jeu peut la réinitialiser. BindForge sauvegarde vos fichiers de commandes chaque jour et avant chaque modification, et peut les remettre quand vous en avez besoin.
+
+---
 
 ## Choisissez votre LLM
 
@@ -61,7 +69,7 @@ Elite Intel fonctionne avec le modèle de langage adapté à votre configuration
 **Cloud gratuit** - [Mistral](https://console.mistral.ai/) - offre gratuite, sans carte bancaire  
 **Cloud payant** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
-Changez de fournisseur à tout moment dans les paramètres. Aucune réinstallation n'est nécessaire.
+Changez de fournisseur à tout moment dans l'onglet Services. Aucune réinstallation n'est nécessaire.
 
 ---
 

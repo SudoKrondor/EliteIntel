@@ -1,13 +1,13 @@
 # Onglet Commandant
 
-<img src="images/controller.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, avec
+<img src="images/commander.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, avec
 quelle voix parle chaque coque de votre flotte, ce que votre vaisseau fait automatiquement pour
-vous, ce que Vega vous dit sans qu'on le lui demande, et le catalogue Exo-Maîtrise.
+vous, ce que Vega vous dit sans qu'on le lui demande, le catalogue Exo-Maîtrise et les lieux que vous avez enregistrés.
 
 ![Onglet Commandant](images/ui-tab-commander.png)
 
-La bande **Profil commandant** est en haut ; en dessous se trouvent quatre sous-onglets :
-**Gestion de la flotte**, **Réglages globaux du vaisseau**, **Annonces** et **Exo-Maîtrise**.
+La bande **Profil commandant** est en haut ; en dessous se trouvent cinq sous-onglets :
+**Gestion de la flotte**, **Réglages globaux du vaisseau**, **Annonces**, **Exo-Maîtrise** et **Signets**.
 
 ---
 
@@ -19,8 +19,33 @@ avec Entrée ou en cliquant ailleurs.
 
 **M'interpeller** — désactivé, Vega ne s'adresse jamais à vous : ni nom, ni grade, ni titre.
 
-> Le **dossier du journal** se trouve dans [Paramètres → Général](UI-Settings-Tab), et le
-> **dossier des raccourcis** dans l'[onglet Bindings](UI-Bindings-Tab).
+**Dossier du journal** — l'endroit où Elite Dangerous écrit ses fichiers de journal. Facultatif : laissé vide,
+l'emplacement standard de votre plateforme est utilisé. C'est ainsi qu'Elite Intel sait ce qui se passe autour de
+votre vaisseau ; s'il est faux, l'application est pratiquement aveugle et le dit au démarrage. Un dossier
+inutilisable est refusé et le réglage précédent est conservé.
+
+> Le **dossier des raccourcis** se trouve dans l'[onglet Commandes](UI-Bindings-Tab), sous *Gestion des raccourcis*.
+
+### Importer d'anciens journaux
+
+![Importer d'anciens journaux](images/ui-journal-import.png)
+
+Elite Intel apprend de vos journaux pendant que vous volez : les fournisseurs de missions de massacre de pirates, les
+sites d'extraction de ressources, les corps que vous avez découverts et cartographiés, l'exobiologie que vous avez
+prélevée, et les noms des nouveaux matériaux et marchandises. Si vous avez gardé d'anciens journaux ailleurs, ou si
+vous venez d'installer Elite Intel, **Importer d'anciens journaux…** lui apprend aussi ceux-là.
+
+Cliquez sur **Ajouter un dossier ou une archive…**, ajoutez-en autant que vous voulez, puis cliquez sur **Importer**.
+
+- Les archives zip, 7z et tar sont lues, brutes ou compressées avec gzip, bzip2 ou xz. Les archives RAR ne peuvent pas
+  être lues ; recompressez-les en zip ou 7z.
+- Ce qui n'est pas un journal est ignoré, et un fichier endommagé est lu jusqu'à l'endroit abîmé.
+- **Chaque commandant trouvé est importé dans ses propres données.**
+- Rien ne change concernant votre position ou votre cargaison actuelles, et importer deux fois les mêmes journaux ne
+  fait aucun mal.
+
+À la fin, un résumé indique combien de journaux ont été lus et ce qui a été appris. Si vous annulez, tout ce qui a été
+appris jusque-là est conservé.
 
 ---
 
@@ -36,18 +61,19 @@ PC, la liste suit le commandant chargé dans le jeu.
 | **Vaisseau** | Le nom de votre vaisseau (pour un vaisseau-mère, son nom et son indicatif) |
 | **Modèle de vaisseau** | Le type de coque, ou *Vaisseau-mère* / *Vaisseau-mère d'escadron* |
 | **Voix** | Cliquez pour choisir. Un changement joue aussitôt une phrase avec cette voix pour l'écouter |
-| **Personnalité** | `Professionnel` · `Décontracté` · `Amical` · `Instable` · `Seven of Nine` · `Mercenaire grande gueule` · `Ton ex-copain` · `Ton ex-copine` · `Fripon` |
+| **Personnalité** | `Professionnel` · `Décontracté` · `Amical` · `Instable` · `Seven of Nine` · `F.R.I.D.A.Y.` · `Mercenaire grande gueule` · `Ton ex-copain` · `Ton ex-copine` · `Fripon` |
 | **⚙** | Ouvre les réglages de ce vaisseau (voir plus bas) |
 
 **À propos de la liste des voix.** Toutes les voix du moteur choisi dans
-[Paramètres → Services IA](UI-Settings-Tab) sont proposées, masculines comme féminines — la voix
+[Services → Services IA](UI-Settings-Tab) sont proposées, masculines comme féminines — la voix
 choisie détermine aussi si Vega parle d'elle-même au masculin ou au féminin sur ce vaisseau.
 
-- **Kokoro** et **Supertonic 3** (locales) — libellées `Nom - accent`.
+- **Supertonic 3** (locale) — 45 voix, listées par nom et genre. Chaque voix parle toutes les langues. Un nouveau
+  vaisseau reçoit **Lily** jusqu'à ce que vous choisissiez. Vous pouvez régler chaque voix avec le
+  [Réglage des voix](UI-Settings-Tab).
 - **Google** (cloud) — libellées `Nom - accent · HD` ou `· Standard`. En anglais, l'accent
   distingue les voix. Dans toute autre langue, chaque voix est synthétisée dans cette langue, donc
   le libellé indique le genre et le niveau de qualité plutôt qu'un accent anglais trompeur.
-- **Microsoft Edge** (cloud) — libellées `Nom - accent`.
 
 > Changer de moteur de voix remet la voix de chaque vaisseau à celle par défaut du nouveau moteur.
 > Les **personnalités sont conservées**. L'application demande avant de le faire.
@@ -137,6 +163,8 @@ quelque chose parle trop, ou pas assez.
 | **Annoncer les récupérations de la trappe** | Ce que vous venez de ramasser |
 | **Annoncer la navigation** | Événements de navigation et arrivées |
 | **Transmissions radio** | Les échanges radio du jeu, avec des voix radio distinctes |
+| **L'IA répond aux scans pirates** | Vega réplique quand un pirate scanne votre cargaison |
+| **L'IA jubile sur les primes abattues** | Vega jubile quand vous abattez une prime |
 | **Annonces de route** | Interrupteur principal de tout ce qui est dit autour d'un saut. Les interrupteurs en dessous ne fonctionnent que s'il est activé |
 | &nbsp;&nbsp;↳ **Annoncer la destination du saut** | Quel est le prochain système |
 | &nbsp;&nbsp;↳ **Annoncer le trafic de la destination** | Rapports de trafic de votre destination |
@@ -168,6 +196,36 @@ système, *« marque ce système comme récolté »*.
 
 **Désactiver Exo-Maîtrise** supprime le catalogue de votre ordinateur, après confirmation. Les
 planètes déjà prélevées restent enregistrées, donc le réactiver plus tard ne vous y renverra pas.
+
+---
+
+## Signets
+
+![Signets](images/ui-tab-commander-bookmarks.png)
+
+Les lieux où vous voulez revenir : un système stellaire, une station, un port planétaire, une planète ou un point de sa
+surface. Chaque commandant a sa propre liste.
+
+Dites *« enregistre cet endroit »* pour enregistrer l'endroit où vous êtes. Tout le reste se fait aussi à la voix, avec le
+numéro de la liste :
+
+| Dites | Ce qui se passe |
+|-------|-----------------|
+| *« Affiche les signets »* | Met la liste numérotée sur l'[overlay HUD](UI-HUD-Overlay). Elle n'est jamais lue à voix haute |
+| *« Page suivante »* / *« page précédente »* | Fait défiler la liste sur l'overlay |
+| *« Navigue vers le signet 3 »* | Trace une route jusque-là |
+| *« Supprime le signet 3 »* | Le retire |
+| *« Ferme les signets »* | Retire la liste de l'overlay |
+
+L'onglet montre la même liste dans le même ordre, avec son **Nom affiché** et son **Système stellaire**.
+
+- **Double-cliquez sur une ligne** pour voir tout ce qui est connu du lieu et le renommer. Le nom choisi est celui
+  qu'affiche l'overlay et celui qu'utilise Vega.
+- **Monter** / **Descendre** (ou Alt+Haut / Alt+Bas) déplacent la ligne en surbrillance. Un trait entre les lignes marque
+  la fin d'une page de l'overlay et le début de la suivante.
+- **Exporter** et **Supprimer** agissent sur les lignes cochées.
+- **Importer** ajoute des signets d'un fichier exporté au bas de votre liste. La liste n'est jamais remplacée, et chaque
+  entrée est marquée *Nouveau*, *Doublon* ou *Invalide* avant que vous ne validiez.
 
 ---
 

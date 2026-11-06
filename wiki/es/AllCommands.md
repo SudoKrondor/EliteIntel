@@ -205,10 +205,23 @@ la burbuja. Para eso usa *navegar desde memoria* o — para un lugar al que vas 
   el ajuste *Trazar la siguiente ruta de neutrones* de la [pestaña Comandante](UI-Commander-Tab)).
 - *«Borrar ruta de estrella de neutrones»*
 
+### Marcadores
+
+- *«Guarda este lugar»*: guarda dónde estás.
+- *«Muestra los marcadores»*: la lista numerada en el [overlay HUD](UI-HUD-Overlay). *«Página siguiente»* /
+  *«página anterior»* · *«cierra los marcadores»*
+- *«Navega al marcador 3»* · *«borra el marcador 3»*
+
+Ver [pestaña Comandante → Marcadores](UI-Commander-Tab).
+
 ### Buscar lugares
 
 Cada orden de *buscar* traza una ruta a lo que encuentra y lo pone en el
 [overlay HUD](UI-HUD-Overlay).
+
+- *«Busca un astillero»* / *«busca un astillero que venda una Python»*
+- *«Busca una zona de conflicto de powerplay»*: sistemas con zonas de conflicto para la potencia a la que
+  has jurado lealtad.
 
 - *«Buscar comerciante de materiales sin procesar / codificados / fabricados»*
 - *«Buscar intermediario tecnológico humano / guardian»*
@@ -235,7 +248,7 @@ Cada orden de *buscar* traza una ruta a lo que encuentra y lo pone en el
 - *«Navega a la siguiente parada comercial»*
 - *«Cancelar ruta comercial»*
 - *«Mercados locales»* · *«Detalles de la estación»* / *«¿qué servicios hay aquí?»* ·
-  *«Outfitting»* · *«Naves en venta»*
+  *«Outfitting»*
 - *«¿Qué hay en nuestra bodega?»*
 
 ### Perfil comercial

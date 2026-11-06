@@ -1,75 +1,54 @@
-# V1.1 screenshot checklist
+# V1.2 screenshot checklist
 
 Drop each file into `images/` with **exactly** the filename below, then re-run `node build.js`.
-Until a file exists the page shows a broken-image placeholder, so the list doubles as a
-progress tracker.
-
-**Status — 4 of 16 received (12 Aug).** ✅ = in `images/` and rendering. ⚠️ = present but
-needs a retake, reason noted in the row. Everything unmarked is still outstanding.
+Until a **New** file exists its page shows a broken-image placeholder. A **Retake** file already
+exists but shows the V1.1 interface. Replacing a file updates the pages in every language together.
 
 **General notes**
 
-- Window size: the app opens at 1200 x 920. Capture the **window only**, not the desktop.
-- Take them with **services running** and a game session loaded wherever the shot involves live
-  data — empty tables and `Standby` badges make the docs look broken.
-- PNG. Roughly 1200px wide is plenty; the site scales them down.
-- Blank or crop any API key that is visible.
+- Capture the **window only**, not the desktop. PNG, roughly 1200px wide; the site scales them down.
+- Use the V1.2 colour scheme, with **services running** and a game session loaded wherever the shot
+  involves live data. Empty tables and `Standby` badges make the docs look broken.
+- Blank or crop any API key.
+- Save the shots with the app in **English**.
 
 ---
 
-## Vega tab — `UI-Vega-Tab.md`
+## New
 
-| File | What to capture |
-|------|-----------------|
-| ✅ `ui-tab-vega.png` | The whole Vega tab, services **running**, with a few lines of real conversation in the log and the Quick Status badges green. This is the hero shot for the whole UI section. |
+| File | Page | What to capture |
+|------|------|-----------------|
+| `ui-bindings-axis.png` | `UI-Bindings-Tab` | The axis dialog for a real control (pitch or throttle), with a controller connected, so Direction, Dead zone and Throttle range are all visible. |
+| `ui-bindings-anomalies.png` | `UI-Bindings-Tab` | **Binding Profile → Anomalies** with a few conflicts, and ideally a *Shares key with* hover showing. |
+| `ui-bindings-settings.png` | `UI-Bindings-Tab` | **Binding Profile → Settings**, with a group of sensitivity or dead zone sliders. |
+| `ui-bindings-install-locations.png` | `UI-Bindings-Tab` | **Binding Management → Game Install Locations**: the folder, the Bindings File row and at least one installation showing *Matches*. |
+| `ui-bindings-alias-designer.png` | `UI-Bindings-Tab` | **Alias Designer → My Devices** with several named controllers, some *Attached*, and the gear visible. |
+| `ui-bindings-device-editor.png` | `UI-Bindings-Tab` | **Device Editor** on the **Buttons** or **Axes** tab, with your own labels and an input lit or a meter moving. |
+| `ui-voice-tuning.png` | `UI-Settings-Tab` | **Voice Tuning…** with a voice selected, so the Speed, Volume and Equalizer controls are visible. |
+| `ui-journal-import.png` | `UI-Commander-Tab` | **Import Old Journals** after a finished import, with sources listed and the summary showing. |
+| `ui-tab-commander-bookmarks.png` | `UI-Commander-Tab` | **Bookmarks** sub-tab with enough rows to show a page-break line. |
 
-## Commander tab — `UI-Commander-Tab.md`
+## Retake
 
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-commander.png` | Whole tab with the **Ship Options** sub-tab selected, and at least 3–4 ships in the fleet grid. |
-| `ui-commander-announcements.png` | The **Announcements** sub-tab — just the toggle grid is enough. |
-| `ui-ship-settings.png` | The ⚙ ship settings popup, scrolled so both the honk section and some Trade Profile rows are visible. |
-
-## Actions tab — `UI-Actions-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-actions-builtin.png` | **Built-in Commands** sub-tab. Set the scope picker to a real situation (e.g. *In ship — supercruise*) so the Place field is populated and the list is a plausible length. |
-| `ui-tab-actions-custom.png` | **Custom Commands** sub-tab with 2–3 example commands defined. |
-| `ui-custom-command-editor.png` | The custom command editor with a filled-in example — a name, a couple of phrases, and 2–3 steps of different types. |
-
-> Optional extra, not currently referenced: the command details dialog (double-click a
-> built-in command). Say the word and I will add it to the page.
-
-## Bindings tab — `UI-Bindings-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-bindings-profile.png` | **Binding Profile** sub-tab showing the profile/file fields and both tables. Ideally with at least one missing binding and one conflict visible, so the colours mean something. |
-| ⚠️ `ui-bindings-assign.png` | **Retake.** The shot received has no modifier held, so every key renders neutral and the green/red map — the whole reason this image exists — is not visible. Re-capture with Ctrl (or Shift/Alt) held down. |
-| `ui-tab-bindings-management.png` | **Binding Management** sub-tab with a few backups listed. |
-
-## Settings tab — `UI-Settings-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-settings-ai.png` | **AI Services** sub-tab. Best shot: **Cloud Setup** selected for the LLM (key blanked or fake) so the dimmed Local column is visible — it shows the switch behaviour. Include the Common strip at the top. |
-| ✅ `ui-tab-settings-audio.png` | **Audio** sub-tab, **while speaking**, so the Microphone Monitor shows a live signal against the FLOOR/GATE rails. |
-| `ui-tab-settings-push-to-talk.png` | **Push To Talk** sub-tab with a controller connected and a button selected. |
-
-## Stats tab — `UI-Stats-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-stats.png` | After a session long enough to have real numbers (10+ minutes, so Tokens/Hour is populated rather than "collecting data"). A **cloud** provider is the better shot — it shows the cache lines a local model hides. |
-
-## HUD overlay — `UI-HUD-Overlay.md`
-
-| File | What to capture |
-|------|-----------------|
-| ⚠️ `ui-overlay-ingame.png` | **Re-crop, ideally with a second card.** The file currently in `images/` is a tight crop around the card alone. Use the **full cockpit frame** instead — see the note below on why. Still only one card (Plotted Route) where 2+ were asked for, so a frame with a trade or exobiology card alongside it would be better again. |
-| `ui-overlay-settings.png` | The OVERLAY SETUP dialog, with **VR headset** or **Monitor and headset** selected so the *Position in headset* control and its placement note are visible. |
+| File | Page | What to capture |
+|------|------|-----------------|
+| `ui-tab-vega.png` | `UI-Vega-Tab` | The whole Vega tab, services **running**, a few lines of real conversation, and the five Quick Status readouts (Keymap is gone). The hero shot for the whole UI section. |
+| `ui-tab-commander.png` | `UI-Commander-Tab` | Whole tab on **Fleet Management**, with 3–4 ships. It now shows the Journal Directory and Import Old Journals, and five sub-tabs. |
+| `ui-commander-announcements.png` | `UI-Commander-Tab` | **Announcements**, with the two new AI toggles. |
+| `ui-ship-settings.png` | `UI-Commander-Tab` | The ⚙ popup, scrolled so both the honk section and some Trade Profile rows are visible. |
+| `ui-tab-actions-builtin.png` | `UI-Actions-Tab` | **Built-in Commands**, with the scope picker on a real situation. |
+| `ui-tab-actions-custom.png` | `UI-Actions-Tab` | **Custom Commands** with 2–3 examples. |
+| `ui-custom-command-editor.png` | `UI-Actions-Tab` | The editor with a name, a couple of phrases, and 2–3 steps of different types. |
+| `ui-custom-command-navigation.png` | `UI-Actions-Tab` | The Jameson Memorial example from the page, in the new colours. |
+| `ui-tab-bindings-profile.png` | `UI-Bindings-Tab` | **Binding Profile → Game Mode**: the Editing line, section tabs, the AI access column and the bottom row of filters. Ideally with the Apply bar lit, one conflict and one *Vega can't use*. |
+| `ui-bindings-assign.png` | `UI-Bindings-Tab` | The **Assign control** dialog with both slot cards and Ctrl (or Shift/Alt) held, so the green and red key map shows. |
+| `ui-tab-bindings-management.png` | `UI-Bindings-Tab` | **Binding Management → Player Backups**, with backups of different kinds in the Taken column and Backup Settings visible. |
+| `ui-tab-settings-ai.png` | `UI-Settings-Tab` | **Services → AI Services**, with the Language row at the top. Best shot: **Cloud Setup** selected, key blanked, so the dimmed Local side is visible. |
+| `ui-tab-settings-audio.png` | `UI-Settings-Tab` | **Audio**, **while speaking**, so the Microphone Monitor shows live signal against FLOOR and GATE. |
+| `ui-tab-settings-push-to-talk.png` | `UI-Settings-Tab` | **Push To Talk** with a controller and a labelled button selected. |
+| `ui-tab-stats.png` | `UI-Stats-Tab` | After 10+ minutes, so Tokens/Hour is populated. A **cloud** provider shows the cache lines a local model hides. |
+| `ui-overlay-settings.png` | `UI-HUD-Overlay` | The settings dialog with **VR headset** or **Monitor and headset** selected, so *Position in headset* and its note are visible. |
+| `ui-overlay-ingame.png` | `UI-HUD-Overlay` | **Use the full cockpit frame**; see below. A plotted route card showing the new blue and white star dots would be ideal. |
 
 ---
 
@@ -90,25 +69,23 @@ makes the shot legible, and it is what sells the feature.
 
 ---
 
-## Pre-existing gaps (not V1.1, but broken today)
+## Pre-existing gaps
 
 `AMD-RX-7800XT-LLM-Setup.md` references two images that are not in `images/`:
 
 - `rocm-smi-without-game-running-example.png`
 - `rocm-smi-with-game-and-Elite-Intel-running-example.png`
 
-They render as broken images on that page in all six locales.
+They render as broken images on that page in every locale.
 
 ---
 
-## Superseded V1.0 images
+## Superseded images
 
-These are no longer referenced by any page and can be deleted once the new set is in:
+Check these against the localized pages before deleting them:
 
-`tab-ai-buttons.png` · `tab-player.png` · `tab-actions.png` ·
+`v1.0.png` · `v1.1.png` · `tab-ai-buttons.png` · `tab-player.png` · `tab-actions.png` ·
 `tab-action-build-in-commands.png` · `tab-actions-custom-commands.png` ·
 `tab-settings-ai-services.png` · `tab-settings-audio.png` ·
 `tab-settings-push-to-talk.png` · `tab-stats.png` · `popup-ship-properties.png` ·
 `popup-custom-action.png` · `select_audio_device.png` · `calibrate-audio.png`
-
-They are still referenced by the **localized** pages, so hold off until those are translated.

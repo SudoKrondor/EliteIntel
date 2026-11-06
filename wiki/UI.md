@@ -12,10 +12,10 @@ This section walks through every tab, every control, and what it actually does.
 | Tab | What it is for |
 |-----|----------------|
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | The flight deck. Start and stop services, watch the conversation, read live status, open the in-game HUD overlay. |
-| <img src="images/controller.png" class="inline" height="20" alt="Commander"> **[Commander](UI-Commander-Tab)** | Who you are and how your ships behave. Fleet voices and personalities, automations, spoken announcements, and the Exo-Mastery catalogue. |
-| <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Everything Elite Intel can do. Browse the built-in command catalogue, and build your own macros. |
-| <img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> **[Bindings](UI-Bindings-Tab)** | Your Elite Dangerous key bindings. Diagnose gaps and conflicts, edit them, and write them back to the game. |
-| <img src="images/settings.png" class="inline" height="20" alt="Settings"> **[Settings](UI-Settings-Tab)** | The plumbing. Language, journal folder, language model, speech engine, audio, and push-to-talk. |
+| <img src="images/commander.png" class="inline" height="20" alt="Commander"> **[Commander](UI-Commander-Tab)** | Who you are and how your ships behave. The journal folder, fleet voices and personalities, automations, spoken announcements, the Exo-Mastery catalogue, and your location bookmarks. |
+| <img src="images/actions.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Everything Elite Intel can do. Browse the built-in command catalogue, and build your own macros. |
+| <img src="images/keyboard.png" class="inline" height="20" alt="Bindings"> **[Bindings](UI-Bindings-Tab)** | **BindForge.** Edit every Elite Dangerous control on any device, name your controllers, and back up all your control files. |
+| <img src="images/services.png" class="inline" height="20" alt="Services"> **[Services](UI-Settings-Tab)** | The plumbing. Language, language model, speech engine, audio, push-to-talk, and a backup of your settings and data. |
 | <img src="images/speaker.png" class="inline" height="20" alt="Jukebox"> **[Jukebox](UI-Jukebox-Tab)** | Your own music, played underneath Vega and ducked automatically when she speaks. |
 | <img src="images/stats.png" class="inline" height="20" alt="Stats"> **[Stats](UI-Stats-Tab)** | Token usage and LLM telemetry for the current session. |
 
@@ -30,14 +30,15 @@ Elite Intel speaks its own setup warnings out loud when services start, so you d
 hunt for what is missing. In order of importance:
 
 1. **A language model.** Nothing works without one. Go to
-   [Settings → AI Services](UI-Settings-Tab) and either pick a cloud provider and paste its API
+   [Services → AI Services](UI-Settings-Tab) and either pick a cloud provider and paste its API
    key, or point the app at a local model. See [Choose your LLM](installing-local-llms).
 2. **The journal folder.** Without it Elite Intel is blind to everything happening around your
-   ship. [Settings → Common](UI-Settings-Tab).
-3. **The bindings folder.** Without it Elite Intel cannot operate your ship.
-   [Bindings → Binding Profile](UI-Bindings-Tab). If the folder is right but Vega still says she
-   cannot find your bindings, open *Options → Controls* in the game and change any binding — the
-   game only writes a bindings file once you have customised something.
+   ship. [Commander → Commander Profile](UI-Commander-Tab).
+3. **Your controls.** Without a bindings file Elite Intel cannot operate your ship. Open the
+   [Bindings tab](UI-Bindings-Tab) once so BindForge can set itself up, then press **Auto-Assign VEGA
+   Required Binds** to give Vega the keys she needs. If Vega says your control files have not been
+   created yet, complete your commander training, then in the game's *Options → Controls*, set the
+   galaxy map UI movement to the arrow keys and apply.
 4. **Calibrate audio.** Strongly recommended before your first flight.
    [Vega tab](UI-Vega-Tab) → **CALIBRATE AUDIO**.
 
@@ -50,14 +51,14 @@ hunt for what is missing. In order of importance:
 
 - **Most controls save the moment you change them.** Toggles, sliders and dropdowns write
   through immediately; there is no Save button to forget.
-- **Two exceptions work on a draft.** *Settings → AI Services* holds your edits until you press
+- **Two exceptions wait for you.** *Services → AI Services* holds your edits until you press
   **Save**, and asks you to *Save*, *Discard* or *Keep editing* if you try to leave with unsaved
-  changes. Key bindings collect in a draft that is written to Elite Dangerous only when you
-  press **Apply**.
-- **Language changes rebuild the window.** Selecting a new language in *Settings → Common*
+  changes. Changes on the Bindings tab are held until you press **Apply**, and everything is backed
+  up before they reach Elite Dangerous.
+- **Language changes rebuild the window.** Selecting a new language on the *Services* tab
   re-renders every tab in that language immediately, and Vega announces the change.
-- **Seven languages are supported:** English, Spanish, French, German, Italian, Portuguese and
-  Brazilian Portuguese.
+- **Nine languages are supported:** English, Russian, Ukrainian, German, French, Spanish, Italian,
+  Portuguese and Brazilian Portuguese.
 - **Several commanders on one PC.** Elite Intel keeps each commander's data separately and
   switches automatically when a different commander loads into the game — the fleet list and
   per-commander settings follow.

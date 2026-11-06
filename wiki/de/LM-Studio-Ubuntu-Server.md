@@ -2,7 +2,7 @@
 
 > Diese Anleitung wurde von **Wim** bereitgestellt.
 
-> **Elite Intel:** Diese Anleitung richtet einen eigenen Rechner im LAN ein, der LM Studio für Elite Intel betreibt. Danach in der [Reiter Einstellungen](UI-Settings-Tab) als **Adresse** `http://SERVER_IP:1234/v1/chat/completions` eintragen und das unterstützte Modell **`google/gemma-4-e4b`** laden. Der Server muss über localhost hinaus lauschen (`--bind 0.0.0.0`, siehe Teil 2 § 9), und die Firewall muss den Gaming-PC zulassen.
+> **Elite Intel:** Diese Anleitung richtet einen eigenen Rechner im LAN ein, der LM Studio für Elite Intel betreibt. Danach im [Reiter Dienste](UI-Settings-Tab) als **Adresse** `http://SERVER_IP:1234/v1/chat/completions` eintragen und das unterstützte Modell **`google/gemma-4-e4b`** laden. Der Server muss über localhost hinaus lauschen (`--bind 0.0.0.0`, siehe Teil 2 § 9), und die Firewall muss den Gaming-PC zulassen.
 
 ---
 

@@ -10,7 +10,7 @@ Elite Intel verbindet deine Stimme mit deinem Schiff. Keine Befehlslisten zum Au
 
 Daten werden in Echtzeit von [Spansh](https://spansh.co.uk/) und [EDSM](https://www.edsm.net/) bezogen.
 
-**Unterstützte Sprachen:** Englisch, Spanisch, Französisch, Deutsch
+**Unterstützte Sprachen:** Englisch, Russisch, Ukrainisch, Deutsch, Französisch, Spanisch, Italienisch, Portugiesisch, brasilianisches Portugiesisch
 
 > ### ⚠️ Ein Sprachmodell (LLM) wird benötigt
 > Elite Intel ist Stimme und Hände — das LLM ist das Gehirn. Ohne LLM läuft die App nicht.
@@ -46,12 +46,20 @@ Wenn du bereits Spracherkennungssoftware mit Elite Dangerous verwendet hast, wir
 
 ## Eine Stimme, die zum Cockpit passt
 
-**Kokoro TTS** ist integriert und funktioniert sofort einsatzbereit. Keine Downloads, keine API-Schlüssel, keine Konfiguration. Es bietet 53 Stimmen in Englisch, Spanisch und Französisch und unterstützt das vollständige Persönlichkeitssystem.
+**Supertonic 3** ist integriert und funktioniert sofort. Keine Downloads, keine API-Schlüssel, keine Konfiguration, und nichts verlässt deinen PC. Es bietet 45 für Elite Intel erstellte Stimmen, und jede Stimme spricht jede von Elite Intel unterstützte Sprache. Bei russischer Sprache setzt die Bibliothek RUAccent die Betonung, sodass Wörter, deren Bedeutung davon abhängt, richtig ausgesprochen werden. Du kannst [jede Stimme abstimmen](UI-Settings-Tab), bis sie dir gefällt.
 
-Für alle anderen unterstützten Sprachen liefert **Google TTS** natürlich klingende Sprache in jeder von Elite Intel unterstützten Sprache. Ein API-Schlüssel ist erforderlich und kann unter Einstellungen / Cloud-Dienste konfiguriert werden.
+Lieber eine Cloud-Stimme? **Google TTS** steht als Option bereit. Dafür ist ein API-Schlüssel nötig, den du unter [Dienste → KI-Dienste](UI-Settings-Tab) einträgst.
 
 ---
 
+
+## Deine Steuerung, geschützt
+
+**[BindForge](UI-Bindings-Tab)** bearbeitet deine Steuerung für Elite Dangerous von außerhalb des Spiels: Tastatur, Maus, Joystick, HOTAS und Pedale. Lege jedes Gerät auf jeden Slot, behebe Konflikte, stimme Empfindlichkeiten und Totzonen ab und gib deinen Controllern echte Namen und Tastenbeschriftungen.
+
+Eine aufwendige Belegung kostet Stunden, und ein Spiel-Update kann sie zurücksetzen. BindForge sichert deine Steuerungsdateien jeden Tag und vor jeder Änderung und kann sie zurückspielen, wenn du sie brauchst.
+
+---
 
 ## Wähle dein LLM
 
@@ -61,7 +69,7 @@ Elite Intel funktioniert mit dem Sprachmodell, das zu deinem Setup passt:
 **Kostenlose Cloud** - [Mistral](https://console.mistral.ai/) - kostenloser Tarif, ohne Kreditkarte  
 **Kostenpflichtige Cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
-Wechsle den Anbieter jederzeit in den Einstellungen. Keine Neuinstallation erforderlich.
+Wechsle den Anbieter jederzeit im Reiter Dienste. Keine Neuinstallation erforderlich.
 
 ---
 

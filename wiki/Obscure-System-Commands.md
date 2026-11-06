@@ -23,7 +23,7 @@ Every spoken announcement has a voice toggle, and each one mirrors a switch on t
 - **Cargo scoop pickups**: *"Announce cargo scoop pickups."*
 - **Radar contacts**: *"Radar announcements off."*
 - **Radio**: *"Radio on."* In-character radio traffic — pirate threats, traffic control — in its
-  own radio voices. Its volume and effects are in [Settings → Audio](UI-Settings-Tab).
+  own radio voices. Its volume and effects are in [Services → Audio](UI-Settings-Tab).
 - **Everything at once**: *"All announcements off."*
 - **Night vision / lights / drive assist**: *"Night vision on."* *"Lights off."* *"Drive assist
   off."*

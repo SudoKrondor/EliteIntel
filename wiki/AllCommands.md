@@ -51,6 +51,7 @@ For those, **type the order into the in-game chat** instead. Start the line with
 - The line is handled exactly as if you had said it, and it interrupts Vega if she is speaking.
 - Use the **local** channel. Only your own sent lines are read — nothing another commander types
   can ever give Vega an order.
+- In Russian and Ukrainian the Cyrillic spelling (`@Вега`) works too.
 
 ---
 
@@ -199,10 +200,23 @@ recognition fails most, and a wrong guess sends you to the wrong side of the bub
   jump* setting do it on the [Commander tab](UI-Commander-Tab)).
 - *"Clear neutron route"*
 
+### Bookmarks
+
+- *"Bookmark this location"* — saves where you are.
+- *"Show bookmarks"* — the numbered list on the [HUD overlay](UI-HUD-Overlay). *"Next page"* /
+  *"previous page"* · *"close bookmarks"*
+- *"Navigate to bookmark 3"* · *"Delete bookmark 3"*
+
+See [Commander tab → Bookmarks](UI-Commander-Tab).
+
 ### Finding places
 
 Every *find* command plots a route to what it finds, and puts it on the
 [HUD overlay](UI-HUD-Overlay).
+
+- *"Find a shipyard"* / *"find a shipyard selling a Python"*
+- *"Find a powerplay conflict zone"* / *"where is my power fighting?"* — systems with power conflict
+  zones for the power you are pledged to.
 
 - *"Find raw / encoded / manufactured material trader"*
 - *"Find human / guardian tech broker"*
@@ -228,8 +242,7 @@ Every *find* command plots a route to what it finds, and puts it on the
 - *"What is our trade route?"* / *"trade legs"*
 - *"Navigate to next trade stop"*
 - *"Cancel trade route"*
-- *"Local markets"* · *"Station details"* / *"what services here?"* · *"Outfitting"* ·
-  *"Shipyard"* / *"ships for sale"*
+- *"Local markets"* · *"Station details"* / *"what services here?"* · *"Outfitting"*
 - *"What are we carrying?"* — cargo hold.
 
 ### Trade profile

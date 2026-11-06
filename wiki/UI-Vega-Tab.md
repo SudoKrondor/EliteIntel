@@ -37,17 +37,16 @@ Four buttons sit in the section header:
 
 ## Quick Status
 
-Six live readouts. Each shows a state and a colour, so a glance tells you whether the stack is
+Five live readouts. Each shows a state and a colour, so a glance tells you whether the stack is
 healthy.
 
 | Readout | States |
 |---------|--------|
 | **STT** | `Standby` (services stopped) · `Listening` · `Sleeping` (ignoring you) · `Push to talk` (only the mapped button opens the microphone) |
 | **LLM** | `Standby` · `Offline` (could not connect) · the name of the provider that actually answered, or `Active` |
-| **TTS** | `Standby` · `Local` (Kokoro / Supertonic) · `Cloud` (Google / Microsoft Edge) |
+| **TTS** | `Standby` · `Local` (Supertonic) · `Cloud` (Google) |
 | **Bindings** | `All OK`, or `N missing` |
 | **Commands** | How many custom commands are loaded |
-| **Keymap** | `In sync` with the game, or `Modified` — you have an unapplied bindings draft |
 
 The **LLM** readout is worth watching. It does not report what you *configured*, it reports
 which provider actually answered.

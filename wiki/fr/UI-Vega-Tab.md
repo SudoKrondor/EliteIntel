@@ -38,17 +38,16 @@ Quatre boutons se trouvent dans l'en-tête de la section :
 
 ## Statut rapide
 
-Six indicateurs en direct. Chacun affiche un état et une couleur, pour voir d'un coup d'œil si la
+Cinq indicateurs en direct. Chacun affiche un état et une couleur, pour voir d'un coup d'œil si la
 pile est en bonne santé.
 
 | Indicateur | États |
 |---------|--------|
 | **STT** | `Veille` (services arrêtés) · `Écoute` · `Endormi` (vous ignore) · `Push to Talk` (seul le bouton assigné ouvre le micro) |
 | **IA** | `Veille` · `Hors ligne` (connexion impossible) · le nom du fournisseur qui a réellement répondu, ou `Actif` |
-| **TTS** | `Veille` · `Local` (Kokoro / Supertonic) · `Cloud` (Google / Microsoft Edge) |
+| **TTS** | `Veille` · `Local` (Supertonic) · `Cloud` (Google) |
 | **Touches** | `OK`, ou `N manquant` |
 | **Commandes** | Combien de commandes personnalisées sont chargées |
-| **Mappage** | `Synchronisé` avec le jeu, ou `Modifié` — vous avez un brouillon de raccourcis non appliqué |
 
 L'indicateur **IA** mérite qu'on le surveille. Il n'indique pas ce que vous avez *configuré*, mais
 quel fournisseur a réellement répondu.

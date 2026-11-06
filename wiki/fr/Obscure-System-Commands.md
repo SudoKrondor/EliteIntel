@@ -27,7 +27,7 @@ l'[onglet Commandant → Annonces](UI-Commander-Tab), où vous voyez d'un coup d
 - **Récupérations de la trappe** : *« Annonce les récupérations de la trappe. »*
 - **Contacts radar** : *« Désactive les annonces radar. »*
 - **Radio** : *« Active la radio. »* Le trafic radio du jeu — menaces pirates, contrôle du trafic —
-  avec ses propres voix radio. Volume et effets dans [Paramètres → Audio](UI-Settings-Tab).
+  avec ses propres voix radio. Volume et effets dans [Services → Audio](UI-Settings-Tab).
 - **Tout d'un coup** : *« Désactive toutes les annonces. »*
 - **Vision nocturne / lumières / assistance de conduite** : *« Active la vision nocturne. »*
   *« Éteins les phares. »* *« Désactive l'assistance de conduite. »*

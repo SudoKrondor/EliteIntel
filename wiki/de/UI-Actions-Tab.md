@@ -1,6 +1,6 @@
 # Reiter Aktionen
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Aktionen"> Alles, was Elite
+<img src="images/actions.png" class="inline" height="20" alt="Aktionen"> Alles, was Elite
 Intel tun kann, und alles, was du ihm beigebracht hast. Zwei Unterreiter: **Integrierte Befehle**
 und **Eigene Befehle**.
 
@@ -61,8 +61,6 @@ anlegst, erscheint.
 
 Knöpfe:
 
-- **Ausführen** — führt ihn sofort aus der App aus, ohne zu sprechen. Braucht der Befehl
-  Parameter, erscheint zuerst ein kleines Formular.
 - **Korrektur vorschlagen** — öffnet ein vorausgefülltes GitHub-Issue mit Befehls-ID, deiner
   Sprache, den aktuellen Phrasen und deinen Vorschlägen. So werden die nicht-englischen
   Phrasen besser — bitte nutze es.
@@ -84,7 +82,7 @@ statt nach exakter Phrase.
 
 Die Tabelle zeigt für jeden Befehl **Name** und **Trainingsphrasen**, darüber ein Suchfeld.
 **Klicke auf eine Zeile**, um die Details zu öffnen: Sie zeigen die Schritt-**Sequenz** und bieten
-**Ausführen**, **Bearbeiten**, **Duplizieren** und **Löschen**.
+**Bearbeiten**, **Duplizieren** und **Löschen**.
 
 Oben:
 

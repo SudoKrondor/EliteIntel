@@ -1,6 +1,6 @@
 # Instalación
 
-Elite Intel **V1.1** es la versión actual.
+Elite Intel **V1.2** es la versión actual.
 
 ---
 
@@ -13,7 +13,7 @@ Elite Intel **V1.1** es la versión actual.
      Requiere hardware de GPU capaz.
    - **LLM en la nube** (tiene plan gratuito y es más fácil de configurar): consulta
      [**Opciones de LLM en la nube**](cloud-llm-options) para obtener una clave API, y después
-     introdúcela en [**Ajustes → Servicios de IA**](UI-Settings-Tab).
+     introdúcela en [**Servicios → Servicios de IA**](UI-Settings-Tab).
      Plan gratuito, sin tarjeta de crédito: 👉 [**console.mistral.ai**](https://console.mistral.ai/) 👈
 
 Configuración completada. Siguiente: [**la interfaz, pestaña a pestaña**](UI).
@@ -25,10 +25,23 @@ cualquier cosa que falte, pero conviene hacerlos de antemano:
 
 | Paso | Dónde |
 |------|-------|
-| Apuntarlo a un modelo de lenguaje | [Ajustes → Servicios de IA](UI-Settings-Tab) |
-| Comprobar la carpeta del diario | [Ajustes → General](UI-Settings-Tab) |
-| Comprobar la carpeta de asignaciones y corregir las que falten | [Pestaña Bindings](UI-Bindings-Tab) |
+| Apuntarlo a un modelo de lenguaje | [Servicios → Servicios de IA](UI-Settings-Tab) |
+| Comprobar la carpeta del diario | [Pestaña Comandante](UI-Commander-Tab) |
+| Dejar que BindForge se configure y dar a Vega las teclas que necesita | [Pestaña Bindings](UI-Bindings-Tab) |
 | Calibrar el audio | [Pestaña Vega](UI-Vega-Tab) → **CALIBRAR AUDIO** |
+
+---
+
+### ¿Nuevo en Elite Dangerous?
+
+El juego crea sus archivos de controles solo cuando has cambiado algo, y sin ellos Elite Intel no puede manejar
+tu nave. Completa tu entrenamiento de comandante y luego, en *Opciones → Controles* del juego, pon el movimiento
+de la interfaz del mapa galáctico en las teclas de flecha y aplica.
+
+### Pasar a otro ordenador
+
+[**Copia de ajustes y datos**](UI-Settings-Tab), en la pestaña Servicios, guarda tus ajustes, tus datos y tus
+comandos personalizados en un archivo que puedes restaurar en el ordenador nuevo.
 
 ---
 

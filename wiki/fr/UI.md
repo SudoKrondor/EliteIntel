@@ -12,10 +12,10 @@ Cette section passe en revue chaque onglet, chaque contrôle, et ce qu'il fait r
 | Onglet | À quoi il sert |
 |-----|----------------|
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | Le poste de pilotage. Démarrer et arrêter les services, suivre la conversation, lire l'état en direct, ouvrir l'overlay HUD en jeu. |
-| <img src="images/controller.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Voix et personnalités de la flotte, automatisations, annonces vocales et catalogue Exo-Maîtrise. |
-| <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Tout ce qu'Elite Intel sait faire. Parcourir le catalogue des commandes intégrées et créer vos propres macros. |
-| <img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> **[Bindings](UI-Bindings-Tab)** | Vos raccourcis Elite Dangerous. Repérer les manques et les conflits, les modifier et les réécrire dans le jeu. |
-| <img src="images/settings.png" class="inline" height="20" alt="Paramètres"> **[Paramètres](UI-Settings-Tab)** | La tuyauterie. Langue, dossier du journal, modèle de langage, moteur de voix, audio et push-to-talk. |
+| <img src="images/commander.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Le dossier du journal, voix et personnalités de la flotte, automatisations, annonces vocales, le catalogue Exo-Maîtrise et vos signets. |
+| <img src="images/actions.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Tout ce qu'Elite Intel sait faire. Parcourir le catalogue des commandes intégrées et créer vos propres macros. |
+| <img src="images/keyboard.png" class="inline" height="20" alt="Commandes"> **[Commandes](UI-Bindings-Tab)** | **BindForge.** Modifiez toutes les commandes d'Elite Dangerous sur n'importe quel périphérique, nommez vos contrôleurs et sauvegardez tous vos fichiers de commandes. |
+| <img src="images/services.png" class="inline" height="20" alt="Services"> **[Services](UI-Settings-Tab)** | La tuyauterie. Langue, modèle de langage, moteur de voix, audio, push-to-talk et une sauvegarde de vos réglages et données. |
 | <img src="images/speaker.png" class="inline" height="20" alt="Jukebox"> **[Jukebox](UI-Jukebox-Tab)** | Votre propre musique, jouée sous Vega et baissée automatiquement quand elle parle. |
 | <img src="images/stats.png" class="inline" height="20" alt="Statistiques"> **[Statistiques](UI-Stats-Tab)** | Consommation de tokens et télémétrie LLM de la session en cours. |
 
@@ -30,15 +30,18 @@ Elite Intel énonce à voix haute ses avertissements de configuration au démarr
 pour que vous n'ayez pas à chercher ce qui manque. Par ordre d'importance :
 
 1. **Un modèle de langage.** Rien ne fonctionne sans lui. Allez dans
-   [Paramètres → Services IA](UI-Settings-Tab) et choisissez un fournisseur cloud puis collez sa
+   [Services → Services IA](UI-Settings-Tab) et choisissez un fournisseur cloud puis collez sa
    clé API, ou pointez l'application vers un modèle local. Voir
    [Choisir votre LLM](installing-local-llms).
 2. **Le dossier du journal.** Sans lui, Elite Intel ne voit rien de ce qui se passe autour de
-   votre vaisseau. [Paramètres → Général](UI-Settings-Tab).
-3. **Le dossier des raccourcis.** Sans lui, Elite Intel ne peut pas piloter votre vaisseau.
-   [Bindings → Profil de raccourcis](UI-Bindings-Tab). Si le dossier est correct mais que Vega ne
-   trouve toujours pas vos raccourcis, ouvrez *Options → Commandes* dans le jeu et modifiez
-   n'importe quel raccourci — le jeu n'écrit un fichier de raccourcis qu'après une personnalisation.
+   votre vaisseau. [Commandant → Profil commandant](UI-Commander-Tab).
+3. **Vos commandes.** Sans fichier de raccourcis, Elite Intel ne peut pas piloter votre vaisseau. Ouvrez une
+   fois l'[onglet Commandes](UI-Bindings-Tab) pour que BindForge se configure, puis cliquez sur **Attribuer
+   automatiquement les raccourcis requis par VEGA** pour donner à Vega les touches dont elle a besoin. Si Vega
+   dit que vos fichiers de commandes n'existent pas encore, terminez votre entraînement de commandant, puis dans
+   *Options → Commandes* du jeu, réglez le déplacement de l'interface de la carte de la galaxie sur les touches
+   fléchées et appliquez.
+
 4. **Calibrer l'audio.** Fortement recommandé avant le premier vol.
    [Onglet Vega](UI-Vega-Tab) → **CALIBRER L'AUDIO**.
 
@@ -51,16 +54,15 @@ pour que vous n'ayez pas à chercher ce qui manque. Par ordre d'importance :
 
 - **La plupart des contrôles enregistrent immédiatement.** Interrupteurs, curseurs et listes
   s'appliquent dès que vous les changez ; aucun bouton Enregistrer à oublier.
-- **Deux exceptions fonctionnent avec un brouillon.** *Paramètres → Services IA* conserve vos
-  modifications jusqu'à ce que vous cliquiez sur **Enregistrer**, et vous demande *Enregistrer*,
-  *Abandonner* ou *Continuer l'édition* si vous quittez avec des modifications en attente. Les
-  raccourcis s'accumulent dans un brouillon qui n'est écrit dans Elite Dangerous qu'au clic sur
-  **Appliquer**.
-- **Changer de langue reconstruit la fenêtre.** Choisir une autre langue dans *Paramètres →
-  Général* redessine immédiatement tous les onglets dans cette langue, et Vega annonce le
-  changement.
-- **Sept langues sont prises en charge :** anglais, espagnol, français, allemand, italien,
+- **Deux exceptions vous attendent.** *Services → Services IA* conserve vos modifications jusqu'à ce que vous
+  cliquiez sur **Enregistrer**, et vous demande *Enregistrer*, *Abandonner* ou *Continuer l'édition* si vous
+  quittez avec des modifications en attente. Les modifications de l'onglet Commandes attendent que vous cliquiez
+  sur **Appliquer**, et tout est sauvegardé avant qu'elles n'atteignent Elite Dangerous.
+- **Changer de langue reconstruit la fenêtre.** Choisir une autre langue dans l'onglet *Services* redessine
+  immédiatement tous les onglets dans cette langue, et Vega annonce le changement.
+- **Neuf langues sont prises en charge :** anglais, russe, ukrainien, allemand, français, espagnol, italien,
   portugais et portugais du Brésil.
+
 - **Plusieurs commandants sur un même PC.** Elite Intel garde les données de chaque commandant
   séparément et bascule automatiquement quand un autre commandant est chargé dans le jeu — la
   liste de la flotte et les réglages par commandant suivent.

@@ -135,14 +135,12 @@ Als `start-lmstudio.bat` an einem dauerhaften Speicherort (z. B. `C:\Scripts\`) 
 
 ### Schritt 5 – Elite Intel konfigurieren
 
-Öffne den **Einstellungs-Tab** in Elite Intel:
+Öffne in Elite Intel **Dienste → KI-Dienste** und wähle **LMSTudio**:
 
-- Das Feld **LLM-Schlüssel** leer lassen (lokales LM Studio benötigt keinen Schlüssel).
-- **LLM-Adresse**: auf `http://localhost:1234/v1/chat/completions` setzen. Wenn LM Studio auf einem anderen Rechner läuft, `localhost` durch die IP dieses Rechners ersetzen.
-- **LLM-Modell**: die Modell-ID-Zeichenfolge aus `http://localhost:1234/v1/models` einfügen.
-- **Befehls-LLM**: auf dieselbe Modell-ID setzen.
-- **Abfrage-LLM**: auf dieselbe Modell-ID setzen.
-- Auf dem KI-Tab auf **Stop** und dann auf **Start** klicken, um Änderungen zu übernehmen.
+- **Adresse**: auf `http://localhost:1234/v1/chat/completions` setzen. Wenn LM Studio auf einem anderen Rechner läuft, `localhost` durch die IP dieses Rechners ersetzen.
+- **Modell**: die Modell-ID-Zeichenfolge aus `http://localhost:1234/v1/models` einfügen.
+
+Drücke **Speichern**.
 
 ---
 

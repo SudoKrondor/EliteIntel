@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройка Elite Intel  EliteIntel</title>
+    <meta name="description" content="Elite Intel — это голос и ИИ-мозг корабля. В этом руководстве рассказано, как настроить голос и характер. У каждого корабля вашего флота могут быть свои, они за">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Customizing-your-AI.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Customizing-your-AI.html">
+    <meta property="og:title" content="Настройка Elite Intel  EliteIntel">
+    <meta property="og:description" content="Elite Intel — это голос и ИИ-мозг корабля. В этом руководстве рассказано, как настроить голос и характер. У каждого корабля вашего флота могут быть свои, они за">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/Customizing-your-AI.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Customizing-your-AI.html" class="locale-link">EN</a><a href="../fr/Customizing-your-AI.html" class="locale-link">FR</a><a href="../es/Customizing-your-AI.html" class="locale-link">ES</a><a href="../de/Customizing-your-AI.html" class="locale-link">DE</a><a href="../uk/Customizing-your-AI.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бинды»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервисы»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Бесплатный облачный LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системные команды</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Свои команды</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонизация</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Впервые в Matrix? Начните здесь</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Настройка Elite Intel</h1>
+<p>Elite Intel — это голос и ИИ-мозг корабля. В этом руководстве рассказано, как настроить голос и характер. У каждого корабля вашего флота могут быть свои, они задаются на <a href="UI-Commander-Tab.html">вкладке «Командир»</a>.</p>
+<h2>Голоса</h2>
+<p><strong>Supertonic 3</strong> — встроенный движок речи. Он работает на вашем ПК без облака, и каждый голос говорит на всех языках, которые поддерживает Elite Intel. Всего голосов 45, среди них:</p>
+<ul>
+<li><strong>Женские</strong>: Lily (по умолчанию), Heart, Bella, Nicole, Sky, Emma, Isabella, Astra, Lyra</li>
+<li><strong>Мужские</strong>: George, Daniel, Michael, Lewis, Fable, Orion, Atlas, Draven</li>
+</ul>
+<p>Ваш выбор также определяет, говорит ли «Вега» о себе в мужском или женском роде на этом корабле.</p>
+<p>Если голос кажется слишком тихим, быстрым или резким, настройте его в разделе <a href="UI-Settings-Tab.html">Настройка голосов</a>: скорость, громкость и шестиполосный эквалайзер для каждого голоса.</p>
+<p>Если добавить API-ключ, доступен и Google TTS (облако). У него свой набор голосов.</p>
+<p><strong>Примечание</strong>: голос и характер корабля можно менять только в интерфейсе, а не голосовой командой.</p>
+<h2>Личность корабля</h2>
+<p>ИИ говорит от имени корабля. О себе он говорит «я», «мой» и «мне».</p>
+<p>Примеры:</p>
+<ul>
+<li>«Какое у тебя оснащение?» — текущие модули корабля.</li>
+<li>«Какая у тебя дальность прыжка?» — текущая дальность с грузом и без него.</li>
+<li>«Сколько у меня топлива?» — уровень топлива корабля.</li>
+</ul>
+<p>Чтобы спросить о флотоносце, обратитесь к нему явно:</p>
+<ul>
+<li>«Какая дальность у флотоносца?»</li>
+<li>«Расскажи о дальности прыжка флотоносца.»</li>
+</ul>
+<p>Иначе ИИ считает, что вопрос относится к кораблю.</p>
+<h2>Характеры</h2>
+<p>У каждого корабля есть характер: Профессиональный, Неформальный, Дружелюбный, Безумный, Seven of Nine, F.R.I.D.A.Y., Болтливый наёмник, Твой бывший, Твоя бывшая или Без тормозов. Насколько творческими будут ответы, зависит от выбранного характера и возможностей языковой модели.</p>
+<p>У локальной модели нет расходов на API и низкая задержка. Облачная модель, в зависимости от провайдера, может стоить денег и обычно изобретательнее.</p>
+<h2>Советы</h2>
+<ul>
+<li>Попробуйте несколько голосов на вкладке «Командир». При смене голоса корабля сразу звучит фраза этим голосом.</li>
+<li>Эксперименты с формулировками могут улучшить общение с кораблём.</li>
+</ul>
+<p>Сообщайте о проблемах, неожиданном поведении и идеях в Matrix.</p>
+<p>Community 👉 <a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a> 👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

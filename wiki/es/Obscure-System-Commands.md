@@ -27,7 +27,7 @@ Cada anuncio hablado tiene un interruptor por voz, y cada uno equivale a un inte
 - **Recogidas del cargo scoop**: *«Activa los anuncios de recogida.»*
 - **Contactos de radar**: *«Desactiva los anuncios de radar.»*
 - **Radio**: *«Enciende la radio.»* Tráfico de radio del juego — amenazas piratas, control de
-  tráfico — con sus propias voces de radio. Volumen y efectos en [Ajustes → Audio](UI-Settings-Tab).
+  tráfico — con sus propias voces de radio. Volumen y efectos en [Servicios → Audio](UI-Settings-Tab).
 - **Todo a la vez**: *«Desactiva todos los anuncios.»*
 - **Visión nocturna / luces / asistente de conducción**: *«Activar visión nocturna.»* *«Apagar
   luces.»* *«Asistente de conducción.»*

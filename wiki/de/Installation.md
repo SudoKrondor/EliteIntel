@@ -1,6 +1,6 @@
 # Installation
 
-Elite Intel **V1.1** ist die aktuelle Version.
+Elite Intel **V1.2** ist die aktuelle Version.
 
 ---
 
@@ -13,7 +13,7 @@ Elite Intel **V1.1** ist die aktuelle Version.
      Erfordert leistungsfähige GPU-Hardware.
    - **Cloud-LLM** (hat eine kostenlose Option und ist einfacher einzurichten): Siehe
      [**Cloud-LLM-Optionen**](cloud-llm-options), um einen API-Schlüssel zu bekommen, und trage ihn
-     dann unter [**Einstellungen → KI-Dienste**](UI-Settings-Tab) ein.
+     dann unter [**Dienste → KI-Dienste**](UI-Settings-Tab) ein.
      Kostenloser Tarif, ohne Kreditkarte: 👉 [**console.mistral.ai**](https://console.mistral.ai/) 👈
 
 Setup abgeschlossen. Weiter mit [**der Benutzeroberfläche, Reiter für Reiter**](UI).
@@ -25,10 +25,23 @@ was fehlt — es lohnt sich aber, das vorab zu erledigen:
 
 | Schritt | Wo |
 |------|-------|
-| Auf ein Sprachmodell verweisen | [Einstellungen → KI-Dienste](UI-Settings-Tab) |
-| Journal-Ordner prüfen | [Einstellungen → Allgemein](UI-Settings-Tab) |
-| Belegungsordner prüfen und fehlende Belegungen beheben | [Reiter Bindings](UI-Bindings-Tab) |
+| Auf ein Sprachmodell verweisen | [Dienste → KI-Dienste](UI-Settings-Tab) |
+| Journal-Ordner prüfen | [Reiter Kommandant](UI-Commander-Tab) |
+| BindForge einrichten lassen und Vega die nötigen Tasten geben | [Reiter Bindings](UI-Bindings-Tab) |
 | Audio kalibrieren | [Vega-Reiter](UI-Vega-Tab) → **AUDIO KALIBRIEREN** |
+
+---
+
+### Neu in Elite Dangerous?
+
+Das Spiel legt seine Steuerungsdateien erst an, wenn du etwas geändert hast, und ohne sie kann Elite Intel
+dein Schiff nicht bedienen. Schließe dein Kommandantentraining ab und stelle dann im Spiel unter *Optionen →
+Steuerung* die UI-Bewegung der Galaxiekarte auf die Pfeiltasten und übernimm das.
+
+### Umzug auf einen anderen Rechner
+
+[**Einstellungen & Daten sichern**](UI-Settings-Tab) im Reiter Dienste legt deine Einstellungen, deine Daten
+und deine eigenen Befehle in einer Datei ab, die du auf dem neuen Rechner wiederherstellen kannst.
 
 ---
 

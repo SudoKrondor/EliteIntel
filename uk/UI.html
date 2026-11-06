@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерфейс Elite Intel  EliteIntel</title>
+    <meta name="description" content="Elite Intel поділено на сім вкладок угорі вікна. Кожна відповідає за свою частину системи, і">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI.html">
+    <meta property="og:title" content="Інтерфейс Elite Intel  EliteIntel">
+    <meta property="og:description" content="Elite Intel поділено на сім вкладок угорі вікна. Кожна відповідає за свою частину системи, і">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI.html" class="locale-link">EN</a><a href="../fr/UI.html" class="locale-link">FR</a><a href="../es/UI.html" class="locale-link">ES</a><a href="../de/UI.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бінди»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервіси»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музика»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системні команди</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Власні команди</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонізація</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Піратські місії</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Уперше в Matrix? Почніть тут</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Інтерфейс Elite Intel</h1>
+<p>Elite Intel поділено на сім вкладок угорі вікна. Кожна відповідає за свою частину системи, і
+більшість має власні підвкладки.</p>
+<p>Цей розділ проходить кожну вкладку, кожен елемент керування і те, що він насправді робить.</p>
+<hr>
+<h2>Сім вкладок</h2>
+<table>
+<thead>
+<tr>
+<th>Вкладка</th>
+<th>Для чого вона</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="../images/ai.png" class="inline" height="20" alt="Вега"> <strong><a href="UI-Vega-Tab.html">Вега</a></strong></td>
+<td>Льотна палуба. Запуск і зупинка служб, хід діалогу, живий статус, ігрова HUD-накладка.</td>
+</tr>
+<tr>
+<td><img src="../images/commander.png" class="inline" height="20" alt="Командир"> <strong><a href="UI-Commander-Tab.html">Командир</a></strong></td>
+<td>Хто ви і як поводяться ваші кораблі. Папка журналів, голоси й характери флоту, автоматизація, голосові оголошення, каталог «Екзо-майстерність» і ваші закладки.</td>
+</tr>
+<tr>
+<td><img src="../images/actions.png" class="inline" height="20" alt="Дії"> <strong><a href="UI-Actions-Tab.html">Дії</a></strong></td>
+<td>Усе, що вміє Elite Intel. Каталог вбудованих команд і створення власних макросів.</td>
+</tr>
+<tr>
+<td><img src="../images/keyboard.png" class="inline" height="20" alt="Бінди"> <strong><a href="UI-Bindings-Tab.html">Бінди</a></strong></td>
+<td><strong>BindForge.</strong> Редагуйте будь-яке керування Elite Dangerous на будь-якому пристрої, давайте назви контролерам і робіть копії всіх файлів керування.</td>
+</tr>
+<tr>
+<td><img src="../images/services.png" class="inline" height="20" alt="Сервіси"> <strong><a href="UI-Settings-Tab.html">Сервіси</a></strong></td>
+<td>Інфраструктура. Мова, мовна модель, рушій мовлення, аудіо, Push to Talk і резервна копія ваших налаштувань і даних.</td>
+</tr>
+<tr>
+<td><img src="../images/speaker.png" class="inline" height="20" alt="Музика"> <strong><a href="UI-Jukebox-Tab.html">Музика</a></strong></td>
+<td>Ваша власна музика — грає під «Вегою» й автоматично стишується, коли вона говорить.</td>
+</tr>
+<tr>
+<td><img src="../images/stats.png" class="inline" height="20" alt="Статистика"> <strong><a href="UI-Stats-Tab.html">Статистика</a></strong></td>
+<td>Витрата токенів і телеметрія LLM за поточний сеанс.</td>
+</tr>
+</tbody></table>
+<p>Крім того, є <strong><a href="UI-HUD-Overlay.html">HUD-накладка</a></strong> — окреме вікно поверх усіх (і необов&#39;язкова
+поверхня у VR), яким керують із вкладки «Вега».</p>
+<hr>
+<h2>Якщо це перший запуск</h2>
+<p>Під час запуску служб Elite Intel вимовляє попередження про налаштування вголос, тож шукати, чого
+бракує, не доведеться. За важливістю:</p>
+<ol>
+<li><p><strong>Мовна модель.</strong> Без неї не працює нічого. Відкрийте
+<a href="UI-Settings-Tab.html">Сервіси → Сервіси ШІ</a> і або оберіть хмарного провайдера та вставте його
+API-ключ, або вкажіть локальну модель. Див. <a href="installing-local-llms.html">Вибір LLM</a>.</p>
+</li>
+<li><p><strong>Папка журналів.</strong> Без неї Elite Intel не бачить нічого, що відбувається навколо корабля.
+<a href="UI-Commander-Tab.html">Командир → Профіль командира</a>.</p>
+</li>
+<li><p><strong>Ваше керування.</strong> Без файлу прив&#39;язок Elite Intel не може керувати кораблем. Відкрийте один раз
+<a href="UI-Bindings-Tab.html">вкладку «Бінди»</a>, щоб BindForge налаштувався, потім натисніть <strong>Автопризначити прив&#39;язки,
+потрібні VEGA</strong>, щоб дати «Везі» потрібні клавіші. Якщо «Вега» каже, що файли керування ще не створено, пройдіть
+навчання командира, потім у грі в розділі <em>Налаштування → Керування</em> призначте рух інтерфейсу галактичної карти на
+клавіші зі стрілками й застосуйте.</p>
+</li>
+<li><p><strong>Калібрування аудіо.</strong> Наполегливо рекомендується перед першим польотом.
+<a href="UI-Vega-Tab.html">Вкладка «Вега»</a> → <strong>КАЛІБРУВАТИ АУДІО</strong>.</p>
+</li>
+</ol>
+<blockquote>
+<p>Elite Intel створено для <strong>Elite Dangerous Odyssey</strong>. У Horizons «Вега» під час запуску
+попередить, що багато чого не працюватиме.</p>
+</blockquote>
+<hr>
+<h2>Загальні правила</h2>
+<ul>
+<li><p><strong>Більшість елементів зберігаються одразу.</strong> Перемикачі, повзунки й списки застосовуються в мить
+зміни; кнопки «Зберегти», про яку можна забути, немає.</p>
+</li>
+<li><p><strong>Два винятки чекають на ваше рішення.</strong> <em>Сервіси → Сервіси ШІ</em> тримають правки до натискання <strong>Зберегти</strong> і в разі
+спроби піти з незбереженими змінами питають: <em>Зберегти</em>, <em>Відхилити</em> чи <em>Продовжити редагування</em>. Зміни на вкладці
+«Бінди» чекають на натискання <strong>Застосувати</strong>, і перед тим, як вони потраплять в Elite Dangerous, створюється копія всього.</p>
+</li>
+<li><p><strong>Зміна мови перебудовує вікно.</strong> Вибір іншої мови на вкладці <em>Сервіси</em> одразу перемальовує всі вкладки цією мовою, і
+«Вега» оголошує про зміну.</p>
+</li>
+<li><p><strong>Підтримуються дев&#39;ять мов:</strong> англійська, російська, українська, німецька, французька, іспанська, італійська,
+португальська та бразильська португальська.</p>
+</li>
+<li><p><strong>Кілька командирів на одному ПК.</strong> Elite Intel зберігає дані кожного командира окремо й
+автоматично перемикається, коли в грі завантажується інший командир — список флоту й
+налаштування командира перемикаються разом із ним.</p>
+</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

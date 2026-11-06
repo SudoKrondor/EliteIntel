@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BindForge — вкладка «Бинды»  EliteIntel</title>
+    <meta name="description" content="защищает управление Elite Dangerous вне игры: клавиатуру, мышь, джойстик, HOTAS и педали. Он следит за">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
+    <meta property="og:title" content="BindForge — вкладка «Бинды»  EliteIntel">
+    <meta property="og:description" content="защищает управление Elite Dangerous вне игры: клавиатуру, мышь, джойстик, HOTAS и педали. Он следит за">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Bindings-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Bindings-Tab.html" class="locale-link">FR</a><a href="../es/UI-Bindings-Tab.html" class="locale-link">ES</a><a href="../de/UI-Bindings-Tab.html" class="locale-link">DE</a><a href="../uk/UI-Bindings-Tab.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бинды»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервисы»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Бесплатный облачный LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системные команды</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Свои команды</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонизация</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Впервые в Matrix? Начните здесь</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>BindForge — вкладка «Бинды»</h1>
+<p><img src="../images/keyboard.png" class="inline" height="20" alt="Бинды"> <strong>BindForge</strong> редактирует и
+защищает управление Elite Dangerous вне игры: клавиатуру, мышь, джойстик, HOTAS и педали. Он следит за
+всеми файлами, которые за этим стоят: вашими файлами <code>.binds</code>, файлом пресета, который определяет, какой
+из них загружается, а также файлами <code>DeviceMappings.xml</code> и <code>.buttonMap</code>, которые дают имена контроллерам
+и подписи их кнопкам.</p>
+<p>Он находится на вкладке <strong>Бинды</strong>: на ней три подвкладки и панель над ними.</p>
+<table>
+<thead>
+<tr>
+<th>Часть</th>
+<th>Для чего</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong><a href="#the-apply-bar">Панель «Применить»</a></strong></td>
+<td>Единственные <strong>Применить</strong> и <strong>Отбросить</strong> для всей вкладки</td>
+</tr>
+<tr>
+<td><strong><a href="#binding-profile">Профиль привязок</a></strong></td>
+<td>Редактор привязок. Все органы управления игры, с видами <strong>Игровой режим</strong>, <strong>Аномалии</strong> и <strong>Настройки</strong></td>
+</tr>
+<tr>
+<td><strong><a href="#binding-management">Управление привязками</a></strong></td>
+<td>Файловый менеджер. Ваши установки игры, файлы привязок и резервные копии</td>
+</tr>
+<tr>
+<td><strong><a href="#alias-designer">Конструктор псевдонимов</a></strong></td>
+<td>Дайте контроллерам настоящие имена и подпишите их кнопки, оси и хатки</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>«Вега» по-прежнему нажимает только клавиши клавиатуры.</strong> Теперь любое устройство можно назначить в
+любой слот, но чтобы «Вега» могла пользоваться органом управления, ему нужна клавиша. Столбец
+<strong>Доступ ИИ</strong> показывает, у каких она есть.</p>
+</blockquote>
+<hr>
+<h2>При первом открытии</h2>
+<p>Прежде чем что-либо менять, BindForge один раз настраивается. <strong>Сначала создаётся резервная копия всего,
+и она хранится вечно.</strong></p>
+<ol>
+<li><strong>Подтвердите установки.</strong> BindForge показывает все копии Elite Dangerous, найденные на этом ПК.
+Поправьте список кнопками <strong>Добавить недостающую</strong> или <strong>Убрать</strong>, затем нажмите <strong>Подтвердить</strong>.</li>
+<li><strong>Согласуйте, если нужно.</strong> Если в установках разные файлы устройств, используйте файлы одной установки
+для всех или нажмите <strong>Объединить</strong> и ответьте на каждую строку с пометкой <em>выбрать</em>.</li>
+<li><strong>Создайте рабочую копию.</strong> BindForge делает собственную копию файлов управления. Редактируете вы
+именно её, а файлы игры остаются нетронутыми, пока вы не нажмёте <strong>Применить</strong>.</li>
+<li><strong>Дайте имена контроллерам.</strong> Каждому подключённому контроллеру без имени будет предложено
+<a href="#naming-a-controller">имя</a>. Этот шаг можно <strong>Пропустить</strong>.</li>
+</ol>
+<p>Пока вы не закончите, первый запуск будет предлагаться при каждом открытии вкладки.</p>
+<h3>Впервые в Elite Dangerous?</h3>
+<p>У совсем нового командира файлов управления нет, и «Вега» об этом скажет. Пройдите обучение командира,
+затем в игре в разделе <em>Настройки → Управление</em> назначьте движение интерфейса галактической карты на
+клавиши со стрелками и примените. Так появятся файлы, и «Вега» сможет их прочитать.</p>
+<p>Если файлы игры есть, но своего файла привязок нет, на панели «Применить» появится кнопка <strong>Создать</strong>, а
+вкладки редакторов останутся неактивными. Выберите в поле <strong>На основе</strong> один из пресетов Frontier, укажите
+<strong>Имя</strong> своего и нажмите <strong>Применить</strong>, чтобы записать его в игру. Если вы возвращаетесь в игру, лучше
+восстановите копию из раздела <a href="#player-backups">Резервные копии игрока</a>.</p>
+<hr>
+<p><a id="the-apply-bar"></a></p>
+<h2>Панель «Применить»</h2>
+<p>Ничто на этих вкладках не затрагивает игру, пока вы не нажмёте <strong>Применить</strong>. Изменения накапливаются, а
+<strong>Применить</strong> и <strong>Отбросить</strong> загораются, как только они появляются.</p>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Применить</strong></td>
+<td>Создаёт копию всего, записывает изменения в файлы игры и сообщает, что записано в каждую установку</td>
+</tr>
+<tr>
+<td><strong>Отбросить</strong></td>
+<td>Выбрасывает все неприменённые изменения. Файлы игры не затрагиваются</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Закройте экран управления в игре, прежде чем применять.</strong> Изменения, сделанные одновременно в BindForge
+и в игре, могут потеряться. Чтобы игра загрузила изменённый файл привязок, после применения откройте и
+закройте её экран управления. «Вега» об этом напомнит.</p>
+</blockquote>
+<p>Если вы уходите с вкладки или закрываете приложение с неприменёнными изменениями, вам предложат
+<strong>Применить</strong>, <strong>Отбросить</strong> или <strong>Вернуться</strong>.</p>
+<h3>Когда игра изменила ваши файлы</h3>
+<p>Игра может менять свои файлы, а обновление может их сбросить. BindForge сравнивает их со своей рабочей копией
+при первом открытии вкладки за сеанс и при каждом применении. Если они различаются, он показывает, что
+изменилось, и предлагает выбор:</p>
+<table>
+<thead>
+<tr>
+<th>Выбор</th>
+<th>Что происходит</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Вернуть мои</strong></td>
+<td>Ваша рабочая копия возвращается в игру. Обычно это правильно, если файл выглядит сброшенным после обновления</td>
+</tr>
+<tr>
+<td><strong>Объединить...</strong></td>
+<td>Каждая отличающаяся строка становится рядом. Нажмите значение, которое хотите оставить: ваше или игры</td>
+</tr>
+<tr>
+<td><strong>Взять файлы игры</strong></td>
+<td>Файлы игры заменяют вашу рабочую копию</td>
+</tr>
+</tbody></table>
+<p>Перед любой из этих записей создаётся копия всего, а предупреждение можно закрыть и решить позже. Если закрыть
+его во время применения, применение отменится, а изменения сохранятся.</p>
+<p><strong>Новая версия вашего файла привязок.</strong> Обновления игры иногда сохраняют ваш файл под новым именем и с новыми
+органами управления. BindForge никогда не записывает поверх него старый файл. Если все привязки перенесены,
+достаточно нажать <strong>Одобрить</strong>. Если какие-то отличаются, <strong>Согласовать...</strong> сохранит новые органы управления и
+спросит о каждой отличающейся строке.</p>
+<hr>
+<p><a id="binding-profile"></a></p>
+<h2>Профиль привязок</h2>
+<p><img src="../images/ui-tab-bindings-profile.png" alt="Профиль привязок"></p>
+<p>Это редактор привязок. Строка <strong>Редактируется</strong> вверху называет открытый файл привязок. Чтобы открыть другой,
+воспользуйтесь разделом <a href="#bindings-file">Файл привязок</a> в <em>Управлении привязками</em>.</p>
+<p><strong>Темп клавиатурного ввода</strong> — ползунок <strong>Быстро ↔ Медленно</strong> для паузы, которую Elite Intel делает после каждого
+нажатия, отправленного в игру. Если на медленном железе игра теряет нажатия (макрос выполняется наполовину, панель
+открывается не на той вкладке), сдвиньте его к <strong>Медленно</strong>.</p>
+<p><strong>Искать привязки...</strong> внизу работает во всех трёх видах. Поиск идёт по разделу, группе, названию органа управления
+и исходному тегу <code>.binds</code>, а также по именам контроллеров и кнопок в привязке.</p>
+<h3>Игровой режим</h3>
+<p>Все органы управления, сгруппированные под заголовками игры и в том же порядке, что на её экране управления, так что
+их удобно читать рядом. Вкладки сверху сужают список до <strong>Все</strong>, <strong>Общие</strong>, <strong>Корабль</strong>, <strong>SRV</strong> или <strong>Пешком</strong>, у
+каждой есть счётчик. Под ними два списка: <strong>Используемые привязки</strong> и <strong>Отсутствующие привязки</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Столбец</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Привязка</strong></td>
+<td>Орган управления</td>
+</tr>
+<tr>
+<td><strong>Основная</strong> / <strong>Вторичная</strong></td>
+<td>Два слота, которые Elite Dangerous даёт каждому органу управления, с вашими именами контроллеров и кнопок</td>
+</tr>
+<tr>
+<td><strong>Доступ ИИ</strong></td>
+<td>Может ли «Вега» им пользоваться (см. ниже)</td>
+</tr>
+<tr>
+<td><strong>Статус</strong></td>
+<td><code>Отсутствует</code> · <code>Нет клавиатурной привязки</code> (назначено, но только на контроллер) · <code>Не задано</code></td>
+</tr>
+<tr>
+<td><strong>Быстрое исправление</strong></td>
+<td>Список <em>отсутствующих</em>: даёт этому органу управления безопасную свободную клавишу</td>
+</tr>
+<tr>
+<td><strong>Очистить</strong></td>
+<td>Список <em>используемых</em>: убирает клавиатурную привязку, не трогая привязки контроллера и HOTAS</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>Доступ ИИ</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Используется Vega</strong></td>
+<td>«Вега» нажимает этот орган управления его клавишей. Оставьте на нём клавишу</td>
+</tr>
+<tr>
+<td><strong>Vega не может</strong></td>
+<td>«Веге» он нужен, но клавиши нет. Назначьте её в пустой слот: привязка контроллера продолжит работать</td>
+</tr>
+<tr>
+<td><strong>Vega нужна клавиша</strong></td>
+<td>«Веге» он нужен, но на него ничего не назначено</td>
+</tr>
+</tbody></table>
+<p>Рядом с поиском находятся два фильтра и кнопка автоназначения:</p>
+<ul>
+<li><strong>Показывать только конфликты</strong> — только строки с конфликтами.</li>
+<li><strong>Только нужные Vega</strong> — только то, что нажимает «Вега» для встроенных и ваших пользовательских команд.</li>
+<li><strong><a href="#auto-assign-vega-required-binds">Автоназначить привязки, нужные VEGA</a></strong> — см. ниже.</li>
+</ul>
+<h3>Назначение кнопки или клавиши</h3>
+<p>Нажмите любой из двух слотов строки, чтобы открыть <strong>Назначить управление</strong>. Окно показывает оба слота карточками, и
+выделенная карточка получит ваш следующий ввод. Нажмите другую, чтобы заполнить её, или поменяйте Основную и Вторичную
+местами кнопкой между ними.</p>
+<p><img src="../images/ui-bindings-assign.png" alt="Назначить управление"></p>
+<p>Под карточками есть вкладка <strong>Клавиатура</strong> и по одной вкладке на каждый подключённый контроллер.</p>
+<ul>
+<li><strong>Клавиатура</strong> — нажмите на поле, затем нажмите клавиши вместе с модификаторами, до трёх. Esc отменяет. Удерживайте
+Ctrl, Shift или Alt, чтобы увидеть карту клавиатуры для этого сочетания: <strong>зелёная свободна, красная уже занята.</strong>
+Зарезервированные клавиши, такие как клавиша игрового меню и Alt+F4, назначить нельзя.</li>
+<li><strong>Контроллер</strong> — нажмите кнопку или хатку на контроллере либо выберите в списке <strong>Кнопки</strong> или <strong>Хатки</strong>. Уже
+удерживаемые кнопки становятся модификаторами. Зелёный — свободно, красный — занято другим органом управления, синий —
+то, что назначено сейчас. Сначала контроллеру нужно имя из <a href="#alias-designer">Конструктора псевдонимов</a>.</li>
+</ul>
+<p>Ввод, занятый другим органом управления, назначить нельзя. Карточка называет его, а <strong>Сохранить</strong> остаётся неактивной,
+пока вы его не освободите. Если изменение лишит нужный «Веге» орган управления последней клавиши, окно предупредит вас.
+<strong>Сохранить</strong> оставляет изменения готовыми для <strong>Применить</strong>.</p>
+<blockquote>
+<p><strong>Геймпады пока поддерживаются лишь частично.</strong> Стики геймпада здесь пока назначить нельзя.</p>
+</blockquote>
+<h3>Назначение оси</h3>
+<p>Осевые органы управления, такие как тангаж, рыскание и тяга, находятся среди других строк и открывают отдельное окно.</p>
+<p><img src="../images/ui-bindings-axis.png" alt="Назначить ось"></p>
+<p>Двиньте ось контроллера или выберите её в списке. Затем задайте <strong>Направление</strong> (<em>Обычное</em> или <em>Инвертировано</em>),
+<strong>Мёртвую зону</strong> и там, где он есть, <strong>Диапазон тяги</strong> (<em>Полный диапазон</em> или <em>Только вперёд</em>). Несколько органов управления
+могут делить одну ось, и это нормально: окно скажет, что ещё на ней находится, а решаете вы.</p>
+<h3>Аномалии</h3>
+<p><img src="../images/ui-bindings-anomalies.png" alt="Аномалии"></p>
+<p>Строки с конфликтами в одном месте, с их числом на вкладке. Это те же строки, которые игровой режим рисует красным, и они
+открывают то же окно. <strong>Когда «Вега» предупреждает о конфликте привязок, смотрите сюда.</strong></p>
+<p>Elite Dangerous считает конфликтом только <em>точно</em> одинаковое сочетание: <code>G</code> и <code>Shift+G</code> прекрасно уживаются. Elite Intel
+следует тому же правилу. Органы управления, которые не могут быть активны одновременно, например корабельный и SRV, не
+отмечаются. Наведите указатель на строку, чтобы увидеть <strong>Использует <em>клавишу</em> вместе с:</strong> и список для каждого слота с конфликтом.</p>
+<p>Вы также можете увидеть на строке <strong>Аналог корабль/SRV - многие назначают так же, как:</strong>. Это не конфликт, а подсказка:
+некоторые органы управления корабля и SRV обычно назначают на одну клавишу.</p>
+<p>Кроме того, «Вега» <strong>вслух</strong> сообщает о привязках, которые действительно что-то ломают, и называет клавиши в журнале
+диагностики:</p>
+<ul>
+<li><strong>Движение галактической карты и навигация по интерфейсу на одной клавише.</strong> Прокладка маршрутов не заработает, пока у
+карты и интерфейса не будет разных клавиш.</li>
+<li><strong>Орган управления на клавише игрового меню.</strong> Elite открывает меню при любом сочетании, оканчивающемся этой клавишей,
+так что его никогда не удастся нажать. Решение — очистить эту привязку в игре: Escape всё равно открывает меню.</li>
+<li><strong>Орган управления на сочетании, которое первой перехватывает операционная система</strong> (например, Alt+F4). Нажатие закроет
+игру или завершит сеанс.</li>
+</ul>
+<h3>Настройки</h3>
+<p><img src="../images/ui-bindings-settings.png" alt="Настройки привязок"></p>
+<p>Чувствительность, мёртвые зоны и кривые мощности из вашего файла привязок, сгруппированные как в игре. У каждого значения
+есть ползунок и число рядом. Перетащите ползунок или введите число и нажмите Enter.</p>
+<p>Ползунок охватывает тот же диапазон, что и ползунок игры. Число — это точное значение и единственный способ выйти за его
+пределы. Значение, которое уже находится вне диапазона, остаётся как есть, пока вы его не сдвинете.</p>
+<p><a id="auto-assign-vega-required-binds"></a></p>
+<h3>Автоназначить привязки, нужные VEGA</h3>
+<p>Одна кнопка, которая даёт безопасную и подходящую для вашей раскладки клавишу всему, что <strong>нажимает «Вега»</strong>, но без клавиши,
+включая то, что используют ваши пользовательские команды. Остальное остаётся как есть.</p>
+<ul>
+<li>Существующие привязки на любом устройстве никогда не меняются. Заполняется только пустой слот.</li>
+<li>Ни одна клавиша не используется повторно.</li>
+<li>Изменения остаются в правках, чтобы вы проверили их перед <strong>Применить</strong>.</li>
+</ul>
+<p>Кнопка сообщает, что сделала, что пропустила и почему: оба слота уже заняты контроллером, нет свободной безопасной клавиши или
+нет слота, который можно безопасно изменить. Два органа управления <strong>намеренно оставлены без привязки</strong>: игровое меню (его и так
+открывает Escape) и <em>сброс всего груза</em> (он опустошает трюм в космос, и ни одна команда Elite Intel его не нажимает).</p>
+<hr>
+<p><a id="binding-management"></a></p>
+<h2>Управление привязками</h2>
+<p>Файловый менеджер с двумя собственными вкладками: <strong>Установки игры</strong> и <strong>Резервные копии игрока</strong>.</p>
+<h3>Установки игры</h3>
+<p><img src="../images/ui-bindings-install-locations.png" alt="Установки игры"></p>
+<p><strong>Папка пользовательской конфигурации</strong> — место, где лежат файлы <code>.binds</code> и файл пресета, и все установки используют её вместе.
+Она определяется автоматически. Воспользуйтесь кнопкой <strong>⋮</strong>, если ваша находится в необычном месте.</p>
+<blockquote>
+<p><strong>«Привязки не найдены» при правильной папке?</strong> Elite Dangerous не записывает файл <code>.binds</code>, пока вы что-нибудь не настроите.
+Откройте в игре <em>Настройки → Управление</em>, измените любую привязку, и Elite Intel найдёт файл.</p>
+</blockquote>
+<p><a id="bindings-file"></a></p>
+<p><strong>Файл привязок</strong> перечисляет ваши файлы привязок вместе с неприменёнными изменениями. Выберите файл и нажмите <strong>Загрузить</strong>, чтобы
+открыть его в профиле привязок, или введите новое имя и нажмите <strong>Переименовать</strong>. Переименование — такая же правка, как и любая
+другая, и попадает в игру после нажатия <strong>Применить</strong>.</p>
+<p><strong>Установки игры</strong> перечисляет все копии игры, известные BindForge. У каждой свои файлы <code>DeviceMappings.xml</code> и <code>.buttonMap</code>, и
+BindForge поддерживает их одинаковыми.</p>
+<table>
+<thead>
+<tr>
+<th>Столбец</th>
+<th>Значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Магазин</strong></td>
+<td>Откуда эта копия: Steam, Epic, Frontier или Oculus</td>
+</tr>
+<tr>
+<td><strong>Расположение</strong></td>
+<td>Её папка</td>
+</tr>
+<tr>
+<td><strong>Источник</strong></td>
+<td><em>Обнаружена</em> или <em>Добавлена вручную</em></td>
+</tr>
+<tr>
+<td><strong>Файлы устройств</strong></td>
+<td>Сколько в ней записей устройств и карт кнопок и сколько из них осталось без владельца</td>
+</tr>
+<tr>
+<td><strong>Состояние</strong></td>
+<td><em>Совпадает</em> с рабочей копией, <em>Отличается</em> или <em>Не найдена</em></td>
+</tr>
+</tbody></table>
+<p><strong>Добавить недостающую</strong> добавляет установку, которую BindForge не обнаружил. <strong>Убрать</strong> прекращает копирование и запись в неё. Если
+вы перемещаете игру, нажмите <strong>Убрать</strong>, а затем <strong>Добавить недостающую</strong>.</p>
+<p><a id="player-backups"></a></p>
+<h3>Резервные копии игрока</h3>
+<p><img src="../images/ui-tab-bindings-management.png" alt="Резервные копии игрока"></p>
+<p>Защита вашего управления — главная причина существования BindForge. На сложную настройку уходят часы, а обновление игры может её
+сбросить. BindForge делает копии сам, и каждая копия — это <code>.zip</code> с датой, где лежат файлы привязок, файл пресета и файлы устройств из
+каждой установки.</p>
+<p>Столбец <strong>Создана</strong> показывает, почему существует копия, и от этого зависит срок её хранения:</p>
+<table>
+<thead>
+<tr>
+<th>Создана</th>
+<th>Когда</th>
+<th>Хранится</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Ежедневная</strong></td>
+<td>При первом запуске Elite Intel за день</td>
+<td>По возрасту: 30 дней по умолчанию, либо 60, 90 или 180</td>
+</tr>
+<tr>
+<td><strong>Перед ПРИМЕНЕНИЕМ</strong>, <strong>Перед ВОССТАНОВЛЕНИЕМ</strong>, <strong>Перед проверкой</strong>, <strong>Перед изменениями</strong></td>
+<td>Автоматически, прежде чем BindForge что-либо запишет</td>
+<td>100 самых новых по умолчанию, до 1000</td>
+</tr>
+<tr>
+<td><strong>Пользователь</strong></td>
+<td>Когда вы нажимаете <strong>Создать резервную копию</strong></td>
+<td>Пока вы её не удалите</td>
+</tr>
+<tr>
+<td><strong>Первая настройка</strong></td>
+<td>Перед первым запуском</td>
+<td>Вечно</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>Кнопка</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Создать резервную копию</strong></td>
+<td>Создать копию самому. Сделайте это, прежде чем экспериментировать</td>
+</tr>
+<tr>
+<td><strong>Восстановить</strong></td>
+<td>Возвращает выбранную копию: все файлы привязок, файл пресета и файлы устройств в каждой установке. Сначала копируются ваши текущие файлы</td>
+</tr>
+<tr>
+<td><strong>Выбрать файл резервной копии</strong></td>
+<td>Восстанавливает копию не из списка, например привезённую с другого компьютера</td>
+</tr>
+<tr>
+<td><strong>Удалить</strong></td>
+<td>Окончательно удаляет одну из ваших копий типа <em>Пользователь</em></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Восстанавливайте только свои копии.</strong> Копия другого игрока содержит его контроллеры, а не ваши.</p>
+</blockquote>
+<p><strong>Настройки резервного копирования</strong> определяют, куда идут копии (<strong>Резервные копии сохраняются в</strong>, с кнопками <strong>Обзор...</strong> и <strong>По
+умолчанию</strong>), и два правила хранения. Папка внутри установки игры отклоняется, потому что обновление игры удалило бы ваши копии вместе с ней.</p>
+<hr>
+<p><a id="alias-designer"></a></p>
+<h2>Конструктор псевдонимов</h2>
+<p><img src="../images/ui-bindings-alias-designer.png" alt="Конструктор псевдонимов"></p>
+<p>Изначально игра знает многие контроллеры только по аппаратному ID, а её экран управления показывает их кнопки как безымянные номера.
+Конструктор псевдонимов даёт каждому контроллеру настоящее имя, а каждой кнопке, оси и хатке — подпись на ваш выбор. Подписи появляются
+на экране управления в игре и в профиле привязок.</p>
+<p><strong>Мои устройства</strong> перечисляет ваши контроллеры: <strong>Устройство</strong>, <strong>VID / PID</strong>, <strong>Состояние</strong> (<em>Подключено</em> или <em>Отсутствует</em>) и
+<strong>Псевдоним</strong>. <strong>Встроенные устройства</strong> — список только для чтения с контроллерами, которые Frontier поставляет с игрой. <strong>Проверить
+снова</strong> заново читает, что подключено.</p>
+<p><a id="naming-a-controller"></a></p>
+<h3>Как дать контроллеру имя</h3>
+<p>Если у контроллера нет имени, вас проведёт окно <strong>Дайте имена своим контроллерам</strong>. Оно запускается после первого запуска и по кнопке
+<strong>Проверить снова</strong>, а для одного контроллера его можно открыть через значок шестерёнки. <strong>Пропустить</strong> берёт имя по умолчанию.</p>
+<p>В имени используются латинские буквы от A до Z, цифры, <code>-</code> и <code>_</code>; оно начинается с буквы, без пробелов и диакритики. Оно не может быть
+слишком похожим на уже используемое. Привязки, которые знают контроллер только по аппаратному ID, перейдут на новое имя при применении.</p>
+<h3>Редактор устройства</h3>
+<p>Нажмите <strong>шестерёнку</strong> в строке устройства, чтобы открыть его.</p>
+<p><img src="../images/ui-bindings-device-editor.png" alt="Редактор устройства"></p>
+<ul>
+<li><strong>Устройство</strong> — имя, VID, PID, аппаратное имя и состояние. Измените здесь имя, и <strong>Применить</strong> переименует устройство в каждой
+установке и перенесёт использующие его привязки.</li>
+<li><strong>Оси</strong>, <strong>Кнопки</strong>, <strong>Хатки</strong> — введите подпись для каждого входа. Вкладки появляются только для тех типов входов, что есть у контроллера.
+Задействуйте вход, и его поле <strong>подсветится</strong>, чтобы было видно, какой это вход, а оси показывают живой индикатор.</li>
+</ul>
+<p><strong>Сохранить</strong> оставляет правки для <strong>Применить</strong>; до этого в игру ничего не попадает.</p>
+<ul>
+<li><strong>Очистить</strong> при применении убирает запись и подписи устройства из файлов игры.</li>
+<li><strong>Сбросить подписи</strong> возвращает подписи по умолчанию.</li>
+</ul>
+<p>У встроенного устройства Frontier можно менять подписи. Чтобы дать ему своё имя, подключите его и введите имя в поле: ваша запись встанет
+перед записью Frontier, а если снова ввести имя Frontier, вы вернётесь обратно.</p>
+<h3>Когда меняется оборудование</h3>
+<p>Если именованного контроллера, который используют ваши привязки, нет, «Вега» об этом скажет: его привязки не загрузятся, пока он не
+подключён. Обновление прошивки тоже может изменить ID продукта контроллера, а у замены он будет новым. BindForge может это заметить, и окно
+<strong>Это тот же контроллер?</strong> спросит, какой из подключённых это. Ответьте, и привязки последуют за ним при применении.</p>
+<blockquote>
+<p>Привязки ссылаются на кнопки по номеру. Если замена другой модели, некоторые привязки могут оказаться на неожиданных кнопках. <strong>Проверить в
+редакторе привязок</strong> сразу приведёт вас к ним.</p>
+</blockquote>
+<hr>
+<p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

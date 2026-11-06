@@ -1,7 +1,7 @@
 # LLM auswählen
 
 Elite Intel braucht ein Sprachmodell (LLM), um deine Befehle zu verstehen und deine Fragen zu
-beantworten. Es gibt zwei Wege dorthin, und beide richtest du unter **Einstellungen → KI-Dienste →
+beantworten. Es gibt zwei Wege dorthin, und beide richtest du unter **Dienste → KI-Dienste →
 Sprachmodell (LLM)** ein:
 
 | Option | Was du brauchst | Kosten |

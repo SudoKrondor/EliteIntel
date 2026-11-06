@@ -38,17 +38,16 @@ Vier Knöpfe sitzen im Abschnittskopf:
 
 ## Schnellstatus
 
-Sechs Live-Anzeigen. Jede zeigt einen Zustand und eine Farbe, sodass ein Blick genügt, um zu
+Fünf Live-Anzeigen. Jede zeigt einen Zustand und eine Farbe, sodass ein Blick genügt, um zu
 sehen, ob der Stack gesund ist.
 
 | Anzeige | Zustände |
 |---------|--------|
 | **STT** | `Bereit` (Dienste gestoppt) · `Höre zu` · `Schlafend` (ignoriert dich) · `Push-to-Talk` (nur die zugewiesene Taste öffnet das Mikrofon) |
 | **KI** | `Bereit` · `Offline` (keine Verbindung) · der Name des Anbieters, der tatsächlich geantwortet hat, oder `Aktiv` |
-| **TTS** | `Bereit` · `Lokal` (Kokoro / Supertonic) · `Cloud` (Google / Microsoft Edge) |
+| **TTS** | `Bereit` · `Lokal` (Supertonic) · `Cloud` (Google) |
 | **Belegungen** | `OK` oder `N fehlend` |
 | **Befehle** | Wie viele eigene Befehle geladen sind |
-| **Tasten** | `Synchron` mit dem Spiel oder `Geändert` — es gibt einen nicht angewendeten Belegungsentwurf |
 
 Die **KI**-Anzeige lohnt einen Blick. Sie meldet nicht, was du *eingestellt* hast, sondern
 welcher Anbieter tatsächlich geantwortet hat.

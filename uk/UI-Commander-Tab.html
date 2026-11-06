@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вкладка «Командир»  EliteIntel</title>
+    <meta name="description" content="говорить кожен корпус вашого флоту, що корабель робить за вас автоматично, про що «Вега» повідомляє">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Commander-Tab.html">
+    <meta property="og:title" content="Вкладка «Командир»  EliteIntel">
+    <meta property="og:description" content="говорить кожен корпус вашого флоту, що корабель робить за вас автоматично, про що «Вега» повідомляє">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/UI-Commander-Tab.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../UI-Commander-Tab.html" class="locale-link">EN</a><a href="../fr/UI-Commander-Tab.html" class="locale-link">FR</a><a href="../es/UI-Commander-Tab.html" class="locale-link">ES</a><a href="../de/UI-Commander-Tab.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/UI-Commander-Tab.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub active"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бінди»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервіси»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музика»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системні команди</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Власні команди</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонізація</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Піратські місії</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Уперше в Matrix? Почніть тут</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вкладка «Командир»</h1>
+<p><img src="../images/commander.png" class="inline" height="20" alt="Командир"> Хто ви, яким голосом
+говорить кожен корпус вашого флоту, що корабель робить за вас автоматично, про що «Вега» повідомляє
+без запитання, каталог «Екзо-майстерність» і місця, які ви зберегли.</p>
+<p><img src="../images/ui-tab-commander.png" alt="Вкладка «Командир»"></p>
+<p>Угорі — смуга <strong>Профіль командира</strong>; під нею п&#39;ять підвкладок: <strong>Керування флотом</strong>, <strong>Загальні
+налаштування корабля</strong>, <strong>Оголошення</strong>, <strong>Екзо-майстерність</strong> і <strong>Закладки</strong>.</p>
+<hr>
+<h2>Профіль командира</h2>
+<p><strong>Ім&#39;я командира</strong> — ім&#39;я, яким «Вега» час від часу до вас звертається. Знадобиться, якщо «Вега»
+спотворює ваш ігровий нік або ви просто хочете, щоб вас називали інакше. Зберігається клавішею
+Enter або коли ви йдете з поля.</p>
+<p><strong>Звертатися до мене</strong> — якщо вимкнено, «Вега» взагалі до вас не звертається: ні на ім&#39;я, ні за
+рангом, ні за званням.</p>
+<p><strong>Папка журналів</strong> — місце, куди Elite Dangerous пише файли журналу. Необов&#39;язково: якщо лишити поле порожнім, використовується
+стандартне розташування для вашої платформи. Так Elite Intel знає, що відбувається навколо корабля; якщо папка неправильна,
+застосунок фактично сліпий і скаже про це під час запуску. Непридатну папку відхилено, і лишається попереднє значення.</p>
+<blockquote>
+<p><strong>Папка прив&#39;язок</strong> розташована на <a href="UI-Bindings-Tab.html">вкладці «Бінди»</a>, у розділі <em>Керування прив&#39;язками</em>.</p>
+</blockquote>
+<h3>Імпорт старих журналів</h3>
+<p><img src="../images/ui-journal-import.png" alt="Імпорт старих журналів"></p>
+<p>Elite Intel вчиться на ваших журналах просто в польоті: хто видає місії на знищення піратів, зони видобутку ресурсів, тіла, які
+ви відкрили й картографували, зібрана екзобіологія та назви нових матеріалів і товарів. Якщо старі журнали зберігалися деінде або
+ви щойно встановили Elite Intel, <strong>Імпорт старих журналів…</strong> навчить його і за ними.</p>
+<p>Натисніть <strong>Додати теку або архів…</strong>, додайте скільки потрібно й натисніть <strong>Імпортувати</strong>.</p>
+<ul>
+<li>Читаються архіви zip, 7z і tar, без стиснення або зі стисненням gzip, bzip2 чи xz. Архіви RAR прочитати не можна, перепакуйте їх
+у zip або 7z.</li>
+<li>Усе, що не є журналом, пропускається, а пошкоджений файл читається до місця пошкодження.</li>
+<li><strong>Кожен знайдений командир імпортується у власні записи.</strong></li>
+<li>Нічого не змінюється в тому, де ви перебуваєте й що везете зараз, а повторний імпорт тих самих журналів не зашкодить.</li>
+</ul>
+<p>Наприкінці зведення покаже, скільки журналів прочитано й що вивчено. Якщо ви скасуєте імпорт, усе вивчене до цього моменту збережеться.</p>
+<hr>
+<h2>Керування флотом</h2>
+<p>По рядку на кожен ваш корабель, а далі ваш <strong>флотоносець</strong> і <strong>ескадрений флотоносець</strong>, якщо вони
+є. Elite Intel дізнається склад флоту з ігрового журналу; додавати кораблі вручну не потрібно. Якщо
+ви граєте кількома командирами на одному ПК, список слідує за командиром, завантаженим у грі.</p>
+<table>
+<thead>
+<tr>
+<th>Стовпець</th>
+<th>Примітки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Корабель</strong></td>
+<td>Ім&#39;я вашого корабля (у флотоносця — назва й позивний)</td>
+</tr>
+<tr>
+<td><strong>Модель корабля</strong></td>
+<td>Тип корпусу, або <em>Флотоносець</em> / <em>Ескадрений флотоносець</em></td>
+</tr>
+<tr>
+<td><strong>Голос</strong></td>
+<td>Натисніть, щоб вибрати. Після зміни одразу звучить фраза цим голосом, щоб його прослухати</td>
+</tr>
+<tr>
+<td><strong>Характер</strong></td>
+<td><code>Професійний</code> · <code>Невимушений</code> · <code>Дружній</code> · <code>Нестримний</code> · <code>Seven of Nine</code> · <code>F.R.I.D.A.Y.</code> · <code>Балакучий найманець</code> · <code>Твій колишній</code> · <code>Твоя колишня</code> · <code>Бунтівний</code></td>
+</tr>
+<tr>
+<td><strong>⚙</strong></td>
+<td>Відкриває налаштування цього корабля (див. нижче)</td>
+</tr>
+</tbody></table>
+<p><strong>Про список голосів.</strong> Пропонуються всі голоси рушія мовлення, вибраного в
+<a href="UI-Settings-Tab.html">Сервіси → Сервіси ШІ</a>, чоловічі й жіночі — вибраний голос також визначає,
+чи говорить «Вега» про себе в чоловічому чи жіночому роді на цьому кораблі.</p>
+<ul>
+<li><strong>Supertonic 3</strong> (локальний) — 45 голосів, з іменем і статтю. Кожен голос говорить усіма мовами. Новий корабель отримує <strong>Lily</strong>,
+доки ви не виберете інший. Кожен голос можна змінити в розділі <a href="UI-Settings-Tab.html">Налаштування голосів</a>.</li>
+<li><strong>Google</strong> (хмара) — підписи виду <code>Ім&#39;я - акцент · HD</code> або <code>· Стандарт</code>. В англійській голоси
+розрізняються акцентом. Будь-якою іншою мовою кожен голос синтезується цією мовою, тому підпис
+показує стать і рівень якості замість оманливого англійського акценту.</li>
+</ul>
+<blockquote>
+<p>Зміна рушія мовлення скидає голос кожного корабля на голос за замовчуванням нового рушія.
+<strong>Характери зберігаються.</strong> Застосунок спитає перед цим.</p>
+</blockquote>
+<p><strong>Рядки флотоносців</strong> мають лише голос — флотоносцем «Вега» не керує, тож у нього немає ні
+характеру, ні налаштувань. Це голос, яким по радіо відповідає його <strong>диспетчерська служба</strong>.
+Залиште <strong>Випадковий</strong> — і щоразу відповідатиме інший диспетчер; виберіть голос — і проба прозвучить
+як радіопередача, адже тільки так ви його й почуєте.</p>
+<hr>
+<h2>Налаштування корабля (кнопка ⚙)</h2>
+<p>Налаштування для кожного корабля окремо: шахтарському Python і бойовому Corvette потрібна різна
+поведінка. Зміни зберігаються, коли ви закриваєте вікно кнопкою <strong>Назад</strong>.</p>
+<p><img src="../images/ui-ship-settings.png" alt="Налаштування корабля"></p>
+<p><strong>Сканувати систему при вході</strong> — виконує сканування виявлення після прибуття в систему. Виберіть
+<strong>Вогневу групу</strong> (A–H) і <strong>Тригер</strong> (1 або 2), на яких стоїть ваш сканер виявлення. Якщо HUD у
+бойовому режимі, Elite Intel перемкнеться в режим аналізу, просканує й повернеться.</p>
+<p><strong>Відсіки для машин</strong> — що стоїть у кожному відсіку ангара планетарних машин (<strong>Відсік 1–4</strong>:
+<em>Порожньо</em>, <em>Scarab</em>, <em>Scorpion</em> або <em>Rhino</em>). Ігровий журнал називає ангар, але ніколи не каже, що
+в ньому, тож саме так команда <em>«випусти СРВ»</em> відкриває потрібний відсік — і знає, чи треба
+кораблю спершу сісти (Scarab, Scorpion), чи можна зависнути (Rhino). Усі чотири відсіки показано
+завжди, хоч який ангар стоїть, щоб ваш вибір пережив переоснащення.</p>
+<p><strong>Сповіщення про матеріали у потужних викидах</strong> — повідомляє, коли сигнал високоякісних викидів у
+системі містить матеріали, заради яких варто зупинитися.</p>
+<p><strong>Торговий профіль</strong> — обмеження, яких Elite Intel дотримується, прокладаючи торговий маршрут для
+цього корабля. Будь-яке з них можна задати й голосом:
+<em>«зміни максимальну кількість зупинок торгового профілю чотири»</em>.</p>
+<table>
+<thead>
+<tr>
+<th>Налаштування</th>
+<th>Значення</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Дозволити планетарні порти</strong></td>
+<td>Включати наземні порти в маршрути</td>
+</tr>
+<tr>
+<td><strong>Дозволити заборонений вантаж</strong></td>
+<td>Включати вантажі, заборонені десь на маршруті</td>
+</tr>
+<tr>
+<td><strong>Дозволити системи з дозволами</strong></td>
+<td>Включати системи, що потребують пермиту</td>
+</tr>
+<tr>
+<td><strong>Дозволити флотські авіаносці</strong></td>
+<td>Включати флотоносці гравців як ринки</td>
+</tr>
+<tr>
+<td><strong>Дозволити системи фортець</strong></td>
+<td>Включати фортеці таргоїдів / держав</td>
+</tr>
+<tr>
+<td><strong>Макс. св. секунд від входу</strong></td>
+<td>Як далеко від зорі прибуття може бути станція</td>
+</tr>
+<tr>
+<td><strong>Макс. зупинок</strong></td>
+<td>Кількість етапів маршруту</td>
+</tr>
+<tr>
+<td><strong>Початковий капітал</strong></td>
+<td>Скільки кредитів може витратити планувальник</td>
+</tr>
+</tbody></table>
+<p>Як літати маршрутами: <a href="TradeRoutePlotting.html">Торгівля й прибуток</a>.</p>
+<hr>
+<h2>Загальні налаштування корабля</h2>
+<p>Автоматизація, яку «Вега» виконує за вас на всіх кораблях. Кожен пункт — простий перемикач, що
+зберігається одразу. Корисно всім і по-справжньому допомагає командирам з інвалідністю.</p>
+<table>
+<thead>
+<tr>
+<th>Перемикач</th>
+<th>Що робить</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Автоматично збільшувати швидкість перед FSD-стрибком</strong></td>
+<td>Дає тягу перед стрибком</td>
+</tr>
+<tr>
+<td><strong>Автоматично вимикати вогні перед FSD-стрибком</strong></td>
+<td>Гасить вогні корабля перед стрибком</td>
+</tr>
+<tr>
+<td><strong>Автоматично вимикати нічне бачення перед FSD-стрибком</strong></td>
+<td>Вимикає нічне бачення перед стрибком</td>
+</tr>
+<tr>
+<td><strong>Автоматично прибирати озброєння перед FSD-стрибком</strong></td>
+<td>Прибирає зброю перед стрибком</td>
+</tr>
+<tr>
+<td><strong>Автоматично піднімати шасі перед FSD-стрибком</strong></td>
+<td>Піднімає шасі перед стрибком</td>
+</tr>
+<tr>
+<td><strong>Автоматично прибирати вантажний ківш перед FSD-стрибком</strong></td>
+<td>Прибирає вантажозабірник перед стрибком</td>
+</tr>
+<tr>
+<td><strong>Автоматично піднімати шасі під час зльоту</strong></td>
+<td>Піднімає шасі після зльоту</td>
+</tr>
+<tr>
+<td><strong>Автоматично вимикати вогні перед розгортанням SRV</strong></td>
+<td>Гасить вогні, коли ви випускаєте SRV</td>
+</tr>
+<tr>
+<td><strong>Прокладати наступний нейтронний стрибок після бусту в конусі</strong></td>
+<td>На <a href="AllCommands.html">нейтронному маршруті</a> прокладає наступну нейтронну точку, щойно ви пройшли конус із бустом</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Оголошення</h2>
+<p>Усе, що «Вега» каже без запитання, в одному місці — один екран, який варто перевірити, коли щось
+говорить забагато чи замало.</p>
+<p><img src="../images/ui-commander-announcements.png" alt="Оголошення"></p>
+<table>
+<thead>
+<tr>
+<th>Перемикач</th>
+<th>Що ви чуєте</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Оголошувати відкриття</strong></td>
+<td>Примітні тіла, перші відкриття, біологічні сигнали. Також керує карткою «Екзобіологія» на <a href="UI-HUD-Overlay.html">HUD-накладці</a></td>
+</tr>
+<tr>
+<td><strong>Оголошувати підліт до планети</strong></td>
+<td>Факти про тіло, до якого ви підлітаєте</td>
+</tr>
+<tr>
+<td><strong>Оголошувати радарні контакти</strong></td>
+<td>Кораблі, що з&#39;являються на сканері</td>
+</tr>
+<tr>
+<td><strong>Оголошувати видобуток</strong></td>
+<td>Влучання розвідника й знахідки для ваших цілей видобутку</td>
+</tr>
+<tr>
+<td><strong>Оголошувати підбір вантажозабірником</strong></td>
+<td>Що ви щойно підібрали</td>
+</tr>
+<tr>
+<td><strong>Оголошувати навігацію</strong></td>
+<td>Навігаційні події та прибуття</td>
+</tr>
+<tr>
+<td><strong>Радіопередачі</strong></td>
+<td>Радіоефір ігрового світу, окремими радіоголосами</td>
+</tr>
+<tr>
+<td><strong>ШІ відповідає на сканування піратів</strong></td>
+<td>«Вега» відповідає, коли пірат сканує ваш вантаж</td>
+</tr>
+<tr>
+<td><strong>ШІ зловтішається над збитими за нагороду</strong></td>
+<td>«Вега» зловтішається над цілями, збитими за нагороду</td>
+</tr>
+<tr>
+<td><strong>Оголошення про маршрут</strong></td>
+<td>Головний перемикач усього, що кажуть навколо стрибка. Перемикачі під ним працюють, лише поки він увімкнений</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Оголошувати пункт призначення стрибка</strong></td>
+<td>Яка наступна система</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Оголошувати трафік пункту призначення</strong></td>
+<td>Зведення трафіку для пункту призначення</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Оголошувати втрати в пункті призначення</strong></td>
+<td>Недавні загибелі в системі призначення</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Оголошувати прибуття</strong></td>
+<td>Фраза після прибуття</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;↳ <strong>Оголошувати залишок стрибків</strong></td>
+<td>Скільки стрибків лишилось</td>
+</tr>
+<tr>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;↳ <strong>Оголошувати наявність паливної зірки</strong></td>
+<td>Чи є в пункті призначення зоря для заправки — звучить у складі фрази про залишок стрибків</td>
+</tr>
+</tbody></table>
+<p>Більшість із них можна перемикати й голосом (<em>«вимкни оголошення радара»</em>, <em>«вимкни всі
+оголошення»</em>), тому сторінка перечитує їх щоразу, коли ви відкриваєте вкладку.</p>
+<hr>
+<h2>Екзо-майстерність</h2>
+<p>Каталог зоряних систем поблизу Бульбашки, на планетах яких є цінна екзобіологія; зібраний
+спільнотою через Spansh.</p>
+<ol>
+<li>Натисніть <strong>Увімкнути Екзо-майстерність</strong>. Каталог завантажується й імпортується, у кожного
+етапу свій індикатор прогресу.</li>
+<li>Після завантаження сторінка показує <strong>Зоряні системи</strong>, <strong>Планети й супутники</strong>, <strong>Очікувану
+вартість</strong> усього каталогу і скільки ви вже <strong>Зібрали</strong>.</li>
+<li>У польоті скажіть <em>«відвези мене до наступного місця екзобіології»</em>, і «Вега» прокладе курс до
+найбагатшої системи, яку ви ще не обібрали.</li>
+</ol>
+<p>Завершені планети позначаються в міру сканування. Те, що ви зібрали до встановлення Elite Intel,
+можна списати голосом — <em>«біосканування тут уже зроблено»</em>, а для цілої системи — <em>«познач цю
+систему як обібрану»</em>.</p>
+<p><strong>Вимкнути Екзо-майстерність</strong> видаляє каталог із комп&#39;ютера (після підтвердження). Уже зібрані
+планети лишаються в записах, тож повторне ввімкнення не відправить вас до них знову.</p>
+<hr>
+<h2>Закладки</h2>
+<p><img src="../images/ui-tab-commander-bookmarks.png" alt="Закладки"></p>
+<p>Місця, куди ви хочете повернутися: зоряна система, станція, планетарний порт, планета або точка на її поверхні. Кожен командир має власний
+список.</p>
+<p>Скажіть <em>«запам&#39;ятай це місце»</em>, щоб зберегти, де ви перебуваєте. Усе інше теж можна робити голосом, використовуючи номер зі списку:</p>
+<table>
+<thead>
+<tr>
+<th>Скажіть</th>
+<th>Що відбувається</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><em>«Покажи закладки»</em></td>
+<td>Виводить нумерований список на <a href="UI-HUD-Overlay.html">HUD-накладку</a>. Уголос він ніколи не читається</td>
+</tr>
+<tr>
+<td><em>«Наступна сторінка»</em> / <em>«попередня сторінка»</em></td>
+<td>Гортає список на накладці</td>
+</tr>
+<tr>
+<td><em>«Проклади маршрут до закладки 3»</em></td>
+<td>Прокладає туди маршрут</td>
+</tr>
+<tr>
+<td><em>«Видали закладку 3»</em></td>
+<td>Видаляє її</td>
+</tr>
+<tr>
+<td><em>«Закрий закладки»</em></td>
+<td>Прибирає список із накладки</td>
+</tr>
+</tbody></table>
+<p>Вкладка показує той самий список у тому самому порядку, з <strong>Відображуваною назвою</strong> та <strong>Зоряною системою</strong>.</p>
+<ul>
+<li><strong>Двічі клацніть рядок</strong>, щоб побачити все, що відомо про місце, і перейменувати його. Вибрану назву показує накладка й використовує «Вега».</li>
+<li><strong>Вгору</strong> / <strong>Вниз</strong> (або Alt+Вгору / Alt+Вниз) переміщують виділений рядок. Лінія між рядками позначає, де закінчується одна сторінка накладки
+й починається наступна.</li>
+<li><strong>Експорт</strong> і <strong>Видалити</strong> діють на позначені рядки.</li>
+<li><strong>Імпорт</strong> додає закладки з експортованого файлу в кінець списку. Список ніколи не замінюється, а кожен запис перед підтвердженням позначається як
+<em>Нова</em>, <em>Дублікат</em> або <em>Помилка</em>.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

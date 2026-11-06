@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Команди й запити Elite Intel  EliteIntel</title>
+    <meta name="description" content="Привіт, командире! Це довідник того, про що можна спитати «Вегу», ШІ вашого корабля, і що їй">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/AllCommands.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/AllCommands.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/AllCommands.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/AllCommands.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/AllCommands.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/AllCommands.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/AllCommands.html">
+    <meta property="og:title" content="Команди й запити Elite Intel  EliteIntel">
+    <meta property="og:description" content="Привіт, командире! Це довідник того, про що можна спитати «Вегу», ШІ вашого корабля, і що їй">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/AllCommands.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../AllCommands.html" class="locale-link">EN</a><a href="../fr/AllCommands.html" class="locale-link">FR</a><a href="../es/AllCommands.html" class="locale-link">ES</a><a href="../de/AllCommands.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/AllCommands.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Інтерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Дії»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бінди»)</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервіси»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музика»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-накладка</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> 🆓 Безкоштовний хмарний LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="AllCommands.html" class="nav-link active"><img src="../images/journal.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системні команди</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Власні команди</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонізація</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Піратські місії</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Уперше в Matrix? Почніть тут</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Команди й запити Elite Intel</h1>
+<p>Привіт, командире! Це довідник того, про що можна спитати <strong>«Вегу»</strong>, ШІ вашого корабля, і що їй
+можна наказати. <strong>Нічого заучувати не треба</strong> — говоріть природно, і «Вега» зрозуміє, що ви маєте
+на увазі. Фрази нижче — приклади, а не сценарій: важить зміст, а не точні слова.</p>
+<blockquote>
+<p><strong>Повний і завжди актуальний список — у самому застосунку.</strong>
+<a href="UI-Actions-Tab.html">Вкладка «Дії» → Вбудовані команди</a> показує кожну команду й запит цієї версії,
+відфільтровані за тим, що доступно там, де ви зараз, із навчальними фразами вашою мовою. Будь-яку
+з них можна запустити звідти одним клацанням.</p>
+</blockquote>
+<hr>
+<h2>Як говорити з «Вегою»</h2>
+<p><strong>Говоріть природно.</strong> <em>«Шасі вниз»</em>, <em>«випусти шасі»</em> і <em>«шасі»</em> роблять одне й те саме. Що
+ясніше ви кажете, чого хочете, то надійніше це відбувається.</p>
+<p><strong>Звертатися на ім&#39;я не обов&#39;язково.</strong> <em>«Вега, шасі вниз»</em> працює так само, як <em>«шасі вниз»</em>.</p>
+<p><strong>Сон і пробудження.</strong></p>
+<ul>
+<li><em>«Спи»</em> / <em>«йди спати»</em> — «Вега» перестає слухати.</li>
+<li><em>«Прокинься»</em> — знову слухає.</li>
+<li><em>«Слухай, …»</em> — уві сні пропускає <strong>один</strong> наказ, не будячи її:
+<em>«Слухай, стрибок у гіперпростір.»</em></li>
+</ul>
+<p><strong>Перебити.</strong> Скажіть <em>«перерви»</em> або <em>«перебий»</em>, щоб обірвати «Вегу» на півслові. З увімкненим
+<a href="UI-Settings-Tab.html">Push to Talk</a> досить просто натиснути кнопку.</p>
+<p><strong>Руйнівні команди перепитують.</strong> Очистити нагадування, цілі видобутку чи активні місії, видалити
+торговий, нейтронний маршрут чи маршрут авіаносця, видалити запис кодексу, забути мисливські
+угіддя, прибрати будмайданчик, виключити систему з пошуку або призначити нову домашню систему —
+«Вега» попросить підтвердження. Відповідайте <em>так</em>, щоб продовжити; <em>ні</em> чи щось інше скасовує.</p>
+<hr>
+<h2>Команди текстом в ігровому чаті</h2>
+<p>Розпізнавання мовлення завжди спотворюватиме деякі слова — назви систем, товарів, <em>тритій</em>. У
+таких випадках <strong>наберіть наказ в ігровому чаті</strong>. Почніть рядок з <code>@Вега</code> або <code>@Vega</code>:</p>
+<pre><code>@Вега де купити тритій
+@Вега додай ціль видобутку пейніт
+@vega, шасі вниз
+</code></pre>
+<ul>
+<li>Регістр не важливий, після імені можна поставити кому чи двокрапку.</li>
+<li>Рядок обробляється точнісінько так, ніби ви його сказали, і перебиває «Вегу», якщо та говорить.</li>
+<li>Використовуйте <strong>локальний</strong> канал. Читаються лише ваші власні надіслані рядки — ніщо з того, що
+пише інший командир, не може віддати «Везі» наказ.</li>
+</ul>
+<hr>
+<h2>⚙️ Застосунок і сеанс</h2>
+<ul>
+<li>Сон / прокинься / <em>«слухай, [наказ]»</em> — див. вище.</li>
+<li><em>«Перерви»</em> — замовкнути.</li>
+<li><em>«Запусти діагностику»</em> — «Вега» перевірить себе й доповість.</li>
+<li><em>«Котра година?»</em> — реальний час UTC.</li>
+<li><em>«Встанови нагадування [текст]»</em> — постійна нотатка; <em>«яке було нагадування?»</em> зачитає її.</li>
+<li><em>«Нагадай мені через 10 хвилин перевірити авіаносець»</em> — таймер.</li>
+<li><em>«Очисти нагадування.»</em></li>
+</ul>
+<h3>Оголошення увімк/вимк</h3>
+<ul>
+<li><em>«Вимкни оголошення радара»</em> / <em>«увімкни оголошення радара»</em></li>
+<li><em>«Увімкни / вимкни оголошення відкриттів»</em></li>
+<li><em>«Увімкни / вимкни оголошення маршруту»</em></li>
+<li><em>«Увімкни / вимкни оголошення підльоту до планети»</em></li>
+<li><em>«Увімкни / вимкни оголошення видобутку»</em></li>
+<li><em>«Увімкни / вимкни оголошення про підбір»</em> — вантажозабірник</li>
+<li><em>«Перемкни радіо»</em> — радіопередачі</li>
+<li><em>«Вимкни всі оголошення»</em></li>
+</ul>
+<p>Кожне з них — також перемикач на <a href="UI-Commander-Tab.html">вкладці «Командир» → Оголошення</a>.</p>
+<hr>
+<h2>🎮 Керування кораблем</h2>
+<ul>
+<li><strong>Шасі:</strong> <em>«шасі вниз»</em> / <em>«шасі вгору»</em>, <em>«прибери шасі»</em></li>
+<li><strong>Зброя:</strong> <em>«хардпойнти»</em>, <em>«до бою»</em> / <em>«прибери зброю»</em></li>
+<li><strong>Вантажозабірник:</strong> <em>«відкрий вантажний ківш»</em></li>
+<li><strong>Світло / нічне бачення:</strong> <em>«фари»</em>, <em>«вогні»</em>, <em>«увімкни нічне бачення»</em></li>
+<li><strong>Режим HUD:</strong> <em>«бойовий режим»</em> / <em>«режим аналізу»</em></li>
+<li><strong>Захист:</strong> <em>«тепловідвід»</em>, <em>«щитова комірка»</em>, <em>«скинь пастки»</em></li>
+<li><strong>Вогневі групи:</strong> <em>«вогнева група браво»</em>, <em>«вибери вогневу групу 3»</em></li>
+<li><strong>Енергія:</strong> <em>«енергію на щити / двигуни / зброю / системи»</em> (<em>«максимум щитів»</em>),
+<em>«збалансуй енергію»</em></li>
+<li><strong>Погляд:</strong> <em>«дивись вперед»</em> / <em>«скинь погляд»</em></li>
+<li><strong>Підтвердити:</strong> <em>«активуй вибране»</em> — підтверджує вибране у відкритій панелі.</li>
+</ul>
+<h3>Тяга</h3>
+<ul>
+<li><em>«Зупини двигуни»</em> / <em>«зупинись»</em></li>
+<li><em>«Чверть тяги»</em>, <em>«половина тяги»</em>, <em>«три чверті тяги»</em>, <em>«повна тяга»</em></li>
+<li><em>«Збільш швидкість на 2»</em> / <em>«зменш швидкість на 1»</em></li>
+<li><em>«Оптимальна швидкість»</em> — тяга для підходу в суперкруїзі.</li>
+</ul>
+<h3>Політ</h3>
+<ul>
+<li><em>«Злітай»</em> / <em>«запусти корабель»</em> — залишити майданчик.</li>
+<li><em>«Запроси стикування»</em></li>
+<li><em>«Автопілот»</em> / <em>«таксі»</em> — довірити посадку комп&#39;ютеру стикування.</li>
+<li><em>«Увійти в суперкруїз»</em> / <em>«суперкруїз»</em></li>
+<li><em>«Стрибай»</em> / <em>«стрибок у гіперпростір»</em> — сам стрибок.</li>
+<li><em>«Вийти із суперкруїзу»</em> / <em>«виходь тут»</em></li>
+<li><em>«Обери FSD пункт призначення»</em> — вибирає наступну систему прокладеного маршруту.</li>
+<li><em>«Скануй систему»</em> / <em>«досліджуй систему»</em> — запускає сканер виявлення (див. налаштування
+сканування для кожного корабля на <a href="UI-Commander-Tab.html">вкладці «Командир»</a>).</li>
+<li><em>«Відкрий FSS»</em> / <em>«повноспектральне сканування»</em> — відкриває FSS і сканує.</li>
+</ul>
+<hr>
+<h2>🚙 SRV, винищувач і пішки</h2>
+<ul>
+<li><em>«Випусти СРВ»</em> — відкриває потрібний відсік ангара (відсіки задаються в налаштуваннях ⚙ кожного
+корабля на <a href="UI-Commander-Tab.html">вкладці «Командир»</a>).</li>
+<li><em>«Запусти номад»</em></li>
+<li><em>«Поверни СРВ»</em> / <em>«на борт корабля»</em> — із SRV.</li>
+<li><em>«Допомога керування»</em> (увімк/вимк)</li>
+<li><em>«Вийти з корабля»</em> / <em>«висадитися»</em></li>
+<li><em>«Відправ корабель на орбіту»</em></li>
+<li><em>«Забери мене»</em> / <em>«виклич корабель»</em> — повернути його.</li>
+<li><em>«Сервіси станції»</em> — панель сервісів, коли ви в SRV на станції.</li>
+</ul>
+<h3>Накази винищувачу</h3>
+<ul>
+<li><em>«Випусти винищувач»</em></li>
+<li><em>«Винищувач оборона»</em> · <em>«Атакуй мою ціль»</em> · <em>«Вільний вогонь»</em> · <em>«Винищувач припинити вогонь»</em>
+· <em>«Відкликати винищувач»</em></li>
+</ul>
+<hr>
+<h2>⚔️ Бій і місії</h2>
+<ul>
+<li><strong>Цілі:</strong> <em>«пріоритетна ціль»</em>, <em>«ціль з найбільшою загрозою»</em></li>
+<li><strong>Підсистеми:</strong> <em>«ціль FSD»</em>, <em>«ціль двигуни»</em>, <em>«ціль розподільник живлення»</em>, а також силова
+установка, життєзабезпечення, щит</li>
+<li><strong>Крило:</strong> <em>«ціль напарник один / два / три»</em> (або <em>напарник альфа / браво / чарлі</em>),
+<em>«слідувати за напарником»</em></li>
+<li><em>«Активні місії»</em> / <em>«журнал місій»</em> — усе, що у вас на дошці.</li>
+<li><em>«Навігація до активної місії»</em></li>
+<li><em>«Знайди вантаж для місії»</em> — де купити те, що ще потрібно активній місії, і маршрут туди.</li>
+<li><em>«Видали всі завдання»</em></li>
+<li><em>«Нагороди за голови»</em> — зібрані нагороди.</li>
+</ul>
+<h3>Стеки піратських місій на знищення</h3>
+<ul>
+<li><em>«Знайди піратські місії на знищення»</em></li>
+<li><em>«Навігація до піратського провайдера місій»</em></li>
+<li><em>«Навігація до цілі піратської місії»</em></li>
+<li><em>«Скільки вбивств?»</em> / <em>«рахунок вбивств»</em></li>
+</ul>
+<h3>Полювання за головами й зони конфлікту</h3>
+<ul>
+<li><em>«Знайди мисливські угіддя в радіусі 100 світлових років»</em> — система із зонами видобутку
+ресурсів, з тих, де ви вже бували.</li>
+<li><em>«Проскануй журнали на мисливські угіддя»</em> — одразу дізнається системи з RES і видачу піратських
+місій із ваших старих журналів. Виконайте один раз після встановлення.</li>
+<li><em>«Забудь ці мисливські угіддя»</em></li>
+<li><em>«Знайди зону конфлікту»</em> / <em>«де найближча війна?»</em></li>
+</ul>
+<p>Див. <a href="Pirate-Massacre-Mission-Tracking.html">Піратські місії</a>.</p>
+<hr>
+<h2>🧭 Навігація</h2>
+<p>«Вега» прокладає маршрути до <strong>результату пошуку</strong>, до місць, які вже знає, або до координат на
+поверхні. До системи, яку ви просто називаєте вголос, вона прокласти маршрут <strong>не може</strong> — назви
+найгірше даються розпізнаванню мовлення, а помилка відправить вас на інший край Бульбашки. Для
+цього використовуйте <em>навігацію з пам&#39;яті</em> або — для місця, де ви часто буваєте, —
+<a href="UI-Actions-Tab.html">власну команду, що прокладе маршрут за вас</a>.</p>
+<ul>
+<li><em>«Навігація з пам&#39;яті»</em> / <em>«встав із пам&#39;яті»</em> — спершу скопіюйте назву системи (з INARA,
+Spansh, із повідомлення в чаті…) через Ctrl+C; «Вега» відкриє карту галактики й прокладе маршрут.</li>
+<li><em>«Веди додому»</em> / <em>«встанови домашню систему»</em></li>
+<li><em>«Лети до авіаносця»</em> / <em>«лети до авіаносця ескадрильї»</em></li>
+<li><em>«Навігація до наступної торгової зупинки»</em></li>
+<li><em>«Скасуй навігацію»</em></li>
+</ul>
+<h3>На планеті</h3>
+<ul>
+<li><em>«Лети до координат широта 12,5 довгота -40,2»</em> — наведення від орбіти до точки.</li>
+<li><em>«Навігація до зони посадки»</em> — назад туди, де сів корабель.</li>
+<li><em>«Навігація до наступного біозразка»</em> — найближча позначена органіка.</li>
+<li><em>«Видали запис кодексу»</em></li>
+</ul>
+<h3>Нейтронна магістраль</h3>
+<ul>
+<li><em>«Розрахувати нейтронний маршрут»</em> — спершу скопіюйте назву цілі з карти галактики. Варіанти:
+<em>«…ефективність 60»</em>, <em>«…з форсажем»</em>.</li>
+<li><em>«Наступна нейтронна зірка»</em> — маршрут до наступної нейтронної точки (або хай це робить
+налаштування <em>Прокладати наступний нейтронний стрибок</em> на <a href="UI-Commander-Tab.html">вкладці «Командир»</a>).</li>
+<li><em>«Видалити маршрут нейтронної зірки»</em></li>
+</ul>
+<h3>Закладки</h3>
+<ul>
+<li><em>«Запам&#39;ятай це місце»</em> — зберігає, де ви перебуваєте.</li>
+<li><em>«Покажи закладки»</em> — нумерований список на <a href="UI-HUD-Overlay.html">HUD-накладці</a>. <em>«Наступна сторінка»</em> / <em>«попередня сторінка»</em> · <em>«закрий закладки»</em></li>
+<li><em>«Проклади маршрут до закладки 3»</em> · <em>«видали закладку 3»</em></li>
+</ul>
+<p>Див. <a href="UI-Commander-Tab.html">вкладка «Командир» → Закладки</a>.</p>
+<h3>Пошук місць</h3>
+<p>Кожна команда <em>знайди</em> прокладає маршрут до знайденого й показує його на
+<a href="UI-HUD-Overlay.html">HUD-накладці</a>.</p>
+<ul>
+<li><p><em>«Знайди верф»</em> / <em>«знайди верф де продається Python»</em></p>
+</li>
+<li><p><em>«Знайди зону конфлікту powerplay»</em> / <em>«де воює моя держава?»</em> — системи із зонами конфлікту для держави, якій ви присягнули.</p>
+</li>
+<li><p><em>«Знайди торговця сировиною / закодованими / виготовленими матеріалами»</em></p>
+</li>
+<li><p><em>«Знайди людського техноброкера»</em> / <em>«знайди техноброкера Стражів»</em></p>
+</li>
+<li><p><em>«Знайди найближчу Vista Genomics»</em></p>
+</li>
+<li><p><em>«Знайди міжзоряного посередника»</em> / <em>«де сплатити штрафи»</em></p>
+</li>
+<li><p><em>«Знайди заправну станцію»</em></p>
+</li>
+<li><p><em>«Знайди найближчий авіаносець»</em></p>
+</li>
+<li><p><em>«Знайди мозкові дерева в радіусі 500 світлових років»</em></p>
+</li>
+<li><p><em>«Знайди місце видобутку пейніту»</em></p>
+</li>
+<li><p><em>«Виключи поточну систему з пошуку»</em> (або <em>«виключи ту систему»</em> — систему призначення) — коли
+пошук раз у раз відправляє вас туди, де нічого не працює. <em>«Розбань поточну систему»</em>, сказане
+зсередини неї, скасовує виключення.</p>
+</li>
+</ul>
+<hr>
+<h2>💰 Торгівля й ринки</h2>
+<ul>
+<li><em>«Де купити [товар]?»</em> — працює й для модулів корабля; скажіть <em>найближчий</em> або <em>найкраща
+ціна</em>.</li>
+<li><em>«Де можна продати [товар]?»</em></li>
+<li><em>«Розрахуй торговий маршрут»</em> — за торговим профілем цього корабля.</li>
+<li><em>«Монетизуй маршрут»</em> — вигідний вантаж для шляху, яким ви й так летите.</li>
+<li><em>«Торговий маршрут»</em> / <em>«поточний торговий план»</em></li>
+<li><em>«Навігація до наступної торгової зупинки»</em></li>
+<li><em>«Скасуй торговий маршрут»</em></li>
+<li><em>«Локальні ринки»</em> · <em>«Деталі станції»</em> / <em>«які сервіси тут?»</em> · <em>«Оснащення»</em></li>
+<li><em>«Що у вантажному відсіку?»</em></li>
+</ul>
+<h3>Торговий профіль</h3>
+<p>Також налаштовується для кожного корабля в налаштуваннях ⚙ на <a href="UI-Commander-Tab.html">вкладці «Командир»</a>.</p>
+<ul>
+<li><em>«Торговий профіль»</em> — описати поточний.</li>
+<li><em>«Зміни стартовий бюджет торгового профілю 5 мільйонів»</em></li>
+<li><em>«Зміни максимальну кількість зупинок торгового профілю 4»</em></li>
+<li><em>«Зміни максимальну відстань торгового профілю 1000»</em></li>
+<li><em>«Дозволь / заборони заборонені товари»</em></li>
+<li><em>«Дозволь / заборони планетарні порти»</em></li>
+<li><em>«Дозволь / заборони системи з дозволом»</em></li>
+<li><em>«Дозволь / заборони опорні системи»</em></li>
+</ul>
+<p>Див. <a href="TradeRoutePlotting.html">Торгівля й прибуток</a> і <a href="Search-galaxy-with-EliteIntel.html">Пошук галактикою</a>.</p>
+<hr>
+<h2>🏗️ Колонізація</h2>
+<ul>
+<li><em>«Знайди вантаж для будмайданчика»</em> — що ще потрібно будівництву, де це купити і як заповнити
+трюм.</li>
+<li><em>«Прогрес будмайданчика»</em> / <em>«як іде будівництво?»</em></li>
+<li><em>«Відвези мене назад на будмайданчик»</em></li>
+<li><em>«Забудь будмайданчик»</em> — перестати відстежувати.</li>
+</ul>
+<hr>
+<h2>🛰️ Авіаносець (флотоносець)</h2>
+<p>Кажіть <em>авіаносець</em> — або <em>авіаносець ескадрильї</em>, — інакше «Вега» може подумати, що йдеться про
+корабель.</p>
+<ul>
+<li><em>«Статус авіаносця»</em> — паливо, дальність на поточному тритії, фінанси.</li>
+<li><em>«Встанови резерв палива авіаносця 200»</em></li>
+<li><em>«Розрахуй маршрут авіаносця»</em> — спершу скопіюйте назву цілі з карти галактики.</li>
+<li><em>«Введи пункт призначення авіаносця»</em> — коли відкрито карту галактики авіаносця, «Вега» вдрукує
+наступний етап і підтвердить його.</li>
+<li><em>«Аналіз маршруту авіаносця»</em> / <em>«шлях авіаносця»</em></li>
+<li><em>«ETA авіаносця»</em> / <em>«коли прибуде авіаносець?»</em></li>
+<li><em>«Відстань до авіаносця»</em></li>
+<li><em>«Скасуй маршрут авіаносця»</em></li>
+<li><em>«Авіаносці в системі»</em></li>
+</ul>
+<hr>
+<h2>🌠 Дослідження й екзобіологія</h2>
+<ul>
+<li><em>«В якій системі ми знаходимось?»</em> — поточне розташування.</li>
+<li><em>«Відстань до Бульбашки»</em> / <em>«як далеко до Землі»</em></li>
+<li><em>«Відстань до планети [назва]»</em></li>
+<li><em>«Останній скан»</em> — останнє проскановане тіло.</li>
+<li><em>«Планети в системі»</em> / <em>«посадкові планети»</em></li>
+<li><em>«Сигнали в системі»</em> · <em>«Геосигнали»</em></li>
+<li><em>«Безпека системи»</em> / <em>«хто контролює цю систему?»</em></li>
+<li><em>«Інформація про ціль FSD»</em> / <em>«аналіз пункту призначення»</em> — аналіз системи, у яку ви
+стрибаєте.</li>
+<li><em>«Прокладений маршрут»</em> / <em>«залишок стрибків»</em></li>
+<li><em>«Прибуток дослідження»</em> — скільки коштують ваші скани.</li>
+<li><em>«Матеріали планети»</em> — що є на цьому тілі.</li>
+<li><em>«Біосигнали в системі»</em> · <em>«Екзобіологічні зразки»</em> · <em>«Аналіз біому»</em></li>
+<li><em>«Відстань до останнього біозразка»</em></li>
+<li><em>«Біосканування тут уже зроблено»</em> — позначити тіло пройденим, якщо збирали до встановлення.</li>
+</ul>
+<h3>Екзо-майстерність</h3>
+<p>Коли каталог увімкнено на <a href="UI-Commander-Tab.html">вкладці «Командир»</a>:</p>
+<ul>
+<li><em>«Відвези мене до наступного місця екзобіології»</em> — найбагатша система, яку ви ще не обібрали.</li>
+<li><em>«Познач цю систему як обібрану»</em> — списати цілу систему, пройдену раніше.</li>
+</ul>
+<p>Див. <a href="Discovery-Assistance.html">Відкриття й екзобіологія</a>.</p>
+<hr>
+<h2>⛏️ Видобуток</h2>
+<ul>
+<li><em>«Додай ціль видобутку пейніт»</em> / <em>«видали ціль видобутку пейніт»</em> / <em>«очисти цілі видобутку»</em></li>
+<li><em>«Увімкни оголошення видобутку»</em> — влучання розвідника за вашими цілями.</li>
+<li><em>«Знайди місце видобутку [матеріалу]»</em></li>
+</ul>
+<p>Якщо цілі задано і стоїть збагачувач, <a href="UI-HUD-Overlay.html">HUD-накладка</a> показує картку видобутку.</p>
+<hr>
+<h2>👤 Командир і корабель</h2>
+<ul>
+<li><em>«Профіль гравця»</em> — ранги й прогрес.</li>
+<li><em>«Спорядження корабля»</em></li>
+<li><em>«Інвентар матеріалів»</em> / <em>«скільки [матеріалу] у нас?»</em></li>
+</ul>
+<hr>
+<h2>📺 Панелі й карти</h2>
+<p>Назвіть панель, за бажання з <em>покажи</em> чи <em>відкрий</em>:</p>
+<ul>
+<li><em>Навігація</em> · <em>Транзакції</em> · <em>Контакти</em> · <em>Чат / панель зв&#39;язку</em> · <em>Пошта</em> · <em>Соціальна панель</em>
+· <em>Історія</em> · <em>Ескадрилья</em> · <em>Статус</em> · <em>Радар</em></li>
+<li><em>Панель командира</em> (<em>планшет</em>) · <em>Екіпаж</em> · <em>Домашня панель</em> · <em>Модулі</em> · <em>Вогневі групи</em> ·
+<em>Інвентар</em> · <em>Сховище</em> · <em>Панель винищувача</em></li>
+<li><em>Керування авіаносцем</em></li>
+<li><em>Карта галактики</em> · <em>Карта системи</em></li>
+<li><em>«Наступна / попередня панель»</em>, <em>«наступна / попередня сторінка»</em> — гортати вкладки всередині
+панелі.</li>
+<li><em>«Закрий»</em> / <em>«закрити панель»</em> — назад до HUD.</li>
+</ul>
+<hr>
+<h2>🎵 Музика</h2>
+<p><em>«Увімкни музику»</em>, <em>«постав музику на паузу»</em>, <em>«наступний трек»</em>, <em>«попередній трек»</em>,
+<em>«перезапусти плейлист»</em>, <em>«перемішай музику»</em>, <em>«увімкни пісню [назва]»</em>. Див.
+<a href="UI-Jukebox-Tab.html">вкладку «Музика»</a>.</p>
+<hr>
+<h2>Ваші власні команди</h2>
+<p>Чого бракує — зберіть самі: <a href="UI-Actions-Tab.html">Дії → Власні команди</a>. Власні команди запускаються
+вашими власними фразами, голосом чи в чаті, так само як вбудовані.</p>
+<hr>
+<p>Fly Dangerous, командире! o7</p>
+<hr>
+<p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈 | Open Source <a href="https://github.com/SudoKrondor/EliteIntel"><strong>GitHub</strong></a> | <a href="https://www.youtube.com/@SudoKrondor">YouTube</a> | <a href="https://www.twitch.tv/sudokrondor">Twitch</a> | Creative Commons License |</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

@@ -16,8 +16,8 @@ UI: Benutzeroberfläche
 UI-Vega-Tab: Reiter Vega
 UI-Commander-Tab: Reiter Kommandant
 UI-Actions-Tab: Reiter Aktionen
-UI-Bindings-Tab: Reiter Bindings
-UI-Settings-Tab: Reiter Einstellungen
+UI-Bindings-Tab: BindForge (Reiter Bindings)
+UI-Settings-Tab: Reiter Dienste
 UI-Jukebox-Tab: Reiter Jukebox
 UI-Stats-Tab: Reiter Statistik
 UI-HUD-Overlay: HUD-Overlay
