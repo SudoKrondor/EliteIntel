@@ -22,7 +22,7 @@ UI-Jukebox-Tab: Pestaña Jukebox
 UI-Stats-Tab: Pestaña Estadísticas
 UI-HUD-Overlay: Overlay HUD
 installing-local-llms: Elegir tu LLM
-cloud-llm-options: 🆓 LLM gratuito en la nube
+cloud-llm-options: LLM en la nube
 Install-LM-Studio-Linux: LM Studio  Linux
 Install-LM-Studio-Windows: LM Studio  Windows
 AMD-RX-7800XT-LLM-Setup: AMD RX Series

@@ -3,7 +3,7 @@
   * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [User Interface](UI)
 * ## [wiki](#)
   * ### [Choose your LLM player](installing-local-llms)
-  * ### [🆓 Free Cloud LLM (Mistral)](cloud-llm-options)
+  * ### [Cloud LLM](cloud-llm-options)
   * ### [🆓 Install LM Studio Linux](Install-LM-Studio-Linux)
   * ### [🆓 Install LM Studio Windows](Install-LM-Studio-Windows)
   * ### [🆓 LLMs on AMD-RX Series](AMD-RX-7800XT-LLM-Setup)

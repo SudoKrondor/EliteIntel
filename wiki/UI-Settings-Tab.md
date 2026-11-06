@@ -57,7 +57,7 @@ Setup guides: [LM Studio on Linux](Install-LM-Studio-Linux) ·
 
 | Field | Notes |
 |-------|-------|
-| **Provider** | Pick one: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek**, **Mistral** |
+| **Provider** | Pick one: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek** |
 | **API Key** | Your key for that provider, with a **Locked** checkbox beside it so a saved key cannot be edited by accident. Uncheck Locked to change it |
 
 You do not pick a model — the right one is selected automatically for your provider.
@@ -67,7 +67,6 @@ paste that provider's key, and picking your saved provider again brings its key 
 accidental click costs nothing. **Save** stays greyed out until both a provider and a key are
 filled in.
 
-Mistral has a free tier and is the easiest way to start.
 See [Cloud LLM options](cloud-llm-options) for how to obtain a key from each provider.
 
 ### Speech (TTS)

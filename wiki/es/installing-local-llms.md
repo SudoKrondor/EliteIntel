@@ -7,7 +7,7 @@ Modelo de lenguaje (LLM)**:
 | Opción | Qué necesitas | Coste |
 |--------|---------------|-------|
 | **Local: LM Studio** | Una GPU potente, [LM Studio](https://lmstudio.ai) y el modelo `google/gemma-4-e4b` | Gratis. Todo se queda en tu PC |
-| **Nube** | Una cuenta y una clave API de un proveedor compatible | Gratis con Mistral. Los demás proveedores te cobran lo que uses |
+| **Nube** | Una cuenta y una clave API de un proveedor compatible | El proveedor te cobra lo que uses |
 
 ![Configuración del LLM](images/llm-setup.png)
 
@@ -85,7 +85,6 @@ El modelo no lo eliges: Elite Intel escoge el adecuado para tu proveedor.
 
 | Proveedor | Notas |
 |-----------|-------|
-| **Mistral** | Nivel gratuito, sin tarjeta de crédito. La forma más fácil de empezar |
 | **Anthropic (Claude)** | De pago |
 | **OpenAI** | De pago |
 | **Google (Gemini)** | De pago |
@@ -106,8 +105,7 @@ Cómo conseguir una clave de cada proveedor: [Configurar un LLM en la nube](clou
 - tu GPU no tiene VRAM suficiente para ejecutar un modelo junto al juego
 - prefieres no tener ningún servidor de inferencia
 
-¿No lo tienes claro? Empieza con el nivel gratuito de Mistral. Lleva unos minutos, y puedes pasarte
-a local cuando quieras sin reinstalar nada.
+¿No lo tienes claro? Puedes empezar con cualquiera de las dos opciones y cambiar cuando quieras sin reinstalar nada.
 
 ---
 

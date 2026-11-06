@@ -11,10 +11,9 @@ Elite Intel **V1.1** ist die aktuelle Version.
 3. Ein LLM einrichten. **Ohne LLM läuft Elite Intel nicht.** Zwei Optionen stehen zur Verfügung:
    - **Lokales LLM** (kostenlos, offline): Siehe die [**Lokale LLM-Anleitung**](installing-local-llms).
      Erfordert leistungsfähige GPU-Hardware.
-   - **Cloud-LLM** (hat eine kostenlose Option und ist einfacher einzurichten): Siehe
+   - **Cloud-LLM** (kostenpflichtig und einfacher einzurichten): Siehe
      [**Cloud-LLM-Optionen**](cloud-llm-options), um einen API-Schlüssel zu bekommen, und trage ihn
      dann unter [**Einstellungen → KI-Dienste**](UI-Settings-Tab) ein.
-     Kostenloser Tarif, ohne Kreditkarte: 👉 [**console.mistral.ai**](https://console.mistral.ai/) 👈
 
 Setup abgeschlossen. Weiter mit [**der Benutzeroberfläche, Reiter für Reiter**](UI).
 

@@ -59,7 +59,7 @@ Einrichtungsanleitungen: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
 
 | Feld | Hinweise |
 |-------|-------|
-| **Anbieter** | Wähle einen: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek**, **Mistral** |
+| **Anbieter** | Wähle einen: **Anthropic (Claude)**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **DeepSeek** |
 | **API-Schlüssel** | Dein Schlüssel für diesen Anbieter, mit einem Kästchen **Gesperrt** daneben, damit ein gespeicherter Schlüssel nicht versehentlich geändert wird. Entferne den Haken, um ihn zu ändern |
 
 Ein Modell wählst du nicht — das passende wird für deinen Anbieter automatisch ausgewählt.
@@ -69,7 +69,6 @@ Schlüsselfeld geleert, damit du dessen Schlüssel einfügen kannst; wählst du 
 Anbieter erneut, kommt sein Schlüssel zurück — ein versehentlicher Klick kostet also nichts.
 **Speichern** bleibt ausgegraut, bis Anbieter und Schlüssel ausgefüllt sind.
 
-Mistral hat ein kostenloses Kontingent und ist der einfachste Einstieg.
 Wie du bei jedem Anbieter einen Schlüssel bekommst, steht unter [Cloud-LLM-Optionen](cloud-llm-options).
 
 ### Sprache (TTS)

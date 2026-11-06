@@ -14,9 +14,8 @@ Les données sont récupérées en temps réel depuis [Spansh](https://spansh.co
 
 > ### ⚠️ Un modèle de langage (LLM) est indispensable
 > Elite Intel est la voix et les mains — le LLM est le cerveau. Sans lui, l'application ne peut pas fonctionner.
-> Faites tourner un modèle en local sur votre GPU, ou utilisez l'offre cloud **gratuite** sur
-> 👉 **[console.mistral.ai](https://console.mistral.ai/)** 👈 — aucune carte bancaire requise.
-> Voir [LLM cloud gratuit](cloud-llm-options) ou [Choisir votre LLM](installing-local-llms).
+> Faites tourner un modèle en local sur votre GPU, ou utilisez un fournisseur cloud avec votre propre clé API.
+> Voir [LLM cloud](cloud-llm-options) ou [Choisir votre LLM](installing-local-llms).
 
 ---
 
@@ -58,7 +57,6 @@ Pour toutes les autres langues supportées, **Google TTS** offre une synthèse v
 Elite Intel fonctionne avec le modèle de langage adapté à votre configuration :
 
 **Gratuit et hors ligne** - [LM Studio](https://lmstudio.ai/) avec un modèle local  
-**Cloud gratuit** - [Mistral](https://console.mistral.ai/) - offre gratuite, sans carte bancaire  
 **Cloud payant** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Changez de fournisseur à tout moment dans les paramètres. Aucune réinstallation n'est nécessaire.

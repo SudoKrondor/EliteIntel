@@ -11,10 +11,9 @@ Elite Intel **V1.1** est la version actuelle.
 3. Configurer un modèle de langage. **Elite Intel ne peut pas fonctionner sans lui.** Deux options :
    - **LLM local** (gratuit, hors ligne) : voir le [**guide LLM local**](installing-local-llms).
      Nécessite un GPU performant.
-   - **LLM cloud** (dispose d'un palier gratuit et se configure plus facilement) : voir
+   - **LLM cloud** (payant, et se configure plus facilement) : voir
      [**Options de LLM cloud**](cloud-llm-options) pour obtenir une clé API, puis saisissez-la dans
      [**Paramètres → Services IA**](UI-Settings-Tab).
-     Offre gratuite, sans carte bancaire : 👉 [**console.mistral.ai**](https://console.mistral.ai/) 👈
 
 Configuration terminée. Ensuite : [**l'interface, onglet par onglet**](UI).
 
