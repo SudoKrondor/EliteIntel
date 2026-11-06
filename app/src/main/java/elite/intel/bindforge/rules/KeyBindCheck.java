@@ -2,6 +2,8 @@ package elite.intel.bindforge.rules;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.bindforge.io.BindingsMonitor;
+import elite.intel.bindforge.model.BindingSection;
+import elite.intel.bindforge.preseteditor.BindName;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogEvent;
@@ -11,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class KeyBindCheck {
@@ -54,7 +57,9 @@ public class KeyBindCheck {
             });
         }
 
-        // Second, and also unconditionally: keys and chords that must never be bound to anything - the key
+        warnAboutSectionsNotRead(monitor);
+
+        // Also unconditionally: keys and chords that must never be bound to anything - the key
         // the commander has on the game menu, Alt+F4, Linux Ctrl+Alt+F*. EliteIntel refuses to assign one,
         // but Elite's own controls screen has no such rule, so a file written there can already hold one.
         // Same class of problem again - the commander cannot tell from playing why that one control
@@ -107,6 +112,41 @@ public class KeyBindCheck {
                         + plainOverlaps.size() + "): " + String.join(", ", plainOverlaps)));
             }
         }
+    }
+
+    /**
+     * Warns on every start, like a blocking conflict, when a section of the game's controls is on another preset than
+     * the one file read. The checks here cannot see that section's keys, so a commander who fixed them in the file read
+     * hears nothing and sees no change. General gets a line of its own: it holds the galaxy map and interface keys, so
+     * its consequence is route plotting, and it has no file of its own whenever another section's was read.
+     */
+    private void warnAboutSectionsNotRead(BindingsMonitor monitor) {
+        Map<BindingSection, String> notRead = monitor.sectionsNotRead();
+        if (notRead.isEmpty()) {
+            return;
+        }
+        String readFile = monitor.getCurrentBindsFile().getName();
+        String readPreset = BindName.fromFileName(readFile);
+
+        String general = notRead.get(BindingSection.GENERAL);
+        if (general != null) {
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech(
+                    "speech.bindingGeneralPresetNotRead", general, readPreset)));
+        }
+        List<String> others = notRead.keySet().stream()
+                .filter(section -> section != BindingSection.GENERAL)
+                .map(section -> StringUtls.localizedSpeech(section.getLabelKey()))
+                .toList();
+        if (!others.isEmpty()) {
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech(
+                    "speech.bindingSectionsNotRead", String.join(", ", others), readPreset)));
+        }
+
+        String line = "Read " + readFile + ", but these sections use another preset: " + notRead
+                + ". Their keys may not match the game.";
+        UiBus.publish(new AppLogEvent("Bindings warning: " + line));
+        // ERROR so the line survives into elite-intel.log and the support bundle, as a blocking conflict's does.
+        log.error("Preset sections not read: {}", line);
     }
 
     /**
