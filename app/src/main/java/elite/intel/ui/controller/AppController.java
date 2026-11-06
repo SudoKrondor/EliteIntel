@@ -382,9 +382,17 @@ public class AppController {
         if (systemSession.isPushToTalkEnabled() || !systemSession.isSleeping()) {
             return;
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
-                StringUtls.localizedSpeech("speech.sleepModeStartupNotice")));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(sleepModeNotice(SetupCheck.isLlmUnconfigured())));
         appendToLog("Starting in sleep mode: voice input is ignored until a wake phrase or the WAKE UP button.");
+    }
+
+    /**
+     * What is said on starting asleep. Only a commander with no language model set up, our sign of a new install, also
+     * hears about push-to-talk: anyone past that point knows the option, and may have decided against it.
+     */
+    static String sleepModeNotice(boolean llmUnconfigured) {
+        String notice = StringUtls.localizedSpeech("speech.sleepModeStartupNotice");
+        return llmUnconfigured ? notice + " " + StringUtls.localizedSpeech("speech.sleepModeStartupPttHint") : notice;
     }
 
     @Subscribe
