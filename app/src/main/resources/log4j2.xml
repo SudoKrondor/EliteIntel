@@ -37,6 +37,20 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
+        <!-- BindForge's own record, for the support bundle. The file above rolls at every start and
+             shares its megabyte with the keystroke trail, so an APPLY from a few sessions ago is gone
+             from it long before a commander reports what it did. This one takes only BindForge's lines
+             (the two loggers below) and rolls only on size, so its history spans sessions - which is
+             why its pattern carries the date, and the one above does not need to. Current file plus
+             one rolled: 2MB at most. -->
+        <RollingFile name="bindForgeFile" fileName="${logPath}/bindforge.log"
+                     filePattern="${logPath}/bindforge_%i.log" immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-6p→ %c{1}.%M(%F:%L) - %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="1"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -87,11 +101,17 @@
              warn because one line genuinely belongs at info: what BindForge read a controller's
              VID/PID as. That reading is silent when wrong - every controller simply fails to match
              its entry, with no error anywhere - so it must be visible without turning logging up. -->
-        <Logger name="elite.intel.bindforge" level="info"/>
+        <Logger name="elite.intel.bindforge" level="info">
+            <!-- level on the ref, not only on the logger: bindforge.io, .model and .rules below log at
+                 debug and reach this appender through additivity, which ignores this logger's level. -->
+            <AppenderRef ref="bindForgeFile" level="info"/>
+        </Logger>
         <!-- The same, for the screens: they hold the thread boundaries where a background refresh
              reports what it could not do, and the line saying the device service is not running at
              all, which otherwise looks identical to having no controllers plugged in. -->
-        <Logger name="elite.intel.ui.screen.bindings" level="info"/>
+        <Logger name="elite.intel.ui.screen.bindings" level="info">
+            <AppenderRef ref="bindForgeFile"/>
+        </Logger>
         <!-- Also louder than elite.intel, for the same reason as the overlay above. Memory
              consolidation used to announce its failures out loud, which told the commander
              about housekeeping they can do nothing about (the batch is retried, and falls

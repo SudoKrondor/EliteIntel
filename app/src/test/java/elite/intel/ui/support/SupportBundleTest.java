@@ -1,6 +1,7 @@
 package elite.intel.ui.support;
 
 import elite.intel.bindforge.storage.Backups;
+import elite.intel.bindforge.storage.BindForgeSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -37,6 +38,52 @@ class SupportBundleTest {
         Path file = dir.resolve(name);
         Files.writeString(file, content, StandardCharsets.UTF_8);
         return file;
+    }
+
+    @Test
+    void carriesBindForgesReportFilesAndLogs(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+        write(tmp, "bindforge.log", "applied");
+        write(tmp, "bindforge_1.log", "applied before that");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null, null, null, null, null,
+                        () -> new BindForgeSupport.Contents("BindForge report",
+                                Map.of("bindforge/live/Bindings/StartPreset.4.start", "Main".getBytes(StandardCharsets.UTF_8)))));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("BindForge report", entries.get(BindForgeSupport.REPORT_ENTRY));
+        assertEquals("Main", entries.get("bindforge/live/Bindings/StartPreset.4.start"));
+        assertEquals("applied", entries.get("bindforge.log"));
+        assertEquals("applied before that", entries.get("bindforge_1.log"));
+        assertTrue(result.included().contains("bindforge/live/Bindings/StartPreset.4.start"), result.toString());
+        assertTrue(entries.get(SupportBundle.INFO_ENTRY).contains(BindForgeSupport.REPORT_ENTRY));
+    }
+
+    @Test
+    void aBindForgeReportThatThrowsCostsOnlyItself(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "system log line", null, null, null, null, null, null, null,
+                        () -> {
+                            throw new IllegalStateException("no database");
+                        }));
+
+        assertTrue(unzip(zip).containsKey(SupportBundle.SESSION_LOG_ENTRY));
+        assertTrue(result.omitted().stream().anyMatch(line -> line.contains("no database")), result.toString());
+    }
+
+    @Test
+    void noBindForgeLogBesideTheAppLogIsNotAnOmission(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null));
+
+        assertTrue(result.omitted().stream().noneMatch(line -> line.contains("BindForge")), result.toString());
     }
 
     @Test

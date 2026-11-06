@@ -1,16 +1,16 @@
 ---
-description: Draft a human-readable commit message describing what changed, written to commit-message.txt
+description: Draft a human-readable change summary describing what changed, written to change-summary.txt
 
 This file is for me to work with. I will copy and paste the parts where they need to go.
 
-The commit-message.txt will contain two parts. One will be pasted in to the commit message, the other will be used during the version bump tag to let users know what changes where introduced.
+The change-summary.txt will contain two parts. One will be pasted in to the change summary, the other will be used during the version bump tag to let users know what changes where introduced.
 
 argument-hint: "[ticket key e.g. KAN-XYZ] [--staged]"
 ---
 
 Optional input: $ARGUMENTS
 
-Generate a commit-message draft for the current uncommitted work. Do NOT stage or commit anything; just write the draft to a file and print it. The user commits manually.
+Generate a change-summary draft for the current uncommitted work. Do NOT stage or commit anything; just write the draft to a file and print it. The user commits manually.
 
 # 1. Gather the change set
 
@@ -67,5 +67,5 @@ This record is instructions Users in plain English explaining what functionality
 ```
 # 5. Output
 
-Write the message to `commit-message.txt` in the repo root and print it inline. Do not run `git add` or
-`git commit`. Mention that the draft is ready for the user to review and commit. Allways overrie `commit-message.txt`
+Write the message to `change-summary.txt` in the repo root and print it inline. Do not run `git add` or
+`git commit`. Mention that the draft is ready for the user to review and commit. Allways overrie `change-summary.txt`
