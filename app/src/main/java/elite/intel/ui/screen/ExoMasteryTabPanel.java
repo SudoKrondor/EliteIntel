@@ -93,9 +93,9 @@ public class ExoMasteryTabPanel extends JPanel {
         progressSection.setVisible(false);
         page.add(progressSection);
 
-        systemsCell = new HudStatCell(getText("exoMastery.stat.systems"), "/images/stats.png",
+        systemsCell = new HudStatCell(getText("exoMastery.stat.systems"), "/images/stars.png",
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, null);
-        bodiesCell = new HudStatCell(getText("exoMastery.stat.bodies"), "/images/stats.png",
+        bodiesCell = new HudStatCell(getText("exoMastery.stat.bodies"), "/images/planet-and-moon.png",
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, null);
         valueCell = new HudStatCell(getText("exoMastery.stat.value"), "/images/credits.png",
                 HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION, getText("exoMastery.unit.credits"));
