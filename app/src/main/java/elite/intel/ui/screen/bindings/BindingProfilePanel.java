@@ -12,6 +12,7 @@ import elite.intel.bindforge.storage.Edits;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import elite.intel.ui.theme.AppTheme;
@@ -126,6 +127,17 @@ public class BindingProfilePanel extends JPanel {
     @Subscribe
     public void onEditsChanged(BindForgeEditsChangedEvent event) {
         SwingUtilities.invokeLater(this::initData);
+    }
+
+    /**
+     * BindForge went read only, or stopped being: Game Mode, Anomalies and Settings follow (Storage S14b).
+     */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            gameMode.readOnlyChanged();
+            settingsMode.readOnlyChanged();
+        });
     }
 
     /**

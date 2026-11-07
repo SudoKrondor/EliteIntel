@@ -93,6 +93,11 @@ public class AssignAxisDialog extends JDialog {
     private final HudToggleButton rangeButton = new HudToggleButton("");
     private final JButton saveButton = makeButton(getText("button.save"));
     private JTabbedPane sourceTabs;
+    /**
+     * Read only while an installation is missing (Storage S14b): the dialog shows the axis, and nothing in it changes
+     * anything.
+     */
+    private final boolean viewOnly;
 
     private BindingInput picked;
     private ThrottleRanges.Reading rangeReading;
@@ -100,10 +105,11 @@ public class AssignAxisDialog extends JDialog {
 
     /**
      * @param rangeChoice the throttle range, or {@code null} for an axis with none, or a file that does not hold it
+     * @param viewOnly    true while BindForge is read only: everything shows, nothing changes
      */
     public AssignAxisDialog(Component parent, BindsValues.Axis axis, RangeChoice rangeChoice,
                             List<CaptureControllers.Controller> controllers, EditedDeviceLabels labels,
-                            Function<BindingInput, List<String>> holders) {
+                            Function<BindingInput, List<String>> holders, boolean viewOnly) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         this.axis = axis;
@@ -112,6 +118,7 @@ public class AssignAxisDialog extends JDialog {
         this.labels = labels;
         this.formatter = new BindingSlotDisplayFormatter(labels);
         this.holders = holders;
+        this.viewOnly = viewOnly;
         this.picked = axis.input().orElse(null);
         this.rangeReading = rangeChoice == null ? null : rangeChoice.range().read(rangeChoice.value());
         this.deadzoneAtOpen = Math.round(axis.deadzone() * DEADZONE_SCALE);
@@ -124,7 +131,7 @@ public class AssignAxisDialog extends JDialog {
      * @return what to write, or empty when the commander left with nothing changed
      */
     public Optional<Choice> showDialog() {
-        boolean listening = !live.isEmpty();
+        boolean listening = !live.isEmpty() && changeable();
         if (listening) DeviceBus.register(this);
         try {
             setVisible(true);
@@ -168,7 +175,9 @@ public class AssignAxisDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(0, 0, 8, 0);
         stack.add(bindingCard(), gbc);
-        if (!axis.editable()) {
+        if (viewOnly) {
+            stack.add(HudBanner.multiline(getText("bindings.readOnly.viewOnly"), StatusBadge.State.STANDBY), gbc);
+        } else if (!axis.editable()) {
             stack.add(HudBanner.multiline(getText("bindings.axis.notEditable"), StatusBadge.State.OFFLINE), gbc);
         }
         stack.add(sources(), gbc);
@@ -193,7 +202,7 @@ public class AssignAxisDialog extends JDialog {
                 .primary(saveButton)
                 .dismiss(backButton)
                 .build()));
-        getRootPane().setDefaultButton(saveButton);
+        if (changeable()) getRootPane().setDefaultButton(saveButton);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         pack();
         fitToScreen();
@@ -291,7 +300,7 @@ public class AssignAxisDialog extends JDialog {
             cell.setFont(cell.getFont().deriveFont(Font.PLAIN, 11f));
             cell.setPreferredSize(new Dimension(0, CELL_HEIGHT));
             cell.setToolTipText(controller.name() + " " + token);
-            if (axis.editable()) {
+            if (changeable()) {
                 cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 cell.addMouseListener(new MouseAdapter() {
                     @Override
@@ -353,10 +362,17 @@ public class AssignAxisDialog extends JDialog {
     // ------------------------------------------------------------------ choosing
 
     private void pick(BindingInput input) {
-        if (!axis.editable()) return;
+        if (!changeable()) return;
         picked = input;
         if (input != null) bringForward(input);
         refresh();
+    }
+
+    /**
+     * Whether anything in the dialog may change: an axis the writer knows, while BindForge is not read only.
+     */
+    private boolean changeable() {
+        return axis.editable() && !viewOnly;
     }
 
     private void bringForward(BindingInput input) {
@@ -386,7 +402,7 @@ public class AssignAxisDialog extends JDialog {
     }
 
     private void save() {
-        if (!axis.editable() || !changed()) return;
+        if (!changeable() || !changed()) return;
         result = new Choice(new AxisAssignment(axis.id(), picked, invertButton.isSelected(), deadzone()),
                 rangeChanged() ? rangeChoice.range().setting() : null,
                 rangeChanged() ? rangeChoice.range().valueFor(rangeReading) : null);
@@ -398,13 +414,13 @@ public class AssignAxisDialog extends JDialog {
     private void refresh() {
         willHold.setText(bindingChanged() ? "→ " + textOf(picked) : " ");
         undoButton.setVisible(bindingChanged());
-        clearButton.setEnabled(axis.editable() && picked != null);
+        clearButton.setEnabled(changeable() && picked != null);
         showToggle(invertButton, getText(invertButton.isSelected() ? "bindings.axis.inverted" : "bindings.axis.normal"));
-        invertButton.setEnabled(axis.editable());
-        deadzoneSlider.setEnabled(axis.editable());
+        invertButton.setEnabled(changeable());
+        deadzoneSlider.setEnabled(changeable());
         if (rangeChoice != null) {
             showToggle(rangeButton, rangeText());
-            rangeButton.setEnabled(axis.editable());
+            rangeButton.setEnabled(changeable());
         }
         showAlsoOn();
         for (Map.Entry<String, JLabel> entry : cells.entrySet()) {
@@ -418,7 +434,12 @@ public class AssignAxisDialog extends JDialog {
                     ? BorderFactory.createLineBorder(HUD_COLOR_ROLE_PRIMARY_ACTION, 2)
                     : BorderFactory.createLineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER));
         }
-        saveButton.setEnabled(axis.editable() && changed());
+        saveButton.setEnabled(changeable() && changed());
+        if (viewOnly) {
+            for (JComponent off : List.of(clearButton, invertButton, deadzoneSlider, rangeButton, saveButton)) {
+                off.setToolTipText(getText("bindings.readOnly.tooltip"));
+            }
+        }
         if (isDisplayable() && getPreferredSize().height > getHeight()) {
             Point at = getLocation();
             pack();

@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,6 +23,7 @@ class SettingsModePanelTest {
     private static final String MOTION = "HeadlookMotionSensitivity";
 
     private final List<String> edits = new ArrayList<>();
+    private final AtomicBoolean readOnly = new AtomicBoolean(false);
     private final SettingsModePanel panel = new SettingsModePanel(new GameModePanel.EditRunner() {
         @Override
         public boolean running() {
@@ -32,7 +34,7 @@ class SettingsModePanelTest {
         public void run(String title, GameModePanel.Change change, Runnable onEdt, Runnable afterFailure) {
             edits.add(title);
         }
-    });
+    }, readOnly::get);
 
     @Test
     void readingAFileMovesTheThumbButKeepsNoEdit() {
@@ -97,6 +99,41 @@ class SettingsModePanelTest {
                 Map.of(THIRD_PERSON, new BindsValues.Setting(THIRD_PERSON, "30.00000000", false))));
 
         assertFalse(slider().isEnabled());
+    }
+
+    @Test
+    void readOnlyTurnsTheNumberAndSliderOffAndSaysWhy() {
+        readOnly.set(true);
+        show(THIRD_PERSON, "30.00000000");
+
+        assertFalse(field().isEnabled());
+        assertFalse(slider().isEnabled());
+        assertNotNull(field().getToolTipText());
+        assertEquals("30.0", field().getText(), "read only still shows the number");
+    }
+
+    @Test
+    void theRowsFollowReadOnlyEndingWithoutARead() {
+        readOnly.set(true);
+        show(THIRD_PERSON, "30.00000000");
+
+        readOnly.set(false);
+        panel.readOnlyChanged();
+
+        assertTrue(field().isEnabled());
+        assertTrue(slider().isEnabled());
+        assertNull(field().getToolTipText());
+    }
+
+    @Test
+    void aNumberTypedAsReadOnlyBeganKeepsNoEdit() {
+        show(THIRD_PERSON, "30.00000000");
+        readOnly.set(true);
+
+        field().setText("40");
+        field().postActionEvent();
+
+        assertTrue(edits.isEmpty(), "an edit was kept while read only");
     }
 
     private void show(String id, String value) {

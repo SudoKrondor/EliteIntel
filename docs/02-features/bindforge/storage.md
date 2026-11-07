@@ -131,6 +131,41 @@ stops first-time startup, with its message and its code.
 Built in Storage S14a as `bindforge.storage.ReadOnlyMode`, `Edits.ReadOnlyException`, the bar's line and OVERRIDE in
 `ui.screen.bindings.ApplyBar`, and the warning in `AppController`.
 
+**Settled with Storage S14b's sources (Alan, 2026-11-06):**
+
+- **The bind dialogs are the same dialogs, opened view only** - not a second dialog to show a control. Both slots'
+  cards, the keyboard map and the controller tabs show as usual; key capture and live controller input are off, a pick
+  does nothing, and CLEAR, swap and SAVE are greyed. The axis dialog the same: invert, dead zone, throttle range, CLEAR
+  and SAVE greyed. BACK and Esc close.
+- **The grid's CLEAR (Used tab, Anomalies) and AUTO FIX (Missing tab) are inert** - greyed, saying why on hover, a click
+  doing nothing - and **AUTO-ASSIGN is greyed**. Settings mode's numbers and sliders are greyed. All of them follow read
+  only ending without a restart.
+- **The Device Editor opens and its input tabs light as usual**, so the user can still find which input is which; the
+  name and label boxes are not editable (still readable), and SAVE, CLEAR / RESET LABELS / UNDO and NAME are greyed.
+- **Onboarding and the identity question are held while read only, not spent.** Nothing offers them - not the
+  automatic offer, a controller plugged in, nor NAME - and the refresh after read only ends (OVERRIDE or Remove) offers
+  them as it would have. **CHECK AGAIN is greyed**, since offering them is its one job; the screen still reads again on
+  hot-plug.
+- **One line says why, in warning text colour**, at the foot of the bind dialogs and the Device Editor: *"Read only
+  while an installation is missing - nothing here can be changed."* (`bindings.readOnly.viewOnly`). Every greyed control
+  carries S14a's tooltip.
+- **The Preset Editor's locked dropdowns are P4's**, built with that screen.
+
+**Settled for Storage S14c, from Krondor's S14a review (Alan, 2026-11-06):**
+
+- **The warning at start names each missing installation by its store alone** - Steam, Epic, Frontier, Oculus, and
+  *a manual installation* for one added by hand - never its path, which is no use spoken. The bar and the log keep the
+  path.
+- **Remove ends read only the way OVERRIDE does:** when the last missing installation is removed, what was held back -
+  the check, first-time startup, the offer of the newest backup - runs straight away, not at the next click on the
+  BindForge tab.
+- **The *changed outside* line is not said while read only.** The read-only warning covers it, and the check it points
+  to is off.
+
+Built in Storage S14b: a view-only flag on `AssignKeyboardBindingDialog` and `AssignAxisDialog`, `OffCell` for the grid's
+inert actions, `Opening.readOnly` on `DeviceEditorDialog`, and `BindForgeReadOnlyChangedEvent` heard by
+`BindingProfilePanel` and `AliasDesignerController`.
+
 ## Opening BindForge
 
 5. The first time the user clicks the BindForge tab in an Elite-Intel session, [the check](#when-a-live-copy-differs)

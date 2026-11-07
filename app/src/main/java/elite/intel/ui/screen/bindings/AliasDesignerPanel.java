@@ -91,6 +91,8 @@ public class AliasDesignerPanel extends JPanel {
     private List<MyDevice> currentMyDevices = List.of();
     /** Whether the Device Service was running at the last refresh. */
     private boolean deviceServiceRunning;
+    /** CHECK AGAIN: its one job is offering onboarding and the identity question, so it is off while read only. */
+    private JButton rescanButton;
 
     public AliasDesignerPanel() {
         buildUi();
@@ -158,11 +160,20 @@ public class AliasDesignerPanel extends JPanel {
                 HudTable.dataPlaneScrollPane(myDevicesTable));
         myDevices.addTab(getText("bindings.aliasDesigner.section.builtIn"), builtIn);
 
-        JButton rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
+        rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
         rescanButton.addActionListener(e -> controller.checkAgain());
 
         add(myDevices, BorderLayout.CENTER);
         add(HudFooter.build(false, null, null, List.of(rescanButton)), BorderLayout.SOUTH);
+    }
+
+    /**
+     * BindForge is read only, or stopped being: CHECK AGAIN follows, with a tooltip saying why it is dark (Storage
+     * S14b). On the EDT.
+     */
+    void showReadOnly(boolean readOnly) {
+        rescanButton.setEnabled(!readOnly);
+        rescanButton.setToolTipText(readOnly ? getText("bindings.readOnly.tooltip") : null);
     }
 
     /**

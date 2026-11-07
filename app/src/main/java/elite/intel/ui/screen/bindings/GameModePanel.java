@@ -11,6 +11,7 @@ import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.ui.dialog.AssignAxisDialog;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
@@ -274,6 +275,21 @@ class GameModePanel extends JPanel {
     }
 
     /**
+     * BindForge went read only, or stopped being (Storage S14b): the rows' CLEAR and AUTO FIX and Auto-Assign follow.
+     * On the EDT.
+     */
+    void readOnlyChanged() {
+        if (loadedFile != null) renderBindingTables();
+    }
+
+    /**
+     * True while an installation is missing and nothing may change (Storage S14a). Safe on the EDT.
+     */
+    private static boolean readOnly() {
+        return ReadOnlyMode.stored().activeIfKnown();
+    }
+
+    /**
      * This mode's filters and Auto-Assign, for the shell's footer: it shares that line with the search, and shows them
      * only while this mode is up.
      */
@@ -303,7 +319,7 @@ class GameModePanel extends JPanel {
     }
 
     private void fixAllMissing() {
-        if (loadedFile == null || currentSlots.isEmpty() || editRunner.running()) {
+        if (loadedFile == null || currentSlots.isEmpty() || editRunner.running() || readOnly()) {
             return;
         }
         int choice = JOptionPane.showConfirmDialog(
@@ -322,7 +338,7 @@ class GameModePanel extends JPanel {
 
     private void autoFixSingleBinding(String bindingId) {
         if (bindingId == null || bindingId.isBlank() || loadedFile == null || editRunner.running()
-                || isAxis(bindingId)) {
+                || isAxis(bindingId) || readOnly()) {
             return;
         }
         MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots, currentKeyboardLayout);
@@ -471,6 +487,7 @@ class GameModePanel extends JPanel {
             AiAccess aiAccess
     ) {
         Map<BindingSection, List<Object[]>> grouped = groupedRows();
+        boolean readOnly = readOnly();
         for (String bindingId : inGameOrder(bindingIds)) {
             KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
             BindsValues.Axis axis = currentValues.axes().get(bindingId);
@@ -481,13 +498,21 @@ class GameModePanel extends JPanel {
                     : aiAccessCell(aiAccess.stateOf(bindingId, bindingSlots), bindingSlots);
             Object[] row = switch (rowAction) {
                 case AUTO_FIX -> new Object[]{bindingId, primary, secondary, ai,
-                        axis != null ? "" : getText("bindings.column.autofix.action")};
-                case CLEAR -> new Object[]{bindingId, primary, secondary, ai, getText("bindings.column.clear.action")};
+                        axis != null ? "" : actionCell(getText("bindings.column.autofix.action"), readOnly)};
+                case CLEAR -> new Object[]{bindingId, primary, secondary, ai,
+                        actionCell(getText("bindings.column.clear.action"), readOnly)};
                 case NONE -> new Object[]{bindingId, primary, secondary, ai};
             };
             grouped.get(BindingDisplayNames.lookup(bindingId).section()).add(row);
         }
         return grouped;
+    }
+
+    /**
+     * A row's CLEAR or AUTO FIX: the word, or the word greyed and inert while read only (Storage S14b).
+     */
+    private static Object actionCell(String text, boolean readOnly) {
+        return readOnly ? new OffCell(text, getText("bindings.readOnly.tooltip")) : text;
     }
 
     private SlotCell slotCell(KeyBindingsParser.ReadOnlyBindingSlot slot) {
@@ -704,7 +729,9 @@ class GameModePanel extends JPanel {
         // Enabled only when a control VEGA presses is missing: the button fills those and nothing else, so with
         // only emotes and the like left in the Missing tab a click could do nothing.
         Set<String> required = BindingsMonitor.requiredControls();
-        fixAllButton.setEnabled(missingBindings.stream().anyMatch(id -> !isAxis(id) && required.contains(id)));
+        boolean readOnly = readOnly();
+        fixAllButton.setEnabled(!readOnly && missingBindings.stream().anyMatch(id -> !isAxis(id) && required.contains(id)));
+        fixAllButton.setToolTipText(getText(readOnly ? "bindings.readOnly.tooltip" : "bindings.button.fixAll.tooltip"));
         renderAnomalies(aiAccess);
     }
 
@@ -1029,7 +1056,9 @@ class GameModePanel extends JPanel {
                 // WHY: the names and labels read with the file, off the EDT (S4b review; Storage S5).
                 CaptureControllers.all(currentSlots, labels),
                 labels,
-                currentAiAccess().stateOf(bindingId, slots) != AiAccess.State.NOT_USED
+                currentAiAccess().stateOf(bindingId, slots) != AiAccess.State.NOT_USED,
+                // WHY open at all while read only: the dialog is where a control's slots are read in full (S14b).
+                readOnly()
         );
 
         assignDialogOpen = true;
@@ -1062,7 +1091,8 @@ class GameModePanel extends JPanel {
                         .filter(other -> other.input().filter(input::sameInputAs).isPresent())
                         .map(other -> BindingDisplayNames.label(other.id()))
                         .sorted()
-                        .toList());
+                        .toList(),
+                readOnly());
         assignDialogOpen = true;
         try {
             AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(dialogOwner),
@@ -1162,7 +1192,7 @@ class GameModePanel extends JPanel {
      * the other slot untouched. The actual edit + reload is delegated back via {@link #clearKeyboardSlot}.
      */
     private void openClearKeyboardBindingDialog(String bindingId) {
-        if (bindingId == null || bindingId.isBlank() || loadedFile == null || editRunner.running()) {
+        if (bindingId == null || bindingId.isBlank() || loadedFile == null || editRunner.running() || readOnly()) {
             return;
         }
         // Opened from a row click - no mouseExited fires, so drop the hover callout explicitly.

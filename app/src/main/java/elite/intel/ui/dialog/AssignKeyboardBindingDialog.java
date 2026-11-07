@@ -260,6 +260,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final Set<String> gameMenuKeys;
     private final List<CaptureControllers.Controller> controllers;
     private final boolean vegaUsesIt;
+    /**
+     * Read only while an installation is missing (Storage S14b): the dialog shows what the control holds, and nothing
+     * in it changes anything.
+     */
+    private final boolean viewOnly;
     private final Map<BindingSlotType, SlotEdit> edits = new EnumMap<>(BindingSlotType.class);
     private final Map<BindingSlotType, SlotCard> cards = new EnumMap<>(BindingSlotType.class);
     /**
@@ -299,7 +304,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
             Map<BindingSlotType, ExistingConflict> existingConflicts,
             List<CaptureControllers.Controller> controllers,
             EditedDeviceLabels labels,
-            boolean vegaUsesIt
+            boolean vegaUsesIt,
+            boolean viewOnly
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
@@ -316,6 +322,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.labels = labels == null ? EditedDeviceLabels.NONE : labels;
         this.slotFormatter = new BindingSlotDisplayFormatter(this.labels);
         this.vegaUsesIt = vegaUsesIt;
+        this.viewOnly = viewOnly;
         Map<BindingSlotType, ExistingConflict> conflicts = existingConflicts == null ? Map.of() : existingConflicts;
         edits.put(BindingSlotType.PRIMARY, new SlotEdit(BindingSlotType.PRIMARY,
                 slots == null ? null : slots.primary(), conflicts.get(BindingSlotType.PRIMARY)));
@@ -342,7 +349,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
     /** @return the slots to write, each once - empty when the commander left with nothing changed */
     public List<AssignSelection> showDialog() {
         installModifierTracker();
-        boolean listening = !livePanels.isEmpty();
+        // WHY not while read only: a pressed input would only be turned away (Storage S14b).
+        boolean listening = !livePanels.isEmpty() && !viewOnly;
         if (listening) DeviceBus.register(this);
         try {
             setVisible(true);
@@ -459,6 +467,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
         if (controllers.isEmpty()) {
             wide(content, gbc, HudBanner.multiline(getText("bindings.assign.noControllers"), StatusBadge.State.INFO), null);
         }
+        if (viewOnly) {
+            wide(content, gbc, HudBanner.multiline(getText("bindings.readOnly.viewOnly"), StatusBadge.State.STANDBY), null);
+            captureField.setEnabled(false);
+            captureField.setToolTipText(getText("bindings.readOnly.tooltip"));
+        }
 
         // Absorb extra vertical space at the bottom so content top-aligns, and a message appearing
         // shrinks this filler rather than the input lists.
@@ -493,8 +506,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
         setContentPane(AppTheme.hudModalScaffold(spec));
 
-        // The capture field consumes Enter while armed; otherwise Save is the default.
-        getRootPane().setDefaultButton(saveButton);
+        // The capture field consumes Enter while armed; otherwise Save is the default - but not while read only.
+        if (!viewOnly) getRootPane().setDefaultButton(saveButton);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         pack();
         fitToScreen();
@@ -649,6 +662,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void onChordCaptured(KeyChordCaptureField.CapturedChord chord) {
+        if (viewOnly) return;
         sourceTabs.setSelectedComponent(keyboardTab);
         choose(edits.get(active), edit -> {
             edit.kind = Kind.KEYBOARD;
@@ -660,6 +674,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void onClear(BindingSlotType type) {
+        if (viewOnly) return;
         setActive(type);
         SlotEdit edit = edits.get(type);
         edit.kind = Kind.CLEAR;
@@ -669,6 +684,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void onUndo(BindingSlotType type) {
+        if (viewOnly) return;
         setActive(type);
         edits.get(type).undo();
         showSourceOf(edits.get(type));
@@ -679,6 +695,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
      * The orange card stays orange; only what the two slots hold changes places.
      */
     private void onSwap() {
+        if (viewOnly) return;
         SlotEdit.swap(edits.get(BindingSlotType.PRIMARY), edits.get(BindingSlotType.SECONDARY));
         showSourceOf(edits.get(active));
         refresh(true);
@@ -688,6 +705,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
      * A controller input, pressed or clicked, goes into the orange card; its controller's tab comes forward.
      */
     private void pickControl(ControllerCapture.Captured captured) {
+        if (viewOnly) return;
         SlotEdit edit = edits.get(active);
         choose(edit, e -> {
             e.kind = Kind.CONTROLLER;
@@ -866,8 +884,12 @@ public class AssignKeyboardBindingDialog extends JDialog {
         }
 
         aiAccessBanner.setVisible(takesControlFromVega());
-        saveButton.setEnabled(anyChanged && !anyBlocked);
-        swapButton.setEnabled(edits.values().stream().anyMatch(edit -> edit.inputAfter() != null));
+        saveButton.setEnabled(!viewOnly && anyChanged && !anyBlocked);
+        swapButton.setEnabled(!viewOnly && edits.values().stream().anyMatch(edit -> edit.inputAfter() != null));
+        if (viewOnly) {
+            saveButton.setToolTipText(getText("bindings.readOnly.tooltip"));
+            swapButton.setToolTipText(getText("bindings.readOnly.tooltip"));
+        }
         // Grow when a message or a longer translation needs the room, up to the screen; never shrink, so the dialog
         // does not jump while choosing. Past the screen's size the body scrolls.
         Dimension preferred = getPreferredSize();
@@ -933,6 +955,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void save() {
+        if (viewOnly) return;
         List<AssignSelection> selections = new ArrayList<>();
         for (SlotEdit edit : edits.values()) {
             if (!edit.changed()) continue;
@@ -1024,6 +1047,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
             JButton clear = makeButtonSubtle(getText("bindings.assign.capture.clear"));
             clear.addActionListener(e -> onClear(edit.type));
+            if (viewOnly) {
+                clear.setEnabled(false);
+                clear.setToolTipText(getText("bindings.readOnly.tooltip"));
+            }
             undo.addActionListener(e -> onUndo(edit.type));
             JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
             buttons.add(undo);

@@ -8,6 +8,7 @@ import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.model.SettingNumbers;
 import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudSlider;
 import elite.intel.ui.widget.StatusBadge;
@@ -20,6 +21,7 @@ import java.awt.event.FocusEvent;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -46,6 +48,8 @@ class SettingsModePanel extends JPanel {
 
     private final BindingsWriter writer = new BindingsWriter();
     private final GameModePanel.EditRunner editRunner;
+    /** Whether BindForge is read only, an installation missing (Storage S14b). Asked on the EDT. */
+    private final BooleanSupplier readOnly;
     private final JPanel list = transparentPanel(null);
     private final Map<String, Row> rows = new LinkedHashMap<>();
 
@@ -54,7 +58,15 @@ class SettingsModePanel extends JPanel {
     private String query = "";
 
     SettingsModePanel(GameModePanel.EditRunner editRunner) {
+        this(editRunner, () -> ReadOnlyMode.stored().activeIfKnown());
+    }
+
+    /**
+     * @param readOnly whether BindForge is read only - the shared {@link ReadOnlyMode} but in a test
+     */
+    SettingsModePanel(GameModePanel.EditRunner editRunner, BooleanSupplier readOnly) {
         this.editRunner = editRunner;
+        this.readOnly = readOnly;
         setOpaque(false);
         setLayout(new BorderLayout(0, 4));
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
@@ -84,6 +96,20 @@ class SettingsModePanel extends JPanel {
             return;
         }
         rows.values().forEach(row -> row.showValue(settings.get(row.id)));
+    }
+
+    /**
+     * BindForge went read only, or stopped being (Storage S14b): every number and slider follows. On the EDT.
+     */
+    void readOnlyChanged() {
+        rows.values().forEach(row -> row.showValue(settings.get(row.id)));
+    }
+
+    /**
+     * Whether this setting's number may change: one the writer knows, while BindForge is not read only (S14b).
+     */
+    private boolean changeable(BindsValues.Setting setting) {
+        return setting.editable() && !readOnly.getAsBoolean();
     }
 
     /**
@@ -154,7 +180,7 @@ class SettingsModePanel extends JPanel {
      */
     private void commit(Row row) {
         BindsValues.Setting setting = settings.get(row.id);
-        if (setting == null || !setting.editable()) return;
+        if (setting == null || !changeable(setting)) return;
         SettingNumbers.Verdict verdict = SettingNumbers.judge(row.id, row.field.getText());
         if (!verdict.valid()) {
             row.problem.setText(switch (verdict.refusal()) {
@@ -259,8 +285,9 @@ class SettingsModePanel extends JPanel {
         }
 
         void showValue(BindsValues.Setting setting) {
-            field.setEnabled(setting.editable());
-            field.setToolTipText(setting.editable() ? null : getText("bindings.settings.notEditable"));
+            field.setEnabled(changeable(setting));
+            field.setToolTipText(changeable(setting) ? null : getText(setting.editable()
+                    ? "bindings.readOnly.tooltip" : "bindings.settings.notEditable"));
             if (!field.isFocusOwner()) {
                 field.setText(SettingNumbers.shown(setting.value()));
             }
@@ -273,7 +300,7 @@ class SettingsModePanel extends JPanel {
          */
         private void placeSlider(BindsValues.Setting setting) {
             if (slider == null || slider.isAdjusting()) return;
-            slider.setEnabled(setting.editable());
+            slider.setEnabled(changeable(setting));
             Float held = SettingNumbers.judge(id, setting.value()).value();
             heldPosition = held == null ? range.sliderMin() : range.toSlider(held);
             placingSlider = true;

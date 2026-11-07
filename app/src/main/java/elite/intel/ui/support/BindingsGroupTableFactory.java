@@ -148,6 +148,7 @@ public class BindingsGroupTableFactory {
                 int column = table.columnAtPoint(event.getPoint());
 
                 if (column == actionColumn(table)) {
+                    if (table.getValueAt(row, column) instanceof OffCell) return;
                     String bindingId = selectionController.selectRow(table, row);
                     dispatchRowAction(table, bindingId);
                     return;
@@ -247,7 +248,8 @@ public class BindingsGroupTableFactory {
             return false;
         }
         int column = table.columnAtPoint(point);
-        return slotTypeForColumn(column) != null || column == actionColumn(table);
+        return slotTypeForColumn(column) != null
+                || (column == actionColumn(table) && !(table.getValueAt(row, column) instanceof OffCell));
     }
 
     private BindingSlotType slotTypeForColumn(int column) {

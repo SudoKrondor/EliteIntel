@@ -7,6 +7,7 @@ import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
 import elite.intel.devices.DeviceService;
@@ -328,7 +329,9 @@ final class AliasDesignerReader {
                 : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
                 frontierNameHeld(edited, covering, shipped));
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, gamepad, inputs,
-                saved, name != null && stock.gameDrawsIt(name), middle, rename, taken, frontier);
+                saved, name != null && stock.gameDrawsIt(name), middle, rename, taken, frontier,
+                // WHY active(), not activeIfKnown(): this read is off the EDT, and may be the first to ask (S14b).
+                ReadOnlyMode.stored().active());
     }
 
     /**
