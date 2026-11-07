@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,10 +27,9 @@ public record DeviceFiles(byte[] deviceMappings, Map<String, byte[]> buttonMaps)
 
     private static final Logger log = LogManager.getLogger(DeviceFiles.class);
 
+    /** @throws IllegalArgumentException if two map names are one file ({@link FileNames#oneFileEach}) */
     public DeviceFiles {
-        Map<String, byte[]> sorted = new TreeMap<>(FileNames.ONE_FILE);
-        sorted.putAll(buttonMaps);
-        buttonMaps = Collections.unmodifiableMap(sorted);
+        buttonMaps = FileNames.oneFileEach(buttonMaps);
     }
 
     /**

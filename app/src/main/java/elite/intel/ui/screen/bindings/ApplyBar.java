@@ -108,7 +108,7 @@ public final class ApplyBar extends JPanel {
             Create.State state;
             // WHY here: off the EDT, so the first ask in a run - which reads the stored list and the disk - never holds
             // the screen; the bar shows the answer when it comes.
-            ReadOnlyMode.stored().missing();
+            ReadOnlyMode.stored().workOut();
             try {
                 state = Create.State.of(Edits.stored().snapshot());
             } catch (IOException e) {

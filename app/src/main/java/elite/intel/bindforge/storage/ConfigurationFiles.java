@@ -1,11 +1,10 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,24 +37,10 @@ public final class ConfigurationFiles {
     public ConfigurationFiles(Map<String, byte[]> bindings, byte[] deviceMappings, Map<String, byte[]> buttonMaps) {
         bindings.keySet().forEach(ConfigurationFiles::requireBindingsFileName);
         buttonMaps.keySet().forEach(ConfigurationFiles::requireButtonMapName);
-        this.bindings = oneFileEach(bindings);
+        // WHY: sorted, so the files are written and logged in one order every time.
+        this.bindings = FileNames.oneFileEach(bindings);
         this.deviceMappings = deviceMappings;
-        this.buttonMaps = oneFileEach(buttonMaps);
-    }
-
-    // WHY: sorted, so the files are written and logged in one order every time; keyed ignoring case, so a lookup finds
-    // the file whatever its spelling and two spellings of one file are refused rather than one silently dropped.
-    private static Map<String, byte[]> oneFileEach(Map<String, byte[]> files) {
-        Map<String, byte[]> sorted = new TreeMap<>(FileNames.ONE_FILE);
-        files.forEach((name, content) -> {
-            if (sorted.containsKey(name)) {
-                throw new IllegalArgumentException("two names for one file: " + name + " and "
-                        + sorted.keySet().stream().filter(other -> FileNames.sameFile(other, name)).findFirst()
-                        .orElseThrow());
-            }
-            sorted.put(name, content);
-        });
-        return Collections.unmodifiableMap(sorted);
+        this.buttonMaps = FileNames.oneFileEach(buttonMaps);
     }
 
     /**

@@ -159,6 +159,57 @@ class LiveCopiesTest {
         assertEquals(List.of("custom.4.2.binds"), report.bindings().removed());
     }
 
+    /**
+     * A respelling whose first step fails: the file is written under its old spelling, never as a second file beside
+     * it, the failure is reported, and the next write renames it (Storage S13aR, D1).
+     */
+    @Test
+    void aRespellingThatCannotStartWritesTheFileUnderItsOldSpelling() throws IOException {
+        write(bindings.resolve("custom.4.2.binds"), "<Old/>");
+        LiveCopies.Mover refusing = (from, to) -> {
+            throw new IOException("refused");
+        };
+
+        WriteReport report = liveCopies(refusing).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertOldSpellingWritten(report);
+        assertSpelledAsTheSetAtTheNextWrite();
+    }
+
+    /**
+     * A respelling whose second step fails: the file is put back under its old spelling and written there (Storage
+     * S13aR, D1).
+     */
+    @Test
+    void aRespellingThatCannotFinishWritesTheFileUnderItsOldSpelling() throws IOException {
+        write(bindings.resolve("custom.4.2.binds"), "<Old/>");
+        LiveCopies.Mover refusingTheNewSpelling = (from, to) -> {
+            if (to.getFileName().toString().equals("Custom.4.2.binds")) throw new IOException("refused");
+            Files.move(from, to);
+        };
+
+        WriteReport report = liveCopies(refusingTheNewSpelling).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertOldSpellingWritten(report);
+        assertSpelledAsTheSetAtTheNextWrite();
+    }
+
+    private void assertOldSpellingWritten(WriteReport report) throws IOException {
+        // WHY: the preset file is held back, as after any failure in the bindings folder.
+        assertEquals(List.of("custom.4.2.binds"), names(bindings), "one file, under the old spelling");
+        assertEquals("<Custom/>", Files.readString(bindings.resolve("custom.4.2.binds")));
+        assertTrue(report.bindings().failures().stream().anyMatch(line -> line.contains("refused")),
+                report.bindings().failures().toString());
+        assertTrue(report.bindings().removed().isEmpty());
+    }
+
+    private void assertSpelledAsTheSetAtTheNextWrite() throws IOException {
+        WriteReport again = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertEquals(List.of("Custom.4.2.binds", "StartPreset.4.start"), names(bindings));
+        assertTrue(again.bindings().updated(), again.bindings().failures().toString());
+    }
+
     /** A file named for removal is removed in whatever case it is spelled on disk (Storage S13a). */
     @Test
     void aRemovalFindsTheFileInAnotherCase() throws IOException {
@@ -395,10 +446,14 @@ class LiveCopiesTest {
     }
 
     private LiveCopies liveCopies(Path... installations) {
+        return liveCopies(LiveCopies.Mover.FILES, installations);
+    }
+
+    private LiveCopies liveCopies(LiveCopies.Mover mover, Path... installations) {
         List<BackupSources.Installation> list = Stream.of(installations)
                 .map(root -> new BackupSources.Installation("STEAM", root, false, null))
                 .toList();
-        return new LiveCopies(new BackupSources(bindings, list));
+        return new LiveCopies(new BackupSources(bindings, list), mover);
     }
 
     private static ConfigurationFiles set() {

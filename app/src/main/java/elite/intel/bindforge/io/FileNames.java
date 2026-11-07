@@ -137,6 +137,26 @@ public final class FileNames {
     }
 
     /**
+     * {@code files} as an unmodifiable map keyed with {@link #ONE_FILE}, in name order, so a lookup finds a file
+     * whatever its spelling. Each file keeps the spelling it was given.
+     *
+     * @throws IllegalArgumentException if two names are one file - refused rather than one silently dropped (Storage
+     *                                  S13aR, D2); {@link #oneSpelling} is how a caller chooses between them first
+     */
+    public static <V> Map<String, V> oneFileEach(Map<String, V> files) {
+        Map<String, V> sorted = new TreeMap<>(ONE_FILE);
+        files.forEach((name, content) -> {
+            if (sorted.containsKey(name)) {
+                String other = sorted.keySet().stream().filter(found -> sameFile(found, name)).findFirst()
+                        .orElseThrow();
+                throw new IllegalArgumentException("two names for one file: " + name + " and " + other);
+            }
+            sorted.put(name, content);
+        });
+        return Collections.unmodifiableMap(sorted);
+    }
+
+    /**
      * Files with one spelling of each, and the other spellings left out.
      *
      * @param files   by name, one spelling of each file

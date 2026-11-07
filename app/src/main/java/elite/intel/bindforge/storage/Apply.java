@@ -1,7 +1,7 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.preseteditor.BindNameCatalog;
 import elite.intel.bindforge.preseteditor.BindNameList;
@@ -13,7 +13,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**

@@ -149,6 +149,9 @@ public final class StartupNotice {
         try {
             store = Storefront.valueOf(storefront);
         } catch (IllegalArgumentException e) {
+            // WHY: rows are written from the enum, so this is a fault - but one bad row must not silence the read-only
+            // warning, which is the reason the notice speaks at all (Storage S13aR, D3). Said as it is stored.
+            log.warn("Unknown store '{}' on a stored installation; said as it is stored", storefront);
             return storefront;
         }
         if (store == Storefront.MANUAL) return StringUtls.localizedSpeech(MANUAL_INSTALLATION_KEY);

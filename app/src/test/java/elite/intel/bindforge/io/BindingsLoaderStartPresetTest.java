@@ -38,12 +38,12 @@ class BindingsLoaderStartPresetTest {
             Files.write(bindingsDir.resolve(SPECIMEN), in.readAllBytes());
         }
         // WHY: an empty binds file for each line's BindName - only the names matter to the one-line read.
-        for (String binds : new String[]{"KeyboardMouseOnly.binds", "Custom.4.2.binds"}) {
+        for (String binds : new String[]{"KeyboardMouseOnly.4.2.binds", "Custom.4.2.binds"}) {
             Files.writeString(bindingsDir.resolve(binds), "<Root/>", StandardCharsets.UTF_8);
         }
 
         // getLatestBindsFile resolves through the one-line read: General's preset, not Ship's.
-        assertEquals("KeyboardMouseOnly.binds", loader.getLatestBindsFile(bindingsDir).getName());
+        assertEquals("KeyboardMouseOnly.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
     }
 
     @Test
@@ -146,12 +146,30 @@ class BindingsLoaderStartPresetTest {
         assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
     }
 
+    /**
+     * A copy Windows named {@code Custom.4.2 (2).binds} is not a binds file's name, so it is no preset's file - read
+     * as BindForge reads it (preset-editor.md, <em>The BindName list</em>; Storage S13aR, D7).
+     */
     @Test
-    void aVersionedOrDeDuplicatedFileCountsAsItsPresets() throws IOException {
+    void aDeDuplicatedCopyIsNotTheFileOfItsPreset() throws IOException {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
         binds("Custom.4.2 (2).binds");
 
-        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertEquals(everySectionOn("Custom"),
+                loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+    }
+
+    /**
+     * {@code Custom.Old.4.2.binds} is BindName {@code Custom.Old}, not a file of preset {@code Custom} (Storage S13aR,
+     * D7).
+     */
+    @Test
+    void aDottedNameIsItsOwnBindName() throws IOException {
+        startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
+        binds("Custom.Old.4.2.binds");
+
+        assertEquals(everySectionOn("Custom"),
+                loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
     }
 
     @Test
@@ -189,6 +207,11 @@ class BindingsLoaderStartPresetTest {
         binds("Custom.4.2.binds");
 
         assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, bindingsDir.resolve("Custom.4.2.binds").toFile()));
+    }
+
+    private static Map<BindingSection, String> everySectionOn(String preset) {
+        return Map.of(BindingSection.GENERAL, preset, BindingSection.SHIP, preset, BindingSection.SRV, preset,
+                BindingSection.ON_FOOT, preset);
     }
 
     private void startPreset(String text) throws IOException {

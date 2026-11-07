@@ -1,8 +1,8 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.BindingSaveResult;
 import elite.intel.bindforge.io.EditedBinds;
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.StartPresetSections;
 
 import java.util.Comparator;

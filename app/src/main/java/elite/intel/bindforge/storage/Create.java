@@ -5,8 +5,8 @@ import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
 import elite.intel.bindforge.preseteditor.BindNameList;
 import elite.intel.bindforge.preseteditor.BindsFileOrigin;
-import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
+import elite.intel.db.managers.BindForgeInstallationsManager;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

@@ -1,8 +1,8 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.storage.WriteReport.Place;
 import elite.intel.io.AtomicFiles;
 import org.apache.logging.log4j.LogManager;
@@ -69,10 +69,27 @@ final class LiveCopies {
         boolean leaveAlone(BackupSources.Installation installation);
     }
 
+    /**
+     * Moves a file: {@link Files#move}, or in a test a move that fails, so a respelling that fails can be seen on any
+     * file system (Storage S13aR, D1).
+     */
+    @FunctionalInterface
+    interface Mover {
+        Mover FILES = Files::move;
+
+        void move(Path from, Path to) throws IOException;
+    }
+
     private final BackupSources sources;
+    private final Mover mover;
 
     LiveCopies(BackupSources sources) {
+        this(sources, Mover.FILES);
+    }
+
+    LiveCopies(BackupSources sources, Mover mover) {
         this.sources = sources;
+        this.mover = mover;
     }
 
     /**
@@ -99,7 +116,7 @@ final class LiveCopies {
 
     private Place writeBindings(ConfigurationFiles files, Set<String> remove) {
         Path folder = sources.bindingsFolder();
-        Writing writing = new Writing();
+        Writing writing = new Writing(mover);
         // WHY: not created. The game makes this folder; one that is not there is a wrong setting or an unplugged
         // drive, and creating it would put the user's files where the game never reads them.
         if (!Files.isDirectory(folder)) {
@@ -134,7 +151,7 @@ final class LiveCopies {
     }
 
     private Place writeInstallation(BackupSources.Installation installation, ConfigurationFiles files) {
-        Writing writing = new Writing();
+        Writing writing = new Writing(mover);
         Path controlSchemes = installation.controlSchemes();
         if (!installation.reachable()) {
             writing.failures.add(FOLDER_NOT_FOUND);
@@ -158,10 +175,15 @@ final class LiveCopies {
 
     /** What one place's write did so far. */
     private static final class Writing {
+        private final Mover mover;
         final List<String> written = new ArrayList<>();
         final List<String> removed = new ArrayList<>();
         final List<String> keptReadOnly = new ArrayList<>();
         final List<String> failures = new ArrayList<>();
+
+        Writing(Mover mover) {
+            this.mover = mover;
+        }
 
         void heldBack(Set<String> names) {
             names.forEach(name -> failures.add(name + ": " + HELD_BACK));
@@ -171,6 +193,8 @@ final class LiveCopies {
          * Writes each file under its own spelling. Another spelling of it in the folder is renamed to it first, so the
          * file is replaced rather than a second one written beside it; any further spelling - two or more, which only a
          * file system that heeds case allows - is removed after the write (Krondor and Alan, 2026-11-07, Storage S13a).
+         * A rename that fails is reported and the file written under its old spelling, so the next write tries the
+         * rename again (Storage S13aR, D1).
          */
         void writeAll(Path folder, Map<String, byte[]> files) {
             List<String> present = namesIn(folder);
@@ -181,7 +205,11 @@ final class LiveCopies {
                 boolean respelled = false;
                 List<String> extra = others;
                 if (!present.contains(name) && !others.isEmpty()) {
-                    respelled = respell(folder.resolve(others.getFirst()), target);
+                    Path old = folder.resolve(others.getFirst());
+                    respelled = respell(old, target);
+                    // WHY: where the file system heeds case, the new spelling would be a second file beside the old -
+                    // the state BindForge never leaves (Storage S13aR, D1).
+                    if (!respelled) target = old;
                     extra = others.subList(1, others.size());
                 }
                 writeIfDifferent(target, content);
@@ -214,19 +242,19 @@ final class LiveCopies {
         private boolean respell(Path from, Path to) {
             Path step = to.resolveSibling(to.getFileName() + RESPELLING);
             try {
-                Files.move(from, step);
+                mover.move(from, step);
             } catch (IOException e) {
                 fail(from, e);
                 return false;
             }
             try {
-                Files.move(step, to);
+                mover.move(step, to);
                 log.info("Renamed {} to {}", from.getFileName(), to.getFileName());
                 return true;
             } catch (IOException e) {
                 fail(to, e);
                 try {
-                    Files.move(step, from);
+                    mover.move(step, from);
                 } catch (IOException back) {
                     failures.add(from.getFileName() + ": left as " + step.getFileName() + ": " + reason(back));
                     log.warn("Could not put {} back as {}", step, from, back);

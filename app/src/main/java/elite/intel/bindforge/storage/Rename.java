@@ -110,7 +110,7 @@ public final class Rename {
 
     /** The factory BindName {@code typed} is, ignoring case only - {@code Keyboard_Mouse_Only} is not one. */
     public static Optional<String> factoryClash(String typed, List<String> factory) {
-        return factory.stream().filter(name -> name.equalsIgnoreCase(typed)).findFirst();
+        return factory.stream().filter(name -> FileNames.sameFile(name, typed)).findFirst();
     }
 
     /** Whether a binds file is named like a factory one, ignoring case - the Bind Editor warns of it. */

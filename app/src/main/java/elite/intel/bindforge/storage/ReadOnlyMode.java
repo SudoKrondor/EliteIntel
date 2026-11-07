@@ -92,7 +92,7 @@ public final class ReadOnlyMode {
         boolean first = false;
         synchronized (workingOut) {
             if (!known()) {
-                publish(workOut());
+                publish(findMissing());
                 first = true;
             }
         }
@@ -108,7 +108,7 @@ public final class ReadOnlyMode {
         missing = gone.stream().filter(row -> !removedBeforeKnown.contains(row.id())).toList();
     }
 
-    private List<InstallationRow> workOut() {
+    private List<InstallationRow> findMissing() {
         try {
             if (!everSetUp.exists()) return List.of();
             List<InstallationRow> gone = installations.get().stream().filter(reachable.negate()).toList();
@@ -123,6 +123,15 @@ public final class ReadOnlyMode {
             log.error("Could not work out whether an installation is missing; BindForge is not read only", e);
             return List.of();
         }
+    }
+
+    /**
+     * Works out whether BindForge is read only, if it has not been yet, so the screens' {@link #activeIfKnown()} and
+     * {@link #missingIfKnown()} have the answer - for a thread off the EDT that wants nothing else from it (Storage
+     * S13aR, D7).
+     */
+    public void workOut() {
+        missing();
     }
 
     /** Whether every change is off now. Works out {@link #missing()} first if it has not been - not for the EDT. */

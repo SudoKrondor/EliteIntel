@@ -1,16 +1,16 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.ButtonMapReader;
 import elite.intel.bindforge.devicefiles.ButtonMapWriter;
-import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
+import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.DeviceMappingsMerge;
 import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.io.DeviceReferenceRewrite;
+import elite.intel.bindforge.io.FileNames;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

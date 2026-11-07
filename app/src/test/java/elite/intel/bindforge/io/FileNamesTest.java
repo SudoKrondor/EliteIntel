@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The name rules of the game input configuration files, in their one home (review, 2026-10-29). */
@@ -84,6 +85,17 @@ class FileNamesTest {
         FileNames.OneSpelling<String> none = FileNames.oneSpelling(both, List.of());
         assertEquals(Map.of("Custom.4.2.binds", "upper"), none.files(), "the first in plain name order");
         assertEquals(List.of("custom.4.2.binds"), none.leftOut());
+    }
+
+    /** One file each, keyed ignoring case; two spellings of one file refused, never one dropped (Storage S13aR, D2). */
+    @Test
+    void oneFileEachRefusesTwoSpellings() {
+        Map<String, String> one = FileNames.oneFileEach(Map.of("LVWAP.buttonMap", "maps"));
+        assertEquals("maps", one.get("lvwap.buttonMap"), "looked up ignoring case");
+        assertEquals(List.of("LVWAP.buttonMap"), List.copyOf(one.keySet()), "the spelling given");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> FileNames.oneFileEach(Map.of("LVWAP.buttonMap", "upper", "lvwap.buttonMap", "lower")));
     }
 
     @Test

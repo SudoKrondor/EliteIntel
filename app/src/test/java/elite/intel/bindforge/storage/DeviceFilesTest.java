@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import static elite.intel.bindforge.storage.WorkingCopyTest.text;
 import static elite.intel.bindforge.storage.WorkingCopyTest.write;
@@ -40,5 +41,17 @@ class DeviceFilesTest {
 
         assertFalse(files.hasDeviceMappings());
         assertTrue(files.buttonMaps().containsKey("LVWAP.buttonMap"));
+    }
+
+    /**
+     * Two spellings of one map handed in are refused, as {@link ConfigurationFiles} refuses them - never one silently
+     * kept (Storage S13aR, D2).
+     */
+    @Test
+    void twoSpellingsOfOneMapAreRefused() {
+        Map<String, byte[]> both = Map.of("LVWAP.buttonMap", new byte[0], "lvwap.buttonMap", new byte[0]);
+
+        assertThrows(IllegalArgumentException.class, () -> new DeviceFiles(null, both));
+        assertThrows(IllegalArgumentException.class, () -> new InstallationFiles(1, "STEAM", root, null, both));
     }
 }

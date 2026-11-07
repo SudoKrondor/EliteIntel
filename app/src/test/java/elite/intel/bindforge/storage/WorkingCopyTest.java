@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -10,6 +11,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -119,6 +121,25 @@ class WorkingCopyTest {
         assertTrue(read.buttonMaps().isEmpty(), "all of the new set, none of the old");
         assertFalse(Files.exists(next));
         assertFalse(Files.exists(previous));
+    }
+
+    /**
+     * Two spellings of one file in the working copy - made by hand where the file system heeds case, never by
+     * BindForge - make it a working copy that cannot be read, so the newest backup is offered (Storage S13a; S13aR,
+     * D5).
+     */
+    @Test
+    void twoSpellingsOfOneFileCannotBeRead() throws IOException {
+        WorkingCopy workingCopy = new WorkingCopy(root);
+        workingCopy.write(set(BOM_BINDS, "<Mappings/>", "<LVWAP/>"));
+        write(root.resolve("Bindings/custom.4.2.binds"), "<a second spelling/>");
+        try (Stream<Path> files = Files.list(root.resolve("Bindings"))) {
+            Assumptions.assumeTrue(files.count() == 3, "the file system ignores case, so it holds one file");
+        }
+
+        IOException refused = assertThrows(IOException.class, workingCopy::read);
+
+        assertTrue(refused.getMessage().contains("two names for one file"), refused.getMessage());
     }
 
     @Test

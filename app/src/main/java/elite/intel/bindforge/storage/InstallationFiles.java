@@ -6,10 +6,8 @@ import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 
 /**
  * One installation's device files as first-time startup read them: its {@code DeviceMappings.xml} and every
@@ -24,12 +22,11 @@ import java.util.TreeMap;
 public record InstallationFiles(long installId, String storefront, Path root, byte[] deviceMappings,
                                 Map<String, byte[]> buttonMaps) {
 
+    /** @throws IllegalArgumentException if two map names are one file ({@link FileNames#oneFileEach}) */
     public InstallationFiles {
         Objects.requireNonNull(storefront, "storefront");
         Objects.requireNonNull(root, "root");
-        Map<String, byte[]> sorted = new TreeMap<>(FileNames.ONE_FILE);
-        sorted.putAll(buttonMaps);
-        buttonMaps = Collections.unmodifiableMap(sorted);
+        buttonMaps = FileNames.oneFileEach(buttonMaps);
     }
 
     /**

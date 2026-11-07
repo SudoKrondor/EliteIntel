@@ -78,6 +78,24 @@ class BackupsTest {
                 "each installation's folder is named, for a person reading the backup");
     }
 
+    /**
+     * A {@code devicemappings.xml} is the installation's file, found ignoring case and held under the game's spelling,
+     * which RESTORE reads (Storage S13a D5; S13aR, D5).
+     */
+    @Test
+    void aDeviceMappingsInAnotherCaseIsTakenUnderTheGamesSpelling() throws IOException {
+        Path controlSchemes = steam.resolve("Products/elite-dangerous-odyssey-64/ControlSchemes");
+        // WHY: deleted and written, not moved - on Windows a move that changes only case does nothing.
+        Files.delete(controlSchemes.resolve("DeviceMappings.xml"));
+        write(controlSchemes.resolve("devicemappings.xml"), "<Lower case/>");
+
+        Backup backup = backups("2026-10-24T18:30:00Z", sources()).backUpEverything(Backups.Kind.USER);
+
+        assertEquals("<Lower case/>", entry(backup, "Installations/1-STEAM/ControlSchemes/DeviceMappings.xml"));
+        assertNull(entry(backup, "Installations/1-STEAM/ControlSchemes/devicemappings.xml"));
+        assertTrue(backup.full());
+    }
+
     @Test
     void onlyTheGameInputConfigurationFilesAreTaken() throws IOException {
         write(bindings.resolve("StartPreset.start"), "old");

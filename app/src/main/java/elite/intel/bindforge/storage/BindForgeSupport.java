@@ -1,6 +1,5 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
@@ -9,6 +8,7 @@ import elite.intel.bindforge.devices.MissingControllers;
 import elite.intel.bindforge.devices.MyDevice;
 import elite.intel.bindforge.devices.MyDeviceList;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.storage.BindingsComparison.Differences;
@@ -185,10 +185,14 @@ public final class BindForgeSupport {
         return readings.firstSetupComplete() ? Optional.of(readings.set()) : Optional.empty();
     }
 
+    /**
+     * The bindings folder's files, one spelling of each - two spellings, only where the file system heeds case, are
+     * one file to the game (Storage S13a D3), and a {@link ConfigurationFiles} refuses them.
+     */
     private Map<String, byte[]> live() throws IOException {
         Path folder = readings.bindingsFolder();
         if (folder == null) throw new NoSuchFileException("no bindings folder is configured");
-        return BindingsCheck.readBindingsFolder(folder);
+        return FileNames.oneSpelling(BindingsCheck.readBindingsFolder(folder), List.of()).files();
     }
 
     private void writeState() throws IOException {
@@ -307,7 +311,7 @@ public final class BindForgeSupport {
 
     private void writePresetFile() throws IOException {
         Map<String, byte[]> live = live();
-        ConfigurationFiles set = new ConfigurationFiles(FileNames.oneSpelling(live, List.of()).files(), null, Map.of());
+        ConfigurationFiles set = new ConfigurationFiles(live, null, Map.of());
         Optional<String> presetFile = PresetEdits.presetFile(set);
         if (presetFile.isEmpty()) {
             line("none in the bindings folder, so the game is on a factory preset");
@@ -326,7 +330,7 @@ public final class BindForgeSupport {
 
     private static List<String> filesNaming(String bindName, Set<String> fileNames) {
         return fileNames.stream()
-                .filter(name -> FileNames.bindName(name).filter(bindName::equalsIgnoreCase).isPresent())
+                .filter(name -> FileNames.bindName(name).filter(found -> FileNames.sameFile(found, bindName)).isPresent())
                 .sorted().toList();
     }
 
@@ -424,7 +428,7 @@ public final class BindForgeSupport {
         Map<String, byte[]> live = live();
         Set<String> taken = new TreeSet<>();
         live.keySet().stream().filter(FileNames::isPresetFile).forEach(taken::add);
-        PresetEdits.sections(new ConfigurationFiles(FileNames.oneSpelling(live, List.of()).files(), null, Map.of())).ifPresent(sections -> {
+        PresetEdits.sections(new ConfigurationFiles(live, null, Map.of())).ifPresent(sections -> {
             for (BindingSection section : PresetEdits.SECTIONS) {
                 taken.addAll(filesNaming(sections.forSection(section), live.keySet()));
             }

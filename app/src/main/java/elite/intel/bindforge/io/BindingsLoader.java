@@ -94,11 +94,13 @@ public class BindingsLoader {
 
     /**
      * One rule for which file is a preset's, so the read and {@link #sectionsNotIn} cannot disagree. The preset's
-     * name is matched ignoring case, as the game matches it (Alan, 2026-11-07, Storage S13a D6).
+     * name is matched ignoring case, as the game matches it (Alan, 2026-11-07, Storage S13a D6), against the file's
+     * BindName as the rest of BindForge reads it ({@link FileNames#bindName}): {@code Custom.Old.4.2.binds} is BindName
+     * {@code Custom.Old}, not a file of preset {@code Custom}, and a name that is not {@code <name>.<major>.<minor>.binds}
+     * is no preset's file (Storage S13aR, D7).
      */
     private static boolean isFileOfPreset(String fileName, String presetName) {
-        String prefix = presetName + ".";
-        return fileName.regionMatches(true, 0, prefix, 0, prefix.length()) && fileName.endsWith(".binds");
+        return FileNames.bindName(fileName).filter(name -> FileNames.sameFile(name, presetName)).isPresent();
     }
 
     /**

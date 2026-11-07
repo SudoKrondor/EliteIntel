@@ -1,6 +1,5 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
@@ -8,6 +7,7 @@ import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.GameInstallationProvider;
 import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeActivationManager;
 import elite.intel.eventbus.GameEventBus;

@@ -285,7 +285,7 @@ public final class BindingsComparison {
     private static Map<String, byte[]> paired(Map<String, byte[]> workingCopy, Map<String, byte[]> found) {
         FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(found, workingCopy.keySet());
         if (!one.leftOut().isEmpty()) {
-            log.info("The bindings folder holds two spellings of one file; compared without: {}", one.leftOut());
+            log.warn("The bindings folder holds two spellings of one file; compared without: {}", one.leftOut());
         }
         return one.files();
     }

@@ -152,6 +152,30 @@ class BackupContentsTest {
         assertThrows(BackupContents.NotABackupException.class, () -> BackupContents.read(temp.resolve("gone.zip")));
     }
 
+    /**
+     * A backup taken where the file system heeds case can hold two spellings of one file: the first in name order is
+     * restored, binds file and {@code .buttonMap} alike, and the backup still holds the other (Storage S13a D3; S13aR,
+     * D5).
+     */
+    @Test
+    void twoSpellingsOfOneFileRestoreTheFirstInNameOrder() throws IOException {
+        Map<String, String> entries = new LinkedHashMap<>();
+        entries.put(Backups.INFO_FILE, "Taken: x\n");
+        entries.put("Bindings/custom.4.2.binds", "<Lower/>");
+        entries.put("Bindings/Custom.4.2.binds", "<Upper/>");
+        entries.put("Installations/1-STEAM/ControlSchemes/DeviceMappings.xml", "<Steam/>");
+        entries.put("Installations/1-STEAM/ControlSchemes/DeviceButtonMaps/lvwap.buttonMap", "<Lower/>");
+        entries.put("Installations/1-STEAM/ControlSchemes/DeviceButtonMaps/LVWAP.buttonMap", "<Upper/>");
+
+        BackupContents contents = BackupContents.read(zip("two-spellings.zip", entries));
+
+        assertEquals(List.of("Custom.4.2.binds"), List.copyOf(contents.bindings().keySet()));
+        assertEquals("<Upper/>", text(contents.bindings().get("Custom.4.2.binds")));
+        InstallationFiles steam = contents.installations().getFirst();
+        assertEquals(List.of("LVWAP.buttonMap"), List.copyOf(steam.buttonMaps().keySet()));
+        assertEquals("<Upper/>", text(steam.buttonMaps().get("LVWAP.buttonMap")));
+    }
+
     /** A backup with only one half is still read - RESTORE decides whether it can be restored. */
     @Test
     void aBackupWithOnlyBindingsSaysItHasNoDeviceFiles() throws IOException {

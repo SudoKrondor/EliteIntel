@@ -1,7 +1,7 @@
 package elite.intel.bindforge.storage;
 
-import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.io.AtomicFiles;
 import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;

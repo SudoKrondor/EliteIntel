@@ -66,8 +66,7 @@ public final class BindNameCatalog {
 
         List<BindNameEntry> entries = byName.values().stream()
                 .map(gathered -> new BindNameEntry(gathered.name, gathered.origin, gathered.files, gathered.shadowsFactory))
-                .sorted(Comparator.comparing(BindNameEntry::bindName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(BindNameEntry::bindName))
+                .sorted(Comparator.comparing(BindNameEntry::bindName, FileNames.ONE_FILE))
                 .toList();
         return new BindNameList(entries, notOffered);
     }

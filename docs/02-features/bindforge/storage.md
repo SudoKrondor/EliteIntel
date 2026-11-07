@@ -272,7 +272,9 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     names, a preset line naming a binds file, the device files, the plain `.binds` of S13b.
   - **BindForge never leaves two files whose names differ only in case.** A file is saved under whatever spelling it is
     given - the user's spelling is kept, never forced to one case (Alan, 2026-11-07); if a file of the same name in another case is already there, it is replaced, and the spelling saved is the
-    one left - written as a new file and the old spelling removed, the way rule 7 renames.
+    one left - the file there is renamed to the spelling given, then written. *A rename that fails* is reported and the
+    file written under its old spelling, never as a second file beside it; the next write tries the rename again (Alan,
+    2026-11-07, Storage S13aR D1).
   - **Only the name ignores case.** The kinds - `.binds`, `.buttonMap`, `StartPreset.N.start` - are matched exactly:
     the game needs the preset file's name, and players do not rename these (Alan, 2026-11-07).
 
@@ -292,12 +294,18 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     `devicemappings.xml` would otherwise read as missing, and the write would put a second file beside it. The write
     leaves the game's spelling.
   - **D6: Elite-Intel's own loader** (`BindingsLoader`, the keys the assistant presses) finds the file a preset line
-    names ignoring case too.
+    names ignoring case too. *Since Storage S13aR (Alan, 2026-11-07, D7)* it reads a file's BindName as the rest of
+    BindForge does (`FileNames.bindName`): `Custom.Old.4.2.binds` is BindName `Custom.Old`, not a file of preset
+    `Custom`, and a name that is not `<name>.<major>.<minor>.binds` - a plain `Custom.binds`, a Windows copy
+    `Custom.4.2 (2).binds` - is no preset's file, as [principles.md *Words*](principles.md#words) defines a binds
+    file. Until then the loader matched any name starting `<preset>.`.
   - *Decided while building:* a file's `PresetName` that differs from its file name only in case is no mismatch - Alan's
     test file, renamed to lower case with its `PresetName` as it was, is offered and loaded. A set that holds two
     spellings of one file is refused; a working copy holding two, made by hand, cannot be read, so the newest backup is
     offered (rule 10). On Windows a move between two spellings does nothing, so a respelling goes through a name of its
-    own (`.respelling`) in two steps.
+    own (`.respelling`) in two steps. A set's file names are held one file each wherever a set is built - the working
+    copy's, one installation's device files, first setup's - and two spellings handed in are refused, never one kept
+    (Alan, 2026-11-07, Storage S13aR D2, `FileNames.oneFileEach`).
 
   Built in Storage S13a: `FileNames.sameFile` / `ONE_FILE` / `oneSpelling`; `ConfigurationFiles` keyed ignoring case;
   the check's pairing in `BindingsComparison`; `LiveCopies.Writing.writeAll` renaming another spelling to the set's;
