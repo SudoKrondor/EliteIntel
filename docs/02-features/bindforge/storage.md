@@ -263,9 +263,21 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   only in line endings costs nothing, and what counts as a change is the check's question (rule 14), not the write's.
 - **A missing bindings folder is reported, never created** — creating it would put the files where the game never
   reads them. A missing `DeviceButtonMaps` folder inside an installation is created.
+- **File names are matched ignoring case, on every platform: two names that differ only in case are one file**
+  (Krondor and Alan, 2026-11-07, settling Storage S13's D3). The game reads file names the Windows way, under Proton on
+  Linux too: Alan renamed a binds file (`dualvirpildawntreadercopy.4.2.binds`), `DeviceMappings.xml` and `LVWAP.buttonMap` to
+  lower case, and the game loaded them and wrote its own edits back (2026-11-06). Linux itself allows `Custom.4.2.binds` and
+  `custom.4.2.binds` side by side, and Proton then breaks (Krondor). So:
+  - **Every name match ignores case** - the check pairing a live file with the working copy's, the working copy's own
+    names, a preset line naming a binds file, the device files, the plain `.binds` of S13b.
+  - **BindForge never leaves two files whose names differ only in case.** A file is saved under whatever spelling it is
+    given - the user's spelling is kept, never forced to one case (Alan, 2026-11-07); if a file of the same name in another case is already there, it is replaced, and the spelling saved is the
+    one left - written as a new file and the old spelling removed, the way rule 7 renames.
+  - Built in Storage S13a.
 - **A `.buttonMap` the working copy lacks is removed**, except Frontier's shipped `VPCPanel` and `VPCThrottle`. An old
-  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is the same file on Windows and is kept as it; on a
-  file system that heeds case it is a file of its own, and goes.
+  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is that same file (the case rule above). **Until
+  Storage S13a** it is kept as it is on Windows and removed on a file system that heeds case, the kept spelling written
+  beside it.
 - **A working copy with no `DeviceMappings.xml` leaves each installation's alone** (review, 2026-10-24). Without that
   file the game loads no bindings at all ([overview](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08)),
   so the write never removes one — unlike a `.buttonMap`, which holds only labels and is removed when the working copy
