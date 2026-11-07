@@ -48,8 +48,9 @@ public final class FirstTimeStartupFlow {
      * when it cannot be read (storage.md rule 10; Alan, 2026-10-25). On the EDT.
      * <p>
      * <strong>Nothing is offered while BindForge is read only</strong> (Storage S14a): first-time startup, RESTORE and
-     * the check all write, and every write is off. The bar names the missing installations; after OVERRIDE the BindForge
-     * tab calls this again, so what was held back runs then (Alan, 2026-11-05, S14a Q3).
+     * the check all write, and every write is off. The bar names the missing installations; when read only ends - OVERRIDE,
+     * or the last missing installation removed - the BindForge tab calls this again, so what was held back runs then
+     * (Alan, 2026-11-05, S14a Q3; 2026-11-06, S14c).
      */
     public void offerIfNeeded() {
         if (!running.compareAndSet(false, true)) return;

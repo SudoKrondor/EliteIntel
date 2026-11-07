@@ -13,9 +13,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -40,9 +37,6 @@ public final class ReadOnlyMode {
 
     private static final Logger log = LogManager.getLogger(ReadOnlyMode.class);
 
-    /** The warning at Elite-Intel start, in the user's language; {@code {0}} names the missing installations. */
-    public static final String SPEECH_KEY = "speech.bindforge.readOnly";
-
     private static final ReadOnlyMode STORED = new ReadOnlyMode(
             () -> new InstallationRegistry(GameInstallationProvider.forThisPlatform(
                     PlayerSession.getInstance().getBindingsDir())).currentWithStartupScan(),
@@ -60,7 +54,6 @@ public final class ReadOnlyMode {
     private final EverSetUp everSetUp;
     private final Predicate<InstallationRow> reachable;
     private final Runnable changed;
-    private final AtomicBoolean warned = new AtomicBoolean();
     /**
      * One work-out at a time, held across the disk and the database. Apart from this object's own monitor because the
      * EDT takes that one: it must never wait on the work (a stalled drive is what this class is for).
@@ -173,23 +166,5 @@ public final class ReadOnlyMode {
         }
         log.info("A missing installation was removed; installations still missing: {}", missingIfKnown().size());
         changed.run();
-    }
-
-    /**
-     * The warning at Elite-Intel start, once a run, on a thread of its own: {@code warn} is handed the missing
-     * installations when BindForge is read only.
-     */
-    public void warnInBackground(Consumer<List<InstallationRow>> warn) {
-        warnOnce(warn, task -> Thread.ofPlatform().name("BindForge-ReadOnlyCheck").start(task));
-    }
-
-    /**
-     * {@link #warnInBackground}, on the executor given.
-     */
-    void warnOnce(Consumer<List<InstallationRow>> warn, Executor on) {
-        if (!warned.compareAndSet(false, true)) return;
-        on.execute(() -> {
-            if (active()) warn.accept(missing());
-        });
     }
 }

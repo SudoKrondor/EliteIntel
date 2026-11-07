@@ -63,8 +63,6 @@ public final class ApplyBar extends JPanel {
     private final JLabel status = AppTheme.hudReadoutValue(" ", HudPalette.HUD_COLOR_ROLE_WARNING);
     private final JButton create = makeButton(getText("bindings.create.button"));
     private final JButton override = makeButton(getText("bindings.readOnly.override"));
-    private Runnable overridden = () -> {
-    };
     private final RefreshCoalescer createRefresh = new RefreshCoalescer();
     private Create.State createState = Create.State.NOT_SET_UP;
     private Consumer<Create.State> createListener = state -> {
@@ -97,11 +95,6 @@ public final class ApplyBar extends JPanel {
         createListener = listener;
         listener.accept(createState);
         refreshCreate();
-    }
-
-    /** Runs {@code then} on the EDT once the user has overridden read only - the BindForge tab offers what it held back. */
-    public void onOverride(Runnable then) {
-        overridden = then;
     }
 
     /**
@@ -205,8 +198,9 @@ public final class ApplyBar extends JPanel {
                 getText("button.cancel"))) {
             return;
         }
+        // WHY no follow-up here: the BindForge tab hears read only end, whether by OVERRIDE or Remove, and offers what
+        // it held back (Storage S14c).
         ReadOnlyMode.stored().override();
-        overridden.run();
     }
 
     /** The leave prompt, asking over {@code parent}, whose Apply is this bar's APPLY. */

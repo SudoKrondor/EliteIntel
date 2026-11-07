@@ -176,42 +176,6 @@ class ReadOnlyModeTest {
         assertEquals(List.of(), mode.missing());
     }
 
-    /**
-     * Q6 (Alan, 2026-11-05): the warning at start names what is missing, and is said once a run.
-     */
-    @Test
-    void theWarningNamesTheMissingOnceARun() {
-        ReadOnlyMode mode = mode(true, () -> List.of(STEAM, EPIC));
-        List<List<InstallationRow>> warned = new ArrayList<>();
-
-        mode.warnOnce(warned::add, Runnable::run);
-        mode.warnOnce(warned::add, Runnable::run);
-
-        assertEquals(List.of(List.of(EPIC)), warned);
-    }
-
-    @Test
-    void withNothingMissingThereIsNoWarning() {
-        ReadOnlyMode mode = mode(true, () -> List.of(STEAM));
-        List<List<InstallationRow>> warned = new ArrayList<>();
-
-        mode.warnOnce(warned::add, Runnable::run);
-
-        assertEquals(List.of(), warned);
-    }
-
-    @Test
-    void onceOverriddenThereIsNoWarning() {
-        ReadOnlyMode mode = mode(true, () -> List.of(STEAM, EPIC));
-        List<List<InstallationRow>> warned = new ArrayList<>();
-        mode.active();
-        mode.override();
-
-        mode.warnOnce(warned::add, Runnable::run);
-
-        assertEquals(List.of(), warned);
-    }
-
     @Test
     void aWorkingCopyThatCannotBeLookedForIsNotReadOnly() {
         ReadOnlyMode mode = new ReadOnlyMode(() -> List.of(STEAM, EPIC), () -> {

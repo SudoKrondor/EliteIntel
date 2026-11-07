@@ -162,6 +162,24 @@ Built in Storage S14a as `bindforge.storage.ReadOnlyMode`, `Edits.ReadOnlyExcept
 - **The *changed outside* line is not said while read only.** The read-only warning covers it, and the check it points
   to is off.
 
+**Settled with Storage S14c's sources (Alan, 2026-11-06)** - the notice at Elite-Intel start:
+
+- **Spoken and logged, a line each, no dialog**, once a run, in a fixed order: read only; changed outside BindForge or a
+  newer version (rule 15), not while read only; a binds file named like a factory one. Nothing is blocked or asked.
+- **The binding warnings stay Elite-Intel's** (`KeyBindCheck`: missing bindings, conflicts, reserved keys), said where
+  they were, before the notice.
+- **The missing controller stays the Alias Designer's**, said the first time it is opened in a run
+  ([alias-designer.md, A13](alias-designer.md#a-missing-controller-is-worth-exactly-one-warning--settled-2026-09-24)).
+- **A binds file named like a factory one is judged on the working copy**, once one exists, against the reachable
+  installations' factory files - what the Bind Editor warns of. Before first-time startup nothing is said: the live
+  files are not yet BindForge's.
+- *Decided while building:* that line is said while read only too - it names a file, not a write, and the read-only
+  line comes first. Two missing installations from one store are named once (*Steam*, not *Steam, Steam*).
+
+Built in Storage S14c as `bindforge.storage.StartupNotice`, started by `AppController` after `KeyBindCheck`; it replaces
+`StartupCheck.runInBackground` and `ReadOnlyMode.warnInBackground`. Read only ending - OVERRIDE or Remove - is heard by
+`BindingsTabPanel`, which runs `FirstTimeStartupFlow.offerIfNeeded`; `ApplyBar.onOverride` is gone.
+
 Built in Storage S14b: a view-only flag on `AssignKeyboardBindingDialog` and `AssignAxisDialog`, `OffCell` for the grid's
 inert actions, `Opening.readOnly` on `DeviceEditorDialog`, and `BindForgeReadOnlyChangedEvent` heard by
 `BindingProfilePanel` and `AliasDesignerController`.
@@ -546,7 +564,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to
-    check them."* Nothing is decided until the user opens BindForge (2026-10-23, Alan).
+    check them."* Nothing is decided until the user opens BindForge (2026-10-23, Alan). *Since Storage S14c
+    (2026-11-06) it is a line of the notice at start, and is not said while BindForge is read only.*
 
 ## Create — a new player's first binds file
 
