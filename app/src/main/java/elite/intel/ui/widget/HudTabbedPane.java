@@ -213,9 +213,15 @@ public class HudTabbedPane extends JTabbedPane {
         protected void layoutLabel(int tabPlacement, FontMetrics metrics, int tabIndex,
                                    String title, Icon icon, Rectangle tabRect, Rectangle iconRect,
                                    Rectangle textRect, boolean isSelected) {
-            super.layoutLabel(tabPlacement, metrics, tabIndex,
-                    title != null ? title.toUpperCase() : title,
-                    icon, tabRect, iconRect, textRect, isSelected);
+            String upper = title != null ? title.toUpperCase() : title;
+            super.layoutLabel(tabPlacement, metrics, tabIndex, upper, icon, tabRect, iconRect, textRect, isSelected);
+
+            // WHY: the base class clips the title as written against this box, measured here in capitals, and a word can
+            // be wider in lower case: "A pé (69)" lost its count in Portuguese with room to spare. The capitals are what
+            // paintText draws, so while they fit, nothing may be clipped.
+            if (upper != null && metrics.stringWidth(upper) <= textRect.width) {
+                textRect.width = Math.max(textRect.width, metrics.stringWidth(title));
+            }
 
             if (!mainNavigation && !section) return;
 

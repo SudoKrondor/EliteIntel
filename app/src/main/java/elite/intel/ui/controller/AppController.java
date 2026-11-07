@@ -46,6 +46,7 @@ import javax.swing.Timer;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 public class AppController {
@@ -62,6 +63,9 @@ public class AppController {
     });
 
     private final Object lifecycleLock = new Object();
+    private final AtomicBoolean audioCalibrationRunning = new AtomicBoolean(false);
+    // Read and written only under lifecycleLock.
+    private boolean sleepNoticeHeldBack = false;
     // Written only under lifecycleLock; volatile so the off-lock reads (e.g. onLlmConnectionStatus on the
     // EDT) observe the latest transition.
     private volatile ServicesStateEvent.State serviceState = ServicesStateEvent.State.STOPPED;
@@ -136,29 +140,51 @@ public class AppController {
 
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            appendToLog(StringUtls.localizedSpeech("log.audioCalibrationStarting"));
-            EarsInterface ears = services.get(ServiceType.EARS).get();
-            if (ears == null) return;
-            ears.stop();
-            new Thread(() -> {
+        if (!audioCalibrationRunning.compareAndSet(false, true)) return;
+        new Thread(this::runAudioCalibration, "AudioCalibrator-Thread").start();
+    }
+
+    /**
+     * Stops voice input, calibrates and restarts it, all off the EDT: the capture line, the prompts and the speech
+     * model together take about 20 seconds. The lifecycle lock is held throughout so no restart or service stop can
+     * pull voice input out from under the run.
+     */
+    private void runAudioCalibration() {
+        try {
+            synchronized (lifecycleLock) {
+                if (!isServiceRunning()) return;
+                ServiceHolder holder = services.get(ServiceType.EARS);
+                EarsInterface ears = holder == null ? null : holder.get();
+                if (ears == null) return;
+
+                appendToLog(StringUtls.localizedSpeech("log.audioCalibrationStarting"));
+                ears.stop();
+                boolean calibrated = calibrateAudio();
                 try {
-                    Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
-                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
-                    AudioCalibrator.calibrateRMS(format, inputMixerInfo);
-                    SwingUtilities.invokeLater(() -> {
-                        ears.start();
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.audioCalibrationComplete")));
-                    });
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> {
-                        ears.start();
-                        appendToLog(StringUtls.localizedSpeech("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.audioCalibrationFailed")));
-                    });
+                    ears.start();
+                } catch (Exception e) {
+                    log.error("Failed to restart STT service after calibration", e);
+                    appendToLog(StringUtls.localizedSpeech("log.sttRestartFailed", String.valueOf(e.getMessage())));
                 }
-            }, "AudioCalibrator-Thread").start();
-        });
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse(
+                        calibrated ? "speech.audioCalibrationComplete" : "speech.audioCalibrationFailed")));
+            }
+        } finally {
+            audioCalibrationRunning.set(false);
+            UiBus.publish(new AudioCalibrationFinishedEvent());
+        }
+    }
+
+    private boolean calibrateAudio() {
+        try {
+            Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
+            AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
+            AudioCalibrator.calibrateRMS(format, inputMixerInfo);
+            return true;
+        } catch (Exception e) {
+            appendToLog(StringUtls.localizedSpeech("log.audioCalibrationFailed", String.valueOf(e.getMessage())));
+            return false;
+        }
     }
 
     @Subscribe
@@ -224,6 +250,9 @@ public class AppController {
             brain.stop();
             brain.start();
             appendToLog("LLM service restarted");
+            if (sleepNoticeHeldBack) {
+                announceSleepModeIfAsleep();
+            }
             Timer checkTimer = new Timer(2000, e -> connectionCheck());
             checkTimer.setRepeats(false);
             checkTimer.start();
@@ -375,14 +404,19 @@ public class AppController {
      * indistinguishable from a broken one, so the warning must not depend on the path it is warning about.
      * <p>
      * Silent while push-to-talk is on, where the mapped button already gates the microphone and the stored
-     * sleep flag is not consulted at all.
+     * sleep flag is not consulted at all. Held back while no model is set up, since the phrase it names would only
+     * be answered with what is missing, and said when one is ({@link #restartBrainService}): a new install starts
+     * asleep, so a commander who has just set up a model would otherwise be ignored with no word why.
      */
     private void announceSleepModeIfAsleep() {
         if (systemSession.isPushToTalkEnabled() || !systemSession.isSleeping()) {
             return;
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
-                StringUtls.localizedSpeech("speech.sleepModeStartupNotice")));
+        sleepNoticeHeldBack = SetupCheck.llmGapSpeechKey().isPresent();
+        if (sleepNoticeHeldBack) {
+            return;
+        }
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.sleepModeStartupNotice")));
         appendToLog("Starting in sleep mode: voice input is ignored until a wake phrase or the WAKE UP button.");
     }
 

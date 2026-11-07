@@ -53,8 +53,7 @@ cannot be checked out from the first):
 
 **Git refuses a switch over uncommitted changes to a file that differs between the branches**, so commit or
 stash before each switch. A spec edit made before the code is written rides across in a stash.
-**Never `git add -A` on the foundation branch:** `V1.1-Release`'s `.gitignore` does not cover the V1.2 drafts
-(`commit-message.txt`, `version-diff.txt`, `scripts/__pycache__/`), and F1 shipped one by mistake. Alan's
+**Never `git add -A` on the foundation branch:** `V1.1-Release`'s `.gitignore` does not cover the V1.2 drafts (`change-summary.txt`, `version-diff.txt`, `scripts/__pycache__/`), and F1 shipped one by mistake. Alan's
 `.git/info/exclude` now lists them.
 
 **A slice is done when Krondor has merged it**, not when its tests pass. Until then it is *with Krondor*, and the
@@ -225,7 +224,7 @@ next slice needs.*
 - **2026-10-12 — F1 built, with Krondor.** `readStartPresetSections` and `findLiveStartPresetFile` beside the
   unchanged one-line read; the five read rules, and the single-line rule tightened by the review, are in
   [preset-editor.md](../02-features/bindforge/preset-editor.md#how-the-four-lines-are-read--settled-2026-10-12-alan-foundation-f1).
-  **Found:** the worktree was dropped for branch switching (above); a stray `commit-message.txt` rode in on
+  **Found:** the worktree was dropped for branch switching (above); a stray `change-summary.txt` rode in on
   `git add -A` and took two commits to remove; the review's pre-existing issues are under Known issues.
   Preset Editor and C7 wait for the merge-up. **F2 needs:** Alan's answers to its two questions, first.
 

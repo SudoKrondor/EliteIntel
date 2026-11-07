@@ -128,7 +128,7 @@ public class ParakeetSTTImpl implements EarsInterface {
 
         Double high = systemSession.getRmsThresholdHigh();
         Double low = systemSession.getRmsThresholdLow();
-        boolean calibrationWasStored = high != 0 && low != 0;
+        boolean calibrationWasStored = AudioCalibrator.isCalibrated(high);
         if (!calibrationWasStored) {
             RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(format, inputMixerInfo);
             this.RMS_THRESHOLD_HIGH = cal.getRmsHigh();
@@ -161,7 +161,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         processingThread = new Thread(this::captureLoop);
         processingThread.start();
 
-        if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
+        if (!AudioCalibrator.isCalibrated(RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse("speech.audioCalibrationRequired")));
         } else if (!AudioCalibrator.gateClearsNoiseFloor(NOISE_FLOOR, RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));

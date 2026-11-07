@@ -16,9 +16,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class HudMicHealthHintTest {
 
     @ParameterizedTest(name = "floor {0}, gate {1}")
-    @CsvSource({"0, 0", "0, 500", "100, 0"})
-    void noThresholdsMeansNoCalibration(double floor, double gate) {
+    @CsvSource({"0, 0", "100, 0"})
+    void noGateMeansNoCalibration(double floor, double gate) {
         assertEquals(UNCALIBRATED, HudMicHealthHint.judge(floor, gate));
+    }
+
+    @Test
+    void aFloorOfZeroFromAGatedMicrophoneIsHealthy() {
+        assertEquals(HEALTHY, HudMicHealthHint.judge(0, 500));
     }
 
     @ParameterizedTest(name = "floor {0}, gate {1}")

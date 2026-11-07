@@ -42,9 +42,8 @@ import static elite.intel.ui.theme.HudPalette.*;
 /**
  * The "Binding Profile" sub-tab of BIND FORGE - the Bind Editor's shell: the EDITING line naming the binds file shown,
  * the search field and the modes under it. The file is chosen in File Manager (Storage S15). Extracted from the former
- * monolithic {@code BindingsTabPanel}. The modes
- * are Game Mode ({@link GameModePanel}), Anomalies (its view of the rows in conflict) and Settings
- * ({@link SettingsModePanel}).
+ * monolithic {@code BindingsTabPanel}. One tab row holds the modes: the game's sections ({@link GameModePanel}, All to
+ * On-Foot), Anomalies (its view of the rows in conflict) and Settings ({@link SettingsModePanel}).
  * <p>
  * <strong>It shows and changes the edits not applied</strong> (Storage S5, 2026-10-28): any binds file in the working
  * copy loads, and capture SAVE, CLEAR and Auto-Assign are edits that light the one APPLY / DISCARD bar above
@@ -71,7 +70,13 @@ public class BindingProfilePanel extends JPanel {
     private final GameModePanel gameMode;
     private final SettingsModePanel settingsMode;
     private JTabbedPane modeTabs;
-    private static final int ANOMALIES_TAB = 1;
+    /**
+     * Where the Anomalies tab sits in {@link #modeTabs}, after the section tabs.
+     */
+    private int anomaliesTab;
+    private static final String CARD_SECTIONS = "sections";
+    private static final String CARD_ANOMALIES = "anomalies";
+    private static final String CARD_SETTINGS = "settings";
 
     /** The binds file shown, by file name - {@code null} when none could be read. */
     private volatile String loadedFile;
@@ -95,7 +100,7 @@ public class BindingProfilePanel extends JPanel {
             }
         };
         gameMode = new GameModePanel(this, runner, count -> {
-            if (modeTabs != null) modeTabs.setTitleAt(ANOMALIES_TAB, getText("bindings.mode.anomalies", count));
+            if (modeTabs != null) modeTabs.setTitleAt(anomaliesTab, getText("bindings.mode.anomalies", count));
         });
         settingsMode = new SettingsModePanel(runner);
         buildUi();
@@ -159,12 +164,44 @@ public class BindingProfilePanel extends JPanel {
         header.add(hintAndPacingRow(), BorderLayout.CENTER);
         add(header, BorderLayout.NORTH);
 
-        modeTabs = AppTheme.makeSectionTabs();
-        modeTabs.addTab(getText("bindings.mode.gameMode"), gameMode);
-        modeTabs.addTab(getText("bindings.mode.anomalies", 0), gameMode.anomaliesView());
-        modeTabs.addTab(getText("bindings.mode.settings"), settingsMode);
-        add(modeTabs, BorderLayout.CENTER);
+        add(modeArea(), BorderLayout.CENTER);
         add(footer(), BorderLayout.SOUTH);
+    }
+
+    /**
+     * The one tab row - the sections, then Anomalies and Settings - over what the chosen tab shows.
+     * <p>
+     * WHY the tabs are empty and a card panel holds the views: a component sits on one tab only, and all five section
+     * tabs show the same tables, narrowed.
+     */
+    private JPanel modeArea() {
+        modeTabs = AppTheme.makeSectionTabs();
+        gameMode.addSectionTabs(modeTabs);
+        anomaliesTab = modeTabs.getTabCount();
+        modeTabs.addTab(getText("bindings.mode.anomalies", 0), transparentPanel(null));
+        modeTabs.addTab(getText("bindings.mode.settings"), transparentPanel(null));
+
+        CardLayout cards = new CardLayout();
+        JPanel views = transparentPanel(cards);
+        views.add(gameMode, CARD_SECTIONS);
+        views.add(gameMode.anomaliesView(), CARD_ANOMALIES);
+        views.add(settingsMode, CARD_SETTINGS);
+        modeTabs.addChangeListener(e -> {
+            int tab = modeTabs.getSelectedIndex();
+            cards.show(views, sectionTabChosen() ? CARD_SECTIONS : tab == anomaliesTab ? CARD_ANOMALIES : CARD_SETTINGS);
+        });
+
+        JPanel area = transparentPanel(new BorderLayout());
+        area.add(modeTabs, BorderLayout.NORTH);
+        area.add(views, BorderLayout.CENTER);
+        return area;
+    }
+
+    /**
+     * The section tabs come first in the row, so everything before Anomalies is one.
+     */
+    private boolean sectionTabChosen() {
+        return modeTabs.getSelectedIndex() < anomaliesTab;
     }
 
     /**
@@ -181,7 +218,7 @@ public class BindingProfilePanel extends JPanel {
                 controls);
         footer.setBorder(hudFooterBorder());
         wireSearch(footer.textField());
-        modeTabs.addChangeListener(e -> controls.setVisible(modeTabs.getSelectedComponent() == gameMode));
+        modeTabs.addChangeListener(e -> controls.setVisible(sectionTabChosen()));
         return footer;
     }
 

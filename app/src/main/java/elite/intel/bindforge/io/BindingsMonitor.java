@@ -2,6 +2,7 @@ package elite.intel.bindforge.io;
 
 import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.rules.BindingConflictRules;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyBindCheck;
@@ -335,6 +336,18 @@ public class BindingsMonitor {
      */
     public File resolveActiveBindsFile() throws IOException {
         return currentBindsFile != null ? currentBindsFile : bindingsLoader.getLatestBindsFile();
+    }
+
+    /**
+     * The sections of the game's controls on another preset than the file parsed - see
+     * {@link BindingsLoader#sectionsNotIn}. Empty when nothing has been parsed, which
+     * {@code SetupCheck} already speaks about.
+     */
+    public Map<BindingSection, String> sectionsNotRead() {
+        File read = currentBindsFile;
+        return read == null
+                ? Map.of()
+                : bindingsLoader.sectionsNotIn(PlayerSession.getInstance().getBindingsDir(), read);
     }
 
     /**

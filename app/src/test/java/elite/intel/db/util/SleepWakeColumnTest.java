@@ -42,7 +42,6 @@ class SleepWakeColumnTest {
     @Test
     void sleepStateSurvivesTheRoundTrip() {
         SystemSession session = SystemSession.getInstance();
-        assertFalse(session.isSleeping(), "the test database starts awake");
 
         session.setSleeping(true);
         assertTrue(session.isSleeping());

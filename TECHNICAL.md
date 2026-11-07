@@ -160,7 +160,7 @@ On top of the built-in gate sits Sleep/Wake, driven by the SLEEP / WAKE UP butto
 - **"listen
   up"** followed by a request is a one-time bypass: the prefix is stripped and the request runs, without waking her for good.
 
-The state is remembered between runs, so if you shut down asleep the app says so out loud on the next start rather than sitting there silently ignoring you. Sleep/Wake is unavailable while push to talk is on:
+A new install starts asleep, so a loud room cannot set her off while you are still setting up, and "wake up" works before any language model is configured. The state is remembered between runs, so if you shut down asleep the app says so out loud on the next start rather than sitting there silently ignoring you. Sleep/Wake is unavailable while push to talk is on:
 the mapped button already gates the microphone, so there is nothing left for it to gate.
 
 ### No Game Memory Access

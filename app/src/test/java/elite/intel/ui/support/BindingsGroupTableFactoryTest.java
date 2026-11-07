@@ -30,7 +30,7 @@ class BindingsGroupTableFactoryTest {
 
     @Test
     void aClickOnClearRunsIt() {
-        JTable table = table("CLEAR");
+        JTable table = table(new BindingsGroupTableFactory.RowActionCell(BindingsGroupTableFactory.RowAction.CLEAR, "CLEAR"));
 
         click(table);
 
@@ -59,7 +59,7 @@ class BindingsGroupTableFactoryTest {
     private JTable table(Object action) {
         List<Object[]> rows = new ArrayList<>();
         rows.add(new Object[]{CONTROL, "W", "-", "", action});
-        JScrollPane pane = factory.groupTable(rows, new JScrollPane(), BindingsGroupTableFactory.RowAction.CLEAR,
+        JScrollPane pane = factory.groupTable(rows, new JScrollPane(),
                 "ACTION", "PRIMARY", "SECONDARY", "AI ACCESS", "CLEAR");
         JTable table = (JTable) pane.getViewport().getView();
         table.setSize(500, table.getRowHeight());

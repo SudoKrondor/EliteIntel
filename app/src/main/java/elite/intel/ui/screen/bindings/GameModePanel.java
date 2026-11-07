@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -34,8 +35,8 @@ import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * The Bind Editor's Game Mode: the Used/Missing Bindings tables, split by the game's sections, with conflict detection,
- * hover callouts, the view filters and Auto-Assign VEGA Required Binds. {@link BindingProfilePanel}, the shell, reads the
+ * The Bind Editor's Game Mode: the bindings tables, split by the game's sections, with conflict detection, hover
+ * callouts, the view filters and Auto-Assign VEGA Required Binds. {@link BindingProfilePanel}, the shell, reads the
  * binds file and hands over what it found ({@link #show}); this panel shows it and turns what the commander does into
  * edits not applied.
  * <p>
@@ -117,12 +118,17 @@ class GameModePanel extends JPanel {
     private final EditRunner editRunner;
     private final BindingSaveResultPresenter saveResultPresenter;
 
-    private JPanel usedBindingsPanel;
-    private JPanel missingBindingsPanel;
-    private JScrollPane usedBindingsScrollPane;
-    private JScrollPane missingBindingsScrollPane;
-    private JTabbedPane tabs;
+    private JPanel bindingsPanel;
+    private JScrollPane bindingsScrollPane;
+    /**
+     * The shell's tab row, whose first tabs are {@link #SECTION_TABS}.
+     */
     private JTabbedPane sectionTabs;
+    /**
+     * The section the tables are narrowed to, by its place in {@link #SECTION_TABS}. Kept apart from the row's selection,
+     * which may be on another mode.
+     */
+    private int selectedSection;
     private JPanel anomaliesPanel;
     private JScrollPane anomaliesScrollPane;
     /**
@@ -132,6 +138,10 @@ class GameModePanel extends JPanel {
     private JButton fixAllButton;
     private JComponent footerControls;
     private JCheckBox conflictsOnlyCheck;
+    /**
+     * Narrows the grid to the controls with nothing bound, on the keyboard or any controller.
+     */
+    private JCheckBox unassignedOnlyCheck;
     /**
      * Narrows the grid to the controls Vega uses - the ones with something in the AI ACCESS column.
      */
@@ -190,31 +200,9 @@ class GameModePanel extends JPanel {
         setOpaque(false);
         setLayout(new BorderLayout(2, SCREEN_TOP_GAP));
 
-        usedBindingsPanel = groupedTablesPanel();
-        missingBindingsPanel = groupedTablesPanel();
-        usedBindingsScrollPane = groupedTablesScrollPane(usedBindingsPanel);
-        missingBindingsScrollPane = groupedTablesScrollPane(missingBindingsPanel);
-
-        tabs = AppTheme.makeCompactTabs();
-        tabs.addTab(getText("bindings.usedBindings"), nestedTabContent(usedBindingsScrollPane));
-        tabs.addTab(getText("bindings.missingBindings"), nestedTabContent(missingBindingsScrollPane));
-        tabs.addChangeListener(e -> selectionController.clearSelection());
-        add(tabs, BorderLayout.CENTER);
-
-        // WHY a tab bar over one set of tables, its tabs empty: a tab per section would mean a Used and a Missing table
-        // per section, and what they show is one list narrowed. Tabs rather than a segmented bar, for the counts: with a
-        // search typed, the counts say which section holds the hits.
-        sectionTabs = AppTheme.makeCompactTabs();
-        for (SectionTab tab : SECTION_TABS) {
-            sectionTabs.addTab(getText(tab.titleKey(), 0), transparentPanel(null));
-        }
-        sectionTabs.addChangeListener(e -> {
-            selectionController.clearSelection();
-            renderBindingTables();
-            usedBindingsScrollPane.getVerticalScrollBar().setValue(0);
-            missingBindingsScrollPane.getVerticalScrollBar().setValue(0);
-        });
-        add(sectionTabs, BorderLayout.NORTH);
+        bindingsPanel = groupedTablesPanel();
+        bindingsScrollPane = groupedTablesScrollPane(bindingsPanel);
+        add(bindingsScrollPane, BorderLayout.CENTER);
 
         footerControls = buildFooterControls();
 
@@ -223,7 +211,30 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * The Anomalies mode: every row in conflict, whichever section or tab it is in. It takes the same search and opens
+     * Puts the section tabs first in the shell's tab row, which also holds the other modes (Krondor, 2026-11-06: a row of
+     * sections under a row of modes was too busy to take in). A tab of the row that is not a section leaves the section
+     * as it was, so coming back to it finds the same rows.
+     * <p>
+     * WHY a tab bar over one set of tables, its tabs empty: what a tab per section would show is one list narrowed. Tabs
+     * rather than a segmented bar, for the counts: with a search typed, the counts say which section holds the hits.
+     */
+    void addSectionTabs(JTabbedPane row) {
+        sectionTabs = row;
+        for (SectionTab tab : SECTION_TABS) {
+            row.addTab(getText(tab.titleKey(), 0), transparentPanel(null));
+        }
+        row.addChangeListener(e -> {
+            int chosen = row.getSelectedIndex();
+            if (chosen >= SECTION_TABS.size() || chosen == selectedSection) return;
+            selectedSection = chosen;
+            selectionController.clearSelection();
+            renderBindingTables();
+            bindingsScrollPane.getVerticalScrollBar().setValue(0);
+        });
+    }
+
+    /**
+     * The Anomalies mode: every row in conflict, whichever section it is in. It takes the same search and opens
      * the same dialogs, because it is a view of this panel's rows.
      */
     JComponent anomaliesView() {
@@ -245,10 +256,7 @@ class GameModePanel extends JPanel {
         if (read.file() == null) {
             conflicts = ConflictIndex.empty();
             recommendationsByBinding = Map.of();
-            renderGroupedTables(usedBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
-            renderGroupedTables(missingBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
-            tabs.setTitleAt(0, getText("bindings.usedBindings", 0));
-            tabs.setTitleAt(1, getText("bindings.missingBindings", 0));
+            renderGroupedTables(bindingsPanel, Map.of(), getText("bindings.column.action"));
             showSectionCounts(List.of());
             renderAnomalies(currentAiAccess());
             fixAllButton.setEnabled(false);
@@ -305,6 +313,10 @@ class GameModePanel extends JPanel {
         conflictsOnlyCheck = makeCheckBox(getText("bindings.filter.conflictsOnly"), false);
         conflictsOnlyCheck.addActionListener(e -> renderBindingTables());
 
+        unassignedOnlyCheck = makeCheckBox(getText("bindings.filter.unassignedOnly"), false);
+        unassignedOnlyCheck.setToolTipText(getText("bindings.filter.unassignedOnly.tooltip"));
+        unassignedOnlyCheck.addActionListener(e -> renderBindingTables());
+
         vegaOnlyCheck = makeCheckBox(getText("bindings.filter.vegaOnly"), false);
         vegaOnlyCheck.setToolTipText(getText("bindings.filter.vegaOnly.tooltip"));
         vegaOnlyCheck.addActionListener(e -> renderBindingTables());
@@ -313,6 +325,7 @@ class GameModePanel extends JPanel {
         JPanel filters = new JPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
         filters.setOpaque(false);
         filters.add(conflictsOnlyCheck);
+        filters.add(unassignedOnlyCheck);
         filters.add(vegaOnlyCheck);
         filters.add(fixAllButton);
         return filters;
@@ -483,7 +496,7 @@ class GameModePanel extends JPanel {
     private Map<BindingSection, List<Object[]>> groupedBindings(
             List<String> bindingIds,
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots,
-            BindingsGroupTableFactory.RowAction rowAction,
+            Function<String, BindingsGroupTableFactory.RowActionCell> rowAction,
             AiAccess aiAccess
     ) {
         Map<BindingSection, List<Object[]>> grouped = groupedRows();
@@ -496,23 +509,43 @@ class GameModePanel extends JPanel {
             AiAccessCell ai = axis != null
                     ? aiAccessCell(AiAccess.State.NOT_USED, null)
                     : aiAccessCell(aiAccess.stateOf(bindingId, bindingSlots), bindingSlots);
-            Object[] row = switch (rowAction) {
-                case AUTO_FIX -> new Object[]{bindingId, primary, secondary, ai,
-                        axis != null ? "" : actionCell(getText("bindings.column.autofix.action"), readOnly)};
-                case CLEAR -> new Object[]{bindingId, primary, secondary, ai,
-                        actionCell(getText("bindings.column.clear.action"), readOnly)};
-                case NONE -> new Object[]{bindingId, primary, secondary, ai};
-            };
+            Object[] row = {bindingId, primary, secondary, ai, actionCell(rowAction.apply(bindingId), readOnly)};
             grouped.get(BindingDisplayNames.lookup(bindingId).section()).add(row);
         }
         return grouped;
     }
 
+    private static BindingsGroupTableFactory.RowActionCell clearCell() {
+        return new BindingsGroupTableFactory.RowActionCell(
+                BindingsGroupTableFactory.RowAction.CLEAR, getText("bindings.column.clear.action"));
+    }
+
     /**
-     * A row's CLEAR or AUTO FIX: the word, or the word greyed and inert while read only (Storage S14b).
+     * What a row of the bindings tables offers: Clear where there is a keyboard key or a bound axis to clear. Without
+     * one, Auto fix if Vega needs the control and a key could go on it, else nothing.
+     * <p>
+     * WHY only what Vega needs (Krondor, 2026-11-06): the same rule as Auto-Assign VEGA Required Binds, and a key on any
+     * other control buys the commander nothing they asked for. A commander who wants one binds it from the row's cells.
      */
-    private static Object actionCell(String text, boolean readOnly) {
-        return readOnly ? new OffCell(text, getText("bindings.readOnly.tooltip")) : text;
+    private BindingsGroupTableFactory.RowActionCell rowActionOf(String bindingId, Set<String> required) {
+        BindsValues.Axis axis = currentValues.axes().get(bindingId);
+        if (axis != null ? axis.bound() : autoAssigner.isKeyboardBound(currentSlots.get(bindingId))) {
+            return clearCell();
+        }
+        return axis == null && required.contains(bindingId) && autoAssigner.canAssign(bindingId, currentSlots.get(bindingId))
+                ? new BindingsGroupTableFactory.RowActionCell(
+                BindingsGroupTableFactory.RowAction.AUTO_FIX, getText("bindings.column.autofix.action"))
+                : new BindingsGroupTableFactory.RowActionCell(BindingsGroupTableFactory.RowAction.NONE, "");
+    }
+
+    /**
+     * A row's CLEAR or AUTO FIX as the table shows it: the cell, or its word greyed and inert while read only (Storage
+     * S14b). A row that offers nothing stays blank.
+     */
+    private static Object actionCell(BindingsGroupTableFactory.RowActionCell cell, boolean readOnly) {
+        return readOnly && cell.action() != BindingsGroupTableFactory.RowAction.NONE
+                ? new OffCell(cell.text(), getText("bindings.readOnly.tooltip"))
+                : cell;
     }
 
     private SlotCell slotCell(KeyBindingsParser.ReadOnlyBindingSlot slot) {
@@ -604,31 +637,13 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * Splits all keyboard-capable controls into those that already have a usable
-     * keyboard binding and those that do not, using the same definition of "bound"
-     * the auto-assigner uses. The Missing tab lists every such control; Auto-Assign VEGA Required Binds fills
-     * only the ones in {@link BindingsMonitor#requiredControls()}, and each row can still be filled on its own.
+     * Every control the file holds, buttons and axes. Left unsorted on purpose: groupedBindings puts them in the game's
+     * own row order, and the counts this list also feeds do not care about order.
      */
-    private BindingPartition partitionByKeyboardBinding(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
-        List<String> used = new ArrayList<>();
-        List<String> missing = new ArrayList<>();
-        for (Map.Entry<String, KeyBindingsParser.ReadOnlyBindingSlots> entry : slots.entrySet()) {
-            if (autoAssigner.isKeyboardBound(entry.getValue())) {
-                used.add(entry.getKey());
-            } else {
-                missing.add(entry.getKey());
-            }
-        }
-        // Left unsorted on purpose: groupedBindings puts them in the game's own row order, and the
-        // counts these lists also feed do not care about order.
-        // An axis has no keyboard binding to have or to miss, so it is used once it is on an axis.
-        for (BindsValues.Axis axis : currentValues.axes().values()) {
-            (axis.bound() ? used : missing).add(axis.id());
-        }
-        return new BindingPartition(used, missing);
-    }
-
-    private record BindingPartition(List<String> used, List<String> missing) {
+    private List<String> allBindings() {
+        List<String> all = new ArrayList<>(currentSlots.keySet());
+        currentValues.axes().values().forEach(axis -> all.add(axis.id()));
+        return all;
     }
 
     /**
@@ -684,8 +699,7 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. The Used and Missing
-     * counts are of the selected section, ignoring the filters and the search; the Auto-Assign VEGA Required Binds enabled
+     * Renders the tables from {@link #currentSlots}, honoring the filters. The Auto-Assign VEGA Required Binds enabled
      * state always reflects the whole file, so the filters and tabs are pure view toggles. Called on load and whenever a
      * filter or section tab changes.
      */
@@ -693,44 +707,25 @@ class GameModePanel extends JPanel {
         // Drop any open conflict callout before the tables (and their hover listeners) are rebuilt.
         tableFactory.hideConflictPopup();
 
-        // Tables show every keyboard-capable control (custom commands can target any of them),
-        // split by whether it currently has a usable keyboard binding.
-        BindingPartition partition = partitionByKeyboardBinding(currentSlots);
-        List<String> usedBindings = partition.used();
-        List<String> missingBindings = partition.missing();
+        // Tables show every control (custom commands can target any of them).
         AiAccess aiAccess = currentAiAccess();
-        List<String> usedShown = filterRows(usedBindings, aiAccess);
-        List<String> missingShown = filterRows(missingBindings, aiAccess);
-        List<String> allShown = new ArrayList<>(usedShown);
-        allShown.addAll(missingShown);
-        showSectionCounts(allShown);
-
-        renderGroupedTables(
-                usedBindingsPanel,
-                groupedBindings(inSelectedSection(usedShown), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR, aiAccess),
-                BindingsGroupTableFactory.RowAction.CLEAR,
-                getText("bindings.column.action"),
-                getText("bindings.column.primary"),
-                getText("bindings.column.secondary"),
-                getText("bindings.column.aiAccess"),
-                getText("bindings.column.clear"));
-        tabs.setTitleAt(0, getText("bindings.usedBindings", inSelectedSection(usedBindings).size()));
-
-        renderGroupedTables(
-                missingBindingsPanel,
-                groupedBindings(inSelectedSection(missingShown), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX, aiAccess),
-                BindingsGroupTableFactory.RowAction.AUTO_FIX,
-                getText("bindings.column.action"),
-                getText("bindings.column.primary"),
-                getText("bindings.column.secondary"),
-                getText("bindings.column.aiAccess"),
-                getText("bindings.column.autofix"));
-        tabs.setTitleAt(1, getText("bindings.missingBindings", inSelectedSection(missingBindings).size()));
-        // Enabled only when a control VEGA presses is missing: the button fills those and nothing else, so with
-        // only emotes and the like left in the Missing tab a click could do nothing.
         Set<String> required = BindingsMonitor.requiredControls();
+        List<String> shown = filterRows(allBindings(), aiAccess);
+        showSectionCounts(shown);
+
+        renderGroupedTables(
+                bindingsPanel,
+                groupedBindings(inSelectedSection(shown), currentSlots, id -> rowActionOf(id, required), aiAccess),
+                getText("bindings.column.action"),
+                getText("bindings.column.primary"),
+                getText("bindings.column.secondary"),
+                getText("bindings.column.aiAccess"),
+                getText("bindings.column.rowAction"));
+        // Enabled only when a control VEGA presses has no keyboard key: the button fills those and nothing else, so with
+        // only emotes and the like left without one a click could do nothing.
         boolean readOnly = readOnly();
-        fixAllButton.setEnabled(!readOnly && missingBindings.stream().anyMatch(id -> !isAxis(id) && required.contains(id)));
+        fixAllButton.setEnabled(!readOnly && currentSlots.entrySet().stream().anyMatch(entry -> !isAxis(entry.getKey())
+                && required.contains(entry.getKey()) && !autoAssigner.isKeyboardBound(entry.getValue())));
         fixAllButton.setToolTipText(getText(readOnly ? "bindings.readOnly.tooltip" : "bindings.button.fixAll.tooltip"));
         renderAnomalies(aiAccess);
     }
@@ -739,7 +734,7 @@ class GameModePanel extends JPanel {
      * The rows the selected section tab keeps. A pure view of the filtered list, as the other filters are.
      */
     private List<String> inSelectedSection(List<String> bindingIds) {
-        BindingSection section = SECTION_TABS.get(sectionTabs.getSelectedIndex()).section();
+        BindingSection section = SECTION_TABS.get(selectedSection).section();
         return section == null ? bindingIds : bindingIds.stream()
                 .filter(id -> BindingDisplayNames.lookup(id).section() == section)
                 .toList();
@@ -767,8 +762,7 @@ class GameModePanel extends JPanel {
         anomalyCount.accept(inConflict.size());
         renderGroupedTables(
                 anomaliesPanel,
-                groupedBindings(filterBySearch(inConflict), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR, aiAccess),
-                BindingsGroupTableFactory.RowAction.CLEAR,
+                groupedBindings(filterBySearch(inConflict), currentSlots, id -> clearCell(), aiAccess),
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
                 getText("bindings.column.secondary"),
@@ -822,12 +816,35 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * The view filters, in one place so the two tables always narrow the same way: the conflicts-only and
-     * required-by-Vega checkboxes, and the search field. Purely a view concern - the tab counts and the
-     * Auto-Assign VEGA Required Binds enabled state are computed from the unfiltered lists.
+     * The view filters, in one place: the conflicts-only, unassigned and required-by-Vega checkboxes, and the search
+     * field. Purely a view concern - the Auto-Assign VEGA Required Binds enabled state is computed from the whole file.
      */
     private List<String> filterRows(List<String> bindingIds, AiAccess aiAccess) {
-        return filterBySearch(filterVegaOnly(filterConflictsOnly(bindingIds), aiAccess));
+        return filterBySearch(filterVegaOnly(filterUnassignedOnly(filterConflictsOnly(bindingIds)), aiAccess));
+    }
+
+    /**
+     * When the filter is on, narrows the ids to the controls with nothing bound; otherwise a no-op.
+     */
+    private List<String> filterUnassignedOnly(List<String> bindingIds) {
+        if (unassignedOnlyCheck == null || !unassignedOnlyCheck.isSelected()) {
+            return bindingIds;
+        }
+        return bindingIds.stream().filter(this::isUnassigned).toList();
+    }
+
+    /**
+     * Nothing on the keyboard or any controller. WHY a control bound only on a stick does not count, though it has no
+     * keyboard key: it is assigned, so the word would be wrong (Krondor and Alan, 2026-11-06). If Vega needs it, the AI
+     * ACCESS column and the required-by-Vega filter say so.
+     */
+    private boolean isUnassigned(String bindingId) {
+        BindsValues.Axis axis = currentValues.axes().get(bindingId);
+        if (axis != null) {
+            return !axis.bound();
+        }
+        KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
+        return !KeyBindingsParser.isAssigned(slots.primary()) && !KeyBindingsParser.isAssigned(slots.secondary());
     }
 
     /**
@@ -988,8 +1005,7 @@ class GameModePanel extends JPanel {
         return grouped;
     }
 
-    private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped,
-                                     BindingsGroupTableFactory.RowAction rowAction, String... columnNames) {
+    private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped, String... columnNames) {
         targetPanel.removeAll();
         for (BindingSection section : BindingSection.values()) {
             // Already in the game's own row order - groupedBindings sorted them, so leave them alone.
@@ -998,7 +1014,7 @@ class GameModePanel extends JPanel {
                 continue;
 
             targetPanel.add(sectionHeader(section));
-            targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), rowAction, columnNames));
+            targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), columnNames));
             targetPanel.add(Box.createVerticalStrut(6));
         }
         targetPanel.add(Box.createVerticalGlue());
@@ -1014,8 +1030,7 @@ class GameModePanel extends JPanel {
     }
 
     private JScrollPane outerScrollPaneFor(JPanel targetPanel) {
-        if (targetPanel == anomaliesPanel) return anomaliesScrollPane;
-        return targetPanel == usedBindingsPanel ? usedBindingsScrollPane : missingBindingsScrollPane;
+        return targetPanel == anomaliesPanel ? anomaliesScrollPane : bindingsScrollPane;
     }
 
     /**
@@ -1187,7 +1202,7 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * Opens the per-row "clear keyboard binding" dialog for the Used view. The dialog offers to clear
+     * Opens the per-row "clear keyboard binding" dialog. The dialog offers to clear
      * the Primary and/or Secondary <em>keyboard</em> slot while leaving any Controller/HOTAS binding in
      * the other slot untouched. The actual edit + reload is delegated back via {@link #clearKeyboardSlot}.
      */

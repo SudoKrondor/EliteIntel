@@ -72,6 +72,8 @@ public class AiTabPanel extends JPanel {
     private HudUpdateButton updateAppButton;
     private HudCommanderBlock commanderBlock;
     private final AtomicBoolean isServiceRunning = new AtomicBoolean(false);
+    // EDT only.
+    private boolean audioCalibrationRunning = false;
 
     private HudLogArea chatPanel;
     private HudLogArea systemPanel;
@@ -166,7 +168,12 @@ public class AiTabPanel extends JPanel {
 
         recalibrateAudioButton = makeButtonSubtle(getText("button.calibrateAudio"));
         recalibrateAudioButton.setEnabled(false);
-        recalibrateAudioButton.addActionListener(e -> UiBus.publish(new RecalibrateAudioEvent()));
+        recalibrateAudioButton.addActionListener(e -> {
+            // Disabled here, on the click itself, so a second click cannot get in before the run reports back.
+            audioCalibrationRunning = true;
+            recalibrateAudioButton.setEnabled(false);
+            UiBus.publish(new RecalibrateAudioEvent());
+        });
 
         audioDevicesButton = makeButtonSubtle(getText("button.audioDevices"));
         audioDevicesButton.addActionListener(e ->
@@ -507,6 +514,14 @@ public class AiTabPanel extends JPanel {
     }
 
     @Subscribe
+    public void onAudioCalibrationFinished(AudioCalibrationFinishedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            audioCalibrationRunning = false;
+            recalibrateAudioButton.setEnabled(isServiceRunning.get());
+        });
+    }
+
+    @Subscribe
     public void onStatsChanged(LlmSessionStatsChangedEvent event) {
         SwingUtilities.invokeLater(() -> refreshSummary(event.snapshot()));
     }
@@ -521,7 +536,7 @@ public class AiTabPanel extends JPanel {
         isServiceRunning.set(running);
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(!transitioning);
-        recalibrateAudioButton.setEnabled(running);
+        recalibrateAudioButton.setEnabled(running && !audioCalibrationRunning);
         // Sleep/Wake gates the hands-free microphone. Under push-to-talk the mapped button already does that,
         // so there is nothing left for it to gate and it is offered as disabled rather than as a lie.
         sleepWakeButton.setEnabled(running && !pttModeActive);

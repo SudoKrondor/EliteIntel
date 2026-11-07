@@ -172,7 +172,7 @@ Classifies a binding ID into a
 **`KeyBindCheck.check()`
 ** - triggers missing/conflict detection and publishes the voice announcements. Missing bindings are announced as a count pointing at the Bindings tab (the names go to the log at INFO, for the support bundle); ordinary conflicts are announced as counts; a
 **blocking** conflict instead names the chords in collision (via
-`BindingChordSpeech`), because the commander has to know which keys to move, and Frontier's W/A/S/D default is not necessarily theirs.
+`BindingChordSpeech`), because the commander has to know which keys to move, and Frontier's W/A/S/D default is not necessarily theirs. It also warns on every start when a section of the game's controls is on another preset than the one file read (`BindingsLoader.sectionsNotIn`), because the checks then cannot see that section's keys.
 
 **`EliteKeyboardKeys`
 ** - static allow-list of keyboard token strings the MVP editor can assign. Kept static so the UI dropdown can show keys that are not yet in the active file.

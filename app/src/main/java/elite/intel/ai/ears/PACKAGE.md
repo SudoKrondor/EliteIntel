@@ -108,6 +108,10 @@ aloud**, not only logged (`speech.audioCalibrationMicQuiet`: raise the OS input 
 Results are stored in `SystemSession` (`rmsThresholdHigh`, `rmsThresholdLow`) and returned as
 `RmsTupple<Double, Double>`.
 
+`isCalibrated` decides whether a calibration has run, from the gate alone: a microphone behind a noise gate of its own (Carla, for one) reads digital silence, so a floor of exactly zero is a true measurement. A run that heard no speech throws instead of overwriting a stored calibration, and `AppController` then says calibration failed; with nothing stored it saves the fallback, because voice input cannot run without a gate.
+
+A calibration from the button runs one at a time: `AiTabPanel` disables the button on the click and enables it again on `AudioCalibrationFinishedEvent`, sent whatever the outcome.
+
 ---
 
 ## The STT Extension Point

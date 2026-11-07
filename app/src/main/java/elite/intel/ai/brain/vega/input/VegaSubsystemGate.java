@@ -12,12 +12,22 @@ import elite.intel.ai.brain.vega.execution.ExecutionGateway;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.mind.ThoughtDispatcher;
 import elite.intel.ai.brain.vega.speech.SpeechGateway;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
+import elite.intel.setup.SetupCheck;
 import elite.intel.ui.controller.ManagedService;
+import elite.intel.ui.event.AppLogEvent;
+import elite.intel.util.StringUtls;
+
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * The single gate seam between existing input and VEGA subsystem, and the owner of the subsystem
@@ -36,9 +46,11 @@ public final class VegaSubsystemGate implements ManagedService {
     private final LlmGateway llmOverride;
     private final ExecutionGateway executionOverride;
     private final SpeechGateway speechOverride;
+    private final Supplier<Optional<String>> llmGap;
+    private final AtomicBoolean llmGapAnnounced = new AtomicBoolean();
 
     public VegaSubsystemGate() {
-        this(null, null);
+        this(null, null, null, SetupCheck::llmGapSpeechKey);
     }
 
     /**
@@ -57,13 +69,31 @@ public final class VegaSubsystemGate implements ManagedService {
             ExecutionGateway executionOverride,
             SpeechGateway speechOverride
     ) {
-        this.llmOverride = llmOverride;
-        this.executionOverride = executionOverride;
-        this.speechOverride = speechOverride;
+        this(llmOverride, executionOverride, speechOverride, Optional::empty);
     }
 
     /**
-     * Commander voice input gate. While a dangerous action waits for confirmation, the next utterance answers it:
+     * As above, plus what stops a model running, as the key of the line that says so. Only the production gate reads
+     * the settings: every override runs on a model it brought or on a harness that asks for whatever is loaded.
+     */
+    VegaSubsystemGate(
+            LlmGateway llmOverride,
+            ExecutionGateway executionOverride,
+            SpeechGateway speechOverride,
+            Supplier<Optional<String>> llmGap
+    ) {
+        this.llmOverride = llmOverride;
+        this.executionOverride = executionOverride;
+        this.speechOverride = speechOverride;
+        this.llmGap = llmGap;
+    }
+
+    /**
+     * Commander voice input gate. With no model set up nothing goes further, not even a phrase the reflex could
+     * resolve: a few commands working out of the many gives the impression of an app that works badly, when what it
+     * needs is a language model.
+     * <p>
+     * While a dangerous action waits for confirmation, the next utterance answers it:
      * a yes runs it, a no discards it, and anything else discards it and is then handled as the new request it
      * is - the commander has moved on, and a destructive action never runs on anything short of a clear yes.
      */
@@ -71,6 +101,11 @@ public final class VegaSubsystemGate implements ManagedService {
     public void onUserInput(UserInputEvent event) {
         VegaRuntimeGraph runtimeGraph = activeGraph;
         if (runtimeGraph == null) {
+            return;
+        }
+        Optional<String> gap = llmGap.get();
+        if (gap.isPresent()) {
+            sayWhatIsMissing(gap.get());
             return;
         }
         String input = event.getUserInput();
@@ -94,6 +129,18 @@ public final class VegaSubsystemGate implements ManagedService {
         }
         // Everything else is echoed by the dispatcher, which alone knows the canonical form of the words.
         runtimeGraph.thoughtDispatcher().submitCommanderInput(input);
+    }
+
+    /**
+     * Spoken once per service start, straight to TTS because the thing it is about is the missing model. The log line
+     * is every time, so the input never just disappears.
+     */
+    private void sayWhatIsMissing(String speechKey) {
+        UiBus.publish(new AppLogEvent("Input ignored: no language model is set up."));
+        if (llmGapAnnounced.compareAndSet(false, true)) {
+            GameEventBus.publish(new VocalisationRequestEvent(StringUtls.localizedSpeech(speechKey),
+                    MissionCriticalAnnouncementEvent.class, false));
+        }
     }
 
     /**
