@@ -93,7 +93,8 @@ pairs**, as it does any other conflict. `MouseReset` and `BlockMouseDecay` gaine
 **2026-11-03, Binding Profile re-scoped and built (Krondor and Alan).**
 
 -
-**Tabs:** `BindingProfilePanel` holds Game Mode, Anomalies and Settings under the shared search. Game Mode has section tabs (All, General, Ship, SRV, On-Foot), each with a count of what the filters and the search leave, over the Used and Missing tabs, which stay. A control the name table does not know shows under All only: `MouseReset`, `BlockMouseDecay` and `HumanoidPing` in `Custom.4.2.binds`.
+
+**Tabs:** `BindingProfilePanel` holds Game Mode, Anomalies and Settings under the shared search. Game Mode has section tabs (All, General, Ship, SRV, On-Foot), each with a count of what the filters and the search leave, over the Used and Missing tabs, which stay. *Changed 2026-11-06 (Krondor and Alan): the section tabs sit in one row with Anomalies and Settings, over one grid, and a Show Unassigned filter replaces the Used and Missing tabs ([Bind Editor](../02-features/bindforge/bind-editor.md#shell-common-to-all-modes)).* A control the name table does not know shows under All only: `MouseReset`, `BlockMouseDecay` and `HumanoidPing` in `Custom.4.2.binds`.
 - **Axis
   rows:** read by `BindsValues`, never by `KeyBindingsParser`. Their second column shows Normal or Inverted, the dead zone and any throttle range. `ed_control_names.properties` gained the 70 axis tags and 22 number settings, from the Action Catalog; those names were not read off the game screen for this.
 - **Anomalies is a view of `GameModePanel`'s

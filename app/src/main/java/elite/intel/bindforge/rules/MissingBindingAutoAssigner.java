@@ -135,6 +135,17 @@ public class MissingBindingAutoAssigner {
     }
 
     /**
+     * Whether an assignment here could ever go in: not a control left unbound on purpose, and with a slot free to take a
+     * key. So a row can leave out a button that would only refuse. Whether a free key remains is not asked, because that
+     * changes as the file does and the commander is told when it runs out.
+     */
+    public boolean canAssign(String bindingId, ReadOnlyBindingSlots binding) {
+        return !ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
+                && !LEFT_TO_THE_COMMANDER.contains(bindingId)
+                && chooseWritableSlot(binding) != null;
+    }
+
+    /**
      * Plans an assignment for a single binding (the per-row "auto fix" action).
      * Returns an empty plan if the binding is unknown or already keyboard-bound.
      */

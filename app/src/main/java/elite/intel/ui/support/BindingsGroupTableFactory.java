@@ -26,7 +26,6 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 public class BindingsGroupTableFactory {
     public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     public static final String HOVER_ROW_PROPERTY = "elite.intel.bindings.hoverRow";
-    private static final String ROW_ACTION_PROPERTY = "elite.intel.bindings.rowAction";
     /**
      * The AI ACCESS column, between Secondary and the row action.
      */
@@ -34,10 +33,21 @@ public class BindingsGroupTableFactory {
     private static final Border TABLE_SECTION_BORDER = BorderFactory.createEmptyBorder(1, 0, 0, 0);
 
     /**
-     * The per-row action offered in a table's trailing column: the Missing view offers AUTO_FIX,
-     * the Used view offers CLEAR (of the keyboard binding only), and other tables offer none.
+     * The action a row offers in the table's trailing column: CLEAR (of the keyboard binding only) on a row with a
+     * keyboard key, AUTO_FIX on a row without one, NONE where neither applies.
      */
     public enum RowAction {NONE, AUTO_FIX, CLEAR}
+
+    /**
+     * A row's trailing cell: what it does when pressed, and the text drawn for that. Each row carries its own, because one
+     * table holds rows that offer different actions.
+     */
+    public record RowActionCell(RowAction action, String text) {
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
 
     private final BindingsSelectionController selectionController;
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
@@ -80,21 +90,13 @@ public class BindingsGroupTableFactory {
     }
 
     /**
-     * The trailing column that carries this table's per-row action, or {@code -1} when the table has
-     * none. The action kind is stamped on the table in {@link #groupTable} and read back here so the
-     * click and hover logic stay agnostic to which action (auto fix vs. clear) the column represents.
+     * What pressing this cell does: the row's action if the cell is its {@link RowActionCell}, else {@code NONE}.
      */
-    private int actionColumn(JTable table) {
-        return rowAction(table) == RowAction.NONE ? -1 : table.getColumnCount() - 1;
+    private RowAction actionAt(JTable table, int row, int column) {
+        return table.getValueAt(row, column) instanceof RowActionCell cell ? cell.action() : RowAction.NONE;
     }
 
-    private RowAction rowAction(JTable table) {
-        Object value = table.getClientProperty(ROW_ACTION_PROPERTY);
-        return value instanceof RowAction action ? action : RowAction.NONE;
-    }
-
-    public JScrollPane groupTable(
-            List<Object[]> rows, JScrollPane outerScrollPane, RowAction rowAction, String... columnNames) {
+    public JScrollPane groupTable(List<Object[]> rows, JScrollPane outerScrollPane, String... columnNames) {
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -106,7 +108,6 @@ public class BindingsGroupTableFactory {
         }
 
         JTable table = new JTable(model);
-        table.putClientProperty(ROW_ACTION_PROPERTY, rowAction);
         styleGroupTable(table);
         configureColumnWidths(table);
         selectionController.register(table);
@@ -147,9 +148,9 @@ public class BindingsGroupTableFactory {
                 }
                 int column = table.columnAtPoint(event.getPoint());
 
-                if (column == actionColumn(table)) {
-                    String bindingId = selectionController.selectRow(table, row);
-                    dispatchRowAction(table, bindingId);
+                RowAction action = actionAt(table, row, column);
+                if (action != RowAction.NONE) {
+                    dispatchRowAction(action, selectionController.selectRow(table, row));
                     return;
                 }
 
@@ -163,8 +164,8 @@ public class BindingsGroupTableFactory {
         });
     }
 
-    private void dispatchRowAction(JTable table, String bindingId) {
-        switch (rowAction(table)) {
+    private void dispatchRowAction(RowAction action, String bindingId) {
+        switch (action) {
             case AUTO_FIX -> {
                 if (autoFixHandler != null) {
                     autoFixHandler.accept(bindingId);
@@ -247,7 +248,7 @@ public class BindingsGroupTableFactory {
             return false;
         }
         int column = table.columnAtPoint(point);
-        return slotTypeForColumn(column) != null || column == actionColumn(table);
+        return slotTypeForColumn(column) != null || (column >= 0 && actionAt(table, row, column) != RowAction.NONE);
     }
 
     private BindingSlotType slotTypeForColumn(int column) {
