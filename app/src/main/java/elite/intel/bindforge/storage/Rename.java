@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
@@ -156,13 +157,12 @@ public final class Rename {
         }
         if (newBindName.equals(oldBindName)) return current;
         String newFile = newBindName + suffix(bindsFile);
-        String newKey = newFile.toLowerCase(Locale.ROOT);
-        // WHY: on Windows a name differing only in case is the same file, so APPLY would remove the one it wrote.
-        if (current.bindings().keySet().stream().anyMatch(name -> name.toLowerCase(Locale.ROOT).equals(newKey))) {
+        // WHY: a name differing only in case is the same file (Storage S13a), so APPLY would remove the one it wrote.
+        if (current.bindings().keySet().stream().anyMatch(name -> FileNames.sameFile(name, newFile))) {
             throw new IllegalArgumentException("the set already holds " + newFile);
         }
         if (applied.bindings().keySet().stream()
-                .anyMatch(name -> !name.equals(newFile) && name.toLowerCase(Locale.ROOT).equals(newKey))) {
+                .anyMatch(name -> !name.equals(newFile) && FileNames.sameFile(name, newFile))) {
             throw new IllegalArgumentException("the working copy holds a file differing from " + newFile + " only in case");
         }
         byte[] renamed = Create.withPresetName(content, newBindName);

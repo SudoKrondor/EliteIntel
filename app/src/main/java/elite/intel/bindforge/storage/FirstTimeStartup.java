@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
@@ -285,7 +286,11 @@ public final class FirstTimeStartup {
                 throw new IOException(file.getFileName() + " could not be read: " + e.getMessage(), e);
             }
         }
-        return bindings;
+        // WHY: two spellings of one file - only where the file system heeds case - are one file to the game; the first
+        // in name order is taken, and the write removes the other (Storage S13a D3).
+        FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(bindings, List.of());
+        if (!one.leftOut().isEmpty()) log.warn("{} holds two spellings of one file; left out: {}", folder, one.leftOut());
+        return one.files();
     }
 
     /** Told once, on the first setup backup being taken: one spoken line, and a log line naming where it is. */

@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.io.AtomicFiles;
 import org.apache.logging.log4j.LogManager;
@@ -24,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -476,9 +478,18 @@ public final class Backups {
             return;
         }
         String schemesEntry = into + ENTRY_SEPARATOR + CONTROL_SCHEMES + ENTRY_SEPARATOR;
-        Path deviceMappings = controlSchemes.resolve(GameInstallation.DEVICE_MAPPINGS);
-        if (Files.isRegularFile(deviceMappings)) {
-            copy.file(deviceMappings, schemesEntry + GameInstallation.DEVICE_MAPPINGS);
+        // WHY: found ignoring case, as the game finds it, and held under the game's spelling, which RESTORE reads
+        // (Storage S13a D5).
+        Optional<Path> deviceMappings;
+        try {
+            deviceMappings = GameInstallation.findDeviceMappingsIn(controlSchemes);
+        } catch (IOException e) {
+            copy.notRead.add(label + "'s " + CONTROL_SCHEMES + ": " + reason(e));
+            log.warn("Could not list {}", controlSchemes, e);
+            deviceMappings = Optional.empty();
+        }
+        if (deviceMappings.isPresent()) {
+            copy.file(deviceMappings.get(), schemesEntry + GameInstallation.DEVICE_MAPPINGS);
         }
         Path buttonMaps = controlSchemes.resolve(GameInstallation.DEVICE_BUTTON_MAPS);
         if (!Files.isDirectory(buttonMaps)) return;

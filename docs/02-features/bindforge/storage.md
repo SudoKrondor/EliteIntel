@@ -273,11 +273,40 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   - **BindForge never leaves two files whose names differ only in case.** A file is saved under whatever spelling it is
     given - the user's spelling is kept, never forced to one case (Alan, 2026-11-07); if a file of the same name in another case is already there, it is replaced, and the spelling saved is the
     one left - written as a new file and the old spelling removed, the way rule 7 renames.
-  - Built in Storage S13a.
+  - **Only the name ignores case.** The kinds - `.binds`, `.buttonMap`, `StartPreset.N.start` - are matched exactly:
+    the game needs the preset file's name, and players do not rename these (Alan, 2026-11-07).
+
+  **Settled with Storage S13a's sources (Alan, 2026-11-07):**
+
+  - **D1: the rule lives in `bindforge.io.FileNames`** (`sameFile`, and `ONE_FILE` for a map keyed by file name),
+    moved there from `bindforge.storage` so the BindName list and Elite-Intel's own loader can use it.
+  - **D2: a live file whose name differs from the working copy's only in case is that file**, compared by value as
+    usual: equal values ask nothing, and the next write leaves the working copy's spelling. A hand rename gets no guard
+    of its own (principle 13); the game loads either spelling.
+  - **D3: two spellings of one file** - only where the file system heeds case, made outside BindForge - are compared as
+    the one spelled as the working copy's, else the first in name order. **Every write removes the others** after the
+    backup, and the report names them; a read-only one is kept and reported, as any removal is. A backup holding two is
+    restored with the first in name order; the backup still holds the other.
+  - **D4: a `.buttonMap` follows the same rule** - the working copy's spelling is left, on Windows and Linux alike.
+  - **D5: `DeviceMappings.xml` is found by listing its folder, ignoring case**, not by path - on Linux a
+    `devicemappings.xml` would otherwise read as missing, and the write would put a second file beside it. The write
+    leaves the game's spelling.
+  - **D6: Elite-Intel's own loader** (`BindingsLoader`, the keys the assistant presses) finds the file a preset line
+    names ignoring case too.
+  - *Decided while building:* a file's `PresetName` that differs from its file name only in case is no mismatch - Alan's
+    test file, renamed to lower case with its `PresetName` as it was, is offered and loaded. A set that holds two
+    spellings of one file is refused; a working copy holding two, made by hand, cannot be read, so the newest backup is
+    offered (rule 10). On Windows a move between two spellings does nothing, so a respelling goes through a name of its
+    own (`.respelling`) in two steps.
+
+  Built in Storage S13a: `FileNames.sameFile` / `ONE_FILE` / `oneSpelling`; `ConfigurationFiles` keyed ignoring case;
+  the check's pairing in `BindingsComparison`; `LiveCopies.Writing.writeAll` renaming another spelling to the set's;
+  `GameInstallation.findDeviceMappingsIn`; `BindNameList.find`, `BindsContent`, `BindNameCatalog`;
+  `BindingsLoader.isFileOfPreset`.
 - **A `.buttonMap` the working copy lacks is removed**, except Frontier's shipped `VPCPanel` and `VPCThrottle`. An old
-  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is that same file (the case rule above). **Until
-  Storage S13a** it is kept as it is on Windows and removed on a file system that heeds case, the kept spelling written
-  beside it.
+  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is that same file (the case rule above), renamed to
+  the working copy's spelling. *Until Storage S13a it was kept as it was on Windows and removed on a file system that
+  heeds case, the kept spelling written beside it.*
 - **A working copy with no `DeviceMappings.xml` leaves each installation's alone** (review, 2026-10-24). Without that
   file the game loads no bindings at all ([overview](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08)),
   so the write never removes one — unlike a `.buttonMap`, which holds only labels and is removed when the working copy

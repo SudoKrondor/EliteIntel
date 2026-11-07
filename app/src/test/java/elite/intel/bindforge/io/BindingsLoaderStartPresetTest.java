@@ -57,6 +57,21 @@ class BindingsLoaderStartPresetTest {
         assertEquals(Map.of(BindingSection.GENERAL, "KeyboardMouseOnly"), loader.sectionsNotIn(bindingsDir, read));
     }
 
+    /**
+     * A preset line in another case names the file, as the game reads it - not the newest file in the folder (Alan,
+     * 2026-11-07, Storage S13a D6).
+     */
+    @Test
+    void aPresetLineInAnotherCaseFindsItsFile() throws IOException {
+        startPreset("custom\r\ncustom\r\ncustom\r\ncustom");
+        binds("Custom.4.2.binds");
+        binds("Other.4.2.binds");
+        Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(1_000_000));
+        Files.setLastModifiedTime(bindingsDir.resolve("Other.4.2.binds"), FileTime.fromMillis(9_000_000));
+
+        assertEquals("Custom.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
+    }
+
     @Test
     void aGeneralPresetWithNoFileFallsToTheNextLineNotTheNewestFile() throws IOException {
         startPreset("KeyboardMouseOnly\r\nVKB\r\nVKB\r\nVKB");

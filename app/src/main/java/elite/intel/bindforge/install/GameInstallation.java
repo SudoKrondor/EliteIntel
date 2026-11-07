@@ -1,9 +1,15 @@
 package elite.intel.bindforge.install;
 
+import elite.intel.bindforge.io.FileNames;
+
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * One installation of Elite Dangerous, and where its input files live.
@@ -91,6 +97,26 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
     /** The {@code DeviceMappings.xml} in a {@code ControlSchemes} folder, whether or not it exists. */
     public static Path deviceMappingsIn(Path controlSchemes) {
         return controlSchemes.resolve(DEVICE_MAPPINGS);
+    }
+
+    /**
+     * The {@code DeviceMappings.xml} a {@code ControlSchemes} folder holds, in whatever case it is spelled - empty when
+     * it holds none, or the folder is not there. Found by listing the folder, since the game reads the name ignoring
+     * case and a file system that heeds case would miss {@code devicemappings.xml} by path (Alan, 2026-11-07, Storage
+     * S13a D5). With two spellings, which only such a file system allows, the one spelled as the game ships it is
+     * taken, else the first in name order.
+     *
+     * @throws IOException if the folder is there but cannot be listed
+     */
+    public static Optional<Path> findDeviceMappingsIn(Path controlSchemes) throws IOException {
+        if (!Files.isDirectory(controlSchemes)) return Optional.empty();
+        List<Path> found;
+        try (Stream<Path> listing = Files.list(controlSchemes)) {
+            found = listing.filter(file -> FileNames.sameFile(file.getFileName().toString(), DEVICE_MAPPINGS))
+                    .filter(Files::isRegularFile).sorted().toList();
+        }
+        return found.stream().filter(file -> file.getFileName().toString().equals(DEVICE_MAPPINGS)).findFirst()
+                .or(() -> found.stream().findFirst());
     }
 
     /** The {@code DeviceButtonMaps} folder in a {@code ControlSchemes} folder, whether or not it exists. */

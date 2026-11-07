@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.preseteditor.BindNameCatalog;
@@ -281,7 +282,7 @@ public final class Apply {
 
     /** The edits, with the default labels for every device that has no {@code .buttonMap} - one in any spelling wins. */
     private static ConfigurationFiles withDefaults(ConfigurationFiles files, Map<String, byte[]> defaultLabels) {
-        Map<String, byte[]> maps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, byte[]> maps = new TreeMap<>(FileNames.ONE_FILE);
         maps.putAll(files.buttonMaps());
         defaultLabels.forEach(maps::putIfAbsent);
         return files.withButtonMaps(new TreeMap<>(maps));

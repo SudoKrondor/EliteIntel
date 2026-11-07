@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.io.AtomicFiles;
 import elite.intel.util.AppPaths;
@@ -91,11 +92,17 @@ public final class WorkingCopy {
             if (!Files.isDirectory(bindings)) throw new NoSuchFileException(bindings.toString(), null, "no working copy");
             Path controlSchemes = root.resolve(Backups.CONTROL_SCHEMES);
             Path deviceMappings = GameInstallation.deviceMappingsIn(controlSchemes);
-            return new ConfigurationFiles(
-                    readFiles(bindings, FileNames::isBindingsFile),
-                    Files.isRegularFile(deviceMappings) ? Files.readAllBytes(deviceMappings) : null,
-                    readFiles(GameInstallation.deviceButtonMapsIn(controlSchemes),
-                            file -> file.getFileName().toString().endsWith(GameInstallation.BUTTON_MAP_SUFFIX)));
+            try {
+                return new ConfigurationFiles(
+                        readFiles(bindings, FileNames::isBindingsFile),
+                        Files.isRegularFile(deviceMappings) ? Files.readAllBytes(deviceMappings) : null,
+                        readFiles(GameInstallation.deviceButtonMapsIn(controlSchemes),
+                                file -> file.getFileName().toString().endsWith(GameInstallation.BUTTON_MAP_SUFFIX)));
+            } catch (IllegalArgumentException e) {
+                // WHY: two spellings of one file, made by hand where the file system heeds case - a working copy
+                // BindForge never writes, so one it cannot read (Storage S13a), and the newest backup is offered.
+                throw new IOException("the working copy holds " + e.getMessage(), e);
+            }
         }
     }
 

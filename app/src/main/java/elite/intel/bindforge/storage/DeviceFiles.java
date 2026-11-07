@@ -1,6 +1,9 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
@@ -22,8 +26,12 @@ import java.util.stream.Stream;
  */
 public record DeviceFiles(byte[] deviceMappings, Map<String, byte[]> buttonMaps) {
 
+    private static final Logger log = LogManager.getLogger(DeviceFiles.class);
+
     public DeviceFiles {
-        buttonMaps = Collections.unmodifiableMap(new TreeMap<>(buttonMaps));
+        Map<String, byte[]> sorted = new TreeMap<>(FileNames.ONE_FILE);
+        sorted.putAll(buttonMaps);
+        buttonMaps = Collections.unmodifiableMap(sorted);
     }
 
     /**
@@ -34,8 +42,14 @@ public record DeviceFiles(byte[] deviceMappings, Map<String, byte[]> buttonMaps)
      */
     public static DeviceFiles read(Path root) throws IOException {
         Path controlSchemes = GameInstallation.controlSchemesUnder(root);
-        Path mappings = GameInstallation.deviceMappingsIn(controlSchemes);
-        byte[] deviceMappings = Files.isRegularFile(mappings) ? readNamed(mappings) : null;
+        // WHY: found ignoring case, as the game finds it (Storage S13a D5).
+        Optional<Path> mappings;
+        try {
+            mappings = GameInstallation.findDeviceMappingsIn(controlSchemes);
+        } catch (IOException e) {
+            throw new IOException(controlSchemes.getFileName() + " could not be listed: " + e.getMessage(), e);
+        }
+        byte[] deviceMappings = mappings.isPresent() ? readNamed(mappings.get()) : null;
 
         Map<String, byte[]> buttonMaps = new TreeMap<>();
         Path folder = GameInstallation.deviceButtonMapsIn(controlSchemes);
@@ -51,7 +65,13 @@ public record DeviceFiles(byte[] deviceMappings, Map<String, byte[]> buttonMaps)
             }
             for (Path file : found) buttonMaps.put(file.getFileName().toString(), readNamed(file));
         }
-        return new DeviceFiles(deviceMappings, buttonMaps);
+        // WHY: two spellings of one map - only where the file system heeds case - are one file to the game; the write
+        // removes the other (Storage S13a D3).
+        FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(buttonMaps, List.of());
+        if (!one.leftOut().isEmpty()) {
+            log.warn("{} holds two spellings of one .buttonMap; left out: {}", folder, one.leftOut());
+        }
+        return new DeviceFiles(deviceMappings, one.files());
     }
 
     /** Whether the installation holds a {@code DeviceMappings.xml}. */

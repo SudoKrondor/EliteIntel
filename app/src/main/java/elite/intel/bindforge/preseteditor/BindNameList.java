@@ -1,5 +1,7 @@
 package elite.intel.bindforge.preseteditor;
 
+import elite.intel.bindforge.io.FileNames;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -18,10 +20,11 @@ public record BindNameList(List<BindNameEntry> entries, List<NotOfferedFile> not
     }
 
     /**
-     * The entry a line of {@code StartPreset.4.start} names. Exact match: the game's names are case-sensitive as
-     * far as anyone has shown, and a near miss is the silent failure the spec warns about.
+     * The entry a line of {@code StartPreset.4.start} names, ignoring case: the game reads names the Windows way, under
+     * Proton too (Alan, 2026-11-07, Storage S13a; storage.md, <em>How the files are written</em>). Exact otherwise -
+     * a {@code -} or {@code _} apart is another name, and a near miss is the silent failure the spec warns about.
      */
     public Optional<BindNameEntry> find(String bindName) {
-        return entries.stream().filter(entry -> entry.bindName().equals(bindName)).findFirst();
+        return entries.stream().filter(entry -> FileNames.sameFile(entry.bindName(), bindName)).findFirst();
     }
 }

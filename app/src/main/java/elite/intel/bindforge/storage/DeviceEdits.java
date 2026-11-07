@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.ButtonMapReader;
 import elite.intel.bindforge.devicefiles.ButtonMapWriter;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
@@ -62,7 +63,7 @@ public final class DeviceEdits {
     /** The file name the set holds the device's {@code .buttonMap} under, found ignoring case, as the game finds it. */
     public static Optional<String> buttonMapFile(ConfigurationFiles files, String device) {
         String wanted = device + GameInstallation.BUTTON_MAP_SUFFIX;
-        return files.buttonMaps().keySet().stream().filter(wanted::equalsIgnoreCase).findFirst();
+        return files.buttonMaps().keySet().stream().filter(name -> FileNames.sameFile(name, wanted)).findFirst();
     }
 
     /**
@@ -305,7 +306,7 @@ public final class DeviceEdits {
     private static Map<String, byte[]> withoutMap(Map<String, byte[]> maps, String device) {
         Map<String, byte[]> result = new TreeMap<>(maps);
         String wanted = device + GameInstallation.BUTTON_MAP_SUFFIX;
-        result.keySet().removeIf(wanted::equalsIgnoreCase);
+        result.keySet().removeIf(name -> FileNames.sameFile(name, wanted));
         return result;
     }
 

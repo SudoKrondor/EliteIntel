@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.storage.WriteReport.Place;
@@ -31,6 +32,11 @@ import java.util.stream.Stream;
  *     are still written, and nothing is rolled back. <strong>In the bindings folder the binds files go first</strong>:
  *     if one fails, the preset file is not written and nothing is removed, so the game is never left on a preset line
  *     naming a file that is not there (review, 2026-11-03).</li>
+ *     <li><strong>One spelling of each file</strong> (Krondor and Alan, 2026-11-07, Storage S13a): names that differ
+ *     only in case are one file ({@link FileNames#sameFile}). A file is written under the set's spelling - another
+ *     spelling already there is renamed to it first, and any further spelling, which only a file system that heeds
+ *     case allows, is removed and reported. So the working copy's spelling is the one left, a {@code .buttonMap} and
+ *     {@code DeviceMappings.xml} included.</li>
  * </ul>
  * A {@code .binds} the set lacks is left in the bindings folder - removing an old-named one is a rename's (Storage
  * S12). Only {@link WritePath} calls this, after the backup. Touches the disk - not for the EDT.
@@ -48,6 +54,9 @@ final class LiveCopies {
      * A failure line: a file held back because an earlier file in the bindings folder could not be written.
      */
     static final String HELD_BACK = "left as it is, because another file could not be written";
+
+    /** Added to a file's name for the middle step of changing its spelling. */
+    static final String RESPELLING = ".respelling";
 
     /**
      * Decides, just before an installation is written, whether to leave it alone - APPLY's for an installation whose
@@ -117,7 +126,9 @@ final class LiveCopies {
             if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
                 throw new IllegalArgumentException("not a binds or preset file name: " + name);
             }
-            if (!writing.isWritten(folder, name, files.bindings().keySet())) writing.remove(folder.resolve(name));
+            // WHY: a name the set holds in any spelling is the file just written - the edit wins (Storage S13a).
+            if (files.bindings().keySet().stream().anyMatch(written -> FileNames.sameFile(written, name))) continue;
+            writing.spellingsIn(folder, name).forEach(spelling -> writing.remove(folder.resolve(spelling)));
         }
         return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
     }
@@ -130,7 +141,9 @@ final class LiveCopies {
             return writing.place(WriteReport.Kind.INSTALLATION, installation.storefront(), installation.root());
         }
         if (files.hasDeviceMappings()) {
-            writing.writeIfDifferent(GameInstallation.deviceMappingsIn(controlSchemes), files.deviceMappings());
+            // WHY: through writeAll, so a devicemappings.xml there is that file and leaves under the game's spelling
+            // (Alan, 2026-11-07, Storage S13a D5).
+            writing.writeAll(controlSchemes, Map.of(GameInstallation.DEVICE_MAPPINGS, files.deviceMappings()));
         }
         Path buttonMaps = GameInstallation.deviceButtonMapsIn(controlSchemes);
         try {
@@ -155,27 +168,71 @@ final class LiveCopies {
         }
 
         /**
-         * Whether removing {@code name} would remove a file just written.
-         * WHY: asked of the file system - on Windows a name differing only in case is that file, on Linux it is another
-         * (Storage S12). A file that cannot be told apart is kept and reported.
+         * Writes each file under its own spelling. Another spelling of it in the folder is renamed to it first, so the
+         * file is replaced rather than a second one written beside it; any further spelling - two or more, which only a
+         * file system that heeds case allows - is removed after the write (Krondor and Alan, 2026-11-07, Storage S13a).
          */
-        boolean isWritten(Path folder, String name, Set<String> written) {
-            Path target = folder.resolve(name);
-            if (!Files.exists(target)) return false;
-            for (String file : written) {
-                if (!file.equalsIgnoreCase(name)) continue;
-                try {
-                    if (Files.isSameFile(target, folder.resolve(file))) return true;
-                } catch (IOException e) {
-                    fail(target, e);
-                    return true;
+        void writeAll(Path folder, Map<String, byte[]> files) {
+            List<String> present = namesIn(folder);
+            files.forEach((name, content) -> {
+                List<String> others = present.stream()
+                        .filter(found -> FileNames.sameFile(found, name) && !found.equals(name)).toList();
+                Path target = folder.resolve(name);
+                boolean respelled = false;
+                List<String> extra = others;
+                if (!present.contains(name) && !others.isEmpty()) {
+                    respelled = respell(folder.resolve(others.getFirst()), target);
+                    extra = others.subList(1, others.size());
                 }
-            }
-            return false;
+                writeIfDifferent(target, content);
+                if (respelled && !written.contains(name)) written.add(name);
+                extra.forEach(other -> remove(folder.resolve(other)));
+            });
         }
 
-        void writeAll(Path folder, Map<String, byte[]> files) {
-            files.forEach((name, content) -> writeIfDifferent(folder.resolve(name), content));
+        /** The spellings of {@code name} the folder holds - none, one, or on a file system that heeds case, several. */
+        List<String> spellingsIn(Path folder, String name) {
+            return namesIn(folder).stream().filter(found -> FileNames.sameFile(found, name)).toList();
+        }
+
+        /** The names of the files in {@code folder}, as spelled on disk; none, logged, when it cannot be listed. */
+        private static List<String> namesIn(Path folder) {
+            try (Stream<Path> listing = Files.list(folder)) {
+                return listing.filter(Files::isRegularFile).map(file -> file.getFileName().toString()).toList();
+            } catch (IOException e) {
+                // WHY: the writes that follow say what failed; without a listing a file is only written, not respelled.
+                log.warn("Could not list {} to find other spellings of the files written", folder, e);
+                return List.of();
+            }
+        }
+
+        /**
+         * Renames {@code from} to {@code to}, names that differ only in case, in two steps through a name of its own:
+         * on Windows a move to a name the file system takes for the same file does nothing. On a failure the file is
+         * put back and reported, and the write goes on under the old spelling.
+         */
+        private boolean respell(Path from, Path to) {
+            Path step = to.resolveSibling(to.getFileName() + RESPELLING);
+            try {
+                Files.move(from, step);
+            } catch (IOException e) {
+                fail(from, e);
+                return false;
+            }
+            try {
+                Files.move(step, to);
+                log.info("Renamed {} to {}", from.getFileName(), to.getFileName());
+                return true;
+            } catch (IOException e) {
+                fail(to, e);
+                try {
+                    Files.move(step, from);
+                } catch (IOException back) {
+                    failures.add(from.getFileName() + ": left as " + step.getFileName() + ": " + reason(back));
+                    log.warn("Could not put {} back as {}", step, from, back);
+                }
+                return false;
+            }
         }
 
         void writeIfDifferent(Path target, byte[] content) {
@@ -226,7 +283,7 @@ final class LiveCopies {
             }
             for (Path file : present) {
                 String name = file.getFileName().toString();
-                if (kept.containsKey(name) || isOneKept(file, folder, kept)) continue;
+                if (kept.keySet().stream().anyMatch(keptName -> FileNames.sameFile(keptName, name))) continue;
                 if (FrontierStockButtonMaps.shipsMapFor(deviceNameOf(name))) continue;
                 // WHY: the user protected it, so it is not removed against that - asked before deleting, because on
                 // Linux the delete would succeed whatever the file's own permission. They are told how to let it go,
@@ -278,18 +335,6 @@ final class LiveCopies {
             } catch (IOException e) {
                 fail(file, e);
             }
-        }
-
-        // WHY: on a file system that ignores case, lvwap.buttonMap on disk is the LVWAP.buttonMap just written - one
-        // file, which deleting would lose. Asked of the file system rather than assumed, so on one that heeds case the
-        // old spelling is a file of its own and goes.
-        private static boolean isOneKept(Path file, Path folder, Map<String, byte[]> kept) throws IOException {
-            for (String name : kept.keySet()) {
-                if (!name.equalsIgnoreCase(file.getFileName().toString())) continue;
-                Path keptFile = folder.resolve(name);
-                if (Files.exists(keptFile) && Files.isSameFile(file, keptFile)) return true;
-            }
-            return false;
         }
 
         void fail(Path file, IOException e) {
