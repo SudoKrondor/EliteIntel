@@ -4,6 +4,8 @@
 from your own files, underneath Vega rather than over her. Whenever Vega speaks, the music dips
 automatically and comes back up when she is done — you never miss a callout.
 
+![Commander tab](images/ui-jukebox.png)
+
 Nothing to install, no account, no streaming service. The tab is laid out top to bottom:
 **Music Library**, **Playlist**, **Playback**.
 
