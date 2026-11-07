@@ -2,7 +2,6 @@ package elite.intel.ui.controller;
 
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ui.controller.AppController.ServiceType;
-import elite.intel.util.StringUtls;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -36,15 +35,6 @@ class AppControllerServicesTest {
         // holder would hand the same singleton the RADIO role and silence all narration.
         assertFalse(AppController.buildServices(TtsProvider.SUPERTONIC, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.RADIO_MOUTH));
-    }
-
-    @Test
-    void onlyAnInstallWithNoLlmHearsThePushToTalkHint() {
-        String notice = StringUtls.localizedSpeech("speech.sleepModeStartupNotice");
-        String hint = StringUtls.localizedSpeech("speech.sleepModeStartupPttHint");
-
-        assertEquals(notice + " " + hint, AppController.sleepModeNotice(true));
-        assertEquals(notice, AppController.sleepModeNotice(false));
     }
 
     @Test

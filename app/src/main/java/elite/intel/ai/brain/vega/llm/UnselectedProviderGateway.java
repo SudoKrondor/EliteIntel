@@ -12,8 +12,8 @@ import java.util.concurrent.CompletableFuture;
  * at once, exactly as an unreachable provider would, and the commander hears the service-unreachable phrase.
  * <p>
  * It exists so a missing provider does not stop the services from starting: with them up,
- * {@link elite.intel.setup.SetupCheck} can say out loud what is missing, and the reflex commands, which never
- * ask a model, keep working in the meantime.
+ * {@link elite.intel.setup.SetupCheck} can say out loud what is missing. Commander input does not reach it:
+ * {@code VegaSubsystemGate} drops that until a model is set up.
  */
 final class UnselectedProviderGateway implements LlmGateway {
 

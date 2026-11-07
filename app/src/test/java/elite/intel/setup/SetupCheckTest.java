@@ -8,6 +8,7 @@ import elite.intel.i18n.Language;
 import elite.intel.session.DirectorySetting;
 import elite.intel.session.SystemSession;
 import elite.intel.setup.SetupCheck.LlmSetup;
+import elite.intel.setup.SetupCheck.SelectedLlm;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -88,6 +90,33 @@ class SetupCheckTest {
     @Test
     void anyConfigurationAtAllSilencesTheOnboardingWarning() {
         assertFalse(new LlmSetup("gemma-4-e4b", "sk-whatever").nothingConfigured());
+    }
+
+    // ── can the selected model run ───────────────────────────────────────────
+
+    @Test
+    void aSelectedLocalModelWithANameCanRun() {
+        assertEquals(Optional.empty(), new SelectedLlm(true, "google/gemma-4-e4b", "", false).gapSpeechKey());
+    }
+
+    @Test
+    void localWithNoModelCannotRunEvenWithACloudKeyStored() {
+        assertEquals(Optional.of("speech.setup.noLlm"), new SelectedLlm(true, " ", "sk-whatever", true).gapSpeechKey());
+    }
+
+    @Test
+    void cloudWithAKeyAndAProviderCanRun() {
+        assertEquals(Optional.empty(), new SelectedLlm(false, "", "sk-whatever", true).gapSpeechKey());
+    }
+
+    @Test
+    void cloudWithNoKeyCannotRunEvenWithALocalModelNamed() {
+        assertEquals(Optional.of("speech.setup.noLlm"), new SelectedLlm(false, "gemma-4-e4b", "", true).gapSpeechKey());
+    }
+
+    @Test
+    void cloudWithAKeyButNoProviderSaysToPickOne() {
+        assertEquals(Optional.of("speech.setup.noLlmProvider"), new SelectedLlm(false, "", "sk-whatever", false).gapSpeechKey());
     }
 
     // ── journals ─────────────────────────────────────────────────────────────
@@ -344,19 +373,20 @@ class SetupCheckTest {
     }
 
     /**
-     * The onboarding line has to name the two ways out and where to read about them, in every language -
-     * a commander who cannot act on it is no better off than one who heard nothing.
+     * The onboarding line has to name the local model and where to read about the ways out, in every language -
+     * a commander who cannot act on it is no better off than one who heard nothing. It promises no free cloud
+     * tier: Mistral ended its own, and no other provider has one to send a commander to.
      * <p>
      * The site is spoken, never shown, so Cyrillic locales say it phonetically ("элит интел точка орг"): a
      * Russian voice handed a Latin domain either spells it out or mangles it. Hence the expected token is
      * per-language rather than the Latin name everywhere.
      */
     @Test
-    void theOnboardingLineNamesBothOptionsAndTheSite() {
+    void theOnboardingLineNamesTheLocalModelAndTheSite() {
         for (Language language : Language.values()) {
             String text = MultiLingualTextProvider.getText(language, "speech.setup.noLlm");
 
-            assertTrue(text.contains("Mistral"), language + " does not name Mistral");
+            assertFalse(text.contains("Mistral"), language + " still offers the Mistral free tier");
             assertTrue(text.contains("Gemma 4 E4B"), language + " does not name the local model");
             assertTrue(text.toLowerCase().contains(spokenSiteToken(language)),
                     language + " does not point at the site");

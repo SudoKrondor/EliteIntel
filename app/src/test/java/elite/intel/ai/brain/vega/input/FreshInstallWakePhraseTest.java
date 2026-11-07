@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * A new install starts asleep with no language model set up, and its startup notice tells the commander what to say.
- * That phrase has to work with nothing behind it: past the sleep gate, then to the wake command by reflex, without
- * ever asking a model.
+ * A new install starts asleep, and once a language model is set up the notice tells the commander what to say. That
+ * phrase has to work even while the model is not answering, say with LM Studio still starting: past the sleep gate,
+ * then to the wake command by reflex, without ever asking a model.
  */
 class FreshInstallWakePhraseTest {
 

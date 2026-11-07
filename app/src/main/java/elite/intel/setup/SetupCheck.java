@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -28,7 +29,7 @@ import java.util.stream.Stream;
  * Three separate things are checked, and each speaks on its own — a commander can easily have a working
  * language model and the wrong journal folder:
  * <ul>
- *   <li><b>No language model at all.</b> Points at the free Mistral tier or the local Gemma model and at the
+ *   <li><b>No language model at all.</b> Points at a cloud model or the local Gemma model and at the
  *       website for instructions - and no further: the microphone calibrates itself on its first start and speaks
  *       up only when it needs attention, so the first thing a new commander hears stays short. Short of that, a cloud setup with <b>no provider
  *       picked</b> - an install upgraded with a key whose format named no provider - is sent to the settings
@@ -138,9 +139,38 @@ public class SetupCheck {
         return llmSetup().nothingConfigured();
     }
 
+    /**
+     * What stops VEGA running on the model the commander has selected, as the key of the line that says so, or
+     * empty when nothing does. A setting, never a connection: a model that is set up but not answering right now
+     * is not a gap, it is the connection check's business.
+     */
+    public static Optional<String> llmGapSpeechKey() {
+        SystemSession session = SystemSession.getInstance();
+        return new SelectedLlm(session.useLocalCommandLlm(), session.getLmStudioCommandModel(),
+                session.getAiApiKey(), LlmProviderResolver.cloudProvider().isPresent()).gapSpeechKey();
+    }
+
     private static LlmSetup llmSetup() {
         SystemSession session = SystemSession.getInstance();
         return new LlmSetup(session.getLmStudioCommandModel(), session.getAiApiKey());
+    }
+
+    /**
+     * The model the commander has selected and what it needs. Unlike {@link LlmSetup}, which asks whether this is a
+     * fresh install, this asks whether the selected model can run: a stored cloud key does nothing for a commander
+     * on local with no model named.
+     */
+    record SelectedLlm(boolean local, String localModel, String cloudApiKey, boolean providerChosen) {
+
+        Optional<String> gapSpeechKey() {
+            if (local) {
+                return LlmSetup.isBlank(localModel) ? Optional.of("speech.setup.noLlm") : Optional.empty();
+            }
+            if (LlmSetup.isBlank(cloudApiKey)) {
+                return Optional.of("speech.setup.noLlm");
+            }
+            return providerChosen ? Optional.empty() : Optional.of("speech.setup.noLlmProvider");
+        }
     }
 
     /**
