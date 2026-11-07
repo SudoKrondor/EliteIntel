@@ -58,6 +58,8 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 - **18 `JOptionPane` uses in the Bind Editor, against hard rule 16** (`HudConfirmDialog`, never `JOptionPane`) - in
   `BindingProfilePanel` (the Auto-Assign confirm and its results among them), `ClearKeyboardBindingDialog.onCleared`
   and `BindingSaveResultPresenter`. Older than S5; found in the S5/S6 review (Alan, 2026-10-29, D8). Its own item - move them to `HudConfirmDialog` when a slice is in those files, the first one first.
+  **One more, in `GameModePanel.fixAllMissing`** (the Missing tab's fix-all confirm) - found in the S14a-S13a review
+  (Alan, 2026-11-07, S13aR D6), left with the rest.
 - **The controller conflict check matches exact chords
   only.** The keyboard check also flags a modifier that another control binds on its own (`shadowedModifier`). Whether that holds for controller buttons is unmeasured.
 
