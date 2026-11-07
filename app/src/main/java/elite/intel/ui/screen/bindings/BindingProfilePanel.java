@@ -42,7 +42,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  * The "Binding Profile" sub-tab of BIND FORGE - the Bind Editor's shell: the EDITING line naming the binds file shown,
  * the search field and the modes under it. The file is chosen in File Manager (Storage S15). Extracted from the former
  * monolithic {@code BindingsTabPanel}. One tab row holds the modes: the game's sections ({@link GameModePanel}, All to
- * On-Foot), Anomalies (its view of the rows in conflict) and Settings ({@link SettingsModePanel}).
+ * On-Foot), Anomalies (its view of the rows in conflict) and Dead Zones &amp; Sensitivity ({@link SettingsModePanel}).
  * <p>
  * <strong>It shows and changes the edits not applied</strong> (Storage S5, 2026-10-28): any binds file in the working
  * copy loads, and capture SAVE, CLEAR and Auto-Assign are edits that light the one APPLY / DISCARD bar above
@@ -157,7 +157,7 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * The one tab row - the sections, then Anomalies and Settings - over what the chosen tab shows.
+     * The one tab row - the sections, then Anomalies and Dead Zones &amp; Sensitivity - over what the chosen tab shows.
      * <p>
      * WHY the tabs are empty and a card panel holds the views: a component sits on one tab only, and all five section
      * tabs show the same tables, narrowed.

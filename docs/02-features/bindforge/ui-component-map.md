@@ -95,7 +95,7 @@ canon's.
 | Search, clearing with × | `HudSearchField` ✓ |
 | Search, clearing with Esc | **GAP 6** — the widget has no Esc handling |
 | Show Anomalies Only | `HudCheckBox` ✓ — exists today as SHOW CONFLICTS ONLY |
-| One tab row — All, General, Ship, SRV, On-Foot, Anomalies, Settings (2026-11-06) | `HudTabbedPane` `SECTION` ✓ — tabs rather than a segmented bar, for the counts |
+| One tab row — All, General, Ship, SRV, On-Foot, Anomalies, Dead Zones & Sensitivity (2026-11-06) | `HudTabbedPane` `SECTION` ✓ — tabs rather than a segmented bar, for the counts |
 | The roughly 75/25 split, grid against Binding Editor panel | `HudSplitPane` ✓ |
 
 ### Game Mode
