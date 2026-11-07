@@ -1906,6 +1906,8 @@ Built as `bindforge.devices.MissingControllers` (who is named — pure) and `Mis
   been listing controllers since launch; BindForge says nothing until the user comes to it. The screen's first showing
   starts a refresh of its own, and the warning judges that one: the screen's refresh at application start can run
   before any hardware has been listed.
+  *Kept out of BindForge's notice at Elite-Intel start for the same reasons (Alan, 2026-11-06, Storage S14c;
+  [storage.md](storage.md#an-installation-missing--read-only-2026-11-03-alan)).*
 - **Spoken and logged**, as the other one-time checks are: one spoken line naming the controllers, and one log line
   each with how many bindings name it — *"Controller LVWAP is not connected - 142 bindings name it"*.
 

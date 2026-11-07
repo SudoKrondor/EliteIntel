@@ -1,5 +1,6 @@
 package elite.intel.bindforge.preseteditor;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.SafeXml;
 import elite.intel.bindforge.io.StartPresetSections;
 import org.w3c.dom.Document;
@@ -97,7 +98,9 @@ final class BindsContent {
         if (bindName.isEmpty()) {
             return new NotOffered(NotOfferedReason.NO_PRESET_NAME, "");
         }
-        if (!bindName.equals(BindName.fromFileName(fileName))) {
+        // WHY: ignoring case - the game loads a file renamed to lower case with its PresetName as it was (Alan,
+        // 2026-11-06; Storage S13a).
+        if (!FileNames.sameFile(bindName, BindName.fromFileName(fileName))) {
             return new NotOffered(NotOfferedReason.NAME_MISMATCH, bindName);
         }
         return new Offered(bindName);

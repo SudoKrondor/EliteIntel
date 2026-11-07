@@ -139,6 +139,7 @@ public final class DeviceCheck {
 
         private static boolean sameBytes(DeviceFiles one, DeviceFiles other) {
             if (!Arrays.equals(one.deviceMappings(), other.deviceMappings())) return false;
+            // WHY: both maps are keyed ignoring case (DeviceFiles), so a respelled map is the same file (Storage S13a).
             if (!one.buttonMaps().keySet().equals(other.buttonMaps().keySet())) return false;
             return one.buttonMaps().entrySet().stream()
                     .allMatch(map -> Arrays.equals(map.getValue(), other.buttonMaps().get(map.getKey())));

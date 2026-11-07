@@ -1,7 +1,10 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.model.BindingSection;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -33,6 +36,8 @@ import java.util.*;
  * Pure: nothing is read or written here.
  */
 public final class BindingsComparison {
+
+    private static final Logger log = LogManager.getLogger(BindingsComparison.class);
 
     /** The row of a file's details - its root's {@code PresetName} and version. */
     static final String DETAILS = "#details";
@@ -227,9 +232,10 @@ public final class BindingsComparison {
      * Every binds and preset file that differs.
      *
      * @param workingCopy the working copy's binds and preset files, by name
-     * @param live        the bindings folder's, by name
+     * @param found       the bindings folder's, by name as found - paired with the working copy's ignoring case
      */
-    public static Differences compare(Map<String, byte[]> workingCopy, Map<String, byte[]> live, Factory factory) {
+    public static Differences compare(Map<String, byte[]> workingCopy, Map<String, byte[]> found, Factory factory) {
+        Map<String, byte[]> live = paired(workingCopy, found);
         Set<String> leftOut = new TreeSet<>();
         List<NewerVersion> newer = new ArrayList<>();
         Set<String> names = new TreeSet<>(workingCopy.keySet());
@@ -270,13 +276,28 @@ public final class BindingsComparison {
     }
 
     /**
+     * The bindings folder's files under the working copy's spellings: a live file whose name differs from a working-copy
+     * file's only in case is that file, compared by value as usual, and the working copy's spelling is the one the next
+     * write leaves (Alan, 2026-11-07, Storage S13a D2). Two live spellings of one file - only where the file system
+     * heeds case - are compared as the one spelled as the working copy's, else the first in name order; the write
+     * removes the others (D3).
+     */
+    private static Map<String, byte[]> paired(Map<String, byte[]> workingCopy, Map<String, byte[]> found) {
+        FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(found, workingCopy.keySet());
+        if (!one.leftOut().isEmpty()) {
+            log.info("The bindings folder holds two spellings of one file; compared without: {}", one.leftOut());
+        }
+        return one.files();
+    }
+
+    /**
      * Each working-copy binds file the game has a newer version of, to the newest such live file: for every BindName,
      * the working copy's newest version, and the newest live file of that BindName above it that the working copy does
      * not hold. Only the file name's version counts - the root's names the tool that last wrote the file, and BindForge
      * gates nothing on it (bind-editor.md, <em>A fourth source</em>; Alan, 2026-10-31, Storage S10 D2).
      */
     private static Map<String, String> newerVersions(Set<String> workingCopy, Set<String> live) {
-        Map<String, String> newestMine = new TreeMap<>();
+        Map<String, String> newestMine = new TreeMap<>(FileNames.ONE_FILE);
         for (String file : workingCopy) {
             FileNames.bindName(file).ifPresent(bindName -> newestMine.merge(bindName, file,
                     (a, b) -> FileNames.version(a) >= FileNames.version(b) ? a : b));
@@ -285,7 +306,9 @@ public final class BindingsComparison {
         for (String older : newestMine.values()) {
             Optional<String> bindName = FileNames.bindName(older);
             live.stream()
-                    .filter(file -> !workingCopy.contains(file) && FileNames.bindName(file).equals(bindName)
+                    .filter(file -> !workingCopy.contains(file)
+                            && FileNames.bindName(file).filter(name -> FileNames.sameFile(name, bindName.orElseThrow()))
+                            .isPresent()
                             && FileNames.version(file) > FileNames.version(older))
                     .max(Comparator.comparingLong(FileNames::version))
                     .ifPresent(newest -> newer.put(older, newest));
@@ -332,7 +355,8 @@ public final class BindingsComparison {
         }
         if (items.isEmpty()) return Optional.empty();
         boolean reset = PresetEdits.SECTIONS.stream()
-                .allMatch(section -> factory.bindNames().contains(theirLines.forSection(section)))
+                .allMatch(section -> factory.bindNames().stream()
+                        .anyMatch(factoryName -> FileNames.sameFile(factoryName, theirLines.forSection(section))))
                 && PresetEdits.SECTIONS.stream()
                 .anyMatch(section -> isUsersOwn(mineLines.forSection(section), workingCopyFiles));
         return Optional.of(new FileDifference(name, Presence.BOTH, reset, items));
@@ -421,13 +445,14 @@ public final class BindingsComparison {
      * The binds and preset files once every row is answered.
      *
      * @param workingCopy the working copy's binds and preset files, as compared
-     * @param live        the bindings folder's, as compared
+     * @param found       the bindings folder's, as compared
      * @param answers     the side each row keeps, by {@link LineItem#id()}
      * @throws IllegalArgumentException if a row has no answer
      * @throws IOException              if a merged binds file could not be made - the message names it
      */
-    public static Settled settle(Map<String, byte[]> workingCopy, Map<String, byte[]> live, Differences differences,
+    public static Settled settle(Map<String, byte[]> workingCopy, Map<String, byte[]> found, Differences differences,
                                  Map<String, Side> answers) throws IOException {
+        Map<String, byte[]> live = paired(workingCopy, found);
         Map<String, byte[]> settled = new TreeMap<>(workingCopy);
         Set<String> remove = new TreeSet<>();
         for (FileDifference file : differences.files()) {

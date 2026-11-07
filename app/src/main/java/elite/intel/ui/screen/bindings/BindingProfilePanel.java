@@ -12,6 +12,7 @@ import elite.intel.bindforge.storage.Edits;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import elite.intel.ui.theme.AppTheme;
@@ -131,6 +132,17 @@ public class BindingProfilePanel extends JPanel {
     @Subscribe
     public void onEditsChanged(BindForgeEditsChangedEvent event) {
         SwingUtilities.invokeLater(this::initData);
+    }
+
+    /**
+     * BindForge went read only, or stopped being: Game Mode, Anomalies and Settings follow (Storage S14b).
+     */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            gameMode.readOnlyChanged();
+            settingsMode.readOnlyChanged();
+        });
     }
 
     /**
@@ -432,10 +444,10 @@ public class BindingProfilePanel extends JPanel {
         FlowSteps.inBackground("BindForge-BindEditorChange", log, title, () -> {
                     try {
                         change.run();
-                    } catch (Edits.WriteRunningException e) {
-                        // WHY: a write is running - said in the user's language, not the exception's.
+                    } catch (Edits.RefusedException e) {
+                        // WHY: refused - a write running, or read only - said in the user's language.
                         log.info("{} not done: {}", title, e.getMessage());
-                        return () -> changed(title, getText("bindings.writeRunning"), onEdt, afterFailure);
+                        return () -> changed(title, getText(e.messageKey()), onEdt, afterFailure);
                     }
                     return () -> changed(title, null, onEdt, afterFailure);
                 }, reason -> () -> changed(title, getText("bindings.change.failed"), onEdt, afterFailure),

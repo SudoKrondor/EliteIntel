@@ -136,6 +136,11 @@ below follow the rest of that order.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-11-05 — Storage S14a done: P4 is read only too.** While an installation is missing BindForge is read only
+  (storage.md, *An installation missing - read only*): the Preset Editor shows its four lines with the dropdowns locked.
+  P4 reads `ReadOnlyMode.stored().activeIfKnown()` on the EDT and listens for `BindForgeReadOnlyChangedEvent`; the edits
+  refuse a change anyway (`Edits.ReadOnlyException`).
+
 - **2026-11-02 — Storage S11 (CREATE) done: P4 needs its tab greyed with the other editors.** While the working copy
   holds no binds file of the user's, `BindingsTabPanel.editorsUsable` greys the Bind Editor and Alias Designer tabs
   until CREATE is pressed (storage.md rule 16, *Settled with Storage S11's sources*). P4's new tab joins that list.

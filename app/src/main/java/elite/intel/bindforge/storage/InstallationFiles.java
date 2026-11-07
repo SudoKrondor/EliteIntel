@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 
 import java.io.IOException;
@@ -26,7 +27,9 @@ public record InstallationFiles(long installId, String storefront, Path root, by
     public InstallationFiles {
         Objects.requireNonNull(storefront, "storefront");
         Objects.requireNonNull(root, "root");
-        buttonMaps = Collections.unmodifiableMap(new TreeMap<>(buttonMaps));
+        Map<String, byte[]> sorted = new TreeMap<>(FileNames.ONE_FILE);
+        sorted.putAll(buttonMaps);
+        buttonMaps = Collections.unmodifiableMap(sorted);
     }
 
     /**
@@ -46,7 +49,7 @@ public record InstallationFiles(long installId, String storefront, Path root, by
         return deviceMappings != null;
     }
 
-    /** Whether the other holds exactly the same device files, byte for byte. */
+    /** Whether the other holds exactly the same device files, byte for byte - a map's name ignoring case (Storage S13a). */
     public boolean sameFilesAs(InstallationFiles other) {
         if (!Arrays.equals(deviceMappings, other.deviceMappings)) return false;
         if (!buttonMaps.keySet().equals(other.buttonMaps.keySet())) return false;

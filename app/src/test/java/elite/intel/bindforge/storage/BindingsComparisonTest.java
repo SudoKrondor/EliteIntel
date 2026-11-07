@@ -51,6 +51,43 @@ class BindingsComparisonTest {
         assertTrue(differences.none(), differences.toString());
     }
 
+    /**
+     * A live file whose name differs from the working copy's only in case is that file, compared by value: equal values
+     * ask nothing (Alan, 2026-11-07, Storage S13a D2).
+     */
+    @Test
+    void aLiveFileInAnotherCaseIsTheWorkingCopysFile() {
+        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
+                Map.of("custom.4.2.binds", binds("Custom", "Key_A", "Joy_XAxis", "")));
+
+        assertTrue(differences.none(), differences.toString());
+    }
+
+    /** Taking the game's side of such a file keeps the working copy's spelling (Storage S13a D2). */
+    @Test
+    void theGamesSideOfAFileInAnotherCaseKeepsTheWorkingCopysSpelling() throws IOException {
+        Map<String, byte[]> workingCopy = files(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")));
+        Map<String, byte[]> live = files(Map.of("custom.4.2.binds", binds("Custom", "Key_Q", "Joy_XAxis", "")));
+        Differences differences = BindingsComparison.compare(workingCopy, live, Factory.NONE);
+
+        assertEquals(CUSTOM, differences.files().getFirst().file());
+        BindingsComparison.Settled settled = BindingsComparison.settle(workingCopy, live, differences,
+                Map.of(YAW_PRIMARY, Side.LIVE));
+        assertEquals(Set.of(CUSTOM), settled.bindings().keySet());
+        assertEquals(Set.of(), settled.removeFromLive());
+        assertTrue(text(settled.bindings().get(CUSTOM)).contains("Key_Q"));
+    }
+
+    /** A newer version in another case is still that BindName's newer version (Storage S13a). */
+    @Test
+    void aNewerVersionInAnotherCaseIsFound() {
+        Differences differences = compare(Map.of(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", "")),
+                Map.of("custom.4.3.binds", binds43("Custom", "Key_A", "Joy_XAxis", NEW_THING)));
+
+        assertEquals(List.of("custom.4.3.binds"),
+                differences.newer().stream().map(NewerVersion::newer).toList());
+    }
+
     /** A button is compared slot by slot - Primary and Secondary are separate rows (overview.md, Merge grain). */
     @Test
     void aChangedButtonSlotIsOneRow() {

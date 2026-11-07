@@ -76,7 +76,22 @@ class BindNameCatalogTest {
 
         assertEquals(BindsFileOrigin.FACTORY, list.find("KeyboardMouseOnly").orElseThrow().origin());
         assertEquals(BindsFileOrigin.USER, list.find("Custom").orElseThrow().origin());
-        assertEquals(Optional.empty(), list.find("custom"), "a near miss is not a match");
+        assertEquals(BindsFileOrigin.USER, list.find("custom").orElseThrow().origin(),
+                "a line in another case names the file, as the game reads it (Storage S13a)");
+        assertEquals(Optional.empty(), list.find("Cust_om"), "a near miss is not a match");
+    }
+
+    /** A player's file spelled like a factory one in another case still shadows it (Storage S13a). */
+    @Test
+    void aPlayersFileInAnotherCaseShadowsTheFactoryOne() throws IOException {
+        set.put("keyboardmouseonly.4.2.binds", bytes(binds("keyboardmouseonly")));
+        Path controlSchemes = folder("Steam/ControlSchemes");
+        factory(controlSchemes, "KeyboardMouseOnly");
+
+        BindNameList list = BindNameCatalog.list(set, List.of(controlSchemes));
+
+        assertEquals(List.of(new BindNameEntry("keyboardmouseonly", BindsFileOrigin.USER,
+                List.of(Path.of("keyboardmouseonly.4.2.binds")), true)), list.entries());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.io.StartPresetSections;
 import elite.intel.bindforge.preseteditor.BindNameCatalog;
@@ -12,13 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -211,6 +206,8 @@ public final class Apply {
      *                                                 file that can be found - nothing was backed up or written, and
      *                                                 the edits are still on screen. It names the installations that
      *                                                 could not be reached, if any
+     * @throws Edits.RefusedException                  if another write is running, or BindForge is read only - nothing
+     *                                                 was written, and the edits are still on screen
      * @throws IOException                             if the game's files or the working copy's own device files cannot
      *                                                 be read, a merge cannot be made, the backup cannot be taken, or
      *                                                 the working copy cannot be saved - no live copy was written, and
@@ -285,7 +282,7 @@ public final class Apply {
 
     /** The edits, with the default labels for every device that has no {@code .buttonMap} - one in any spelling wins. */
     private static ConfigurationFiles withDefaults(ConfigurationFiles files, Map<String, byte[]> defaultLabels) {
-        Map<String, byte[]> maps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, byte[]> maps = new TreeMap<>(FileNames.ONE_FILE);
         maps.putAll(files.buttonMaps());
         defaultLabels.forEach(maps::putIfAbsent);
         return files.withButtonMaps(new TreeMap<>(maps));

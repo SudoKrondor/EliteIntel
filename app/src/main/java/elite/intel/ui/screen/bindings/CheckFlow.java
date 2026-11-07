@@ -112,9 +112,9 @@ final class CheckFlow {
             } catch (BindingsCheck.EditsNotAppliedException e) {
                 log.info("The check wrote nothing: {}", e.getMessage());
                 return getText("bindings.check.editsNotApplied");
-            } catch (Edits.WriteRunningException e) {
+            } catch (Edits.RefusedException e) {
                 log.info("The check wrote nothing: {}", e.getMessage());
-                return getText("bindings.writeRunning");
+                return getText(e.messageKey());
             }
         }
 

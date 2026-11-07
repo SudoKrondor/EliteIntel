@@ -1,5 +1,6 @@
 package elite.intel.bindforge.preseteditor;
 
+import elite.intel.bindforge.io.FileNames;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +43,9 @@ public final class BindNameCatalog {
      *                              skipped with a warning, because an unplugged drive must not empty the list
      */
     public static BindNameList list(Map<String, byte[]> userFiles, Collection<Path> controlSchemesFolders) {
-        Map<String, Gathered> byName = new LinkedHashMap<>();
+        // WHY: keyed ignoring case, so a file of the player's spelled like a factory one in another case shadows it, and
+        // two of theirs differing only in case are one BindName (Storage S13a).
+        Map<String, Gathered> byName = new TreeMap<>(FileNames.ONE_FILE);
         List<NotOfferedFile> notOffered = new ArrayList<>();
 
         new TreeMap<>(userFiles).forEach((name, content) ->

@@ -94,11 +94,13 @@ final class DeviceEditorDialog extends JDialog {
      * @param rename      whether the name can be changed, and why not
      * @param taken       the names a new name must not clash with - empty unless {@code rename} allows it
      * @param covering    Frontier's element covering the controller's hardware, or {@code null} when none does
+     * @param readOnly    whether BindForge is read only, an installation missing: the dialog shows everything and
+     *                    changes nothing (Storage S14b)
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
                    boolean gamepad, DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
                    DeviceEditorMiddle middle, DeviceRename.Allowed rename,
-                   Set<String> taken, Covering covering) {
+                   Set<String> taken, Covering covering, boolean readOnly) {
         Opening {
             taken = Set.copyOf(taken);
         }
@@ -169,7 +171,7 @@ final class DeviceEditorDialog extends JDialog {
     }
 
     private boolean renamable() {
-        return opening.rename() == DeviceRename.Allowed.YES;
+        return opening.rename() == DeviceRename.Allowed.YES && !opening.readOnly();
     }
 
     /** The name as typed, trimmed - or the name it opened with when it cannot be changed. */
@@ -199,6 +201,19 @@ final class DeviceEditorDialog extends JDialog {
         return named() && !opening.middle().undoing();
     }
 
+    /**
+     * Whether the label boxes take typing: {@link #editable()}, while BindForge is not read only. WHY apart: read only,
+     * the input tabs still open and light, so the user can still find out which input is which (Storage S14b).
+     */
+    private boolean labelsChangeable() {
+        return editable() && !opening.readOnly();
+    }
+
+    /** Whether the middle button can be pressed: as its rule says, and never while read only. */
+    private boolean middleEnabled() {
+        return opening.middle().enabled() && !opening.readOnly();
+    }
+
     private void buildUi() {
         JTabbedPane tabs = AppTheme.makeCompactTabs();
         tabs.addTab(getText("bindings.aliasDesigner.editor.tab.device"), deviceTab());
@@ -209,7 +224,9 @@ final class DeviceEditorDialog extends JDialog {
 
         JPanel body = transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         body.add(tabs, BorderLayout.CENTER);
-        body.add(note(getText("bindings.aliasDesigner.editor.workingCopy"), HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT),
+        body.add(opening.readOnly()
+                        ? note(getText("bindings.readOnly.viewOnly"), HudPalette.HUD_COLOR_ROLE_WARNING)
+                        : note(getText("bindings.aliasDesigner.editor.workingCopy"), HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT),
                 BorderLayout.SOUTH);
 
         save = makeButton(getText("button.save"));
@@ -226,9 +243,10 @@ final class DeviceEditorDialog extends JDialog {
             case UNDO_CLEAR -> "bindings.aliasDesigner.editor.button.undoClear";
             case UNDO_RESET -> "bindings.aliasDesigner.editor.button.undoReset";
         }));
-        middle.setEnabled(rule.enabled());
-        String why = whyText(rule);
+        middle.setEnabled(middleEnabled());
+        String why = opening.readOnly() ? getText("bindings.readOnly.tooltip") : whyText(rule);
         if (why != null) middle.setToolTipText(why);
+        if (opening.readOnly()) save.setToolTipText(getText("bindings.readOnly.tooltip"));
         middle.addActionListener(e -> middleAction());
 
         HudModalSpec spec = HudModalSpec.builder()
@@ -286,6 +304,9 @@ final class DeviceEditorDialog extends JDialog {
         }
         if (offersName()) {
             JButton name = makeButton(getText("bindings.aliasDesigner.editor.button.name"));
+            // WHY off while read only: NAME opens onboarding, which writes the name (Storage S14b).
+            name.setEnabled(!opening.readOnly());
+            if (opening.readOnly()) name.setToolTipText(getText("bindings.readOnly.tooltip"));
             name.addActionListener(e -> {
                 dispose();
                 onName.run();
@@ -453,7 +474,7 @@ final class DeviceEditorDialog extends JDialog {
         sized(box, FIELD_COLUMNS);
         ((AbstractDocument) box.getDocument()).setDocumentFilter(new LengthLimit());
         box.setText(starting.get(token));
-        box.setEditable(editable());
+        box.setEditable(labelsChangeable());
         refreshOnEdit(box);
         box.addFocusListener(new FocusAdapter() {
             @Override
@@ -509,7 +530,7 @@ final class DeviceEditorDialog extends JDialog {
     }
 
     private boolean dirty() {
-        return editable() && (nameChanged() || DeviceEditorInputs.changed(starting, boxValues()));
+        return labelsChangeable() && (nameChanged() || DeviceEditorInputs.changed(starting, boxValues()));
     }
 
     private void refreshDirty() {
@@ -622,7 +643,7 @@ final class DeviceEditorDialog extends JDialog {
      */
     private void middleAction() {
         DeviceEditorMiddle rule = opening.middle();
-        if (busy || !rule.enabled()) return;
+        if (busy || !middleEnabled()) return;
         String name = opening.deviceName();
         FrontierStockDevices stock = FrontierStockDevices.getInstance();
         if (rule.undoing()) {
@@ -678,10 +699,10 @@ final class DeviceEditorDialog extends JDialog {
                 Edits.stored().change(edit);
             } catch (Stale e) {
                 return () -> notChanged(getText("bindings.aliasDesigner.editor.stale", opening.deviceName()));
-            } catch (Edits.WriteRunningException e) {
+            } catch (Edits.RefusedException e) {
                 // WHY: shown alone, like a stale device - wrapped in failedKey it would say "could not be done" twice.
                 log.info("The Device Editor did not change {}: {}", opening.deviceName(), e.getMessage());
-                return () -> notChanged(getText("bindings.writeRunning"));
+                return () -> notChanged(getText(e.messageKey()));
             }
             return () -> {
                 busy = false;
@@ -693,7 +714,7 @@ final class DeviceEditorDialog extends JDialog {
     /** After {@link #runAndClose}: the dialog stays, with {@code message} shown. On the EDT. */
     private void notChanged(String message) {
         busy = false;
-        middle.setEnabled(opening.middle().enabled());
+        middle.setEnabled(middleEnabled());
         refreshDirty();
         HudConfirmDialog.info(this, getText("bindings.aliasDesigner.editor.heading"), message,
                 getText("button.close"));

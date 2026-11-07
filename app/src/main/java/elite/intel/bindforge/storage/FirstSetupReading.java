@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.FirstSetupPlan;
 import elite.intel.bindforge.devicefiles.FirstSetupReader;

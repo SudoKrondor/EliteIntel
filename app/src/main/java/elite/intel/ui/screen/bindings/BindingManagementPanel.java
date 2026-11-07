@@ -1,10 +1,14 @@
 package elite.intel.ui.screen.bindings;
 
+import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.storage.Backup;
 import elite.intel.bindforge.storage.BackupDestination;
 import elite.intel.bindforge.storage.Backups;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.db.managers.BindForgeSettingsManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudFooter;
@@ -89,6 +93,15 @@ public class BindingManagementPanel extends JPanel {
 
     public BindingManagementPanel() {
         buildUi();
+        UiBus.register(this);
+        // WHY after registering: read only may have been worked out before this screen existed.
+        updateSelectionActionsEnabled();
+    }
+
+    /** RESTORE and Browse for Backup File are off while BindForge is read only (Storage S14a). */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(this::updateSelectionActionsEnabled);
     }
 
     private void buildUi() {
@@ -220,6 +233,7 @@ public class BindingManagementPanel extends JPanel {
     }
 
     public void dispose() {
+        UiBus.unregister(this);
         gameInstallLocationsPanel.dispose();
     }
 
@@ -455,8 +469,14 @@ public class BindingManagementPanel extends JPanel {
 
     private void updateSelectionActionsEnabled() {
         Backup selected = operationInProgress ? null : selectedBackup();
-        restoreButton.setEnabled(selected != null);
-        browseButton.setEnabled(!operationInProgress);
+        // WHY: RESTORE writes every live copy, and every write is off while read only; Backup Now and Delete touch no
+        // game file and stay (Storage S14a). The tooltip says why the button is dark.
+        boolean readOnly = ReadOnlyMode.stored().activeIfKnown();
+        String why = readOnly ? getText("bindings.readOnly.tooltip") : null;
+        restoreButton.setEnabled(selected != null && !readOnly);
+        restoreButton.setToolTipText(why);
+        browseButton.setEnabled(!operationInProgress && !readOnly);
+        browseButton.setToolTipText(why);
         deleteButton.setEnabled(selected != null && selected.kind() == Backups.Kind.USER);
     }
 

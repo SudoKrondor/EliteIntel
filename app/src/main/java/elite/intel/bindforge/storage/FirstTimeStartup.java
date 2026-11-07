@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.bindforge.devicefiles.FrontierStockButtonMaps;
@@ -21,7 +22,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -37,8 +41,10 @@ import java.util.stream.Stream;
  * <p>
  * <strong>A new player with no bindings folder yet is not taken through it</strong> (Alan, 2026-10-25): the game makes
  * the folder only after the training, so nothing of theirs exists yet - {@link #read} refuses with
- * {@link NoBindingsYetException}, and the flag stays unset. Nor is first-time startup run when every installation is
- * unreachable ({@link NoInstallationReachableException}). Touches the disk and the database - not for the EDT.
+ * {@link NoBindingsYetException}, and the flag stays unset. <strong>It runs with the installations that are
+ * there</strong>, even none of the known ones (storage.md, <em>An installation missing - read only</em>; Storage S14a):
+ * one missing then is read only at the next start, and reconciled when it comes back (rule 1). Touches the disk and the
+ * database - not for the EDT.
  */
 public final class FirstTimeStartup {
 
@@ -60,26 +66,6 @@ public final class FirstTimeStartup {
 
         NoBindingsYetException(Path folder) {
             super("the bindings folder is not there yet: " + folder);
-        }
-    }
-
-    /**
-     * Thrown by {@link #read} when Elite-Intel knows installations but none of their folders is there - a drive
-     * unplugged. First-time startup does not run on none of them (Alan, 2026-10-25); the flag stays unset. With no
-     * installation known at all it runs, with the binds and preset files alone.
-     */
-    public static final class NoInstallationReachableException extends IOException {
-        private final transient List<InstallationRow> unreachable;
-
-        NoInstallationReachableException(List<InstallationRow> unreachable) {
-            super("no installation could be reached: " + unreachable.stream()
-                    .map(row -> row.storefront() + " (" + row.rootPath() + ")").toList());
-            this.unreachable = List.copyOf(unreachable);
-        }
-
-        /** The installations that could not be reached, for the user to plug in or Remove. */
-        public List<InstallationRow> unreachable() {
-            return unreachable;
         }
     }
 
@@ -125,7 +111,8 @@ public final class FirstTimeStartup {
      * the APPLY / DISCARD bar is dimmed and no APPLY can start: one started meanwhile would write the edits it read
      * before this write, over the set this write leaves (review, 2026-10-27).
      *
-     * @throws Edits.WriteRunningException if an APPLY or another write is already running - nothing is written
+     * @throws Edits.RefusedException if an APPLY or another write is already running, or BindForge is read only -
+     *                                nothing is written
      */
     static Writer storedWriter() {
         return (files, places, backUp) -> Edits.stored()
@@ -183,7 +170,6 @@ public final class FirstTimeStartup {
      * Reads the bindings folder and every installation in the list whose folder is there. Writes nothing.
      *
      * @throws NoBindingsYetException            if the bindings folder is not there
-     * @throws NoInstallationReachableException if installations are known and none of their folders is there
      * @throws IOException            if a file that is there cannot be read - the message names the installation and
      *                                the file. First setup does not run on a partial picture
      */
@@ -207,9 +193,6 @@ public final class FirstTimeStartup {
                 throw new IOException(row.storefront() + " (" + row.rootPath() + "): " + e.getMessage(), e);
             }
         }
-        // WHY: installations are known but none can be read - a drive unplugged. Going on would create a working copy
-        // with no device files, which the next write would put over theirs when they come back (review, 2026-10-25).
-        if (reachable.isEmpty() && !unreachable.isEmpty()) throw new NoInstallationReachableException(unreachable);
         FirstSetupReading reading = FirstSetupReading.of(folder, bindings, reachable, unreachable,
                 FrontierStockDevices.getInstance(), FrontierStockButtonMaps.getInstance());
         // WHY: the write covers these and no other. Found again at write time, an installation plugged in while the
@@ -232,11 +215,12 @@ public final class FirstTimeStartup {
      * set is reported, not thrown</strong> (Krondor's review, 2026-10-27): the files are written by then, so the result
      * says so, with {@link Written#setUpAskedAgain()} - as RESTORE does.
      *
-     * @throws IllegalStateException       if {@link #read()} has not read the files first
-     * @throws IOException                 if the backup cannot be taken - {@link Backups.NothingToBackUpException} when
-     *                                     there is nothing at all - or the working copy cannot be saved. Nothing was
-     *                                     written, and the flag stays unset
-     * @throws Edits.WriteRunningException if an APPLY or another write is running - nothing was written
+     * @throws IllegalStateException  if {@link #read()} has not read the files first
+     * @throws IOException            if the backup cannot be taken - {@link Backups.NothingToBackUpException} when
+     *                                there is nothing at all - or the working copy cannot be saved. Nothing was
+     *                                written, and the flag stays unset
+     * @throws Edits.RefusedException if an APPLY or another write is running, or BindForge is read only - nothing was
+     *                                written
      */
     public Written write(ConfigurationFiles files) throws IOException {
         BackupSources places = read;
@@ -302,7 +286,11 @@ public final class FirstTimeStartup {
                 throw new IOException(file.getFileName() + " could not be read: " + e.getMessage(), e);
             }
         }
-        return bindings;
+        // WHY: two spellings of one file - only where the file system heeds case - are one file to the game; the first
+        // in name order is taken, and the write removes the other (Storage S13a D3).
+        FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(bindings, List.of());
+        if (!one.leftOut().isEmpty()) log.warn("{} holds two spellings of one file; left out: {}", folder, one.leftOut());
+        return one.files();
     }
 
     /** Told once, on the first setup backup being taken: one spoken line, and a log line naming where it is. */

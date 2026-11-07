@@ -3,6 +3,7 @@ package elite.intel.ui.render;
 import elite.intel.bindforge.model.BindingDisplayNames;
 import elite.intel.ui.support.AiAccessCell;
 import elite.intel.ui.support.BindingsGroupTableFactory;
+import elite.intel.ui.support.OffCell;
 import elite.intel.ui.support.TooltipCell;
 import elite.intel.ui.widget.HudTable;
 
@@ -73,6 +74,8 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
                 label.setForeground(statusColor(String.valueOf(value)));
             } else if (value instanceof AiAccessCell cell) {
                 label.setForeground(aiAccessColor(cell));
+            } else if (value instanceof OffCell) {
+                label.setForeground(HUD_COLOR_ROLE_DISABLED);
             } else {
                 label.setForeground(notDefined ? HUD_COLOR_ROLE_DISABLED : HUD_COLOR_ROLE_VALUE_TEXT);
             }

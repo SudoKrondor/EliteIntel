@@ -50,7 +50,10 @@ Built as `elite.intel.bindforge.preseteditor.BindNameCatalog`.
 - **A file whose `PresetName` does not match its file name is not offered.** A `Spare.4.2.binds` saying
   `PresetName="Custom"` would claim a BindName `Custom.4.2.binds` already answers to, offered as `Custom`, and would
   write a line no file's `PresetName` matches, offered as `Spare`. It is reported, never offered. *(The case was
-  found in `Custom.4.2 (2).binds`, which is not in the set - above.)*
+  found in `Custom.4.2 (2).binds`, which is not in the set - above.)* **Names that differ only in case match**
+  (Storage S13a, 2026-11-07; [storage.md, *How the files are written*](storage.md#how-the-files-are-written--2026-10-24)):
+  a `custom.4.2.binds` whose `PresetName` is `Custom` is offered, as the game loads it, and a player's
+  `keyboardmouseonly` shadows the factory `KeyboardMouseOnly`.
 
 ## What a line actually holds — the BindName, not the file name
 
@@ -119,7 +122,8 @@ sections. The master, draft, merge and Edit History copies (`StartPresetStore`, 
 `StartPresetApply`) are removed.
 
 - **Every one of the four lines must name a binds file the [BindName list](#the-bindname-list--settled-2026-10-17-alan-p1)
-  offers** — unchanged lines included, and an empty line is refused too. A line that names nothing real fails
+  offers**, matched ignoring case as the game matches it (Storage S13a, 2026-11-07) — unchanged lines included, and an
+  empty line is refused too. A line that names nothing real fails
   silently in the game, so **APPLY checks this first and refuses as a whole, naming the sections, before anything is
   backed up or written** (2026-10-24, Alan).
 - **The check runs on every APPLY, whatever the edits are** — a device edit alone included — and a set with no preset

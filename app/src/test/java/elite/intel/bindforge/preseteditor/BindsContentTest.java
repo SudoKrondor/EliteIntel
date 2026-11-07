@@ -38,6 +38,16 @@ class BindsContentTest {
         assertEquals(new NotOffered(NotOfferedReason.NAME_MISMATCH, "Custom"), judgeSpecimen("Custom.4.2 (2).binds"));
     }
 
+    /**
+     * A file renamed to lower case keeps its PresetName, and the game loads it (Alan, 2026-11-06): offered, under its
+     * PresetName (Storage S13a).
+     */
+    @Test
+    void aFileWhoseNameDiffersFromItsPresetNameOnlyInCaseIsOffered() {
+        assertEquals(new Offered("DualVirpil"),
+                judge("dualvirpil.4.2.binds", BINDING.formatted("DualVirpil")));
+    }
+
     @Test
     void aFactoryBindsFileWithNoSuffixIsOffered() {
         // The factory files write SortOrder and no version, as the installations on Alan's machine do.

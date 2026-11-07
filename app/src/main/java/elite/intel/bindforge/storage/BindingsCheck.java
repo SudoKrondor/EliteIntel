@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
 import elite.intel.bindforge.preseteditor.BindsFileOrigin;
 import elite.intel.bindforge.storage.BindingsComparison.Differences;
@@ -274,7 +275,7 @@ public final class BindingsCheck {
      * @throws ChangedMeanwhileException if a row, the working copy or an installation changed since {@code found} -
      *                                   nothing written
      * @throws EditsNotAppliedException  if there are edits not applied - nothing written
-     * @throws Edits.WriteRunningException if another write is running
+     * @throws Edits.RefusedException    if another write is running, or BindForge is read only - nothing written
      * @throws IOException               if the files cannot be read again, a merge cannot be made, the backup cannot
      *                                   be taken or the working copy cannot be saved - no live copy was written
      */

@@ -2,10 +2,10 @@ package elite.intel.bindforge.devicefiles;
 
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
 import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.io.FileNames;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -67,9 +67,8 @@ public final class FirstSetupReader {
     public static String buttonMapFileOf(Map<String, byte[]> buttonMaps, String deviceName) {
         String exact = deviceName + GameInstallation.BUTTON_MAP_SUFFIX;
         if (buttonMaps.containsKey(exact)) return exact;
-        String folded = exact.toLowerCase(Locale.ROOT);
         for (String file : buttonMaps.keySet()) {
-            if (file.toLowerCase(Locale.ROOT).equals(folded)) return file;
+            if (FileNames.sameFile(file, exact)) return file;
         }
         return null;
     }

@@ -175,7 +175,8 @@ public final class Restore {
      * @param prepared what {@link #prepare} found
      * @param files    the set to write
      * @throws IOException if the backup cannot be taken, or the working copy cannot be saved - nothing was written
-     * @throws Edits.WriteRunningException if an APPLY or another write is running - nothing was written
+     * @throws Edits.RefusedException if an APPLY or another write is running, or BindForge is read only - nothing was
+     *                                written
      */
     public Written write(Prepared prepared, ConfigurationFiles files) throws IOException {
         AtomicReference<Backup> taken = new AtomicReference<>();

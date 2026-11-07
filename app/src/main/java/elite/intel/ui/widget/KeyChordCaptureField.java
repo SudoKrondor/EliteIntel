@@ -80,6 +80,23 @@ public class KeyChordCaptureField extends JPanel {
     }
 
     /**
+     * A disabled field shows its chord and cannot be armed; disabling it while armed cancels the capture.
+     */
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (surface == null) return;
+        surface.setEnabled(enabled);
+        if (!enabled) cancelCapture();
+    }
+
+    @Override
+    public void setToolTipText(String text) {
+        super.setToolTipText(text);
+        if (surface != null) surface.setToolTipText(text);
+    }
+
+    /**
      * Replaces the displayed value (used to reflect an externally set chord, e.g. on Clear).
      */
     public void showIdleText(String text) {

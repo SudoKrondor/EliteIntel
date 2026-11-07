@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.io.BindingsWriter;
 import elite.intel.bindforge.io.DeviceReferenceRewrite;
 import elite.intel.bindforge.io.RewrittenXml;

@@ -107,9 +107,9 @@ final class RestoreFlow {
             try {
                 Written written = restore.write(prepared, chosen.files());
                 message = restoredText(written, chosen.moved());
-            } catch (Edits.WriteRunningException e) {
+            } catch (Edits.RefusedException e) {
                 log.info("RESTORE not run: {}", e.getMessage());
-                message = getText("bindings.writeRunning");
+                message = getText(e.messageKey());
             } catch (IOException e) {
                 // WHY: the backup or the working copy's save failed, so no game file was written.
                 log.error("RESTORE stopped before writing the game files", e);

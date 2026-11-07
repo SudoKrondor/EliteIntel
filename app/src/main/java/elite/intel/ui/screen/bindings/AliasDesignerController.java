@@ -6,6 +6,7 @@ import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devices.*;
 import elite.intel.bindforge.storage.DeviceEdits;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.db.managers.BindForgeIdentityAnswerManager;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -13,6 +14,7 @@ import elite.intel.eventbus.DeviceBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.screen.bindings.AliasDesignerReader.OnboardingReading;
 import elite.intel.ui.screen.bindings.AliasDesignerReader.Snapshot;
 import org.apache.logging.log4j.LogManager;
@@ -119,6 +121,18 @@ final class AliasDesignerController {
     }
 
     /**
+     * BindForge went read only, or stopped being (Storage S14b). CHECK AGAIN follows at once; the read after it offers
+     * whatever read only held back - onboarding and the identity question wait for it rather than being spent.
+     */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            view.showReadOnly(ReadOnlyMode.stored().activeIfKnown());
+            hardwareChanged();
+        });
+    }
+
+    /**
      * A controller was plugged in (A7). It waits for onboarding's offer - which leaves it out if it already has a name -
      * and the screen reads the hardware again, so it appears ATTACHED. On the device bus's thread, which also carries
      * push-to-talk: nothing here reads a file or the database.
@@ -172,6 +186,7 @@ final class AliasDesignerController {
      * controllers to name (Krondor, 2026-10-14). It says nothing when nobody needs a name.
      */
     void checkAgain() {
+        if (ReadOnlyMode.stored().activeIfKnown()) return;
         // WHY: the identity question first, deferred ones included - the user pressed CHECK AGAIN to deal with the
         // unnamed controllers, and naming one first would end its question unasked (Alan, 2026-10-15, A12).
         identityAsked.clear();
@@ -198,9 +213,19 @@ final class AliasDesignerController {
         if (!refreshes.tryStart()) return;
         new Thread(() -> {
             Snapshot read = reader.read(missingWarningWanted.getAndSet(false));
+            // WHY active() here, off the EDT: a refresh at startup can come before anything has worked read only out,
+            // and activeIfKnown() would then say no and let onboarding open over a read-only BindForge.
+            boolean readOnly = ReadOnlyMode.stored().active();
             SwingUtilities.invokeLater(() -> {
                 shown = keepingLastAnswers(read);
                 view.render(shown);
+                view.showReadOnly(readOnly);
+                // WHY nothing offered while read only: onboarding and the identity question both write, and both are
+                // held, not spent - the refresh that follows read only ending offers them (Storage S14b).
+                if (readOnly) {
+                    if (refreshes.finish()) refresh();
+                    return;
+                }
                 // WHY: the identity question before onboarding - naming a candidate would end it unasked, and a
                 // retarget is what saves the bindings (Alan, 2026-10-15, A12).
                 boolean identityOffered = offerIdentity(read);
@@ -272,9 +297,9 @@ final class AliasDesignerController {
      * name in the same edit. BACK gives the yes up, and the question comes back next run.
      */
     private void askIdentity(List<IdentityQuestions.Question> questions) {
-        // WHY: a click queued before this may have started a change since the offer - the question goes back, for the
-        // refresh that ends it to put again.
-        if (actionRunning) {
+        // WHY: a click queued before this may have started a change since the offer - or BindForge gone read only - and
+        // the question goes back, for the refresh that ends it to put again.
+        if (actionRunning || ReadOnlyMode.stored().activeIfKnown()) {
             questions.forEach(question -> identityAsked.remove(question.answerKey()));
             return;
         }
@@ -422,6 +447,8 @@ final class AliasDesignerController {
      * says so when it turns out to need no name.
      */
     void openOnboarding(MyDevice only) {
+        // WHY: NAME is off while read only; this stops a click that landed as read only began (Storage S14b).
+        if (ReadOnlyMode.stored().activeIfKnown()) return;
         // WHY: nothing held back - choosing to name a candidate is the user's answer, and naming it takes it out of
         // every identity question's candidates (Alan, 2026-10-15, A12).
         openOnboarding(Set.of(only.hardware()), true, Set.of());
@@ -547,11 +574,11 @@ final class AliasDesignerController {
             T result;
             try {
                 result = work.call();
-            } catch (Edits.WriteRunningException e) {
-                // WHY: a write is running - said in the user's language, not the exception's, and shown alone, as the
+            } catch (Edits.RefusedException e) {
+                // WHY: refused - a write running, or read only - said in the user's language, shown alone, as the
                 // Device Editor does: wrapped in actionFailed it would say "could not be done" twice.
                 log.info("{} not done: {}", title, e.getMessage());
-                return told.apply(getText("bindings.writeRunning"));
+                return told.apply(getText(e.messageKey()));
             }
             return () -> {
                 actionRunning = false;

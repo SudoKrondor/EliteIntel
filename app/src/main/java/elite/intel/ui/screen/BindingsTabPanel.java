@@ -1,5 +1,9 @@
 package elite.intel.ui.screen;
 
+import com.google.common.eventbus.Subscribe;
+import elite.intel.bindforge.storage.ReadOnlyMode;
+import elite.intel.eventbus.UiBus;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.screen.bindings.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -30,6 +34,8 @@ public class BindingsTabPanel extends JPanel {
     private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this);
     private final ApplyBar applyBar = new ApplyBar();
     private final LeavePrompt leavePrompt = applyBar.leavePrompt(this);
+    /** Whether read only was on when last heard. On the EDT. */
+    private boolean readOnly;
 
     public BindingsTabPanel() {
         buildUi();
@@ -40,6 +46,24 @@ public class BindingsTabPanel extends JPanel {
             if ((event.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0 || !isShowing()) return;
             firstTimeStartup.offerIfNeeded();
             applyBar.refreshCreate();
+        });
+        UiBus.register(this);
+        // WHY after registering: read only may have been worked out before this panel existed, and its event missed.
+        readOnly = ReadOnlyMode.stored().activeIfKnown();
+    }
+
+    /**
+     * Read only ending - OVERRIDE, or the last missing installation removed in Game Install Locations - runs what it held
+     * back straight away, on screen: the check, first-time startup, the offer of the newest backup (Storage S14a Q3;
+     * S14c, Alan, 2026-11-06). Not at the first work-out, which only finds out whether it is on.
+     */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            boolean now = ReadOnlyMode.stored().activeIfKnown();
+            boolean ended = readOnly && !now;
+            readOnly = now;
+            if (ended && isShowing()) firstTimeStartup.offerIfNeeded();
         });
     }
 
@@ -110,6 +134,7 @@ public class BindingsTabPanel extends JPanel {
     }
 
     public void dispose() {
+        UiBus.unregister(this);
         bindingProfilePanel.dispose();
         bindingManagementPanel.dispose();
         aliasDesignerPanel.dispose();

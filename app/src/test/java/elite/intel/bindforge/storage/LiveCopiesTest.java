@@ -102,18 +102,72 @@ class LiveCopiesTest {
                 "a binds file the set lacks stays - removing one is a rename's (S12)");
     }
 
+    /** The working copy's spelling is the one left, on every file system (Alan, 2026-11-07, Storage S13a D4). */
     @Test
     void anOldSpellingOfAKeptButtonMapEndsAsTheOneNewFile() throws IOException {
         write(buttonMap(steam, "lvwap.buttonMap"), "<old/>");
 
+        WriteReport report = liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertEquals(List.of("LVWAP.buttonMap"), names(GameInstallation.deviceButtonMapsIn(controlSchemes(steam))));
+        assertEquals("<LVWAP/>", Files.readString(buttonMap(steam, "LVWAP.buttonMap")));
+        assertTrue(report.complete(), report.installations().getFirst().failures().toString());
+    }
+
+    /**
+     * A live file whose name differs from the set's only in case is that file: renamed to the set's spelling, even when
+     * it already holds the bytes, and named as written (Alan, 2026-11-07, Storage S13a D2).
+     */
+    @Test
+    void aLiveFileInAnotherCaseIsLeftUnderTheSetsSpelling() throws IOException {
+        write(bindings.resolve("custom.4.2.binds"), "<Custom/>");
+
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertEquals(List.of("Custom.4.2.binds", "StartPreset.4.start"), names(bindings));
+        assertEquals("<Custom/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
+        assertTrue(report.bindings().written().contains("Custom.4.2.binds"));
+        assertTrue(report.bindings().removed().isEmpty(), "renamed, not removed");
+        assertTrue(report.bindings().updated(), report.bindings().failures().toString());
+    }
+
+    /** A {@code devicemappings.xml} is the installation's file, replaced under the game's spelling (Storage S13a D5). */
+    @Test
+    void aDeviceMappingsInAnotherCaseIsReplacedUnderTheGamesSpelling() throws IOException {
+        write(controlSchemes(steam).resolve("devicemappings.xml"), "<Old/>");
+
         liveCopies(steam).write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
 
-        // WHY: holds whether or not the file system ignores case - on one that does, the old spelling is the new
-        // file and must not be deleted; on one that heeds it, the old spelling is a file of its own and goes.
-        assertEquals("<LVWAP/>", Files.readString(buttonMap(steam, "LVWAP.buttonMap")));
-        try (Stream<Path> files = Files.list(GameInstallation.deviceButtonMapsIn(controlSchemes(steam)))) {
-            assertEquals(1, files.count());
-        }
+        assertEquals(List.of(GameInstallation.DEVICE_MAPPINGS), names(controlSchemes(steam)));
+        assertEquals("<Mappings/>", Files.readString(GameInstallation.deviceMappingsIn(controlSchemes(steam))));
+    }
+
+    /**
+     * Two spellings of one file - only where the file system heeds case, made outside BindForge: the set's spelling is
+     * written and the other removed and reported (Alan, 2026-11-07, Storage S13a D3).
+     */
+    @Test
+    void twoSpellingsOfOneFileLeaveOne() throws IOException {
+        write(bindings.resolve("Custom.4.2.binds"), "<Mine/>");
+        write(bindings.resolve("custom.4.2.binds"), "<Theirs/>");
+        Assumptions.assumeTrue(names(bindings).size() == 2, "the file system ignores case, so it holds one file");
+
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of());
+
+        assertEquals(List.of("Custom.4.2.binds", "StartPreset.4.start"), names(bindings));
+        assertEquals("<Custom/>", Files.readString(bindings.resolve("Custom.4.2.binds")));
+        assertEquals(List.of("custom.4.2.binds"), report.bindings().removed());
+    }
+
+    /** A file named for removal is removed in whatever case it is spelled on disk (Storage S13a). */
+    @Test
+    void aRemovalFindsTheFileInAnotherCase() throws IOException {
+        write(bindings.resolve("spare.4.2.binds"), "<Spare/>");
+
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("Spare.4.2.binds"));
+
+        assertEquals(List.of("Custom.4.2.binds", "StartPreset.4.start"), names(bindings));
+        assertEquals(List.of("spare.4.2.binds"), report.bindings().removed());
     }
 
     @Test
@@ -268,8 +322,8 @@ class LiveCopiesTest {
     }
 
     /**
-     * A removal differing only in case from a file written leaves one file on any file system: on Windows it is the file
-     * written, kept; on Linux it is another, removed (review, 2026-11-03).
+     * A removal differing only in case from a file written leaves one file, under the set's spelling, on any file system
+     * (review, 2026-11-03; Storage S13a).
      */
     @Test
     void aCaseOnlyChangeLeavesOneFile() throws IOException {
@@ -280,9 +334,7 @@ class LiveCopiesTest {
 
         WriteReport report = liveCopies().write(renamed, LiveCopies.LeaveAlone.NONE, Set.of("Custom.4.2.binds"));
 
-        try (Stream<Path> files = Files.list(bindings)) {
-            assertEquals(1, files.filter(file -> file.getFileName().toString().endsWith(".binds")).count());
-        }
+        assertEquals(List.of("StartPreset.4.start", "custom.4.2.binds"), names(bindings));
         assertEquals("<custom/>", Files.readString(bindings.resolve("custom.4.2.binds")));
         assertTrue(report.bindings().updated(), report.bindings().failures().toString());
     }
@@ -353,6 +405,13 @@ class LiveCopiesTest {
         return new ConfigurationFiles(
                 Map.of("Custom.4.2.binds", bytes("<Custom/>"), "StartPreset.4.start", bytes("Custom")),
                 bytes("<Mappings/>"), Map.of("LVWAP.buttonMap", bytes("<LVWAP/>")));
+    }
+
+    /** The files in a folder as spelled on disk, in plain name order. */
+    private static List<String> names(Path folder) throws IOException {
+        try (Stream<Path> files = Files.list(folder)) {
+            return files.filter(Files::isRegularFile).map(file -> file.getFileName().toString()).sorted().toList();
+        }
     }
 
     private static Path controlSchemes(Path installation) {

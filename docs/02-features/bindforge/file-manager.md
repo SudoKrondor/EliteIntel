@@ -358,6 +358,12 @@ tester from anyone else; the build plan carries the reminder to take it out.
 **A missing installation is never removed on its own.** A row whose folder has gone stays in the list, marked
 missing, because an unplugged drive and an uninstall look identical from here.
 
+**While BindForge is read only** ([storage.md, *An installation missing - read only*](storage.md#an-installation-missing--read-only-2026-11-03-alan);
+Alan, 2026-11-05, Storage S14a): **Remove** on a missing installation takes it off the missing list, and read only ends
+when none is left; **Run first-time startup again**, **RESTORE**, **Browse for Backup File** and **RENAME** are greyed,
+each saying why on hover; Add missing, Backup Now, Delete, the backup settings, the folder ⋮, the dropdown and LOAD
+stay usable.
+
 **An installation folder can hold more than one product, and only Odyssey is in scope.** Under
 `Products\` a Steam installation may carry both `elite-dangerous-64` (Horizons) and
 `elite-dangerous-odyssey-64`, **each with its own `ControlSchemes` folder**, and they genuinely differ —

@@ -93,10 +93,12 @@ public class BindingsLoader {
     }
 
     /**
-     * One rule for which file is a preset's, so the read and {@link #sectionsNotIn} cannot disagree.
+     * One rule for which file is a preset's, so the read and {@link #sectionsNotIn} cannot disagree. The preset's
+     * name is matched ignoring case, as the game matches it (Alan, 2026-11-07, Storage S13a D6).
      */
     private static boolean isFileOfPreset(String fileName, String presetName) {
-        return fileName.startsWith(presetName + ".") && fileName.endsWith(".binds");
+        String prefix = presetName + ".";
+        return fileName.regionMatches(true, 0, prefix, 0, prefix.length()) && fileName.endsWith(".binds");
     }
 
     /**

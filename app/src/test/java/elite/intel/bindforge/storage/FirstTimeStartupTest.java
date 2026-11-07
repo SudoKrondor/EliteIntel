@@ -69,20 +69,40 @@ class FirstTimeStartupTest {
     }
 
     /**
-     * Review, 2026-10-25 (Alan): installations known but none reachable - a drive unplugged - stop first-time startup,
-     * naming them. A working copy with no device files would otherwise go over theirs when they come back.
+     * Storage S14a (storage.md, An installation missing - read only): the very first setup runs with the installations
+     * that are there, even when none of the known ones is - S2b's stop is gone. The one missing is named in the reading.
      */
     @Test
-    void installationsKnownButNoneReachableStopTheReadingAndAreNamed() throws IOException {
+    void installationsKnownButNoneReachableStillLetTheReadingGoOn() throws IOException {
         Path bindings = Files.createDirectories(temp.resolve("Bindings"));
         rows.add(new InstallationRow(1, "STEAM", temp.resolve("unplugged").toString(), false, true));
 
-        FirstTimeStartup.NoInstallationReachableException thrown = assertThrows(
-                FirstTimeStartup.NoInstallationReachableException.class,
-                () -> startup(bindings, writerThatWrites()).read());
+        FirstSetupReading reading = startup(bindings, writerThatWrites()).read();
 
-        assertEquals(List.of(1L), thrown.unreachable().stream().map(InstallationRow::id).toList());
-        assertFalse(flag.complete);
+        assertTrue(reading.installations().isEmpty());
+        assertEquals(List.of(1L), reading.unreachable().stream().map(InstallationRow::id).toList());
+    }
+
+    /**
+     * Storage S14a: with nothing reachable the write still runs and first-time startup completes, on a set holding no
+     * device files, with the installation left out of it. {@code DeviceCheckTest} covers what happens when it comes back.
+     */
+    @Test
+    void withNothingReachableTheWriteCompletesAndLeavesTheInstallationOut() throws IOException {
+        rows.add(new InstallationRow(1, "STEAM", temp.resolve("unplugged").toString(), false, true));
+        List<BackupSources> written = new ArrayList<>();
+        FirstTimeStartup startup = startup(bindingsFolder(), (files, places, backUp) -> {
+            written.add(places);
+            return writerThatWrites().write(files, places, backUp);
+        });
+
+        ConfigurationFiles set = FirstSetupFiles.identical(startup.read());
+        startup.write(set);
+
+        assertFalse(set.hasDeviceMappings());
+        assertTrue(flag.complete);
+        assertEquals(List.of(true), written.getFirst().installations().stream()
+                .map(BackupSources.Installation::missing).toList());
     }
 
     @Test

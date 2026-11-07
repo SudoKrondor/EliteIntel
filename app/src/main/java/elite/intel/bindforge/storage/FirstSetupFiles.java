@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.ButtonMapWriter;
 import elite.intel.bindforge.devicefiles.DeviceMappingsMerge;
@@ -174,7 +175,7 @@ public final class FirstSetupFiles {
 
     private static Map<String, byte[]> buttonMaps(FirstSetupReading reading, FirstSetupPlan.Resolution resolution)
             throws IOException {
-        Map<String, byte[]> maps = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, byte[]> maps = new TreeMap<>(FileNames.ONE_FILE);
         for (FirstSetupPlan.Kept device : resolution.devices()) {
             if (device.labels().isEmpty()) continue;
             String file = device.name() + GameInstallation.BUTTON_MAP_SUFFIX;

@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.DeviceEntry;
 import elite.intel.bindforge.devicefiles.FrontierStockDevices;
@@ -306,7 +307,7 @@ public final class BindForgeSupport {
 
     private void writePresetFile() throws IOException {
         Map<String, byte[]> live = live();
-        ConfigurationFiles set = new ConfigurationFiles(live, null, Map.of());
+        ConfigurationFiles set = new ConfigurationFiles(FileNames.oneSpelling(live, List.of()).files(), null, Map.of());
         Optional<String> presetFile = PresetEdits.presetFile(set);
         if (presetFile.isEmpty()) {
             line("none in the bindings folder, so the game is on a factory preset");
@@ -423,7 +424,7 @@ public final class BindForgeSupport {
         Map<String, byte[]> live = live();
         Set<String> taken = new TreeSet<>();
         live.keySet().stream().filter(FileNames::isPresetFile).forEach(taken::add);
-        PresetEdits.sections(new ConfigurationFiles(live, null, Map.of())).ifPresent(sections -> {
+        PresetEdits.sections(new ConfigurationFiles(FileNames.oneSpelling(live, List.of()).files(), null, Map.of())).ifPresent(sections -> {
             for (BindingSection section : PresetEdits.SECTIONS) {
                 taken.addAll(filesNaming(sections.forSection(section), live.keySet()));
             }

@@ -150,6 +150,49 @@ class EditsTest {
         assertEquals(List.of(), announced);
     }
 
+    /**
+     * Storage S14a: while BindForge is read only every change and write is refused, whichever screen offered it, and
+     * nothing changes - the user is told why in their language.
+     */
+    @Test
+    void readOnlyRefusesEveryChangeAndWrite() {
+        boolean[] wrote = {false};
+        Edits locked = new Edits(workingCopy::get, () -> announced.add("changed"), () -> true);
+
+        Edits.RefusedException change = assertThrows(Edits.ReadOnlyException.class,
+                () -> locked.change(current -> set("<edited/>")));
+        assertThrows(Edits.ReadOnlyException.class, () -> locked.whileWriting(() -> wrote[0] = true));
+
+        assertEquals("bindings.readOnly.refused", change.messageKey());
+        assertFalse(wrote[0], "the write is not run");
+        assertFalse(locked.hasEdits());
+        assertEquals(List.of(), announced);
+    }
+
+    /** OVERRIDE: once read only is off, the same edits take changes again. */
+    @Test
+    void aChangeIsTakenOnceReadOnlyIsOff() throws IOException {
+        boolean[] readOnly = {true};
+        Edits locked = new Edits(workingCopy::get, () -> {
+        }, () -> readOnly[0]);
+        assertThrows(Edits.ReadOnlyException.class, () -> locked.change(current -> set("<edited/>")));
+
+        readOnly[0] = false;
+        locked.change(current -> set("<edited/>"));
+
+        assertTrue(locked.hasEdits());
+    }
+
+    @Test
+    void aRunningWriteSaysSoInTheUsersLanguage() throws IOException {
+        edits.whileWriting(() -> {
+            Edits.RefusedException refused = assertThrows(Edits.WriteRunningException.class,
+                    () -> edits.change(current -> set("<late/>")));
+            assertEquals("bindings.writeRunning", refused.messageKey());
+            return null;
+        });
+    }
+
     private static ConfigurationFiles set(String binds) {
         return new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes(binds)), bytes("<Root/>"), Map.of());
     }

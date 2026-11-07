@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.io.FileNames;
 import elite.intel.bindforge.install.GameInstallation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -120,7 +121,15 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
             if (bindings.isEmpty() && installations.isEmpty()) {
                 throw new NotABackupException(zip, "it holds no game input configuration file");
             }
-            return new BackupContents(zip, takenOf(info), bindings, installationsOf(installations, info));
+            // WHY: a backup taken where the file system heeds case can hold two spellings of one file; the first in
+            // name order is restored, and the backup still holds the other (Storage S13a D3).
+            installations.values().forEach(found -> {
+                FileNames.OneSpelling<byte[]> maps = oneSpelling(zip, found.buttonMaps);
+                found.buttonMaps.clear();
+                found.buttonMaps.putAll(maps.files());
+            });
+            return new BackupContents(zip, takenOf(info), oneSpelling(zip, bindings).files(),
+                    installationsOf(installations, info));
         } catch (ZipException e) {
             throw new NotABackupException(zip, "not a zip", e);
         }
@@ -142,6 +151,14 @@ public record BackupContents(Path zip, String taken, Map<String, byte[]> binding
     // - "..", "C:x", a backslash - would write outside it, and one Windows refuses - a reserved character, or a space or
     // dot at the end - would throw rather than be skipped (reviews, 2026-10-25). Never one Elite-Intel wrote, skipped
     // rather than trusted. The one check the working copy's names use too (Krondor's review, 2026-10-27).
+
+    private static FileNames.OneSpelling<byte[]> oneSpelling(Path zip, Map<String, byte[]> files) {
+        FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(files, List.of());
+        if (!one.leftOut().isEmpty()) {
+            log.warn("{} holds two spellings of one file; not restored: {}", zip, one.leftOut());
+        }
+        return one;
+    }
 
     private static boolean isBindingsEntry(String[] parts) {
         return parts.length == 2 && parts[0].equals(Backups.BINDINGS) && FileNames.plain(parts[1])

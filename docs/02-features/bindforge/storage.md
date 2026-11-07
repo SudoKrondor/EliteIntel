@@ -102,6 +102,88 @@ stops first-time startup, with its message and its code.
   lasts until Elite-Intel closes; the next start checks and warns again. After it the bar is the normal DISCARD /
   APPLY, and APPLY writes to the installations that are there.
 
+**Settled with Storage S14a's sources (Alan, 2026-11-05):**
+
+- **Three slices.** S14a: the state, the warning at start, the bar and OVERRIDE, the refusal, and what writes turned
+  off. S14b: each editor screen and its dialogs viewable with nothing changeable. S14c: the startup notice.
+- **"First-time startup has ever completed" is: a working copy exists** - its `Bindings` folder is there
+  (`WorkingCopy.exists`). Only first-time startup and RESTORE make one, and Run first-time startup again leaves it, so a
+  user who set up before is read only even with the flag cleared; a new user is not.
+- **The check does not run while read only** - its three choices all write. Nor does first-time startup, or the offer
+  of RESTORE for a working copy that cannot be read. *Decided while building:* they run as soon as the user presses
+  OVERRIDE, on screen, rather than at the next click on the BindForge tab.
+- **Remove in Game Install Locations takes that installation off the missing list**, and read only ends when none is
+  left, without a restart. Plugging the drive back in is noticed only at the next start, so the bar says to restart.
+- **Run first-time startup again is greyed while read only**, since first-time startup is off. RESTORE and Browse for
+  Backup File are greyed too, and RENAME in the Bindings File section; the dropdown and LOAD stay, for viewing. **Backup
+  Now, deleting a user backup and the backup settings stay usable** - they touch no game file.
+- **The warning at start is spoken and logged once**, as rule 15's line is, naming each missing installation; the bar
+  carries it after that. No dialog.
+- **CREATE is not shown while read only.**
+- **The edits refuse every change and write while read only**, whichever screen offered it, and the screen says
+  *"BindForge is read only while an installation is missing, so nothing was changed."* The screens' own controls are
+  turned off in S14b; the refusal stays behind them.
+- **Worked out once a run, at the first ask**, from the stored list after this run's detection; a fault working it out
+  is logged and BindForge is not read only - every write still backs up first.
+- **First-time startup's summary names every installation it leaves
+  out**, and with none read says the working copy will hold no device files, rather than that the installations match (S14a review, 2026-11-06). With S2b's stop gone, it is the last thing said before the working copy is made without them.
+
+Built in Storage S14a as `bindforge.storage.ReadOnlyMode`, `Edits.ReadOnlyException`, the bar's line and OVERRIDE in
+`ui.screen.bindings.ApplyBar`, and the warning in `AppController`.
+
+**Settled with Storage S14b's sources (Alan, 2026-11-06):**
+
+- **The bind dialogs are the same dialogs, opened view only** - not a second dialog to show a control. Both slots'
+  cards, the keyboard map and the controller tabs show as usual; key capture and live controller input are off, a pick
+  does nothing, and CLEAR, swap and SAVE are greyed. The axis dialog the same: invert, dead zone, throttle range, CLEAR
+  and SAVE greyed. BACK and Esc close.
+- **The grid's CLEAR (Used tab, Anomalies) and AUTO FIX (Missing tab) are inert** - greyed, saying why on hover, a click
+  doing nothing - and **AUTO-ASSIGN is greyed**. Settings mode's numbers and sliders are greyed. All of them follow read
+  only ending without a restart.
+- **The Device Editor opens and its input tabs light as usual**, so the user can still find which input is which; the
+  name and label boxes are not editable (still readable), and SAVE, CLEAR / RESET LABELS / UNDO and NAME are greyed.
+- **Onboarding and the identity question are held while read only, not spent.** Nothing offers them - not the
+  automatic offer, a controller plugged in, nor NAME - and the refresh after read only ends (OVERRIDE or Remove) offers
+  them as it would have. **CHECK AGAIN is greyed**, since offering them is its one job; the screen still reads again on
+  hot-plug.
+- **One line says why, in warning text colour**, at the foot of the bind dialogs and the Device Editor: *"Read only
+  while an installation is missing - nothing here can be changed."* (`bindings.readOnly.viewOnly`). Every greyed control
+  carries S14a's tooltip.
+- **The Preset Editor's locked dropdowns are P4's**, built with that screen.
+
+**Settled for Storage S14c, from Krondor's S14a review (Alan, 2026-11-06):**
+
+- **The warning at start names each missing installation by its store alone** - Steam, Epic, Frontier, Oculus, and
+  *a manual installation* for one added by hand - never its path, which is no use spoken. The bar and the log keep the
+  path.
+- **Remove ends read only the way OVERRIDE does:** when the last missing installation is removed, what was held back -
+  the check, first-time startup, the offer of the newest backup - runs straight away, not at the next click on the
+  BindForge tab.
+- **The *changed outside* line is not said while read only.** The read-only warning covers it, and the check it points
+  to is off.
+
+**Settled with Storage S14c's sources (Alan, 2026-11-06)** - the notice at Elite-Intel start:
+
+- **Spoken and logged, a line each, no dialog**, once a run, in a fixed order: read only; changed outside BindForge or a
+  newer version (rule 15), not while read only; a binds file named like a factory one. Nothing is blocked or asked.
+- **The binding warnings stay Elite-Intel's** (`KeyBindCheck`: missing bindings, conflicts, reserved keys), said where
+  they were, before the notice.
+- **The missing controller stays the Alias Designer's**, said the first time it is opened in a run
+  ([alias-designer.md, A13](alias-designer.md#a-missing-controller-is-worth-exactly-one-warning--settled-2026-09-24)).
+- **A binds file named like a factory one is judged on the working copy**, once one exists, against the reachable
+  installations' factory files - what the Bind Editor warns of. Before first-time startup nothing is said: the live
+  files are not yet BindForge's.
+- *Decided while building:* that line is said while read only too - it names a file, not a write, and the read-only
+  line comes first. Two missing installations from one store are named once (*Steam*, not *Steam, Steam*).
+
+Built in Storage S14c as `bindforge.storage.StartupNotice`, started by `AppController` after `KeyBindCheck`; it replaces
+`StartupCheck.runInBackground` and `ReadOnlyMode.warnInBackground`. Read only ending - OVERRIDE or Remove - is heard by
+`BindingsTabPanel`, which runs `FirstTimeStartupFlow.offerIfNeeded`; `ApplyBar.onOverride` is gone.
+
+Built in Storage S14b: a view-only flag on `AssignKeyboardBindingDialog` and `AssignAxisDialog`, `OffCell` for the grid's
+inert actions, `Opening.readOnly` on `DeviceEditorDialog`, and `BindForgeReadOnlyChangedEvent` heard by
+`BindingProfilePanel` and `AliasDesignerController`.
+
 ## Opening BindForge
 
 5. The first time the user clicks the BindForge tab in an Elite-Intel session, [the check](#when-a-live-copy-differs)
@@ -181,9 +263,50 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
   only in line endings costs nothing, and what counts as a change is the check's question (rule 14), not the write's.
 - **A missing bindings folder is reported, never created** — creating it would put the files where the game never
   reads them. A missing `DeviceButtonMaps` folder inside an installation is created.
+- **File names are matched ignoring case, on every platform: two names that differ only in case are one file**
+  (Krondor and Alan, 2026-11-07, settling Storage S13's D3). The game reads file names the Windows way, under Proton on
+  Linux too: Alan renamed a binds file (`dualvirpildawntreadercopy.4.2.binds`), `DeviceMappings.xml` and `LVWAP.buttonMap` to
+  lower case, and the game loaded them and wrote its own edits back (2026-11-06). Linux itself allows `Custom.4.2.binds` and
+  `custom.4.2.binds` side by side, and Proton then breaks (Krondor). So:
+  - **Every name match ignores case** - the check pairing a live file with the working copy's, the working copy's own
+    names, a preset line naming a binds file, the device files, the plain `.binds` of S13b.
+  - **BindForge never leaves two files whose names differ only in case.** A file is saved under whatever spelling it is
+    given - the user's spelling is kept, never forced to one case (Alan, 2026-11-07); if a file of the same name in another case is already there, it is replaced, and the spelling saved is the
+    one left - written as a new file and the old spelling removed, the way rule 7 renames.
+  - **Only the name ignores case.** The kinds - `.binds`, `.buttonMap`, `StartPreset.N.start` - are matched exactly:
+    the game needs the preset file's name, and players do not rename these (Alan, 2026-11-07).
+
+  **Settled with Storage S13a's sources (Alan, 2026-11-07):**
+
+  - **D1: the rule lives in `bindforge.io.FileNames`** (`sameFile`, and `ONE_FILE` for a map keyed by file name),
+    moved there from `bindforge.storage` so the BindName list and Elite-Intel's own loader can use it.
+  - **D2: a live file whose name differs from the working copy's only in case is that file**, compared by value as
+    usual: equal values ask nothing, and the next write leaves the working copy's spelling. A hand rename gets no guard
+    of its own (principle 13); the game loads either spelling.
+  - **D3: two spellings of one file** - only where the file system heeds case, made outside BindForge - are compared as
+    the one spelled as the working copy's, else the first in name order. **Every write removes the others** after the
+    backup, and the report names them; a read-only one is kept and reported, as any removal is. A backup holding two is
+    restored with the first in name order; the backup still holds the other.
+  - **D4: a `.buttonMap` follows the same rule** - the working copy's spelling is left, on Windows and Linux alike.
+  - **D5: `DeviceMappings.xml` is found by listing its folder, ignoring case**, not by path - on Linux a
+    `devicemappings.xml` would otherwise read as missing, and the write would put a second file beside it. The write
+    leaves the game's spelling.
+  - **D6: Elite-Intel's own loader** (`BindingsLoader`, the keys the assistant presses) finds the file a preset line
+    names ignoring case too.
+  - *Decided while building:* a file's `PresetName` that differs from its file name only in case is no mismatch - Alan's
+    test file, renamed to lower case with its `PresetName` as it was, is offered and loaded. A set that holds two
+    spellings of one file is refused; a working copy holding two, made by hand, cannot be read, so the newest backup is
+    offered (rule 10). On Windows a move between two spellings does nothing, so a respelling goes through a name of its
+    own (`.respelling`) in two steps.
+
+  Built in Storage S13a: `FileNames.sameFile` / `ONE_FILE` / `oneSpelling`; `ConfigurationFiles` keyed ignoring case;
+  the check's pairing in `BindingsComparison`; `LiveCopies.Writing.writeAll` renaming another spelling to the set's;
+  `GameInstallation.findDeviceMappingsIn`; `BindNameList.find`, `BindsContent`, `BindNameCatalog`;
+  `BindingsLoader.isFileOfPreset`.
 - **A `.buttonMap` the working copy lacks is removed**, except Frontier's shipped `VPCPanel` and `VPCThrottle`. An old
-  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is the same file on Windows and is kept as it; on a
-  file system that heeds case it is a file of its own, and goes.
+  spelling of a kept one (`lvwap.buttonMap` for `LVWAP.buttonMap`) is that same file (the case rule above), renamed to
+  the working copy's spelling. *Until Storage S13a it was kept as it was on Windows and removed on a file system that
+  heeds case, the kept spelling written beside it.*
 - **A working copy with no `DeviceMappings.xml` leaves each installation's alone** (review, 2026-10-24). Without that
   file the game loads no bindings at all ([overview](overview.md#why-devicemappingsxml-is-not-cosmetic--reclassified-2026-09-08)),
   so the write never removes one — unlike a `.buttonMap`, which holds only labels and is removed when the working copy
@@ -482,7 +605,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to
-    check them."* Nothing is decided until the user opens BindForge (2026-10-23, Alan).
+    check them."* Nothing is decided until the user opens BindForge (2026-10-23, Alan). *Since Storage S14c
+    (2026-11-06) it is a line of the notice at start, and is not said while BindForge is read only.*
 
 ## Create — a new player's first binds file
 

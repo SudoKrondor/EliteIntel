@@ -109,14 +109,21 @@ class PresetEditsTest {
         assertDoesNotThrow(() -> PresetEdits.check(set(Map.of("StartPreset.4.start", SPLIT)), OFFERED));
     }
 
-    /** Exact match: the game's names are case-sensitive as far as anyone has shown. */
+    /** A near miss is refused: only case is ignored (Storage S13a). */
     @Test
     void aLineNamingNothingTheListOffersIsRefused() {
         PresetRefusedException refused = assertThrows(PresetRefusedException.class, () -> PresetEdits.check(
-                set(Map.of("StartPreset.4.start", "Custom\r\ncustom\r\nCustom\r\nGone")), OFFERED));
+                set(Map.of("StartPreset.4.start", "Custom\r\nCust_om\r\nCustom\r\nGone")), OFFERED));
 
         assertEquals(List.of(BindingSection.SHIP, BindingSection.ON_FOOT), refused.sections());
         assertTrue(refused.getMessage().contains("'Gone'"), refused.getMessage());
+    }
+
+    /** A line in another case names the file, as the game reads it (Alan, 2026-11-07, Storage S13a). */
+    @Test
+    void aLineInAnotherCasePassesTheCheck() {
+        assertDoesNotThrow(() -> PresetEdits.check(
+                set(Map.of("StartPreset.4.start", "Custom\r\ncustom\r\nCUSTOM\r\nCustom")), OFFERED));
     }
 
     @Test

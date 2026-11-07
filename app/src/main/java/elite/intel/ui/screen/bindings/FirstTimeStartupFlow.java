@@ -46,10 +46,19 @@ public final class FirstTimeStartupFlow {
     /**
      * Offers first-time startup if its flag is not set; once it is, reads the working copy, and offers the newest backup
      * when it cannot be read (storage.md rule 10; Alan, 2026-10-25). On the EDT.
+     * <p>
+     * <strong>Nothing is offered while BindForge is read only</strong> (Storage S14a): first-time startup, RESTORE and
+     * the check all write, and every write is off. The bar names the missing installations; when read only ends - OVERRIDE,
+     * or the last missing installation removed - the BindForge tab calls this again, so what was held back runs then
+     * (Alan, 2026-11-05, S14a Q3; 2026-11-06, S14c).
      */
     public void offerIfNeeded() {
         if (!running.compareAndSet(false, true)) return;
         background("BindForge-FirstTimeStartup", () -> {
+            if (ReadOnlyMode.stored().active()) {
+                log.info("First-time startup, RESTORE and the check wait: BindForge is read only");
+                return null;
+            }
             FirstTimeStartup startup = FirstTimeStartup.stored();
             if (!startup.needed()) return workingCopyCheck(startup);
             List<InstallationRow> rows = startup.installations();
@@ -73,13 +82,6 @@ public final class FirstTimeStartupFlow {
                 // the next click offers it again (Alan, 2026-10-25). Told in the setup check's own words.
                 log.info("First-time startup waits for the bindings folder: {}", e.getMessage());
                 return () -> tell(getText(FirstTimeStartup.NoBindingsYetException.ADVICE_KEY));
-            } catch (FirstTimeStartup.NoInstallationReachableException e) {
-                log.info("First-time startup waits for an installation: {}", e.getMessage());
-                String which = e.unreachable().stream()
-                        .map(row -> getText("bindings.firstTimeStartup.place.installation", row.storefront(),
-                                row.rootPath()))
-                        .collect(Collectors.joining(", "));
-                return () -> tell(getText("bindings.firstTimeStartup.noneReachable", which));
             } catch (IOException e) {
                 // WHY: a file that is there but cannot be read stops first-time startup, and is named: it could hold the
                 // one entry the working copy must not lose.
@@ -157,9 +159,7 @@ public final class FirstTimeStartupFlow {
                            Map<String, String> names) {
         Optional<FirstSetupDialog.Choice> choice;
         if (identical != null) {
-            String summary = getText("bindings.firstTimeStartup.summary.identical", identical.buttonMaps().size())
-                    + "\n\n" + getText("bindings.firstTimeStartup.summary.installations",
-                    reading.installations().size());
+            String summary = identicalSummary(reading, identical, names);
             choice = HudConfirmDialog.confirm(parent, getText("bindings.firstTimeStartup.summary.title"), summary,
                     getText("bindings.firstTimeStartup.summary.create"),
                     getText("button.cancel"))
@@ -180,9 +180,9 @@ public final class FirstTimeStartupFlow {
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("First-time startup wrote nothing: there was nothing to back up");
                 message = getText(Backups.NothingToBackUpException.ADVICE_KEY);
-            } catch (Edits.WriteRunningException e) {
+            } catch (Edits.RefusedException e) {
                 log.info("First-time startup not run: {}", e.getMessage());
-                message = getText("bindings.writeRunning");
+                message = getText(e.messageKey());
             } catch (IOException e) {
                 // WHY: the backup or the working copy's save failed, so nothing was written and the flag is unset. A
                 // flag that cannot be set after the write is not thrown: it is in the result (Krondor's review,
@@ -198,6 +198,25 @@ public final class FirstTimeStartupFlow {
             String told = message;
             return () -> tell(told);
         });
+    }
+
+    /**
+     * The summary when there is nothing to reconcile. Names every installation left out, as {@link FirstSetupDialog} does
+     * when there is: with a drive unplugged this is the last thing said before the working copy is made without it.
+     */
+    static String identicalSummary(FirstSetupReading reading, ConfigurationFiles identical, Map<String, String> names) {
+        StringBuilder text = new StringBuilder(reading.installations().isEmpty()
+                ? getText("bindings.firstTimeStartup.summary.noInstallations")
+                : getText("bindings.firstTimeStartup.summary.identical", identical.buttonMaps().size()));
+        if (!reading.unreachable().isEmpty()) {
+            String skipped = reading.unreachable().stream()
+                    .map(row -> names.getOrDefault(String.valueOf(row.id()), row.storefront()))
+                    .collect(Collectors.joining(", "));
+            text.append("\n\n").append(getText("bindings.aliasDesigner.firstSetup.unreachable", skipped));
+        }
+        return text.append("\n\n")
+                .append(getText("bindings.firstTimeStartup.summary.installations", reading.installations().size()))
+                .toString();
     }
 
     /**
