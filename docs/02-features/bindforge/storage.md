@@ -312,9 +312,27 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     game at once wrote `keyboardandmouseonly2.4.2.binds` ([testing item 28](../../00-overview/testing-required.md),
     measured 2026-11-08). So the game never leaves a preset line naming a preset that has only a plain file; only a
     hand edit of `StartPreset.4.start` would, and that gets no guard (principle 13).
-    To be built in Storage S13c. *To confirm at the slice's sources:* the lines are still taken in order, General first, each resolving to its true
-    file, else its factory file; a line resolving to neither (no reachable installation holds that factory file) passes
-    to the next, and with none left nothing is read and it is logged.
+    **Settled with Storage S13c's sources (Alan, 2026-11-08):**
+    - **The lines are taken in order, General first; the order matters.** Each resolves to its true file, else its
+      factory file; a line resolving to neither (no reachable installation holds that factory file) passes to the next,
+      and with none left nothing is read and it is logged - the assistant then says its bindings could not be read, as
+      it did when no file was found.
+    - **The installations come from `bindforge.install`:** the one reachable test moved to `GameInstallation.reachable`
+      (`BackupSources` asks it), and `InstallationRegistry.reachableControlSchemes` lists their `ControlSchemes` in the
+      stored list's order. `bindforge.io` and `bindforge.install` now depend on each other (Q2 (a)).
+    - **A factory file is found by its file name**, `<preset>.binds` at the top of `ControlSchemes`, ignoring case - not
+      judged by content: Frontier's files carry their name as `PresetName` (Q3 (a)).
+    - **Two true files of one preset read the highest version in the name**, then name order. Only a hand rename makes
+      two - the game upgrades a file in place, and every file has been `.4.2` since Odyssey - so it gets no guard of its
+      own (principle 13; Q4).
+    - **`listAllBindsFiles` stays for `SetupCheck`**, which asks only whether the folder holds any `.binds` (Q5).
+    - *Planned as its own slice (Alan, 2026-11-08):* when the four lines name different binds files, the assistant asks
+      the user which to use, and whether that file should be the only one the game uses - yes sets all four lines to
+      it, no uses it and warns that functions may not work when the game's binds and the assistant's differ. See the
+      [brief](../../05-build-plan/storage.md#slices).
+
+    Built in Storage S13c: `BindingsLoader` (`getLatestBindsFile`, `sectionsNotIn`, a constructor taking the
+    `ControlSchemes` folders), `GameInstallation.reachable`, `InstallationRegistry.reachableControlSchemes`.
     *Until 2026-11-08 a line whose preset had no file in the bindings folder passed to the next, and when no line had
     one the newest `.binds` in the folder was read, a plain file included.*
   - *Decided while building:* a file's `PresetName` that differs from its file name only in case is no mismatch - Alan's

@@ -68,6 +68,18 @@ public record GameInstallation(Storefront storefront, Path root, Path controlSch
     }
 
     /**
+     * <strong>The one test for "reachable"</strong> (storage.md, <em>Settled from Krondor's review</em>): the stored
+     * list does not mark the installation missing, and its {@code ControlSchemes} folder is there. First-time startup,
+     * the backup, the write, RESTORE and Elite-Intel's own loader all ask it - here since Storage S13c, so
+     * {@code bindforge.io} can reach it. Touches the disk.
+     *
+     * @param missing whether the stored list marks the installation missing
+     */
+    public static boolean reachable(Path root, boolean missing) {
+        return !missing && Files.isDirectory(controlSchemesUnder(root));
+    }
+
+    /**
      * Whether {@code root} is an installation the user may add by hand - Add missing (storage.md rule 1;
      * file-manager.md, <em>Game Install Locations</em>): the {@code ControlSchemes} folder, and
      * {@code EliteDangerous64.exe} beside it in the Live product's folder. Stricter than {@link #looksLikeAnInstall},

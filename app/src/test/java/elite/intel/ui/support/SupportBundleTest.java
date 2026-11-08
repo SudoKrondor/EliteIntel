@@ -186,6 +186,8 @@ class SupportBundleTest {
             write(journalDir, state, "{}");
         }
         write(bindingsDir, "Custom.4.0.binds", "<Root/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
         Path commands = write(tmp, "custom_commands.json", "[]");
         Path zip = tmp.resolve("bundle.zip");
 
@@ -449,6 +451,8 @@ class SupportBundleTest {
         Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
         Path backupDir = Files.createDirectory(tmp.resolve("backups"));
         write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
         backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_12-00-00",
                 Map.of("Custom.4.2.binds", "<Root older/>"));
         backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
@@ -478,6 +482,8 @@ class SupportBundleTest {
         Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
         Path backupDir = Files.createDirectory(tmp.resolve("backups"));
         write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
         backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
                 Map.of("Custom.4.2.binds", "<Root before apply/>"));
         backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-28_09-00-00",
@@ -502,6 +508,8 @@ class SupportBundleTest {
         Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
         Path backupDir = Files.createDirectory(tmp.resolve("backups"));
         write(bindingsDir, "Custom.4.2.binds", "<Root/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
         backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
                 Map.of("Other.4.2.binds", "<Root other preset/>"));
         Path zip = tmp.resolve("bundle.zip");

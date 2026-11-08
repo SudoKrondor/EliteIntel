@@ -6,7 +6,6 @@ import elite.intel.bindforge.install.InstallationRegistry;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,7 +64,7 @@ public record BackupSources(Path bindingsFolder, List<Installation> installation
     }
 
     private static boolean isReachable(boolean missing, Path root) {
-        return !missing && Files.isDirectory(GameInstallation.controlSchemesUnder(root));
+        return GameInstallation.reachable(root, missing);
     }
 
     /**

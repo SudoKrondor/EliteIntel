@@ -248,6 +248,27 @@ class InstallationRegistryTest {
         assertEquals(1, registry.currentWithStartupScan().size(), "no second detection this run");
     }
 
+    /**
+     * Where Elite-Intel's own loader looks for a factory binds file (Storage S13c): only reachable installations - one
+     * marked missing, or whose {@code ControlSchemes} is gone, is left out - in the list's order.
+     */
+    @Test
+    void reachableControlSchemesLeavesOutUnreachableInstallations() throws IOException {
+        Path steam = gameAt("steam");
+        Path epic = gameAt("epic");
+        Path frontier = gameAt("frontier");
+        installations.recordDetected("STEAM", steam);
+        installations.recordDetected("EPIC", epic);
+        installations.recordDetected("FRONTIER", frontier);
+        long epicId = installations.findAll().stream()
+                .filter(row -> Path.of(row.rootPath()).equals(epic)).findFirst().orElseThrow().id();
+        installations.setMissing(epicId, true);
+        Files.delete(GameInstallation.controlSchemesUnder(frontier));
+
+        assertEquals(List.of(GameInstallation.controlSchemesUnder(steam)),
+                InstallationRegistry.reachableControlSchemes());
+    }
+
     private InstallationRegistry registry() {
         return new InstallationRegistry(() -> List.copyOf(detected), installations);
     }

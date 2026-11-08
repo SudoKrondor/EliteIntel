@@ -1,6 +1,7 @@
 package elite.intel.bindforge.io;
 
 import elite.intel.bindforge.model.BindingSection;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -16,20 +17,34 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * {@link BindingsLoader#getActivePresetName()}'s one-line answer on the split specimen: the first non-empty line,
- * General's. The four-section read is {@link StartPresetSections}'s; BindForge reads the preset file from the working
- * copy since Storage S6.
+ * Which binds file {@link BindingsLoader} reads, and which sections of the game's controls that leaves unread: the
+ * preset file's lines in order, General first, each resolving to its preset's true binds file, else its factory binds
+ * file from the first {@code ControlSchemes} folder that holds it; never a plain file, never the newest file (Alan,
+ * 2026-11-08, Storage S13c). BindForge reads the preset file from the working copy since Storage S6.
  */
 class BindingsLoaderStartPresetTest {
 
     private static final String SPECIMEN = "StartPreset.4.start";
 
     @TempDir
-    Path bindingsDir;
+    Path tempDir;
 
-    private final BindingsLoader loader = new BindingsLoader();
+    private Path bindingsDir;
+    private Path firstInstallation;
+    private Path secondInstallation;
+
+    /** No installations: only the bindings folder is looked in. */
+    private final BindingsLoader loader = new BindingsLoader(List::of);
+
+    @BeforeEach
+    void folders() throws IOException {
+        bindingsDir = Files.createDirectory(tempDir.resolve("Bindings"));
+        firstInstallation = Files.createDirectory(tempDir.resolve("FirstControlSchemes"));
+        secondInstallation = Files.createDirectory(tempDir.resolve("SecondControlSchemes"));
+    }
 
     @Test
     void theSingleAnswerTakesTheFirstNonEmptyLine() throws IOException {
@@ -57,17 +72,12 @@ class BindingsLoaderStartPresetTest {
         assertEquals(Map.of(BindingSection.GENERAL, "KeyboardMouseOnly"), loader.sectionsNotIn(bindingsDir, read));
     }
 
-    /**
-     * A preset line in another case names the file, as the game reads it - not the newest file in the folder (Alan,
-     * 2026-11-07, Storage S13a D6).
-     */
+    /** A preset line in another case names the file, as the game reads it (Alan, 2026-11-07, Storage S13a D6). */
     @Test
     void aPresetLineInAnotherCaseFindsItsFile() throws IOException {
         startPreset("custom\r\ncustom\r\ncustom\r\ncustom");
         binds("Custom.4.2.binds");
         binds("Other.4.2.binds");
-        Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(1_000_000));
-        Files.setLastModifiedTime(bindingsDir.resolve("Other.4.2.binds"), FileTime.fromMillis(9_000_000));
 
         assertEquals("Custom.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
     }
@@ -77,7 +87,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("KeyboardMouseOnly\r\nVKB\r\nVKB\r\nVKB");
         binds("VKB.4.2.binds");
         binds("Custom.4.2.binds");
-        // WHY: the leftover file is the newest, which is what the old fallback would have picked.
+        // WHY: the other file is the newest, which the newest-file fallback before Storage S13c would have picked.
         Files.setLastModifiedTime(bindingsDir.resolve("VKB.4.2.binds"), FileTime.fromMillis(1_000_000));
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(9_000_000));
 
@@ -87,22 +97,128 @@ class BindingsLoaderStartPresetTest {
         assertEquals(Map.of(BindingSection.GENERAL, "KeyboardMouseOnly"), loader.sectionsNotIn(bindingsDir, read));
     }
 
+    /** No newest-file fallback (Storage S13c): when no line resolves, nothing is read. */
     @Test
-    void noLineWithAFileFallsBackToTheNewestFileAndReportsEverySection() throws IOException {
+    void noLineWithAFileReadsNothingNotTheNewestFile() throws IOException {
         startPreset("KeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly");
         binds("VKB.4.2.binds");
         binds("Custom.4.2.binds");
-        Files.setLastModifiedTime(bindingsDir.resolve("VKB.4.2.binds"), FileTime.fromMillis(9_000_000));
+
+        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+    }
+
+    @Test
+    void aFolderWithNoStartPresetReadsNothing() throws IOException {
+        binds("Custom.4.2.binds");
+
+        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+    }
+
+    /** A plain file never counts as a preset's file; the preset's factory file is read instead (Storage S13c). */
+    @Test
+    void aPresetWithOnlyAPlainFileReadsItsFactoryFile() throws IOException {
+        startPreset("KeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly");
+        binds("KeyboardMouseOnly.binds");
+        Path factory = factory(firstInstallation, "KeyboardMouseOnly.binds");
+
+        File read = withInstallations(firstInstallation).getLatestBindsFile(bindingsDir);
+
+        assertEquals(factory.toFile(), read);
+        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, read));
+    }
+
+    @Test
+    void aPresetWithOnlyAPlainFileAndNoFactoryFileReadsNothing() throws IOException {
+        startPreset("Mine\r\nMine\r\nMine\r\nMine");
+        binds("Mine.binds");
+        factory(firstInstallation, "KeyboardMouseOnly.binds");
+
+        assertThrows(IOException.class, () -> withInstallations(firstInstallation).getLatestBindsFile(bindingsDir));
+    }
+
+    @Test
+    void aTrueFileBeatsAPlainOne() throws IOException {
+        startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
+        binds("Custom.4.2.binds");
+        binds("Custom.binds");
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(1_000_000));
+        Files.setLastModifiedTime(bindingsDir.resolve("Custom.binds"), FileTime.fromMillis(9_000_000));
 
-        File read = loader.getLatestBindsFile(bindingsDir);
+        assertEquals("Custom.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
+    }
 
-        assertEquals("VKB.4.2.binds", read.getName());
-        assertEquals(Map.of(
-                BindingSection.GENERAL, "KeyboardMouseOnly",
-                BindingSection.SHIP, "KeyboardMouseOnly",
-                BindingSection.SRV, "KeyboardMouseOnly",
-                BindingSection.ON_FOOT, "KeyboardMouseOnly"), loader.sectionsNotIn(bindingsDir, read));
+    @Test
+    void aTrueFileBeatsTheFactoryFileOfTheSameName() throws IOException {
+        startPreset("KeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly");
+        binds("KeyboardMouseOnly.4.2.binds");
+        factory(firstInstallation, "KeyboardMouseOnly.binds");
+
+        assertEquals(bindingsDir.resolve("KeyboardMouseOnly.4.2.binds").toFile(),
+                withInstallations(firstInstallation).getLatestBindsFile(bindingsDir));
+    }
+
+    /** General's factory file is its file: the next line's own file is not read before it. */
+    @Test
+    void generalOnAFactoryFileIsReadBeforeTheNextLinesOwnFile() throws IOException {
+        startPreset("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom");
+        binds("Custom.4.2.binds");
+        Path factory = factory(firstInstallation, "KeyboardMouseOnly.binds");
+
+        File read = withInstallations(firstInstallation).getLatestBindsFile(bindingsDir);
+
+        assertEquals(factory.toFile(), read);
+        assertEquals(Map.of(BindingSection.SHIP, "Custom", BindingSection.SRV, "Custom", BindingSection.ON_FOOT,
+                "Custom"), loader.sectionsNotIn(bindingsDir, read));
+    }
+
+    @Test
+    void theFirstInstallationThatHoldsTheFactoryFileIsRead() throws IOException {
+        startPreset("KeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly");
+        factory(firstInstallation, "XboxPadDefaults.binds");
+        Path second = factory(secondInstallation, "KeyboardMouseOnly.binds");
+
+        assertEquals(second.toFile(),
+                withInstallations(firstInstallation, secondInstallation).getLatestBindsFile(bindingsDir));
+
+        Path first = factory(firstInstallation, "KeyboardMouseOnly.binds");
+        assertEquals(first.toFile(),
+                withInstallations(firstInstallation, secondInstallation).getLatestBindsFile(bindingsDir));
+    }
+
+    @Test
+    void aFactoryFileInAnotherCaseIsFound() throws IOException {
+        startPreset("keyboardmouseonly\r\nkeyboardmouseonly\r\nkeyboardmouseonly\r\nkeyboardmouseonly");
+        Path factory = factory(firstInstallation, "KeyboardMouseOnly.binds");
+
+        File read = withInstallations(firstInstallation).getLatestBindsFile(bindingsDir);
+
+        assertEquals(factory.toFile(), read);
+        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, read));
+    }
+
+    /** One installation that cannot be listed does not hide another's factory file. */
+    @Test
+    void aControlSchemesFolderThatCannotBeListedIsSkipped() throws IOException {
+        startPreset("KeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly");
+        Path gone = tempDir.resolve("UnpluggedControlSchemes");
+        Path factory = factory(secondInstallation, "KeyboardMouseOnly.binds");
+
+        assertEquals(factory.toFile(), withInstallations(gone, secondInstallation).getLatestBindsFile(bindingsDir));
+    }
+
+    /**
+     * Two versions of one preset - only a hand rename makes them - read the highest version, not the newest file
+     * (Alan, 2026-11-08, Storage S13c).
+     */
+    @Test
+    void twoVersionsOfAPresetReadTheHighest() throws IOException {
+        startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
+        binds("Custom.4.2.binds");
+        binds("Custom.4.3.binds");
+        Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.3.binds"), FileTime.fromMillis(1_000_000));
+        Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(9_000_000));
+
+        assertEquals("Custom.4.3.binds", loader.getLatestBindsFile(bindingsDir).getName());
     }
 
     @Test
@@ -153,10 +269,10 @@ class BindingsLoaderStartPresetTest {
     @Test
     void aDeDuplicatedCopyIsNotTheFileOfItsPreset() throws IOException {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
-        binds("Custom.4.2 (2).binds");
+        Path copy = binds("Custom.4.2 (2).binds");
 
-        assertEquals(everySectionOn("Custom"),
-                loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertEquals(everySectionOn("Custom"), loader.sectionsNotIn(bindingsDir, copy.toFile()));
     }
 
     /**
@@ -166,23 +282,19 @@ class BindingsLoaderStartPresetTest {
     @Test
     void aDottedNameIsItsOwnBindName() throws IOException {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
-        binds("Custom.Old.4.2.binds");
+        Path dotted = binds("Custom.Old.4.2.binds");
 
-        assertEquals(everySectionOn("Custom"),
-                loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertEquals(everySectionOn("Custom"), loader.sectionsNotIn(bindingsDir, dotted.toFile()));
     }
 
     @Test
     void aSharedNamePrefixIsNotTheSamePreset() throws IOException {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
-        binds("CustomHotas.4.2.binds");
+        Path other = binds("CustomHotas.4.2.binds");
 
-        assertEquals(Map.of(
-                        BindingSection.GENERAL, "Custom",
-                        BindingSection.SHIP, "Custom",
-                        BindingSection.SRV, "Custom",
-                        BindingSection.ON_FOOT, "Custom"),
-                loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertEquals(everySectionOn("Custom"), loader.sectionsNotIn(bindingsDir, other.toFile()));
     }
 
     @Test
@@ -195,9 +307,9 @@ class BindingsLoaderStartPresetTest {
 
     @Test
     void aFolderWithNoStartPresetIsNotReported() throws IOException {
-        binds("Custom.4.2.binds");
+        Path custom = binds("Custom.4.2.binds");
 
-        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, custom.toFile()));
     }
 
     @Test
@@ -214,11 +326,19 @@ class BindingsLoaderStartPresetTest {
                 BindingSection.ON_FOOT, preset);
     }
 
+    private static BindingsLoader withInstallations(Path... controlSchemes) {
+        return new BindingsLoader(() -> List.of(controlSchemes));
+    }
+
     private void startPreset(String text) throws IOException {
         Files.writeString(bindingsDir.resolve(SPECIMEN), text, StandardCharsets.UTF_8);
     }
 
-    private void binds(String name) throws IOException {
-        Files.writeString(bindingsDir.resolve(name), "<Root/>", StandardCharsets.UTF_8);
+    private Path binds(String name) throws IOException {
+        return Files.writeString(bindingsDir.resolve(name), "<Root/>", StandardCharsets.UTF_8);
+    }
+
+    private static Path factory(Path controlSchemes, String name) throws IOException {
+        return Files.writeString(controlSchemes.resolve(name), "<Root/>", StandardCharsets.UTF_8);
     }
 }

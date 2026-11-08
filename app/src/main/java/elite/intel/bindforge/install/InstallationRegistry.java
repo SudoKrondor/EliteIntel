@@ -115,6 +115,19 @@ public class InstallationRegistry {
     }
 
     /**
+     * The {@code ControlSchemes} folder of every installation on the stored list that is
+     * {@linkplain GameInstallation#reachable reachable}, in the list's order - where Elite-Intel's own loader looks for
+     * a preset's factory binds file, the first that holds it (Storage S13c; storage.md rule 16, <em>Settled with
+     * Storage S11's sources</em>). Runs no detection. Touches the disk and the database.
+     */
+    public static List<Path> reachableControlSchemes() {
+        return BindForgeInstallationsManager.getInstance().findAll().stream()
+                .filter(row -> GameInstallation.reachable(Path.of(row.rootPath()), row.missing()))
+                .map(row -> GameInstallation.controlSchemesUnder(Path.of(row.rootPath())))
+                .toList();
+    }
+
+    /**
      * The list, having run detection once since the application started.
      * <p>
      * Detection belongs at startup: a storefront installed since the last run is otherwise invisible until
