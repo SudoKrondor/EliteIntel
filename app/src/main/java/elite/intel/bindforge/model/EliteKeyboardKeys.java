@@ -19,7 +19,7 @@ public final class EliteKeyboardKeys {
             "Key_F1", "Key_F2", "Key_F3", "Key_F4", "Key_F5", "Key_F6", "Key_F7", "Key_F8", "Key_F9",
             "Key_F10", "Key_F11", "Key_F12",
             "Key_Escape", "Key_Tab", "Key_CapsLock", "Key_LeftShift", "Key_RightShift", "Key_LeftControl",
-            "Key_RightControl", "Key_LeftAlt", "Key_RightAlt", "Key_Space", "Key_Return", "Key_Backspace",
+            "Key_RightControl", "Key_LeftAlt", "Key_RightAlt", "Key_Space", "Key_Enter", "Key_Backspace",
             "Key_Insert", "Key_Delete", "Key_Home", "Key_End", "Key_PageUp", "Key_PageDown",
             "Key_UpArrow", "Key_DownArrow", "Key_LeftArrow", "Key_RightArrow",
             "Key_Grave", "Key_Minus", "Key_Equals", "Key_LeftBracket", "Key_RightBracket",

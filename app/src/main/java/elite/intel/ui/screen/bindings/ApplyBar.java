@@ -53,6 +53,9 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * installation missing - read only</em>; Storage S14a) - there are no edits, so the bar's left side names every missing
  * installation and the ways out, in warning colour, and <strong>OVERRIDE</strong> takes the place of DISCARD and APPLY.
  * CREATE is not shown. The bar is above the tabs, not an editor, so it may name installations (principle 12).
+ * <p>
+ * <strong>The User Configuration Folder sits left of DISCARD and APPLY</strong> ({@link BindingsFolderField}; Alan,
+ * 2026-11-08), shown whatever the mode: it is the folder every tab's binds files come from.
  */
 public final class ApplyBar extends JPanel {
 
@@ -68,7 +71,10 @@ public final class ApplyBar extends JPanel {
     private Consumer<Create.State> createListener = state -> {
     };
 
-    public ApplyBar() {
+    /**
+     * @param bindingsFolder the User Configuration Folder's row, placed left of DISCARD and APPLY
+     */
+    public ApplyBar(BindingsFolderField bindingsFolder) {
         super(new BorderLayout());
         setOpaque(false);
         apply.addActionListener(e -> apply(() -> {
@@ -82,7 +88,8 @@ public final class ApplyBar extends JPanel {
         leading.setOpaque(false);
         leading.add(create);
         leading.add(status);
-        add(HudFooter.build(false, null, leading, List.of(discard, apply, override)), BorderLayout.CENTER);
+        add(HudFooter.build(false, null, leading, List.of(), List.of(bindingsFolder, discard, apply, override)),
+                BorderLayout.CENTER);
         refresh();
         UiBus.register(this);
     }

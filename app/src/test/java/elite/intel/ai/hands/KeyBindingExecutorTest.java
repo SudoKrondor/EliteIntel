@@ -1,6 +1,7 @@
 package elite.intel.ai.hands;
 
 import elite.intel.ai.hands.KeyBindingExecutor.NormalizedChord;
+import elite.intel.bindforge.model.EliteKeyboardKeys;
 import elite.intel.bindforge.rules.SafeKeyboardKeys;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +24,17 @@ class KeyBindingExecutorTest {
             assertNotNull(KeyBindingExecutor.resolveKeyCode(key), "numpad key not executable: " + key);
         }
         assertNotNull(KeyBindingExecutor.resolveKeyCode("Key_Numpad_Enter"));
+    }
+
+    @Test
+    void everyKeyTheBindingsTabCanAssignIsExecutable() {
+        // The Bindings tab once wrote "Key_Return" for Enter: neither Elite (which says "Key_Enter")
+        // nor the executor knew it, so a UI_Select set to Enter was silently never pressed.
+        for (String key : EliteKeyboardKeys.assignableKeys()) {
+            assertNotNull(KeyBindingExecutor.resolveKeyCode(key), "assignable key not executable: " + key);
+        }
+        assertTrue(EliteKeyboardKeys.isAssignable("Key_Enter"));
+        assertFalse(EliteKeyboardKeys.isAssignable("Key_Return"));
     }
 
     @Test
