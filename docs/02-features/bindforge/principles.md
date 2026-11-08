@@ -15,7 +15,10 @@ other documents disagree, the work stops and Alan decides.** How the files are h
     user's own, BindForge's generated ones and the two Frontier ships (`VPCPanel`, `VPCThrottle`).
 
   Not included: the factory binds files in `ControlSchemes`, a leftover `StartPreset.start`, `.binds.backup` copies,
-  `BindingLoadingErrors.log`, and anything else in either folder.
+  `BindingLoadingErrors.log`, and anything else in either folder. **What does not belong in the bindings folder** -
+  anything there but a `<name>.<major>.<minor>.binds`, a `StartPreset.N.start` and `BindingLoadingErrors.log` - **is
+  moved by the check to Leftover User Files**, in Elite-Intel's user data folder, never deleted; BindForge does nothing
+  more with it (2026-11-08, Alan; [storage.md](storage.md) rule 14, *Settled 2026-11-08*).
 - **Working copy** — those files in Elite-Intel's BindForge folder: uncompressed, and the user can open them in the
   file manager. The source of truth once first setup is complete. **Edits stay on screen until APPLY. Only four things write
   the working copy — APPLY, first setup, RESTORE, and the check's reconcile — and each leaves the working copy and
@@ -66,4 +69,7 @@ other documents disagree, the work stops and Alan decides.** How the files are h
     clear which kind it is, ask Alan before building the guard. The first use is
     [read only while an installation is missing](storage.md#an-installation-missing--read-only-2026-11-03-alan).
     *A hand-copied factory file was an example here until 2026-11-07 (Alan, Storage S13b Q0): it confuses which file a
-    preset line loads, so the check tidies it up (storage.md rule 14, Settled with Storage S13b's sources).*
+    preset line loads, so the check tidies it up (storage.md rule 14, Settled with Storage S13b's sources).* *A preset
+    line naming a preset that has only a plain file is this principle's kind (Alan, 2026-11-08): the game converts a
+    plain file the moment it is picked in its controls, so only a hand edit of `StartPreset.4.start` leaves one, and
+    Elite-Intel's loader ignores plain files (storage.md, Settled with Storage S13a's sources, D6).*

@@ -299,6 +299,24 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     `Custom`, and a name that is not `<name>.<major>.<minor>.binds` - a plain `Custom.binds`, a Windows copy
     `Custom.4.2 (2).binds` - is no preset's file, as [principles.md *Words*](principles.md#words) defines a binds
     file. Until then the loader matched any name starting `<preset>.`.
+  - **Which file the loader reads (Alan, 2026-11-08, from Krondor's review of S13b), amending D6:** the true binds
+    file - `<name>.<major>.<minor>.binds` - that `StartPreset.4.start` names, from the bindings folder. **A plain file
+    never counts as a preset's file.** When a line names a preset with no true binds file in the bindings folder, the
+    loader reads **that preset's factory binds file from an installation's `ControlSchemes`**, found the way BindForge
+    finds factory files: reachable installations only, the first that holds it (rule 16, *Settled with Storage S11's
+    sources*). **The newest-file fallback goes** - no file is ever read because it is the newest. **`sectionsNotIn`
+    follows the same rule:** a section counts as read when its preset is the one the loader read, from the bindings
+    folder or from `ControlSchemes`.
+    *Why a plain file can be ignored:* the game converts one the moment it is picked. Alan put
+    `keyboardandmouseonly2.binds` in the bindings folder, chose it for General in the game's controls, and on Apply the
+    game at once wrote `keyboardandmouseonly2.4.2.binds` ([testing item 28](../../00-overview/testing-required.md),
+    measured 2026-11-08). So the game never leaves a preset line naming a preset that has only a plain file; only a
+    hand edit of `StartPreset.4.start` would, and that gets no guard (principle 13).
+    To be built in Storage S13c. *To confirm at the slice's sources:* the lines are still taken in order, General first, each resolving to its true
+    file, else its factory file; a line resolving to neither (no reachable installation holds that factory file) passes
+    to the next, and with none left nothing is read and it is logged.
+    *Until 2026-11-08 a line whose preset had no file in the bindings folder passed to the next, and when no line had
+    one the newest `.binds` in the folder was read, a plain file included.*
   - *Decided while building:* a file's `PresetName` that differs from its file name only in case is no mismatch - Alan's
     test file, renamed to lower case with its `PresetName` as it was, is offered and loaded. A set that holds two
     spellings of one file is refused; a working copy holding two, made by hand, cannot be read, so the newest backup is
@@ -614,29 +632,29 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
 
     - **What is plain:** `<name>.binds` with no period in the name - a factory file copied in by hand, which the game
       has not converted (`KeyboardMouseOnly.binds`, `KeyboardMouseOnly - Copy.binds`). `Custom.4.2 (2).binds` and
-      `.binds.backup` are not one: they are no game file at all, and are left alone (Q1; `FileNames.isPlainBindsFile`).
+      `.binds.backup` are not one: they are no game file at all (Q1; `FileNames.isPlainBindsFile`). *They were left
+      alone until 2026-11-08; since then they go to Leftover User Files, below.*
       **It never stays** in the bindings folder, a backup or the working copy - it confuses which file a preset line
       loads. **D1:** never backed up; it is not one of the user's files.
-    - **D2, judged against the settled set** - the working copy after the check's answers, the edits on top at APPLY -
-      each one in name order: a binds file of the same BindName is there → the plain file is removed (a hand edit in it
-      is lost, accepted); else it holds the values of the factory file of that name (every element, the root apart
-      from `PresetName`, as the reset test judges, from a reachable installation) → removed, and the preset line loads
-      the factory file; else **converted** - `<name>.<root version, else 4.2>.binds`, every byte kept but `PresetName`,
-      set to the name (CREATE's version rule), into the working copy and the bindings folder, the plain file removed.
-      A file that does not read as a binds file, element by element under a `<Root>`, is left alone and named. A
-      converted file named like a factory one gets no warning (Alan, 2026-11-04). **D3:** every match ignores case, and
-      a second spelling of one plain file is a twin of the first converted.
+    - ~~**D2, judged against the settled set** - a twin there → removed, a hand edit in it lost; equal to the factory
+      file → removed; else converted; a file that does not read as a binds file left alone and named.~~ **Replaced on
+      2026-11-08** by *A plain file judged*, below. A converted file named like a factory one gets **no extra warning
+      in the check's report** (Alan, 2026-11-04; worded so 2026-11-08, from the S13aR-S13b review's D2): S14c's
+      startup line and the Bind Editor's warning still name it, and the user renames it there. **D3:** every match
+      ignores case, and a second spelling of one plain file is a twin of the first converted.
     - **In the check, at the first click and at APPLY:** one more line in the same warning, backup and write; the preset
       file needs no change. Plain files are read again before the write, and one that changed meanwhile stops it, as a
       row does. **Any of the three choices tidies them up. A warning holding only plain files offers *Tidy up* and *Not
       now*** (Q2) - at APPLY too, where Not now cancels the APPLY (Q3). One that does not read as a binds file is only
-      named: alone it asks nothing - the first click tells it, APPLY writes and the report names it. A converted file
+      named: alone it asks nothing - the first click tells it, APPLY writes and the report names it (*until 2026-11-08;
+      it now goes to Leftover User Files, below*). A converted file
       changes the working copy, so APPLY's backup holds the working copy as it was.
     - **D4: the report names each file removed, and why, or converted, and to what**; the log does too. **A read-only
       plain file is kept and reported** with the kept-read-only line, as any removal is; a converted one's binds file is
       still written (Q4).
     - **At Elite-Intel start** the plain files are the notice's fourth line, after the factory-name line - once a
-      working copy exists, and **not while read only**, since the check that tidies them up is off then (Q5).
+      working copy exists, and **not while read only**, since the check that tidies them up is off then (Q5). *Since
+      2026-11-08 the line names only the files the check will move* - below.
     - **Principle 13** listed a hand-copied factory file among the cases that get no guard; this tidy-up was planned
       after it, and principle 13's examples were amended to match (Alan, 2026-11-07, Q0).
 
@@ -644,6 +662,47 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     `BindingsCheck.Found.plain` and `plainPlan`; the tidy-up in `BindingsCheck.settle` and `Apply.apply`;
     `LiveCopies` removing plain names; `CheckWarningDialog.Offer.TIDY_UP`; `CheckFlow.plainLines` / `plainReport`;
     `StartupNotice.Line.PlainFiles`.
+
+    **Settled 2026-11-08 (Alan), from the S13aR-S13b code-integrity review and Krondor's review of S13b** - plain
+    files judged again, and Leftover User Files. To be built in Storage S13d (Leftover User Files, the startup line) and
+    S13e (a plain file judged against its twin) - the [brief](../../05-build-plan/storage.md#slices):
+
+    - **A plain file judged** (replaces S13b's D2), against the settled set as before, each in name order:
+      - **A true binds file of the same BindName is there:** the plain file is compared with it by value, as the
+        check compares. Equal, or lacking only bindings the true file has → nothing more is needed. It has bindings the
+        true file lacks → the user goes through the check's existing merge, the plain file one side and the true file
+        the other, and what the user keeps goes into the true file. *To confirm at the sources:* a binding both files
+        hold with different values counts as one the true file lacks.
+      - **No true binds file of that name:** equal by value to the factory file of that name (as the reset test
+        judges, from a reachable installation) → a leftover, and the preset line loads the factory file; differing, or
+        no factory file of that name → hand-edited, and **converted** as S13b does - `<name>.<root version, else
+        4.2>.binds`, every byte kept but `PresetName`, into the working copy and the bindings folder.
+      - **In every case, once the user has decided, the plain file leaves the bindings folder** - moved to Leftover
+        User Files, never deleted. *Until 2026-11-08 a twin was removed, a hand edit in it lost, and so was a file equal
+        to the factory one.*
+    - **Leftover User Files.** Anything in the bindings folder that is **not a true binds file, a
+      `StartPreset.N.start` or `BindingLoadingErrors.log`** is **moved, never deleted**, into a folder named
+      `Leftover User Files` in Elite-Intel's user data folder - **`elite-intel/Leftover User Files`**, beside
+      `working-copy` and `playerbackups`, named by `AppPaths` as they are - each move into **its own date-stamped
+      subfolder**, stamped as a backup is. That covers plain files once judged, plain files that do not read as binds
+      files, Windows copies such as `Custom.4.2 (2).binds`, `.binds.backup` files (probably old Elite-Intel backups),
+      and any other stray file.
+      - **The move happens only in the check** - at the first click and at APPLY, in its warning, backup and write -
+        never unasked (principles 4 and 5). The report names each file moved and where it went; the log does too.
+      - **Plain files still get no backup of their own** (S13b's D1 stands): the move keeps them. It also closes
+        Krondor's finding that restoring APPLY's backup could lose a converted file's bindings - that backup, taken
+        before the write, holds neither the plain file nor the converted one, and the plain file now survives the
+        conversion in Leftover User Files.
+      - **A read-only file the check cannot move** stays where it is and is named once in the check's report, with the
+        kept-read-only line, as any removal is (Q4).
+      - **BindForge is not a backup system.** After the move it does nothing with that folder: it is not listed in File
+        Manager, nothing restores from it, and it is never cleaned. The user opens it in the file manager.
+      - *To confirm at the sources:* a leftover `StartPreset.start` (no generation number) is moved too, as the rule's
+        words say; a folder inside the bindings folder is left alone; a warning holding only files to move offers
+        *Tidy up* / *Not now* as one holding only plain files does (Q2), Not now cancelling APPLY (Q3).
+    - **The line at Elite-Intel start names only the files the check will actually move** (the review's D1). A
+      read-only file is not named at every start - only once, in the check's report. *To confirm at the sources:* the
+      line counts every file the check will move, not only plain ones.
 
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything

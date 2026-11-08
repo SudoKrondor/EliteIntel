@@ -349,6 +349,14 @@ nothing be named, and the question come back next run.
 asking the one who reported
 it.* In the game's own controls screen, bind one face button and one trigger (as a button) on the pad, then send the active `.binds` file and the pad's model, wired or wireless. The file says which family the game writes, `Pad_…` or `GamePad_…`, and whether the pad is on `Device="GamePad"` at all - a wired Xbox Series pad (`045E:0B12`) is not on Frontier's `<GamePad>` list. Also worth a look: open the pad in the Device Editor and say whether the sticks light, or nothing at all. Blocks A18 and E7. → [A gamepad is not a joystick](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
 
+**28. ~~Does the game leave a preset line naming a plain `.binds`?~~ — MEASURED 2026-11-08 (Alan): no.** He put
+`keyboardandmouseonly2.binds` (a plain name, no version) in the bindings folder, picked it for General in the game's
+controls screen, and on Apply the game at once wrote `keyboardandmouseonly2.4.2.binds`. So the game never leaves
+`StartPreset.4.start` naming a preset that has only a plain file; only a hand edit would (principle 13). Elite-Intel's
+loader therefore reads the true binds file a preset line names, else that preset's factory file from `ControlSchemes`,
+and never a plain file or the newest one (Storage S13c). *No longer a testing item.*
+→ [storage.md — Settled with Storage S13a's sources, D6](../02-features/bindforge/storage.md#how-the-files-are-written--2026-10-24)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.
