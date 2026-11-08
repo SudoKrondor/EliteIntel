@@ -7,14 +7,9 @@ import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.install.GameInstallationProvider;
 import elite.intel.bindforge.install.InstallationRegistry;
-import elite.intel.bindforge.storage.ConfigurationFiles;
-import elite.intel.bindforge.storage.DeviceCheck;
-import elite.intel.bindforge.storage.FirstTimeStartup;
-import elite.intel.bindforge.storage.ReadOnlyMode;
-import elite.intel.bindforge.storage.WorkingCopy;
+import elite.intel.bindforge.storage.*;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
@@ -30,7 +25,6 @@ import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,23 +38,22 @@ import java.util.function.Supplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
-import static elite.intel.ui.theme.HudPalette.HUD_FIELD_HEIGHT;
 
 /**
  * Where BindForge looks for the files it manages.
  * <p>
- * The folder and the installations are two sections rather than one list, because the file domains do not live in
+ * The folder and the installations are shown apart rather than as one list, because the file domains do not live in
  * comparable places: the
  * {@code .binds} files sit in <strong>one folder shared by every installation</strong>, while
  * {@code DeviceMappings.xml} and the {@code .buttonMap} files are <strong>duplicated per
  * installation</strong>. Presenting them as one flat list of "locations" would imply otherwise, and that is
  * the thing people get wrong.
  * <p>
- * <strong>The bindings folder's ⋮ and the Bindings File section under it</strong> moved here from the
- * Bind Editor in Storage S15 (Alan, 2026-11-04): only File Manager shows folders and files (principle 12). LOAD there
- * opens the chosen binds file in the Bind Editor ({@link BindsFileSection}).
+ * <strong>The Bindings File section</strong> moved here from the Bind Editor in Storage S15 (Alan, 2026-11-04): only
+ * File Manager shows folders and files (principle 12). LOAD there opens the chosen binds file in the Bind Editor
+ * ({@link BindsFileSection}). <em>The bindings folder's row and its ⋮ moved up to the {@link ApplyBar}
+ * ({@link BindingsFolderField}; Alan, 2026-11-08), above every BindForge tab.</em>
  * <p>
  * Backup, restore and apply all work from this list, so when detection is wrong every one of them is wrong -
  * which is why the list is editable rather than merely displayed: <strong>Add Missing</strong> and
@@ -87,7 +80,6 @@ public class GameInstallLocationsPanel extends JPanel {
 
     private DefaultTableModel tableModel;
     private JTable table;
-    private JTextField configFolderField;
     private final BindsFileSection bindsFileSection = new BindsFileSection();
     private List<InstallationRow> currentRows = List.of();
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
@@ -114,58 +106,11 @@ public class GameInstallLocationsPanel extends JPanel {
         setBorder(hudSubtabContentBorder());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        // WHY the binds file under the folder, not under the table: it is in that folder, and the table takes the
-        // height left over, which put the section at the foot of the screen (Alan, 2026-11-04).
-        JPanel north = new JPanel(new BorderLayout());
-        north.setOpaque(false);
-        north.add(buildConfigFolderSection(), BorderLayout.NORTH);
-        north.add(bindsFileSection, BorderLayout.SOUTH);
-        add(north, BorderLayout.NORTH);
+        // WHY above the table, not under it: the table takes the height left over, which put the section at the foot
+        // of the screen (Alan, 2026-11-04).
+        add(bindsFileSection, BorderLayout.NORTH);
         add(buildInstallationsSection(), BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
-    }
-
-    /**
-     * One folder, shared by every installation, and the ⋮ that changes it - Elite-Intel's own bindings setting. The
-     * field is read-only; the folder is changed only through the ⋮ (Storage S15, Alan, 2026-11-04: moved here from the
-     * Bind Editor, because only File Manager shows folders - principle 12).
-     */
-    private JPanel buildConfigFolderSection() {
-        configFolderField = new JTextField();
-        configFolderField.setEditable(false);
-
-        JButton chooseButton = makeFieldButton(verticalEllipsisIcon(HUD_FIELD_HEIGHT), HUD_FIELD_HEIGHT);
-        chooseButton.setToolTipText(getText("player.bindingsDirectory.select.tooltip"));
-        chooseButton.addActionListener(e -> selectBindingsDirectory());
-
-        HudSection section = new HudSection(
-                getText("bindings.installLocations.section.configFolder"),
-                new BorderLayout(7, 0),
-                HudPanel.Variant.FLAT,
-                6);
-        section.body().add(configFolderField, BorderLayout.CENTER);
-        section.body().add(chooseButton, BorderLayout.EAST);
-        return section;
-    }
-
-    /**
-     * The ⋮ on the bindings folder row: the folder chooser, the same setting and checks the Bind Editor's row used
-     * before S15. The working copy does not change with the folder, so only this screen is read again.
-     */
-    private void selectBindingsDirectory() {
-        PlayerSession playerSession = PlayerSession.getInstance();
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setDialogTitle(getText("player.bindingsDirectory.dialog"));
-        String current = playerSession.getBindingsDir().toString();
-        if (!current.isBlank()) chooser.setCurrentDirectory(new File(current).getParentFile());
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        if (!playerSession.setBindingsDir(chooser.getSelectedFile().getAbsolutePath())) {
-            DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.BINDINGS);
-            return;
-        }
-        DataDirectoryValidator.validateAndWarn(playerSession.getBindingsDir(), DataDirectoryValidator.DirectoryKind.BINDINGS);
-        initData();
     }
 
     /** Wired by the BindForge tab: the Bind Editor LOAD opens a file in. */
@@ -246,20 +191,18 @@ public class GameInstallLocationsPanel extends JPanel {
     private void loadInBackground(Supplier<List<InstallationRow>> source) {
         if (!refreshInProgress.compareAndSet(false, true)) return;
         // WHY: a list that cannot be read shows empty rather than as it was, with the log saying why.
-        Function<String, Runnable> empty = reason -> () -> loaded(List.of(), List.of(), null);
+        Function<String, Runnable> empty = reason -> () -> loaded(List.of(), List.of());
         FlowSteps.inBackground("BindForge-Installations", log, "Refreshing the installation list", () -> {
             List<InstallationRow> rows = source.get();
             Optional<Map<Long, DeviceCheck.State>> states = matchStates();
             List<Object[]> cells = rows.stream().map(row -> cellsOf(row,
                     states.map(stateById -> statusOf(row, stateById)).orElseGet(() -> listedStatus(row)))).toList();
-            Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
-            return () -> loaded(rows, cells, bindingsDir);
+            return () -> loaded(rows, cells);
         }, empty, empty, FlowSteps.NOTHING);
     }
 
     /** Shows what {@link #loadInBackground} read, then the row asked to be selected. On the EDT. */
-    private void loaded(List<InstallationRow> rows, List<Object[]> cells, Path bindingsDir) {
-        showConfigFolder(bindingsDir);
+    private void loaded(List<InstallationRow> rows, List<Object[]> cells) {
         showRows(rows, cells);
         if (pendingSelection != null) {
             selectRow(pendingSelection);
@@ -327,15 +270,6 @@ public class GameInstallLocationsPanel extends JPanel {
             HudConfirmDialog.info(this, getText("bindings.installLocations.runAgain.confirm.title"),
                     getText("bindings.installLocations.runAgain.failed", StringUtls.messageOf(e)), getText("button.ok"));
         }
-    }
-
-    private void showConfigFolder(Path bindingsDir) {
-        boolean found = bindingsDir != null && Files.isDirectory(bindingsDir);
-        configFolderField.setText(bindingsDir == null
-                ? getText("bindings.installLocations.configFolder.unset")
-                : bindingsDir + "   -   " + getText(found
-                        ? "bindings.installLocations.state.found"
-                        : "bindings.installLocations.state.missing"));
     }
 
     /**

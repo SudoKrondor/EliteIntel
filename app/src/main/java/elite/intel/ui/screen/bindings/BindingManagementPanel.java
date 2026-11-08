@@ -10,13 +10,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudFooter;
-import elite.intel.ui.widget.HudMetadataField;
-import elite.intel.ui.widget.HudPanel;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudStepper;
-import elite.intel.ui.widget.HudTable;
+import elite.intel.ui.widget.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -219,6 +213,13 @@ public class BindingManagementPanel extends JPanel {
     public void initData() {
         loadSettings();
         refreshBackups();
+        gameInstallLocationsPanel.initData();
+    }
+
+    /**
+     * The bindings folder changed on the bar: Game Install Locations reads its list again. On the EDT.
+     */
+    public void refreshInstallLocations() {
         gameInstallLocationsPanel.initData();
     }
 

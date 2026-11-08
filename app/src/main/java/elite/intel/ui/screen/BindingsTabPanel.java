@@ -32,7 +32,10 @@ public class BindingsTabPanel extends JPanel {
     private final BindingManagementPanel bindingManagementPanel = new BindingManagementPanel();
     private final AliasDesignerPanel aliasDesignerPanel = new AliasDesignerPanel();
     private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this);
-    private final ApplyBar applyBar = new ApplyBar();
+    // WHY: the binds files are in this folder, and Game Install Locations names it - a new one is read again there.
+    private final BindingsFolderField bindingsFolder =
+            new BindingsFolderField(bindingManagementPanel::refreshInstallLocations);
+    private final ApplyBar applyBar = new ApplyBar(bindingsFolder);
     private final LeavePrompt leavePrompt = applyBar.leavePrompt(this);
     /** Whether read only was on when last heard. On the EDT. */
     private boolean readOnly;
@@ -142,6 +145,7 @@ public class BindingsTabPanel extends JPanel {
     }
 
     public void initData() {
+        bindingsFolder.refresh();
         bindingProfilePanel.initData();
         bindingManagementPanel.initData();
         aliasDesignerPanel.initData();
