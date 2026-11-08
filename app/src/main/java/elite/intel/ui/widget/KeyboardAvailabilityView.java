@@ -114,7 +114,7 @@ public class KeyboardAvailabilityView extends JPanel {
                 w("Key_CapsLock", "Caps", 1.75),
                 k("Key_A", "A"), k("Key_S", "S"), k("Key_D", "D"), k("Key_F", "F"), k("Key_G", "G"),
                 k("Key_H", "H"), k("Key_J", "J"), k("Key_K", "K"), k("Key_L", "L"),
-                k("Key_SemiColon", ";"), k("Key_Apostrophe", "'"), w("Key_Return", "Enter", 2.25)));
+                k("Key_SemiColon", ";"), k("Key_Apostrophe", "'"), w("Key_Enter", "Enter", 2.25)));
         addRow(y++, CELL_GAP, row(
                 mod("Key_LeftShift", "Shift", 2.25),
                 k("Key_Z", "Z"), k("Key_X", "X"), k("Key_C", "C"), k("Key_V", "V"), k("Key_B", "B"),

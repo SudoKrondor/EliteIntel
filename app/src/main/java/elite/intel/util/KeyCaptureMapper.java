@@ -119,7 +119,7 @@ public final class KeyCaptureMapper {
         VK_TO_TOKEN.put(KeyEvent.VK_TAB, "Key_Tab");
         VK_TO_TOKEN.put(KeyEvent.VK_CAPS_LOCK, "Key_CapsLock");
         VK_TO_TOKEN.put(KeyEvent.VK_SPACE, "Key_Space");
-        VK_TO_TOKEN.put(KeyEvent.VK_ENTER, "Key_Return");
+        VK_TO_TOKEN.put(KeyEvent.VK_ENTER, "Key_Enter"); // Elite's name; it never writes "Key_Return"
         VK_TO_TOKEN.put(KeyEvent.VK_BACK_SPACE, "Key_Backspace");
         VK_TO_TOKEN.put(KeyEvent.VK_INSERT, "Key_Insert");
         VK_TO_TOKEN.put(KeyEvent.VK_DELETE, "Key_Delete");
