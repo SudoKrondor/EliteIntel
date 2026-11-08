@@ -4,11 +4,13 @@ import elite.intel.bindforge.install.Storefront;
 import elite.intel.bindforge.preseteditor.BindNameEntry;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +31,9 @@ import java.util.function.Supplier;
  *     while read only</strong>: the read-only line covers it, and the check it points to is off (Alan, 2026-11-06).</li>
  *     <li><strong>A binds file named like a factory one</strong> ({@link BindNameEntry#shadowsFactory()}) - the working
  *     copy's, once one exists, judged against the reachable installations' factory files.</li>
+ *     <li><strong>A plain binds file in the bindings folder</strong> ({@link PlainBinds}; Storage S13b) - once a working
+ *     copy exists, and <strong>not while read only</strong>, since the check that tidies it up is off then (Alan,
+ *     2026-11-07, Q5).</li>
  * </ol>
  * The missing controller stays the Alias Designer's ({@code MissingControllerWarning}, A13), and the binding warnings
  * stay {@code KeyBindCheck}'s, said before this notice (Alan, 2026-11-06).
@@ -42,6 +47,8 @@ public final class StartupNotice {
     static final String NAMED_LIKE_FACTORY_KEY = "speech.bindforge.namedLikeFactory";
     static final String NAMED_LIKE_FACTORY_MANY_KEY = "speech.bindforge.namedLikeFactoryMany";
     static final String MANUAL_INSTALLATION_KEY = "speech.bindforge.manualInstallation";
+    static final String PLAIN_FILE_KEY = "speech.bindforge.plainFile";
+    static final String PLAIN_FILE_MANY_KEY = "speech.bindforge.plainFileMany";
 
     private static final AtomicBoolean STARTED = new AtomicBoolean();
 
@@ -64,6 +71,13 @@ public final class StartupNotice {
                 bindNames = List.copyOf(bindNames);
             }
         }
+
+        /** The plain binds files in the bindings folder, by name (Storage S13b). */
+        record PlainFiles(List<String> files) implements Line {
+            public PlainFiles {
+                files = List.copyOf(files);
+            }
+        }
     }
 
     /** The BindNames of the working copy's binds files named like a factory one. */
@@ -72,22 +86,31 @@ public final class StartupNotice {
         List<String> bindNames() throws IOException;
     }
 
+    /** The plain binds files in the bindings folder, once a working copy exists; none before. */
+    @FunctionalInterface
+    interface PlainNamed {
+        List<String> files() throws IOException;
+    }
+
     private final Supplier<List<InstallationRow>> readOnly;
     private final BooleanSupplier changedOutside;
     private final FactoryNamed factoryNamed;
+    private final PlainNamed plainNamed;
 
-    /** The stored read-only state, the check at start and the stored working copy and installations. */
+    /** The stored read-only state, the check at start, the working copy, the installations and the bindings folder. */
     public static StartupNotice stored() {
         return new StartupNotice(
                 () -> ReadOnlyMode.stored().active() ? ReadOnlyMode.stored().missing() : List.of(),
                 () -> StartupCheck.stored().changedOutside(),
-                StartupNotice::storedFactoryNamed);
+                StartupNotice::storedFactoryNamed, StartupNotice::storedPlainNamed);
     }
 
-    StartupNotice(Supplier<List<InstallationRow>> readOnly, BooleanSupplier changedOutside, FactoryNamed factoryNamed) {
+    StartupNotice(Supplier<List<InstallationRow>> readOnly, BooleanSupplier changedOutside, FactoryNamed factoryNamed,
+                  PlainNamed plainNamed) {
         this.readOnly = readOnly;
         this.changedOutside = changedOutside;
         this.factoryNamed = factoryNamed;
+        this.plainNamed = plainNamed;
     }
 
     /**
@@ -125,6 +148,20 @@ public final class StartupNotice {
             // WHY: broad on purpose - a thread of its own at startup, and a hint only; the Bind Editor warns of it too.
             log.warn("Could not work out whether a binds file is named like a factory one", e);
         }
+        // WHY: not while read only - the check that tidies it up is off, as the changed-outside line's is (Alan,
+        // 2026-11-07, Storage S13b Q5).
+        if (missing.isEmpty()) {
+            try {
+                List<String> plain = plainNamed.files();
+                if (!plain.isEmpty()) {
+                    log.info("Plain binds files in the bindings folder: {}", plain);
+                    lines.add(new Line.PlainFiles(plain));
+                }
+            } catch (IOException | RuntimeException e) {
+                // WHY: broad on purpose, as above - a hint only; the check names the files too.
+                log.warn("Could not look for plain binds files in the bindings folder", e);
+            }
+        }
         return lines;
     }
 
@@ -137,6 +174,9 @@ public final class StartupNotice {
             case Line.NamedLikeFactory named -> named.bindNames().size() == 1
                     ? StringUtls.localizedSpeech(NAMED_LIKE_FACTORY_KEY, named.bindNames().getFirst())
                     : StringUtls.localizedSpeech(NAMED_LIKE_FACTORY_MANY_KEY, String.join(", ", named.bindNames()));
+            case Line.PlainFiles plain -> plain.files().size() == 1
+                    ? StringUtls.localizedSpeech(PLAIN_FILE_KEY, plain.files().getFirst())
+                    : StringUtls.localizedSpeech(PLAIN_FILE_MANY_KEY, String.join(", ", plain.files()));
         };
     }
 
@@ -165,6 +205,14 @@ public final class StartupNotice {
         if (!workingCopy.exists()) return List.of();
         return factoryNamed(Apply.offered(workingCopy.read(), BindForgeInstallationsManager.getInstance().findAll())
                 .list().entries());
+    }
+
+    private static List<String> storedPlainNamed() throws IOException {
+        // WHY: before first-time startup the live files are not BindForge's, as above.
+        if (!WorkingCopy.stored().exists()) return List.of();
+        Path folder = PlayerSession.getInstance().getBindingsDir();
+        if (folder == null) return List.of();
+        return List.copyOf(PlainBinds.read(folder).keySet());
     }
 
     /** The BindNames among {@code entries} that are the user's and named like a factory one. */

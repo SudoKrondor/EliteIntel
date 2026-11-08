@@ -18,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The notice when Elite-Intel starts (Storage S14c): BindForge's lines in a fixed order - read only, changed outside,
- * a binds file named like a factory one - with <em>changed outside</em> not said while read only, and missing
- * installations named by their store alone.
+ * a binds file named like a factory one, a plain binds file (Storage S13b) - with <em>changed outside</em> and the plain
+ * files not said while read only, and missing installations named by their store alone.
  */
 class StartupNoticeTest {
 
@@ -48,7 +48,7 @@ class StartupNoticeTest {
     void changedOutsideIsNotSaidWhileReadOnly() {
         StartupNotice notice = new StartupNotice(() -> List.of(STEAM), () -> {
             throw new AssertionError("the files are not compared while read only");
-        }, List::of);
+        }, List::of, List::of);
 
         assertEquals(List.of(new StartupNotice.Line.ReadOnly(List.of(STEAM))), notice.lines());
     }
@@ -65,9 +65,42 @@ class StartupNoticeTest {
     void aFaultInOneLineLeavesTheOthers() {
         StartupNotice notice = new StartupNotice(List::of, () -> true, () -> {
             throw new IOException("working copy locked");
+        }, () -> {
+            throw new IOException("bindings folder locked");
         });
 
         assertEquals(List.of(new StartupNotice.Line.ChangedOutside()), notice.lines());
+    }
+
+    // ---- plain binds files (Storage S13b)
+
+    /** The fourth line, after the factory-name line. */
+    @Test
+    void aPlainBindsFileIsTheLastLine() {
+        StartupNotice notice = new StartupNotice(List::of, () -> true, () -> List.of("KeyboardMouseOnly"),
+                () -> List.of("Custom.binds"));
+
+        assertEquals(List.of(new StartupNotice.Line.ChangedOutside(),
+                new StartupNotice.Line.NamedLikeFactory(List.of("KeyboardMouseOnly")),
+                new StartupNotice.Line.PlainFiles(List.of("Custom.binds"))), notice.lines());
+    }
+
+    /** Alan, 2026-11-07, Q5: the check that tidies it up is off while read only, so it is not said then. */
+    @Test
+    void aPlainBindsFileIsNotSaidWhileReadOnly() {
+        StartupNotice notice = new StartupNotice(() -> List.of(STEAM), () -> false, List::of, () -> {
+            throw new AssertionError("the bindings folder is not looked at while read only");
+        });
+
+        assertEquals(List.of(new StartupNotice.Line.ReadOnly(List.of(STEAM))), notice.lines());
+    }
+
+    @Test
+    void onePlainFileAndSeveralAreSaidApart() {
+        assertEquals(english(StartupNotice.PLAIN_FILE_KEY, "Custom.binds"),
+                StartupNotice.text(new StartupNotice.Line.PlainFiles(List.of("Custom.binds"))));
+        assertEquals(english(StartupNotice.PLAIN_FILE_MANY_KEY, "Custom.binds, Spare.binds"),
+                StartupNotice.text(new StartupNotice.Line.PlainFiles(List.of("Custom.binds", "Spare.binds"))));
     }
 
     @Test
@@ -122,7 +155,7 @@ class StartupNoticeTest {
     // ---- helpers
 
     private static StartupNotice notice(List<InstallationRow> readOnly, boolean changedOutside, List<String> named) {
-        return new StartupNotice(() -> readOnly, () -> changedOutside, () -> named);
+        return new StartupNotice(() -> readOnly, () -> changedOutside, () -> named, List::of);
     }
 
     private static String english(String key, Object... args) {

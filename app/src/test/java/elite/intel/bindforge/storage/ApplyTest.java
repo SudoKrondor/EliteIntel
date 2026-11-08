@@ -60,6 +60,8 @@ class ApplyTest {
     private IOException unreadable;
     /** What the check finds for the installations' device files - none judged, until a test says otherwise. */
     private DeviceCheck.Found judgedDevices = new DeviceCheck.Found(List.of());
+    /** The plain binds files the check finds in the bindings folder - none, until a test says otherwise. */
+    private Map<String, byte[]> plainFiles = Map.of();
 
     @Test
     void theEditsAndTheDefaultLabelsAreWrittenAfterTheBackup() throws IOException {
@@ -657,6 +659,44 @@ class ApplyTest {
         assertTrue(edits.hasEdits());
     }
 
+    // ---- plain binds files (Storage S13b)
+
+    /** No twin among the edits: converted in APPLY's write, the plain file removed, the working copy held. */
+    @Test
+    void aPlainFileIsConvertedInApplysWrite() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_B", "Joy_XAxis", ""))));
+        plainFiles = Map.of("Spare.binds", bytes(binds("Frontier", "Key_Z", "Joy_XAxis", "")));
+
+        Written result = apply(installation -> live(LVWAP)).apply();
+
+        ConfigurationFiles files = written.getFirst();
+        assertEquals(binds("Spare", "Key_Z", "Joy_XAxis", ""), text(files.bindings().get("Spare.4.2.binds")));
+        assertEquals(binds("Custom", "Key_B", "Joy_XAxis", ""), text(files.bindings().get(CUSTOM_BINDS)),
+                "the edit still written");
+        assertEquals(List.of(Set.of("Spare.binds")), removed);
+        assertEquals(List.of("APPLY with the working copy"), backedUp);
+        assertEquals(PlainBinds.Fate.CONVERTED, result.plain().getFirst().fate());
+    }
+
+    /** Judged against the edits: a binds file the edits add is the plain file's twin. */
+    @Test
+    void aPlainFileWhoseTwinTheEditsHoldIsRemoved() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile("Spare.4.2.binds",
+                bytes(binds("Spare", "Key_B", "Joy_XAxis", ""))));
+        plainFiles = Map.of("spare.binds", bytes(binds("Spare", "Key_Z", "Joy_XAxis", "")));
+
+        Written result = apply(installation -> live(LVWAP)).apply();
+
+        assertEquals(Set.of(CUSTOM_BINDS, "Spare.4.2.binds", "StartPreset.4.start"),
+                written.getFirst().bindings().keySet());
+        assertEquals(binds("Spare", "Key_B", "Joy_XAxis", ""), text(written.getFirst().bindings().get("Spare.4.2.binds")));
+        assertEquals(List.of(Set.of("spare.binds")), removed);
+        assertEquals(PlainBinds.Fate.TWIN, result.plain().getFirst().fate());
+    }
+
     /** Steam, at the folder the fake write path names, judged {@code state} with {@code files}. */
     private static DeviceCheck.Judged steam(DeviceCheck.State state, DeviceFiles files) {
         return new DeviceCheck.Judged(new InstallationRow(1, "STEAM", "Steam", false, false), state, files,
@@ -696,7 +736,7 @@ class ApplyTest {
             throw new AssertionError("APPLY takes its own backup");
         }, installation -> {
             throw new AssertionError("APPLY reads the installations through its own reader");
-        }, files -> judgedDevices);
+        }, files -> judgedDevices, folder -> plainFiles, files -> Map.of());
     }
 
     private WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,

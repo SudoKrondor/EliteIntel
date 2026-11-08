@@ -610,6 +610,41 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       from the user's - the stock list belongs to one game version - so it is an ordinary difference, and Merge keeps
       it; a `StartPreset.5.start` is hypothetical.
 
+    **Settled with Storage S13b's sources (Alan, 2026-11-07)** - plain `.binds` in the bindings folder:
+
+    - **What is plain:** `<name>.binds` with no period in the name - a factory file copied in by hand, which the game
+      has not converted (`KeyboardMouseOnly.binds`, `KeyboardMouseOnly - Copy.binds`). `Custom.4.2 (2).binds` and
+      `.binds.backup` are not one: they are no game file at all, and are left alone (Q1; `FileNames.isPlainBindsFile`).
+      **It never stays** in the bindings folder, a backup or the working copy - it confuses which file a preset line
+      loads. **D1:** never backed up; it is not one of the user's files.
+    - **D2, judged against the settled set** - the working copy after the check's answers, the edits on top at APPLY -
+      each one in name order: a binds file of the same BindName is there → the plain file is removed (a hand edit in it
+      is lost, accepted); else it holds the values of the factory file of that name (every element, the root apart
+      from `PresetName`, as the reset test judges, from a reachable installation) → removed, and the preset line loads
+      the factory file; else **converted** - `<name>.<root version, else 4.2>.binds`, every byte kept but `PresetName`,
+      set to the name (CREATE's version rule), into the working copy and the bindings folder, the plain file removed.
+      A file that does not read as a binds file, element by element under a `<Root>`, is left alone and named. A
+      converted file named like a factory one gets no warning (Alan, 2026-11-04). **D3:** every match ignores case, and
+      a second spelling of one plain file is a twin of the first converted.
+    - **In the check, at the first click and at APPLY:** one more line in the same warning, backup and write; the preset
+      file needs no change. Plain files are read again before the write, and one that changed meanwhile stops it, as a
+      row does. **Any of the three choices tidies them up. A warning holding only plain files offers *Tidy up* and *Not
+      now*** (Q2) - at APPLY too, where Not now cancels the APPLY (Q3). One that does not read as a binds file is only
+      named: alone it asks nothing - the first click tells it, APPLY writes and the report names it. A converted file
+      changes the working copy, so APPLY's backup holds the working copy as it was.
+    - **D4: the report names each file removed, and why, or converted, and to what**; the log does too. **A read-only
+      plain file is kept and reported** with the kept-read-only line, as any removal is; a converted one's binds file is
+      still written (Q4).
+    - **At Elite-Intel start** the plain files are the notice's fourth line, after the factory-name line - once a
+      working copy exists, and **not while read only**, since the check that tidies them up is off then (Q5).
+    - **Principle 13** listed a hand-copied factory file among the cases that get no guard; this tidy-up was planned
+      after it, and principle 13's examples were amended to match (Alan, 2026-11-07, Q0).
+
+    Built in Storage S13b: `FileNames.isPlainBindsFile` / `plainBindName`; `PlainBinds` (read, judge, log);
+    `BindingsCheck.Found.plain` and `plainPlan`; the tidy-up in `BindingsCheck.settle` and `Apply.apply`;
+    `LiveCopies` removing plain names; `CheckWarningDialog.Offer.TIDY_UP`; `CheckFlow.plainLines` / `plainReport`;
+    `StartupNotice.Line.PlainFiles`.
+
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

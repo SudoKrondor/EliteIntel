@@ -96,8 +96,8 @@ final class LiveCopies {
      * The bindings folder first, then each installation in the stored list's order, leaving alone the installations
      * {@code leaveAlone} picks - asked only of one that is there; a missing one is reported as not found. Removes from
      * the bindings folder the binds and preset files named - the check's, for a live-only file the user kept the
-     * working copy's side of (Alan, 2026-10-30, Storage S8); a read-only one is kept, and reported, as a
-     * {@code .buttonMap} is.
+     * working copy's side of (Alan, 2026-10-30, Storage S8), and for a plain binds file it tidied up (Storage S13b); a
+     * read-only one is kept, and reported, as a {@code .buttonMap} is.
      */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings) {
         Place bindings = writeBindings(files, removeFromBindings);
@@ -140,7 +140,9 @@ final class LiveCopies {
             return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
         }
         for (String name : remove) {
-            if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
+            // WHY: a plain binds file too - the check tidies it up (Storage S13b).
+            if (!FileNames.plain(name)
+                    || !(FileNames.isBindingsFile(Path.of(name)) || FileNames.isPlainBindsFile(name))) {
                 throw new IllegalArgumentException("not a binds or preset file name: " + name);
             }
             // WHY: a name the set holds in any spelling is the file just written - the edit wins (Storage S13a).

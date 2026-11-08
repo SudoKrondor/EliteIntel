@@ -420,6 +420,25 @@ class LiveCopiesTest {
                 () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("..\\Custom.4.2.binds")));
         assertThrows(IllegalArgumentException.class,
                 () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("notes.txt")));
+        assertThrows(IllegalArgumentException.class,
+                () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("..\\Custom.binds")));
+    }
+
+    /** A plain binds file the check tidied up is removed (Storage S13b); a read-only one is kept and reported. */
+    @Test
+    void aPlainBindsFileNamedForRemovalIsRemovedUnlessReadOnly() throws IOException {
+        write(bindings.resolve("Spare.binds"), "<Spare/>");
+        Path kept = bindings.resolve("KeyboardMouseOnly.binds");
+        write(kept, "<KeyboardMouseOnly/>");
+        protect(kept);
+
+        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE,
+                Set.of("Spare.binds", "KeyboardMouseOnly.binds"));
+
+        assertFalse(Files.exists(bindings.resolve("Spare.binds")));
+        assertTrue(Files.exists(kept));
+        assertEquals(List.of("Spare.binds"), report.bindings().removed());
+        assertEquals(List.of("KeyboardMouseOnly.binds"), report.bindings().keptReadOnly());
     }
 
     /**

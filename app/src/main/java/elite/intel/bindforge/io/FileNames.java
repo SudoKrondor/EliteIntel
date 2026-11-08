@@ -47,6 +47,12 @@ public final class FileNames {
      * unversioned name is not one.
      */
     private static final Pattern BINDS_FILE = Pattern.compile("(.+)\\.(\\d+)\\.(\\d+)\\.binds");
+    /**
+     * {@code <name>.binds} with no period in the name, the name captured - a factory file copied in by hand, which the
+     * game has not converted (Alan, 2026-11-07, Storage S13b Q1). {@code Custom.4.2 (2).binds} and {@code .binds.backup}
+     * are not one: neither is a game file at all.
+     */
+    private static final Pattern PLAIN_BINDS_FILE = Pattern.compile("([^.]+)\\.binds");
     /** {@code StartPreset.<N>.start}, N captured; a leftover pre-Odyssey {@code StartPreset.start} is not one. */
     private static final Pattern PRESET_FILE = Pattern.compile("StartPreset\\.(\\d+)\\.start");
 
@@ -74,6 +80,21 @@ public final class FileNames {
     /** Whether {@code name} is a binds file's name - {@code <name>.<major>.<minor>.binds}. */
     public static boolean isBindsFile(String name) {
         return BINDS_FILE.matcher(name).matches();
+    }
+
+    /**
+     * Whether {@code name} is a plain binds file's - {@code <name>.binds}, no period in the name, and a plain file name
+     * (Storage S13b). Never a binds file's: the game loads neither BindForge's way, and BindForge tidies it up.
+     */
+    public static boolean isPlainBindsFile(String name) {
+        return plain(name) && PLAIN_BINDS_FILE.matcher(name).matches();
+    }
+
+    /** A plain binds file's name without {@code .binds} - {@code Custom} for {@code Custom.binds}. Empty for another. */
+    public static Optional<String> plainBindName(String plainBindsFile) {
+        if (!plain(plainBindsFile)) return Optional.empty();
+        Matcher matcher = PLAIN_BINDS_FILE.matcher(plainBindsFile);
+        return matcher.matches() ? Optional.of(matcher.group(1)) : Optional.empty();
     }
 
     /** Whether {@code name} is a preset file's name - {@code StartPreset.<N>.start}. */

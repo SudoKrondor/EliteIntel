@@ -60,8 +60,10 @@ other documents disagree, the work stops and Alan decides.** How the files are h
 13. **Handle what players do, not everything they might do** (2026-11-03, Alan). When a protection comes up while
     designing or building, first ask how often it will happen. Something a normal player meets — a game update, a
     binding changed in-game, a copy of the game uninstalled — is handled properly. Something perhaps one user in a
-    thousand would do — a drive unplugged, files renamed by hand outside BindForge, a hand-copied factory file — gets
+    thousand would do — a drive unplugged, files renamed by hand outside BindForge — gets
     no guard of its own: if it can be seen when Elite-Intel starts, the user is warned once, it is marked, and
     BindForge moves on; if it cannot, the backup taken at every Elite-Intel start is the protection. Where it is not
     clear which kind it is, ask Alan before building the guard. The first use is
     [read only while an installation is missing](storage.md#an-installation-missing--read-only-2026-11-03-alan).
+    *A hand-copied factory file was an example here until 2026-11-07 (Alan, Storage S13b Q0): it confuses which file a
+    preset line loads, so the check tidies it up (storage.md rule 14, Settled with Storage S13b's sources).*

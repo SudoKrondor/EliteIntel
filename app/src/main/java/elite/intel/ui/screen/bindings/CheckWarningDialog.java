@@ -25,7 +25,7 @@ final class CheckWarningDialog extends JDialog {
 
     /** What the user chose. */
     enum Choice {
-        /** Overwrite the live copy with the working copy. */
+        /** Overwrite the live copy with the working copy - or, offered on its own, tidy up the plain binds files. */
         KEEP_MINE,
         MERGE,
         /** Overwrite the working copy with the live copy. */
@@ -33,27 +33,49 @@ final class CheckWarningDialog extends JDialog {
         NOT_NOW
     }
 
+    /** Which choices the warning offers. */
+    enum Offer {
+        /** Put mine back, Merge and Use the game's files. */
+        EVERY_CHOICE,
+        /** Put mine back alone - when only a missing or unparseable device file differs (Storage S9a). */
+        PUT_MINE_BACK,
+        /**
+         * Tidy up and Not now - when only plain binds files are found (Alan, 2026-11-07, Storage S13b Q2). Tidy up is
+         * {@link Choice#KEEP_MINE}: with nothing else differing, putting the working copy back only tidies up.
+         */
+        TIDY_UP
+    }
+
     private Choice choice = Choice.NOT_NOW;
 
-    private CheckWarningDialog(Component parent, String message, boolean offerMergeAndTake) {
+    private CheckWarningDialog(Component parent, String message, Offer offer) {
         super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         JPanel body = transparentPanel(new BorderLayout());
         body.add(HudBanner.multiline(message, StatusBadge.State.STANDBY), BorderLayout.CENTER);
 
-        JButton keepMine = makeButton(getText("bindings.check.keepMine"));
-        keepMine.addActionListener(e -> finish(Choice.KEEP_MINE));
-        JButton merge = makeButtonSubtle(getText("bindings.check.merge"));
-        merge.addActionListener(e -> finish(Choice.MERGE));
-        JButton takeTheGames = makeButtonSubtle(getText("bindings.check.takeTheGames"));
-        takeTheGames.addActionListener(e -> finish(Choice.TAKE_THE_GAMES));
-
         HudModalSpec.Builder builder = HudModalSpec.builder()
                 .title(getText("bindings.check.title"))
                 .onClose(() -> finish(Choice.NOT_NOW))
-                .body(body)
-                .primary(keepMine);
-        if (offerMergeAndTake) builder.middle(merge).extra(takeTheGames);
+                .body(body);
+        if (offer == Offer.TIDY_UP) {
+            JButton tidyUp = makeButton(getText("bindings.check.tidyUp"));
+            tidyUp.addActionListener(e -> finish(Choice.KEEP_MINE));
+            JButton notNow = makeButtonSubtle(getText("bindings.restore.notNow"));
+            notNow.addActionListener(e -> finish(Choice.NOT_NOW));
+            builder.primary(tidyUp).dismiss(notNow);
+        } else {
+            JButton keepMine = makeButton(getText("bindings.check.keepMine"));
+            keepMine.addActionListener(e -> finish(Choice.KEEP_MINE));
+            builder.primary(keepMine);
+            if (offer == Offer.EVERY_CHOICE) {
+                JButton merge = makeButtonSubtle(getText("bindings.check.merge"));
+                merge.addActionListener(e -> finish(Choice.MERGE));
+                JButton takeTheGames = makeButtonSubtle(getText("bindings.check.takeTheGames"));
+                takeTheGames.addActionListener(e -> finish(Choice.TAKE_THE_GAMES));
+                builder.middle(merge).extra(takeTheGames);
+            }
+        }
         HudModalSpec spec = builder.build();
         setContentPane(AppTheme.hudModalScaffold(spec));
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -66,15 +88,9 @@ final class CheckWarningDialog extends JDialog {
         setLocationRelativeTo(getOwner());
     }
 
-    /**
-     * Shows the warning and waits. On the EDT.
-     *
-     * @param offerMergeAndTake whether Merge and Use the game's files are offered - not when only a missing or
-     *                          unparseable device file differs, which is offered putting the working copy back alone
-     *                          (Storage S9a)
-     */
-    static Choice show(Component parent, String message, boolean offerMergeAndTake) {
-        CheckWarningDialog dialog = new CheckWarningDialog(parent, message, offerMergeAndTake);
+    /** Shows the warning and waits. On the EDT. */
+    static Choice show(Component parent, String message, Offer offer) {
+        CheckWarningDialog dialog = new CheckWarningDialog(parent, message, offer);
         AppTheme.runWithModalScrim(dialog.getOwner(), () -> dialog.setVisible(true));
         return dialog.choice;
     }

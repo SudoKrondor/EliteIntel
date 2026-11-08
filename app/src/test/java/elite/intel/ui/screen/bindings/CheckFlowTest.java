@@ -1,5 +1,7 @@
 package elite.intel.ui.screen.bindings;
 
+import elite.intel.bindforge.storage.Backup;
+import elite.intel.bindforge.storage.Backups;
 import elite.intel.bindforge.storage.BindingsCheck;
 import elite.intel.bindforge.storage.BindingsComparison.Differences;
 import elite.intel.bindforge.storage.BindingsComparison.FileDifference;
@@ -11,15 +13,23 @@ import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceCheck;
 import elite.intel.bindforge.storage.DeviceFiles;
+import elite.intel.bindforge.storage.PlainBinds;
+import elite.intel.bindforge.storage.WriteReport;
+import elite.intel.bindforge.storage.WriteReport.Place;
+import elite.intel.bindforge.storage.Written;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The check on screen, without Swing (storage.md rule 14; Storage S8R, the S7-S8b review): which answers survive the
@@ -94,7 +104,7 @@ class CheckFlowTest {
                 judged(2, "EPIC", DeviceCheck.State.RESET_MISSING, null),
                 judged(3, "FRONTIER", DeviceCheck.State.UNREADABLE, "locked")));
         BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()),
-                Map.of(), differences(), 0, devices);
+                Map.of(), differences(), 0, devices, PlainBinds.Found.NONE);
 
         String text = CheckFlow.warningText(found, false);
 
@@ -153,6 +163,82 @@ class CheckFlowTest {
                 CheckFlow.kept(found, found, Map.of(row.id(), Side.WORKING_COPY)));
     }
 
+    // ---- plain binds files (Storage S13b)
+
+    /**
+     * Only plain binds files: the warning that offers Tidy up - its own intro, those to tidy up first, then those left
+     * alone - and at APPLY, that closing cancels it.
+     */
+    @Test
+    void aWarningHoldingOnlyPlainFilesSaysTheyAreTidiedUp() {
+        BindingsCheck.Found found = withPlain(differences());
+
+        String text = CheckFlow.warningText(found, true);
+
+        assertTrue(CheckFlow.onlyPlain(found));
+        assertEquals(getText("bindings.check.plain.intro", "- " + getText("bindings.check.file.plain", "Spare.binds")
+                + "\n- " + getText("bindings.check.file.plainUnreadable", "Broken.binds"))
+                + "\n\n" + getText("bindings.check.atApply"), text);
+    }
+
+    /** With a row too, the usual intro and choices; the plain files are lines after the files. */
+    @Test
+    void plainFilesAreLinesInTheUsualWarningWhenAFileDiffersToo() {
+        BindingsCheck.Found found = withPlain(differences(file(false, slot("YawLeftButton", "Key_A", "Key_Q"))));
+
+        String text = CheckFlow.warningText(found, false);
+
+        assertFalse(CheckFlow.onlyPlain(found));
+        assertEquals(getText("bindings.check.intro", "- " + getText("bindings.check.file.differs", CUSTOM, 1)
+                + "\n- " + getText("bindings.check.file.plain", "Spare.binds")
+                + "\n- " + getText("bindings.check.file.plainUnreadable", "Broken.binds")), text);
+    }
+
+    /** Only files that do not read as binds files: named, and nothing asked. */
+    @Test
+    void plainFilesThatDoNotReadAreOnlyNamed() {
+        BindingsCheck.Found found = found(differences(), new PlainBinds.Found(
+                Map.of("Broken.binds", new byte[]{1}), List.of("Broken.binds")));
+
+        assertFalse(found.anythingToAsk());
+        assertEquals(getText("bindings.check.plain.unreadableOnly",
+                "- " + getText("bindings.check.file.plainUnreadable", "Broken.binds")), CheckFlow.unreadableOnly(found));
+    }
+
+    /**
+     * The report (D4): each one removed, and why; one converted, even when its plain file was kept read-only; one kept
+     * read-only and not converted is left to the kept-read-only line; one that does not read is named.
+     */
+    @Test
+    void theReportNamesEachPlainFileRemovedOrConverted() {
+        Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
+                List.of("Spare.4.2.binds"), List.of("custom.binds"), List.of("Spare.binds", "KeyboardMouseOnly.binds"),
+                List.of());
+        Written written = new Written(new WriteReport(bindings, List.of()), new Backup(Path.of("backup.zip"),
+                LocalDateTime.now(), Backups.Kind.BEFORE_CHANGES, Backups.Before.CHECK, true, List.of()), List.of(
+                new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM),
+                new PlainBinds.Tidied("KeyboardMouseOnly.binds", PlainBinds.Fate.FACTORY, "KeyboardMouseOnly"),
+                new PlainBinds.Tidied("Spare.binds", PlainBinds.Fate.CONVERTED, "Spare.4.2.binds"),
+                new PlainBinds.Tidied("Broken.binds", PlainBinds.Fate.UNREADABLE, null)));
+
+        assertEquals("\n" + getText("bindings.check.result.plainTwin", "custom.binds", CUSTOM)
+                + "\n" + getText("bindings.check.result.plainConverted", "Spare.binds", "Spare.4.2.binds")
+                + "\n" + getText("bindings.check.result.plainUnreadable", "Broken.binds"),
+                CheckFlow.plainReport(written));
+    }
+
+    /** {@code differences}, with {@code Spare.binds} to tidy up and {@code Broken.binds}, which does not read. */
+    private static BindingsCheck.Found withPlain(Differences differences) {
+        return found(differences, new PlainBinds.Found(Map.of("Spare.binds", new byte[]{1},
+                "Broken.binds", new byte[]{2}), List.of("Broken.binds")));
+    }
+
+    /** {@code differences} at the first click - no edits - with {@code plain}. */
+    private static BindingsCheck.Found found(Differences differences, PlainBinds.Found plain) {
+        return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
+                0, new DeviceCheck.Found(List.of()), plain);
+    }
+
     private static DeviceCheck.Judged judged(long id, String storefront, DeviceCheck.State state, String problem) {
         String folder = storefront.charAt(0) + storefront.substring(1).toLowerCase(Locale.ROOT);
         InstallationRow row = new InstallationRow(id, storefront, folder, false, false);
@@ -175,6 +261,6 @@ class CheckFlowTest {
 
     private static BindingsCheck.Found found(Differences differences, int edited) {
         return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
-                edited, new DeviceCheck.Found(List.of()));
+                edited, new DeviceCheck.Found(List.of()), PlainBinds.Found.NONE);
     }
 }

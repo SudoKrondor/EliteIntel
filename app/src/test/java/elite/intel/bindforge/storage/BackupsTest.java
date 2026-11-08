@@ -101,6 +101,7 @@ class BackupsTest {
         write(bindings.resolve("StartPreset.start"), "old");
         write(bindings.resolve("Custom.4.2.binds.backup"), "copy");
         write(bindings.resolve("BindingLoadingErrors.log"), "log");
+        // WHY: a plain binds file is never backed up - it is not one of the user's files (Storage S13b, D1).
         write(bindings.resolve("Unversioned.binds"), "<Root/>");
         write(steam.resolve("Products/elite-dangerous-odyssey-64/ControlSchemes/KeyboardMouseOnly.binds"), "factory");
         write(steam.resolve("Products/elite-dangerous-odyssey-64/ControlSchemes/DeviceButtonMaps/notes.txt"), "x");

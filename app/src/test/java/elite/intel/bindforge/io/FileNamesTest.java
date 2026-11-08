@@ -98,6 +98,24 @@ class FileNamesTest {
                 () -> FileNames.oneFileEach(Map.of("LVWAP.buttonMap", "upper", "lvwap.buttonMap", "lower")));
     }
 
+    /**
+     * A plain binds file: {@code <name>.binds}, no period in the name (Alan, 2026-11-07, Storage S13b Q1). A copy the
+     * Explorer named, a backup and a binds file are not.
+     */
+    @Test
+    void aPlainBindsFileHasNoPeriodInItsName() {
+        assertTrue(FileNames.isPlainBindsFile("KeyboardMouseOnly.binds"));
+        assertTrue(FileNames.isPlainBindsFile("KeyboardMouseOnly - Copy.binds"));
+        assertFalse(FileNames.isPlainBindsFile("Custom.4.2.binds"));
+        assertFalse(FileNames.isPlainBindsFile("Custom.4.2 (2).binds"));
+        assertFalse(FileNames.isPlainBindsFile("Custom.4.2.binds.backup"));
+        assertFalse(FileNames.isPlainBindsFile(".binds"));
+        assertFalse(FileNames.isPlainBindsFile("KeyboardMouseOnly.BINDS"), "the kind is matched exactly");
+        assertFalse(FileNames.isBindingsFile(Path.of("KeyboardMouseOnly.binds")), "never a binds file");
+        assertEquals(Optional.of("KeyboardMouseOnly - Copy"), FileNames.plainBindName("KeyboardMouseOnly - Copy.binds"));
+        assertEquals(Optional.empty(), FileNames.plainBindName("Custom.4.2.binds"));
+    }
+
     @Test
     void aPresetFilesGenerationIsItsNumber() {
         assertEquals(4, FileNames.presetGeneration("StartPreset.4.start"));

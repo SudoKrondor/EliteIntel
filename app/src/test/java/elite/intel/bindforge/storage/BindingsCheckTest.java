@@ -51,6 +51,8 @@ class BindingsCheckTest {
     private final AtomicInteger factoryReads = new AtomicInteger();
     /** What the device files' check finds - every installation matching, until a test says otherwise. */
     private DeviceCheck.Found devices = new DeviceCheck.Found(List.of());
+    /** The factory binds files a plain file is judged against, by BindName - none until a test says otherwise. */
+    private Map<String, byte[]> factoryByName = Map.of();
 
     @BeforeEach
     void aBindingsFolder() throws IOException {
@@ -309,6 +311,118 @@ class BindingsCheckTest {
         assertTrue(check.reading(check.find(), Map.of(), "Yours").isEmpty());
     }
 
+    // ---- plain binds files (Storage S13b)
+
+    @Test
+    void aPlainBindsFileIsFoundAndIsSomethingToAskOnItsOwn() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("KeyboardMouseOnly.binds", binds("KeyboardMouseOnly", "Key_Z", "Joy_XAxis", ""));
+
+        BindingsCheck.Found found = check().find();
+
+        assertTrue(found.differences().none());
+        assertFalse(found.live().containsKey("KeyboardMouseOnly.binds"), "never compared as a binds file");
+        assertEquals(List.of("KeyboardMouseOnly.binds"), found.plain().toTidy());
+        assertFalse(found.none());
+        assertTrue(found.anythingToAsk());
+    }
+
+    /** No twin and no factory file of its name: converted into the working copy, and the plain file removed. */
+    @Test
+    void tidyingUpConvertsAPlainFileIntoTheWorkingCopyAndRemovesIt() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("KeyboardMouseOnly.binds", binds("Frontier", "Key_Z", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+
+        Written result = check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        ConfigurationFiles files = written.getFirst();
+        assertEquals(Set.of(CUSTOM, "KeyboardMouseOnly.4.2.binds"), files.bindings().keySet());
+        assertEquals(binds("KeyboardMouseOnly", "Key_Z", "Joy_XAxis", ""),
+                text(files.bindings().get("KeyboardMouseOnly.4.2.binds")), "every byte kept but PresetName");
+        assertEquals(List.of(Set.of("KeyboardMouseOnly.binds")), removed);
+        assertSame(workingCopy, backedUpWorkingCopies.getFirst(), "the working copy before it took the file");
+        assertEquals(List.of(new PlainBinds.Tidied("KeyboardMouseOnly.binds", PlainBinds.Fate.CONVERTED,
+                "KeyboardMouseOnly.4.2.binds")), result.plain());
+    }
+
+    /** A versioned twin in another case: the plain file goes, and nothing is added (Storage S13b D3). */
+    @Test
+    void aPlainFileWithAVersionedTwinIsRemoved() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("custom.binds", binds("Custom", "Key_Z", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+
+        Written result = check.settle(check.find(), Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(Set.of(CUSTOM), written.getFirst().bindings().keySet());
+        assertEquals(List.of(Set.of("custom.binds")), removed);
+        assertEquals(PlainBinds.Fate.TWIN, result.plain().getFirst().fate());
+        assertEquals(CUSTOM, result.plain().getFirst().to());
+    }
+
+    /** The factory file's values, but its own PresetName: removed, and the preset line loads the factory file. */
+    @Test
+    void aPlainFileEqualToTheFactoryFileOfItsNameIsRemoved() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("KeyboardMouseOnly.binds", binds("Copied", "Key_Z", "Joy_XAxis", ""));
+        factoryByName = Map.of("keyboardmouseonly", bytes(binds("KeyboardMouseOnly", "Key_Z", "Joy_XAxis", "")));
+        BindingsCheck check = check();
+
+        Written result = check.settle(check.find(), Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(Set.of(CUSTOM), written.getFirst().bindings().keySet());
+        assertEquals(List.of(Set.of("KeyboardMouseOnly.binds")), removed);
+        assertEquals(PlainBinds.Fate.FACTORY, result.plain().getFirst().fate());
+    }
+
+    /** Judged against the settled set: taking the game's live-only file makes it the plain file's twin. */
+    @Test
+    void aPlainFileIsJudgedAgainstTheFilesTheAnswersSettle() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live(SPARE, binds("Spare", "Key_A", "Joy_XAxis", ""));
+        live("Spare.binds", binds("Spare", "Key_Z", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+
+        Written result = check.settle(found, every(found, Side.LIVE), DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(PlainBinds.Fate.TWIN, result.plain().getFirst().fate());
+        assertEquals(Set.of(CUSTOM, SPARE), written.getFirst().bindings().keySet());
+    }
+
+    @Test
+    void aPlainFileChangedWhileTheWarningWasOpenWritesNothing() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("KeyboardMouseOnly.binds", binds("KeyboardMouseOnly", "Key_Z", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+        live("KeyboardMouseOnly.binds", binds("KeyboardMouseOnly", "Key_Y", "Joy_XAxis", ""));
+
+        BindingsCheck.ChangedMeanwhileException changed = assertThrows(BindingsCheck.ChangedMeanwhileException.class,
+                () -> check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK));
+
+        assertTrue(written.isEmpty());
+        assertEquals(List.of("KeyboardMouseOnly.binds"), changed.now().plain().toTidy());
+    }
+
+    /** One that does not read as a binds file is named, never asked about, and left in the folder. */
+    @Test
+    void aPlainFileThatDoesNotReadAsABindsFileIsLeftAlone() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("Broken.binds", "not a binds file");
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+
+        assertEquals(List.of("Broken.binds"), found.plain().unreadable());
+        assertFalse(found.none());
+        assertFalse(found.anythingToAsk());
+        Written result = check.settle(found, Map.of(), DeviceCheck.Answer.PUT_MINE_BACK);
+        assertEquals(List.of(Set.of()), removed);
+        assertEquals(PlainBinds.Fate.UNREADABLE, result.plain().getFirst().fate());
+    }
+
     // ---- helpers
 
     /** Steam, judged {@code state}, with files to match. */
@@ -342,7 +456,8 @@ class BindingsCheckTest {
                 installation -> {
                     throw new AssertionError("no installation is read: the fake write asks none");
                 },
-                files -> devices);
+                files -> devices,
+                PlainBinds::read, files -> factoryByName);
     }
 
     private void live(String name, String content) throws IOException {
