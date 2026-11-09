@@ -1,7 +1,7 @@
 # Elite Intel
 ## KI-Sprachassistent für Elite Dangerous
 
-![EliteIntel app](images/v1.1.png)
+![EliteIntel app](images/V1.2.png)
 
 
 ## Natürlich sprechen. Besser fliegen.

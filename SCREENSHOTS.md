@@ -84,7 +84,7 @@ They render as broken images on that page in every locale.
 
 Check these against the localized pages before deleting them:
 
-`v1.0.png` · `v1.1.png` · `tab-ai-buttons.png` · `tab-player.png` · `tab-actions.png` ·
+`v1.0.png` · `V1.2.png` · `tab-ai-buttons.png` · `tab-player.png` · `tab-actions.png` ·
 `tab-action-build-in-commands.png` · `tab-actions-custom-commands.png` ·
 `tab-settings-ai-services.png` · `tab-settings-audio.png` ·
 `tab-settings-push-to-talk.png` · `tab-stats.png` · `popup-ship-properties.png` ·
