@@ -3,6 +3,7 @@ package elite.intel.bindforge.storage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -85,24 +86,25 @@ class LeftoversTest {
     }
 
     @Test
-    void thePlanMovesEveryFileAndConvertsOnlyAHandEditedPlainFile() {
+    void thePlanMovesEveryFileAndConvertsOnlyAHandEditedPlainFile() throws IOException {
         Leftovers.Found found = new Leftovers.Found(Map.of("Spare.binds", bytes(binds("Spare", "Key_Z", "Joy_XAxis",
                 ""))), List.of("Custom.4.2 (2).binds"));
 
         Leftovers.Plan plan = Leftovers.plan(found, Map.of("Custom.4.2.binds",
-                bytes(binds("Custom", "Key_A", "Joy_XAxis", ""))), Map.of());
+                bytes(binds("Custom", "Key_A", "Joy_XAxis", ""))), Map.of(), Map.of());
 
         assertEquals(Set.of("Custom.4.2 (2).binds", "Spare.binds"), plan.move());
-        assertTrue(plan.converts());
+        assertTrue(plan.changesTheSet());
         assertTrue(plan.plain().converted().containsKey("Spare.4.2.binds"));
     }
 
     @Test
-    void aPlanWithOnlyOtherFilesConvertsNothing() {
-        Leftovers.Plan plan = Leftovers.plan(new Leftovers.Found(Map.of(), List.of("a.txt")), Map.of(), Map.of());
+    void aPlanWithOnlyOtherFilesConvertsNothing() throws IOException {
+        Leftovers.Plan plan = Leftovers.plan(new Leftovers.Found(Map.of(), List.of("a.txt")), Map.of(), Map.of(),
+                Map.of());
 
         assertEquals(Set.of("a.txt"), plan.move());
-        assertFalse(plan.converts());
+        assertFalse(plan.changesTheSet());
     }
 
     private void write(String name, String content) throws Exception {

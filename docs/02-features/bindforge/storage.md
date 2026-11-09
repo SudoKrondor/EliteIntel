@@ -689,8 +689,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       - **A true binds file of the same BindName is there:** the plain file is compared with it by value, as the
         check compares. Equal, or lacking only bindings the true file has → nothing more is needed. It has bindings the
         true file lacks → the user goes through the check's existing merge, the plain file one side and the true file
-        the other, and what the user keeps goes into the true file. *To confirm at the sources:* a binding both files
-        hold with different values counts as one the true file lacks.
+        the other, and what the user keeps goes into the true file. *Confirmed at Storage S13e's sources (below):* a
+        binding both files hold with different values counts as one the true file lacks.
       - **No true binds file of that name:** equal by value to the factory file of that name (as the reset test
         judges, from a reachable installation) → a leftover, and the preset line loads the factory file; differing, or
         no factory file of that name → hand-edited, and **converted** as S13b does - `<name>.<root version, else
@@ -751,6 +751,42 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     `BindingsCheck.Found.leftovers` and `leftoversPlan`; `Written.leftovers`; `CheckFlow.leftoverLines` /
     `leftoversReport` / `keptReadOnly(Written)`; `StartupNotice.Line.ToMove`. `PlainBinds` keeps the judging only - its
     `Found`, `read` and *left alone* outcome went.
+
+    **Settled with Storage S13e's sources (Alan, 2026-11-08, Q1-Q6 as recommended)** - a plain file judged against its
+    twin:
+
+    - **Q1: a binding both files hold with different values is one the twin lacks**, so it is a row - the plain file may
+      hold a hand edit. Settings and `KeyboardLayout` count the same way: every line item the plain file holds
+      differently, at the merge grain (per slot for a button).
+    - **Q2: an unbound slot in the plain file (`{NoDevice}`), or an element only the twin has, is the plain file lacking
+      it** - no row, and the twin keeps its own. Otherwise a hand-copied factory file would ask about every slot the user
+      has bound. An element only the plain file has is a row when anything in it is bound. The root is no row: its
+      `PresetName` is the plain file's own name.
+    - **Q3: the rows are ordinary rows of the same warning and merge.** The File column names the plain file, *Mine* is
+      the twin and *In-game* the plain file, which sits in the game's folder. The warning's line says how many lines it
+      holds that the twin lacks, and the three choices act on them as on any row: *Put mine back* leaves the twin as it
+      is, *Use the game's files* takes the plain file's lines into it, *Merge* asks row by row. A warning with such rows
+      offers every choice, not Tidy up.
+    - **Q4: compared with the twin as BindForge holds it** - the working copy's with the edits on top (at the first click
+      the working copy) - or, when only the bindings folder holds it, the live one. The answers go into the twin the write
+      holds, compared again there, and are put on last, so a line kept of the plain file wins over an edit on that line:
+      the merge showed the edit as *Mine*. A row the warning did not show keeps the twin's. If the answers leave no twin
+      in the set (a live-only twin the user put back), the plain file is judged as one with no twin and its answers are
+      dropped - rare, principle 13.
+    - **Q5: `Tidied.to` became `about`**, its Javadoc saying what it holds for each fate (the review's finding 7): a
+      factory file's name would read *"KeyboardMouseOnly.binds holds the factory file KeyboardMouseOnly.binds"*.
+    - **Q6: a plain file lacking only what its twin has** is moved with the existing *"is already in the game's folder"*
+      report line. One whose kept lines went into its twin has a line of its own; one kept read-only still has it, since
+      the twin was written.
+    - *Decided while building:* APPLY's backup holds the working copy when a twin is merged into, as when a file is
+      converted. The device files' reconcile reads the binds files the binds rows settle, without a plain file's lines -
+      a device only a plain file names does not rank red there, as with a converted file since S13b. Left (principle 13).
+    - *Also, from the S13aR-S13b review (D5):* escaping the `PresetName` lives in `Create.withPresetName` (finding 5),
+      and the support report names a second spelling it left out (finding 8).
+
+    Built in Storage S13e: `BindingsComparison.plainAgainstTwin` / `mergedIntoTwin`; `PlainBinds.rows`, `Rows`,
+    `Fate.MERGED`, `Plan.merged` / `changesTheSet`; `BindingsCheck.Found.plainRows` / `items` / `rows` / `anyRows`;
+    `CheckFlow.leftoverLines` (`bindings.check.file.plainRows`) and `leftoversReport` (`bindings.check.result.plainMerged`).
 
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything

@@ -127,6 +127,8 @@ public final class BindForgeSupport {
     private final Readings readings;
     private final StringBuilder text = new StringBuilder("BindForge report\n");
     private final Map<String, byte[]> files = new TreeMap<>();
+    /** Whether the report has named a second spelling it left out - once is enough. */
+    private boolean spellingsNamed;
 
     private BindForgeSupport(Readings readings) {
         this.readings = readings;
@@ -187,12 +189,19 @@ public final class BindForgeSupport {
 
     /**
      * The bindings folder's files, one spelling of each - two spellings, only where the file system heeds case, are
-     * one file to the game (Storage S13a D3), and a {@link ConfigurationFiles} refuses them.
+     * one file to the game (Storage S13a D3), and a {@link ConfigurationFiles} refuses them. The first read names any
+     * spelling left out, in the section reading it, as the check logs it (Storage S13e, the S13aR-S13b review's finding 8).
      */
     private Map<String, byte[]> live() throws IOException {
         Path folder = readings.bindingsFolder();
         if (folder == null) throw new NoSuchFileException("no bindings folder is configured");
-        return FileNames.oneSpelling(BindingsCheck.readBindingsFolder(folder), List.of()).files();
+        FileNames.OneSpelling<byte[]> one = FileNames.oneSpelling(BindingsCheck.readBindingsFolder(folder), List.of());
+        if (!one.leftOut().isEmpty() && !spellingsNamed) {
+            spellingsNamed = true;
+            line("The bindings folder holds two spellings of one file; read without: "
+                    + String.join(", ", one.leftOut()));
+        }
+        return one.files();
     }
 
     private void writeState() throws IOException {

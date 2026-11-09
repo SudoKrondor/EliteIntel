@@ -578,6 +578,44 @@ public final class BindingsComparison {
         return new IOException(file + " could not be merged");
     }
 
+    // ---- a plain binds file against its twin (Storage S13e)
+
+    /**
+     * A plain binds file against the true binds file of its BindName (storage.md rule 14, <em>Settled with Storage
+     * S13e's sources</em>): a row for each line item the plain file holds and its twin lacks - holds differently, or not
+     * at all (Q1). An unbound slot in the plain file, or an element only the twin has, is the plain file lacking it, not
+     * a row (Q2); the root is no row, since its {@code PresetName} is the plain file's own name. The twin is the working
+     * copy's side and the plain file the live side, so the merge shows the twin as <em>mine</em> and the plain file as
+     * <em>in-game</em> (Q3), the rows in the plain file's name.
+     *
+     * @return empty when the plain file lacks only what the twin has, or either cannot be read element by element
+     */
+    static Optional<FileDifference> plainAgainstTwin(String plain, byte[] twin, byte[] plainContent) {
+        Optional<BindsElements> mine = BindsElements.of(twin);
+        Optional<BindsElements> theirs = BindsElements.of(plainContent);
+        if (mine.isEmpty() || theirs.isEmpty()) return Optional.empty();
+        List<LineItem> items = new ArrayList<>();
+        for (BindsElements.Top element : theirs.get().elements().values()) {
+            elementItems(plain, mine.get().elements().get(element.name()), element).stream()
+                    .filter(item -> item.live() != null && !item.live().isEmpty())
+                    .forEach(items::add);
+        }
+        if (items.isEmpty()) return Optional.empty();
+        return Optional.of(new FileDifference(plain, Presence.BOTH, false, items));
+    }
+
+    /**
+     * The twin with each of {@code rows} answered in-game - the plain file's line - spliced in: the check's merge, the
+     * plain file against its twin (Storage S13e). A row with no answer keeps the twin's.
+     *
+     * @param rows {@link #plainAgainstTwin}'s, for these same two files
+     * @throws IOException if the merged file could not be read back - the message names the plain file
+     */
+    static byte[] mergedIntoTwin(FileDifference rows, byte[] twin, byte[] plain, Map<String, Side> answers)
+            throws IOException {
+        return mergedBindsFile(rows, twin, plain, answers);
+    }
+
     // ---- the edits, at APPLY
 
     /**

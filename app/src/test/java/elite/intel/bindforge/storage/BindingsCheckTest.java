@@ -1,6 +1,7 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.storage.BindingsComparison.Factory;
+import elite.intel.bindforge.storage.BindingsComparison.LineItem;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.DeviceCheck.State;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
@@ -372,7 +373,39 @@ class BindingsCheckTest {
         assertEquals(Set.of(CUSTOM), written.getFirst().bindings().keySet());
         assertEquals(List.of(Set.of("custom.binds")), moved);
         assertEquals(PlainBinds.Fate.TWIN, result.leftovers().plain().tidied().getFirst().fate());
-        assertEquals(CUSTOM, result.leftovers().plain().tidied().getFirst().to());
+        assertEquals(CUSTOM, result.leftovers().plain().tidied().getFirst().about());
+    }
+
+    /** Storage S13e: a line the plain file holds and its twin lacks is a row of the warning, in the plain file's name. */
+    @Test
+    void aPlainFileHoldingALineItsTwinLacksGivesARow() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("custom.binds", binds("Custom", "Key_Z", "Joy_XAxis", ""));
+
+        BindingsCheck.Found found = check().find();
+
+        assertTrue(found.differences().none());
+        assertEquals(1, found.plainRows().size());
+        assertEquals(CUSTOM, found.plainRows().getFirst().twin());
+        assertEquals(List.of("custom.binds|YawLeftButton/Primary"),
+                found.items().stream().map(LineItem::id).toList());
+    }
+
+    /** Storage S13e: the row kept in-game goes into the twin, which is written; the plain file is moved. */
+    @Test
+    void aPlainFilesLineKeptInGameGoesIntoItsTwin() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live("custom.binds", binds("Custom", "Key_Z", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+
+        Written result = check.settle(found, Map.of("custom.binds|YawLeftButton/Primary", Side.LIVE),
+                DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(binds("Custom", "Key_Z", "Joy_XAxis", ""), text(written.getFirst().bindings().get(CUSTOM)));
+        assertEquals(List.of(Set.of("custom.binds")), moved);
+        assertEquals(List.of(new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.MERGED, CUSTOM)),
+                result.leftovers().plain().tidied());
     }
 
     /** The factory file's values, but its own PresetName: moved, and the preset line loads the factory file. */

@@ -718,6 +718,30 @@ class ApplyTest {
         assertEquals(PlainBinds.Fate.TWIN, result.leftovers().plain().tidied().getFirst().fate());
     }
 
+    /**
+     * Storage S13e, Q4: the plain file is compared with its twin as the edits hold it, and a line kept in-game wins over
+     * the edit on it - the merge showed the edit as the user's. The working copy changes, so the backup holds it.
+     */
+    @Test
+    void aPlainFilesLineKeptInGameWinsOverTheEditOnItsTwin() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_B", "Joy_XAxis", ""))));
+        leftovers = new Leftovers.Found(Map.of("Custom.binds", bytes(binds("Custom", "Key_Z", "Joy_XAxis", ""))),
+                List.of());
+        Apply applying = apply(installation -> live(LVWAP)).applying();
+        BindingsCheck.Found found = applying.check();
+
+        assertEquals("Key_B", found.plainRows().getFirst().rows().items().getFirst().workingCopy(), "the edit is mine");
+        Written result = applying.apply(found, Map.of("Custom.binds|YawLeftButton/Primary", Side.LIVE),
+                DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(binds("Custom", "Key_Z", "Joy_XAxis", ""), text(written.getFirst().bindings().get(CUSTOM_BINDS)));
+        assertEquals(List.of(Set.of("Custom.binds")), moved);
+        assertEquals(List.of("APPLY with the working copy"), backedUp);
+        assertEquals(PlainBinds.Fate.MERGED, result.leftovers().plain().tidied().getFirst().fate());
+    }
+
     /** Steam, at the folder the fake write path names, judged {@code state} with {@code files}. */
     private static DeviceCheck.Judged steam(DeviceCheck.State state, DeviceFiles files) {
         return new DeviceCheck.Judged(new InstallationRow(1, "STEAM", "Steam", false, false), state, files,

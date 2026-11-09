@@ -1,6 +1,8 @@
 package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.io.FileNames;
+import elite.intel.bindforge.storage.BindingsComparison.FileDifference;
+import elite.intel.bindforge.storage.BindingsComparison.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,9 +17,12 @@ import java.util.regex.Pattern;
  * It confuses which file a preset line loads, so it never stays in the bindings folder, a backup or the working copy.
  * <p>
  * <strong>Judged against the settled set</strong> - the working copy after the check's answers, with the edits on top at
- * APPLY - each one that reads as a binds file, in name order:
+ * APPLY - each one that reads as a binds file, in name order (Storage S13e, replacing S13b's D2):
  * <ul>
- *     <li>a binds file of the same BindName is there, ignoring case ({@link Fate#TWIN});</li>
+ *     <li>a binds file of the same BindName is there, ignoring case: compared with it by value ({@link #rows}). Lacking
+ *     only what the twin has, nothing more is needed ({@link Fate#TWIN}); holding lines the twin lacks, those are rows
+ *     of the check's merge, and each the user answered in-game goes into the twin ({@link Fate#MERGED}) - none, and it
+ *     is {@link Fate#TWIN} too;</li>
  *     <li>else it holds the values of the factory file of that name, the root's {@code PresetName} apart, as the reset
  *     test judges - the preset line loads the factory file ({@link Fate#FACTORY});</li>
  *     <li>else it is <strong>converted</strong>: {@code <name>.<root version, else 4.2>.binds}, every byte kept but the
@@ -34,10 +39,12 @@ public final class PlainBinds {
 
     private static final Pattern ROOT_START = Pattern.compile("<Root(?=[\\s/>])");
 
-    /** Why one plain file is moved, and whether a binds file was made of it first. */
+    /** Why one plain file is moved, and what was made of it first. */
     public enum Fate {
-        /** A binds file of its BindName is in the set. */
+        /** A binds file of its BindName is in the set, and nothing of the plain file's went into it. */
         TWIN,
+        /** A binds file of its BindName is in the set, and the lines the user kept of the plain file went into it. */
+        MERGED,
         /** It holds the factory file of its name's values. */
         FACTORY,
         /** Made a binds file of the set first. */
@@ -47,15 +54,34 @@ public final class PlainBinds {
     /**
      * One plain file, and why it is moved.
      *
-     * @param file the plain file's name, as found
-     * @param fate why it is moved
-     * @param to   the binds file it is a twin of, or converted to; the BindName for {@link Fate#FACTORY}
+     * @param file  the plain file's name, as found
+     * @param fate  why it is moved
+     * @param about for {@link Fate#TWIN} and {@link Fate#MERGED} the twin's file name, for {@link Fate#CONVERTED} the
+     *              file it became, and for {@link Fate#FACTORY} the factory file's BindName
      */
-    public record Tidied(String file, Fate fate, String to) {
+    public record Tidied(String file, Fate fate, String about) {
         public Tidied {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(fate, "fate");
-            Objects.requireNonNull(to, "to");
+            Objects.requireNonNull(about, "about");
+        }
+    }
+
+    /**
+     * The lines one plain file holds and its twin lacks, to ask about (Storage S13e).
+     *
+     * @param twin the twin's file name
+     * @param rows the rows, in the plain file's name - {@link BindingsComparison#plainAgainstTwin}
+     */
+    public record Rows(String twin, FileDifference rows) {
+        public Rows {
+            Objects.requireNonNull(twin, "twin");
+            Objects.requireNonNull(rows, "rows");
+        }
+
+        /** The plain file's name, as found. */
+        public String plain() {
+            return rows.file();
         }
     }
 
@@ -64,20 +90,28 @@ public final class PlainBinds {
      *
      * @param tidied    each plain file, in name order, and why it is moved
      * @param converted the binds files the converted ones become, by name - added to the set
+     * @param merged    each twin a plain file's lines went into, by name - in place of the set's
      */
-    public record Plan(List<Tidied> tidied, Map<String, byte[]> converted) {
-        public static final Plan NONE = new Plan(List.of(), Map.of());
+    public record Plan(List<Tidied> tidied, Map<String, byte[]> converted, Map<String, byte[]> merged) {
+        public static final Plan NONE = new Plan(List.of(), Map.of(), Map.of());
 
         public Plan {
             tidied = List.copyOf(tidied);
             converted = Collections.unmodifiableMap(new TreeMap<>(converted));
+            merged = Collections.unmodifiableMap(new TreeMap<>(merged));
         }
 
-        /** {@code bindings} with the converted files added. */
+        /** {@code bindings} with the converted files added and the merged twins in place. */
         public Map<String, byte[]> appliedTo(Map<String, byte[]> bindings) {
             Map<String, byte[]> with = new TreeMap<>(bindings);
             with.putAll(converted);
+            with.putAll(merged);
             return with;
+        }
+
+        /** Whether the set changes - a file converted, or a twin merged into. */
+        public boolean changesTheSet() {
+            return !converted.isEmpty() || !merged.isEmpty();
         }
     }
 
@@ -85,30 +119,64 @@ public final class PlainBinds {
     }
 
     /**
-     * Why each plain file is moved, against the settled set, and the binds files the converted ones become.
+     * The rows to ask about for each plain file that has a twin and holds lines it lacks (Storage S13e, Q4): the twin as
+     * BindForge holds it - the working copy's with the edits on top - else, when only the bindings folder holds it, the
+     * live one.
      *
-     * @param plain    the plain files that read as binds files ({@link #readsAsBindsFile}), by name as found
-     * @param settled  the binds and preset files the write would hold - with the edits on top at APPLY
-     * @param factory  Frontier's factory binds files, by BindName - looked up ignoring case
+     * @param plain the plain files that read as binds files, by name as found
+     * @param twins the binds files a twin is looked for in, by name - the edits' first, the bindings folder's after
      */
-    static Plan plan(Map<String, byte[]> plain, Map<String, byte[]> settled, Map<String, byte[]> factory) {
+    static List<Rows> rows(Map<String, byte[]> plain, Map<String, byte[]> twins) {
+        if (plain.isEmpty()) return List.of();
+        List<Rows> rows = new ArrayList<>();
+        for (Map.Entry<String, byte[]> file : new TreeMap<>(plain).entrySet()) {
+            Optional<String> twin = twinOf(file.getKey(), twins.keySet());
+            if (twin.isEmpty()) continue;
+            BindingsComparison.plainAgainstTwin(file.getKey(), twins.get(twin.get()), file.getValue())
+                    .ifPresent(found -> rows.add(new Rows(twin.get(), found)));
+        }
+        return List.copyOf(rows);
+    }
+
+    /**
+     * Why each plain file is moved, against the settled set, and what it makes of the set.
+     *
+     * @param plain   the plain files that read as binds files ({@link #readsAsBindsFile}), by name as found
+     * @param settled the binds and preset files the write would hold - with the edits on top at APPLY
+     * @param factory Frontier's factory binds files, by BindName - looked up ignoring case
+     * @param answers the side each row keeps, by {@link BindingsComparison.LineItem#id()}. A plain file's rows are
+     *                compared again with the twin the write holds, and one with no answer keeps the twin's (Q4)
+     * @throws IOException if a twin merged into could not be read back - the message names the plain file
+     */
+    static Plan plan(Map<String, byte[]> plain, Map<String, byte[]> settled, Map<String, byte[]> factory,
+                     Map<String, Side> answers) throws IOException {
         if (plain.isEmpty()) return Plan.NONE;
         Map<String, byte[]> factoryByName = new TreeMap<>(FileNames.ONE_FILE);
         factory.forEach(factoryByName::putIfAbsent);
-        List<String> bindsFiles = new ArrayList<>(settled.keySet().stream().filter(FileNames::isBindsFile).toList());
+        Map<String, byte[]> set = new TreeMap<>(settled);
         List<Tidied> tidied = new ArrayList<>();
         Map<String, byte[]> converted = new TreeMap<>();
+        Map<String, byte[]> merged = new TreeMap<>();
         for (Map.Entry<String, byte[]> file : new TreeMap<>(plain).entrySet()) {
             String name = file.getKey();
             String bindName = FileNames.plainBindName(name).orElseThrow();
             BindsElements elements = BindsElements.of(file.getValue()).orElseThrow();
             // WHY: a converted one counts too, so a second spelling of it - only where the file system heeds case -
             // is a twin of the first, not a second conversion.
-            Optional<String> twin = bindsFiles.stream()
-                    .filter(binds -> FileNames.bindName(binds).filter(n -> FileNames.sameFile(n, bindName)).isPresent())
-                    .findFirst();
+            Optional<String> twin = twinOf(name, set.keySet());
             if (twin.isPresent()) {
-                tidied.add(new Tidied(name, Fate.TWIN, twin.get()));
+                byte[] twinContent = set.get(twin.get());
+                Optional<FileDifference> rows = BindingsComparison.plainAgainstTwin(name, twinContent, file.getValue());
+                boolean takesAny = rows.isPresent() && rows.get().items().stream()
+                        .anyMatch(item -> answers.get(item.id()) == Side.LIVE);
+                if (!takesAny) {
+                    tidied.add(new Tidied(name, Fate.TWIN, twin.get()));
+                    continue;
+                }
+                byte[] into = BindingsComparison.mergedIntoTwin(rows.get(), twinContent, file.getValue(), answers);
+                set.put(twin.get(), into);
+                merged.put(twin.get(), into);
+                tidied.add(new Tidied(name, Fate.MERGED, twin.get()));
                 continue;
             }
             byte[] stock = factoryByName.get(bindName);
@@ -121,17 +189,26 @@ public final class PlainBinds {
             byte[] content;
             try {
                 newName = Create.fileName(bindName, file.getValue());
-                content = Create.withPresetName(file.getValue(), presetNameText(bindName));
+                content = Create.withPresetName(file.getValue(), bindName);
             } catch (IOException e) {
                 // WHY: fails fast - readsAsBindsFile found a <Root> and BindsElements parsed it, so this is a bug, not
                 // the user's file (Storage S13d, from the S13aR-S13b review's finding 4).
                 throw new IllegalStateException("a plain binds file that reads as one has no <Root>: " + name, e);
             }
             converted.put(newName, content);
-            bindsFiles.add(newName);
+            set.put(newName, content);
             tidied.add(new Tidied(name, Fate.CONVERTED, newName));
         }
-        return new Plan(tidied, converted);
+        return new Plan(tidied, converted, merged);
+    }
+
+    /** The binds file among {@code files} whose BindName is the plain file's, ignoring case; the first in name order. */
+    private static Optional<String> twinOf(String plain, Collection<String> files) {
+        String bindName = FileNames.plainBindName(plain).orElseThrow();
+        return files.stream().filter(FileNames::isBindsFile)
+                .filter(binds -> FileNames.bindName(binds).filter(n -> FileNames.sameFile(n, bindName)).isPresent())
+                .sorted()
+                .findFirst();
     }
 
     /**
@@ -143,28 +220,19 @@ public final class PlainBinds {
                 && ROOT_START.matcher(new String(content, StandardCharsets.ISO_8859_1)).find();
     }
 
-    /** Logs why each plain file is moved, and what each converted one became (Storage S13b, D4; S13d). */
+    /** Logs why each plain file is moved, and what was made of it (Storage S13b, D4; S13d; S13e). */
     static void log(Plan plan) {
         for (Tidied file : plan.tidied()) {
             switch (file.fate()) {
                 case TWIN -> log.info("The plain binds file {} goes to Leftover User Files: {} is in the set",
-                        file.file(), file.to());
+                        file.file(), file.about());
+                case MERGED -> log.info("The lines kept of the plain binds file {} went into {}; it goes to Leftover "
+                        + "User Files", file.file(), file.about());
                 case FACTORY -> log.info("The plain binds file {} goes to Leftover User Files: it holds the factory "
-                        + "file {}", file.file(), file.to());
+                        + "file {}", file.file(), file.about());
                 case CONVERTED -> log.info("Converted the plain binds file {} to {}; it goes to Leftover User Files",
-                        file.file(), file.to());
+                        file.file(), file.about());
             }
         }
-    }
-
-    /**
-     * The name as the root's {@code PresetName} holds it: XML's special characters escaped, and the text in the bytes
-     * {@link Create#withPresetName} writes one character each - so a name a file name allows, {@code &} or a letter
-     * beyond ASCII, is written as the file's own UTF-8.
-     */
-    static String presetNameText(String name) {
-        String escaped = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                .replace("\"", "&quot;").replace("'", "&apos;");
-        return new String(escaped.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
     }
 }

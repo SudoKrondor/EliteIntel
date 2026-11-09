@@ -45,7 +45,8 @@ import java.util.stream.Stream;
  * <strong>What does not belong in the bindings folder is moved to Leftover User Files in the same write</strong>
  * (Storage S13d; {@link Leftovers}): found here, compared again before the write as a row is, a plain binds file judged
  * against the set the write would hold first ({@link PlainBinds}) - and converted into a binds file of the set when it
- * is neither a twin nor a factory file.
+ * is neither a twin nor a factory file. <strong>A plain file holding lines its twin lacks</strong> (Storage S13e) gives
+ * rows of the warning ({@link Found#plainRows}), answered in the same map: each kept in-game goes into the twin.
  * <p>
  * <strong>At APPLY</strong> (Storage S8b, S9b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes
  * the settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
@@ -108,15 +109,36 @@ public final class BindingsCheck {
      *                    the edits go on top (Storage S8b); none at the first click, which has no edits
      * @param devices     every reachable installation's device files, judged (Storage S9a, S9b)
      * @param leftovers   what does not belong in the bindings folder, to move to Leftover User Files (Storage S13d)
+     * @param plainRows   the lines each plain file holds and its twin lacks, asked as rows of the warning (Storage S13e)
      */
     public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited,
-                        DeviceCheck.Found devices, Leftovers.Found leftovers) {
+                        DeviceCheck.Found devices, Leftovers.Found leftovers, List<PlainBinds.Rows> plainRows) {
         public Found {
             Objects.requireNonNull(workingCopy, "workingCopy");
             live = Map.copyOf(live);
             Objects.requireNonNull(differences, "differences");
             Objects.requireNonNull(devices, "devices");
             Objects.requireNonNull(leftovers, "leftovers");
+            plainRows = List.copyOf(plainRows);
+        }
+
+        /** The warning's rows, file by file - the binds and preset files', then the plain files' (Storage S13e). */
+        public List<BindingsComparison.LineItem> items() {
+            List<BindingsComparison.LineItem> items = new ArrayList<>(differences.items());
+            plainRows.forEach(plain -> items.addAll(plain.rows().items()));
+            return items;
+        }
+
+        /** Every row to answer: the warning's, then each newer version's. */
+        public List<BindingsComparison.LineItem> rows() {
+            List<BindingsComparison.LineItem> rows = new ArrayList<>(items());
+            differences.newer().forEach(version -> rows.addAll(version.items()));
+            return rows;
+        }
+
+        /** Whether the warning has a row to answer - a binds or preset file's, or a plain file's. */
+        public boolean anyRows() {
+            return !differences.files().isEmpty() || !plainRows.isEmpty();
         }
 
         /** Whether nothing differs - no binds or preset file, no installation, and nothing to move. */
@@ -238,7 +260,28 @@ public final class BindingsCheck {
             log.info("The bindings folder holds files that do not belong there: {}; of them plain binds files to judge: "
                     + "{}", String.join(", ", leftovers.files()), leftovers.plain().keySet());
         }
-        return new Found(workingCopy, live, asked, all.rows().size() - asked.rows().size(), judged, leftovers);
+        List<PlainBinds.Rows> plainRows = plainRows(snapshot, live, leftovers);
+        plainRows.forEach(plain -> log.info("The plain binds file {} holds {} lines {} lacks", plain.plain(),
+                plain.rows().items().size(), plain.twin()));
+        return new Found(workingCopy, live, asked, all.rows().size() - asked.rows().size(), judged, leftovers,
+                plainRows);
+    }
+
+    /**
+     * The lines each plain file holds and its twin lacks (Storage S13e, Q4): the twin as the edits hold it - the working
+     * copy's, with the edits on top at APPLY - else, when only the bindings folder holds it, the live one.
+     */
+    private static List<PlainBinds.Rows> plainRows(Edits.Snapshot snapshot, Map<String, byte[]> live,
+                                                   Leftovers.Found leftovers) {
+        if (leftovers.plain().isEmpty()) return List.of();
+        Map<String, byte[]> twins = new TreeMap<>(FileNames.ONE_FILE);
+        twins.putAll(live);
+        // WHY: the edits' spelling and bytes win over the bindings folder's.
+        snapshot.current().bindings().forEach((name, content) -> {
+            twins.remove(name);
+            twins.put(name, content);
+        });
+        return PlainBinds.rows(leftovers.plain(), twins);
     }
 
     private static List<BindingsComparison.LineItem> edited(Differences found, Edits.Snapshot snapshot) {
@@ -266,7 +309,8 @@ public final class BindingsCheck {
         Differences now = BindingsComparison.without(compared, edited(compared, snapshot));
         if (!snapshot.applied().sameAs(found.workingCopy()) || !now.sameRows(found.differences())
                 || !devices.find(snapshot.applied()).sameAs(found.devices())
-                || !leftovers.sameAs(found.leftovers())) {
+                || !leftovers.sameAs(found.leftovers())
+                || !plainRows(snapshot, live, leftovers).equals(found.plainRows())) {
             throw new ChangedMeanwhileException(find(snapshot, live, leftovers));
         }
         return BindingsComparison.settle(snapshot.applied().bindings(), live, now, answers);
@@ -279,13 +323,14 @@ public final class BindingsCheck {
      * factory files only when there is a plain file to judge.
      *
      * @param workingCopy the set the factory files are listed for
-     * @throws IOException if the factory files cannot be listed
+     * @param answers     the side each row keeps - a plain file's rows against its twin among them (Storage S13e)
+     * @throws IOException if the factory files cannot be listed, or a twin merged into could not be read back
      */
-    Leftovers.Plan leftoversPlan(Found found, ConfigurationFiles workingCopy, Map<String, byte[]> settled)
-            throws IOException {
+    Leftovers.Plan leftoversPlan(Found found, ConfigurationFiles workingCopy, Map<String, byte[]> settled,
+                                 Map<String, Side> answers) throws IOException {
         if (found.leftovers().none()) return Leftovers.Plan.NONE;
         Map<String, byte[]> factory = found.leftovers().plain().isEmpty() ? Map.of() : plainFactory.of(workingCopy);
-        return Leftovers.plan(found.leftovers(), settled, factory);
+        return Leftovers.plan(found.leftovers(), settled, factory, answers);
     }
 
     /**
@@ -341,7 +386,7 @@ public final class BindingsCheck {
             ConfigurationFiles workingCopy = snapshot.applied();
             BindingsComparison.Settled settled = settled(snapshot, found, answers);
             // WHY: before the device files, so a reconcile's moves reach a converted file too (Storage S13b).
-            Leftovers.Plan leftovers = leftoversPlan(found, workingCopy, settled.bindings());
+            Leftovers.Plan leftovers = leftoversPlan(found, workingCopy, settled.bindings(), answers);
             ConfigurationFiles files = DeviceCheck.withDevices(
                     workingCopy.withBindings(leftovers.plain().appliedTo(settled.bindings())), devices);
             Set<String> remove = new TreeSet<>(settled.removeFromLive());

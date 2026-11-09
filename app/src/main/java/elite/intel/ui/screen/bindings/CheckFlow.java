@@ -58,7 +58,8 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * </ul>
  * <strong>Files that do not belong in the bindings folder are named in the same warning</strong> (Storage S13b, S13d):
  * any choice moves them to Leftover User Files, and a warning holding nothing else offers Tidy up and Not now - at APPLY
- * too, where Not now cancels it (Alan, 2026-11-07, Q2-Q3; 2026-11-08, S13d Q3).
+ * too, where Not now cancels it (Alan, 2026-11-07, Q2-Q3; 2026-11-08, S13d Q3). A plain file holding lines its twin
+ * lacks gives rows like any other file's (Storage S13e): the twin is <em>mine</em>, the plain file <em>in-game</em>.
  * <p>
  * <strong>A newer version of one of the user's binds files is asked first</strong>, at either moment (Storage S10): on
  * its own, before the warning - Approve when every binding carried over, else Reconcile, its lines one by one - and
@@ -273,8 +274,7 @@ final class CheckFlow {
             newer.putAll(answered.get());
         }
         Checked asked = checked.withNewer(newer);
-        if (found.differences().files().isEmpty() && found.devices().asked().isEmpty()
-                && found.leftovers().none()) {
+        if (!found.anyRows() && found.devices().asked().isEmpty() && found.leftovers().none()) {
             write(found, asked.with(Map.of()), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
         } else if (merging) {
             merge(asked, given, then);
@@ -313,7 +313,7 @@ final class CheckFlow {
         // WHY: with no binds row and no installation's files to take - only a missing or unparseable file - putting
         // the working copy back is all there is to offer (Alan, 2026-10-31).
         CheckWarningDialog.Offer offer = onlyLeftovers(found) ? CheckWarningDialog.Offer.TIDY_UP
-                : !found.differences().files().isEmpty() || checked.anySide() ? CheckWarningDialog.Offer.EVERY_CHOICE
+                : found.anyRows() || checked.anySide() ? CheckWarningDialog.Offer.EVERY_CHOICE
                 : CheckWarningDialog.Offer.PUT_MINE_BACK;
         switch (CheckWarningDialog.show(parent, warningText(found, atApply), offer)) {
             case KEEP_MINE -> write(found, checked.with(everyRow(found, Side.WORKING_COPY)),
@@ -348,8 +348,8 @@ final class CheckFlow {
     private void merge(Checked checked, Map<String, Side> given, Runnable then) {
         BindingsCheck.Found found = checked.found();
         Map<String, Side> answered = Map.of();
-        if (!found.differences().files().isEmpty()) {
-            answered = new CheckMergeDialog(parent, found.differences().items(), given).showDialog().orElse(null);
+        if (found.anyRows()) {
+            answered = new CheckMergeDialog(parent, found.items(), given).showDialog().orElse(null);
             if (answered == null) {
                 warn(checked, then);
                 return;
@@ -369,7 +369,7 @@ final class CheckFlow {
                 devices -> write(found, answers, devices, true, then),
                 // WHY: with no binds rows, reopening the merge would open the reconcile again at once.
                 () -> {
-                    if (found.differences().files().isEmpty()) warn(checked, then);
+                    if (!found.anyRows()) warn(checked, then);
                     else merge(checked, answers, then);
                 }));
     }
@@ -464,7 +464,7 @@ final class CheckFlow {
 
     private static Map<String, Side> everyRow(BindingsCheck.Found found, Side side) {
         Map<String, Side> answers = new HashMap<>();
-        found.differences().items().forEach(item -> answers.put(item.id(), side));
+        found.items().forEach(item -> answers.put(item.id(), side));
         return answers;
     }
 
@@ -509,9 +509,9 @@ final class CheckFlow {
 
     /** The answers to rows that are still exactly as they were - a newer version's included. */
     static Map<String, Side> kept(BindingsCheck.Found before, BindingsCheck.Found now, Map<String, Side> answers) {
-        Set<LineItem> unchanged = new HashSet<>(now.differences().rows());
+        Set<LineItem> unchanged = new HashSet<>(now.rows());
         Map<String, Side> kept = new HashMap<>();
-        for (LineItem item : before.differences().rows()) {
+        for (LineItem item : before.rows()) {
             Side answer = answers.get(item.id());
             if (answer != null && unchanged.contains(item)) kept.put(item.id(), answer);
         }
@@ -591,8 +591,7 @@ final class CheckFlow {
      * warning then offers Tidy up and Not now.
      */
     static boolean onlyLeftovers(BindingsCheck.Found found) {
-        return found.differences().files().isEmpty() && found.devices().asked().isEmpty()
-                && !found.leftovers().none();
+        return !found.anyRows() && found.devices().asked().isEmpty() && !found.leftovers().none();
     }
 
     /**
@@ -600,9 +599,18 @@ final class CheckFlow {
      * judged first, any other only that it goes.
      */
     static List<String> leftoverLines(BindingsCheck.Found found) {
+        Map<String, PlainBinds.Rows> withRows = new HashMap<>();
+        found.plainRows().forEach(rows -> withRows.put(rows.plain(), rows));
         return found.leftovers().files().stream()
-                .map(name -> "- " + getText(found.leftovers().plain().containsKey(name)
-                        ? "bindings.check.file.plain" : "bindings.check.file.leftover", name))
+                .map(name -> {
+                    PlainBinds.Rows rows = withRows.get(name);
+                    if (rows != null) {
+                        return "- " + getText("bindings.check.file.plainRows", name, rows.rows().items().size(),
+                                rows.twin());
+                    }
+                    return "- " + getText(found.leftovers().plain().containsKey(name)
+                            ? "bindings.check.file.plain" : "bindings.check.file.leftover", name);
+                })
                 .toList();
     }
 
@@ -648,8 +656,9 @@ final class CheckFlow {
 
     /**
      * What was moved to Leftover User Files, and where (Storage S13d), then a line for each plain binds file moved - why,
-     * or what it was converted to (Storage S13b, D4). A converted one kept because it is read-only is still named, since
-     * its binds file was written; it is in {@link #keptReadOnly}'s line too. Nothing for a file held back when the
+     * or what it was converted to (Storage S13b, D4), or the twin its kept lines went into (Storage S13e). A converted or
+     * merged one kept because it is read-only is still named, since its binds file was written; it is in
+     * {@link #keptReadOnly}'s line too. Nothing for a file held back when the
      * bindings folder's write failed: the failure line says so. Shared with APPLY's report.
      */
     static String leftoversReport(Written written) {
@@ -663,10 +672,12 @@ final class CheckFlow {
             boolean moved = holds(bindings.moved(), file.file());
             boolean kept = holds(bindings.keptReadOnly(), file.file());
             String line = switch (file.fate()) {
-                case TWIN -> moved ? getText("bindings.check.result.plainTwin", file.file(), file.to()) : null;
-                case FACTORY -> moved ? getText("bindings.check.result.plainFactory", file.file(), file.to()) : null;
+                case TWIN -> moved ? getText("bindings.check.result.plainTwin", file.file(), file.about()) : null;
+                case MERGED -> moved || kept
+                        ? getText("bindings.check.result.plainMerged", file.file(), file.about()) : null;
+                case FACTORY -> moved ? getText("bindings.check.result.plainFactory", file.file(), file.about()) : null;
                 case CONVERTED -> moved || kept
-                        ? getText("bindings.check.result.plainConverted", file.file(), file.to()) : null;
+                        ? getText("bindings.check.result.plainConverted", file.file(), file.about()) : null;
             };
             if (line != null) text.append('\n').append(line);
         }

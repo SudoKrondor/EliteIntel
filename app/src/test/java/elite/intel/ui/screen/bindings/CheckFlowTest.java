@@ -105,7 +105,7 @@ class CheckFlowTest {
                 judged(2, "EPIC", DeviceCheck.State.RESET_MISSING, null),
                 judged(3, "FRONTIER", DeviceCheck.State.UNREADABLE, "locked")));
         BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()),
-                Map.of(), differences(), 0, devices, Leftovers.Found.NONE);
+                Map.of(), differences(), 0, devices, Leftovers.Found.NONE, List.of());
 
         String text = CheckFlow.warningText(found, false);
 
@@ -222,6 +222,53 @@ class CheckFlowTest {
                 CheckFlow.leftoversReport(written(bindings)));
     }
 
+    /** A plain file whose kept lines went into its twin names the twin (Storage S13e). */
+    @Test
+    void theReportNamesTheTwinAPlainFilesLinesWentInto() {
+        Path to = Path.of("Leftover User Files", "2026-11-08_10-00-00");
+        Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
+                List.of("Live.4.2.binds"), List.of(), List.of(), List.of(), false, List.of("Live.binds"), to);
+
+        assertEquals("\n" + getText("bindings.check.result.moved", "Live.binds", to.toString())
+                        + "\n" + getText("bindings.check.result.plainMerged", "Live.binds", "Live.4.2.binds"),
+                CheckFlow.leftoversReport(written(bindings)));
+    }
+
+    /**
+     * A plain file holding lines its twin lacks (Storage S13e): its own warning line, naming how many and the twin; its
+     * rows are the warning's, after the binds files', so the warning offers every choice, not Tidy up.
+     */
+    @Test
+    void aPlainFileWithRowsHasItsOwnLineAndRows() {
+        LineItem row = new LineItem("Custom.binds", "YawLeftButton/Primary", Kind.SLOT, "YawLeftButton", "Primary",
+                null, "Key_A", "Key_Z");
+        PlainBinds.Rows rows = new PlainBinds.Rows(CUSTOM, new FileDifference("Custom.binds", Presence.BOTH, false,
+                List.of(row)));
+        BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(),
+                differences(), 0, new DeviceCheck.Found(List.of()),
+                new Leftovers.Found(Map.of("Custom.binds", new byte[]{1}), List.of()), List.of(rows));
+
+        assertEquals(List.of("- " + getText("bindings.check.file.plainRows", "Custom.binds", 1, CUSTOM)),
+                CheckFlow.leftoverLines(found));
+        assertEquals(List.of(row), found.items());
+        assertTrue(found.anyRows());
+        assertFalse(CheckFlow.onlyLeftovers(found), "rows to answer - every choice, not Tidy up");
+    }
+
+    /** An answer to a plain file's row that did not change is kept when the files changed meanwhile. */
+    @Test
+    void anAnswerToAPlainFilesRowIsKept() {
+        LineItem row = new LineItem("Custom.binds", "YawLeftButton/Primary", Kind.SLOT, "YawLeftButton", "Primary",
+                null, "Key_A", "Key_Z");
+        BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(),
+                differences(), 0, new DeviceCheck.Found(List.of()),
+                new Leftovers.Found(Map.of("Custom.binds", new byte[]{1}), List.of()),
+                List.of(new PlainBinds.Rows(CUSTOM, new FileDifference("Custom.binds", Presence.BOTH, false,
+                        List.of(row)))));
+
+        assertEquals(Map.of(row.id(), Side.LIVE), CheckFlow.kept(found, found, Map.of(row.id(), Side.LIVE)));
+    }
+
     /**
      * Finding 3 of the S13aR-S13b review: the kept-read-only lines. A binds file the write would have removed has the
      * old line; a file it would have moved has its own (Storage S13d, Q6).
@@ -247,14 +294,16 @@ class CheckFlowTest {
 
     /**
      * The check's write with {@code bindings}: {@code custom.binds} a twin, {@code KeyboardMouseOnly.binds} a factory
-     * file, {@code Spare.binds} converted, and {@code Broken.binds} and {@code notes.txt} moved as they are.
+     * file, {@code Spare.binds} converted, {@code Live.binds} merged into its twin (Storage S13e), and
+     * {@code Broken.binds} and {@code notes.txt} moved as they are.
      */
     private static Written written(Place bindings) {
         PlainBinds.Plan plain = new PlainBinds.Plan(List.of(
                 new PlainBinds.Tidied("KeyboardMouseOnly.binds", PlainBinds.Fate.FACTORY, "KeyboardMouseOnly"),
                 new PlainBinds.Tidied("Spare.binds", PlainBinds.Fate.CONVERTED, "Spare.4.2.binds"),
-                new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM)),
-                Map.of("Spare.4.2.binds", new byte[]{1}));
+                new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM),
+                new PlainBinds.Tidied("Live.binds", PlainBinds.Fate.MERGED, "Live.4.2.binds")),
+                Map.of("Spare.4.2.binds", new byte[]{1}), Map.of("Live.4.2.binds", new byte[]{2}));
         return new Written(new WriteReport(bindings, List.of()), new Backup(Path.of("backup.zip"),
                 LocalDateTime.now(), Backups.Kind.BEFORE_CHANGES, Backups.Before.CHECK, true, List.of()),
                 new Leftovers.Plan(plain, List.of("Broken.binds", "notes.txt")));
@@ -268,7 +317,7 @@ class CheckFlowTest {
     /** {@code differences} at the first click - no edits - with {@code leftovers}. */
     private static BindingsCheck.Found found(Differences differences, Leftovers.Found leftovers) {
         return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
-                0, new DeviceCheck.Found(List.of()), leftovers);
+                0, new DeviceCheck.Found(List.of()), leftovers, List.of());
     }
 
     private static DeviceCheck.Judged judged(long id, String storefront, DeviceCheck.State state, String problem) {
@@ -293,6 +342,6 @@ class CheckFlowTest {
 
     private static BindingsCheck.Found found(Differences differences, int edited) {
         return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
-                edited, new DeviceCheck.Found(List.of()), Leftovers.Found.NONE);
+                edited, new DeviceCheck.Found(List.of()), Leftovers.Found.NONE, List.of());
     }
 }

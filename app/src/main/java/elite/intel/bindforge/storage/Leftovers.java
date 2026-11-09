@@ -84,9 +84,12 @@ public final class Leftovers {
             return move;
         }
 
-        /** Whether a plain file is converted - the one thing here that changes the working copy. */
-        public boolean converts() {
-            return !plain.converted().isEmpty();
+        /**
+         * Whether a plain file is converted, or its lines go into its twin (Storage S13e) - the one thing here that
+         * changes the working copy, so the backup then holds the working copy as it was.
+         */
+        public boolean changesTheSet() {
+            return plain.changesTheSet();
         }
     }
 
@@ -104,6 +107,7 @@ public final class Leftovers {
             found = listing.filter(Files::isRegularFile)
                     .filter(file -> !FileNames.staysInBindingsFolder(file.getFileName().toString())).toList();
         }
+        // WHY: case-sensitive, so a second spelling reaches PlainBinds.plan and is judged a twin (Storage S13b D3).
         Map<String, byte[]> plain = new TreeMap<>();
         List<String> others = new ArrayList<>();
         for (Path file : found) {
@@ -125,10 +129,13 @@ public final class Leftovers {
      * hold.
      *
      * @param factory Frontier's factory binds files, by BindName
+     * @param answers the side each row keeps - a plain file's rows against its twin among them (Storage S13e)
+     * @throws IOException if a twin merged into could not be read back
      */
-    static Plan plan(Found found, Map<String, byte[]> settled, Map<String, byte[]> factory) {
+    static Plan plan(Found found, Map<String, byte[]> settled, Map<String, byte[]> factory,
+                     Map<String, BindingsComparison.Side> answers) throws IOException {
         if (found.none()) return Plan.NONE;
-        return new Plan(PlainBinds.plan(found.plain(), settled, factory), found.others());
+        return new Plan(PlainBinds.plan(found.plain(), settled, factory, answers), found.others());
     }
 
     /** Logs why each file is moved (Storage S13b, D4; S13d) - {@link LiveCopies} logs each move. */

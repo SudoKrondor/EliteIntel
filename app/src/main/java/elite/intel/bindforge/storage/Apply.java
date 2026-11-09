@@ -237,8 +237,10 @@ public final class Apply {
                     : snapshot.current();
             // WHY: judged against the set written, the edits on top (Storage S13b) - and before the device files, so a
             // reconcile's moves reach a converted file too.
-            Leftovers.Plan leftovers = check.leftoversPlan(found, snapshot.applied(), onTop.bindings());
-            if (leftovers.converts()) onTop = onTop.withBindings(leftovers.plain().appliedTo(onTop.bindings()));
+            // WHY: last, so a line the user kept of a plain file wins over an edit on that line of its twin - the
+            // merge showed the edit as theirs (Storage S13e, Q4).
+            Leftovers.Plan leftovers = check.leftoversPlan(found, snapshot.applied(), onTop.bindings(), answers);
+            if (leftovers.changesTheSet()) onTop = onTop.withBindings(leftovers.plain().appliedTo(onTop.bindings()));
             // WHY: the edits' device files are the user's side of the reconcile (Alan, 2026-10-31, Storage S9b), so a
             // reconciled answer replaces them whole - its moves made in the binds files, edits included.
             onTop = DeviceCheck.withDevices(onTop, devices);
@@ -248,9 +250,9 @@ public final class Apply {
             // parse is a broken invariant - not a user file to protect by leaving every installation alone.
             DeviceFilesComparison comparison = DeviceFilesComparison.of(snapshot.applied());
             ConfigurationFiles files = withDefaults(onTop, defaults.of(onTop, snapshot.applied()));
-            // WHY: a converted plain file changes the working copy, so the backup holds it as it was. A file only moved
-            // changes nothing of the working copy (Storage S13d).
-            boolean checkSettled = bindsSettled || reconciled || leftovers.converts();
+            // WHY: a converted plain file, or one whose lines go into its twin, changes the working copy, so the backup
+            // holds it as it was. A file only moved changes nothing of the working copy (Storage S13d, S13e).
+            boolean checkSettled = bindsSettled || reconciled || leftovers.changesTheSet();
             Set<String> remove = new TreeSet<>(settled.removeFromLive());
             // WHY: a binds file the edits renamed goes from the bindings folder after the backup, which holds it
             // (storage.md rule 7; Storage S12). Only a rename takes a binds file out of the edits.

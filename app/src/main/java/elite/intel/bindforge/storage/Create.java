@@ -158,20 +158,35 @@ public final class Create {
 
     /**
      * {@code content} with its root's {@code PresetName} set to {@code name} - added when there is none - and every
-     * other byte as it was. The name must be ASCII, as the name rule makes it.
+     * other byte as it was. The name is escaped and written as UTF-8 ({@link #attributeText}), so any name a file name
+     * allows can be given - a plain file's, converted (Storage S13b) - and a name the controller name's rule allows is
+     * written as it is.
      *
      * @throws IOException if there is no {@code <Root>} start tag
      */
     static byte[] withPresetName(byte[] content, String name) throws IOException {
+        String value = attributeText(name);
         String text = text(content);
         RootTag root = rootTag(text);
         String tag = text.substring(root.start(), root.end());
         Matcher presetName = attributeIn(tag, "PresetName");
         String newTag = presetName.find()
-                ? tag.substring(0, presetName.start(2)) + name + tag.substring(presetName.end(2))
-                : "<Root PresetName=\"" + name + "\"" + tag.substring("<Root".length());
+                ? tag.substring(0, presetName.start(2)) + value + tag.substring(presetName.end(2))
+                : "<Root PresetName=\"" + value + "\"" + tag.substring("<Root".length());
         String changed = text.substring(0, root.start()) + newTag + text.substring(root.end());
         return changed.getBytes(StandardCharsets.ISO_8859_1);
+    }
+
+    /**
+     * The name as the root's {@code PresetName} holds it: XML's special characters escaped, and the text in the bytes
+     * {@link #withPresetName} writes one character each - so {@code &} or a letter beyond ASCII is written as the file's
+     * own UTF-8 (moved here from {@code PlainBinds} in Storage S13e, from the S13aR-S13b review). The name unchanged
+     * for every name CREATE and RENAME allow.
+     */
+    private static String attributeText(String name) {
+        String escaped = name.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
+        return new String(escaped.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
     }
 
     /** The bytes one character each, so the text written back is the same bytes wherever nothing was changed. */

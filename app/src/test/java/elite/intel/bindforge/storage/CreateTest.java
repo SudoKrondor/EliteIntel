@@ -96,6 +96,18 @@ class CreateTest {
         assertTrue(created.contains("<Root PresetName=\"Custom\" MajorVersion=\"4\" MinorVersion=\"2\">"), created);
     }
 
+    /**
+     * A name a file name allows but XML does not, and a letter beyond ASCII, as the root's PresetName holds them - a
+     * plain file's name, converted (moved here from {@code PlainBindsTest} in Storage S13e).
+     */
+    @Test
+    void aPresetNameIsEscapedAndWrittenAsUtf8() throws IOException {
+        byte[] named = Create.withPresetName(bytes(FACTORY), "Tom & Jérôme");
+
+        assertTrue(text(named).contains("PresetName=\"Tom &amp; Jérôme\""), text(named));
+        assertTrue(PlainBinds.readsAsBindsFile(named));
+    }
+
     @Test
     void aFileWithNoRootIsRefused() {
         assertThrows(IOException.class, () -> Create.withPresetName(bytes("<Other />"), "Custom"));
