@@ -1,5 +1,6 @@
 package elite.intel.appdata;
 
+import elite.intel.ai.brain.inference.lmstudio.install.InstallMarker;
 import elite.intel.db.util.DatabaseMigrator;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -157,6 +159,49 @@ class AppDataBackupRestoreTest {
             assertNull(restored.createQuery("SELECT journal_dir FROM user_preferences WHERE id = 1").mapTo(String.class).one());
             assertEquals(bindingsHere.toString(),
                     restored.createQuery("SELECT bindings_dir FROM user_preferences WHERE id = 1").mapTo(String.class).one());
+        }
+    }
+
+    @Test
+    void anLmStudioInstallWhoseFolderHoldsItsMarkerIsKept() throws Exception {
+        Path lmStudioHome = Files.createDirectories(root.resolve("lmstudio-home"));
+        UUID installId = UUID.randomUUID();
+        InstallMarker.write(lmStudioHome, installId);
+        recordLmStudioInstall(installId, lmStudioHome);
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals(1, lmStudioInstallRows(newDir), "restored onto the PC that made it");
+    }
+
+    /**
+     * The dangerous case: the folder exists here too - the same user name on both PCs - but holds an LM Studio the
+     * app never installed on this one, so no marker. Uninstalling from that record would delete it.
+     */
+    @Test
+    void anLmStudioInstallFromAnotherComputerIsForgottenEvenWhereItsFolderExists() throws Exception {
+        Path sameNamedHome = Files.createDirectories(root.resolve("lmstudio-home"));
+        recordLmStudioInstall(UUID.randomUUID(), sameNamedHome);
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals(0, lmStudioInstallRows(newDir));
+    }
+
+    private void recordLmStudioInstall(UUID installId, Path home) {
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("INSERT INTO lm_studio_install (id, install_id, home_dir, pointer_written, setup_complete, "
+                    + "installed_at) VALUES (1, ?, ?, 0, 1, '2026-11-09T10:00:00Z')", installId.toString(), home.toString());
+        }
+    }
+
+    private static int lmStudioInstallRows(Path dataDir) {
+        try (Handle h = open(dataDir.resolve("db/database.db"))) {
+            return h.createQuery("SELECT COUNT(*) FROM lm_studio_install").mapTo(Integer.class).one();
         }
     }
 
