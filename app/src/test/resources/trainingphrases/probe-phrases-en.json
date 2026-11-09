@@ -1257,17 +1257,17 @@
     "I need you to exit close panel",
     "do exit close panel"
   ],
-  "find_brain_trees": [
-    "find brain trees within 300 light years",
-    "locate nearby brain trees",
-    "where are brain trees near us",
-    "find a brain tree site",
-    "search for brain trees",
-    "find biological brain trees",
-    "where can we farm brain trees",
-    "locate brain tree signals",
-    "find the nearest brain tree location",
-    "show me brain trees nearby"
+  "find_where_to_collect_raw_material": [
+    "where can I find tellurium",
+    "where can I farm polonium",
+    "where do I get selenium for engineering",
+    "find brain trees with ruthenium",
+    "find brain trees with technetium within 300 light years",
+    "where can we collect yttrium",
+    "find a planet with antimony",
+    "where is the best place to farm arsenic",
+    "find raw material zirconium",
+    "where can I collect tin within 200 light years"
   ],
   "fighter_attack_target": [
     "order fighter attack my target",

@@ -119,7 +119,7 @@ class AiActionMapGeneratorTest {
             "fighter_fire_at_will",
             "fighter_hold_fire",
             "fighter_return_to_ship",
-            "find_brain_trees",
+            "find_where_to_collect_raw_material",
             "find_commodity",
             "find_where_to_sell_commodity",
             "find_fuel_station",
