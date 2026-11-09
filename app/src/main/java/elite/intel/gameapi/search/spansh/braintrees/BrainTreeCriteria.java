@@ -5,45 +5,48 @@ import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * A Spansh body search for brain tree sites on bodies that hold one raw material, nearest first.
+ * <p>
+ * Spansh does the filtering and the sorting: it knows of more than ten thousand brain tree bodies, so no
+ * local sample can say which is nearest. Without the sort, Spansh returns its matches in no useful order.
+ */
 public class BrainTreeCriteria extends BaseJsonDto implements ToJsonConvertible {
 
+    static final String GENUS = "Brain Trees";
+
+    /**
+     * Spansh's range comparison: a share between the two values, inclusive.
+     */
+    private static final String BETWEEN = "<=>";
 
     @SerializedName("filters")
-    private BrainTreeCriteria.Filters filters;
+    private final Filters filters;
 
     @SerializedName("sort")
-    private List<Object> sort = Collections.emptyList();
+    private final List<Map<String, Map<String, String>>> sort =
+            List.of(Map.of("distance", Map.of("direction", "asc")));
 
     @SerializedName("size")
-    private int size = 5; //default result size
+    private final int size;
 
     @SerializedName("page")
-    private int page = 0;
+    private final int page = 0;
 
     @SerializedName("reference_coords")
-    private BrainTreeCriteria.ReferenceCoords referenceCoords;
+    private final ReferenceCoords referenceCoords;
 
-    public void setFilters(BrainTreeCriteria.Filters filters) {
-        this.filters = filters;
-    }
-
-    public void setSort(List<Object> sort) {
-        this.sort = sort != null ? sort : Collections.emptyList();
-    }
-
-    public void setSize(int size) {
+    /**
+     * @param englishMaterial the raw material by its English name, as Spansh spells it ("Tellurium")
+     * @param size            how many of the nearest sites to return
+     */
+    public BrainTreeCriteria(String englishMaterial, double x, double y, double z, int size) {
+        this.filters = new Filters(englishMaterial);
+        this.referenceCoords = new ReferenceCoords(x, y, z);
         this.size = size;
-    }
-
-    public void setPage(int page) {
-        this.page = page;
-    }
-
-    public void setReferenceCoords(BrainTreeCriteria.ReferenceCoords referenceCoords) {
-        this.referenceCoords = referenceCoords;
     }
 
     @Override
@@ -51,68 +54,55 @@ public class BrainTreeCriteria extends BaseJsonDto implements ToJsonConvertible 
         return GsonFactory.getGson().toJson(this);
     }
 
-    public static class Filters {
-
+    private static final class Filters {
         @SerializedName("distance")
-        private BrainTreeCriteria.Distance distance;
+        private final Distance distance = new Distance();
 
         @SerializedName("genuses")
-        private BrainTreeCriteria.Genuses genuses;
+        private final Genuses genuses = new Genuses();
 
-        public void setDistance(Distance distance) {
-            this.distance = distance;
-        }
+        @SerializedName("materials")
+        private final List<MaterialFilter> materials;
 
-        public void setGenuses(Genuses genuses) {
-            this.genuses = genuses;
+        private Filters(String englishMaterial) {
+            this.materials = List.of(new MaterialFilter(englishMaterial));
         }
     }
 
-    public static class Genuses {
+    private static final class Genuses {
         @SerializedName("value")
-        private List<String> genuses;
-
-        public void setGenuses(List<String> genuses) {
-            this.genuses = genuses;
-        }
+        private final List<String> value = List.of(GENUS);
     }
 
-    public static class Distance {
+    /**
+     * No upper bound: the sort puts the nearest first, and a far site is still better than no answer.
+     */
+    private static final class Distance {
         @SerializedName("min")
-        private int min;
+        private final int min = 0;
         @SerializedName("max")
-        private int max;
+        private final int max = Integer.MAX_VALUE;
+    }
 
-        public void setMin(int min) {
-            this.min = min;
-        }
+    /**
+     * Any share of the material at all: the body holding it is what makes the site yield it.
+     */
+    private static final class MaterialFilter {
+        @SerializedName("name")
+        private final String name;
+        @SerializedName("comparison")
+        private final String comparison = BETWEEN;
+        @SerializedName("value")
+        private final List<Integer> value = List.of(0, 100);
 
-        public void setMax(int max) {
-            this.max = max;
+        private MaterialFilter(String name) {
+            this.name = name;
         }
     }
 
-    public static class ReferenceCoords {
-
-        @SerializedName("x")
-        private double x;
-
-        @SerializedName("y")
-        private double y;
-
-        @SerializedName("z")
-        private double z;
-
-        public void setX(double x) {
-            this.x = x;
-        }
-
-        public void setY(double y) {
-            this.y = y;
-        }
-
-        public void setZ(double z) {
-            this.z = z;
-        }
+    private record ReferenceCoords(
+            @SerializedName("x") double x,
+            @SerializedName("y") double y,
+            @SerializedName("z") double z) {
     }
 }
