@@ -1,0 +1,139 @@
+# Proof of concept: does the Windows LM Studio page work as written?
+# Runs the wiki's commands on a GitHub-hosted Windows runner (no GPU, so inference is on the CPU).
+# It checks the commands, the paths and the endpoints, not the speed.
+#
+# Independent of ci.yml: it never builds, tags or publishes anything.
+
+name: LM Studio Windows Smoke Test
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - lmstudio-smoke
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      MODEL: google/gemma-4-e4b
+
+    steps:
+      - name: "Step 1: install LM Studio (wiki command)"
+        run: irm https://lmstudio.ai/install.ps1 | iex
+
+      - name: "Step 1: lms.exe is where the wiki says"
+        run: |
+          $documented = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
+          if (Test-Path $documented) {
+            Write-Host "OK: $documented"
+          } else {
+            Write-Host "::warning::lms.exe is NOT at $documented. Found instead:"
+            Get-ChildItem "$env:USERPROFILE" -Recurse -Filter lms.exe -ErrorAction SilentlyContinue |
+              ForEach-Object { Write-Host $_.FullName }
+            throw "The wiki's Task Scheduler path is wrong."
+          }
+          "$env:USERPROFILE\.lmstudio\bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
+      - name: "Step 1: lms --help"
+        run: lms --help
+
+      - name: "Step 2: daemon up + download the model"
+        run: |
+          lms daemon up
+          lms daemon status
+          lms get $env:MODEL --yes
+          lms ls
+
+      - name: "Step 3: load with --gpu max (no GPU on this runner)"
+        id: load_gpu
+        continue-on-error: true
+        run: lms load $env:MODEL --yes --context-length 8192 --gpu max
+
+      - name: "Step 3: fall back to a plain load if --gpu max failed"
+        if: steps.load_gpu.outcome == 'failure'
+        run: |
+          Write-Host "::warning::'--gpu max' failed on a GPU-less runner. Loading without it."
+          lms load $env:MODEL --yes --context-length 8192
+
+      - name: "Step 3: start the server and list models"
+        run: |
+          lms server start --port 1234
+          $models = Invoke-RestMethod http://localhost:1234/v1/models
+          $models | ConvertTo-Json -Depth 5
+          $id = $models.data[0].id
+          if (-not $id) { throw "/v1/models returned no model." }
+          "MODEL_ID=$id" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: "The call Elite Intel makes: one required tool call"
+        run: |
+          $body = @{
+            model       = $env:MODEL_ID
+            stream      = $false
+            tool_choice = "required"
+            messages    = @(@{ role = "user"; content = "Deploy the landing gear." })
+            tools       = @(@{
+              type     = "function"
+              function = @{
+                name        = "deploy_landing_gear"
+                description = "Lower the ship's landing gear."
+                parameters  = @{ type = "object"; properties = @{} }
+              }
+            })
+          } | ConvertTo-Json -Depth 10
+          $r = Invoke-RestMethod -Method Post -Uri http://localhost:1234/v1/chat/completions `
+                 -ContentType "application/json" -Body $body -TimeoutSec 900
+          $r | ConvertTo-Json -Depth 10
+          $name = $r.choices[0].message.tool_calls[0].function.name
+          if ($name -ne "deploy_landing_gear") { throw "Expected a deploy_landing_gear tool call, got '$name'." }
+          Write-Host "OK: tool call came back."
+
+      - name: "App-managed idea: REST unload + load (LM Studio 0.4 API)"
+        continue-on-error: true
+        run: |
+          $listed = Invoke-RestMethod http://localhost:1234/api/v1/models
+          $listed | ConvertTo-Json -Depth 6
+          Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/unload `
+            -ContentType "application/json" -Body (@{ instance_id = $env:MODEL_ID } | ConvertTo-Json)
+          Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/load `
+            -ContentType "application/json" -Body (@{ model = $env:MODEL } | ConvertTo-Json) -TimeoutSec 900
+          Write-Host "OK: unload and load over REST."
+
+      - name: "Step 4 Option A: the wiki's start-lmstudio.ps1, from a cold start"
+        run: |
+          lms server stop
+          lms unload --all
+          lms daemon down
+          $script = "$env:RUNNER_TEMP\start-lmstudio.ps1"
+          @'
+          $lms = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
+          & $lms daemon up
+          & $lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
+          & $lms server start
+          '@ | Set-Content -Encoding utf8 $script
+          if ('${{ steps.load_gpu.outcome }}' -eq 'failure') {
+            Write-Host "::warning::Removing '--gpu max' from the script: it already failed on this GPU-less runner."
+            (Get-Content $script) -replace ' --gpu max', '' | Set-Content -Encoding utf8 $script
+          }
+          # The same command line the wiki puts in Task Scheduler.
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File $script
+          $models = Invoke-RestMethod http://localhost:1234/v1/models
+          if (-not $models.data[0].id) { throw "The wiki's script did not leave a model served." }
+          Write-Host "OK: the script brings the server up with a model loaded."
+
+      - name: Upload LM Studio logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lmstudio-logs
+          path: |
+            ~/.lmstudio/**/*.log
+          if-no-files-found: warn
