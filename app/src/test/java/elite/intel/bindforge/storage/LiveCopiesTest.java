@@ -515,7 +515,7 @@ class LiveCopiesTest {
 
     /** Only a file that does not belong is moved - never the game's own, and never out of the folder. */
     @Test
-    void aMoveOfAGameFileOrAPathIsRefused() {
+    void aMoveOfAGameFileOrAPathIsRefused() throws IOException {
         LiveCopies moving = movingTo(temp.resolve("Leftover User Files"));
         assertThrows(IllegalArgumentException.class,
                 () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("custom.4.2.binds")));
@@ -523,6 +523,9 @@ class LiveCopiesTest {
                 () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("StartPreset.4.start")));
         assertThrows(IllegalArgumentException.class,
                 () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("..\\notes.txt")));
+        assertThrows(IllegalArgumentException.class,
+                () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of("notes.txt"), Set.of()));
+        assertEquals(List.of(), names(bindings), "refused before anything is written (the 2026-11-09 review)");
     }
 
     /**

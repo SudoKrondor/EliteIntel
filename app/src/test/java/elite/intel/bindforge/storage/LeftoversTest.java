@@ -91,7 +91,7 @@ class LeftoversTest {
                 ""))), List.of("Custom.4.2 (2).binds"));
 
         Leftovers.Plan plan = Leftovers.plan(found, Map.of("Custom.4.2.binds",
-                bytes(binds("Custom", "Key_A", "Joy_XAxis", ""))), Map.of(), Map.of());
+                bytes(binds("Custom", "Key_A", "Joy_XAxis", ""))), Set.of(), Map.of(), Map.of());
 
         assertEquals(Set.of("Custom.4.2 (2).binds", "Spare.binds"), plan.move());
         assertTrue(plan.changesTheSet());
@@ -100,8 +100,8 @@ class LeftoversTest {
 
     @Test
     void aPlanWithOnlyOtherFilesConvertsNothing() throws IOException {
-        Leftovers.Plan plan = Leftovers.plan(new Leftovers.Found(Map.of(), List.of("a.txt")), Map.of(), Map.of(),
-                Map.of());
+        Leftovers.Plan plan = Leftovers.plan(new Leftovers.Found(Map.of(), List.of("a.txt")), Map.of(), Set.of(),
+                Map.of(), Map.of());
 
         assertEquals(Set.of("a.txt"), plan.move());
         assertFalse(plan.changesTheSet());

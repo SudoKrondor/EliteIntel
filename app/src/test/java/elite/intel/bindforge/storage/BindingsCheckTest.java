@@ -408,6 +408,31 @@ class BindingsCheckTest {
                 result.leftovers().plain().tidied());
     }
 
+    /**
+     * A plain file's twin is only in the game's folder, and Put mine back takes the twin away: the plain file is only
+     * moved - never converted into the name the user just removed (from the 2026-11-09 review, finding 1).
+     */
+    @Test
+    void aPlainFileWhoseLiveOnlyTwinIsPutBackIsOnlyMoved() throws IOException {
+        live(CUSTOM, binds("Custom", "Key_A", "Joy_XAxis", ""));
+        live(SPARE, binds("Spare", "Key_A", "Joy_XAxis", ""));
+        live("spare.binds", binds("Spare", "Key_Z", "Joy_XAxis", ""));
+        BindingsCheck check = check();
+        BindingsCheck.Found found = check.find();
+        assertEquals(SPARE, found.plainRows().getFirst().twin(), "the rows are shown against the live twin");
+        Map<String, Side> putMineBack = new HashMap<>();
+        found.items().forEach(item -> putMineBack.put(item.id(), Side.WORKING_COPY));
+
+        Written result = check.settle(found, putMineBack, DeviceCheck.Answer.PUT_MINE_BACK);
+
+        assertEquals(Set.of(CUSTOM), written.getFirst().bindings().keySet(), "no Spare file is made");
+        assertEquals(List.of(Set.of(SPARE)), removed);
+        assertEquals(List.of(Set.of("spare.binds")), moved);
+        assertEquals(List.of(new PlainBinds.Tidied("spare.binds", PlainBinds.Fate.TWIN_LEAVES, SPARE)),
+                result.leftovers().plain().tidied());
+        assertFalse(result.leftovers().changesTheSet());
+    }
+
     /** The factory file's values, but its own PresetName: moved, and the preset line loads the factory file. */
     @Test
     void aPlainFileEqualToTheFactoryFileOfItsNameIsMoved() throws IOException {

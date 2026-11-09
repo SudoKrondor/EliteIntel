@@ -107,6 +107,21 @@ class StartupNoticeTest {
     }
 
     /**
+     * More than two: how many, and the first two by name - said at every start, so never a long list read aloud (the
+     * 2026-11-09 review, finding 4).
+     */
+    @Test
+    void manyFilesToMoveAreCountedAndOnlyTheFirstTwoNamed() {
+        List<String> files = List.of("a.binds.backup", "b.binds.backup", "c.binds.backup", "notes.txt");
+
+        String said = StartupNotice.text(new StartupNotice.Line.ToMove(files));
+
+        assertEquals(english(StartupNotice.TO_MOVE_MORE_KEY, 4, "a.binds.backup, b.binds.backup"), said);
+        assertFalse(said.contains("c.binds.backup"), said);
+        assertTrue(said.contains("4"), said);
+    }
+
+    /**
      * Only the files the check will move are named: a read-only one stays, and is named once in the check's report, not
      * at every start (Alan, 2026-11-08, from the S13aR-S13b review's D1).
      */

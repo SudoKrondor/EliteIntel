@@ -675,6 +675,8 @@ final class CheckFlow {
                 case TWIN -> moved ? getText("bindings.check.result.plainTwin", file.file(), file.about()) : null;
                 case MERGED -> moved || kept
                         ? getText("bindings.check.result.plainMerged", file.file(), file.about()) : null;
+                case TWIN_LEAVES -> moved
+                        ? getText("bindings.check.result.plainTwinLeaves", file.file(), file.about()) : null;
                 case FACTORY -> moved ? getText("bindings.check.result.plainFactory", file.file(), file.about()) : null;
                 case CONVERTED -> moved || kept
                         ? getText("bindings.check.result.plainConverted", file.file(), file.about()) : null;

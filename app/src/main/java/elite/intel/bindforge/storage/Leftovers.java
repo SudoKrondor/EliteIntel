@@ -128,14 +128,15 @@ public final class Leftovers {
      * What the write does with {@code found}, its plain files judged against {@code settled} - the set the write would
      * hold.
      *
+     * @param leaving the files the write takes out of the bindings folder ({@link PlainBinds#plan})
      * @param factory Frontier's factory binds files, by BindName
      * @param answers the side each row keeps - a plain file's rows against its twin among them (Storage S13e)
      * @throws IOException if a twin merged into could not be read back
      */
-    static Plan plan(Found found, Map<String, byte[]> settled, Map<String, byte[]> factory,
+    static Plan plan(Found found, Map<String, byte[]> settled, Set<String> leaving, Map<String, byte[]> factory,
                      Map<String, BindingsComparison.Side> answers) throws IOException {
         if (found.none()) return Plan.NONE;
-        return new Plan(PlainBinds.plan(found.plain(), settled, factory, answers), found.others());
+        return new Plan(PlainBinds.plan(found.plain(), settled, leaving, factory, answers), found.others());
     }
 
     /** Logs why each file is moved (Storage S13b, D4; S13d) - {@link LiveCopies} logs each move. */

@@ -323,14 +323,16 @@ public final class BindingsCheck {
      * factory files only when there is a plain file to judge.
      *
      * @param workingCopy the set the factory files are listed for
+     * @param leaving     the files the write takes out of the bindings folder - a plain file whose twin is among them
+     *                    is only moved, never converted into the name taken away
      * @param answers     the side each row keeps - a plain file's rows against its twin among them (Storage S13e)
      * @throws IOException if the factory files cannot be listed, or a twin merged into could not be read back
      */
     Leftovers.Plan leftoversPlan(Found found, ConfigurationFiles workingCopy, Map<String, byte[]> settled,
-                                 Map<String, Side> answers) throws IOException {
+                                 Set<String> leaving, Map<String, Side> answers) throws IOException {
         if (found.leftovers().none()) return Leftovers.Plan.NONE;
         Map<String, byte[]> factory = found.leftovers().plain().isEmpty() ? Map.of() : plainFactory.of(workingCopy);
-        return Leftovers.plan(found.leftovers(), settled, factory, answers);
+        return Leftovers.plan(found.leftovers(), settled, leaving, factory, answers);
     }
 
     /**
@@ -385,11 +387,11 @@ public final class BindingsCheck {
             Edits.Snapshot snapshot = edits.snapshot();
             ConfigurationFiles workingCopy = snapshot.applied();
             BindingsComparison.Settled settled = settled(snapshot, found, answers);
+            Set<String> remove = new TreeSet<>(settled.removeFromLive());
             // WHY: before the device files, so a reconcile's moves reach a converted file too (Storage S13b).
-            Leftovers.Plan leftovers = leftoversPlan(found, workingCopy, settled.bindings(), answers);
+            Leftovers.Plan leftovers = leftoversPlan(found, workingCopy, settled.bindings(), remove, answers);
             ConfigurationFiles files = DeviceCheck.withDevices(
                     workingCopy.withBindings(leftovers.plain().appliedTo(settled.bindings())), devices);
-            Set<String> remove = new TreeSet<>(settled.removeFromLive());
             Set<String> move = leftovers.move();
             DeviceFilesComparison comparison = DeviceFilesComparison.of(workingCopy);
             AtomicReference<Backup> taken = new AtomicReference<>();

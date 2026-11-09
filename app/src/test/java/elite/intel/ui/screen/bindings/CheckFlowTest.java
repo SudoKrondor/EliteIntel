@@ -234,6 +234,18 @@ class CheckFlowTest {
                 CheckFlow.leftoversReport(written(bindings)));
     }
 
+    /** A plain file whose twin the write took away says nothing was taken from it (the 2026-11-09 review). */
+    @Test
+    void theReportSaysAPlainFileWhoseTwinLeftGaveNothing() {
+        Path to = Path.of("Leftover User Files", "2026-11-09_10-00-00");
+        Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
+                List.of(), List.of("Gone.4.2.binds"), List.of(), List.of(), false, List.of("Gone.binds"), to);
+
+        assertEquals("\n" + getText("bindings.check.result.moved", "Gone.binds", to.toString())
+                        + "\n" + getText("bindings.check.result.plainTwinLeaves", "Gone.binds", "Gone.4.2.binds"),
+                CheckFlow.leftoversReport(written(bindings)));
+    }
+
     /**
      * A plain file holding lines its twin lacks (Storage S13e): its own warning line, naming how many and the twin; its
      * rows are the warning's, after the binds files', so the warning offers every choice, not Tidy up.
@@ -302,7 +314,8 @@ class CheckFlowTest {
                 new PlainBinds.Tidied("KeyboardMouseOnly.binds", PlainBinds.Fate.FACTORY, "KeyboardMouseOnly"),
                 new PlainBinds.Tidied("Spare.binds", PlainBinds.Fate.CONVERTED, "Spare.4.2.binds"),
                 new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM),
-                new PlainBinds.Tidied("Live.binds", PlainBinds.Fate.MERGED, "Live.4.2.binds")),
+                new PlainBinds.Tidied("Live.binds", PlainBinds.Fate.MERGED, "Live.4.2.binds"),
+                new PlainBinds.Tidied("Gone.binds", PlainBinds.Fate.TWIN_LEAVES, "Gone.4.2.binds")),
                 Map.of("Spare.4.2.binds", new byte[]{1}), Map.of("Live.4.2.binds", new byte[]{2}));
         return new Written(new WriteReport(bindings, List.of()), new Backup(Path.of("backup.zip"),
                 LocalDateTime.now(), Backups.Kind.BEFORE_CHANGES, Backups.Before.CHECK, true, List.of()),

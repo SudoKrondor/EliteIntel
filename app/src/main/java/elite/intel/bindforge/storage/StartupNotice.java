@@ -33,7 +33,8 @@ import java.util.function.Supplier;
  *     copy's, once one exists, judged against the reachable installations' factory files.</li>
  *     <li><strong>Files the check will move to Leftover User Files</strong> ({@link Leftovers}; Storage S13b, S13d) -
  *     every one, not only plain binds files, but a read-only one, which the check leaves where it is and names once in
- *     its report (Alan, 2026-11-08, Q4 and the S13aR-S13b review's D1). Once a working copy exists, and <strong>not
+ *     its report (Alan, 2026-11-08, Q4 and the S13aR-S13b review's D1). Two are named; with more, the line says how
+ *     many and names the first two in name order. Once a working copy exists, and <strong>not
  *     while read only</strong>, since the check that moves them is off then (Alan, 2026-11-07, Q5).</li>
  * </ol>
  * The missing controller stays the Alias Designer's ({@code MissingControllerWarning}, A13), and the binding warnings
@@ -50,6 +51,9 @@ public final class StartupNotice {
     static final String MANUAL_INSTALLATION_KEY = "speech.bindforge.manualInstallation";
     static final String TO_MOVE_KEY = "speech.bindforge.leftover";
     static final String TO_MOVE_MANY_KEY = "speech.bindforge.leftoverMany";
+    static final String TO_MOVE_MORE_KEY = "speech.bindforge.leftoverMore";
+    /** The most files the line to move names; with more, it says how many and names this many of them. */
+    static final int TO_MOVE_NAMED_AT_MOST = 2;
 
     private static final AtomicBoolean STARTED = new AtomicBoolean();
 
@@ -175,10 +179,19 @@ public final class StartupNotice {
             case Line.NamedLikeFactory named -> named.bindNames().size() == 1
                     ? StringUtls.localizedSpeech(NAMED_LIKE_FACTORY_KEY, named.bindNames().getFirst())
                     : StringUtls.localizedSpeech(NAMED_LIKE_FACTORY_MANY_KEY, String.join(", ", named.bindNames()));
-            case Line.ToMove toMove -> toMove.files().size() == 1
-                    ? StringUtls.localizedSpeech(TO_MOVE_KEY, toMove.files().getFirst())
-                    : StringUtls.localizedSpeech(TO_MOVE_MANY_KEY, String.join(", ", toMove.files()));
+            case Line.ToMove toMove -> toMoveText(toMove.files());
         };
+    }
+
+    private static String toMoveText(List<String> files) {
+        if (files.size() == 1) return StringUtls.localizedSpeech(TO_MOVE_KEY, files.getFirst());
+        if (files.size() <= TO_MOVE_NAMED_AT_MOST) {
+            return StringUtls.localizedSpeech(TO_MOVE_MANY_KEY, String.join(", ", files));
+        }
+        // WHY: said at every start until the check tidies up, so a folder of old .binds.backup files must not become a
+        // long list of file names read aloud - the check's warning names every one (the 2026-11-09 review, finding 4).
+        return StringUtls.localizedSpeech(TO_MOVE_MORE_KEY, files.size(),
+                String.join(", ", files.subList(0, TO_MOVE_NAMED_AT_MOST)));
     }
 
     /**

@@ -235,11 +235,20 @@ public final class Apply {
                     ? snapshot.current().withBindings(BindingsComparison.withEditsOnTop(settled.bindings(),
                     settled.renamed(), snapshot.applied().bindings(), snapshot.current().bindings()))
                     : snapshot.current();
+            Set<String> remove = new TreeSet<>(settled.removeFromLive());
+            // WHY: a binds file the edits renamed goes from the bindings folder after the backup, which holds it
+            // (storage.md rule 7; Storage S12). Only a rename takes a binds file out of the edits.
+            snapshot.applied().bindings().keySet().stream()
+                    .filter(FileNames::isBindsFile)
+                    .filter(name -> !snapshot.current().bindings().containsKey(name))
+                    .forEach(remove::add);
             // WHY: judged against the set written, the edits on top (Storage S13b) - and before the device files, so a
-            // reconcile's moves reach a converted file too.
+            // reconcile's moves reach a converted file too. Told what leaves the bindings folder, so a plain file is
+            // never converted into a name the answers or a rename take away.
             // WHY: last, so a line the user kept of a plain file wins over an edit on that line of its twin - the
             // merge showed the edit as theirs (Storage S13e, Q4).
-            Leftovers.Plan leftovers = check.leftoversPlan(found, snapshot.applied(), onTop.bindings(), answers);
+            Leftovers.Plan leftovers = check.leftoversPlan(found, snapshot.applied(), onTop.bindings(), remove,
+                    answers);
             if (leftovers.changesTheSet()) onTop = onTop.withBindings(leftovers.plain().appliedTo(onTop.bindings()));
             // WHY: the edits' device files are the user's side of the reconcile (Alan, 2026-10-31, Storage S9b), so a
             // reconciled answer replaces them whole - its moves made in the binds files, edits included.
@@ -253,13 +262,6 @@ public final class Apply {
             // WHY: a converted plain file, or one whose lines go into its twin, changes the working copy, so the backup
             // holds it as it was. A file only moved changes nothing of the working copy (Storage S13d, S13e).
             boolean checkSettled = bindsSettled || reconciled || leftovers.changesTheSet();
-            Set<String> remove = new TreeSet<>(settled.removeFromLive());
-            // WHY: a binds file the edits renamed goes from the bindings folder after the backup, which holds it
-            // (storage.md rule 7; Storage S12). Only a rename takes a binds file out of the edits.
-            snapshot.applied().bindings().keySet().stream()
-                    .filter(FileNames::isBindsFile)
-                    .filter(name -> !snapshot.current().bindings().containsKey(name))
-                    .forEach(remove::add);
             // WHY: a file the edits hold is written, never removed - the edit wins.
             remove.removeAll(files.bindings().keySet());
             AtomicReference<Backup> taken = new AtomicReference<>();

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import static elite.intel.bindforge.storage.BindingsComparisonTest.binds;
@@ -183,6 +184,32 @@ class PlainBindsTest {
         assertFalse(plan.changesTheSet());
     }
 
+    /**
+     * No twin in the set, but the write takes one of its BindName out of the bindings folder: only moved, its rows'
+     * answers dropped - converted, it would put back the name the user took away (the 2026-11-09 review, finding 1).
+     */
+    @Test
+    void aPlainFileWhoseTwinLeavesIsNeitherConvertedNorMerged() throws IOException {
+        Map<String, byte[]> files = Map.of("spare.binds", bytes(binds("Spare", "Key_Z", "Joy_XAxis", "")));
+
+        PlainBinds.Plan plan = PlainBinds.plan(files, CUSTOM_SET, Set.of("Spare.4.2.binds"), Map.of(),
+                Map.of("spare.binds|YawLeftButton/Primary", Side.LIVE));
+
+        assertEquals(List.of(new PlainBinds.Tidied("spare.binds", PlainBinds.Fate.TWIN_LEAVES, "Spare.4.2.binds")),
+                plan.tidied());
+        assertFalse(plan.changesTheSet());
+    }
+
+    /** A twin in the set wins over one leaving - a newer version's older name leaves while the newer one is written. */
+    @Test
+    void aTwinInTheSetWinsOverOneLeaving() throws IOException {
+        Map<String, byte[]> files = Map.of("custom.binds", bytes(binds("Custom", "Key_A", "Joy_XAxis", "")));
+
+        PlainBinds.Plan plan = PlainBinds.plan(files, CUSTOM_SET, Set.of("Custom.4.1.binds"), Map.of(), Map.of());
+
+        assertEquals(List.of(new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM)), plan.tidied());
+    }
+
     /** XML that is not under a {@code <Root>} has no version to name a file by - not read as a binds file. */
     @Test
     void xmlThatIsNotUnderARootDoesNotReadAsABindsFile() {
@@ -191,7 +218,7 @@ class PlainBindsTest {
 
     @Test
     void noPlainFilesIsNoPlan() throws IOException {
-        assertSame(PlainBinds.Plan.NONE, PlainBinds.plan(Map.of(), CUSTOM_SET, Map.of(), Map.of()));
+        assertSame(PlainBinds.Plan.NONE, PlainBinds.plan(Map.of(), CUSTOM_SET, Set.of(), Map.of(), Map.of()));
         assertEquals(List.of(), PlainBinds.rows(Map.of(), CUSTOM_SET));
     }
 
@@ -203,6 +230,6 @@ class PlainBindsTest {
                                         Map<String, Side> answers) throws IOException {
         Map<String, byte[]> files = new TreeMap<>();
         plain.forEach((name, content) -> files.put(name, bytes(content)));
-        return PlainBinds.plan(files, CUSTOM_SET, factory, answers);
+        return PlainBinds.plan(files, CUSTOM_SET, Set.of(), factory, answers);
     }
 }

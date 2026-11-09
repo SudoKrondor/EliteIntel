@@ -137,6 +137,7 @@ final class LiveCopies {
      */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings,
                       Set<String> moveFromBindings) {
+        requireNamesToTakeAway(removeFromBindings, moveFromBindings);
         Place bindings = writeBindings(files, removeFromBindings, moveFromBindings);
         List<Place> installations = sources.installations().stream()
                 .map(installation -> {
@@ -149,6 +150,23 @@ final class LiveCopies {
                 })
                 .toList();
         return new WriteReport(bindings, installations);
+    }
+
+    /**
+     * Refuses a name to remove that is not a binds or preset file's, and a name to move that is the game's own or a
+     * path - a bug in the caller, so it is thrown before anything is written, never half way through the write.
+     */
+    private static void requireNamesToTakeAway(Set<String> remove, Set<String> move) {
+        for (String name : remove) {
+            if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
+                throw new IllegalArgumentException("not a binds or preset file name: " + name);
+            }
+        }
+        for (String name : move) {
+            if (!FileNames.plain(name) || FileNames.staysInBindingsFolder(name)) {
+                throw new IllegalArgumentException("not a file to move from the bindings folder: " + name);
+            }
+        }
     }
 
     private Place writeBindings(ConfigurationFiles files, Set<String> remove, Set<String> move) {
@@ -179,19 +197,11 @@ final class LiveCopies {
             return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
         }
         for (String name : remove) {
-            if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
-                throw new IllegalArgumentException("not a binds or preset file name: " + name);
-            }
             // WHY: a name the set holds in any spelling is the file just written - the edit wins (Storage S13a).
             if (files.bindings().keySet().stream().anyMatch(written -> FileNames.sameFile(written, name))) continue;
             writing.spellingsIn(folder, name).forEach(spelling -> writing.remove(folder.resolve(spelling)));
         }
-        for (String name : move) {
-            if (!FileNames.plain(name) || FileNames.staysInBindingsFolder(name)) {
-                throw new IllegalArgumentException("not a file to move from the bindings folder: " + name);
-            }
-            writing.moveAway(folder.resolve(name), leftovers);
-        }
+        for (String name : move) writing.moveAway(folder.resolve(name), leftovers);
         return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
     }
 
@@ -360,34 +370,11 @@ final class LiveCopies {
                 String name = file.getFileName().toString();
                 if (kept.keySet().stream().anyMatch(keptName -> FileNames.sameFile(keptName, name))) continue;
                 if (FrontierStockButtonMaps.shipsMapFor(deviceNameOf(name))) continue;
-                // WHY: the user protected it, so it is not removed against that - asked before deleting, because on
-                // Linux the delete would succeed whatever the file's own permission. They are told how to let it go,
-                // rather than shown the system's "access denied" (principle 9; Alan, 2026-10-25, from the review).
-                boolean readOnly;
-                try {
-                    readOnly = ReadOnlyFlag.isSet(file);
-                } catch (IOException e) {
-                    // WHY: a file whose protection cannot be read may be protected, so it is kept, not deleted, and
-                    // reported (Krondor's review, 2026-10-27). Taken for unprotected, it was deleted.
-                    failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " (" + reason(e) + ")");
-                    log.warn("Did not remove {}: whether it is read-only could not be read", file, e);
-                    continue;
-                }
-                if (readOnly) {
-                    keptReadOnly.add(name);
-                    log.warn("Did not remove {}: it is read-only", file);
-                    continue;
-                }
-                try {
-                    Files.delete(file);
-                    removed.add(name);
-                } catch (IOException e) {
-                    fail(file, e);
-                }
+                remove(file);
             }
         }
 
-        /** Removes one binds or preset file; a read-only one is kept and reported, never unprotected to delete it. */
+        /** Removes one file; a read-only one is kept and reported, never unprotected to delete it. */
         void remove(Path file) {
             if (!Files.isRegularFile(file) || kept(file, NOT_REMOVED_FLAG_UNREADABLE)) return;
             try {
@@ -428,9 +415,14 @@ final class LiveCopies {
          */
         private boolean kept(Path file, String notDone) {
             String name = file.getFileName().toString();
+            // WHY: the user protected it, so it is not taken away against that - asked first, because on Linux the
+            // delete would succeed whatever the file's own permission. They are told how to let it go, rather than shown
+            // the system's "access denied" (principle 9; Alan, 2026-10-25, from the review).
             try {
                 if (!ReadOnlyFlag.isSet(file)) return false;
             } catch (IOException e) {
+                // WHY: a file whose protection cannot be read may be protected, so it is kept, not taken away, and
+                // reported (Krondor's review, 2026-10-27). Taken for unprotected, it was deleted.
                 failures.add(name + ": " + notDone + " (" + reason(e) + ")");
                 log.warn("Left {} where it is: whether it is read-only could not be read", file, e);
                 return true;

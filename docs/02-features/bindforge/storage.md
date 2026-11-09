@@ -729,7 +729,11 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **Q2: a folder inside the bindings folder is left alone.** Only files are moved.
     - **Q3: a warning holding only files to move offers *Tidy up* / *Not now***, as one holding only plain files did; at
       APPLY Not now cancels it. So a stray file is never only named: it is something to ask about, like any other.
-    - **Q4: the startup line counts every file the check will move**, not only plain ones.
+    - **Q4: the startup line counts every file the check will move**, not only plain ones. *Amended 2026-11-09
+      (Krondor's code-integrity review, finding 4):* it names at most two. With more it says how many and names the
+      first two in name order (`speech.bindforge.leftoverMore`), since it is said at every start until the check tidies
+      up and a folder of old `.binds.backup` files would otherwise be read aloud name by name. The check's warning
+      still names every file.
     - **Q5: what stays is matched ignoring case** - `<name>.<major>.<minor>.binds`, `StartPreset.N.start` and
       `BindingLoadingErrors.log` in any case - so nothing that could be the game's own file is moved
       (`FileNames.staysInBindingsFolder`). Every other match of a kind stays exact (S13a).
@@ -770,9 +774,16 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **Q4: compared with the twin as BindForge holds it** - the working copy's with the edits on top (at the first click
       the working copy) - or, when only the bindings folder holds it, the live one. The answers go into the twin the write
       holds, compared again there, and are put on last, so a line kept of the plain file wins over an edit on that line:
-      the merge showed the edit as *Mine*. A row the warning did not show keeps the twin's. If the answers leave no twin
+      the merge showed the edit as *Mine*. A row the warning did not show keeps the twin's. ~~If the answers leave no twin
       in the set (a live-only twin the user put back), the plain file is judged as one with no twin and its answers are
-      dropped - rare, principle 13.
+      dropped - rare, principle 13.~~ **Amended 2026-11-09 (Krondor's code-integrity review, finding 1):** judged as
+      one with no twin, the plain file was converted into the very name the user had just put back - *Put mine back*
+      ending with a binds file made of the plain one. Now **when the write takes a binds file of the plain file's
+      BindName out of the bindings folder** - a live-only one the user kept the working copy's side of, or at APPLY a
+      name the edits renamed away - and the set holds no other, the plain file is **only moved**
+      (`PlainBinds.Fate.TWIN_LEAVES`), its answers dropped and its bytes kept in Leftover User Files. The report says
+      so (`bindings.check.result.plainTwinLeaves`). A twin the set holds still wins: a newer version's older name
+      leaves while the newer one is written.
     - **Q5: `Tidied.to` became `about`**, its Javadoc saying what it holds for each fate (the review's finding 7): a
       factory file's name would read *"KeyboardMouseOnly.binds holds the factory file KeyboardMouseOnly.binds"*.
     - **Q6: a plain file lacking only what its twin has** is moved with the existing *"is already in the game's folder"*
