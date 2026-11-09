@@ -60,8 +60,9 @@ class ApplyTest {
     private IOException unreadable;
     /** What the check finds for the installations' device files - none judged, until a test says otherwise. */
     private DeviceCheck.Found judgedDevices = new DeviceCheck.Found(List.of());
-    /** The plain binds files the check finds in the bindings folder - none, until a test says otherwise. */
-    private Map<String, byte[]> plainFiles = Map.of();
+    /** What the check finds that does not belong in the bindings folder - nothing, until a test says otherwise. */
+    private Leftovers.Found leftovers = Leftovers.Found.NONE;
+    private final List<Set<String>> moved = new ArrayList<>();
 
     @Test
     void theEditsAndTheDefaultLabelsAreWrittenAfterTheBackup() throws IOException {
@@ -170,7 +171,7 @@ class ApplyTest {
     @Test
     void aBackupThatFailsStopsApplyWithTheEditsStillOnScreen() throws IOException {
         edits.change(current -> set("<edited/>", LVWAP));
-        Run apply = new Run(new Apply(edits, (current, applied) -> Map.of(), (files, backUp, leaveAlone, remove) -> {
+        Run apply = new Run(new Apply(edits, (current, applied) -> Map.of(), (files, backUp, leaveAlone, remove, move) -> {
             backUp.take(sources());
             return null;
         }, new Apply.BackUp() {
@@ -659,15 +660,16 @@ class ApplyTest {
         assertTrue(edits.hasEdits());
     }
 
-    // ---- plain binds files (Storage S13b)
+    // ---- what does not belong in the bindings folder (Storage S13b, S13d)
 
-    /** No twin among the edits: converted in APPLY's write, the plain file removed, the working copy held. */
+    /** No twin among the edits: converted in APPLY's write, the plain file moved, the working copy held. */
     @Test
     void aPlainFileIsConvertedInApplysWrite() throws IOException {
         workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
         edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
                 bytes(binds("Custom", "Key_B", "Joy_XAxis", ""))));
-        plainFiles = Map.of("Spare.binds", bytes(binds("Frontier", "Key_Z", "Joy_XAxis", "")));
+        leftovers = new Leftovers.Found(Map.of("Spare.binds", bytes(binds("Frontier", "Key_Z", "Joy_XAxis", ""))),
+                List.of());
 
         Written result = apply(installation -> live(LVWAP)).apply();
 
@@ -675,26 +677,45 @@ class ApplyTest {
         assertEquals(binds("Spare", "Key_Z", "Joy_XAxis", ""), text(files.bindings().get("Spare.4.2.binds")));
         assertEquals(binds("Custom", "Key_B", "Joy_XAxis", ""), text(files.bindings().get(CUSTOM_BINDS)),
                 "the edit still written");
-        assertEquals(List.of(Set.of("Spare.binds")), removed);
+        assertEquals(List.of(Set.of("Spare.binds")), moved);
+        assertEquals(List.of(Set.of()), removed);
         assertEquals(List.of("APPLY with the working copy"), backedUp);
-        assertEquals(PlainBinds.Fate.CONVERTED, result.plain().getFirst().fate());
+        assertEquals(PlainBinds.Fate.CONVERTED, result.leftovers().plain().tidied().getFirst().fate());
+    }
+
+    /**
+     * A stray file is moved in APPLY's write, the edits written as they are - and since nothing of the working copy
+     * changes, the backup does not hold it (Storage S13d).
+     */
+    @Test
+    void aStrayFileIsMovedAndTheBackupHoldsNoWorkingCopy() throws IOException {
+        workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
+        edits.change(current -> current.withBindingsFile(CUSTOM_BINDS,
+                bytes(binds("Custom", "Key_B", "Joy_XAxis", ""))));
+        leftovers = new Leftovers.Found(Map.of(), List.of("Custom.4.2 (2).binds"));
+
+        apply(installation -> live(LVWAP)).apply();
+
+        assertEquals(List.of(Set.of("Custom.4.2 (2).binds")), moved);
+        assertEquals(List.of("APPLY"), backedUp);
     }
 
     /** Judged against the edits: a binds file the edits add is the plain file's twin. */
     @Test
-    void aPlainFileWhoseTwinTheEditsHoldIsRemoved() throws IOException {
+    void aPlainFileWhoseTwinTheEditsHoldIsMoved() throws IOException {
         workingCopy.set(bindsSet(binds("Custom", "Key_A", "Joy_XAxis", "")));
         edits.change(current -> current.withBindingsFile("Spare.4.2.binds",
                 bytes(binds("Spare", "Key_B", "Joy_XAxis", ""))));
-        plainFiles = Map.of("spare.binds", bytes(binds("Spare", "Key_Z", "Joy_XAxis", "")));
+        leftovers = new Leftovers.Found(Map.of("spare.binds", bytes(binds("Spare", "Key_Z", "Joy_XAxis", ""))),
+                List.of());
 
         Written result = apply(installation -> live(LVWAP)).apply();
 
         assertEquals(Set.of(CUSTOM_BINDS, "Spare.4.2.binds", "StartPreset.4.start"),
                 written.getFirst().bindings().keySet());
         assertEquals(binds("Spare", "Key_B", "Joy_XAxis", ""), text(written.getFirst().bindings().get("Spare.4.2.binds")));
-        assertEquals(List.of(Set.of("spare.binds")), removed);
-        assertEquals(PlainBinds.Fate.TWIN, result.plain().getFirst().fate());
+        assertEquals(List.of(Set.of("spare.binds")), moved);
+        assertEquals(PlainBinds.Fate.TWIN, result.leftovers().plain().tidied().getFirst().fate());
     }
 
     /** Steam, at the folder the fake write path names, judged {@code state} with {@code files}. */
@@ -730,21 +751,22 @@ class ApplyTest {
         return new BindingsCheck(edits, () -> Path.of("Bindings"), () -> Path.of("working-copy"), folder -> {
             if (unreadable != null) throw unreadable;
             return liveBindings != null ? liveBindings : workingCopy.get().bindings();
-        }, files -> BindingsComparison.Factory.NONE, (files, backUp, leaveAlone, remove) -> {
+        }, files -> BindingsComparison.Factory.NONE, (files, backUp, leaveAlone, remove, move) -> {
             throw new AssertionError("APPLY writes through its own writer");
         }, (sources, files) -> {
             throw new AssertionError("APPLY takes its own backup");
         }, installation -> {
             throw new AssertionError("APPLY reads the installations through its own reader");
-        }, files -> judgedDevices, folder -> plainFiles, files -> Map.of());
+        }, files -> judgedDevices, folder -> leftovers, files -> Map.of());
     }
 
     private WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
-                              Set<String> remove) throws IOException {
+                              Set<String> remove, Set<String> move) throws IOException {
         BackupSources sources = sources();
         backUp.take(sources);
         written.add(files);
         removed.add(remove);
+        moved.add(move);
         for (BackupSources.Installation installation : sources.installations()) {
             if (leaveAlone.leaveAlone(installation)) leftAlone.add(installation.storefront());
         }

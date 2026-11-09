@@ -179,7 +179,7 @@ class WritePathTest {
      */
     @Test
     void anInstallationLeftAloneIsNotWrittenAndIsReportedAsDiffering() throws IOException {
-        WriteReport report = writePath().write(set(), sources -> backup(), installation -> true, Set.of());
+        WriteReport report = writePath().write(set(), sources -> backup(), installation -> true, Set.of(), Set.of());
 
         WriteReport.Place place = report.installations().getFirst();
         assertTrue(place.differs());
@@ -253,7 +253,7 @@ class WritePathTest {
     /** APPLY's write - the one that finds the places itself - leaving no installation alone. */
     private static WriteReport applyWrite(WritePath writePath, ConfigurationFiles files, WritePath.BackUpFirst backUp)
             throws IOException {
-        return writePath.write(files, backUp, LiveCopies.LeaveAlone.NONE, Set.of());
+        return writePath.write(files, backUp, LiveCopies.LeaveAlone.NONE, Set.of(), Set.of());
     }
 
     private WritePath writePath() {

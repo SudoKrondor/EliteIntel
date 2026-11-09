@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 import static elite.intel.bindforge.storage.BindingsComparisonTest.binds;
@@ -15,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Plain {@code .binds} judged against the settled set (storage.md rule 14, <em>Settled with Storage S13b's
- * sources</em>): a twin or the factory file's values remove it, anything else converts it, and one that does not read
- * as a binds file is left alone.
+ * sources</em>): a twin or the factory file's values send it to Leftover User Files as it is, anything else converts it
+ * first. One that does not read as a binds file is never judged ({@link LeftoversTest}).
  */
 class PlainBindsTest {
 
@@ -30,7 +29,6 @@ class PlainBindsTest {
         assertEquals(List.of(new PlainBinds.Tidied("Spare.binds", PlainBinds.Fate.CONVERTED, "Spare.4.3.binds")),
                 plan.tidied());
         assertEquals(binds43("Spare", "Key_Z", "Joy_XAxis", ""), text(plan.converted().get("Spare.4.3.binds")));
-        assertEquals(Set.of("Spare.binds"), plan.remove());
     }
 
     /** CREATE's version rule: a root with no version names the file 4.2. */
@@ -55,7 +53,7 @@ class PlainBindsTest {
     }
 
     @Test
-    void aFileEqualToTheFactoryFileButItsNameIsRemoved() {
+    void aFileEqualToTheFactoryFileButItsNameIsNotConverted() {
         PlainBinds.Plan plan = plan(Map.of("KeyboardMouseOnly.binds", binds("Copied", "Key_A", "Joy_XAxis", "")),
                 Map.of("KeyboardMouseOnly", bytes(binds("KeyboardMouseOnly", "Key_A", "Joy_XAxis", ""))));
 
@@ -74,14 +72,15 @@ class PlainBindsTest {
         assertEquals(1, plan.converted().size());
     }
 
-    /** XML that is not under a {@code <Root>} has no version to name a file by - left alone. */
+    /** XML that is not under a {@code <Root>} has no version to name a file by - not read as a binds file. */
     @Test
-    void xmlThatIsNotABindsFileIsLeftAlone() {
-        PlainBinds.Plan plan = plan(Map.of("Notes.binds", "<Notes><Line>hello</Line></Notes>"), Map.of());
+    void xmlThatIsNotUnderARootDoesNotReadAsABindsFile() {
+        assertFalse(PlainBinds.readsAsBindsFile(bytes("<Notes><Line>hello</Line></Notes>")));
+    }
 
-        assertEquals(List.of(new PlainBinds.Tidied("Notes.binds", PlainBinds.Fate.UNREADABLE, null)), plan.tidied());
-        assertTrue(plan.remove().isEmpty());
-        assertFalse(plan.anything());
+    @Test
+    void noPlainFilesIsNoPlan() {
+        assertSame(PlainBinds.Plan.NONE, PlainBinds.plan(Map.of(), CUSTOM_SET, Map.of()));
     }
 
     /** A name a file name allows but XML does not, and a letter beyond ASCII, as the root's PresetName holds them. */
@@ -97,6 +96,6 @@ class PlainBindsTest {
     private static PlainBinds.Plan plan(Map<String, String> plain, Map<String, byte[]> factory) {
         Map<String, byte[]> files = new TreeMap<>();
         plain.forEach((name, content) -> files.put(name, bytes(content)));
-        return PlainBinds.plan(PlainBinds.Found.of(files), CUSTOM_SET, factory);
+        return PlainBinds.plan(files, CUSTOM_SET, factory);
     }
 }

@@ -55,6 +55,12 @@ public final class FileNames {
     private static final Pattern PLAIN_BINDS_FILE = Pattern.compile("([^.]+)\\.binds");
     /** {@code StartPreset.<N>.start}, N captured; a leftover pre-Odyssey {@code StartPreset.start} is not one. */
     private static final Pattern PRESET_FILE = Pattern.compile("StartPreset\\.(\\d+)\\.start");
+    /**
+     * What may stay in the bindings folder, ignoring case - a binds file, a preset file, the game's loading log (Alan,
+     * 2026-11-08, Storage S13d Q5: so nothing that could be the game's own file is ever moved).
+     */
+    private static final Pattern STAYS_IN_BINDINGS_FOLDER = Pattern.compile(
+            ".+\\.\\d+\\.\\d+\\.binds|StartPreset\\.\\d+\\.start|BindingLoadingErrors\\.log", Pattern.CASE_INSENSITIVE);
 
     /** The most digits a version number is read with; a longer one counts as the largest. */
     private static final int MAX_DIGITS = 6;
@@ -100,6 +106,16 @@ public final class FileNames {
     /** Whether {@code name} is a preset file's name - {@code StartPreset.<N>.start}. */
     public static boolean isPresetFile(String name) {
         return PRESET_FILE.matcher(name).matches();
+    }
+
+    /**
+     * Whether {@code name} belongs in the bindings folder: a {@code <name>.<major>.<minor>.binds}, a
+     * {@code StartPreset.N.start} or {@code BindingLoadingErrors.log}, each matched ignoring case. Anything else there is
+     * moved by the check to Leftover User Files (principles.md <em>Words</em>; storage.md rule 14, <em>Settled
+     * 2026-11-08</em>).
+     */
+    public static boolean staysInBindingsFolder(String name) {
+        return STAYS_IN_BINDINGS_FOLDER.matcher(name).matches();
     }
 
     /** Whether {@code file} is one that goes to the bindings folder: a binds file or a preset file. */

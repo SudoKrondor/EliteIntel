@@ -42,9 +42,10 @@ import java.util.stream.Stream;
  * is found by the same comparison, its rows answered in the same map, and written in the same backup and write: the
  * newer file becomes the working copy's, the older name goes.
  * <p>
- * <strong>Plain binds files are tidied up in the same write</strong> (Storage S13b; {@link PlainBinds}): each one in the
- * bindings folder is found here, compared again before the write as a row is, and judged against the set the write
- * would hold - removed, or converted into a binds file of the set.
+ * <strong>What does not belong in the bindings folder is moved to Leftover User Files in the same write</strong>
+ * (Storage S13d; {@link Leftovers}): found here, compared again before the write as a row is, a plain binds file judged
+ * against the set the write would hold first ({@link PlainBinds}) - and converted into a binds file of the set when it
+ * is neither a twin nor a factory file.
  * <p>
  * <strong>At APPLY</strong> (Storage S8b, S9b) {@link Apply} runs {@link #find()} and {@link #settled} itself, and writes
  * the settled files with the edits on top in its own one write; {@link #settle} is the first click's, with no edits on
@@ -66,10 +67,10 @@ public final class BindingsCheck {
         Factory of(ConfigurationFiles files) throws IOException;
     }
 
-    /** Reads the plain binds files in a bindings folder (Storage S13b). */
+    /** Reads what does not belong in a bindings folder (Storage S13d). */
     @FunctionalInterface
-    interface PlainReader {
-        Map<String, byte[]> read(Path folder) throws IOException;
+    interface LeftoverReader {
+        Leftovers.Found read(Path folder) throws IOException;
     }
 
     /** Frontier's factory binds files by BindName, for a set - what a plain file is judged against (Storage S13b). */
@@ -82,7 +83,7 @@ public final class BindingsCheck {
     @FunctionalInterface
     interface Writer {
         WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
-                          Set<String> removeFromBindings) throws IOException;
+                          Set<String> removeFromBindings, Set<String> moveFromBindings) throws IOException;
     }
 
     /** Where the working copy is - for the reconcile's message naming BindForge's side. */
@@ -106,29 +107,29 @@ public final class BindingsCheck {
      * @param edited      how many rows that differ are not asked about because the edits change them - at APPLY, where
      *                    the edits go on top (Storage S8b); none at the first click, which has no edits
      * @param devices     every reachable installation's device files, judged (Storage S9a, S9b)
-     * @param plain       the plain binds files in the bindings folder (Storage S13b)
+     * @param leftovers   what does not belong in the bindings folder, to move to Leftover User Files (Storage S13d)
      */
     public record Found(ConfigurationFiles workingCopy, Map<String, byte[]> live, Differences differences, int edited,
-                        DeviceCheck.Found devices, PlainBinds.Found plain) {
+                        DeviceCheck.Found devices, Leftovers.Found leftovers) {
         public Found {
             Objects.requireNonNull(workingCopy, "workingCopy");
             live = Map.copyOf(live);
             Objects.requireNonNull(differences, "differences");
             Objects.requireNonNull(devices, "devices");
-            Objects.requireNonNull(plain, "plain");
+            Objects.requireNonNull(leftovers, "leftovers");
         }
 
-        /** Whether nothing differs - no binds or preset file, no installation, and no plain binds file. */
+        /** Whether nothing differs - no binds or preset file, no installation, and nothing to move. */
         public boolean none() {
-            return differences.none() && devices.none() && plain.none();
+            return differences.none() && devices.none() && leftovers.none();
         }
 
         /**
-         * Whether there is anything to ask: a row, an installation the working copy can be put back to, or a plain binds
-         * file to tidy up. One that does not read as a binds file is only named.
+         * Whether there is anything to ask: a row, an installation the working copy can be put back to, or a file to
+         * move to Leftover User Files.
          */
         public boolean anythingToAsk() {
-            return !differences.none() || !devices.asked().isEmpty() || !plain.toTidy().isEmpty();
+            return !differences.none() || !devices.asked().isEmpty() || !leftovers.none();
         }
     }
 
@@ -168,7 +169,7 @@ public final class BindingsCheck {
     private final BackUp backUp;
     private final Apply.Reader deviceFiles;
     private final DeviceCheck.Source devices;
-    private final PlainReader plainReader;
+    private final LeftoverReader leftoverReader;
     private final PlainFactory plainFactory;
 
     /**
@@ -179,15 +180,16 @@ public final class BindingsCheck {
         return new BindingsCheck(Edits.stored(), () -> PlayerSession.getInstance().getBindingsDir(),
                 AppPaths::getWorkingCopyDir,
                 BindingsCheck::readBindingsFolder, BindingsCheck::factoryOf,
-                (files, backUp, leaveAlone, remove) -> WritePath.stored().write(files, backUp, leaveAlone, remove),
+                (files, backUp, leaveAlone, remove, move) -> WritePath.stored().write(files, backUp, leaveAlone, remove,
+                        move),
                 (sources, workingCopy) -> Backups.stored().backUpBeforeChange(Backups.Before.CHECK, sources, workingCopy),
                 installation -> DeviceFiles.read(installation.root()), DeviceCheck.stored(),
-                PlainBinds::read, BindingsCheck::factoryByName);
+                Leftovers::read, BindingsCheck::factoryByName);
     }
 
     BindingsCheck(Edits edits, Supplier<Path> bindingsFolder, WorkingCopyFolder workingCopyFolder, LiveReader liveReader,
                   FactorySource factory, Writer writer, BackUp backUp, Apply.Reader deviceFiles,
-                  DeviceCheck.Source devices, PlainReader plainReader, PlainFactory plainFactory) {
+                  DeviceCheck.Source devices, LeftoverReader leftoverReader, PlainFactory plainFactory) {
         this.edits = edits;
         this.bindingsFolder = bindingsFolder;
         this.workingCopyFolder = workingCopyFolder;
@@ -197,7 +199,7 @@ public final class BindingsCheck {
         this.backUp = backUp;
         this.deviceFiles = deviceFiles;
         this.devices = devices;
-        this.plainReader = plainReader;
+        this.leftoverReader = leftoverReader;
         this.plainFactory = plainFactory;
     }
 
@@ -213,10 +215,11 @@ public final class BindingsCheck {
      */
     public Found find() throws IOException {
         Path folder = bindingsFolder.get();
-        return find(edits.snapshot(), liveReader.read(folder), PlainBinds.Found.of(plainReader.read(folder)));
+        return find(edits.snapshot(), liveReader.read(folder), leftoverReader.read(folder));
     }
 
-    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live, PlainBinds.Found plain) throws IOException {
+    private Found find(Edits.Snapshot snapshot, Map<String, byte[]> live, Leftovers.Found leftovers)
+            throws IOException {
         ConfigurationFiles workingCopy = snapshot.applied();
         Differences all = BindingsComparison.compare(workingCopy.bindings(), live, Factory.NONE);
         // WHY: the factory binds files are read only when something differs - most first clicks find nothing.
@@ -231,11 +234,11 @@ public final class BindingsCheck {
                 + "differ", version.older(), version.newer(), version.newSlots().size(), version.items().size()));
         Differences asked = BindingsComparison.without(all, edited(all, snapshot));
         DeviceCheck.Found judged = devices.find(workingCopy);
-        if (!plain.none()) {
-            log.info("The bindings folder holds plain binds files: {}; of them not read as binds files: {}",
-                    String.join(", ", plain.files().keySet()), plain.unreadable());
+        if (!leftovers.none()) {
+            log.info("The bindings folder holds files that do not belong there: {}; of them plain binds files to judge: "
+                    + "{}", String.join(", ", leftovers.files()), leftovers.plain().keySet());
         }
-        return new Found(workingCopy, live, asked, all.rows().size() - asked.rows().size(), judged, plain);
+        return new Found(workingCopy, live, asked, all.rows().size() - asked.rows().size(), judged, leftovers);
     }
 
     private static List<BindingsComparison.LineItem> edited(Differences found, Edits.Snapshot snapshot) {
@@ -250,37 +253,39 @@ public final class BindingsCheck {
      * @param snapshot the edits and the working copy, read inside the write
      * @param found    what the warning showed - nothing, when it showed none
      * @param answers  the side each of its rows keeps
-     * @throws ChangedMeanwhileException if a row, the working copy, the edits, an installation's device files or a plain
-     *                                   binds file changed since {@code found} - nothing is written
+     * @throws ChangedMeanwhileException if a row, the working copy, the edits, an installation's device files or the
+     *                                   files to move changed since {@code found} - nothing is written
      * @throws IOException               if the bindings folder cannot be read, or a merge cannot be made
      */
     BindingsComparison.Settled settled(Edits.Snapshot snapshot, Found found, Map<String, Side> answers)
             throws IOException {
         Path folder = bindingsFolder.get();
         Map<String, byte[]> live = liveReader.read(folder);
-        PlainBinds.Found plain = PlainBinds.Found.of(plainReader.read(folder));
+        Leftovers.Found leftovers = leftoverReader.read(folder);
         Differences compared = BindingsComparison.compare(snapshot.applied().bindings(), live, Factory.NONE);
         Differences now = BindingsComparison.without(compared, edited(compared, snapshot));
         if (!snapshot.applied().sameAs(found.workingCopy()) || !now.sameRows(found.differences())
-                || !devices.find(snapshot.applied()).sameAs(found.devices()) || !plain.sameAs(found.plain())) {
-            throw new ChangedMeanwhileException(find(snapshot, live, plain));
+                || !devices.find(snapshot.applied()).sameAs(found.devices())
+                || !leftovers.sameAs(found.leftovers())) {
+            throw new ChangedMeanwhileException(find(snapshot, live, leftovers));
         }
         return BindingsComparison.settle(snapshot.applied().bindings(), live, now, answers);
     }
 
     /**
-     * What becomes of each plain binds file {@code found} holds, judged against {@code settled} - the set the write
-     * would hold (Storage S13b): the check's settled files at the first click, with the edits on top at APPLY. Lists the
-     * factory files only when there is a plain file to tidy up.
+     * What the write does with what {@code found} holds that does not belong in the bindings folder (Storage S13d): each
+     * plain binds file judged against {@code settled} - the set the write would hold, the check's settled files at the
+     * first click, with the edits on top at APPLY (Storage S13b) - and everything moved to Leftover User Files. Lists the
+     * factory files only when there is a plain file to judge.
      *
      * @param workingCopy the set the factory files are listed for
      * @throws IOException if the factory files cannot be listed
      */
-    PlainBinds.Plan plainPlan(Found found, ConfigurationFiles workingCopy, Map<String, byte[]> settled)
+    Leftovers.Plan leftoversPlan(Found found, ConfigurationFiles workingCopy, Map<String, byte[]> settled)
             throws IOException {
-        if (found.plain().none()) return PlainBinds.Plan.NONE;
-        Map<String, byte[]> factory = found.plain().toTidy().isEmpty() ? Map.of() : plainFactory.of(workingCopy);
-        return PlainBinds.plan(found.plain(), settled, factory);
+        if (found.leftovers().none()) return Leftovers.Plan.NONE;
+        Map<String, byte[]> factory = found.leftovers().plain().isEmpty() ? Map.of() : plainFactory.of(workingCopy);
+        return Leftovers.plan(found.leftovers(), settled, factory);
     }
 
     /**
@@ -313,8 +318,9 @@ public final class BindingsCheck {
     /**
      * Writes what the user settled on: backs up the live copies and the working copy, saves the settled files as the
      * working copy, and writes them to the bindings folder - removing each live-only file the user kept the working
-     * copy's side of - and the device files settled on to every installation the check read (Storage S9a). One it
-     * could not read at all is left alone, as is one it never read whose device files differ (storage.md rule 1).
+     * copy's side of, and moving what does not belong there to Leftover User Files (Storage S13d) - and the device
+     * files settled on to every installation the check read (Storage S9a). One it could not read at all is left alone,
+     * as is one it never read whose device files differ (storage.md rule 1).
      *
      * @param found   what the warning showed
      * @param answers the side each of its rows keeps, by {@link BindingsComparison.LineItem#id()}
@@ -335,28 +341,29 @@ public final class BindingsCheck {
             ConfigurationFiles workingCopy = snapshot.applied();
             BindingsComparison.Settled settled = settled(snapshot, found, answers);
             // WHY: before the device files, so a reconcile's moves reach a converted file too (Storage S13b).
-            PlainBinds.Plan plain = plainPlan(found, workingCopy, settled.bindings());
+            Leftovers.Plan leftovers = leftoversPlan(found, workingCopy, settled.bindings());
             ConfigurationFiles files = DeviceCheck.withDevices(
-                    workingCopy.withBindings(plain.appliedTo(settled.bindings())), devices);
+                    workingCopy.withBindings(leftovers.plain().appliedTo(settled.bindings())), devices);
             Set<String> remove = new TreeSet<>(settled.removeFromLive());
-            remove.addAll(plain.remove());
+            Set<String> move = leftovers.move();
             DeviceFilesComparison comparison = DeviceFilesComparison.of(workingCopy);
             AtomicReference<Backup> taken = new AtomicReference<>();
             WriteReport report = writer.write(files, sources -> {
                 Backup backup = backUp.take(sources, workingCopy);
                 taken.set(backup);
                 return backup;
-            }, found.devices().leavingAlone(comparison, deviceFiles), remove);
-            PlainBinds.log(plain);
+            }, found.devices().leavingAlone(comparison, deviceFiles), remove, move);
+            Leftovers.log(leftovers);
             log.info("The check settled {} files: {} rows; newer versions taken: {}; removed from the bindings folder: "
-                            + "{}; installations written that differed: {}, their device files {}",
+                            + "{}; moved to Leftover User Files: {}; installations written that differed: {}, their "
+                            + "device files {}",
                     found.differences().files().size(), found.differences().rows().size(), settled.renamed(),
-                    remove, found.devices().asked().size(),
+                    remove, report.bindings().moved(), found.devices().asked().size(),
                     switch (devices) {
                         case DeviceCheck.PutMineBack putBack -> "the working copy's";
                         case DeviceCheck.Reconciled reconciled -> "reconciled";
                     });
-            return new Written(report, taken.get(), plain.tidied());
+            return new Written(report, taken.get(), leftovers);
         });
     }
 
@@ -403,7 +410,7 @@ public final class BindingsCheck {
     /**
      * The factory binds files of every reachable installation, by BindName - the first readable file of each, since every
      * installation runs one game version (Storage S11, Q2). One that cannot be read is logged and left out: a plain file
-     * of its name is then converted rather than removed, which keeps every byte.
+     * of its name is then converted, which keeps every byte.
      */
     private static Map<String, byte[]> factoryByName(ConfigurationFiles files) {
         Apply.Offered offered = Apply.offered(files, BindForgeInstallationsManager.getInstance().findAll());

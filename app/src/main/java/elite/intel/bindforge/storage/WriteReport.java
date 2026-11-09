@@ -33,18 +33,22 @@ public record WriteReport(Place bindings, List<Place> installations) {
      *                   folder
      * @param folder     the bindings folder, or the installation's root
      * @param written    the files written, by name - a file that already held the same bytes is not
-     * @param removed      the {@code .buttonMap}s removed, by name
-     * @param keptReadOnly the {@code .buttonMap}s the set lacks that were kept because the user made them read-only,
-     *                     by name - the screen tells the user how to let them go, in their language (review,
-     *                     2026-10-25)
+     * @param removed      the files removed, by name - {@code .buttonMap}s the set lacks; in the bindings folder a
+     *                     live-only binds file the user kept the working copy's side of, or a renamed one's old name
+     * @param keptReadOnly the files that were kept because the user made them read-only, by name - a {@code .buttonMap}
+     *                     or binds file that would have been removed, or a file that would have been moved. The
+     *                     screen tells the user how to let them go, in their language (review, 2026-10-25)
      * @param failures     what could not be done, one line each - English, for the log and for support, built from the
      *                     system's own messages. A screen says that a place was not updated in its own words, and may
      *                     show these lines as the detail
      * @param differs      whether the installation was left alone because its device files differ from the working
      *                     copy - nothing was written to it, until it is reconciled (Alan, 2026-10-26)
+     * @param moved        the files moved from the bindings folder to Leftover User Files, by name (Storage S13d)
+     * @param movedTo      the folder they were moved to - {@code null} when none was
      */
     public record Place(Kind kind, String storefront, Path folder, List<String> written, List<String> removed,
-                        List<String> keptReadOnly, List<String> failures, boolean differs) {
+                        List<String> keptReadOnly, List<String> failures, boolean differs, List<String> moved,
+                        Path movedTo) {
         public Place {
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(folder, "folder");
@@ -54,13 +58,23 @@ public record WriteReport(Place bindings, List<Place> installations) {
                 throw new IllegalArgumentException("an installation has a storefront, and the bindings folder none");
             }
             if (differs && !installation) throw new IllegalArgumentException("only an installation can differ");
+            if (moved.isEmpty() != (movedTo == null)) {
+                throw new IllegalArgumentException("files moved, and only then, name where they went");
+            }
             written = List.copyOf(written);
             removed = List.copyOf(removed);
             keptReadOnly = List.copyOf(keptReadOnly);
             failures = List.copyOf(failures);
+            moved = List.copyOf(moved);
         }
 
-        /** A place that was written to, or could not be. */
+        /** A place that was written to, or left alone, with nothing moved. */
+        public Place(Kind kind, String storefront, Path folder, List<String> written, List<String> removed,
+                     List<String> keptReadOnly, List<String> failures, boolean differs) {
+            this(kind, storefront, folder, written, removed, keptReadOnly, failures, differs, List.of(), null);
+        }
+
+        /** A place that was written to, or could not be, with nothing moved. */
         public Place(Kind kind, String storefront, Path folder, List<String> written, List<String> removed,
                      List<String> keptReadOnly, List<String> failures) {
             this(kind, storefront, folder, written, removed, keptReadOnly, failures, false);

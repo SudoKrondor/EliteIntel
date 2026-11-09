@@ -6,11 +6,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Plain {@code .binds} in the bindings folder (storage.md rule 14, <em>Settled with Storage S13b's sources</em>): a
@@ -18,17 +15,18 @@ import java.util.stream.Stream;
  * It confuses which file a preset line loads, so it never stays in the bindings folder, a backup or the working copy.
  * <p>
  * <strong>Judged against the settled set</strong> - the working copy after the check's answers, with the edits on top at
- * APPLY - each one in name order:
+ * APPLY - each one that reads as a binds file, in name order:
  * <ul>
- *     <li>a binds file of the same BindName is there, ignoring case - it is removed ({@link Fate#TWIN});</li>
+ *     <li>a binds file of the same BindName is there, ignoring case ({@link Fate#TWIN});</li>
  *     <li>else it holds the values of the factory file of that name, the root's {@code PresetName} apart, as the reset
- *     test judges - removed, and the preset line loads the factory file ({@link Fate#FACTORY});</li>
+ *     test judges - the preset line loads the factory file ({@link Fate#FACTORY});</li>
  *     <li>else it is <strong>converted</strong>: {@code <name>.<root version, else 4.2>.binds}, every byte kept but the
  *     root's {@code PresetName}, set to the name ({@link Create#fileName}, {@link Create#withPresetName}), into the
- *     working copy and the bindings folder, and the plain file removed ({@link Fate#CONVERTED});</li>
- *     <li>one that does not read as a binds file is left alone and named ({@link Fate#UNREADABLE}).</li>
+ *     working copy and the bindings folder ({@link Fate#CONVERTED}).</li>
  * </ul>
- * Never backed up: it is not one of the user's files. Pure, but for {@link #read}.
+ * <strong>Whichever it is, the plain file then goes to Leftover User Files</strong>, never deleted (Alan, 2026-11-08,
+ * Storage S13d; {@link Leftovers}). One that does not read as a binds file is moved there unjudged. Never backed up: it
+ * is not one of the user's files, and the move keeps it. Pure.
  */
 public final class PlainBinds {
 
@@ -36,81 +34,35 @@ public final class PlainBinds {
 
     private static final Pattern ROOT_START = Pattern.compile("<Root(?=[\\s/>])");
 
-    /** What happens to one plain file. */
+    /** Why one plain file is moved, and whether a binds file was made of it first. */
     public enum Fate {
-        /** Removed: a binds file of its BindName is in the set. */
+        /** A binds file of its BindName is in the set. */
         TWIN,
-        /** Removed: it holds the factory file of its name's values. */
+        /** It holds the factory file of its name's values. */
         FACTORY,
-        /** Made a binds file of the set, and the plain file removed. */
-        CONVERTED,
-        /** Left alone: it does not read as a binds file. */
-        UNREADABLE
+        /** Made a binds file of the set first. */
+        CONVERTED
     }
 
     /**
-     * One plain file, and what happens to it.
+     * One plain file, and why it is moved.
      *
      * @param file the plain file's name, as found
-     * @param fate what happens to it
-     * @param to   the binds file it is a twin of, or converted to; the BindName for {@link Fate#FACTORY}; {@code null}
-     *             for {@link Fate#UNREADABLE}
+     * @param fate why it is moved
+     * @param to   the binds file it is a twin of, or converted to; the BindName for {@link Fate#FACTORY}
      */
     public record Tidied(String file, Fate fate, String to) {
         public Tidied {
             Objects.requireNonNull(file, "file");
             Objects.requireNonNull(fate, "fate");
-        }
-
-        /** Whether the plain file goes from the bindings folder. */
-        public boolean removed() {
-            return fate != Fate.UNREADABLE;
+            Objects.requireNonNull(to, "to");
         }
     }
 
     /**
-     * The plain files the check found in the bindings folder.
+     * What judging the plain files does to the settled set.
      *
-     * @param files      each one's bytes, by name as found
-     * @param unreadable the names of those that do not read as a binds file, in name order
-     */
-    public record Found(Map<String, byte[]> files, List<String> unreadable) {
-        public static final Found NONE = new Found(Map.of(), List.of());
-
-        public Found {
-            files = Collections.unmodifiableMap(new TreeMap<>(files));
-            unreadable = List.copyOf(unreadable);
-        }
-
-        /** {@code files}, each judged readable or not. */
-        static Found of(Map<String, byte[]> files) {
-            List<String> unreadable = new TreeMap<>(files).entrySet().stream()
-                    .filter(file -> !readsAsBindsFile(file.getValue()))
-                    .map(Map.Entry::getKey).toList();
-            return new Found(files, unreadable);
-        }
-
-        public boolean none() {
-            return files.isEmpty();
-        }
-
-        /** The plain files that read as binds files - the ones to tidy up - in name order. */
-        public List<String> toTidy() {
-            return files.keySet().stream().filter(name -> !unreadable.contains(name)).toList();
-        }
-
-        /** Whether {@code other} holds the same files, byte for byte. */
-        boolean sameAs(Found other) {
-            if (!files.keySet().equals(other.files.keySet())) return false;
-            return files.entrySet().stream().allMatch(file -> Arrays.equals(file.getValue(),
-                    other.files.get(file.getKey())));
-        }
-    }
-
-    /**
-     * What tidying up does to the settled set.
-     *
-     * @param tidied    each plain file, in name order, and what happens to it
+     * @param tidied    each plain file, in name order, and why it is moved
      * @param converted the binds files the converted ones become, by name - added to the set
      */
     public record Plan(List<Tidied> tidied, Map<String, byte[]> converted) {
@@ -119,18 +71,6 @@ public final class PlainBinds {
         public Plan {
             tidied = List.copyOf(tidied);
             converted = Collections.unmodifiableMap(new TreeMap<>(converted));
-        }
-
-        /** The plain files to remove from the bindings folder. */
-        public Set<String> remove() {
-            Set<String> remove = new TreeSet<>();
-            tidied.stream().filter(Tidied::removed).map(Tidied::file).forEach(remove::add);
-            return remove;
-        }
-
-        /** Whether anything is removed or converted. */
-        public boolean anything() {
-            return tidied.stream().anyMatch(Tidied::removed);
         }
 
         /** {@code bindings} with the converted files added. */
@@ -145,44 +85,22 @@ public final class PlainBinds {
     }
 
     /**
-     * The plain binds files in a bindings folder, by name; none when it is not there - the check's read of the binds and
-     * preset files says so.
-     */
-    static Map<String, byte[]> read(Path folder) throws IOException {
-        if (!Files.isDirectory(folder)) return Map.of();
-        List<Path> found;
-        try (Stream<Path> listing = Files.list(folder)) {
-            found = listing.filter(Files::isRegularFile)
-                    .filter(file -> FileNames.isPlainBindsFile(file.getFileName().toString())).toList();
-        }
-        Map<String, byte[]> files = new TreeMap<>();
-        for (Path file : found) {
-            files.put(file.getFileName().toString(), Files.readAllBytes(file));
-        }
-        return files;
-    }
-
-    /**
-     * What becomes of each plain file, against the settled set.
+     * Why each plain file is moved, against the settled set, and the binds files the converted ones become.
      *
-     * @param found    the plain files the check found
+     * @param plain    the plain files that read as binds files ({@link #readsAsBindsFile}), by name as found
      * @param settled  the binds and preset files the write would hold - with the edits on top at APPLY
      * @param factory  Frontier's factory binds files, by BindName - looked up ignoring case
      */
-    static Plan plan(Found found, Map<String, byte[]> settled, Map<String, byte[]> factory) {
-        if (found.none()) return Plan.NONE;
+    static Plan plan(Map<String, byte[]> plain, Map<String, byte[]> settled, Map<String, byte[]> factory) {
+        if (plain.isEmpty()) return Plan.NONE;
         Map<String, byte[]> factoryByName = new TreeMap<>(FileNames.ONE_FILE);
         factory.forEach(factoryByName::putIfAbsent);
         List<String> bindsFiles = new ArrayList<>(settled.keySet().stream().filter(FileNames::isBindsFile).toList());
         List<Tidied> tidied = new ArrayList<>();
         Map<String, byte[]> converted = new TreeMap<>();
-        for (Map.Entry<String, byte[]> file : found.files().entrySet()) {
+        for (Map.Entry<String, byte[]> file : new TreeMap<>(plain).entrySet()) {
             String name = file.getKey();
             String bindName = FileNames.plainBindName(name).orElseThrow();
-            if (found.unreadable().contains(name)) {
-                tidied.add(new Tidied(name, Fate.UNREADABLE, null));
-                continue;
-            }
             BindsElements elements = BindsElements.of(file.getValue()).orElseThrow();
             // WHY: a converted one counts too, so a second spelling of it - only where the file system heeds case -
             // is a twin of the first, not a second conversion.
@@ -199,16 +117,19 @@ public final class PlainBinds {
                 tidied.add(new Tidied(name, Fate.FACTORY, bindName));
                 continue;
             }
+            String newName;
+            byte[] content;
             try {
-                String newName = Create.fileName(bindName, file.getValue());
-                converted.put(newName, Create.withPresetName(file.getValue(), presetNameText(bindName)));
-                bindsFiles.add(newName);
-                tidied.add(new Tidied(name, Fate.CONVERTED, newName));
+                newName = Create.fileName(bindName, file.getValue());
+                content = Create.withPresetName(file.getValue(), presetNameText(bindName));
             } catch (IOException e) {
-                // WHY: it reads as XML but has no <Root> to name - not a binds file the game would load either.
-                log.warn("The plain binds file {} cannot be converted, so it is left alone: {}", name, e.getMessage());
-                tidied.add(new Tidied(name, Fate.UNREADABLE, null));
+                // WHY: fails fast - readsAsBindsFile found a <Root> and BindsElements parsed it, so this is a bug, not
+                // the user's file (Storage S13d, from the S13aR-S13b review's finding 4).
+                throw new IllegalStateException("a plain binds file that reads as one has no <Root>: " + name, e);
             }
+            converted.put(newName, content);
+            bindsFiles.add(newName);
+            tidied.add(new Tidied(name, Fate.CONVERTED, newName));
         }
         return new Plan(tidied, converted);
     }
@@ -222,16 +143,16 @@ public final class PlainBinds {
                 && ROOT_START.matcher(new String(content, StandardCharsets.ISO_8859_1)).find();
     }
 
-    /** Logs what tidying up did - each file removed or converted, and each left alone (Storage S13b, D4). */
+    /** Logs why each plain file is moved, and what each converted one became (Storage S13b, D4; S13d). */
     static void log(Plan plan) {
         for (Tidied file : plan.tidied()) {
             switch (file.fate()) {
-                case TWIN -> log.info("Removed the plain binds file {}: {} is in the set", file.file(), file.to());
-                case FACTORY -> log.info("Removed the plain binds file {}: it holds the factory file {}", file.file(),
-                        file.to());
-                case CONVERTED -> log.info("Converted the plain binds file {} to {}", file.file(), file.to());
-                case UNREADABLE -> log.warn("Left the plain binds file {} alone: it does not read as a binds file",
-                        file.file());
+                case TWIN -> log.info("The plain binds file {} goes to Leftover User Files: {} is in the set",
+                        file.file(), file.to());
+                case FACTORY -> log.info("The plain binds file {} goes to Leftover User Files: it holds the factory "
+                        + "file {}", file.file(), file.to());
+                case CONVERTED -> log.info("Converted the plain binds file {} to {}; it goes to Leftover User Files",
+                        file.file(), file.to());
             }
         }
     }

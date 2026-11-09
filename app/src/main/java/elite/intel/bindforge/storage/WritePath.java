@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,19 +49,28 @@ public final class WritePath {
     private final WorkingCopy workingCopy;
     private final Supplier<BackupSources> sources;
     private final Consumer<ConfigurationFiles> written;
+    private final LiveCopies.LeftoverFolder leftovers;
 
     /**
      * The stored working copy, and the bindings folder and installations APPLY finds. Each set written is handed to
      * {@link Edits}, which then starts from it and drops the edits on screen (Storage S4a).
      */
     public static WritePath stored() throws IOException {
-        return new WritePath(WorkingCopy.stored(), BackupSources::rescan, Edits.onWritten());
+        return new WritePath(WorkingCopy.stored(), BackupSources::rescan, Edits.onWritten(),
+                AppPaths::getLeftoverUserFilesDir);
     }
 
+    /** A write path that moves nothing to Leftover User Files - for a test. */
     WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources, Consumer<ConfigurationFiles> written) {
+        this(workingCopy, sources, written, LiveCopies.LeftoverFolder.NONE);
+    }
+
+    WritePath(WorkingCopy workingCopy, Supplier<BackupSources> sources, Consumer<ConfigurationFiles> written,
+              LiveCopies.LeftoverFolder leftovers) {
         this.workingCopy = workingCopy;
         this.sources = sources;
         this.written = written;
+        this.leftovers = leftovers;
     }
 
     /**
@@ -78,7 +88,7 @@ public final class WritePath {
      */
     public WriteReport write(ConfigurationFiles files, BackupSources places, BackUpFirst backUp) throws IOException {
         synchronized (WRITING) {
-            return write(files, places, backUp, LiveCopies.LeaveAlone.NONE, Set.of());
+            return write(files, places, backUp, LiveCopies.LeaveAlone.NONE, Set.of(), Set.of());
         }
     }
 
@@ -87,25 +97,28 @@ public final class WritePath {
      * {@link #write(ConfigurationFiles, BackupSources, BackUpFirst)}, leaving alone each installation {@code leaveAlone}
      * picks - asked just before that installation would be written, after the backup and the working copy - and
      * removing from the bindings folder the binds and preset files named: a live-only file the user kept the working
-     * copy's side of (Alan, 2026-10-30, Storage S8), after the backup.
+     * copy's side of (Alan, 2026-10-30, Storage S8), after the backup - and moving to Leftover User Files the files
+     * named that do not belong in the bindings folder (Storage S13d).
      */
     WriteReport write(ConfigurationFiles files, BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
-                      Set<String> removeFromBindings) throws IOException {
+                      Set<String> removeFromBindings, Set<String> moveFromBindings) throws IOException {
         synchronized (WRITING) {
             // WHY: found once, for the backup and the write alike. Found twice, an installation found only the second
             // time - a drive plugged in between - would be written with no backup of it (principle 3; review,
             // 2026-10-24).
-            return write(files, sources.get(), backUp, leaveAlone, removeFromBindings);
+            return write(files, sources.get(), backUp, leaveAlone, removeFromBindings, moveFromBindings);
         }
     }
 
     /** Holds {@code WRITING}. */
     private WriteReport write(ConfigurationFiles files, BackupSources places, BackUpFirst backUp,
-                              LiveCopies.LeaveAlone leaveAlone, Set<String> removeFromBindings) throws IOException {
+                              LiveCopies.LeaveAlone leaveAlone, Set<String> removeFromBindings,
+                              Set<String> moveFromBindings) throws IOException {
         Backup backup = backUp.take(places);
         workingCopy.write(files);
         written.accept(files);
-        WriteReport report = new LiveCopies(places).write(files, leaveAlone, removeFromBindings);
+        WriteReport report = new LiveCopies(places, LiveCopies.Mover.FILES, leftovers)
+                .write(files, leaveAlone, removeFromBindings, moveFromBindings);
         log(backup, report);
         return report;
     }

@@ -1,6 +1,5 @@
 package elite.intel.bindforge.storage;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -11,28 +10,28 @@ import java.util.Objects;
  * @param setUpAskedAgain whether the write should have marked first-time startup complete and could not, so the next
  *                        click on the BindForge tab offers it again - the user is told (reviews, 2026-10-25 and
  *                        2026-10-27). Always false for APPLY, which never touches the flag
- * @param plain           each plain binds file the check tidied up, and how (Storage S13b) - none for first-time
- *                        startup and RESTORE
+ * @param leftovers       what the check moved from the bindings folder to Leftover User Files, and why (Storage
+ *                        S13b, S13d) - what was actually moved is in the report; none for first-time startup and RESTORE
  */
-public record Written(WriteReport report, Backup backup, boolean setUpAskedAgain, List<PlainBinds.Tidied> plain) {
+public record Written(WriteReport report, Backup backup, boolean setUpAskedAgain, Leftovers.Plan leftovers) {
     public Written {
         Objects.requireNonNull(report, "report");
         Objects.requireNonNull(backup, "backup");
-        plain = List.copyOf(plain);
+        Objects.requireNonNull(leftovers, "leftovers");
     }
 
-    /** A write that tidied up no plain binds file - first-time startup's and RESTORE's. */
+    /** A write that moved nothing - first-time startup's and RESTORE's. */
     public Written(WriteReport report, Backup backup, boolean setUpAskedAgain) {
-        this(report, backup, setUpAskedAgain, List.of());
+        this(report, backup, setUpAskedAgain, Leftovers.Plan.NONE);
     }
 
     /** A write that left first-time startup as it was - the check's and APPLY's. */
-    public Written(WriteReport report, Backup backup, List<PlainBinds.Tidied> plain) {
-        this(report, backup, false, plain);
+    public Written(WriteReport report, Backup backup, Leftovers.Plan leftovers) {
+        this(report, backup, false, leftovers);
     }
 
-    /** A write that left first-time startup as it was, and tidied up no plain binds file. */
+    /** A write that left first-time startup as it was, and moved nothing. */
     public Written(WriteReport report, Backup backup) {
-        this(report, backup, false, List.of());
+        this(report, backup, false, Leftovers.Plan.NONE);
     }
 }

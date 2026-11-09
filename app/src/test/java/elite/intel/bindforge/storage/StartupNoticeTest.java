@@ -8,8 +8,10 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The notice when Elite-Intel starts (Storage S14c): BindForge's lines in a fixed order - read only, changed outside,
- * a binds file named like a factory one, a plain binds file (Storage S13b) - with <em>changed outside</em> and the plain
- * files not said while read only, and missing installations named by their store alone.
+ * a binds file named like a factory one, the files the check will move to Leftover User Files (Storage S13b, S13d) -
+ * with <em>changed outside</em> and the files to move not said while read only, and missing installations named by
+ * their store alone.
  */
 class StartupNoticeTest {
 
@@ -72,22 +75,22 @@ class StartupNoticeTest {
         assertEquals(List.of(new StartupNotice.Line.ChangedOutside()), notice.lines());
     }
 
-    // ---- plain binds files (Storage S13b)
+    // ---- files the check will move (Storage S13b, S13d)
 
     /** The fourth line, after the factory-name line. */
     @Test
-    void aPlainBindsFileIsTheLastLine() {
+    void filesToMoveAreTheLastLine() {
         StartupNotice notice = new StartupNotice(List::of, () -> true, () -> List.of("KeyboardMouseOnly"),
                 () -> List.of("Custom.binds"));
 
         assertEquals(List.of(new StartupNotice.Line.ChangedOutside(),
                 new StartupNotice.Line.NamedLikeFactory(List.of("KeyboardMouseOnly")),
-                new StartupNotice.Line.PlainFiles(List.of("Custom.binds"))), notice.lines());
+                new StartupNotice.Line.ToMove(List.of("Custom.binds"))), notice.lines());
     }
 
-    /** Alan, 2026-11-07, Q5: the check that tidies it up is off while read only, so it is not said then. */
+    /** Alan, 2026-11-07, Q5: the check that moves them is off while read only, so they are not said then. */
     @Test
-    void aPlainBindsFileIsNotSaidWhileReadOnly() {
+    void filesToMoveAreNotSaidWhileReadOnly() {
         StartupNotice notice = new StartupNotice(() -> List.of(STEAM), () -> false, List::of, () -> {
             throw new AssertionError("the bindings folder is not looked at while read only");
         });
@@ -96,11 +99,28 @@ class StartupNoticeTest {
     }
 
     @Test
-    void onePlainFileAndSeveralAreSaidApart() {
-        assertEquals(english(StartupNotice.PLAIN_FILE_KEY, "Custom.binds"),
-                StartupNotice.text(new StartupNotice.Line.PlainFiles(List.of("Custom.binds"))));
-        assertEquals(english(StartupNotice.PLAIN_FILE_MANY_KEY, "Custom.binds, Spare.binds"),
-                StartupNotice.text(new StartupNotice.Line.PlainFiles(List.of("Custom.binds", "Spare.binds"))));
+    void oneFileToMoveAndSeveralAreSaidApart() {
+        assertEquals(english(StartupNotice.TO_MOVE_KEY, "Custom.binds"),
+                StartupNotice.text(new StartupNotice.Line.ToMove(List.of("Custom.binds"))));
+        assertEquals(english(StartupNotice.TO_MOVE_MANY_KEY, "Custom.binds, notes.txt"),
+                StartupNotice.text(new StartupNotice.Line.ToMove(List.of("Custom.binds", "notes.txt"))));
+    }
+
+    /**
+     * Only the files the check will move are named: a read-only one stays, and is named once in the check's report, not
+     * at every start (Alan, 2026-11-08, from the S13aR-S13b review's D1).
+     */
+    @Test
+    void aReadOnlyFileIsNotNamed(@TempDir Path folder) throws IOException {
+        Files.writeString(folder.resolve("notes.txt"), "a");
+        Path kept = folder.resolve("Spare.binds");
+        Files.writeString(kept, "b");
+        ReadOnlyFlag.set(kept, true);
+        try {
+            assertEquals(List.of("notes.txt"), StartupNotice.movable(folder, List.of("Spare.binds", "notes.txt")));
+        } finally {
+            ReadOnlyFlag.set(kept, false);
+        }
     }
 
     @Test

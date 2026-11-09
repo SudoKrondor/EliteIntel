@@ -11,6 +11,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -39,7 +41,10 @@ import java.util.stream.Stream;
  *     {@code DeviceMappings.xml} included.</li>
  * </ul>
  * A {@code .binds} the set lacks is left in the bindings folder - removing an old-named one is a rename's (Storage
- * S12). Only {@link WritePath} calls this, after the backup. Touches the disk - not for the EDT.
+ * S12). <strong>What does not belong in the bindings folder is moved, never deleted</strong>, when the check names it
+ * ({@link Leftovers}; Storage S13d): into a date-stamped folder of its own in Leftover User Files, after the write, a
+ * read-only one kept and reported. Only {@link WritePath} calls this, after the backup. Touches the disk - not for the
+ * EDT.
  */
 final class LiveCopies {
 
@@ -49,6 +54,12 @@ final class LiveCopies {
 
     /** A failure line: a .buttonMap the set lacks was kept because its read-only flag could not be read. */
     static final String NOT_REMOVED_FLAG_UNREADABLE = "not removed: whether it is read-only could not be read";
+
+    /** A failure line: a file was not moved to Leftover User Files because its read-only flag could not be read. */
+    static final String NOT_MOVED_FLAG_UNREADABLE = "not moved: whether it is read-only could not be read";
+
+    /** The date stamp of a folder in Leftover User Files - a backup's (Storage S13d). */
+    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
     /**
      * A failure line: a file held back because an earlier file in the bindings folder could not be written.
@@ -80,27 +91,53 @@ final class LiveCopies {
         void move(Path from, Path to) throws IOException;
     }
 
+    /** Leftover User Files - asked only when there is a file to move ({@code AppPaths.getLeftoverUserFilesDir}). */
+    @FunctionalInterface
+    interface LeftoverFolder {
+        /** For a write that moves nothing. */
+        LeftoverFolder NONE = () -> {
+            throw new IOException("no Leftover User Files folder was given");
+        };
+
+        Path get() throws IOException;
+    }
+
     private final BackupSources sources;
     private final Mover mover;
+    private final LeftoverFolder leftovers;
 
     LiveCopies(BackupSources sources) {
-        this(sources, Mover.FILES);
+        this(sources, Mover.FILES, LeftoverFolder.NONE);
     }
 
     LiveCopies(BackupSources sources, Mover mover) {
+        this(sources, mover, LeftoverFolder.NONE);
+    }
+
+    LiveCopies(BackupSources sources, Mover mover, LeftoverFolder leftovers) {
         this.sources = sources;
         this.mover = mover;
+        this.leftovers = leftovers;
     }
 
     /**
      * The bindings folder first, then each installation in the stored list's order, leaving alone the installations
      * {@code leaveAlone} picks - asked only of one that is there; a missing one is reported as not found. Removes from
      * the bindings folder the binds and preset files named - the check's, for a live-only file the user kept the
-     * working copy's side of (Alan, 2026-10-30, Storage S8), and for a plain binds file it tidied up (Storage S13b); a
-     * read-only one is kept, and reported, as a {@code .buttonMap} is.
+     * working copy's side of (Alan, 2026-10-30, Storage S8), and a renamed one's old name; a read-only one is kept, and
+     * reported, as a {@code .buttonMap} is.
      */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings) {
-        Place bindings = writeBindings(files, removeFromBindings);
+        return write(files, leaveAlone, removeFromBindings, Set.of());
+    }
+
+    /**
+     * {@link #write(ConfigurationFiles, LeaveAlone, Set)}, then moving {@code moveFromBindings} - files that do not
+     * belong in the bindings folder - to Leftover User Files (Storage S13d).
+     */
+    WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings,
+                      Set<String> moveFromBindings) {
+        Place bindings = writeBindings(files, removeFromBindings, moveFromBindings);
         List<Place> installations = sources.installations().stream()
                 .map(installation -> {
                     boolean present = installation.reachable();
@@ -114,7 +151,7 @@ final class LiveCopies {
         return new WriteReport(bindings, installations);
     }
 
-    private Place writeBindings(ConfigurationFiles files, Set<String> remove) {
+    private Place writeBindings(ConfigurationFiles files, Set<String> remove, Set<String> move) {
         Path folder = sources.bindingsFolder();
         Writing writing = new Writing(mover);
         // WHY: not created. The game makes this folder; one that is not there is a wrong setting or an unplugged
@@ -137,17 +174,23 @@ final class LiveCopies {
         }
         if (!writing.failures.isEmpty()) {
             writing.heldBack(remove);
+            // WHY: a converted plain file's binds file may be the one that failed, so the plain file stays too.
+            writing.heldBack(move);
             return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
         }
         for (String name : remove) {
-            // WHY: a plain binds file too - the check tidies it up (Storage S13b).
-            if (!FileNames.plain(name)
-                    || !(FileNames.isBindingsFile(Path.of(name)) || FileNames.isPlainBindsFile(name))) {
+            if (!FileNames.plain(name) || !FileNames.isBindingsFile(Path.of(name))) {
                 throw new IllegalArgumentException("not a binds or preset file name: " + name);
             }
             // WHY: a name the set holds in any spelling is the file just written - the edit wins (Storage S13a).
             if (files.bindings().keySet().stream().anyMatch(written -> FileNames.sameFile(written, name))) continue;
             writing.spellingsIn(folder, name).forEach(spelling -> writing.remove(folder.resolve(spelling)));
+        }
+        for (String name : move) {
+            if (!FileNames.plain(name) || FileNames.staysInBindingsFolder(name)) {
+                throw new IllegalArgumentException("not a file to move from the bindings folder: " + name);
+            }
+            writing.moveAway(folder.resolve(name), leftovers);
         }
         return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
     }
@@ -182,6 +225,8 @@ final class LiveCopies {
         final List<String> removed = new ArrayList<>();
         final List<String> keptReadOnly = new ArrayList<>();
         final List<String> failures = new ArrayList<>();
+        final List<String> moved = new ArrayList<>();
+        Path movedTo;
 
         Writing(Mover mover) {
             this.mover = mover;
@@ -344,27 +389,55 @@ final class LiveCopies {
 
         /** Removes one binds or preset file; a read-only one is kept and reported, never unprotected to delete it. */
         void remove(Path file) {
-            if (!Files.isRegularFile(file)) return;
-            String name = file.getFileName().toString();
-            boolean readOnly;
-            try {
-                readOnly = ReadOnlyFlag.isSet(file);
-            } catch (IOException e) {
-                failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " (" + reason(e) + ")");
-                log.warn("Did not remove {}: whether it is read-only could not be read", file, e);
-                return;
-            }
-            if (readOnly) {
-                keptReadOnly.add(name);
-                log.warn("Did not remove {}: it is read-only", file);
-                return;
-            }
+            if (!Files.isRegularFile(file) || kept(file, NOT_REMOVED_FLAG_UNREADABLE)) return;
             try {
                 Files.delete(file);
-                removed.add(name);
+                removed.add(file.getFileName().toString());
             } catch (IOException e) {
                 fail(file, e);
             }
+        }
+
+        /**
+         * Moves one file into this write's folder in Leftover User Files, made at the first move and stamped as a backup
+         * is (Storage S13d). A read-only one is kept and reported, as a removal is (Q6): Windows would let it move, but
+         * the user protected it. One that cannot be moved stays where it is, reported.
+         */
+        void moveAway(Path file, LeftoverFolder leftovers) {
+            if (!Files.isRegularFile(file) || kept(file, NOT_MOVED_FLAG_UNREADABLE)) return;
+            String name = file.getFileName().toString();
+            try {
+                if (movedTo == null) {
+                    Path folder = uniqueFolder(leftovers.get(), LocalDateTime.now().withNano(0).format(STAMP));
+                    Files.createDirectories(folder);
+                    movedTo = folder;
+                }
+                // WHY: Files.move copies and deletes when the two folders are on different drives (Storage S13d, Q7).
+                mover.move(file, movedTo.resolve(name));
+                moved.add(name);
+                log.info("Moved {} from the bindings folder to {}", name, movedTo);
+            } catch (IOException e) {
+                failures.add(name + ": not moved to Leftover User Files: " + reason(e));
+                log.warn("Could not move {} to Leftover User Files", file, e);
+            }
+        }
+
+        /**
+         * Whether {@code file} is kept because the user made it read-only - or because whether they did cannot be read,
+         * reported with {@code notDone}. A protected file is never unprotected to take it away.
+         */
+        private boolean kept(Path file, String notDone) {
+            String name = file.getFileName().toString();
+            try {
+                if (!ReadOnlyFlag.isSet(file)) return false;
+            } catch (IOException e) {
+                failures.add(name + ": " + notDone + " (" + reason(e) + ")");
+                log.warn("Left {} where it is: whether it is read-only could not be read", file, e);
+                return true;
+            }
+            keptReadOnly.add(name);
+            log.warn("Left {} where it is: it is read-only", file);
+            return true;
         }
 
         void fail(Path file, IOException e) {
@@ -373,8 +446,19 @@ final class LiveCopies {
         }
 
         Place place(WriteReport.Kind kind, String storefront, Path folder) {
-            return new Place(kind, storefront, folder, written, removed, keptReadOnly, failures);
+            // WHY: the folder is made at the first move, so one whose move failed is no place anything went.
+            return new Place(kind, storefront, folder, written, removed, keptReadOnly, failures, false, moved,
+                    moved.isEmpty() ? null : movedTo);
         }
+    }
+
+    /** {@code stamp} in {@code root}, or {@code stamp-2}, {@code -3} and on when two writes come in one second. */
+    private static Path uniqueFolder(Path root, String stamp) {
+        Path candidate = root.resolve(stamp);
+        for (int n = 2; Files.exists(candidate); n++) {
+            candidate = root.resolve(stamp + "-" + n);
+        }
+        return candidate;
     }
 
     private static String deviceNameOf(String buttonMapName) {

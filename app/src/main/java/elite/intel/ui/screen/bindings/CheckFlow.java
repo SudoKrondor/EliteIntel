@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -55,9 +56,9 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  *       the reconcile's own side is the user's files with the edits not applied (Alan, 2026-10-31). An installation
  *       that cannot be read at all asks nothing: APPLY writes, leaves it alone, and the report names it.</li>
  * </ul>
- * <strong>Plain binds files are named in the same warning</strong> (Storage S13b): any choice tidies them up, and a
- * warning holding nothing else offers Tidy up and Not now - at APPLY too, where Not now cancels it (Alan, 2026-11-07,
- * Q2-Q3). One that does not read as a binds file is only named.
+ * <strong>Files that do not belong in the bindings folder are named in the same warning</strong> (Storage S13b, S13d):
+ * any choice moves them to Leftover User Files, and a warning holding nothing else offers Tidy up and Not now - at APPLY
+ * too, where Not now cancels it (Alan, 2026-11-07, Q2-Q3; 2026-11-08, S13d Q3).
  * <p>
  * <strong>A newer version of one of the user's binds files is asked first</strong>, at either moment (Storage S10): on
  * its own, before the warning - Approve when every binding carried over, else Reconcile, its lines one by one - and
@@ -212,8 +213,7 @@ final class CheckFlow {
             return null;
         }
         if (!found.anythingToAsk()) {
-            // WHY: only installations it could not read at all, or files that do not read as binds files - named, and
-            // left as they are (Alan, 2026-10-31; Storage S13b).
+            // WHY: only installations it could not read at all - named, and left as they are (Alan, 2026-10-31).
             return () -> tell(unreadableOnly(found), then);
         }
         return () -> begin(checked, Map.of(), false, then);
@@ -274,7 +274,7 @@ final class CheckFlow {
         }
         Checked asked = checked.withNewer(newer);
         if (found.differences().files().isEmpty() && found.devices().asked().isEmpty()
-                && found.plain().toTidy().isEmpty()) {
+                && found.leftovers().none()) {
             write(found, asked.with(Map.of()), DeviceCheck.Answer.PUT_MINE_BACK, false, then);
         } else if (merging) {
             merge(asked, given, then);
@@ -312,7 +312,7 @@ final class CheckFlow {
         BindingsCheck.Found found = checked.found();
         // WHY: with no binds row and no installation's files to take - only a missing or unparseable file - putting
         // the working copy back is all there is to offer (Alan, 2026-10-31).
-        CheckWarningDialog.Offer offer = onlyPlain(found) ? CheckWarningDialog.Offer.TIDY_UP
+        CheckWarningDialog.Offer offer = onlyLeftovers(found) ? CheckWarningDialog.Offer.TIDY_UP
                 : !found.differences().files().isEmpty() || checked.anySide() ? CheckWarningDialog.Offer.EVERY_CHOICE
                 : CheckWarningDialog.Offer.PUT_MINE_BACK;
         switch (CheckWarningDialog.show(parent, warningText(found, atApply), offer)) {
@@ -564,9 +564,9 @@ final class CheckFlow {
         differences.files().forEach(file -> lines.add(fileLine(file)));
         String installations = installationLines(found);
         if (!installations.isEmpty()) lines.add(installations);
-        lines.addAll(plainLines(found));
-        // WHY: with only plain binds files there is nothing to keep - only to tidy up (Storage S13b).
-        String text = getText(onlyPlain(found) ? "bindings.check.plain.intro" : "bindings.check.intro",
+        lines.addAll(leftoverLines(found));
+        // WHY: with only files to move there is nothing to keep - only to tidy up (Storage S13b, S13d).
+        String text = getText(onlyLeftovers(found) ? "bindings.check.leftover.intro" : "bindings.check.intro",
                 String.join("\n", lines));
         if (differences.anyReset() || found.devices().anyReset()) text += "\n\n" + getText("bindings.check.resetAdvice");
         if (!differences.leftOut().isEmpty()) {
@@ -587,38 +587,28 @@ final class CheckFlow {
     }
 
     /**
-     * Whether the plain binds files are all there is to ask about - no row and no installation (Storage S13b): the
+     * Whether the files to move are all there is to ask about - no row and no installation (Storage S13b, S13d): the
      * warning then offers Tidy up and Not now.
      */
-    static boolean onlyPlain(BindingsCheck.Found found) {
+    static boolean onlyLeftovers(BindingsCheck.Found found) {
         return found.differences().files().isEmpty() && found.devices().asked().isEmpty()
-                && !found.plain().toTidy().isEmpty();
+                && !found.leftovers().none();
     }
 
     /**
-     * One line for each plain binds file (Storage S13b): those to tidy up, then those left alone because they do not
-     * read as binds files, each in name order.
+     * One line for each file to move to Leftover User Files, in name order (Storage S13d): a plain binds file says it is
+     * judged first, any other only that it goes.
      */
-    static List<String> plainLines(BindingsCheck.Found found) {
-        List<String> lines = new ArrayList<>();
-        found.plain().toTidy().forEach(name -> lines.add("- " + getText("bindings.check.file.plain", name)));
-        found.plain().unreadable().forEach(name -> lines.add("- "
-                + getText("bindings.check.file.plainUnreadable", name)));
-        return lines;
+    static List<String> leftoverLines(BindingsCheck.Found found) {
+        return found.leftovers().files().stream()
+                .map(name -> "- " + getText(found.leftovers().plain().containsKey(name)
+                        ? "bindings.check.file.plain" : "bindings.check.file.leftover", name))
+                .toList();
     }
 
-    /**
-     * What is told when nothing can be asked: the installations that could not be read at all, and the plain files
-     * that do not read as binds files - each left as it is.
-     */
+    /** What is told when nothing can be asked: the installations that could not be read at all, left as they are. */
     static String unreadableOnly(BindingsCheck.Found found) {
-        List<String> parts = new ArrayList<>();
-        String installations = installationLines(found);
-        if (!installations.isEmpty()) parts.add(getText("bindings.check.unreadableOnly", installations));
-        if (!found.plain().unreadable().isEmpty()) {
-            parts.add(getText("bindings.check.plain.unreadableOnly", String.join("\n", plainLines(found))));
-        }
-        return String.join("\n\n", parts);
+        return getText("bindings.check.unreadableOnly", installationLines(found));
     }
 
     /** One line for each installation that does not match, in the stored list's order (Storage S9a). */
@@ -650,47 +640,60 @@ final class CheckFlow {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.place",
                     getText("bindings.firstTimeStartup.place.bindingsFolder"), String.join("; ", bindings.failures())));
         }
-        text.append(keptReadOnly(report));
-        text.append(plainReport(written));
+        text.append(keptReadOnly(written));
+        text.append(leftoversReport(written));
         text.append(FirstTimeStartupFlow.installationFailures(report));
         return text.toString();
     }
 
     /**
-     * A line for each plain binds file (Storage S13b, D4): removed, and why, or converted to what - or left alone, not
-     * reading as a binds file. One kept because it is read-only is in {@link #keptReadOnly}'s line instead - a converted
-     * one is still named, since its binds file was written. Nothing for one held back when the bindings folder's write
-     * failed: the failure line says so. Shared with APPLY's report.
+     * What was moved to Leftover User Files, and where (Storage S13d), then a line for each plain binds file moved - why,
+     * or what it was converted to (Storage S13b, D4). A converted one kept because it is read-only is still named, since
+     * its binds file was written; it is in {@link #keptReadOnly}'s line too. Nothing for a file held back when the
+     * bindings folder's write failed: the failure line says so. Shared with APPLY's report.
      */
-    static String plainReport(Written written) {
+    static String leftoversReport(Written written) {
         WriteReport.Place bindings = written.report().bindings();
         StringBuilder text = new StringBuilder();
-        for (PlainBinds.Tidied file : written.plain()) {
-            boolean gone = holds(bindings.removed(), file.file());
+        if (!bindings.moved().isEmpty()) {
+            text.append('\n').append(getText("bindings.check.result.moved", String.join(", ", bindings.moved()),
+                    bindings.movedTo().toString()));
+        }
+        for (PlainBinds.Tidied file : written.leftovers().plain().tidied()) {
+            boolean moved = holds(bindings.moved(), file.file());
             boolean kept = holds(bindings.keptReadOnly(), file.file());
             String line = switch (file.fate()) {
-                case TWIN -> gone ? getText("bindings.check.result.plainTwin", file.file(), file.to()) : null;
-                case FACTORY -> gone ? getText("bindings.check.result.plainFactory", file.file(), file.to()) : null;
-                case CONVERTED -> gone || kept
+                case TWIN -> moved ? getText("bindings.check.result.plainTwin", file.file(), file.to()) : null;
+                case FACTORY -> moved ? getText("bindings.check.result.plainFactory", file.file(), file.to()) : null;
+                case CONVERTED -> moved || kept
                         ? getText("bindings.check.result.plainConverted", file.file(), file.to()) : null;
-                case UNREADABLE -> getText("bindings.check.result.plainUnreadable", file.file());
             };
             if (line != null) text.append('\n').append(line);
         }
         return text.toString();
     }
 
-    private static boolean holds(List<String> names, String name) {
+    private static boolean holds(Collection<String> names, String name) {
         return names.stream().anyMatch(found -> FileNames.sameFile(found, name));
     }
 
     /**
-     * A live-only file the check would have removed but kept, being read-only - its own line, shared with APPLY's report
-     * since S8b removes such files too.
+     * The files in the bindings folder kept because they are read-only, shared with APPLY's report since S8b removes
+     * such files too: a live-only binds file the write would have removed, and - a line of its own - a file it would
+     * have moved to Leftover User Files (Storage S13d, Q6).
      */
-    static String keptReadOnly(WriteReport report) {
-        List<String> kept = report.bindings().keptReadOnly();
-        if (kept.isEmpty()) return "";
-        return "\n" + getText("bindings.check.result.keptReadOnly", String.join(", ", kept));
+    static String keptReadOnly(Written written) {
+        Set<String> toMove = written.leftovers().move();
+        List<String> kept = written.report().bindings().keptReadOnly();
+        List<String> notRemoved = kept.stream().filter(name -> !holds(toMove, name)).toList();
+        List<String> notMoved = kept.stream().filter(name -> holds(toMove, name)).toList();
+        StringBuilder text = new StringBuilder();
+        if (!notRemoved.isEmpty()) {
+            text.append('\n').append(getText("bindings.check.result.keptReadOnly", String.join(", ", notRemoved)));
+        }
+        if (!notMoved.isEmpty()) {
+            text.append('\n').append(getText("bindings.check.result.keptReadOnlyLeftover", String.join(", ", notMoved)));
+        }
+        return text.toString();
     }
 }

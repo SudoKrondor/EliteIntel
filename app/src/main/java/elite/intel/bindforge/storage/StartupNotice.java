@@ -31,9 +31,10 @@ import java.util.function.Supplier;
  *     while read only</strong>: the read-only line covers it, and the check it points to is off (Alan, 2026-11-06).</li>
  *     <li><strong>A binds file named like a factory one</strong> ({@link BindNameEntry#shadowsFactory()}) - the working
  *     copy's, once one exists, judged against the reachable installations' factory files.</li>
- *     <li><strong>A plain binds file in the bindings folder</strong> ({@link PlainBinds}; Storage S13b) - once a working
- *     copy exists, and <strong>not while read only</strong>, since the check that tidies it up is off then (Alan,
- *     2026-11-07, Q5).</li>
+ *     <li><strong>Files the check will move to Leftover User Files</strong> ({@link Leftovers}; Storage S13b, S13d) -
+ *     every one, not only plain binds files, but a read-only one, which the check leaves where it is and names once in
+ *     its report (Alan, 2026-11-08, Q4 and the S13aR-S13b review's D1). Once a working copy exists, and <strong>not
+ *     while read only</strong>, since the check that moves them is off then (Alan, 2026-11-07, Q5).</li>
  * </ol>
  * The missing controller stays the Alias Designer's ({@code MissingControllerWarning}, A13), and the binding warnings
  * stay {@code KeyBindCheck}'s, said before this notice (Alan, 2026-11-06).
@@ -47,8 +48,8 @@ public final class StartupNotice {
     static final String NAMED_LIKE_FACTORY_KEY = "speech.bindforge.namedLikeFactory";
     static final String NAMED_LIKE_FACTORY_MANY_KEY = "speech.bindforge.namedLikeFactoryMany";
     static final String MANUAL_INSTALLATION_KEY = "speech.bindforge.manualInstallation";
-    static final String PLAIN_FILE_KEY = "speech.bindforge.plainFile";
-    static final String PLAIN_FILE_MANY_KEY = "speech.bindforge.plainFileMany";
+    static final String TO_MOVE_KEY = "speech.bindforge.leftover";
+    static final String TO_MOVE_MANY_KEY = "speech.bindforge.leftoverMany";
 
     private static final AtomicBoolean STARTED = new AtomicBoolean();
 
@@ -72,9 +73,9 @@ public final class StartupNotice {
             }
         }
 
-        /** The plain binds files in the bindings folder, by name (Storage S13b). */
-        record PlainFiles(List<String> files) implements Line {
-            public PlainFiles {
+        /** The files in the bindings folder the check will move to Leftover User Files, by name (Storage S13d). */
+        record ToMove(List<String> files) implements Line {
+            public ToMove {
                 files = List.copyOf(files);
             }
         }
@@ -86,31 +87,31 @@ public final class StartupNotice {
         List<String> bindNames() throws IOException;
     }
 
-    /** The plain binds files in the bindings folder, once a working copy exists; none before. */
+    /** The files the check will move from the bindings folder, once a working copy exists; none before. */
     @FunctionalInterface
-    interface PlainNamed {
+    interface ToMoveNamed {
         List<String> files() throws IOException;
     }
 
     private final Supplier<List<InstallationRow>> readOnly;
     private final BooleanSupplier changedOutside;
     private final FactoryNamed factoryNamed;
-    private final PlainNamed plainNamed;
+    private final ToMoveNamed toMoveNamed;
 
     /** The stored read-only state, the check at start, the working copy, the installations and the bindings folder. */
     public static StartupNotice stored() {
         return new StartupNotice(
                 () -> ReadOnlyMode.stored().active() ? ReadOnlyMode.stored().missing() : List.of(),
                 () -> StartupCheck.stored().changedOutside(),
-                StartupNotice::storedFactoryNamed, StartupNotice::storedPlainNamed);
+                StartupNotice::storedFactoryNamed, StartupNotice::storedToMove);
     }
 
     StartupNotice(Supplier<List<InstallationRow>> readOnly, BooleanSupplier changedOutside, FactoryNamed factoryNamed,
-                  PlainNamed plainNamed) {
+                  ToMoveNamed toMoveNamed) {
         this.readOnly = readOnly;
         this.changedOutside = changedOutside;
         this.factoryNamed = factoryNamed;
-        this.plainNamed = plainNamed;
+        this.toMoveNamed = toMoveNamed;
     }
 
     /**
@@ -148,18 +149,18 @@ public final class StartupNotice {
             // WHY: broad on purpose - a thread of its own at startup, and a hint only; the Bind Editor warns of it too.
             log.warn("Could not work out whether a binds file is named like a factory one", e);
         }
-        // WHY: not while read only - the check that tidies it up is off, as the changed-outside line's is (Alan,
+        // WHY: not while read only - the check that moves them is off, as the changed-outside line's is (Alan,
         // 2026-11-07, Storage S13b Q5).
         if (missing.isEmpty()) {
             try {
-                List<String> plain = plainNamed.files();
-                if (!plain.isEmpty()) {
-                    log.info("Plain binds files in the bindings folder: {}", plain);
-                    lines.add(new Line.PlainFiles(plain));
+                List<String> toMove = toMoveNamed.files();
+                if (!toMove.isEmpty()) {
+                    log.info("Files the check will move from the bindings folder to Leftover User Files: {}", toMove);
+                    lines.add(new Line.ToMove(toMove));
                 }
             } catch (IOException | RuntimeException e) {
                 // WHY: broad on purpose, as above - a hint only; the check names the files too.
-                log.warn("Could not look for plain binds files in the bindings folder", e);
+                log.warn("Could not look for files that do not belong in the bindings folder", e);
             }
         }
         return lines;
@@ -174,9 +175,9 @@ public final class StartupNotice {
             case Line.NamedLikeFactory named -> named.bindNames().size() == 1
                     ? StringUtls.localizedSpeech(NAMED_LIKE_FACTORY_KEY, named.bindNames().getFirst())
                     : StringUtls.localizedSpeech(NAMED_LIKE_FACTORY_MANY_KEY, String.join(", ", named.bindNames()));
-            case Line.PlainFiles plain -> plain.files().size() == 1
-                    ? StringUtls.localizedSpeech(PLAIN_FILE_KEY, plain.files().getFirst())
-                    : StringUtls.localizedSpeech(PLAIN_FILE_MANY_KEY, String.join(", ", plain.files()));
+            case Line.ToMove toMove -> toMove.files().size() == 1
+                    ? StringUtls.localizedSpeech(TO_MOVE_KEY, toMove.files().getFirst())
+                    : StringUtls.localizedSpeech(TO_MOVE_MANY_KEY, String.join(", ", toMove.files()));
         };
     }
 
@@ -207,12 +208,28 @@ public final class StartupNotice {
                 .list().entries());
     }
 
-    private static List<String> storedPlainNamed() throws IOException {
+    private static List<String> storedToMove() throws IOException {
         // WHY: before first-time startup the live files are not BindForge's, as above.
         if (!WorkingCopy.stored().exists()) return List.of();
         Path folder = PlayerSession.getInstance().getBindingsDir();
         if (folder == null) return List.of();
-        return List.copyOf(PlainBinds.read(folder).keySet());
+        return movable(folder, Leftovers.read(folder).files());
+    }
+
+    /**
+     * {@code names} in {@code folder} but those the check would leave where they are: read-only, or whether they are
+     * cannot be read (Alan, 2026-11-08, from the S13aR-S13b review's D1) - named once in the check's report, not at
+     * every start.
+     */
+    static List<String> movable(Path folder, List<String> names) {
+        return names.stream().filter(name -> {
+            try {
+                return !ReadOnlyFlag.isSet(folder.resolve(name));
+            } catch (IOException e) {
+                log.warn("Could not read whether {} is read-only, so it is left out of the notice", name, e);
+                return false;
+            }
+        }).toList();
     }
 
     /** The BindNames among {@code entries} that are the user's and named like a factory one. */

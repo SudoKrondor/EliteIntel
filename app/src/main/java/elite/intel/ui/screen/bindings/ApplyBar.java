@@ -353,7 +353,7 @@ public final class ApplyBar extends JPanel {
         WriteReport report = written.report();
         return getText("bindings.applyBar.result", written.backup().zip().toString(), report.installationsUpdated(),
                 report.installations().size()) + FirstTimeStartupFlow.placeFailures(report)
-                + CheckFlow.keptReadOnly(report) + CheckFlow.plainReport(written);
+                + CheckFlow.keptReadOnly(written) + CheckFlow.leftoversReport(written);
     }
 
     /**

@@ -121,4 +121,24 @@ class FileNamesTest {
         assertEquals(4, FileNames.presetGeneration("StartPreset.4.start"));
         assertEquals(-1, FileNames.presetGeneration("StartPreset.start"));
     }
+
+    /**
+     * What stays in the bindings folder (Storage S13d): a binds file, a preset file and the game's loading log, matched
+     * ignoring case so nothing that could be the game's own file is moved (Q5). Everything else goes to Leftover User
+     * Files - a leftover {@code StartPreset.start} included (Q1).
+     */
+    @Test
+    void onlyTheGamesFilesStayInTheBindingsFolder() {
+        assertTrue(FileNames.staysInBindingsFolder("Custom.4.2.binds"));
+        assertTrue(FileNames.staysInBindingsFolder("custom.4.2.BINDS"));
+        assertTrue(FileNames.staysInBindingsFolder("StartPreset.4.start"));
+        assertTrue(FileNames.staysInBindingsFolder("startpreset.4.start"));
+        assertTrue(FileNames.staysInBindingsFolder("BindingLoadingErrors.log"));
+        assertTrue(FileNames.staysInBindingsFolder("bindingloadingerrors.log"));
+        assertFalse(FileNames.staysInBindingsFolder("StartPreset.start"));
+        assertFalse(FileNames.staysInBindingsFolder("KeyboardMouseOnly.binds"));
+        assertFalse(FileNames.staysInBindingsFolder("Custom.4.2 (2).binds"));
+        assertFalse(FileNames.staysInBindingsFolder("Custom.4.2.binds.backup"));
+        assertFalse(FileNames.staysInBindingsFolder("desktop.ini"));
+    }
 }

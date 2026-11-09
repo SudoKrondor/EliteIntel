@@ -66,6 +66,17 @@ public final class AppPaths {
     }
 
     /**
+     * Returns the folder BindForge's check moves what does not belong in the bindings folder to - each move in a
+     * date-stamped folder of its own - creating it if needed (storage.md rule 14, <em>Settled 2026-11-08</em>).
+     * BindForge does nothing more with it: the user opens it in the file manager.
+     */
+    public static Path getLeftoverUserFilesDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/Leftover User Files");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    /**
      * Returns the directory for user-facing, on-demand player backups (bindings/preset
      * snapshots, and later other profile data), creating it if needed.
      */

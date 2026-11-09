@@ -421,24 +421,108 @@ class LiveCopiesTest {
         assertThrows(IllegalArgumentException.class,
                 () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("notes.txt")));
         assertThrows(IllegalArgumentException.class,
-                () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("..\\Custom.binds")));
+                () -> liveCopies().write(set(), LiveCopies.LeaveAlone.NONE, Set.of("Custom.binds")),
+                "a plain binds file is moved, never removed (Storage S13d)");
     }
 
-    /** A plain binds file the check tidied up is removed (Storage S13b); a read-only one is kept and reported. */
+    /**
+     * What does not belong in the bindings folder is moved, never deleted, into one date-stamped folder in Leftover User
+     * Files for the write (Storage S13d); a read-only one is kept and reported (Q6).
+     */
     @Test
-    void aPlainBindsFileNamedForRemovalIsRemovedUnlessReadOnly() throws IOException {
+    void filesNamedToMoveGoToOneStampedFolderUnlessReadOnly() throws IOException {
         write(bindings.resolve("Spare.binds"), "<Spare/>");
+        write(bindings.resolve("Custom.4.2 (2).binds"), "<copy/>");
         Path kept = bindings.resolve("KeyboardMouseOnly.binds");
         write(kept, "<KeyboardMouseOnly/>");
         protect(kept);
+        Path leftovers = temp.resolve("Leftover User Files");
 
-        WriteReport report = liveCopies().write(set(), LiveCopies.LeaveAlone.NONE,
-                Set.of("Spare.binds", "KeyboardMouseOnly.binds"));
+        WriteReport report = movingTo(leftovers).write(set(), LiveCopies.LeaveAlone.NONE, Set.of(),
+                Set.of("Spare.binds", "Custom.4.2 (2).binds", "KeyboardMouseOnly.binds"));
 
+        WriteReport.Place place = report.bindings();
+        assertEquals(List.of("Custom.4.2 (2).binds", "Spare.binds"), place.moved().stream().sorted().toList());
+        try (Stream<Path> made = Files.list(leftovers)) {
+            assertEquals(List.of(place.movedTo()), made.toList(), "one folder for the write");
+        }
+        assertTrue(place.movedTo().getFileName().toString().matches("\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}"),
+                place.movedTo().toString());
+        assertEquals("<Spare/>", Files.readString(place.movedTo().resolve("Spare.binds")));
         assertFalse(Files.exists(bindings.resolve("Spare.binds")));
+        assertFalse(Files.exists(bindings.resolve("Custom.4.2 (2).binds")));
         assertTrue(Files.exists(kept));
-        assertEquals(List.of("Spare.binds"), report.bindings().removed());
-        assertEquals(List.of("KeyboardMouseOnly.binds"), report.bindings().keptReadOnly());
+        assertEquals(List.of("KeyboardMouseOnly.binds"), place.keptReadOnly());
+        assertEquals(List.of(), place.removed());
+    }
+
+    /** Each write gets a folder of its own, two in one second included. */
+    @Test
+    void aSecondMoveInTheSameSecondGetsAFolderOfItsOwn() throws IOException {
+        Path leftovers = temp.resolve("Leftover User Files");
+        write(bindings.resolve("a.txt"), "a");
+        WriteReport first = movingTo(leftovers).write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("a.txt"));
+        Path taken = first.bindings().movedTo();
+        write(bindings.resolve("b.txt"), "b");
+
+        WriteReport second = movingTo(leftovers).write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("b.txt"));
+
+        assertNotEquals(taken, second.bindings().movedTo());
+        assertTrue(Files.exists(second.bindings().movedTo().resolve("b.txt")));
+    }
+
+    /** Nothing moved, no folder made - and none named. */
+    @Test
+    void nothingToMoveMakesNoFolder() {
+        Path leftovers = temp.resolve("Leftover User Files");
+
+        WriteReport report = movingTo(leftovers).write(set(), LiveCopies.LeaveAlone.NONE, Set.of(),
+                Set.of("gone.txt"));
+
+        assertEquals(List.of(), report.bindings().moved());
+        assertNull(report.bindings().movedTo());
+        assertFalse(Files.exists(leftovers));
+    }
+
+    /** A move that fails leaves the file where it is, reported. */
+    @Test
+    void aMoveThatFailsLeavesTheFileAndIsReported() throws IOException {
+        write(bindings.resolve("a.txt"), "a");
+        LiveCopies failing = new LiveCopies(new BackupSources(bindings, List.of()), (from, to) -> {
+            throw new IOException("disk full");
+        }, () -> temp.resolve("Leftover User Files"));
+
+        WriteReport report = failing.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("a.txt"));
+
+        assertTrue(Files.exists(bindings.resolve("a.txt")));
+        assertEquals(List.of(), report.bindings().moved());
+        assertTrue(report.bindings().failures().stream().anyMatch(line -> line.startsWith("a.txt: not moved")),
+                report.bindings().failures().toString());
+    }
+
+    /** A binds file that fails holds the moves back too: a converted plain file's binds file may be the one. */
+    @Test
+    void aBindsFileThatFailsHoldsBackTheMoves() throws IOException {
+        write(bindings.resolve("Spare.binds"), "<Spare/>");
+        write(bindings.resolve("Custom.4.2.binds").resolve("blocker"), "a folder sits where the file goes");
+
+        WriteReport report = movingTo(temp.resolve("Leftover User Files")).write(set(), LiveCopies.LeaveAlone.NONE,
+                Set.of(), Set.of("Spare.binds"));
+
+        assertTrue(Files.exists(bindings.resolve("Spare.binds")));
+        assertTrue(report.bindings().failures().contains("Spare.binds: " + LiveCopies.HELD_BACK));
+    }
+
+    /** Only a file that does not belong is moved - never the game's own, and never out of the folder. */
+    @Test
+    void aMoveOfAGameFileOrAPathIsRefused() {
+        LiveCopies moving = movingTo(temp.resolve("Leftover User Files"));
+        assertThrows(IllegalArgumentException.class,
+                () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("custom.4.2.binds")));
+        assertThrows(IllegalArgumentException.class,
+                () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("StartPreset.4.start")));
+        assertThrows(IllegalArgumentException.class,
+                () -> moving.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("..\\notes.txt")));
     }
 
     /**
@@ -466,6 +550,11 @@ class LiveCopiesTest {
 
     private LiveCopies liveCopies(Path... installations) {
         return liveCopies(LiveCopies.Mover.FILES, installations);
+    }
+
+    /** No installations, moving to {@code leftovers}. */
+    private LiveCopies movingTo(Path leftovers) {
+        return new LiveCopies(new BackupSources(bindings, List.of()), LiveCopies.Mover.FILES, () -> leftovers);
     }
 
     private LiveCopies liveCopies(LiveCopies.Mover mover, Path... installations) {

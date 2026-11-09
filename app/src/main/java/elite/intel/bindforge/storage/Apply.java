@@ -48,8 +48,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * and preset files the check settles the working copy first and the edits go on top - an edit wins on every line item
  * it changed, and the rows the edits change are never asked about. <strong>For the device files the edits are the
  * user's side</strong> (Alan, 2026-10-31, Storage S9b): putting mine back writes the edits' device files, and the
- * reconcile weighs them against the installation's, so no device edit is merged in unseen. <strong>Plain binds files
- * are judged against the set written</strong>, the edits on top (Storage S13b; {@link PlainBinds}).
+ * reconcile weighs them against the installation's, so no device edit is merged in unseen. <strong>What does not
+ * belong in the bindings folder is moved to Leftover User Files</strong>, each plain binds file judged against the set
+ * written, the edits on top (Storage S13b, S13d; {@link Leftovers}).
  * Publishes no {@code BindingsUpdatedEvent} - {@code BindingsMonitor} sees the bindings folder change. Touches the disk
  * - not for the EDT.
  */
@@ -59,12 +60,13 @@ public final class Apply {
 
     /**
      * Writes a set through the write path, leaving alone the installations it is told to and removing from the bindings
-     * folder the files named - a live-only file the check kept the working copy's side of.
+     * folder the files named - a live-only file the check kept the working copy's side of - and moving the files named
+     * that do not belong there to Leftover User Files (Storage S13d).
      */
     @FunctionalInterface
     interface Writer {
         WriteReport write(ConfigurationFiles files, WritePath.BackUpFirst backUp, LiveCopies.LeaveAlone leaveAlone,
-                          Set<String> removeFromBindings) throws IOException;
+                          Set<String> removeFromBindings, Set<String> moveFromBindings) throws IOException;
     }
 
     /** APPLY's before-changes backup, of the bindings folder and installations the write is about to write. */
@@ -134,7 +136,8 @@ public final class Apply {
      */
     public static Apply stored(DefaultLabels defaults) {
         return new Apply(Edits.stored(), defaults,
-                (files, backUp, leaveAlone, remove) -> WritePath.stored().write(files, backUp, leaveAlone, remove),
+                (files, backUp, leaveAlone, remove, move) -> WritePath.stored().write(files, backUp, leaveAlone, remove,
+                        move),
                 new BackUp() {
                     @Override
                     public Backup take(BackupSources sources) throws IOException {
@@ -234,8 +237,8 @@ public final class Apply {
                     : snapshot.current();
             // WHY: judged against the set written, the edits on top (Storage S13b) - and before the device files, so a
             // reconcile's moves reach a converted file too.
-            PlainBinds.Plan plain = check.plainPlan(found, snapshot.applied(), onTop.bindings());
-            if (plain.anything()) onTop = onTop.withBindings(plain.appliedTo(onTop.bindings()));
+            Leftovers.Plan leftovers = check.leftoversPlan(found, snapshot.applied(), onTop.bindings());
+            if (leftovers.converts()) onTop = onTop.withBindings(leftovers.plain().appliedTo(onTop.bindings()));
             // WHY: the edits' device files are the user's side of the reconcile (Alan, 2026-10-31, Storage S9b), so a
             // reconciled answer replaces them whole - its moves made in the binds files, edits included.
             onTop = DeviceCheck.withDevices(onTop, devices);
@@ -245,10 +248,10 @@ public final class Apply {
             // parse is a broken invariant - not a user file to protect by leaving every installation alone.
             DeviceFilesComparison comparison = DeviceFilesComparison.of(snapshot.applied());
             ConfigurationFiles files = withDefaults(onTop, defaults.of(onTop, snapshot.applied()));
-            // WHY: a converted plain file changes the working copy, so the backup holds it as it was.
-            boolean checkSettled = bindsSettled || reconciled || plain.anything();
+            // WHY: a converted plain file changes the working copy, so the backup holds it as it was. A file only moved
+            // changes nothing of the working copy (Storage S13d).
+            boolean checkSettled = bindsSettled || reconciled || leftovers.converts();
             Set<String> remove = new TreeSet<>(settled.removeFromLive());
-            remove.addAll(plain.remove());
             // WHY: a binds file the edits renamed goes from the bindings folder after the backup, which holds it
             // (storage.md rule 7; Storage S12). Only a rename takes a binds file out of the edits.
             snapshot.applied().bindings().keySet().stream()
@@ -263,14 +266,14 @@ public final class Apply {
                         : backUp.take(sources);
                 taken.set(backup);
                 return backup;
-            }, found.devices().leavingAlone(comparison, reader), remove);
-            PlainBinds.log(plain);
+            }, found.devices().leavingAlone(comparison, reader), remove, leftovers.move());
+            Leftovers.log(leftovers);
             log.info("Applied: {} binds and preset files, {} button maps; the check settled {} rows and {} "
                             + "installations that differed, their device files {}; installations updated {} of {}",
                     files.bindings().size(), files.buttonMaps().size(), found.differences().rows().size(),
                     found.devices().asked().size(), reconciled ? "reconciled" : "the edits'",
                     report.installationsUpdated(), report.installations().size());
-            return new Written(report, taken.get(), plain.tidied());
+            return new Written(report, taken.get(), leftovers);
         });
     }
 

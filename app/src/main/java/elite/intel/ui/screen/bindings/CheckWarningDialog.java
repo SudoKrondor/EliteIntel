@@ -25,7 +25,7 @@ final class CheckWarningDialog extends JDialog {
 
     /** What the user chose. */
     enum Choice {
-        /** Overwrite the live copy with the working copy - or, offered on its own, tidy up the plain binds files. */
+        /** Overwrite the live copy with the working copy - or, offered on its own, move the files that do not belong. */
         KEEP_MINE,
         MERGE,
         /** Overwrite the working copy with the live copy. */
@@ -40,8 +40,8 @@ final class CheckWarningDialog extends JDialog {
         /** Put mine back alone - when only a missing or unparseable device file differs (Storage S9a). */
         PUT_MINE_BACK,
         /**
-         * Tidy up and Not now - when only plain binds files are found (Alan, 2026-11-07, Storage S13b Q2). Tidy up is
-         * {@link Choice#KEEP_MINE}: with nothing else differing, putting the working copy back only tidies up.
+         * Tidy up and Not now - when only files to move are found (Alan, 2026-11-07, Storage S13b Q2; S13d Q3). Tidy
+         * up is {@link Choice#KEEP_MINE}: with nothing else differing, putting the working copy back only tidies up.
          */
         TIDY_UP
     }

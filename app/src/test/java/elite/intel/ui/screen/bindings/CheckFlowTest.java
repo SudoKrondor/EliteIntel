@@ -13,6 +13,7 @@ import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.DeviceCheck;
 import elite.intel.bindforge.storage.DeviceFiles;
+import elite.intel.bindforge.storage.Leftovers;
 import elite.intel.bindforge.storage.PlainBinds;
 import elite.intel.bindforge.storage.WriteReport;
 import elite.intel.bindforge.storage.WriteReport.Place;
@@ -104,7 +105,7 @@ class CheckFlowTest {
                 judged(2, "EPIC", DeviceCheck.State.RESET_MISSING, null),
                 judged(3, "FRONTIER", DeviceCheck.State.UNREADABLE, "locked")));
         BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()),
-                Map.of(), differences(), 0, devices, PlainBinds.Found.NONE);
+                Map.of(), differences(), 0, devices, Leftovers.Found.NONE);
 
         String text = CheckFlow.warningText(found, false);
 
@@ -163,80 +164,111 @@ class CheckFlowTest {
                 CheckFlow.kept(found, found, Map.of(row.id(), Side.WORKING_COPY)));
     }
 
-    // ---- plain binds files (Storage S13b)
+    // ---- what does not belong in the bindings folder (Storage S13b, S13d)
 
     /**
-     * Only plain binds files: the warning that offers Tidy up - its own intro, those to tidy up first, then those left
-     * alone - and at APPLY, that closing cancels it.
+     * Only files to move: the warning that offers Tidy up - its own intro, a line each in name order, a plain binds file
+     * saying it is judged first - and at APPLY, that closing cancels it.
      */
     @Test
-    void aWarningHoldingOnlyPlainFilesSaysTheyAreTidiedUp() {
-        BindingsCheck.Found found = withPlain(differences());
+    void aWarningHoldingOnlyFilesToMoveSaysTheyAreTidiedUp() {
+        BindingsCheck.Found found = withLeftovers(differences());
 
         String text = CheckFlow.warningText(found, true);
 
-        assertTrue(CheckFlow.onlyPlain(found));
-        assertEquals(getText("bindings.check.plain.intro", "- " + getText("bindings.check.file.plain", "Spare.binds")
-                + "\n- " + getText("bindings.check.file.plainUnreadable", "Broken.binds"))
+        assertTrue(CheckFlow.onlyLeftovers(found));
+        assertEquals(getText("bindings.check.leftover.intro",
+                "- " + getText("bindings.check.file.leftover", "Broken.binds")
+                        + "\n- " + getText("bindings.check.file.plain", "Spare.binds"))
                 + "\n\n" + getText("bindings.check.atApply"), text);
     }
 
-    /** With a row too, the usual intro and choices; the plain files are lines after the files. */
+    /** With a row too, the usual intro and choices; the files to move are lines after the files. */
     @Test
-    void plainFilesAreLinesInTheUsualWarningWhenAFileDiffersToo() {
-        BindingsCheck.Found found = withPlain(differences(file(false, slot("YawLeftButton", "Key_A", "Key_Q"))));
+    void filesToMoveAreLinesInTheUsualWarningWhenAFileDiffersToo() {
+        BindingsCheck.Found found = withLeftovers(differences(file(false, slot("YawLeftButton", "Key_A", "Key_Q"))));
 
         String text = CheckFlow.warningText(found, false);
 
-        assertFalse(CheckFlow.onlyPlain(found));
+        assertFalse(CheckFlow.onlyLeftovers(found));
         assertEquals(getText("bindings.check.intro", "- " + getText("bindings.check.file.differs", CUSTOM, 1)
-                + "\n- " + getText("bindings.check.file.plain", "Spare.binds")
-                + "\n- " + getText("bindings.check.file.plainUnreadable", "Broken.binds")), text);
+                + "\n- " + getText("bindings.check.file.leftover", "Broken.binds")
+                + "\n- " + getText("bindings.check.file.plain", "Spare.binds")), text);
     }
 
-    /** Only files that do not read as binds files: named, and nothing asked. */
+    /** A stray file alone is something to ask about: the check offers Tidy up, never only names it (Storage S13d). */
     @Test
-    void plainFilesThatDoNotReadAreOnlyNamed() {
-        BindingsCheck.Found found = found(differences(), new PlainBinds.Found(
-                Map.of("Broken.binds", new byte[]{1}), List.of("Broken.binds")));
+    void aStrayFileAloneIsSomethingToAsk() {
+        BindingsCheck.Found found = found(differences(), new Leftovers.Found(Map.of(), List.of("notes.txt")));
 
-        assertFalse(found.anythingToAsk());
-        assertEquals(getText("bindings.check.plain.unreadableOnly",
-                "- " + getText("bindings.check.file.plainUnreadable", "Broken.binds")), CheckFlow.unreadableOnly(found));
+        assertTrue(found.anythingToAsk());
+        assertTrue(CheckFlow.onlyLeftovers(found));
     }
 
     /**
-     * The report (D4): each one removed, and why; one converted, even when its plain file was kept read-only; one kept
-     * read-only and not converted is left to the kept-read-only line; one that does not read is named.
+     * The report (D4): what was moved and where; each plain file moved, and why, and one converted even when its plain
+     * file was kept read-only; one kept read-only and not converted is left to the kept-read-only line.
      */
     @Test
-    void theReportNamesEachPlainFileRemovedOrConverted() {
+    void theReportNamesWhatWasMovedAndWhy() {
+        Path to = Path.of("Leftover User Files", "2026-11-08_10-00-00");
         Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
-                List.of("Spare.4.2.binds"), List.of("custom.binds"), List.of("Spare.binds", "KeyboardMouseOnly.binds"),
-                List.of());
-        Written written = new Written(new WriteReport(bindings, List.of()), new Backup(Path.of("backup.zip"),
-                LocalDateTime.now(), Backups.Kind.BEFORE_CHANGES, Backups.Before.CHECK, true, List.of()), List.of(
-                new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM),
+                List.of("Spare.4.2.binds"), List.of(), List.of("Spare.binds", "KeyboardMouseOnly.binds"), List.of(),
+                false, List.of("Broken.binds", "custom.binds"), to);
+
+        assertEquals("\n" + getText("bindings.check.result.moved", "Broken.binds, custom.binds", to.toString())
+                        + "\n" + getText("bindings.check.result.plainConverted", "Spare.binds", "Spare.4.2.binds")
+                        + "\n" + getText("bindings.check.result.plainTwin", "custom.binds", CUSTOM),
+                CheckFlow.leftoversReport(written(bindings)));
+    }
+
+    /**
+     * Finding 3 of the S13aR-S13b review: the kept-read-only lines. A binds file the write would have removed has the
+     * old line; a file it would have moved has its own (Storage S13d, Q6).
+     */
+    @Test
+    void aReadOnlyFileKeptHasTheLineForWhatWouldHaveBeenDone() {
+        Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"), List.of(), List.of(),
+                List.of("Live.4.2.binds", "Spare.binds", "notes.txt"), List.of());
+
+        assertEquals("\n" + getText("bindings.check.result.keptReadOnly", "Live.4.2.binds")
+                        + "\n" + getText("bindings.check.result.keptReadOnlyLeftover", "Spare.binds, notes.txt"),
+                CheckFlow.keptReadOnly(written(bindings)));
+    }
+
+    @Test
+    void nothingKeptAndNothingMovedSaysNothing() {
+        Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"), List.of(), List.of(),
+                List.of(), List.of());
+
+        assertEquals("", CheckFlow.keptReadOnly(written(bindings)));
+        assertEquals("", CheckFlow.leftoversReport(written(bindings)));
+    }
+
+    /**
+     * The check's write with {@code bindings}: {@code custom.binds} a twin, {@code KeyboardMouseOnly.binds} a factory
+     * file, {@code Spare.binds} converted, and {@code Broken.binds} and {@code notes.txt} moved as they are.
+     */
+    private static Written written(Place bindings) {
+        PlainBinds.Plan plain = new PlainBinds.Plan(List.of(
                 new PlainBinds.Tidied("KeyboardMouseOnly.binds", PlainBinds.Fate.FACTORY, "KeyboardMouseOnly"),
                 new PlainBinds.Tidied("Spare.binds", PlainBinds.Fate.CONVERTED, "Spare.4.2.binds"),
-                new PlainBinds.Tidied("Broken.binds", PlainBinds.Fate.UNREADABLE, null)));
-
-        assertEquals("\n" + getText("bindings.check.result.plainTwin", "custom.binds", CUSTOM)
-                + "\n" + getText("bindings.check.result.plainConverted", "Spare.binds", "Spare.4.2.binds")
-                + "\n" + getText("bindings.check.result.plainUnreadable", "Broken.binds"),
-                CheckFlow.plainReport(written));
+                new PlainBinds.Tidied("custom.binds", PlainBinds.Fate.TWIN, CUSTOM)),
+                Map.of("Spare.4.2.binds", new byte[]{1}));
+        return new Written(new WriteReport(bindings, List.of()), new Backup(Path.of("backup.zip"),
+                LocalDateTime.now(), Backups.Kind.BEFORE_CHANGES, Backups.Before.CHECK, true, List.of()),
+                new Leftovers.Plan(plain, List.of("Broken.binds", "notes.txt")));
     }
 
-    /** {@code differences}, with {@code Spare.binds} to tidy up and {@code Broken.binds}, which does not read. */
-    private static BindingsCheck.Found withPlain(Differences differences) {
-        return found(differences, new PlainBinds.Found(Map.of("Spare.binds", new byte[]{1},
-                "Broken.binds", new byte[]{2}), List.of("Broken.binds")));
+    /** {@code differences}, with {@code Spare.binds} to judge and {@code Broken.binds}, which does not read. */
+    private static BindingsCheck.Found withLeftovers(Differences differences) {
+        return found(differences, new Leftovers.Found(Map.of("Spare.binds", new byte[]{1}), List.of("Broken.binds")));
     }
 
-    /** {@code differences} at the first click - no edits - with {@code plain}. */
-    private static BindingsCheck.Found found(Differences differences, PlainBinds.Found plain) {
+    /** {@code differences} at the first click - no edits - with {@code leftovers}. */
+    private static BindingsCheck.Found found(Differences differences, Leftovers.Found leftovers) {
         return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
-                0, new DeviceCheck.Found(List.of()), plain);
+                0, new DeviceCheck.Found(List.of()), leftovers);
     }
 
     private static DeviceCheck.Judged judged(long id, String storefront, DeviceCheck.State state, String problem) {
@@ -261,6 +293,6 @@ class CheckFlowTest {
 
     private static BindingsCheck.Found found(Differences differences, int edited) {
         return new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()), Map.of(), differences,
-                edited, new DeviceCheck.Found(List.of()), PlainBinds.Found.NONE);
+                edited, new DeviceCheck.Found(List.of()), Leftovers.Found.NONE);
     }
 }

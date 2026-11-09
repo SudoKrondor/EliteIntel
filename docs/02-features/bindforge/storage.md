@@ -679,7 +679,7 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     Built in Storage S13b: `FileNames.isPlainBindsFile` / `plainBindName`; `PlainBinds` (read, judge, log);
     `BindingsCheck.Found.plain` and `plainPlan`; the tidy-up in `BindingsCheck.settle` and `Apply.apply`;
     `LiveCopies` removing plain names; `CheckWarningDialog.Offer.TIDY_UP`; `CheckFlow.plainLines` / `plainReport`;
-    `StartupNotice.Line.PlainFiles`.
+    `StartupNotice.Line.PlainFiles`. *Reworked in Storage S13d (2026-11-08) - below.*
 
     **Settled 2026-11-08 (Alan), from the S13aR-S13b code-integrity review and Krondor's review of S13b** - plain
     files judged again, and Leftover User Files. To be built in Storage S13d (Leftover User Files, the startup line) and
@@ -721,6 +721,36 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **The line at Elite-Intel start names only the files the check will actually move** (the review's D1). A
       read-only file is not named at every start - only once, in the check's report. *To confirm at the sources:* the
       line counts every file the check will move, not only plain ones.
+
+    **Settled with Storage S13d's sources (Alan, 2026-11-08, Q1-Q7 as recommended)** - Leftover User Files:
+
+    - **Q1: a leftover `StartPreset.start` is moved**, as the rule's words say. It also ends the loader's
+      `findStartPresetFile` taking whichever `StartPreset.*.start` the folder lists first.
+    - **Q2: a folder inside the bindings folder is left alone.** Only files are moved.
+    - **Q3: a warning holding only files to move offers *Tidy up* / *Not now***, as one holding only plain files did; at
+      APPLY Not now cancels it. So a stray file is never only named: it is something to ask about, like any other.
+    - **Q4: the startup line counts every file the check will move**, not only plain ones.
+    - **Q5: what stays is matched ignoring case** - `<name>.<major>.<minor>.binds`, `StartPreset.N.start` and
+      `BindingLoadingErrors.log` in any case - so nothing that could be the game's own file is moved
+      (`FileNames.staysInBindingsFolder`). Every other match of a kind stays exact (S13a).
+    - **Q6: a read-only file is kept**, checked before the move as a removal checks it - Windows would let it move, but
+      the user protected it. The report gives it its own line, saying it was left rather than moved; the startup line
+      leaves it out.
+    - **Q7: the move is `Files.move`**, which copies and deletes when the two folders are on different drives (possible
+      under a Wine prefix). One that fails stays where it is and is reported.
+    - *Decided while building:* one write's moves go into one date-stamped folder (`yyyy-MM-dd_HH-mm-ss`, as a backup is
+      stamped; `-2` for a second write in the same second), made at the first move, so a write that moves nothing makes
+      no folder. The moves run after the write; if a binds file could not be written they are held back with the
+      removals, since a converted file's binds file may be the one that failed. A file only moved changes nothing of the
+      working copy, so APPLY's backup holds the working copy only when a plain file is converted (the S13aR-S13b
+      review's finding 6, which S13e was to fold in). A plain file that reads as a binds file but has no `<Root>` to
+      convert by is a bug, so it fails fast (the review's finding 4, likewise).
+
+    Built in Storage S13d: `bindforge.storage.Leftovers` (read, plan, log); `FileNames.staysInBindingsFolder`;
+    `AppPaths.getLeftoverUserFilesDir`; `LiveCopies` moving (`LeftoverFolder`), `WriteReport.Place.moved` / `movedTo`;
+    `BindingsCheck.Found.leftovers` and `leftoversPlan`; `Written.leftovers`; `CheckFlow.leftoverLines` /
+    `leftoversReport` / `keptReadOnly(Written)`; `StartupNotice.Line.ToMove`. `PlainBinds` keeps the judging only - its
+    `Found`, `read` and *left alone* outcome went.
 
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
