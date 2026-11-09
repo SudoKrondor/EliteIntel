@@ -36,10 +36,14 @@ jobs:
         shell: pwsh
     env:
       LMS_HOME: D:\LMStudio
+      # Round 2 found the user PATH gained D:\LMStudio\bin AFTER the install, with the flag set only for the
+      # installer. Set for every lms call this time, to see whether that stops it.
+      LMS_NO_MODIFY_PATH: '1'
 
     steps:
       - name: "Baseline: what exists before the install"
         run: |
+          @'
           function Snapshot($file) {
             $lines = @()
             foreach ($root in @($env:USERPROFILE, $env:LOCALAPPDATA, $env:APPDATA)) {
@@ -48,6 +52,19 @@ jobs:
             }
             $lines | Sort-Object | Set-Content $file
           }
+          # Prints what changed since the baseline: the user PATH and the profile folders.
+          function Checkpoint($label) {
+            $before = (Get-Content "$env:RUNNER_TEMP\user-path-before.txt" -Raw).Trim()
+            $now = "$([Environment]::GetEnvironmentVariable('Path', 'User'))".Trim()
+            if ($before -eq $now) { Write-Host "CHECKPOINT [$label] user PATH unchanged" }
+            else { Write-Host "::warning::CHECKPOINT [$label] user PATH changed: $now" }
+            Snapshot "$env:RUNNER_TEMP\now.txt"
+            $diff = Compare-Object (Get-Content "$env:RUNNER_TEMP\before.txt") (Get-Content "$env:RUNNER_TEMP\now.txt")
+            if (-not $diff) { Write-Host "CHECKPOINT [$label] profile folders unchanged" }
+            else { $diff | ForEach-Object { Write-Host "CHECKPOINT [$label] $($_.SideIndicator) $($_.InputObject)" } }
+          }
+          '@ | Set-Content "$env:RUNNER_TEMP\helpers.ps1"
+          . "$env:RUNNER_TEMP\helpers.ps1"
           Snapshot "$env:RUNNER_TEMP\before.txt"
           [Environment]::GetEnvironmentVariable('Path', 'User') | Set-Content "$env:RUNNER_TEMP\user-path-before.txt"
           Write-Host "User PATH before:"; Get-Content "$env:RUNNER_TEMP\user-path-before.txt"
@@ -56,8 +73,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path $env:LMS_HOME | Out-Null
           [IO.File]::WriteAllText("$env:USERPROFILE\.lmstudio-home-pointer", $env:LMS_HOME)
-          $env:LMS_NO_MODIFY_PATH = '1'
           irm https://lmstudio.ai/install.ps1 | iex
+          . "$env:RUNNER_TEMP\helpers.ps1"; Checkpoint "after install"
 
       - name: "Q1: where did it install?"
         run: |
@@ -93,8 +110,11 @@ jobs:
 
       - name: "Q4: start the daemon and server, start a REST download"
         run: |
+          . "$env:RUNNER_TEMP\helpers.ps1"
           & $env:LMS daemon up
+          Checkpoint "after daemon up"
           & $env:LMS server start --port 1234
+          Checkpoint "after server start"
           $r = Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/download `
                  -ContentType "application/json" -Body (@{ model = $env:MODEL } | ConvertTo-Json)
           $r | ConvertTo-Json -Depth 5
@@ -161,6 +181,7 @@ jobs:
             Where-Object { $_.key -eq $env:MODEL } | ForEach-Object { $_.loaded_instances | ConvertTo-Json -Depth 6 }
           $ids = (Invoke-RestMethod http://localhost:1234/v1/models).data.id
           Write-Host "/v1/models: $($ids -join ', ')"
+          . "$env:RUNNER_TEMP\helpers.ps1"; Checkpoint "after download and load"
 
       - name: "Q7: uninstall: stop, daemon down, delete the home and the pointer"
         run: |
@@ -175,43 +196,40 @@ jobs:
 
       - name: "Q7: what is left behind?"
         run: |
-          function Snapshot($file) {
-            $lines = @()
-            foreach ($root in @($env:USERPROFILE, $env:LOCALAPPDATA, $env:APPDATA)) {
-              $lines += Get-ChildItem -Force -LiteralPath $root -ErrorAction SilentlyContinue |
-                ForEach-Object { $_.FullName }
-            }
-            $lines | Sort-Object | Set-Content $file
-          }
-          Snapshot "$env:RUNNER_TEMP\after.txt"
-          $diff = Compare-Object (Get-Content "$env:RUNNER_TEMP\before.txt") (Get-Content "$env:RUNNER_TEMP\after.txt")
-          if (-not $diff) { Write-Host "OK: nothing left behind in the profile, LOCALAPPDATA or APPDATA." }
-          else {
-            Write-Host "::warning::Left behind (=> new since the baseline, <= removed):"
-            $diff | ForEach-Object { Write-Host "  $($_.SideIndicator) $($_.InputObject)" }
-          }
-          $after = [Environment]::GetEnvironmentVariable('Path', 'User')
-          Write-Host "User PATH now: $after"
+          . "$env:RUNNER_TEMP\helpers.ps1"; Checkpoint "after uninstall"
 
   linux:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       LMS_HOME: /mnt/lmstudio
+      LMS_NO_MODIFY_PATH: '1'
 
     steps:
       - name: "Baseline: what exists before the install"
         run: |
+          cat > "$RUNNER_TEMP/helpers.sh" <<'EOF'
           snapshot() { for d in "$HOME" "$HOME/.config" "$HOME/.cache" "$HOME/.local/share"; do ls -A1 "$d" 2>/dev/null | sed "s|^|$d/|"; done | sort; }
+          profiles() { for f in .bashrc .profile .bash_profile .zshrc; do [ -f "$HOME/$f" ] && sha256sum "$HOME/$f"; done; true; }
+          # Prints what changed since the baseline: the shell profiles and the home folders.
+          checkpoint() {
+            if diff -q "$RUNNER_TEMP/profiles-before.txt" <(profiles) >/dev/null; then echo "CHECKPOINT [$1] shell profiles unchanged"
+            else echo "::warning::CHECKPOINT [$1] a shell profile changed"; diff "$RUNNER_TEMP/profiles-before.txt" <(profiles) || true; fi
+            if diff -q "$RUNNER_TEMP/before.txt" <(snapshot) >/dev/null; then echo "CHECKPOINT [$1] home folders unchanged"
+            else diff "$RUNNER_TEMP/before.txt" <(snapshot) | sed "s|^|CHECKPOINT [$1] |" || true; fi
+          }
+          EOF
+          . "$RUNNER_TEMP/helpers.sh"
           snapshot > "$RUNNER_TEMP/before.txt"
-          for f in .bashrc .profile .bash_profile .zshrc; do [ -f "$HOME/$f" ] && sha256sum "$HOME/$f"; done > "$RUNNER_TEMP/profiles-before.txt"
+          profiles > "$RUNNER_TEMP/profiles-before.txt"
           cat "$RUNNER_TEMP/profiles-before.txt"
 
       - name: "Q1: write the home pointer to /mnt (a second disk), then install with LMS_NO_MODIFY_PATH=1"
         run: |
           sudo mkdir -p "$LMS_HOME" && sudo chown "$(id -u):$(id -g)" "$LMS_HOME"
           printf '%s' "$LMS_HOME" > "$HOME/.lmstudio-home-pointer"
-          curl -fsSL https://lmstudio.ai/install.sh | LMS_NO_MODIFY_PATH=1 bash
+          curl -fsSL https://lmstudio.ai/install.sh | bash
+          . "$RUNNER_TEMP/helpers.sh"; checkpoint "after install"
 
       - name: "Q1: where did it install?"
         run: |
@@ -222,12 +240,6 @@ jobs:
           else find / -name lms -type f 2>/dev/null | head; exit 1; fi
           echo "LMS=$LMS" >> "$GITHUB_ENV"
 
-      - name: "Q2: did any shell profile change?"
-        run: |
-          for f in .bashrc .profile .bash_profile .zshrc; do [ -f "$HOME/$f" ] && sha256sum "$HOME/$f"; done > "$RUNNER_TEMP/profiles-after.txt"
-          if diff "$RUNNER_TEMP/profiles-before.txt" "$RUNNER_TEMP/profiles-after.txt"; then echo "OK: profiles unchanged"
-          else echo "::warning::A shell profile changed"; fi
-
       - name: "Q3: size of LM Studio itself (no model yet)"
         run: |
           du -sh "$LMS_HOME" "$HOME/.lmstudio" 2>/dev/null || true
@@ -235,8 +247,11 @@ jobs:
 
       - name: "Q4: daemon, server, REST download with progress"
         run: |
+          . "$RUNNER_TEMP/helpers.sh"
           "$LMS" daemon up
+          checkpoint "after daemon up"
           "$LMS" server start --port 1234
+          checkpoint "after server start"
           r=$(curl -s -X POST http://localhost:1234/api/v1/models/download -H 'Content-Type: application/json' -d "{\"model\":\"$MODEL\"}")
           echo "$r" | jq .
           job=$(echo "$r" | jq -r .job_id)
@@ -253,7 +268,8 @@ jobs:
 
       - name: "Q1: where did the model land?"
         run: |
-          find "$LMS_HOME" "$HOME/.lmstudio" -name '*.gguf' -exec ls -la {} \; 2>/dev/null
+          # find exits 1 when a start folder is missing (round 2 died here: the pointer worked, so no ~/.lmstudio).
+          find "$LMS_HOME" "$HOME/.lmstudio" -name '*.gguf' -exec ls -la {} \; 2>/dev/null || true
           "$LMS" ls
 
       - name: "Q6: REST load with Elite Intel's settings"
@@ -261,6 +277,7 @@ jobs:
           curl -s -X POST http://localhost:1234/api/v1/models/load -H 'Content-Type: application/json' \
             -d "{\"model\":\"$MODEL\",\"context_length\":8192,\"flash_attention\":true,\"echo_load_config\":true}" | jq .
           curl -s http://localhost:1234/v1/models | jq -c '[.data[].id]'
+          . "$RUNNER_TEMP/helpers.sh"; checkpoint "after download and load"
 
       - name: "Q7: uninstall and look for leftovers"
         run: |
@@ -270,7 +287,4 @@ jobs:
           sleep 5
           echo "Processes that look like LM Studio:"; pgrep -af 'llmster|lms' || echo "  none"
           rm -rf "$LMS_HOME" "$HOME/.lmstudio-home-pointer"
-          snapshot() { for d in "$HOME" "$HOME/.config" "$HOME/.cache" "$HOME/.local/share"; do ls -A1 "$d" 2>/dev/null | sed "s|^|$d/|"; done | sort; }
-          snapshot > "$RUNNER_TEMP/after.txt"
-          if diff "$RUNNER_TEMP/before.txt" "$RUNNER_TEMP/after.txt"; then echo "OK: nothing left behind"
-          else echo "::warning::Left behind (> new since the baseline)"; fi
+          . "$RUNNER_TEMP/helpers.sh"; checkpoint "after uninstall"
