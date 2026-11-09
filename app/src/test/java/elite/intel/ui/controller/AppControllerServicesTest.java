@@ -44,6 +44,18 @@ class AppControllerServicesTest {
     }
 
     /**
+     * The app's own LM Studio must be answering before the brain starts, so its connection check finds it, and it
+     * must go after the brain on the way down (docs/LM_STUDIO_INSTALL_ASSISTANCE.md, "Starting and stopping").
+     */
+    @Test
+    void theAppsOwnLmStudioComesUpBeforeVega() {
+        List<ServiceType> order =
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC).keySet());
+        assertTrue(order.indexOf(ServiceType.LOCAL_LLM_HOST) >= 0);
+        assertEquals(order.indexOf(ServiceType.VEGA) - 1, order.indexOf(ServiceType.LOCAL_LLM_HOST));
+    }
+
+    /**
      * Push-to-talk used to run off a Swing settings panel, so it worked only because that tab is built at
      * startup. As a service it needs the registry entry, and it needs the device poll loop feeding it and a
      * microphone to put to sleep before it arms.
@@ -103,6 +115,31 @@ class AppControllerServicesTest {
                     List.of(ServiceType.JOURNAL_PARSER, ServiceType.AUXILIARY_FILES_MONITOR),
                     order.subList(order.size() - 2, order.size()));
         }
+    }
+
+    /**
+     * The brain restart asks this to decide whether the app's own LM Studio must be started or stopped, and a creator
+     * that declines - no LM Studio of the app's own - leaves nothing running.
+     */
+    @Test
+    void serviceHolderSaysWhetherAServiceIsRunning() {
+        AppController.ServiceHolder declined = new AppController.ServiceHolder(() -> null);
+        declined.start();
+        assertFalse(declined.isStarted());
+
+        AppController.ServiceHolder holder = new AppController.ServiceHolder(() -> new ManagedService() {
+            @Override
+            public void start() {
+            }
+
+            @Override
+            public void stop() {
+            }
+        });
+        holder.start();
+        assertTrue(holder.isStarted());
+        holder.stop();
+        assertFalse(holder.isStarted());
     }
 
     @Test

@@ -8,6 +8,7 @@ import elite.intel.ai.brain.health.AiServiceCheck;
 import elite.intel.ai.brain.health.AiServiceHealth;
 import elite.intel.ai.brain.health.AiServiceReport;
 import elite.intel.ai.brain.health.AiServiceVerdict;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioHost;
 import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
 import elite.intel.ai.brain.vega.prompt.SemanticCatalogWarmer;
 import elite.intel.ai.ears.*;
@@ -205,6 +206,18 @@ public class AppController {
         }).start();
     }
 
+    /**
+     * WHY on the publishing thread, unlike the restarts: the uninstall that publishes it deletes LM Studio's folder
+     * next, and must not start before LM Studio has let go of its files.
+     */
+    @Subscribe
+    void onStopLocalLlmHostEvent(StopLocalLlmHostEvent event) {
+        synchronized (lifecycleLock) {
+            ServiceHolder host = services.get(ServiceType.LOCAL_LLM_HOST);
+            if (host != null) host.stop();
+        }
+    }
+
     @Subscribe
     void onRestartBrainEvent(RestartBrainEvent event) {
         new Thread(this::restartBrainService, "BrainRestart-Thread").start();
@@ -237,6 +250,23 @@ public class AppController {
         }
     }
 
+    /**
+     * Starts the app's own LM Studio when the settings now call for it - an install that just finished saved them -
+     * and stops it when they no longer do, such as a switch to a cloud model. Left alone when nothing changed for it,
+     * since stopping and starting it reloads the model.
+     */
+    private void matchLocalLlmHostToSettings() {
+        ServiceHolder host = services.get(ServiceType.LOCAL_LLM_HOST);
+        if (host == null) return;
+        boolean wanted = LmStudioHost.isWanted();
+        if (wanted == host.isStarted()) return;
+        if (wanted) {
+            host.start();
+        } else {
+            host.stop();
+        }
+    }
+
     private void restartBrainService() {
         synchronized (lifecycleLock) {
             if (!isServiceRunning()) return;
@@ -248,6 +278,7 @@ public class AppController {
             // A restart is how a provider change takes effect; the old provider's record says nothing of the new one.
             AiServiceHealth.getInstance().reset();
             brain.stop();
+            matchLocalLlmHostToSettings();
             brain.start();
             appendToLog("LLM service restarted");
             if (sleepNoticeHeldBack) {
@@ -564,6 +595,9 @@ public class AppController {
         // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path
         // without pressing keys into the game or calling third-party REST APIs) and a speech gateway that
         // delegates to the real TTS path (audible voice + chat-panel replies, indistinguishable from normal).
+        // Before VEGA, so the brain finds the app's own LM Studio answering, and stopped after it. Not started at all
+        // (a null instance) unless the app installed LM Studio and the brain runs on it.
+        services.put(ServiceType.LOCAL_LLM_HOST, new ServiceHolder(LmStudioHost::forOwnedInstall));
         services.put(ServiceType.VEGA, new ServiceHolder(diagnostics
                 ? () -> new VegaSubsystemGate(null, new DiagnosticsExecutionGateway(), new DiagnosticsSpeechGateway())
                 : VegaSubsystemGate::new));
@@ -624,6 +658,13 @@ public class AppController {
             }
         }
 
+        /**
+         * Whether a service is running in this holder. False after a start whose creator declined with {@code null}.
+         */
+        synchronized boolean isStarted() {
+            return instance != null;
+        }
+
         synchronized void stop() {
             if (instance != null) {
                 instance.stop();
@@ -639,7 +680,7 @@ public class AppController {
 
     enum ServiceType {
         MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK,
-        VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER,
+        LOCAL_LLM_HOST, VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER,
         AUXILIARY_FILES_MONITOR
     }
 }

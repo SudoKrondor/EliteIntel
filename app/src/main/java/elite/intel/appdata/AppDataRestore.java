@@ -1,5 +1,6 @@
 package elite.intel.appdata;
 
+import elite.intel.ai.brain.inference.lmstudio.install.InstallMarker;
 import elite.intel.db.util.DatabaseMigrator;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +29,8 @@ import java.util.zip.ZipFile;
  * nothing live is touched here; the swap happens at startup, before the database opens.
  * <p>
  * Everything a restored database says that belongs to the old computer is put right while it is still staged:
- * folders that do not exist here are forgotten, and API keys this computer's key cannot read are cleared.
+ * folders that do not exist here are forgotten, an LM Studio install made on another computer is forgotten, and API
+ * keys this computer's key cannot read are cleared.
  * Touches the disk - not for the EDT.
  */
 public final class AppDataRestore {
@@ -233,6 +235,7 @@ public final class AppDataRestore {
             byte[] keyBytes = Files.isRegularFile(key) ? Files.readAllBytes(key) : null;
             withDatabase(sharedDatabase, h -> {
                 forgetMissingFolders(h);
+                forgetForeignLmStudioInstall(h);
                 clearUnreadableApiKeys(h, keyBytes);
                 return null;
             });
@@ -268,6 +271,31 @@ public final class AppDataRestore {
                 if (isFolderHere(folder)) continue;
                 h.execute("UPDATE " + table + " SET " + column + " = NULL WHERE " + column + " = ?", folder);
             }
+        }
+    }
+
+    /**
+     * Forgets the record of an LM Studio the app installed, unless its folder here holds that install's marker. A
+     * record from another computer would otherwise let Uninstall delete an LM Studio this commander installed
+     * themselves, at a path that only happens to match (see {@link InstallMarker}).
+     */
+    private static void forgetForeignLmStudioInstall(Handle h) {
+        if (!hasColumn(h, "lm_studio_install", "install_id")) return;
+        Optional<Map<String, Object>> row = h.createQuery("SELECT install_id, home_dir FROM lm_studio_install")
+                .mapToMap()
+                .findOne();
+        if (row.isEmpty()) return;
+        if (isInstallHere((String) row.get().get("install_id"), (String) row.get().get("home_dir"))) return;
+        h.execute("DELETE FROM lm_studio_install");
+    }
+
+    private static boolean isInstallHere(String installId, String homeDir) {
+        try {
+            return InstallMarker.matches(Path.of(homeDir), UUID.fromString(installId));
+        } catch (IllegalArgumentException unreadable) {
+            // WHY: also catches InvalidPathException, which is an IllegalArgumentException. A record this PC cannot
+            // even read describes no install here.
+            return false;
         }
     }
 

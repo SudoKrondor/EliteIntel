@@ -1,24 +1,37 @@
 package elite.intel.ui.screen.services;
 
 import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
+import elite.intel.ai.brain.inference.lmstudio.install.InstallException;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSetupOffer;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioUninstaller;
 import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.db.managers.LmStudioInstallManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.LmStudioInstallDialog;
 import elite.intel.ui.dialog.SupertonicVoiceTuningDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.event.StopLocalLlmHostEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
+import elite.intel.ui.i18n.LocalizedNumbers;
 import elite.intel.ui.widget.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -38,11 +51,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  */
 public class AiServicesPanel extends JPanel {
 
-    private static final String DEFAULT_MODEL = "google/gemma-4-e4b";
-    /**
-     * LM Studio's out-of-the-box OpenAI-compatible endpoint; the only local host this app talks to.
-     */
-    private static final String DEFAULT_LOCAL_ADDRESS = "http://localhost:1234/v1/chat/completions";
+    private static final Logger log = LogManager.getLogger(AiServicesPanel.class);
 
     /**
      * Google's pace on the slider's scale: 1 + 30/100 times its own.
@@ -58,6 +67,15 @@ public class AiServicesPanel extends JPanel {
     private HudSegmentedControl llmSourceControl;
     private JTextField addressField;
     private JTextField commandModelField;
+    /**
+     * Installs or sets up LM Studio for this PC. Hidden unless {@link LmStudioSetupOffer#forThisPc()} offers
+     * something: a PC that cannot run the game and the model together never sees it.
+     */
+    private JButton lmStudioSetupButton;
+    /**
+     * What {@link #lmStudioSetupButton} does when pressed: the offer it was last shown for.
+     */
+    private LmStudioSetupOffer lmStudioSetupOffer = LmStudioSetupOffer.NONE;
     private HudComboBox<ProviderOption> providerCombo;
     private JPasswordField apiKeyField;
     /**
@@ -147,6 +165,15 @@ public class AiServicesPanel extends JPanel {
         nextRow(gc);
         addLabel(localCol, getText("settings.ai.model"), gc, 0);
         addField(localCol, commandModelField, gc, 1, 1.0);
+
+        // Under the fields, at its natural width; its caption and visibility come from refreshLmStudioSetupOffer.
+        lmStudioSetupButton = makeButton("");
+        lmStudioSetupButton.setVisible(false);
+        lmStudioSetupButton.addActionListener(e -> openLmStudioSetup());
+        JPanel lmStudioSetupRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        lmStudioSetupRow.add(lmStudioSetupButton);
+        nextRow(gc);
+        addSpanComponent(localCol, lmStudioSetupRow, gc);
 
         // Right column - CLOUD SETUP.
         rightCol = transparentPanel(new GridBagLayout());
@@ -326,7 +353,7 @@ public class AiServicesPanel extends JPanel {
             boolean local = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
             llmSourceControl.setSelectedIndex(local ? SRC_LOCAL : SRC_CLOUD);
 
-            lmAddress = nz(systemSession.getLmStudioAddress(), DEFAULT_LOCAL_ADDRESS);
+            lmAddress = nz(systemSession.getLmStudioAddress(), LmStudioDefaults.ADDRESS);
             lmCommand = nz(systemSession.getLmStudioCommandModel(), "");
             loadFields();
 
@@ -356,6 +383,118 @@ public class AiServicesPanel extends JPanel {
             loading = false;
         }
         clearDirty();
+        refreshLmStudioSetupOffer();
+    }
+
+    /**
+     * Works out, off the event thread, what the LM Studio setup button should offer for this PC, then shows it or
+     * hides it. Reads the saved settings, so it follows a save rather than each keystroke.
+     */
+    private void refreshLmStudioSetupOffer() {
+        Thread.ofVirtual().name("lm-studio-setup-offer").start(() -> {
+            LmStudioSetupOffer offer;
+            try {
+                offer = LmStudioSetupOffer.forThisPc();
+            } catch (RuntimeException e) {
+                // WHY: broad catch at the worker-thread boundary - the button is a convenience, so a failed check
+                // leaves it hidden and the manual guides still work, rather than dying unseen on a virtual thread.
+                log.error("Could not work out what to offer for LM Studio setup", e);
+                offer = LmStudioSetupOffer.NONE;
+            }
+            LmStudioSetupOffer shown = offer;
+            SwingUtilities.invokeLater(() -> showLmStudioSetupOffer(shown));
+        });
+    }
+
+    private void showLmStudioSetupOffer(LmStudioSetupOffer offer) {
+        lmStudioSetupOffer = offer;
+        offer.captionKey().ifPresent(key -> lmStudioSetupButton.setText(getText(key)));
+        lmStudioSetupButton.setVisible(offer.captionKey().isPresent());
+        localCol.revalidate();
+        localCol.repaint();
+    }
+
+    private void openLmStudioSetup() {
+        switch (lmStudioSetupOffer) {
+            case INSTALL, SET_UP_EXISTING, CONTINUE_SETUP -> {
+                LmStudioInstallDialog.open(this, lmStudioSetupOffer, this::saveLmStudioSetup);
+                refreshLmStudioSetupOffer();
+            }
+            case UNINSTALL -> LmStudioSetupOffer.ownedInstall().ifPresent(this::uninstallLmStudio);
+            case NONE -> {
+                // WHY nothing: the button is hidden for NONE, so a press can only come from a stale offer.
+            }
+        }
+    }
+
+    /**
+     * Lists what will be deleted and asks first, then uninstalls off the event thread with the button showing it is
+     * busy, and says how it ended.
+     */
+    private void uninstallLmStudio(LmStudioInstallManager.Install owned) {
+        boolean confirmed = HudConfirmDialog.confirm(this,
+                getText("lmStudioUninstall.confirm.title"),
+                getText("lmStudioUninstall.confirm.message", owned.homeDir().toString(), modelList(owned)),
+                getText("lmStudioUninstall.confirm.button"),
+                getText("button.cancel"));
+        if (!confirmed) return;
+        lmStudioSetupButton.setEnabled(false);
+        lmStudioSetupButton.setText(getText("lmStudioUninstall.working"));
+        LmStudioUninstaller uninstaller = new LmStudioUninstaller(
+                () -> UiBus.publish(new StopLocalLlmHostEvent()),
+                this::saveLmStudioSetup,
+                line -> UiBus.publish(new AppLogEvent("LM Studio uninstall: " + line)));
+        Thread.ofVirtual().name("lm-studio-uninstall").start(() -> {
+            LmStudioUninstaller.Outcome outcome = uninstaller.uninstall(owned);
+            SwingUtilities.invokeLater(() -> {
+                lmStudioSetupButton.setEnabled(llmSourceControl.getSelectedIndex() == SRC_LOCAL);
+                String message = switch (outcome) {
+                    case LmStudioUninstaller.Outcome.Uninstalled() -> getText("lmStudioUninstall.done.message");
+                    case LmStudioUninstaller.Outcome.Failed(String reason) ->
+                            getText("lmStudioUninstall.failed.message", reason);
+                };
+                HudConfirmDialog.info(this, getText("lmStudioUninstall.confirm.title"), message, getText("button.close"));
+                refreshLmStudioSetupOffer();
+            });
+        });
+    }
+
+    private static String modelList(LmStudioInstallManager.Install owned) {
+        List<LmStudioUninstaller.ModelFile> models = LmStudioUninstaller.modelsIn(owned);
+        if (models.isEmpty()) return getText("lmStudioUninstall.confirm.noModels");
+        StringBuilder list = new StringBuilder();
+        for (LmStudioUninstaller.ModelFile model : models) {
+            if (!list.isEmpty()) list.append('\n');
+            list.append("• ").append(model.name()).append("  ")
+                    .append(String.format(LocalizedNumbers.locale(), "%.1f GB", model.bytes() / (1024.0 * 1024 * 1024)));
+        }
+        return list.toString();
+    }
+
+    /**
+     * The install's last step: fills in Address and Model on the LMStudio Setup side and saves through
+     * {@link #save()}, so the brain restarts as it would for the commander's own edit. Called on the install's thread.
+     *
+     * @throws InstallException when the save was refused or could not be made
+     */
+    private void saveLmStudioSetup(String address, String model) throws InstallException {
+        AtomicBoolean saved = new AtomicBoolean();
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                llmSourceControl.setSelectedIndex(SRC_LOCAL);
+                addressField.setText(address);
+                commandModelField.setText(model);
+                saved.set(save());
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InstallException("Interrupted while saving Address and Model", e);
+        } catch (InvocationTargetException e) {
+            throw new InstallException("Address and Model could not be saved: " + e.getCause().getMessage(), e.getCause());
+        }
+        if (!saved.get()) {
+            throw new InstallException("The AI Services settings were not saved");
+        }
     }
 
     /**
@@ -392,6 +531,8 @@ public class AiServicesPanel extends JPanel {
         for (Component c : localCol.getComponents()) {
             c.setEnabled(local);
         }
+        // Nested in its own row panel, which the loop above enables without reaching the button inside.
+        lmStudioSetupButton.setEnabled(local);
 
         // Right column: dim its labels and the info banner; the API-key field also respects the lock.
         boolean cloud = !local;
@@ -554,6 +695,7 @@ public class AiServicesPanel extends JPanel {
         savedGoogleSpeechSpeed = newSpeed;
 
         clearDirty();
+        refreshLmStudioSetupOffer();
         return true;
     }
 
@@ -563,8 +705,8 @@ public class AiServicesPanel extends JPanel {
     private void restoreDefaults() {
         loading = true;
         try {
-            lmAddress = DEFAULT_LOCAL_ADDRESS;
-            lmCommand = DEFAULT_MODEL;
+            lmAddress = LmStudioDefaults.ADDRESS;
+            lmCommand = LmStudioDefaults.MODEL;
             llmSourceControl.setSelectedIndex(SRC_LOCAL);
             loadFields();
             updateEnablement();
