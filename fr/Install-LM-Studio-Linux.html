@@ -143,7 +143,9 @@ export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
 </code></pre>
 <hr>
 <h3>Étape 2 – Télécharger le modèle</h3>
-<pre><code class="language-shell">lms get google/gemma-4-e4b
+<p>Démarrez le serveur d&#39;arrière-plan de LM Studio, puis téléchargez le modèle :</p>
+<pre><code class="language-shell">lms daemon up
+lms get google/gemma-4-e4b
 </code></pre>
 <p>Si le nom ne correspond pas exactement, <code>lms get</code> liste les candidats trouvés ; choisissez-en
 un avec les flèches et Entrée.</p>
@@ -158,19 +160,20 @@ un avec les flèches et Entrée.</p>
 <hr>
 <h3>Étape 3 – Démarrer le serveur</h3>
 <p>Chargez le modèle et démarrez le serveur d&#39;inférence :</p>
-<pre><code class="language-shell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
+<pre><code class="language-shell">lms daemon up
+lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
-<p><code>--gpu max</code> délègue l&#39;inférence au GPU pour des performances maximales.</p>
+<p><code>--gpu max</code> délègue l&#39;inférence au GPU pour des performances maximales. <code>lms daemon up</code> ne fait rien si le serveur d&#39;arrière-plan tourne déjà : vous pouvez donc l&#39;inclure à chaque fois.</p>
 <p>Vérifiez qu&#39;il fonctionne :</p>
 <pre><code class="language-shell">curl http://localhost:1234/v1/models
 </code></pre>
-<p>Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d&#39;identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ <strong>LLM Model</strong> d&#39;Elite Intel.</p>
+<p>Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d&#39;identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ <strong>Modèle</strong> d&#39;Elite Intel.</p>
 <p>Pour arrêter le serveur :</p>
 <pre><code class="language-shell">lms server stop
 </code></pre>
 <blockquote>
-<p>⚠️ <strong>Important :</strong> Le serveur LM Studio ne <strong>survit pas</strong> aux redémarrages. Exécutez <code>lms server start</code> à nouveau après chaque redémarrage, ou configurez le démarrage automatique optionnel ci-dessous.</p>
+<p>⚠️ <strong>Important :</strong> Le serveur LM Studio ne <strong>survit pas</strong> aux redémarrages. Exécutez à nouveau les trois commandes de l&#39;étape 3 après chaque redémarrage, ou configurez le démarrage automatique optionnel ci-dessous.</p>
 </blockquote>
 <hr>
 <h3>Étape 4 – (Optionnel) Démarrage automatique au démarrage</h3>
@@ -197,8 +200,8 @@ Environment=&quot;HOME=/home/YOUR_USERNAME&quot;
 Environment=&quot;PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin&quot;
 Environment=&quot;XDG_RUNTIME_DIR=/run/user/YOUR_UID&quot;
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
-ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192
-ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
 
@@ -208,6 +211,9 @@ WantedBy=default.target
 <p>Remplacez <code>YOUR_USERNAME</code> par votre nom d&#39;utilisateur Linux et <code>YOUR_UID</code> par votre identifiant utilisateur. Pour trouver votre UID :</p>
 <pre><code class="language-shell">id -u
 </code></pre>
+<blockquote>
+<p><strong>Le jeu sur un autre PC ?</strong> Avec <code>--bind 127.0.0.1</code>, le serveur n&#39;est joignable que depuis cette machine. Si Elite Intel tourne sur un autre PC, remplacez-le par <code>--bind 0.0.0.0</code> pour que les autres machines de votre réseau puissent le joindre.</p>
+</blockquote>
 <blockquote>
 <p>⚠️ <strong>Pourquoi <code>XDG_RUNTIME_DIR</code> ?</strong> Les services utilisateur s&#39;exécutent dans un environnement épuré qui peut ne pas inclure les variables de session. LM Studio utilise <code>XDG_RUNTIME_DIR</code> pour l&#39;IPC. Sans lui, le service peut échouer silencieusement même quand <code>lms</code> fonctionne correctement depuis le terminal. C&#39;est la cause la plus fréquente d&#39;échec du service lorsque l&#39;exécution manuelle réussit.</p>
 </blockquote>
@@ -228,8 +234,9 @@ curl http://localhost:1234/v1/models
 </blockquote>
 <hr>
 <h3>Étape 4b – (Optionnel) Corriger l&#39;inférence lente après le démarrage</h3>
-<p>Certains utilisateurs constatent des réponses d&#39;inférence lentes lorsque LM Studio démarre au boot. Le problème se résout immédiatement après un redémarrage manuel du service. Cela est dû à une particularité de l&#39;initialisation du démon LM Studio. Le premier démarrage à froid peut laisser le moteur d&#39;inférence dans un état dégradé.</p>
-<p>Si des réponses lentes apparaissent après un redémarrage et se résolvent après un redémarrage manuel, cette minuterie automatise le correctif.</p>
+<p>Certains utilisateurs constatent des réponses d&#39;inférence lentes lorsque LM Studio démarre au boot. Le problème se résout immédiatement après un redémarrage manuel du service. La cause n&#39;est pas confirmée.</p>
+<p>Vérifiez d&#39;abord que la ligne <code>lms load</code> de votre fichier de service se termine par <code>--gpu max</code>. Les anciennes versions de cette page l&#39;omettaient. Sans cette option, LM Studio décide lui-même quelle part du modèle va sur le GPU, et au démarrage il peut en placer une partie sur le CPU. Si vous l&#39;ajoutez, exécutez <code>systemctl --user daemon-reload</code> et redémarrez pour tester.</p>
+<p>Si des réponses lentes apparaissent encore après un redémarrage et se résolvent après un redémarrage manuel, cette minuterie automatise le correctif.</p>
 <p>Créez un service complémentaire :</p>
 <pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.service
 </code></pre>
@@ -245,7 +252,7 @@ ExecStart=systemctl --user restart lmstudio.service
 <pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.timer
 </code></pre>
 <pre><code class="language-ini">[Unit]
-Description=Restart LM Studio 2 minutes after login
+Description=Restart LM Studio 2 minutes after boot
 
 [Timer]
 OnBootSec=2min
@@ -258,15 +265,16 @@ WantedBy=timers.target
 <pre><code class="language-shell">systemctl --user daemon-reload
 systemctl --user enable --now lmstudio-restart.timer
 </code></pre>
-<p>La minuterie attend 2 minutes après la connexion, redémarre le service LM Studio une fois, puis reste inactive. Si vous ne rencontrez pas d&#39;inférence lente, cette étape n&#39;est pas nécessaire.</p>
+<p>La minuterie attend 2 minutes après le démarrage, redémarre le service LM Studio une fois, puis reste inactive. Si vous ne rencontrez pas d&#39;inférence lente, cette étape n&#39;est pas nécessaire.</p>
 <hr>
 <h3>Étape 5 – Configurer Elite Intel</h3>
-<p>Ouvrez <strong>Services → Services IA</strong> dans Elite Intel et sélectionnez <strong>LMStudio</strong> :</p>
+<p>Dans Elite Intel, ouvrez <strong>Services → Services IA</strong>. Sous <strong>Modèle de langage (LLM)</strong>, sélectionnez <strong>LMStudio</strong> :</p>
 <ul>
-<li><strong>Adresse</strong> : définissez sur <code>http://localhost:1234/v1/chat/completions</code>. Si LM Studio est sur une autre machine, remplacez <code>localhost</code> par l&#39;IP de cette machine.</li>
-<li><strong>Modèle</strong> : collez la chaîne d&#39;identifiant du modèle obtenue via <code>curl http://localhost:1234/v1/models</code>.</li>
+<li><strong>Adresse</strong> : <code>http://localhost:1234/v1/chat/completions</code> (la valeur par défaut). Si LM Studio est sur une autre machine, remplacez <code>localhost</code> par l&#39;adresse IP de cette machine.</li>
+<li><strong>Modèle</strong> : collez la chaîne d&#39;identifiant du modèle obtenue via <code>curl http://localhost:1234/v1/models</code>. Un seul modèle sert aux commandes comme aux requêtes.</li>
 </ul>
-<p>Cliquez sur <strong>Enregistrer</strong>.</p>
+<p>Un LLM local ne nécessite pas de clé d&#39;API.</p>
+<p>Cliquez sur <strong>Enregistrer</strong>. Elite Intel redémarre alors le modèle de langage de lui-même.</p>
 <hr>
 <p>Communauté 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

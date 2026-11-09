@@ -143,7 +143,9 @@ export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
 </code></pre>
 <hr>
 <h3>Шаг 2 — Загрузка модели</h3>
-<pre><code class="language-shell">lms get google/gemma-4-e4b
+<p>Запустите фоновый сервер LM Studio, затем загрузите модель:</p>
+<pre><code class="language-shell">lms daemon up
+lms get google/gemma-4-e4b
 </code></pre>
 <p>Если имя не совпадает точно, <code>lms get</code> покажет найденные варианты — выберите нужный
 стрелками и клавишей Enter.</p>
@@ -158,19 +160,20 @@ export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
 <hr>
 <h3>Шаг 3  Запуск сервера</h3>
 <p>Загрузите модель и запустите сервер инференса:</p>
-<pre><code class="language-shell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
+<pre><code class="language-shell">lms daemon up
+lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
-<p><code>--gpu max</code> переносит инференс на GPU для максимальной производительности.</p>
+<p><code>--gpu max</code> переносит инференс на GPU для максимальной производительности. <code>lms daemon up</code> ничего не делает, если фоновый сервер уже запущен, поэтому его можно безопасно выполнять каждый раз.</p>
 <p>Проверьте работу:</p>
 <pre><code class="language-shell">curl http://localhost:1234/v1/models
 </code></pre>
-<p>Вы должны получить JSON-список загруженных моделей. Строка model ID в этом ответе  то, что нужно ввести в поле <strong>LLM Model</strong> в Elite Intel.</p>
+<p>Вы должны получить JSON-список загруженных моделей. Строка model ID в этом ответе  то, что нужно ввести в поле <strong>Модель</strong> в Elite Intel.</p>
 <p>Остановить сервер:</p>
 <pre><code class="language-shell">lms server stop
 </code></pre>
 <blockquote>
-<p>⚠️ <strong>Важно:</strong> Сервер LM Studio <strong>не переживает перезагрузку</strong>. После каждого перезапуска выполняйте <code>lms server start</code> снова или настройте автозапуск, описанный ниже.</p>
+<p>⚠️ <strong>Важно:</strong> Сервер LM Studio <strong>не переживает перезагрузку</strong>. После каждого перезапуска снова выполняйте три команды из шага 3 или настройте автозапуск, описанный ниже.</p>
 </blockquote>
 <hr>
 <h3>Шаг 4  (Необязательно) Автозапуск при загрузке системы</h3>
@@ -197,8 +200,8 @@ Environment=&quot;HOME=/home/YOUR_USERNAME&quot;
 Environment=&quot;PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin&quot;
 Environment=&quot;XDG_RUNTIME_DIR=/run/user/YOUR_UID&quot;
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
-ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192
-ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
 
@@ -208,6 +211,9 @@ WantedBy=default.target
 <p>Замените <code>YOUR_USERNAME</code> на ваше имя пользователя Linux, а <code>YOUR_UID</code>  на ваш ID пользователя. Чтобы узнать UID:</p>
 <pre><code class="language-shell">id -u
 </code></pre>
+<blockquote>
+<p><strong>Игра на другом ПК?</strong> <code>--bind 127.0.0.1</code> делает сервер доступным только с этого компьютера. Если Elite Intel работает на другом ПК, замените его на <code>--bind 0.0.0.0</code>, чтобы сервер был доступен другим машинам в вашей сети.</p>
+</blockquote>
 <blockquote>
 <p>⚠️ <strong>Зачем нужен <code>XDG_RUNTIME_DIR</code>?</strong> Пользовательские службы запускаются в ограниченном окружении, которое может не включать переменные сессии. LM Studio использует <code>XDG_RUNTIME_DIR</code> для IPC. Без него служба может завершаться незаметно даже при корректной работе <code>lms</code> из терминала. Это наиболее частая причина сбоя службы, когда ручной запуск работает нормально.</p>
 </blockquote>
@@ -228,8 +234,9 @@ curl http://localhost:1234/v1/models
 </blockquote>
 <hr>
 <h3>Шаг 4b  (Необязательно) Исправление медленного инференса после загрузки</h3>
-<p>Некоторые пользователи сталкиваются с медленными ответами при запуске LM Studio при загрузке системы. Проблема немедленно устраняется после ручного перезапуска службы. Это связано с особенностью инициализации демона LM Studio. Первый холодный запуск может оставить среду выполнения инференса в деградированном состоянии.</p>
-<p>Если медленные ответы появляются после перезагрузки и пропадают после ручного перезапуска, следующий таймер автоматизирует это исправление.</p>
+<p>Некоторые пользователи сталкиваются с медленными ответами при запуске LM Studio при загрузке системы. Проблема немедленно устраняется после ручного перезапуска службы. Причина не установлена.</p>
+<p>Сначала проверьте, что строка <code>lms load</code> в вашем файле службы заканчивается на <code>--gpu max</code>. В старых версиях этой страницы его не было. Без него LM Studio сам решает, какую часть модели разместить на GPU, и при загрузке системы может оставить часть модели на CPU. Если вы его добавили, выполните <code>systemctl --user daemon-reload</code> и перезагрузитесь для проверки.</p>
+<p>Если медленные ответы всё ещё появляются после перезагрузки и пропадают после ручного перезапуска, следующий таймер автоматизирует это исправление.</p>
 <p>Создайте вспомогательную службу:</p>
 <pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.service
 </code></pre>
@@ -245,7 +252,7 @@ ExecStart=systemctl --user restart lmstudio.service
 <pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.timer
 </code></pre>
 <pre><code class="language-ini">[Unit]
-Description=Restart LM Studio 2 minutes after login
+Description=Restart LM Studio 2 minutes after boot
 
 [Timer]
 OnBootSec=2min
@@ -258,15 +265,16 @@ WantedBy=timers.target
 <pre><code class="language-shell">systemctl --user daemon-reload
 systemctl --user enable --now lmstudio-restart.timer
 </code></pre>
-<p>Таймер ждёт 2 минуты после входа в систему, однократно перезапускает службу LM Studio и затем остаётся неактивным. Если медленного инференса у вас нет, этот шаг не нужен.</p>
+<p>Таймер ждёт 2 минуты после загрузки системы, однократно перезапускает службу LM Studio и затем остаётся неактивным. Если медленного инференса у вас нет, этот шаг не нужен.</p>
 <hr>
 <h3>Шаг 5  Настройка Elite Intel</h3>
-<p>Откройте <strong>Сервисы → Сервисы ИИ</strong> в Elite Intel и выберите <strong>LMStudio</strong>:</p>
+<p>Откройте в Elite Intel <strong>Сервисы → Сервисы ИИ</strong>. В разделе <strong>Языковая модель (LLM)</strong> выберите <strong>LMStudio</strong>:</p>
 <ul>
-<li><strong>Адрес</strong>: установите <code>http://localhost:1234/v1/chat/completions</code>. Если LM Studio находится на другой машине, замените <code>localhost</code> на IP этой машины.</li>
-<li><strong>Модель</strong>: вставьте строку model ID из <code>curl http://localhost:1234/v1/models</code>.</li>
+<li><strong>Адрес</strong>: <code>http://localhost:1234/v1/chat/completions</code> (значение по умолчанию). Если LM Studio находится на другой машине, замените <code>localhost</code> на IP этой машины.</li>
+<li><strong>Модель</strong>: вставьте строку model ID из <code>curl http://localhost:1234/v1/models</code>. Одна модель обслуживает и команды, и запросы.</li>
 </ul>
-<p>Нажмите <strong>Сохранить</strong>.</p>
+<p>Для локального LLM ключ API не нужен.</p>
+<p>Нажмите <strong>Сохранить</strong>. Elite Intel сам перезапустит языковую модель.</p>
 <hr>
 <p>Сообщество 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
