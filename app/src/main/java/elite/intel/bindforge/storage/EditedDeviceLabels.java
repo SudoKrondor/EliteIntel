@@ -46,9 +46,13 @@ public final class EditedDeviceLabels {
     public static EditedDeviceLabels load() {
         try {
             return of(Edits.stored().snapshot().current());
+        } catch (WorkingCopy.NoWorkingCopyException e) {
+            // WHY: before first-time startup there are no labels yet - every input reads as its token, and that is
+            // no failure to log (PTT capture asks on a fresh install too).
+            return NONE;
         } catch (IOException e) {
-            // WHY: before first-time startup, or with a damaged working copy, there is nothing to show - every input
-            // reads as its token rather than the screen failing, and the BindForge tab says why.
+            // WHY: with a damaged working copy there is nothing to show - every input reads as its token rather than
+            // the screen failing, and the BindForge tab says why.
             log.warn("Could not read the working copy for the controllers' labels: {}", e.getMessage());
             return NONE;
         }

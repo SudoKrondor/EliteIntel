@@ -57,6 +57,18 @@ public final class WorkingCopy {
 
     private final Path root;
 
+    /**
+     * Thrown by {@link #read} when there is no working copy: the usual state before first setup has made one - on a
+     * fresh install, and for as long as the user never opens the BindForge tab - not a fault. A screen that reads at
+     * every refresh shows nothing for it, quietly; only first setup's own check, which runs once setup is complete,
+     * treats it as a working copy that went missing.
+     */
+    public static final class NoWorkingCopyException extends NoSuchFileException {
+        NoWorkingCopyException(Path bindings) {
+            super(bindings.toString(), null, "no working copy");
+        }
+    }
+
     /** The working copy in {@link AppPaths#getWorkingCopyDir()}. */
     public static WorkingCopy stored() throws IOException {
         return new WorkingCopy(AppPaths.getWorkingCopyDir());
@@ -81,15 +93,15 @@ public final class WorkingCopy {
     /**
      * Reads the whole working copy. Files of any other kind in its folders are not part of it, and not read.
      *
-     * @throws NoSuchFileException if there is no working copy
-     * @throws IOException         if any of its files cannot be read - never a partial set, which could lack the one
-     *                             file that mattered
+     * @throws NoWorkingCopyException if there is no working copy
+     * @throws IOException            if any of its files cannot be read - never a partial set, which could lack the one
+     *                                file that mattered
      */
     public ConfigurationFiles read() throws IOException {
         synchronized (LOCK) {
             finishInterruptedWrite();
             Path bindings = root.resolve(Backups.BINDINGS);
-            if (!Files.isDirectory(bindings)) throw new NoSuchFileException(bindings.toString(), null, "no working copy");
+            if (!Files.isDirectory(bindings)) throw new NoWorkingCopyException(bindings);
             Path controlSchemes = root.resolve(Backups.CONTROL_SCHEMES);
             Path deviceMappings = GameInstallation.deviceMappingsIn(controlSchemes);
             try {

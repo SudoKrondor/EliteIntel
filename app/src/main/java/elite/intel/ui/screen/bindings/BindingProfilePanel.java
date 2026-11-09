@@ -9,6 +9,7 @@ import elite.intel.bindforge.storage.BindsEdits;
 import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
@@ -246,10 +247,10 @@ public class BindingProfilePanel extends JPanel {
     public void initData() {
         if (!refreshes.tryStart()) return;
         String wanted = wantedFile != null ? wantedFile : loadedFile;
-        // WHY: the grid shows nothing when the read fails. A file the read could not use is logged as a warning -
-        // before first-time startup there is no working copy, and the BindForge tab says so; a damaged one is offered a
-        // restore there too. A bug is logged as an error (Krondor's branch review, 2026-10-31). Neither is a dialog: a
-        // read runs at every refresh.
+        // WHY: the grid shows nothing when the read fails. A file the read could not use is logged as a warning - a
+        // damaged working copy is offered a restore on the BindForge tab. Before first-time startup there is none to
+        // read, which is no failure: the grid shows nothing and nothing is logged. A bug is logged as an error
+        // (Krondor's branch review, 2026-10-31). Neither is a dialog: a read runs at every refresh.
         // WHY: the AI tab's counts read the live bindings, not the edits, so they run on their own thread - a read
         // that fails does not skip them, and a failure in them does not blank a read that worked (Storage S8R3).
         new Thread(this::publishLiveSummary, "BindForge-BindingsSummary").start();
@@ -296,10 +297,16 @@ public class BindingProfilePanel extends JPanel {
     /**
      * Reads the edits and parses the file to show. Off the EDT.
      *
-     * @throws IOException if the edits, the file or the device files cannot be read
+     * @throws IOException if the edits, the file or the device files cannot be read - none when there is no working
+     *                     copy yet, which shows nothing
      */
     private Loaded read(String asked) throws IOException {
-        ConfigurationFiles current = Edits.stored().snapshot().current();
+        ConfigurationFiles current;
+        try {
+            current = Edits.stored().snapshot().current();
+        } catch (WorkingCopy.NoWorkingCopyException e) {
+            return Loaded.nothing(asked);
+        }
         List<String> files = BindsEdits.bindsFiles(current);
         if (files.isEmpty()) return Loaded.nothing(asked);
         String file = asked != null && files.contains(asked)

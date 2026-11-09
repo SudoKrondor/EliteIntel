@@ -7,6 +7,7 @@ import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.Edits;
 import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.bindforge.storage.Rename;
+import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
@@ -146,15 +147,20 @@ public final class BindsFileSection extends HudSection {
 
     /**
      * Reads the binds files off the EDT, then shows them. A read already in flight is left to finish, and one more
-     * follows it. A read that fails shows an empty, disabled list - the log says why, and before first-time startup
-     * there is no working copy to read.
+     * follows it. A read that fails shows an empty, disabled list and the log says why. Before first-time startup
+     * there is no working copy to read: the same empty list, and nothing logged - that is no failure.
      */
     void refresh() {
         if (bindEditor == null || !refreshes.tryStart()) return;
         String wanted = selectNext != null ? selectNext : bindEditor.shown();
         Function<String, Runnable> empty = reason -> () -> shown(List.of(), null);
         FlowSteps.inBackground("BindForge-BindsFileList", log, "The Bindings File list's read", () -> {
-            ConfigurationFiles current = Edits.stored().snapshot().current();
+            ConfigurationFiles current;
+            try {
+                current = Edits.stored().snapshot().current();
+            } catch (WorkingCopy.NoWorkingCopyException e) {
+                return () -> shown(List.of(), null);
+            }
             List<String> files = BindsEdits.bindsFiles(current);
             String selected = files.isEmpty() ? null
                     : wanted != null && files.contains(wanted)

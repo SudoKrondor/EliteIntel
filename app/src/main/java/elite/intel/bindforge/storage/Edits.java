@@ -134,8 +134,8 @@ public final class Edits {
      * The edits and the working copy, from one read - the working copy is read again first when there are no edits,
      * so neither is ever older than the last write.
      *
-     * @throws java.nio.file.NoSuchFileException if there is no working copy yet - first-time startup makes it
-     * @throws IOException                        if it cannot be read
+     * @throws WorkingCopy.NoWorkingCopyException if there is no working copy yet - first-time startup makes it
+     * @throws IOException                         if it cannot be read
      */
     public synchronized Snapshot snapshot() throws IOException {
         return new Snapshot(currentLocked(), applied);

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.TreeMap;
@@ -86,7 +85,7 @@ class WorkingCopyTest {
         WorkingCopy workingCopy = new WorkingCopy(root);
 
         assertFalse(workingCopy.exists());
-        assertThrows(NoSuchFileException.class, workingCopy::read);
+        assertThrows(WorkingCopy.NoWorkingCopyException.class, workingCopy::read);
     }
 
     @Test
