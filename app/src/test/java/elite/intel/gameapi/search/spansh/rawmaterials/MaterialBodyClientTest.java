@@ -1,4 +1,4 @@
-package elite.intel.gameapi.search.spansh.braintrees;
+package elite.intel.gameapi.search.spansh.rawmaterials;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import elite.intel.gameapi.search.spansh.stellarobjects.StellarObjectSearchResultDto;
@@ -15,13 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The brain tree search is asked of Spansh live, so what matters is the question it puts: only brain
- * trees, only bodies holding the material, nearest to the commander first. Spansh knows of more than ten
- * thousand such bodies and returns them in no useful order unless told to sort.
+ * Both searches are asked of Spansh live, so what matters is the question each puts. A brain tree search
+ * names the genus and no range, because the caller names the nearest site even when it lies beyond the
+ * range. A surface search names landable bodies within the range. Both sort nearest first: Spansh returns
+ * its matches in no useful order unless told to.
  */
-class BrainTreeClientTest {
+class MaterialBodyClientTest {
 
-    private static final String REF = "brain-tree-ref-001";
+    private static final String REF = "material-body-ref-001";
     private static final String SAVE = "/api/bodies/search/save";
     private static final String RECALL = "/api/bodies/search/recall/" + REF;
 
@@ -44,12 +45,12 @@ class BrainTreeClientTest {
             .options(wireMockConfig().dynamicPort().gzipDisabled(true))
             .build();
 
-    private BrainTreeClient client;
+    private MaterialBodyClient client;
 
     @BeforeEach
     void configure() {
         System.setProperty("spansh.base.url", wm.baseUrl());
-        client = new BrainTreeClient();
+        client = new MaterialBodyClient();
     }
 
     @AfterEach
@@ -58,14 +59,16 @@ class BrainTreeClientTest {
     }
 
     @Test
-    void asksForBrainTreesHoldingTheMaterialSortedNearestToTheCommander() {
+    void aBrainTreeSearchAsksForBrainTreesHoldingTheMaterialAtAnyDistanceNearestFirst() {
         stub(RESULTS_JSON);
 
-        client.nearestWithMaterial("Tellurium", 10.5, -20.25, 30.0, 5);
+        client.nearestBrainTrees("Tellurium", 10.5, -20.25, 30.0, 5);
 
         wm.verify(postRequestedFor(urlEqualTo(SAVE))
                 .withRequestBody(matchingJsonPath("$.filters.genuses.value[0]", equalTo("Brain Trees")))
                 .withRequestBody(matchingJsonPath("$.filters.materials[0].name", equalTo("Tellurium")))
+                .withRequestBody(matchingJsonPath("$.filters.distance.max", equalTo(String.valueOf(Integer.MAX_VALUE))))
+                .withRequestBody(notContaining("is_landable"))
                 .withRequestBody(matchingJsonPath("$.sort[0].distance.direction", equalTo("asc")))
                 .withRequestBody(matchingJsonPath("$.reference_coords.x", equalTo("10.5")))
                 .withRequestBody(matchingJsonPath("$.reference_coords.y", equalTo("-20.25")))
@@ -74,21 +77,38 @@ class BrainTreeClientTest {
     }
 
     @Test
-    void returnsTheSitesNearestFirst() {
+    void aSurfaceSearchAsksForLandableBodiesHoldingTheMaterialWithinTheRange() {
         stub(RESULTS_JSON);
 
-        List<StellarObjectSearchResultDto.Result> sites = client.nearestWithMaterial("Tellurium", 0, 0, 0, 5);
+        client.nearestLandableBodies("Polonium", 0, 0, 0, 120, 50);
+
+        wm.verify(postRequestedFor(urlEqualTo(SAVE))
+                .withRequestBody(matchingJsonPath("$.filters.is_landable.value", equalTo("true")))
+                .withRequestBody(matchingJsonPath("$.filters.materials[0].name", equalTo("Polonium")))
+                .withRequestBody(matchingJsonPath("$.filters.distance.max", equalTo("120")))
+                .withRequestBody(notContaining("genuses"))
+                .withRequestBody(matchingJsonPath("$.sort[0].distance.direction", equalTo("asc")))
+                .withRequestBody(matchingJsonPath("$.size", equalTo("50"))));
+    }
+
+    @Test
+    void returnsTheBodiesNearestFirstWithTheirMaterials() {
+        stub(RESULTS_JSON);
+
+        List<StellarObjectSearchResultDto.Result> sites = client.nearestBrainTrees("Tellurium", 0, 0, 0, 5);
 
         assertEquals(List.of("Near System", "Far System"),
                 sites.stream().map(StellarObjectSearchResultDto.Result::getSystemName).toList());
         assertEquals("Near Body 2", sites.getFirst().getBodyName());
+        assertEquals(0.8, sites.getFirst().getMaterials().getFirst().getShare());
     }
 
     @Test
     void aSpanshThatDoesNotAnswerFindsNothing() {
         wm.stubFor(post(urlEqualTo(SAVE)).willReturn(aResponse().withStatus(500)));
 
-        assertTrue(client.nearestWithMaterial("Tellurium", 0, 0, 0, 5).isEmpty());
+        assertTrue(client.nearestBrainTrees("Tellurium", 0, 0, 0, 5).isEmpty());
+        assertTrue(client.nearestLandableBodies("Tellurium", 0, 0, 0, 500, 50).isEmpty());
     }
 
     private void stub(String resultsJson) {
