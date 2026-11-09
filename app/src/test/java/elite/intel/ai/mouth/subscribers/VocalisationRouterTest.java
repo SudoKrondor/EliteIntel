@@ -4,18 +4,22 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.IsSpeakingEvent;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.i18n.Language;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Guards routing into the Mouth-owned handle instead of producer-owned speaking-state events. */
@@ -82,6 +86,26 @@ class VocalisationRouterTest {
         assertEquals("af_bella", carrier.getVoiceName());
         assertTrue(carrier.isRadio());
         carrier.handle().complete();
+    }
+
+    /**
+     * A docking grant is our Italian on an English client: the mouth must be told the language the publisher
+     * wrote it in, or Supertonic reads it with an English accent and English numbers.
+     */
+    @Test
+    void aTransmissionCarriesTheLanguageItsPublisherWroteItIn() {
+        VocalisationRequestEvent request = VocalisationRequestEvent.transmission(new RadioTransmissionEvent(
+                "Controllo del traffico di Jameson. Procedere al pad di atterraggio 12.", Language.IT,
+                "Controllo del traffico di Jameson", null, Set.of()));
+
+        assertEquals(Language.IT, request.getTextLanguage());
+        assertTrue(request.isRadio());
+        assertEquals(RadioTransmissionEvent.class, request.getOriginType());
+    }
+
+    @Test
+    void speechWeWroteStatesNoLanguageAndSoReadsInTheCommanders() {
+        assertNull(new VocalisationRequestEvent("course plotted", AiVoxResponseEvent.class, true).getTextLanguage());
     }
 
     private <T> T register(T subscriber) {

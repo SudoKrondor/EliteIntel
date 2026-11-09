@@ -11,10 +11,11 @@ import elite.intel.session.SystemSession;
  * a local engine and a random voice - accents and strangers are what make the galaxy sound populated.
  * A local engine owns that job: it is free, and its multi-speaker model gives the variety the channel lives on.
  * <p>
- * A transmission is the only thing we say that we did not write: the words are the game client's own, in the
- * <em>client's</em> language, which is independent of the language the commander set here. Supertonic voices
- * them for every client: it reads every language the game ships in, Russian included, and takes the language
- * per call. A commander on Supertonic voices radio with the main mouth; a commander on Google gets Supertonic
+ * Most transmissions are words we did not write: the game client's own, in the <em>client's</em> language
+ * ({@link #transmissionLanguage()}), which is independent of the language the commander set here. A few are
+ * ours - the docking grant is composed from our bundle in the commander's language - so every transmission
+ * states the language it is written in. Supertonic voices them for every client: it reads every language the
+ * game ships in, Russian included, and takes the language per call. A commander on Supertonic voices radio with the main mouth; a commander on Google gets Supertonic
  * loaded beside it.
  * <p>
  * Every local engine reads this once at start, so exactly one engine ever claims a radio request: the main

@@ -59,9 +59,7 @@ public class VocalisationRouter {
     @Subscribe
     public void onRadioTransmissionEvent(RadioTransmissionEvent event) {
         if (!Boolean.TRUE.equals(playerSession.isRadioTransmissionOn())) return;
-        publishToMouth(new VocalisationRequestEvent(
-                event.getText(), event.getVoiceName(), RadioTransmissionEvent.class, true, true,
-                event.getSource(), event.getReservedVoices(), event.getSpeakerKey()));
+        publishToMouth(VocalisationRequestEvent.transmission(event));
     }
 
     private static void publishToMouth(VocalisationRequestEvent request) {

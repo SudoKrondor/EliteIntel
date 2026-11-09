@@ -1,6 +1,7 @@
 package elite.intel.ai.mouth.subscribers.events;
 
 import elite.intel.ai.mouth.VocalisationHandle;
+import elite.intel.i18n.Language;
 
 import javax.annotation.Nullable;
 import java.util.Set;
@@ -17,14 +18,15 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     private final String speaker;
     private final String speakerKey;
     private final Set<String> reservedVoices;
+    private final Language textLanguage;
     private final VocalisationHandle handle;
 
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of(), null, false);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, null, Set.of(), null, false, null);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of(), null, false);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null, null, Set.of(), null, false, null);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker) {
@@ -32,18 +34,24 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker, Set<String> reservedVoices) {
-        this(textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, reservedVoices, null);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices, null, false, null);
     }
 
-    public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable String speaker, Set<String> reservedVoices, @Nullable String speakerKey) {
-        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, speaker, null, reservedVoices, speakerKey, false);
+    /**
+     * A radio transmission. {@code textLanguage} is the language its text is written in, as the publisher of the
+     * transmission stated it (see {@link RadioTransmissionEvent}).
+     */
+    public static VocalisationRequestEvent transmission(RadioTransmissionEvent event) {
+        return new VocalisationRequestEvent(UUID.randomUUID().toString(), event.getText(), event.getVoiceName(),
+                RadioTransmissionEvent.class, true, true, event.getSource(), null, event.getReservedVoices(),
+                event.getSpeakerKey(), false, event.getTextLanguage());
     }
 
     /**
      * Used when a completion signal is required (e.g. when routing a customCommand SPEAK request).
      */
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, @Nullable CompletableFuture<Void> completionFuture) {
-        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, false);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, false, null);
     }
 
     /** Creates a tracked request while preserving its correlation id through the Mouth pipeline. */
@@ -55,7 +63,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             CompletableFuture<Void> completionFuture
     ) {
         return new VocalisationRequestEvent(
-                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, false);
+                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, false, null);
     }
 
     /** Only the VEGA speech gateway sets this marker; other system responses use the ordinary route. */
@@ -63,7 +71,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             String requestId, String textToVoice, Class<? extends BaseVoxEvent> originType,
             boolean canBeInterrupted, CompletableFuture<Void> completionFuture) {
         return new VocalisationRequestEvent(
-                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, true);
+                requestId, textToVoice, null, originType, canBeInterrupted, false, null, completionFuture, Set.of(), null, true, null);
     }
 
     /**
@@ -73,7 +81,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
      */
     public static VocalisationRequestEvent missionCritical(String textToVoice) {
         return new VocalisationRequestEvent(UUID.randomUUID().toString(), textToVoice, null,
-                MissionCriticalAnnouncementEvent.class, false, false, null, null, Set.of(), null, true);
+                MissionCriticalAnnouncementEvent.class, false, false, null, null, Set.of(), null, true, null);
     }
 
     private VocalisationRequestEvent(
@@ -87,7 +95,8 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
             @Nullable CompletableFuture<Void> completionFuture,
             Set<String> reservedVoices,
             @Nullable String speakerKey,
-            boolean vegaSpeech
+            boolean vegaSpeech,
+            @Nullable Language textLanguage
     ) {
         super(textToVoice, false);
         this.voiceName = voiceName;
@@ -98,6 +107,7 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         this.vegaSpeech = vegaSpeech;
         this.speaker = speaker;
         this.speakerKey = speakerKey;
+        this.textLanguage = textLanguage;
         this.handle = new VocalisationHandle(requestId, canBeInterrupted, completionFuture);
     }
 
@@ -162,6 +172,14 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
      */
     public Set<String> getReservedVoices() {
         return reservedVoices;
+    }
+
+    /**
+     * The language the text is written in, when its publisher said: a radio transmission, which may be the game
+     * client's words or ours. Null for everything else, which we wrote in the commander's language.
+     */
+    public @Nullable Language getTextLanguage() {
+        return textLanguage;
     }
 
     /** The request-scoped lifecycle claimed and settled by the active Mouth. */

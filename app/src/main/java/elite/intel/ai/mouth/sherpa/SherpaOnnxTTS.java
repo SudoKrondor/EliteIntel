@@ -10,7 +10,6 @@ import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.Resampler;
 import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicBoost;
@@ -64,8 +63,8 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
      * through one queue).
      * RADIO: a radio-only engine that runs alongside a main mouth of another engine (Google, or the other
      * local engine), handling only radio transmissions and ducking behind the main voice via
-     * {@link MainVoicePlaybackGate}. It is built for the language the transmissions are written in - the game
-     * client's - not the commander's (see {@link RadioVoicing#transmissionLanguage()}).
+     * {@link MainVoicePlaybackGate}. Each transmission is read in the language its publisher says it is written in
+     * (see {@link #languageOf(VocalisationRequestEvent)}).
      */
     public enum Role {MAIN, RADIO}
 
@@ -86,7 +85,7 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
 
     /**
      * One sentence waiting for synthesis. {@code language} is the one the text is written in: the commander's
-     * for everything we say ourselves, the game client's for a radio transmission (see
+     * for everything we say ourselves, the game client's for a transmission relayed from the journal (see
      * {@link #languageOf(VocalisationRequestEvent)}).
      */
     private record SynthesisTask(String text, String voiceName, boolean isRadio, Language language,
@@ -506,20 +505,16 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
     }
 
     /**
-     * The language the request's text is written in. A radio transmission is the game client's own prose,
-     * in the client's language. Everything else - narration, a carrier voice audition, a system callout -
-     * we wrote in the commander's language.
-     * The distinction is the origin, not the radio flag: a carrier audition is flagged radio so it gets
-     * the transmission filter, but its words are ours.
+     * The language the request's text is written in. A radio transmission says which, because a radio line can be
+     * either the game client's prose relayed from the journal or a line we composed (a docking grant) in the
+     * commander's language. Everything else - narration, a carrier voice audition, a system callout - we wrote
+     * in the commander's language.
      * <p>
      * Supertonic takes the language per call, so each task is read in its own language.
      */
     private Language languageOf(VocalisationRequestEvent event) {
-        return isTransmission(event) ? RadioVoicing.transmissionLanguage() : systemSession.getLanguage();
-    }
-
-    private static boolean isTransmission(VocalisationRequestEvent event) {
-        return event.getOriginType() == RadioTransmissionEvent.class;
+        Language stated = event.getTextLanguage();
+        return stated != null ? stated : systemSession.getLanguage();
     }
 
     /**

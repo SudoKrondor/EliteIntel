@@ -4,13 +4,16 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.prompt.VoiceCues;
 import elite.intel.ai.mouth.EventNarrator;
+import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.StationName;
 import elite.intel.gameapi.carrier.OurCarriers;
+import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.gameapi.journal.events.ReceiveTextEvent;
+import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 
 import java.util.Collections;
@@ -82,18 +85,25 @@ public class TransmissionReceivedSubscriber {
                 // rather than who, has no name here, and goes on drawing a stranger per transmission.
                 String pilot = event.getNpcPilotName();
 
+                // The words are the game client's, so they are read in its language, not the commander's.
+                Language clientLanguage = RadioVoicing.transmissionLanguage();
+
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
                         // One resolution of the sender for both: the spoken line and the label on screen
                         // name the same station, rather than disagreeing whenever the journal localises it.
+                        // The "traffic control" opening is ours but heads the client's text, so it is worded in
+                        // the client's language too: one line, one language, read in it.
                         GameEventBus.publish(new RadioTransmissionEvent(
-                                localizedEvent("event.transmission.trafficControl", source, event.getMessageLocalised()),
+                                EventsTextProvider.getText(clientLanguage, "event.transmission.trafficControl",
+                                        source, event.getMessageLocalised()),
+                                clientLanguage,
                                 localizedEvent("event.trafficControl.speaker", source),
                                 voice, reserved, pilot));
                     }
                 } else {
                     GameEventBus.publish(new RadioTransmissionEvent(
-                            event.getMessageLocalised(), source, voice, reserved, pilot));
+                            event.getMessageLocalised(), clientLanguage, source, voice, reserved, pilot));
                     if (event.isPirateCargoScan() && GlobalSettingsManager.getInstance().getAiRespondsToPirateScan()) {
                         retortToPirateScan(source, event.getMessageLocalised());
                     }
