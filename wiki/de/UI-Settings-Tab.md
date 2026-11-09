@@ -49,7 +49,20 @@ Das unterstützte lokale Modell ist **`google/gemma-4-e4b`**. Elite Intel warnt 
 dein lokales Modell ein anderes ist; andere Modelle funktionieren womöglich schlecht oder gar
 nicht.
 
-Einrichtungsanleitungen: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
+Auf einem PC mit einer NVIDIA RTX 3090 (24 GB) oder besser richtet eine Schaltfläche unter diesen Feldern
+LM Studio für dich ein:
+
+| Schaltfläche | Was sie tut |
+|--------------|-------------|
+| **LM Studio installieren** | Installiert LM Studio, lädt das Modell herunter und auf die Grafikkarte und trägt Adresse und Modell ein |
+| **LM Studio einrichten** | Für ein LM Studio, das du schon hast: fügt das Modell hinzu und füllt die Felder aus, sonst nichts |
+| **Einrichtung fortsetzen** | Setzt eine unterbrochene Installation fort |
+| **LM Studio deinstallieren** | Entfernt das von Elite Intel installierte LM Studio samt Modellen, nachdem es sie aufgelistet hat |
+
+Ein so installiertes LM Studio startet und stoppt mit den Diensten von Elite Intel. Details unter
+[LLM auswählen](installing-local-llms).
+
+Anleitungen für LM Studio auf einem zweiten PC: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
 [LM Studio unter Windows](Install-LM-Studio-Windows) ·
 [AMD-RX-Serie](AMD-RX-7800XT-LLM-Setup) ·
 [Headless-Ubuntu-Server](LM-Studio-Ubuntu-Server)

@@ -6,11 +6,20 @@ Requiere [LM Studio](https://lmstudio.ai) y una GPU suficientemente potente.
 
 ---
 
-### Hardware mínimo
+### Para quién es esta guía
 
-Para ejecutar Elite Dangerous y el LLM en la **misma máquina**, se requiere como mínimo una **NVIDIA RTX 3060 con 12 GB de VRAM**.
+Esta guía configura LM Studio a mano en un PC que **solo ejecuta el modelo**: un segundo PC de tu red, mientras el
+juego corre en tu PC de juego, que así no lleva ninguna carga de inferencia.
 
-> **Consejo:** Elite Intel puede apuntarse a una instancia de LM Studio que se ejecute en un **PC separado** de tu red. Si hay disponible una segunda máquina con una GPU capaz, el PC del juego no llevará ninguna carga de inferencia en esta configuración.
+> **¿El juego y el modelo en un mismo PC?** Entonces no necesitas esta guía. Si tu PC de juego tiene una NVIDIA
+> RTX 3090 (24 GB) o superior, Elite Intel instala y configura LM Studio por ti: consulta
+> [Elegir tu LLM](installing-local-llms).
+
+### Hardware para el PC del LLM
+
+- **12 GB de memoria de vídeo.** El modelo ocupa unos 6,3 GB, así que queda margen.
+- **Potencia de cálculo de la clase RTX 3080 o superior.** Una tarjeta más lenta puede cargar el modelo, pero
+  responde demasiado despacio para ser útil.
 
 ---
 
@@ -90,17 +99,21 @@ Carga el modelo e inicia el servidor de inferencia:
 ```powershell
 lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
-lms server start
+lms server start --bind 0.0.0.0
 ```
 
 `lms daemon up` no hace nada si el servidor en segundo plano ya está en ejecución, así que puedes incluirlo siempre.
 
-**NOTA**: El parámetro `--context-length 8192` es obligatorio. Sin él, la ventana de contexto puede ser demasiado pequeña, causando truncamiento del prompt, fallos y alucinaciones.
+`--bind 0.0.0.0` hace que otros PC de tu red puedan llegar al servidor, que por defecto solo responde a este.
 
-Verifica que está en ejecución abriendo un navegador u otra ventana de PowerShell y navegando a:
+**NOTA**: `--context-length 8192` es obligatorio, y debe ser exactamente 8192: con una ventana más pequeña el modelo alucina, y con una más grande cada respuesta es demasiado lenta.
+
+> **Deja entrar al PC de juego.** La primera vez que el servidor escucha en la red, el Firewall de Windows Defender puede preguntar si lo permite. Permítelo en redes **privadas**. Si nunca pregunta y el PC de juego no puede conectar, añade una regla de entrada para el puerto TCP 1234.
+
+Compruébalo desde el **PC de juego** abriendo un navegador en esta dirección, con la dirección del PC del LLM en lugar de `LLM_PC_IP`:
 
 ```
-http://localhost:1234/v1/models
+http://LLM_PC_IP:1234/v1/models
 ```
 
 Deberías recibir una lista JSON de los modelos cargados. La cadena de ID del modelo en esa respuesta es lo que introducirás en el campo **Modelo** de Elite Intel.
@@ -127,7 +140,7 @@ Primero, guarda este script como `start-lmstudio.ps1` en una ubicación permanen
 $lms = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
 & $lms daemon up
 & $lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-& $lms server start
+& $lms server start --bind 0.0.0.0
 ```
 
 Inicia el servidor en segundo plano, carga el modelo con los ajustes que necesita Elite Intel e inicia el servidor de inferencia: los mismos tres comandos del paso 3.
@@ -150,7 +163,8 @@ Esta opción solo está disponible si la aplicación de escritorio de LM Studio 
 
 1. Abre LM Studio y presiona **Ctrl + ,** para abrir Ajustes.
 2. Marca **«Run LLM server on login»**.
-3. Cerrar la app la minimiza a la bandeja del sistema y mantiene el servidor en ejecución. Se restaura automáticamente en el próximo inicio de sesión.
+3. En los ajustes del servidor, activa **Serve on Local Network** para que el PC de juego pueda llegar a él.
+4. Cerrar la app la minimiza a la bandeja del sistema y mantiene el servidor en ejecución. Se restaura automáticamente en el próximo inicio de sesión.
 
 > ⚠️ **Longitud de contexto:** Con esta opción, LM Studio carga el modelo solo cuando llega la primera petición, con los ajustes **predeterminados** del modelo en lugar del `--context-length 8192` del paso 3. Abre los ajustes predeterminados del modelo en la aplicación de escritorio y fija la **longitud de contexto** en **8192**. Si no, la ventana de contexto puede ser demasiado pequeña.
 
@@ -158,10 +172,10 @@ Esta opción solo está disponible si la aplicación de escritorio de LM Studio 
 
 ### Paso 5 – Configurar Elite Intel
 
-En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMStudio**:
+**En el PC de juego:** En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMStudio**:
 
-- **Dirección**: `http://localhost:1234/v1/chat/completions` (el valor por defecto). Si LM Studio está en otra máquina, sustituye `localhost` por la IP de esa máquina.
-- **Modelo**: pega la cadena de ID del modelo de `http://localhost:1234/v1/models`. Un solo modelo atiende tanto los comandos como las consultas.
+- **Dirección**: `http://LLM_PC_IP:1234/v1/chat/completions`, cambiando `LLM_PC_IP` por la dirección del PC del LLM en tu red (`ipconfig` en el PC del LLM la muestra).
+- **Modelo**: pega la cadena de ID del modelo de `http://LLM_PC_IP:1234/v1/models`. Un solo modelo atiende tanto los comandos como las consultas.
 
 Un LLM local no necesita clave de API.
 

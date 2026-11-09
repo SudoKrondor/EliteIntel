@@ -6,11 +6,20 @@ Requiere [LM Studio](https://lmstudio.ai) y una GPU suficientemente potente.
 
 ---
 
-### Hardware mínimo
+### Para quién es esta guía
 
-Para ejecutar Elite Dangerous y el LLM en la **misma máquina**, se requiere como mínimo una **NVIDIA RTX 3060 con 12 GB de VRAM**. El margen de rendimiento es limitado con esta especificación.
+Esta guía configura LM Studio a mano en un PC que **solo ejecuta el modelo**: un segundo PC de tu red, mientras el
+juego corre en tu PC de juego, que así no lleva ninguna carga de inferencia.
 
-> **Consejo:** Elite Intel puede apuntarse a una instancia de LM Studio que se ejecute en un **PC separado** de tu red. Si hay disponible una segunda máquina con una GPU capaz, el PC del juego no llevará ninguna carga de inferencia en esta configuración.
+> **¿El juego y el modelo en un mismo PC?** Entonces no necesitas esta guía. Si tu PC de juego tiene una NVIDIA
+> RTX 3090 (24 GB) o superior, Elite Intel instala y configura LM Studio por ti: consulta
+> [Elegir tu LLM](installing-local-llms).
+
+### Hardware para el PC del LLM
+
+- **12 GB de memoria de vídeo.** El modelo ocupa unos 6,3 GB, así que queda margen.
+- **Potencia de cálculo de la clase RTX 3080 o superior.** Una tarjeta más lenta puede cargar el modelo, pero
+  responde demasiado despacio para ser útil.
 
 ---
 
@@ -92,15 +101,19 @@ Carga el modelo e inicia el servidor de inferencia:
 ```shell
 lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
-lms server start
+lms server start --bind 0.0.0.0
 ```
 
-`--gpu max` delega la inferencia a la GPU para el máximo rendimiento. `lms daemon up` no hace nada si el servidor en segundo plano ya está en ejecución, así que puedes incluirlo siempre.
+`--gpu max` delega la inferencia a la GPU para el máximo rendimiento. `lms daemon up` no hace nada si el servidor en segundo plano ya está en ejecución, así que puedes incluirlo siempre. `--bind 0.0.0.0` hace que otros PC de tu red puedan llegar al servidor, que por defecto solo responde a este.
 
-Verifica que está en ejecución:
+**NOTA**: `--context-length 8192` es obligatorio, y debe ser exactamente 8192: con una ventana más pequeña el modelo alucina, y con una más grande cada respuesta es demasiado lenta.
+
+> **Deja entrar al PC de juego.** Si este PC tiene un cortafuegos, permite el puerto TCP 1234 desde tu PC de juego. Con `ufw`, por ejemplo: `sudo ufw allow from GAMING_PC_IP to any port 1234 proto tcp`.
+
+Compruébalo desde el **PC de juego**, con la dirección del PC del LLM en lugar de `LLM_PC_IP`:
 
 ```shell
-curl http://localhost:1234/v1/models
+curl http://LLM_PC_IP:1234/v1/models
 ```
 
 Deberías recibir una lista JSON de los modelos cargados. La cadena de ID del modelo en esa respuesta es lo que introducirás en el campo **Modelo** de Elite Intel.
@@ -153,7 +166,7 @@ Environment="PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin
 Environment="XDG_RUNTIME_DIR=/run/user/YOUR_UID"
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
 
@@ -167,7 +180,7 @@ Sustituye `YOUR_USERNAME` por tu nombre de usuario de Linux y `YOUR_UID` por tu 
 id -u
 ```
 
-> **¿El juego en otro PC?** Con `--bind 127.0.0.1` el servidor solo es accesible desde esta máquina. Si Elite Intel se ejecuta en otro PC, cámbialo a `--bind 0.0.0.0` para que otras máquinas de tu red puedan acceder a él.
+> **Red:** `--bind 0.0.0.0` permite que tu PC de juego llegue al servidor. Permite el puerto TCP 1234 en el cortafuegos de este PC, como en el paso 3.
 
 > ⚠️ **¿Por qué `XDG_RUNTIME_DIR`?** Los servicios de usuario se ejecutan en un entorno simplificado que puede no incluir las variables de sesión. LM Studio usa `XDG_RUNTIME_DIR` para IPC. Sin él, el servicio puede fallar silenciosamente incluso cuando `lms` funciona correctamente desde el terminal. Esta es la causa más común de fallo del servicio cuando la ejecución manual funciona.
 
@@ -249,10 +262,10 @@ El temporizador espera 2 minutos después del arranque, reinicia el servicio de 
 
 ### Paso 5 – Configurar Elite Intel
 
-En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMStudio**:
+**En el PC de juego:** En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMStudio**:
 
-- **Dirección**: `http://localhost:1234/v1/chat/completions` (el valor por defecto). Si LM Studio está en otra máquina, sustituye `localhost` por la IP de esa máquina.
-- **Modelo**: pega la cadena de ID del modelo de `curl http://localhost:1234/v1/models`. Un solo modelo atiende tanto los comandos como las consultas.
+- **Dirección**: `http://LLM_PC_IP:1234/v1/chat/completions`, cambiando `LLM_PC_IP` por la dirección del PC del LLM en tu red (`ip addr` en el PC del LLM la muestra).
+- **Modelo**: pega la cadena de ID del modelo de `http://LLM_PC_IP:1234/v1/models`. Un solo modelo atiende tanto los comandos como las consultas.
 
 Un LLM local no necesita clave de API.
 

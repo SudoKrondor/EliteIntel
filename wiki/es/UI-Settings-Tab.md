@@ -47,7 +47,19 @@ Cambia entre **LMStudio** (local) y **Configuración en la nube**.
 El modelo local admitido es **`google/gemma-4-e4b`**. Elite Intel te avisa al arrancar si tu
 modelo local es otro; otros modelos pueden funcionar mal o no funcionar.
 
-Guías: [LM Studio en Linux](Install-LM-Studio-Linux) ·
+En un PC con una NVIDIA RTX 3090 (24 GB) o superior, un botón bajo estos campos configura LM Studio por ti:
+
+| Botón | Qué hace |
+|-------|----------|
+| **Instalar LM Studio** | Instala LM Studio, descarga el modelo, lo carga en la tarjeta gráfica y rellena Dirección y Modelo |
+| **Configurar LM Studio** | Para un LM Studio que ya tienes: añade el modelo y rellena los campos, nada más |
+| **Continuar la configuración** | Retoma una instalación que se detuvo a medias |
+| **Desinstalar LM Studio** | Quita el LM Studio que instaló Elite Intel, con sus modelos, tras mostrarlos |
+
+Un LM Studio instalado así se inicia y se detiene con los servicios de Elite Intel. Más detalles en
+[Elegir tu LLM](installing-local-llms).
+
+Guías para LM Studio en un segundo PC: [LM Studio en Linux](Install-LM-Studio-Linux) ·
 [LM Studio en Windows](Install-LM-Studio-Windows) ·
 [Serie AMD RX](AMD-RX-7800XT-LLM-Setup) ·
 [Servidor Ubuntu headless](LM-Studio-Ubuntu-Server)

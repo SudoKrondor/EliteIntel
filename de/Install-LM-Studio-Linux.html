@@ -98,11 +98,20 @@
 <p>Ein lokales LLM zu betreiben hält alle Daten privat und offline. Es gibt keine Abonnementgebühren. Hardware- und Stromkosten fallen an.</p>
 <p>Es erfordert <a href="https://lmstudio.ai">LM Studio</a> und eine leistungsfähige GPU.</p>
 <hr>
-<h3>Mindest-Hardware</h3>
-<p>Um Elite Dangerous und das LLM auf <strong>demselben Rechner</strong> zu betreiben, ist mindestens eine <strong>NVIDIA RTX 3060 mit 12 GB VRAM</strong> erforderlich. Bei dieser Spezifikation ist der Leistungsspielraum begrenzt.</p>
+<h3>Für wen diese Anleitung ist</h3>
+<p>Diese Anleitung richtet LM Studio von Hand auf einem PC ein, der <strong>nur das Modell betreibt</strong>: einem zweiten PC in
+deinem Netzwerk, während das Spiel auf deinem Spiele-PC läuft, der dann keinerlei Inferenzlast trägt.</p>
 <blockquote>
-<p><strong>Tipp:</strong> Elite Intel kann auf eine LM Studio-Instanz verweisen, die auf einem <strong>separaten PC</strong> in deinem Netzwerk läuft. Wenn ein zweiter Rechner mit einer leistungsfähigen GPU verfügbar ist, trägt der Spiele-PC in dieser Konfiguration keine Inferenzlast.</p>
+<p><strong>Spiel und Modell auf einem PC?</strong> Dann brauchst du diese Anleitung nicht. Hat dein Spiele-PC eine NVIDIA RTX
+3090 (24 GB) oder besser, installiert und richtet Elite Intel LM Studio für dich ein: siehe
+<a href="installing-local-llms.html">LLM auswählen</a>.</p>
 </blockquote>
+<h3>Hardware für den LLM-PC</h3>
+<ul>
+<li><strong>12 GB Grafikspeicher.</strong> Das Modell braucht etwa 6,3 GB, das lässt Spielraum.</li>
+<li><strong>Rechenleistung der Klasse RTX 3080 oder besser.</strong> Eine langsamere Karte fasst das Modell, antwortet aber zu
+langsam, um nützlich zu sein.</li>
+</ul>
 <hr>
 <h3>Empfohlenes Modell</h3>
 <table>
@@ -162,11 +171,15 @@ wähle einen mit den Pfeiltasten und Enter.</p>
 <p>Das Modell laden und den Inferenzserver starten:</p>
 <pre><code class="language-shell">lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
-lms server start
+lms server start --bind 0.0.0.0
 </code></pre>
-<p><code>--gpu max</code> verlagert die Inferenz auf die GPU für maximale Leistung. <code>lms daemon up</code> tut nichts, wenn der Hintergrundserver bereits läuft. Du kannst es also jedes Mal mit ausführen.</p>
-<p>Überprüfen, ob er läuft:</p>
-<pre><code class="language-shell">curl http://localhost:1234/v1/models
+<p><code>--gpu max</code> verlagert die Inferenz auf die GPU für maximale Leistung. <code>lms daemon up</code> tut nichts, wenn der Hintergrundserver bereits läuft. Du kannst es also jedes Mal mit ausführen. <code>--bind 0.0.0.0</code> macht den Server für andere PCs in deinem Netzwerk erreichbar. Ohne diese Angabe antwortet er nur diesem PC.</p>
+<p><strong>HINWEIS</strong>: <code>--context-length 8192</code> ist erforderlich, und zwar genau 8192: Mit einem kleineren Fenster halluziniert das Modell, mit einem größeren wird jede Antwort zu langsam.</p>
+<blockquote>
+<p><strong>Lass den Spiele-PC herein.</strong> Läuft auf diesem PC eine Firewall, gib TCP-Port 1234 für deinen Spiele-PC frei. Mit <code>ufw</code> zum Beispiel: <code>sudo ufw allow from GAMING_PC_IP to any port 1234 proto tcp</code>.</p>
+</blockquote>
+<p>Prüfe es vom <strong>Spiele-PC</strong> aus, mit der Adresse des LLM-PCs anstelle von <code>LLM_PC_IP</code>:</p>
+<pre><code class="language-shell">curl http://LLM_PC_IP:1234/v1/models
 </code></pre>
 <p>Du solltest eine JSON-Liste der geladenen Modelle erhalten. Die Modell-ID-Zeichenfolge in dieser Antwort gibst du in das Feld <strong>Modell</strong> von Elite Intel ein.</p>
 <p>Den Server stoppen:</p>
@@ -201,7 +214,7 @@ Environment=&quot;PATH=/home/DEIN_BENUTZERNAME/.lmstudio/bin:/usr/local/bin:/usr
 Environment=&quot;XDG_RUNTIME_DIR=/run/user/DEINE_UID&quot;
 ExecStartPre=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms daemon up
 ExecStartPre=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-ExecStart=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
+ExecStart=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
 ExecStop=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms daemon down
 
@@ -212,7 +225,7 @@ WantedBy=default.target
 <pre><code class="language-shell">id -u
 </code></pre>
 <blockquote>
-<p><strong>Spiel auf einem anderen PC?</strong> Mit <code>--bind 127.0.0.1</code> ist der Server nur von diesem Rechner aus erreichbar. Wenn Elite Intel auf einem anderen PC läuft, ändere es in <code>--bind 0.0.0.0</code>, damit andere Rechner in deinem Netzwerk ihn erreichen.</p>
+<p><strong>Netzwerk:</strong> Mit <code>--bind 0.0.0.0</code> erreicht dein Spiele-PC den Server. Gib TCP-Port 1234 in der Firewall dieses PCs frei, wie in Schritt 3.</p>
 </blockquote>
 <blockquote>
 <p>⚠️ <strong>Warum <code>XDG_RUNTIME_DIR</code>?</strong> Benutzerdienste laufen in einer vereinfachten Umgebung, die möglicherweise keine Sitzungsvariablen enthält. LM Studio verwendet <code>XDG_RUNTIME_DIR</code> für IPC. Ohne diese Variable kann der Dienst stillschweigend fehlschlagen, auch wenn <code>lms</code> vom Terminal aus korrekt funktioniert. Dies ist die häufigste Ursache für Dienstfehler, wenn die manuelle Ausführung erfolgreich ist.</p>
@@ -268,10 +281,10 @@ systemctl --user enable --now lmstudio-restart.timer
 <p>Der Timer wartet 2 Minuten nach dem Booten, startet den LM Studio-Dienst einmal neu und bleibt dann inaktiv. Wenn keine langsame Inferenz auftritt, ist dieser Schritt nicht erforderlich.</p>
 <hr>
 <h3>Schritt 5 – Elite Intel konfigurieren</h3>
-<p>Öffne in Elite Intel <strong>Dienste → KI-Dienste</strong>. Wähle unter <strong>Sprachmodell (LLM)</strong> die Option <strong>LMSTudio</strong>:</p>
+<p><strong>Am Spiele-PC:</strong> Öffne in Elite Intel <strong>Dienste → KI-Dienste</strong>. Wähle unter <strong>Sprachmodell (LLM)</strong> die Option <strong>LMStudio</strong>:</p>
 <ul>
-<li><strong>Adresse</strong>: <code>http://localhost:1234/v1/chat/completions</code> (der Standardwert). Wenn LM Studio auf einem anderen Rechner läuft, <code>localhost</code> durch die IP dieses Rechners ersetzen.</li>
-<li><strong>Modell</strong>: die Modell-ID-Zeichenfolge aus <code>curl http://localhost:1234/v1/models</code> einfügen. Ein Modell bedient sowohl Befehle als auch Abfragen.</li>
+<li><strong>Adresse</strong>: <code>http://LLM_PC_IP:1234/v1/chat/completions</code>, wobei <code>LLM_PC_IP</code> die Adresse des LLM-PCs in deinem Netzwerk ist (<code>ip addr</code> auf dem LLM-PC zeigt sie).</li>
+<li><strong>Modell</strong>: die Modell-ID-Zeichenfolge aus <code>http://LLM_PC_IP:1234/v1/models</code> einfügen. Ein Modell bedient sowohl Befehle als auch Abfragen.</li>
 </ul>
 <p>Für ein lokales LLM wird kein API-Schlüssel benötigt.</p>
 <p>Klicke auf <strong>Speichern</strong>. Elite Intel startet das Sprachmodell daraufhin selbst neu.</p>

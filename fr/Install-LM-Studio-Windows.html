@@ -98,11 +98,20 @@
 <p>Faire tourner un LLM localement garde toutes les données privées et hors ligne. Aucun abonnement n&#39;est requis. Des coûts matériels et électriques s&#39;appliquent.</p>
 <p>Il nécessite <a href="https://lmstudio.ai">LM Studio</a> et un GPU suffisamment puissant.</p>
 <hr>
-<h3>Matériel minimum</h3>
-<p>Pour faire tourner Elite Dangerous et le LLM sur la <strong>même machine</strong>, il faut au minimum un <strong>NVIDIA RTX 3060 avec 12 Go de VRAM</strong>.</p>
+<h3>À qui s&#39;adresse ce guide</h3>
+<p>Ce guide installe LM Studio à la main sur un PC qui <strong>ne fait tourner que le modèle</strong> : un second PC de votre
+réseau, pendant que le jeu tourne sur votre PC de jeu, qui ne supporte alors plus aucune charge d&#39;inférence.</p>
 <blockquote>
-<p><strong>Conseil :</strong> Elite Intel peut être dirigé vers une instance LM Studio fonctionnant sur un <strong>PC séparé</strong> de votre réseau. Si une deuxième machine dotée d&#39;un GPU capable est disponible, le PC de jeu ne supporte aucune charge d&#39;inférence dans cette configuration.</p>
+<p><strong>Le jeu et le modèle sur un même PC ?</strong> Ce guide n&#39;est alors pas nécessaire. Si votre PC de jeu a une NVIDIA
+RTX 3090 (24 Go) ou mieux, Elite Intel installe et configure LM Studio pour vous : voir
+<a href="installing-local-llms.html">Choisir votre LLM</a>.</p>
 </blockquote>
+<h3>Matériel du PC du LLM</h3>
+<ul>
+<li><strong>12 Go de mémoire vidéo.</strong> Le modèle en prend environ 6,3 Go, ce qui laisse de la marge.</li>
+<li><strong>Une puissance de calcul de classe RTX 3080 ou mieux.</strong> Une carte plus lente peut charger le modèle, mais
+répond trop lentement pour être utile.</li>
+</ul>
 <hr>
 <h3>Modèle recommandé</h3>
 <table>
@@ -164,12 +173,16 @@ un avec les flèches et Entrée.</p>
 <p>Chargez le modèle et démarrez le serveur d&#39;inférence :</p>
 <pre><code class="language-powershell">lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
-lms server start
+lms server start --bind 0.0.0.0
 </code></pre>
 <p><code>lms daemon up</code> ne fait rien si le serveur d&#39;arrière-plan tourne déjà : vous pouvez donc l&#39;inclure à chaque fois.</p>
-<p><strong>NOTE</strong> : L&#39;option <code>--context-length 8192</code> est obligatoire. Sans elle, la fenêtre de contexte peut être trop petite, provoquant une troncature des invites, des échecs et des hallucinations.</p>
-<p>Vérifiez qu&#39;il fonctionne en ouvrant un navigateur ou une autre fenêtre PowerShell et en accédant à :</p>
-<pre><code>http://localhost:1234/v1/models
+<p><code>--bind 0.0.0.0</code> permet aux autres PC de votre réseau de joindre le serveur, qui par défaut ne répond qu&#39;à ce PC.</p>
+<p><strong>NOTE</strong> : <code>--context-length 8192</code> est obligatoire, et doit valoir exactement 8192 : avec une fenêtre plus petite le modèle hallucine, avec une plus grande chaque réponse devient trop lente.</p>
+<blockquote>
+<p><strong>Laissez entrer le PC de jeu.</strong> La première fois que le serveur écoute sur le réseau, le pare-feu Windows Defender peut demander s&#39;il faut l&#39;autoriser. Autorisez-le sur les réseaux <strong>privés</strong>. S&#39;il ne demande jamais et que le PC de jeu ne se connecte pas, ajoutez une règle entrante pour le port TCP 1234.</p>
+</blockquote>
+<p>Vérifiez depuis le <strong>PC de jeu</strong> en ouvrant un navigateur à cette adresse, avec l&#39;adresse du PC du LLM à la place de <code>LLM_PC_IP</code> :</p>
+<pre><code>http://LLM_PC_IP:1234/v1/models
 </code></pre>
 <p>Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d&#39;identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ <strong>Modèle</strong> d&#39;Elite Intel.</p>
 <p>Pour arrêter le serveur :</p>
@@ -186,7 +199,7 @@ lms server start
 <pre><code class="language-powershell">$lms = &quot;$env:USERPROFILE\.lmstudio\bin\lms.exe&quot;
 &amp; $lms daemon up
 &amp; $lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-&amp; $lms server start
+&amp; $lms server start --bind 0.0.0.0
 </code></pre>
 <p>Il démarre le serveur d&#39;arrière-plan, charge le modèle avec les réglages dont Elite Intel a besoin et démarre le serveur d&#39;inférence : les trois mêmes commandes qu&#39;à l&#39;étape 3.</p>
 <p>Créez ensuite la tâche :</p>
@@ -207,6 +220,7 @@ lms server start
 <ol>
 <li>Ouvrez LM Studio et appuyez sur <strong>Ctrl + ,</strong> pour ouvrir les Paramètres.</li>
 <li>Cochez <strong>« Run LLM server on login »</strong>.</li>
+<li>Dans les paramètres du serveur, activez <strong>Serve on Local Network</strong>, pour que le PC de jeu puisse le joindre.</li>
 <li>Fermer l&#39;application la minimise dans la barre système et maintient le serveur en fonctionnement. Elle se restaure automatiquement à la prochaine connexion.</li>
 </ol>
 <blockquote>
@@ -214,10 +228,10 @@ lms server start
 </blockquote>
 <hr>
 <h3>Étape 5 – Configurer Elite Intel</h3>
-<p>Dans Elite Intel, ouvrez <strong>Services → Services IA</strong>. Sous <strong>Modèle de langage (LLM)</strong>, sélectionnez <strong>LMStudio</strong> :</p>
+<p><strong>Sur le PC de jeu :</strong> Dans Elite Intel, ouvrez <strong>Services → Services IA</strong>. Sous <strong>Modèle de langage (LLM)</strong>, sélectionnez <strong>LMStudio</strong> :</p>
 <ul>
-<li><strong>Adresse</strong> : <code>http://localhost:1234/v1/chat/completions</code> (la valeur par défaut). Si LM Studio est sur une autre machine, remplacez <code>localhost</code> par l&#39;adresse IP de cette machine.</li>
-<li><strong>Modèle</strong> : collez la chaîne d&#39;identifiant du modèle obtenue depuis <code>http://localhost:1234/v1/models</code>. Un seul modèle sert aux commandes comme aux requêtes.</li>
+<li><strong>Adresse</strong> : <code>http://LLM_PC_IP:1234/v1/chat/completions</code>, en remplaçant <code>LLM_PC_IP</code> par l&#39;adresse du PC du LLM sur votre réseau (<code>ipconfig</code> sur le PC du LLM l&#39;affiche).</li>
+<li><strong>Modèle</strong> : collez la chaîne d&#39;identifiant du modèle obtenue depuis <code>http://LLM_PC_IP:1234/v1/models</code>. Un seul modèle sert aux commandes comme aux requêtes.</li>
 </ul>
 <p>Un LLM local ne nécessite pas de clé d&#39;API.</p>
 <p>Cliquez sur <strong>Enregistrer</strong>. Elite Intel redémarre alors le modèle de langage de lui-même.</p>

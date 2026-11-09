@@ -98,11 +98,19 @@
 <p>Running a local LLM keeps all data private and offline. There are no subscription fees. Hardware and electricity costs apply.</p>
 <p>It requires <a href="https://lmstudio.ai">LM Studio</a> and a capable GPU.</p>
 <hr>
-<h3>Minimum Hardware</h3>
-<p>To run Elite Dangerous and the LLM on the <strong>same machine</strong>, a minimum of an <strong>NVIDIA RTX 3060 with 12 GB VRAM</strong> is required.</p>
+<h3>Who this guide is for</h3>
+<p>This guide sets LM Studio up by hand on a PC that <strong>runs only the model</strong>: a second PC on your network, while
+the game runs on your gaming PC, which then does no inference work at all.</p>
 <blockquote>
-<p><strong>Tip:</strong> Elite Intel can be pointed at an LM Studio instance running on a <strong>separate PC</strong> on your network. If a second machine with a capable GPU is available, the game PC carries no inference load in this configuration.</p>
+<p><strong>Game and model on one PC?</strong> You don&#39;t need this guide. If your gaming PC has an NVIDIA RTX 3090 (24 GB) or
+better, Elite Intel installs and sets up LM Studio for you: see <a href="installing-local-llms.html">Choose your LLM</a>.</p>
 </blockquote>
+<h3>Hardware for the LLM PC</h3>
+<ul>
+<li><strong>12 GB of video memory.</strong> The model takes about 6.3 GB, so this leaves headroom.</li>
+<li><strong>RTX 3080-class processing power or better.</strong> A slower card holds the model but answers too slowly to be
+useful.</li>
+</ul>
 <hr>
 <h3>Recommended Model</h3>
 <table>
@@ -163,12 +171,17 @@ pick one with the arrow keys and Enter.</p>
 <p>Load the model and start the inference server:</p>
 <pre><code class="language-powershell">lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
-lms server start
+lms server start --bind 0.0.0.0
 </code></pre>
-<p><code>lms daemon up</code> does nothing if the background server is already running, so it is safe to include every time.</p>
-<p><strong>NOTE</strong>: The <code>--context-length 8192</code> flag is required. Without it, the context window may be too small, causing prompt truncation, failures, and hallucinations.</p>
-<p>Verify it is running by opening a browser or another PowerShell window and navigating to:</p>
-<pre><code>http://localhost:1234/v1/models
+<p><code>lms daemon up</code> does nothing if the background server is already running, so it is safe to include every time. <code>--bind 0.0.0.0</code> lets other PCs on your network reach the server, which by default answers only this one.</p>
+<p><strong>NOTE</strong>: <code>--context-length 8192</code> is required, and it must be exactly 8192: a smaller window makes the model hallucinate, and a larger one makes every answer too slow.</p>
+<blockquote>
+<p><strong>Let the gaming PC in.</strong> The first time the server listens on the network, Windows Defender Firewall may ask
+whether to allow it. Allow it on <strong>private</strong> networks. If it never asks and the gaming PC cannot connect, add an
+inbound rule for TCP port 1234.</p>
+</blockquote>
+<p>Verify it from the <strong>gaming PC</strong> by opening a browser at this address, with the LLM PC&#39;s address in place of <code>LLM_PC_IP</code>:</p>
+<pre><code>http://LLM_PC_IP:1234/v1/models
 </code></pre>
 <p>You should receive a JSON list of loaded models. The model ID string in that response is what you will enter in Elite Intel&#39;s <strong>Model</strong> field.</p>
 <p>To stop the server:</p>
@@ -185,7 +198,7 @@ lms server start
 <pre><code class="language-powershell">$lms = &quot;$env:USERPROFILE\.lmstudio\bin\lms.exe&quot;
 &amp; $lms daemon up
 &amp; $lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-&amp; $lms server start
+&amp; $lms server start --bind 0.0.0.0
 </code></pre>
 <p>It starts the background server, loads the model with the settings Elite Intel needs, and starts the inference server: the same three commands as Step 3.</p>
 <p>Then create the task:</p>
@@ -206,6 +219,7 @@ lms server start
 <ol>
 <li>Open LM Studio and press <strong>Ctrl + ,</strong> to open Settings.</li>
 <li>Check <strong>&quot;Run LLM server on login&quot;</strong>.</li>
+<li>In the server settings, turn on <strong>Serve on Local Network</strong>, so the gaming PC can reach it.</li>
 <li>Closing the app minimizes it to the system tray and keeps the server running. It restores automatically on next login.</li>
 </ol>
 <blockquote>
@@ -213,10 +227,10 @@ lms server start
 </blockquote>
 <hr>
 <h3>Step 5 - Configure Elite Intel</h3>
-<p>In Elite Intel, open <strong>Services → AI Services</strong>. Under <strong>Language Model (LLM)</strong>, select <strong>LMStudio Setup</strong>:</p>
+<p>On the <strong>gaming PC</strong>, in Elite Intel, open <strong>Services → AI Services</strong>. Under <strong>Language Model (LLM)</strong>, select <strong>LMStudio Setup</strong>:</p>
 <ul>
-<li><strong>Address</strong>: <code>http://localhost:1234/v1/chat/completions</code> (the default). If LM Studio is on another machine, replace <code>localhost</code> with that machine&#39;s IP.</li>
-<li><strong>Model</strong>: paste in the model ID string from <code>http://localhost:1234/v1/models</code>. One model serves both commands and queries.</li>
+<li><strong>Address</strong>: <code>http://LLM_PC_IP:1234/v1/chat/completions</code>, with <code>LLM_PC_IP</code> replaced by the LLM PC&#39;s address on your network (<code>ipconfig</code> on the LLM PC shows it).</li>
+<li><strong>Model</strong>: paste in the model ID string from <code>http://LLM_PC_IP:1234/v1/models</code>. One model serves both commands and queries.</li>
 </ul>
 <p>No API key is needed for a local LLM.</p>
 <p>Click <strong>Save</strong>. Elite Intel restarts the language model on its own.</p>

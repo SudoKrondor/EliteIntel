@@ -120,7 +120,7 @@ Sprachmodell (LLM)</strong> ein:</p>
 <p><img src="../images/llm-setup.png" alt="LLM-Einrichtung"></p>
 <hr>
 <h2>Option 1: Lokal (LM Studio)</h2>
-<p>Die linke Seite des Bereichs, <strong>LMSTudio</strong>:</p>
+<p>Die linke Seite des Bereichs, <strong>LMStudio</strong>:</p>
 <table>
 <thead>
 <tr>
@@ -138,19 +138,41 @@ Sprachmodell (LLM)</strong> ein:</p>
 </tr>
 </tbody></table>
 <p>LM Studio ist der einzige lokale Inferenzserver, den Elite Intel unterstützt, und
-<code>google/gemma-4-e4b</code> das einzige unterstützte lokale Modell.</p>
-<h3>GPU-Anforderungen</h3>
-<p>Diese Hardware brauchst du, um Spiel und LLM auf demselben Rechner zu betreiben:</p>
+<code>google/gemma-4-e4b</code> das einzige unterstützte lokale Modell. Es gibt zwei Wege, es zu betreiben.</p>
+<h3>Auf deinem Spiele-PC: Elite Intel richtet es ein</h3>
+<p>Kann dein PC Spiel und Modell zusammen betreiben, erscheint unter den Feldern von <strong>LMStudio</strong> eine
+Schaltfläche. Drücke <strong>LM Studio installieren</strong>, und Elite Intel:</p>
+<ol>
+<li>installiert LM Studio, auf dem Laufwerk deiner Wahl,</li>
+<li>lädt <code>google/gemma-4-e4b</code> herunter (etwa 6 GB),</li>
+<li>lädt es auf deine Grafikkarte und prüft, ob es wirklich dort gelandet ist,</li>
+<li>testet es und trägt <strong>Adresse</strong> und <strong>Modell</strong> für dich ein.</li>
+</ol>
+<p>Jeder Schritt wird angezeigt, während er läuft, mit einem Fortschrittsbalken für den Download. Schlägt ein
+Schritt fehl, sagt der Dialog, welcher und warum, und ein erneuter Klick macht dort weiter. Rechne mit etwa
+10 GB Speicherplatz. LM Studio ist kostenlose Software von Element Labs und nicht Teil von Elite Intel.</p>
+<p>Danach startet Elite Intel LM Studio, wenn du seine Dienste startest, und beendet es, wenn du sie stoppst
+oder die App schließt. Das Modell belegt den Speicher deiner Grafikkarte also nur, solange Elite Intel läuft.
+Zum Entfernen drücke <strong>LM Studio deinstallieren</strong>: Es zeigt, was gelöscht wird, bevor es etwas löscht.</p>
+<p><strong>Die Schaltfläche erscheint nur bei einer NVIDIA RTX 3090 (24 GB) oder besser.</strong> Das Spiel braucht 8,5 GB
+Grafikspeicher oder mehr, das Modell etwa 6 GB, und Browser, OBS und Windows brauchen auch etwas, deshalb
+fasst eine kleinere Karte nicht beides zuverlässig. AMD-Karten werden noch nicht erkannt: AMD-Besitzer folgen
+der <a href="AMD-RX-7800XT-LLM-Setup.html">AMD-Anleitung</a>.</p>
+<p>Du hast LM Studio schon? Dann heißt die Schaltfläche <strong>LM Studio einrichten</strong>. Sie fügt das Modell hinzu und
+füllt die Felder aus, und sonst bleibt dein LM Studio genau, wie es ist: Elite Intel startet, stoppt oder
+entfernt nie ein LM Studio, das du selbst installiert hast.</p>
+<h3>Auf einem zweiten PC: selbst einrichten</h3>
+<p>Kann dein Spiele-PC Spiel und Modell nicht zusammen halten, lass LM Studio auf einem anderen PC in deinem
+Netzwerk laufen, der nichts als das Modell betreibt, und trage dessen Adresse unter <strong>Adresse</strong> ein. Der
+Spiele-PC leistet dann keine Inferenzarbeit.</p>
+<p>Der LLM-PC braucht:</p>
 <ul>
-<li>RTX 3090 24 GB VRAM</li>
-<li>AMD RX 7800 XT</li>
+<li><strong>12 GB Grafikspeicher</strong>, das lässt Spielraum für das Modell,</li>
+<li><strong>Rechenleistung der Klasse RTX 3080 oder besser.</strong> Eine langsamere Karte fasst das Modell, antwortet aber zu
+langsam, um nützlich zu sein.</li>
 </ul>
-<p>Der VRAM zählt mehr als die GPU-Geschwindigkeit. Eine Karte mit nur 12 GB VRAM reicht nicht, egal
-wie neu sie ist. Hast du einen zweiten PC mit einer leistungsfähigen GPU, lass LM Studio dort laufen
-und richte Elite Intel darauf aus. Dann leistet der Spiele-PC keine Inferenzarbeit.</p>
 <p>Eine GPU-Referenztabelle von <strong>Kevin Rank</strong> findest du hier:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">GPU-Referenzleitfaden</a></p>
-<h3>Installationsanleitungen</h3>
 <table>
 <thead>
 <tr>
@@ -160,19 +182,19 @@ und richte Elite Intel darauf aus. Dann leistet der Spiele-PC keine Inferenzarbe
 </thead>
 <tbody><tr>
 <td><a href="Install-LM-Studio-Linux.html">LM Studio – Linux</a></td>
-<td>Desktop-Installation und Betrieb als Server</td>
+<td>Installation über die Kommandozeile und Betrieb als Dienst ab dem Systemstart</td>
 </tr>
 <tr>
 <td><a href="Install-LM-Studio-Windows.html">LM Studio – Windows</a></td>
-<td>Desktop-App mit GUI</td>
-</tr>
-<tr>
-<td><a href="AMD-RX-7800XT-LLM-Setup.html">LLMs auf der AMD-RX-Serie</a></td>
-<td>AMD-spezifische Einrichtung</td>
+<td>Installation über die Kommandozeile und Start bei der Anmeldung</td>
 </tr>
 <tr>
 <td><a href="LM-Studio-Ubuntu-Server.html">LM Studio auf Ubuntu Server</a></td>
 <td>Headless-Installation auf einem eigenen Inferenzrechner</td>
+</tr>
+<tr>
+<td><a href="AMD-RX-7800XT-LLM-Setup.html">LLMs auf der AMD-RX-Serie</a></td>
+<td>AMD-spezifische Einrichtung</td>
 </tr>
 </tbody></table>
 <h3>Warum gerade <code>google/gemma-4-e4b</code>?</h3>
@@ -238,12 +260,13 @@ nicht: Elite Intel nimmt das passende für deinen Anbieter.</p>
 <h2>Was soll ich nehmen?</h2>
 <p><strong>Nimm LM Studio lokal, wenn:</strong></p>
 <ul>
-<li>du eine RTX 3090 24 GB oder Gleichwertiges hast, oder einen zweiten PC im Netzwerk mit einer solchen Karte</li>
+<li>dein Spiele-PC eine NVIDIA RTX 3090 24 GB oder besser hat: Elite Intel richtet es für dich ein</li>
+<li>oder du einen zweiten PC im Netzwerk mit 12 GB Grafikspeicher und Leistung der Klasse RTX 3080 hast</li>
 <li>alles auf deiner eigenen Hardware bleiben soll</li>
 </ul>
 <p><strong>Nimm einen Cloud-Anbieter, wenn:</strong></p>
 <ul>
-<li>deine GPU nicht genug VRAM hat, um ein Modell neben dem Spiel zu betreiben</li>
+<li>deine GPU das Modell nicht neben dem Spiel betreiben kann und du keinen zweiten PC dafür hast</li>
 <li>du überhaupt keinen Inferenzserver betreiben willst</li>
 </ul>
 <p>Unsicher? Du kannst mit beidem anfangen und jederzeit ohne Neuinstallation wechseln.</p>

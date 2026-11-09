@@ -23,29 +23,56 @@ Die linke Seite des Bereichs, **LMStudio**:
 | **Modell** | `google/gemma-4-e4b` |
 
 LM Studio ist der einzige lokale Inferenzserver, den Elite Intel unterstützt, und
-`google/gemma-4-e4b` das einzige unterstützte lokale Modell.
+`google/gemma-4-e4b` das einzige unterstützte lokale Modell. Es gibt zwei Wege, es zu betreiben.
 
-### GPU-Anforderungen
-Diese Hardware brauchst du, um Spiel und LLM auf demselben Rechner zu betreiben:
+### Auf deinem Spiele-PC: Elite Intel richtet es ein
 
-- RTX 3090 24 GB VRAM
-- AMD RX 7800 XT
+Kann dein PC Spiel und Modell zusammen betreiben, erscheint unter den Feldern von **LMStudio** eine
+Schaltfläche. Drücke **LM Studio installieren**, und Elite Intel:
 
-Der VRAM zählt mehr als die GPU-Geschwindigkeit. Eine Karte mit nur 12 GB VRAM reicht nicht, egal
-wie neu sie ist. Hast du einen zweiten PC mit einer leistungsfähigen GPU, lass LM Studio dort laufen
-und richte Elite Intel darauf aus. Dann leistet der Spiele-PC keine Inferenzarbeit.
+1. installiert LM Studio, auf dem Laufwerk deiner Wahl,
+2. lädt `google/gemma-4-e4b` herunter (etwa 6 GB),
+3. lädt es auf deine Grafikkarte und prüft, ob es wirklich dort gelandet ist,
+4. testet es und trägt **Adresse** und **Modell** für dich ein.
+
+Jeder Schritt wird angezeigt, während er läuft, mit einem Fortschrittsbalken für den Download. Schlägt ein
+Schritt fehl, sagt der Dialog, welcher und warum, und ein erneuter Klick macht dort weiter. Rechne mit etwa
+10 GB Speicherplatz. LM Studio ist kostenlose Software von Element Labs und nicht Teil von Elite Intel.
+
+Danach startet Elite Intel LM Studio, wenn du seine Dienste startest, und beendet es, wenn du sie stoppst
+oder die App schließt. Das Modell belegt den Speicher deiner Grafikkarte also nur, solange Elite Intel läuft.
+Zum Entfernen drücke **LM Studio deinstallieren**: Es zeigt, was gelöscht wird, bevor es etwas löscht.
+
+**Die Schaltfläche erscheint nur bei einer NVIDIA RTX 3090 (24 GB) oder besser.** Das Spiel braucht 8,5 GB
+Grafikspeicher oder mehr, das Modell etwa 6 GB, und Browser, OBS und Windows brauchen auch etwas, deshalb
+fasst eine kleinere Karte nicht beides zuverlässig. AMD-Karten werden noch nicht erkannt: AMD-Besitzer folgen
+der [AMD-Anleitung](AMD-RX-7800XT-LLM-Setup).
+
+Du hast LM Studio schon? Dann heißt die Schaltfläche **LM Studio einrichten**. Sie fügt das Modell hinzu und
+füllt die Felder aus, und sonst bleibt dein LM Studio genau, wie es ist: Elite Intel startet, stoppt oder
+entfernt nie ein LM Studio, das du selbst installiert hast.
+
+### Auf einem zweiten PC: selbst einrichten
+
+Kann dein Spiele-PC Spiel und Modell nicht zusammen halten, lass LM Studio auf einem anderen PC in deinem
+Netzwerk laufen, der nichts als das Modell betreibt, und trage dessen Adresse unter **Adresse** ein. Der
+Spiele-PC leistet dann keine Inferenzarbeit.
+
+Der LLM-PC braucht:
+
+- **12 GB Grafikspeicher**, das lässt Spielraum für das Modell,
+- **Rechenleistung der Klasse RTX 3080 oder besser.** Eine langsamere Karte fasst das Modell, antwortet aber zu
+  langsam, um nützlich zu sein.
 
 Eine GPU-Referenztabelle von **Kevin Rank** findest du hier:
 [GPU-Referenzleitfaden](https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing)
 
-### Installationsanleitungen
-
 | Anleitung | |
 |-----------|---|
-| [LM Studio – Linux](Install-LM-Studio-Linux) | Desktop-Installation und Betrieb als Server |
-| [LM Studio – Windows](Install-LM-Studio-Windows) | Desktop-App mit GUI |
-| [LLMs auf der AMD-RX-Serie](AMD-RX-7800XT-LLM-Setup) | AMD-spezifische Einrichtung |
+| [LM Studio – Linux](Install-LM-Studio-Linux) | Installation über die Kommandozeile und Betrieb als Dienst ab dem Systemstart |
+| [LM Studio – Windows](Install-LM-Studio-Windows) | Installation über die Kommandozeile und Start bei der Anmeldung |
 | [LM Studio auf Ubuntu Server](LM-Studio-Ubuntu-Server) | Headless-Installation auf einem eigenen Inferenzrechner |
+| [LLMs auf der AMD-RX-Serie](AMD-RX-7800XT-LLM-Setup) | AMD-spezifische Einrichtung |
 
 ### Warum gerade `google/gemma-4-e4b`?
 
@@ -98,11 +125,12 @@ Wie du bei jedem Anbieter einen Schlüssel bekommst: [Cloud-LLM einrichten](clou
 ## Was soll ich nehmen?
 
 **Nimm LM Studio lokal, wenn:**
-- du eine RTX 3090 24 GB oder Gleichwertiges hast, oder einen zweiten PC im Netzwerk mit einer solchen Karte
+- dein Spiele-PC eine NVIDIA RTX 3090 24 GB oder besser hat: Elite Intel richtet es für dich ein
+- oder du einen zweiten PC im Netzwerk mit 12 GB Grafikspeicher und Leistung der Klasse RTX 3080 hast
 - alles auf deiner eigenen Hardware bleiben soll
 
 **Nimm einen Cloud-Anbieter, wenn:**
-- deine GPU nicht genug VRAM hat, um ein Modell neben dem Spiel zu betreiben
+- deine GPU das Modell nicht neben dem Spiel betreiben kann und du keinen zweiten PC dafür hast
 - du überhaupt keinen Inferenzserver betreiben willst
 
 Unsicher? Du kannst mit beidem anfangen und jederzeit ohne Neuinstallation wechseln.
