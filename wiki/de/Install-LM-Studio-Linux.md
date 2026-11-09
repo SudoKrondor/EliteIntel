@@ -249,7 +249,7 @@ Der Timer wartet 2 Minuten nach dem Booten, startet den LM Studio-Dienst einmal 
 
 ### Schritt 5 – Elite Intel konfigurieren
 
-Öffne in Elite Intel **Dienste → KI-Dienste**. Wähle unter **Sprachmodell (LLM)** die Option **LMSTudio**:
+Öffne in Elite Intel **Dienste → KI-Dienste**. Wähle unter **Sprachmodell (LLM)** die Option **LMStudio**:
 
 - **Adresse**: `http://localhost:1234/v1/chat/completions` (der Standardwert). Wenn LM Studio auf einem anderen Rechner läuft, `localhost` durch die IP dieses Rechners ersetzen.
 - **Modell**: die Modell-ID-Zeichenfolge aus `curl http://localhost:1234/v1/models` einfügen. Ein Modell bedient sowohl Befehle als auch Abfragen.

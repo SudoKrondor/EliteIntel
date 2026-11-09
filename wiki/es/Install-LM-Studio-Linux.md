@@ -249,7 +249,7 @@ El temporizador espera 2 minutos después del arranque, reinicia el servicio de 
 
 ### Paso 5 – Configurar Elite Intel
 
-En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMSTudio**:
+En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMStudio**:
 
 - **Dirección**: `http://localhost:1234/v1/chat/completions` (el valor por defecto). Si LM Studio está en otra máquina, sustituye `localhost` por la IP de esa máquina.
 - **Modelo**: pega la cadena de ID del modelo de `curl http://localhost:1234/v1/models`. Un solo modelo atiende tanto los comandos como las consultas.

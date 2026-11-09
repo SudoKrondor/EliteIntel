@@ -35,9 +35,9 @@ pulsas **Guardar**, y si intentas salir con cambios sin guardar te pregunta *Gua
 
 ### Modelo de lenguaje (LLM)
 
-Cambia entre **LMSTudio** (local) y **Configuración en la nube**.
+Cambia entre **LMStudio** (local) y **Configuración en la nube**.
 
-**LMSTudio**
+**LMStudio**
 
 | Campo | Notas |
 |-------|-------|

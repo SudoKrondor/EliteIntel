@@ -15,7 +15,7 @@ Sprachmodell (LLM)** ein:
 
 ## Option 1: Lokal (LM Studio)
 
-Die linke Seite des Bereichs, **LMSTudio**:
+Die linke Seite des Bereichs, **LMStudio**:
 
 | Feld | Wert |
 |------|------|

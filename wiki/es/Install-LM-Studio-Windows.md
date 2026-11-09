@@ -158,7 +158,7 @@ Esta opción solo está disponible si la aplicación de escritorio de LM Studio 
 
 ### Paso 5 – Configurar Elite Intel
 
-En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMSTudio**:
+En Elite Intel, abre **Servicios → Servicios de IA**. En **Modelo de lenguaje (LLM)**, selecciona **LMStudio**:
 
 - **Dirección**: `http://localhost:1234/v1/chat/completions` (el valor por defecto). Si LM Studio está en otra máquina, sustituye `localhost` por la IP de esa máquina.
 - **Modelo**: pega la cadena de ID del modelo de `http://localhost:1234/v1/models`. Un solo modelo atiende tanto los comandos como las consultas.

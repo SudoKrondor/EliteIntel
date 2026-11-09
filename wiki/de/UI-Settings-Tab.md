@@ -36,9 +36,9 @@ bis du **Speichern** drückst, und wer mit offenen Änderungen den Reiter verlä
 
 ### Sprachmodell (LLM)
 
-Wechsle zwischen **LMSTudio** (lokal) und **Cloud-Einrichtung**.
+Wechsle zwischen **LMStudio** (lokal) und **Cloud-Einrichtung**.
 
-**LMSTudio**
+**LMStudio**
 
 | Feld | Hinweise |
 |-------|-------|

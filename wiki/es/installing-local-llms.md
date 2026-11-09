@@ -15,7 +15,7 @@ Modelo de lenguaje (LLM)**:
 
 ## Opción 1: Local (LM Studio)
 
-El lado izquierdo del panel, **LMSTudio**:
+El lado izquierdo del panel, **LMStudio**:
 
 | Campo | Valor |
 |-------|-------|
