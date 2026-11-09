@@ -360,6 +360,8 @@ ${hreflangTags}
     <meta property="og:image:type" content="image/png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="${DOMAIN}/images/site-preview.png">
+    <link rel="icon" href="${assetBase}favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="${assetBase}apple-touch-icon.png">
     <link rel="stylesheet" href="${assetBase}css/main.css">
 </head>
 <body>
