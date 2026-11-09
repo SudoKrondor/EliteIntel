@@ -97,7 +97,7 @@
 <p>Il nécessite <a href="https://lmstudio.ai">LM Studio</a> et un GPU suffisamment puissant.</p>
 <hr>
 <h3>Matériel minimum</h3>
-<p>Pour faire tourner Elite Dangerous et le LLM sur la <strong>même machine</strong>, il faut au minimum un <strong>NVIDIA RTX 3060 avec 24 Go de VRAM</strong>.</p>
+<p>Pour faire tourner Elite Dangerous et le LLM sur la <strong>même machine</strong>, il faut au minimum un <strong>NVIDIA RTX 3060 avec 12 Go de VRAM</strong>.</p>
 <blockquote>
 <p><strong>Conseil :</strong> Elite Intel peut être dirigé vers une instance LM Studio fonctionnant sur un <strong>PC séparé</strong> de votre réseau. Si une deuxième machine dotée d&#39;un GPU capable est disponible, le PC de jeu ne supporte aucune charge d&#39;inférence dans cette configuration.</p>
 </blockquote>
@@ -124,6 +124,9 @@ Voir <a href="installing-local-llms.html">Choisir votre LLM</a>.</p>
 </blockquote>
 <hr>
 <p>Tutoriel vidéo très détaillé par @DawnTreaderToolsoftheElite </p>
+<blockquote>
+<p><strong>Note :</strong> La vidéo montre d&#39;anciennes versions de LM Studio et d&#39;Elite Intel. Là où elle diffère des étapes ci-dessous, suivez les étapes ci-dessous.</p>
+</blockquote>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/F5RgRRePrTo" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
 
 <hr>
@@ -131,7 +134,7 @@ Voir <a href="installing-local-llms.html">Choisir votre LLM</a>.</p>
 <p>Ouvrez <strong>PowerShell</strong> et exécutez :</p>
 <pre><code class="language-powershell">irm https://lmstudio.ai/install.ps1 | iex
 </code></pre>
-<p>Cela installe le CLI <code>lms</code> et l&#39;environnement d&#39;exécution LM Studio. Ouvrez une <strong>nouvelle</strong> fenêtre PowerShell après l&#39;installation pour que les modifications prennent effet.</p>
+<p>Cela installe le CLI <code>lms</code> et <strong>llmster</strong>, le serveur d&#39;arrière-plan de LM Studio. L&#39;application de bureau LM Studio n&#39;est <strong>pas</strong> installée. Ouvrez une <strong>nouvelle</strong> fenêtre PowerShell après l&#39;installation pour que les modifications prennent effet.</p>
 <p>Vérifiez que ça fonctionne :</p>
 <pre><code class="language-powershell">lms --help
 </code></pre>
@@ -140,70 +143,82 @@ Voir <a href="installing-local-llms.html">Choisir votre LLM</a>.</p>
 </blockquote>
 <hr>
 <h3>Étape 2 – Télécharger le modèle</h3>
-<pre><code class="language-powershell">lms get google/gemma-4-e4b
+<p>Démarrez le serveur d&#39;arrière-plan de LM Studio, puis téléchargez le modèle :</p>
+<pre><code class="language-powershell">lms daemon up
+lms get google/gemma-4-e4b
 </code></pre>
 <p>Si le nom ne correspond pas exactement, <code>lms get</code> liste les candidats trouvés ; choisissez-en
 un avec les flèches et Entrée.</p>
 <p>Pour lister les modèles téléchargés :</p>
 <pre><code class="language-powershell">lms ls
 </code></pre>
+<p><a href="https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/917">LM Studio a un bug connu</a>. Dans certains cas, le téléchargement échoue avec :
+<code>Error: No staff picks found with the specified search criteria.</code></p>
+<p>Dans ce cas, téléchargez le fichier GGUF à la main depuis la page du modèle sur HuggingFace, puis importez-le :</p>
+<pre><code class="language-powershell">lms import C:\chemin\vers\le-modele.gguf
+</code></pre>
 <hr>
 <h3>Étape 3 – Démarrer le serveur</h3>
 <p>Chargez le modèle et démarrez le serveur d&#39;inférence :</p>
-<pre><code class="language-powershell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
+<pre><code class="language-powershell">lms daemon up
+lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
+<p><code>lms daemon up</code> ne fait rien si le serveur d&#39;arrière-plan tourne déjà : vous pouvez donc l&#39;inclure à chaque fois.</p>
 <p><strong>NOTE</strong> : L&#39;option <code>--context-length 8192</code> est obligatoire. Sans elle, la fenêtre de contexte peut être trop petite, provoquant une troncature des invites, des échecs et des hallucinations.</p>
 <p>Vérifiez qu&#39;il fonctionne en ouvrant un navigateur ou une autre fenêtre PowerShell et en accédant à :</p>
 <pre><code>http://localhost:1234/v1/models
 </code></pre>
-<p>Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d&#39;identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ <strong>LLM Model</strong> d&#39;Elite Intel.</p>
+<p>Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d&#39;identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ <strong>Modèle</strong> d&#39;Elite Intel.</p>
 <p>Pour arrêter le serveur :</p>
 <pre><code class="language-powershell">lms server stop
 </code></pre>
 <blockquote>
-<p>⚠️ <strong>Important :</strong> Le serveur LM Studio ne <strong>survit pas</strong> aux redémarrages. Exécutez <code>lms server start</code> à nouveau après chaque redémarrage, ou utilisez l&#39;une des options de démarrage automatique ci-dessous.</p>
+<p>⚠️ <strong>Important :</strong> Le serveur LM Studio ne <strong>survit pas</strong> aux redémarrages. Exécutez à nouveau les trois commandes de l&#39;étape 3 après chaque redémarrage, ou utilisez l&#39;une des options de démarrage automatique ci-dessous.</p>
 </blockquote>
 <hr>
 <h3>Étape 4 – (Optionnel) Démarrage automatique au démarrage</h3>
-<p>Deux options sont disponibles pour maintenir le serveur en fonctionnement après les redémarrages.</p>
-<h4>Option A – Application de bureau</h4>
-<p>Si l&#39;application de bureau LM Studio est installée, c&#39;est l&#39;approche la plus simple :</p>
+<p>Deux options sont disponibles pour maintenir le serveur en fonctionnement après les redémarrages. Si vous avez suivi l&#39;étape 1, utilisez l&#39;<strong>option A</strong>. L&#39;option B ne concerne que ceux qui ont aussi installé l&#39;application de bureau LM Studio.</p>
+<h4>Option A – Planificateur de tâches (sans application de bureau)</h4>
+<p>Enregistrez d&#39;abord ce script sous <code>start-lmstudio.ps1</code> dans un emplacement permanent (par ex. <code>C:\Scripts\</code>) :</p>
+<pre><code class="language-powershell">$lms = &quot;$env:USERPROFILE\.lmstudio\bin\lms.exe&quot;
+&amp; $lms daemon up
+&amp; $lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
+&amp; $lms server start
+</code></pre>
+<p>Il démarre le serveur d&#39;arrière-plan, charge le modèle avec les réglages dont Elite Intel a besoin et démarre le serveur d&#39;inférence : les trois mêmes commandes qu&#39;à l&#39;étape 3.</p>
+<p>Créez ensuite la tâche :</p>
+<ol>
+<li>Appuyez sur <strong>Win + R</strong>, tapez <code>taskschd.msc</code>, appuyez sur Entrée.</li>
+<li>Cliquez sur <strong>Créer une tâche</strong> dans le panneau de droite.</li>
+<li><strong>Onglet Général</strong> : Nommez-la <code>LM Studio Server</code>. Laissez <strong>« Exécuter avec les privilèges les plus élevés »</strong> décoché : LM Studio n&#39;a pas besoin des droits d&#39;administrateur.</li>
+<li><strong>Onglet Déclencheurs</strong> : Cliquez sur Nouveau → <strong>« À la connexion »</strong> → OK.</li>
+<li><strong>Onglet Actions</strong> : Cliquez sur Nouveau → <strong>« Démarrer un programme »</strong>.<ul>
+<li>Programme/script : <code>powershell.exe</code></li>
+<li>Ajouter des arguments : <code>-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File &quot;C:\Scripts\start-lmstudio.ps1&quot;</code></li>
+</ul>
+</li>
+</ol>
+<p><code>-WindowStyle Hidden</code> évite qu&#39;une fenêtre de console reste ouverte à chaque connexion. Une fenêtre peut apparaître brièvement au démarrage du script.</p>
+<h4>Option B – Application de bureau</h4>
+<p>Cette option n&#39;est disponible que si l&#39;application de bureau LM Studio est installée. L&#39;étape 1 ne l&#39;installe pas.</p>
 <ol>
 <li>Ouvrez LM Studio et appuyez sur <strong>Ctrl + ,</strong> pour ouvrir les Paramètres.</li>
 <li>Cochez <strong>« Run LLM server on login »</strong>.</li>
 <li>Fermer l&#39;application la minimise dans la barre système et maintient le serveur en fonctionnement. Elle se restaure automatiquement à la prochaine connexion.</li>
 </ol>
-<h4>Option B – Planificateur de tâches (sans interface graphique)</h4>
-<ol>
-<li>Appuyez sur <strong>Win + R</strong>, tapez <code>taskschd.msc</code>, appuyez sur Entrée.</li>
-<li>Cliquez sur <strong>Créer une tâche</strong> dans le panneau de droite.</li>
-<li><strong>Onglet Général</strong> : Nommez-la <code>LM Studio Server</code>. Cochez <strong>« Exécuter avec les privilèges les plus élevés »</strong>.</li>
-<li><strong>Onglet Déclencheurs</strong> : Cliquez sur Nouveau → <strong>« À la connexion »</strong> → OK.</li>
-<li><strong>Onglet Actions</strong> : Cliquez sur Nouveau → <strong>« Démarrer un programme »</strong>.<ul>
-<li>Programme/script : <code>%USERPROFILE%\.lmstudio\bin\lms.exe</code></li>
-<li>Ajouter des arguments : <code>server start</code></li>
-</ul>
-</li>
-</ol>
-<p>Pour charger également le modèle automatiquement, créez plutôt un fichier batch :</p>
-<pre><code class="language-batch">@echo off
-%USERPROFILE%\.lmstudio\bin\lms.exe daemon up
-%USERPROFILE%\.lmstudio\bin\lms.exe load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-%USERPROFILE%\.lmstudio\bin\lms.exe server start
-</code></pre>
-<p>Enregistrez-le sous <code>start-lmstudio.bat</code> dans un emplacement permanent (par ex. <code>C:\Scripts\</code>) et faites pointer l&#39;action du Planificateur de tâches vers ce fichier.</p>
+<blockquote>
+<p>⚠️ <strong>Longueur de contexte :</strong> Avec cette option, LM Studio ne charge le modèle qu&#39;à l&#39;arrivée de la première requête, avec les réglages <strong>par défaut</strong> du modèle au lieu du <code>--context-length 8192</code> de l&#39;étape 3. Ouvrez les réglages par défaut du modèle dans l&#39;application de bureau et réglez la <strong>longueur de contexte</strong> sur <strong>8192</strong>. Sinon, la fenêtre de contexte risque d&#39;être trop petite.</p>
+</blockquote>
 <hr>
 <h3>Étape 5 – Configurer Elite Intel</h3>
-<p>Ouvrez l&#39;<strong>onglet Paramètres</strong> dans Elite Intel :</p>
+<p>Dans Elite Intel, ouvrez <strong>Paramètres → Services IA</strong>. Sous <strong>Modèle de langage (LLM)</strong>, sélectionnez <strong>LMStudio</strong> :</p>
 <ul>
-<li>Laissez le champ <strong>LLM Key</strong> vide (LM Studio local n&#39;en requiert pas).</li>
-<li><strong>LLM Address</strong> : définissez sur <code>http://localhost:1234/v1/chat/completions</code>. Si LM Studio est sur une autre machine, remplacez <code>localhost</code> par l&#39;adresse IP de cette machine.</li>
-<li><strong>LLM Model</strong> : collez la chaîne d&#39;identifiant du modèle obtenue depuis <code>http://localhost:1234/v1/models</code>.</li>
-<li><strong>Command LLM</strong> : définissez sur le même identifiant de modèle.</li>
-<li><strong>Query LLM</strong> : définissez sur le même identifiant de modèle.</li>
-<li>Cliquez sur <strong>Stop</strong> puis <strong>Start</strong> dans l&#39;onglet AI pour appliquer les modifications.</li>
+<li><strong>Adresse</strong> : <code>http://localhost:1234/v1/chat/completions</code> (la valeur par défaut). Si LM Studio est sur une autre machine, remplacez <code>localhost</code> par l&#39;adresse IP de cette machine.</li>
+<li><strong>Modèle</strong> : collez la chaîne d&#39;identifiant du modèle obtenue depuis <code>http://localhost:1234/v1/models</code>. Un seul modèle sert aux commandes comme aux requêtes.</li>
 </ul>
+<p>Un LLM local ne nécessite pas de clé d&#39;API.</p>
+<p>Cliquez sur <strong>Enregistrer</strong>. Elite Intel redémarre alors le modèle de langage de lui-même.</p>
 <hr>
 <p>Communauté 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

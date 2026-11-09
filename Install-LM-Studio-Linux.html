@@ -140,7 +140,9 @@ export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
 </code></pre>
 <hr>
 <h3>Step 2 - Download the Model</h3>
-<pre><code class="language-shell">lms get google/gemma-4-e4b
+<p>Start the LM Studio background server, then download the model:</p>
+<pre><code class="language-shell">lms daemon up
+lms get google/gemma-4-e4b
 </code></pre>
 <p>If the name does not resolve to an exact match, <code>lms get</code> lists the candidates it found and you
 pick one with the arrow keys and Enter.</p>
@@ -155,19 +157,20 @@ pick one with the arrow keys and Enter.</p>
 <hr>
 <h3>Step 3 - Start the Server</h3>
 <p>Load the model and start the inference server:</p>
-<pre><code class="language-shell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
+<pre><code class="language-shell">lms daemon up
+lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
-<p><code>--gpu max</code> offloads inference to the GPU for maximum performance.</p>
+<p><code>--gpu max</code> offloads inference to the GPU for maximum performance. <code>lms daemon up</code> does nothing if the background server is already running, so it is safe to include every time.</p>
 <p>Verify it is running:</p>
 <pre><code class="language-shell">curl http://localhost:1234/v1/models
 </code></pre>
-<p>You should receive a JSON list of loaded models. The model ID string in that response is what you will enter in Elite Intel&#39;s <strong>LLM Model</strong> field.</p>
+<p>You should receive a JSON list of loaded models. The model ID string in that response is what you will enter in Elite Intel&#39;s <strong>Model</strong> field.</p>
 <p>To stop the server:</p>
 <pre><code class="language-shell">lms server stop
 </code></pre>
 <blockquote>
-<p>⚠️ <strong>Important:</strong> The LM Studio server does <strong>not</strong> survive reboots. Run <code>lms server start</code> again after each restart, or set up the optional auto-start below.</p>
+<p>⚠️ <strong>Important:</strong> The LM Studio server does <strong>not</strong> survive reboots. Run the three Step 3 commands again after each restart, or set up the optional auto-start below.</p>
 </blockquote>
 <hr>
 <h3>Step 4 - (Optional) Auto-Start on Boot</h3>
@@ -194,8 +197,8 @@ Environment=&quot;HOME=/home/YOUR_USERNAME&quot;
 Environment=&quot;PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin&quot;
 Environment=&quot;XDG_RUNTIME_DIR=/run/user/YOUR_UID&quot;
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
-ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192
-ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
 
@@ -205,6 +208,9 @@ WantedBy=default.target
 <p>Replace <code>YOUR_USERNAME</code> with your Linux username and <code>YOUR_UID</code> with your user ID. To find your UID:</p>
 <pre><code class="language-shell">id -u
 </code></pre>
+<blockquote>
+<p><strong>Game on another PC?</strong> <code>--bind 127.0.0.1</code> makes the server reachable only from this machine. If Elite Intel runs on a different PC, change it to <code>--bind 0.0.0.0</code> so other machines on your network can reach it.</p>
+</blockquote>
 <blockquote>
 <p>⚠️ <strong>Why <code>XDG_RUNTIME_DIR</code>?</strong> User services run in a stripped-down environment that may not include session variables. LM Studio uses <code>XDG_RUNTIME_DIR</code> for IPC. Without it, the service can fail silently even when <code>lms</code> works correctly from the terminal. This is the most common cause of service failure when manual execution succeeds.</p>
 </blockquote>
@@ -225,8 +231,9 @@ curl http://localhost:1234/v1/models
 </blockquote>
 <hr>
 <h3>Step 4b - (Optional) Fix Slow Inference After Boot</h3>
-<p>Some users experience slow inference responses when LM Studio starts at boot. The issue resolves immediately after a manual service restart. This is caused by a quirk in LM Studio&#39;s daemon initialization. The first cold start may leave the inference runtime in a degraded state.</p>
-<p>If slow responses appear after a reboot and resolve after a manual restart, this timer automates the fix.</p>
+<p>Some users experience slow inference responses when LM Studio starts at boot. The issue resolves immediately after a manual service restart. The cause is not confirmed.</p>
+<p>First, check that the <code>lms load</code> line in your service file ends with <code>--gpu max</code>. Older copies of this page left it out. Without it, LM Studio decides for itself how much of the model goes on the GPU, and at boot it may put part of the model on the CPU. If you add it, run <code>systemctl --user daemon-reload</code> and reboot to test.</p>
+<p>If slow responses still appear after a reboot and resolve after a manual restart, this timer automates the fix.</p>
 <p>Create a companion service:</p>
 <pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.service
 </code></pre>
@@ -242,7 +249,7 @@ ExecStart=systemctl --user restart lmstudio.service
 <pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.timer
 </code></pre>
 <pre><code class="language-ini">[Unit]
-Description=Restart LM Studio 2 minutes after login
+Description=Restart LM Studio 2 minutes after boot
 
 [Timer]
 OnBootSec=2min
@@ -255,17 +262,16 @@ WantedBy=timers.target
 <pre><code class="language-shell">systemctl --user daemon-reload
 systemctl --user enable --now lmstudio-restart.timer
 </code></pre>
-<p>The timer waits 2 minutes after login, restarts the LM Studio service once, and then stays inactive. If you do not experience slow inference, this step is not needed.</p>
+<p>The timer waits 2 minutes after boot, restarts the LM Studio service once, and then stays inactive. If you do not experience slow inference, this step is not needed.</p>
 <hr>
 <h3>Step 5 - Configure Elite Intel</h3>
-<p>Open the <strong>Settings tab</strong> in Elite Intel:</p>
+<p>In Elite Intel, open <strong>Settings → AI Services</strong>. Under <strong>Language Model (LLM)</strong>, select <strong>LMStudio Setup</strong>:</p>
 <ul>
-<li>Leave the <strong>LLM Key</strong> field blank (local LM Studio does not require one).</li>
-<li><strong>LLM Address</strong>: set to <code>http://localhost:1234/v1/chat/completions</code>. If LM Studio is on another machine, replace <code>localhost</code> with that machine&#39;s IP.</li>
-<li><strong>LLM Model</strong>: paste in the model ID string from <code>curl http://localhost:1234/v1/models</code>.</li>
-<li><strong>Command LLM</strong>: set to the same model ID.</li>
-<li><strong>Query LLM</strong>: set to the same model ID.</li>
+<li><strong>Address</strong>: <code>http://localhost:1234/v1/chat/completions</code> (the default). If LM Studio is on another machine, replace <code>localhost</code> with that machine&#39;s IP.</li>
+<li><strong>Model</strong>: paste in the model ID string from <code>curl http://localhost:1234/v1/models</code>. One model serves both commands and queries.</li>
 </ul>
+<p>No API key is needed for a local LLM.</p>
+<p>Click <strong>Save</strong>. Elite Intel restarts the language model on its own.</p>
 <hr>
 <p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

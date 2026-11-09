@@ -59,7 +59,10 @@ lms --help
 
 ### Étape 2 – Télécharger le modèle
 
+Démarrez le serveur d'arrière-plan de LM Studio, puis téléchargez le modèle :
+
 ```shell
+lms daemon up
 lms get google/gemma-4-e4b
 ```
 Si le nom ne correspond pas exactement, `lms get` liste les candidats trouvés ; choisissez-en
@@ -87,11 +90,12 @@ lms import /path/to/the-model.gguf
 Chargez le modèle et démarrez le serveur d'inférence :
 
 ```shell
+lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 ```
 
-`--gpu max` délègue l'inférence au GPU pour des performances maximales.
+`--gpu max` délègue l'inférence au GPU pour des performances maximales. `lms daemon up` ne fait rien si le serveur d'arrière-plan tourne déjà : vous pouvez donc l'inclure à chaque fois.
 
 Vérifiez qu'il fonctionne :
 
@@ -99,7 +103,7 @@ Vérifiez qu'il fonctionne :
 curl http://localhost:1234/v1/models
 ```
 
-Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d'identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ **LLM Model** d'Elite Intel.
+Vous devriez recevoir une liste JSON des modèles chargés. La chaîne d'identifiant du modèle dans cette réponse est celle que vous devrez saisir dans le champ **Modèle** d'Elite Intel.
 
 Pour arrêter le serveur :
 
@@ -107,7 +111,7 @@ Pour arrêter le serveur :
 lms server stop
 ```
 
-> ⚠️ **Important :** Le serveur LM Studio ne **survit pas** aux redémarrages. Exécutez `lms server start` à nouveau après chaque redémarrage, ou configurez le démarrage automatique optionnel ci-dessous.
+> ⚠️ **Important :** Le serveur LM Studio ne **survit pas** aux redémarrages. Exécutez à nouveau les trois commandes de l'étape 3 après chaque redémarrage, ou configurez le démarrage automatique optionnel ci-dessous.
 
 ---
 
@@ -148,8 +152,8 @@ Environment="HOME=/home/YOUR_USERNAME"
 Environment="PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="XDG_RUNTIME_DIR=/run/user/YOUR_UID"
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
-ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192
-ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
 
@@ -162,6 +166,8 @@ Remplacez `YOUR_USERNAME` par votre nom d'utilisateur Linux et `YOUR_UID` par vo
 ```shell
 id -u
 ```
+
+> **Le jeu sur un autre PC ?** Avec `--bind 127.0.0.1`, le serveur n'est joignable que depuis cette machine. Si Elite Intel tourne sur un autre PC, remplacez-le par `--bind 0.0.0.0` pour que les autres machines de votre réseau puissent le joindre.
 
 > ⚠️ **Pourquoi `XDG_RUNTIME_DIR` ?** Les services utilisateur s'exécutent dans un environnement épuré qui peut ne pas inclure les variables de session. LM Studio utilise `XDG_RUNTIME_DIR` pour l'IPC. Sans lui, le service peut échouer silencieusement même quand `lms` fonctionne correctement depuis le terminal. C'est la cause la plus fréquente d'échec du service lorsque l'exécution manuelle réussit.
 
@@ -190,9 +196,11 @@ curl http://localhost:1234/v1/models
 
 ### Étape 4b – (Optionnel) Corriger l'inférence lente après le démarrage
 
-Certains utilisateurs constatent des réponses d'inférence lentes lorsque LM Studio démarre au boot. Le problème se résout immédiatement après un redémarrage manuel du service. Cela est dû à une particularité de l'initialisation du démon LM Studio. Le premier démarrage à froid peut laisser le moteur d'inférence dans un état dégradé.
+Certains utilisateurs constatent des réponses d'inférence lentes lorsque LM Studio démarre au boot. Le problème se résout immédiatement après un redémarrage manuel du service. La cause n'est pas confirmée.
 
-Si des réponses lentes apparaissent après un redémarrage et se résolvent après un redémarrage manuel, cette minuterie automatise le correctif.
+Vérifiez d'abord que la ligne `lms load` de votre fichier de service se termine par `--gpu max`. Les anciennes versions de cette page l'omettaient. Sans cette option, LM Studio décide lui-même quelle part du modèle va sur le GPU, et au démarrage il peut en placer une partie sur le CPU. Si vous l'ajoutez, exécutez `systemctl --user daemon-reload` et redémarrez pour tester.
+
+Si des réponses lentes apparaissent encore après un redémarrage et se résolvent après un redémarrage manuel, cette minuterie automatise le correctif.
 
 Créez un service complémentaire :
 
@@ -218,7 +226,7 @@ nano ~/.config/systemd/user/lmstudio-restart.timer
 
 ```ini
 [Unit]
-Description=Restart LM Studio 2 minutes after login
+Description=Restart LM Studio 2 minutes after boot
 
 [Timer]
 OnBootSec=2min
@@ -235,20 +243,20 @@ systemctl --user daemon-reload
 systemctl --user enable --now lmstudio-restart.timer
 ```
 
-La minuterie attend 2 minutes après la connexion, redémarre le service LM Studio une fois, puis reste inactive. Si vous ne rencontrez pas d'inférence lente, cette étape n'est pas nécessaire.
+La minuterie attend 2 minutes après le démarrage, redémarre le service LM Studio une fois, puis reste inactive. Si vous ne rencontrez pas d'inférence lente, cette étape n'est pas nécessaire.
 
 ---
 
 ### Étape 5 – Configurer Elite Intel
 
-Ouvrez l'**onglet Paramètres** dans Elite Intel :
+Dans Elite Intel, ouvrez **Paramètres → Services IA**. Sous **Modèle de langage (LLM)**, sélectionnez **LMStudio** :
 
-- Laissez le champ **LLM Key** vide (LM Studio local n'en requiert pas).
-- **LLM Address** : définissez sur `http://localhost:1234/v1/chat/completions`. Si LM Studio est sur une autre machine, remplacez `localhost` par l'adresse IP de cette machine.
-- **LLM Model** : collez la chaîne d'identifiant du modèle obtenue via `curl http://localhost:1234/v1/models`.
-- **Command LLM** : définissez sur le même identifiant de modèle.
-- **Query LLM** : définissez sur le même identifiant de modèle.
-- Cliquez sur **Stop** puis **Start** dans l'onglet AI pour appliquer les modifications.
+- **Adresse** : `http://localhost:1234/v1/chat/completions` (la valeur par défaut). Si LM Studio est sur une autre machine, remplacez `localhost` par l'adresse IP de cette machine.
+- **Modèle** : collez la chaîne d'identifiant du modèle obtenue via `curl http://localhost:1234/v1/models`. Un seul modèle sert aux commandes comme aux requêtes.
+
+Un LLM local ne nécessite pas de clé d'API.
+
+Cliquez sur **Enregistrer**. Elite Intel redémarre alors le modèle de langage de lui-même.
 
 ---
 
