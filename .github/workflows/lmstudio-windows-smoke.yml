@@ -1,10 +1,19 @@
-# Proof of concept: does the Windows LM Studio page work as written?
-# Runs the wiki's commands on a GitHub-hosted Windows runner (no GPU, so inference is on the CPU).
-# It checks the commands, the paths and the endpoints, not the speed.
+# Proof of concept, round 2: what an in-app LM Studio installer needs to know.
+#
+#   Q1  Does ~/.lmstudio-home-pointer move the whole install (binaries AND models) to another drive?
+#   Q2  Does LMS_NO_MODIFY_PATH=1 leave PATH and the shell profiles untouched?
+#   Q3  How big is LM Studio itself, before any model?
+#   Q4  Does the REST download report usable progress (downloaded_bytes, bytes_per_second)?
+#   Q5  If the daemon dies mid-download (the app is closed), does a new download resume or restart?
+#   Q6  What does a REST load with Elite Intel's settings actually configure?
+#   Q7  After uninstalling (daemon down, delete the home and the pointer), is anything left behind?
+#
+# Runs on GitHub-hosted runners: no GPU, and their network is NOT representative of a commander's,
+# so no timing here means anything. Round 1 (the wiki's own commands) is in this file's git history.
 #
 # Independent of ci.yml: it never builds, tags or publishes anything.
 
-name: LM Studio Windows Smoke Test
+name: LM Studio Smoke Test
 
 permissions:
   contents: read
@@ -15,125 +24,253 @@ on:
       - lmstudio-smoke
   workflow_dispatch:
 
+env:
+  MODEL: google/gemma-4-e4b
+
 jobs:
-  smoke:
+  windows:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     defaults:
       run:
         shell: pwsh
-
     env:
-      MODEL: google/gemma-4-e4b
+      LMS_HOME: D:\LMStudio
 
     steps:
-      - name: "Step 1: install LM Studio (wiki command)"
-        run: irm https://lmstudio.ai/install.ps1 | iex
-
-      - name: "Step 1: lms.exe is where the wiki says"
+      - name: "Baseline: what exists before the install"
         run: |
-          $documented = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
-          if (Test-Path $documented) {
-            Write-Host "OK: $documented"
-          } else {
-            Write-Host "::warning::lms.exe is NOT at $documented. Found instead:"
-            Get-ChildItem "$env:USERPROFILE" -Recurse -Filter lms.exe -ErrorAction SilentlyContinue |
-              ForEach-Object { Write-Host $_.FullName }
-            throw "The wiki's Task Scheduler path is wrong."
+          function Snapshot($file) {
+            $lines = @()
+            foreach ($root in @($env:USERPROFILE, $env:LOCALAPPDATA, $env:APPDATA)) {
+              $lines += Get-ChildItem -Force -LiteralPath $root -ErrorAction SilentlyContinue |
+                ForEach-Object { $_.FullName }
+            }
+            $lines | Sort-Object | Set-Content $file
           }
-          "$env:USERPROFILE\.lmstudio\bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+          Snapshot "$env:RUNNER_TEMP\before.txt"
+          [Environment]::GetEnvironmentVariable('Path', 'User') | Set-Content "$env:RUNNER_TEMP\user-path-before.txt"
+          Write-Host "User PATH before:"; Get-Content "$env:RUNNER_TEMP\user-path-before.txt"
 
-      - name: "Step 1: lms --help"
-        run: lms --help
-
-      - name: "Step 2: daemon up + download the model"
+      - name: "Q1: write the home pointer to D:, then install with LMS_NO_MODIFY_PATH=1"
         run: |
-          lms daemon up
-          lms daemon status
-          lms get $env:MODEL --yes
-          lms ls
+          New-Item -ItemType Directory -Force -Path $env:LMS_HOME | Out-Null
+          [IO.File]::WriteAllText("$env:USERPROFILE\.lmstudio-home-pointer", $env:LMS_HOME)
+          $env:LMS_NO_MODIFY_PATH = '1'
+          irm https://lmstudio.ai/install.ps1 | iex
 
-      - name: "Step 3: load with --gpu max (no GPU on this runner)"
-        id: load_gpu
-        continue-on-error: true
-        run: lms load $env:MODEL --yes --context-length 8192 --gpu max
-
-      - name: "Step 3: fall back to a plain load if --gpu max failed"
-        if: steps.load_gpu.outcome == 'failure'
+      - name: "Q1: where did it install?"
         run: |
-          Write-Host "::warning::'--gpu max' failed on a GPU-less runner. Loading without it."
-          lms load $env:MODEL --yes --context-length 8192
-
-      - name: "Step 3: start the server and list models"
-        run: |
-          lms server start --port 1234
-          $models = Invoke-RestMethod http://localhost:1234/v1/models
-          $models | ConvertTo-Json -Depth 5
-          $id = $models.data[0].id
-          if (-not $id) { throw "/v1/models returned no model." }
-          "MODEL_ID=$id" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-
-      - name: "The call Elite Intel makes: one required tool call"
-        run: |
-          $body = @{
-            model       = $env:MODEL_ID
-            stream      = $false
-            tool_choice = "required"
-            messages    = @(@{ role = "user"; content = "Deploy the landing gear." })
-            tools       = @(@{
-              type     = "function"
-              function = @{
-                name        = "deploy_landing_gear"
-                description = "Lower the ship's landing gear."
-                parameters  = @{ type = "object"; properties = @{} }
-              }
-            })
-          } | ConvertTo-Json -Depth 10
-          $r = Invoke-RestMethod -Method Post -Uri http://localhost:1234/v1/chat/completions `
-                 -ContentType "application/json" -Body $body -TimeoutSec 900
-          $r | ConvertTo-Json -Depth 10
-          $name = $r.choices[0].message.tool_calls[0].function.name
-          if ($name -ne "deploy_landing_gear") { throw "Expected a deploy_landing_gear tool call, got '$name'." }
-          Write-Host "OK: tool call came back."
-
-      - name: "App-managed idea: REST unload + load (LM Studio 0.4 API)"
-        continue-on-error: true
-        run: |
-          $listed = Invoke-RestMethod http://localhost:1234/api/v1/models
-          $listed | ConvertTo-Json -Depth 6
-          Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/unload `
-            -ContentType "application/json" -Body (@{ instance_id = $env:MODEL_ID } | ConvertTo-Json)
-          Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/load `
-            -ContentType "application/json" -Body (@{ model = $env:MODEL } | ConvertTo-Json) -TimeoutSec 900
-          Write-Host "OK: unload and load over REST."
-
-      - name: "Step 4 Option A: the wiki's start-lmstudio.ps1, from a cold start"
-        run: |
-          lms server stop
-          lms unload --all
-          lms daemon down
-          $script = "$env:RUNNER_TEMP\start-lmstudio.ps1"
-          @'
-          $lms = "$env:USERPROFILE\.lmstudio\bin\lms.exe"
-          & $lms daemon up
-          & $lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-          & $lms server start
-          '@ | Set-Content -Encoding utf8 $script
-          if ('${{ steps.load_gpu.outcome }}' -eq 'failure') {
-            Write-Host "::warning::Removing '--gpu max' from the script: it already failed on this GPU-less runner."
-            (Get-Content $script) -replace ' --gpu max', '' | Set-Content -Encoding utf8 $script
+          $candidates = @("$env:LMS_HOME\bin\lms.exe", "$env:USERPROFILE\.lmstudio\bin\lms.exe")
+          foreach ($c in $candidates) { Write-Host ("{0}  exists={1}" -f $c, (Test-Path $c)) }
+          Write-Host "C:\...\.lmstudio exists: $(Test-Path "$env:USERPROFILE\.lmstudio")"
+          $lms = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $lms) {
+            Get-ChildItem C:\Users, D:\ -Recurse -Filter lms.exe -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "found: $($_.FullName)" }
+            throw "lms.exe not found at either location."
           }
-          # The same command line the wiki puts in Task Scheduler.
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File $script
-          $models = Invoke-RestMethod http://localhost:1234/v1/models
-          if (-not $models.data[0].id) { throw "The wiki's script did not leave a model served." }
-          Write-Host "OK: the script brings the server up with a model loaded."
+          if ($lms -like "$env:LMS_HOME*") { Write-Host "OK: the pointer moved the install to $env:LMS_HOME" }
+          else { Write-Host "::warning::The pointer did NOT move the install. lms.exe is at $lms" }
+          "LMS=$lms" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
-      - name: Upload LM Studio logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lmstudio-logs
-          path: |
-            ~/.lmstudio/**/*.log
-          if-no-files-found: warn
+      - name: "Q2: did the user PATH change?"
+        run: |
+          $before = Get-Content "$env:RUNNER_TEMP\user-path-before.txt" -Raw
+          $after = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if ($before.Trim() -eq "$after".Trim()) { Write-Host "OK: user PATH unchanged." }
+          else { Write-Host "::warning::User PATH changed."; Write-Host "after: $after" }
+
+      - name: "Q3: size of LM Studio itself (no model yet)"
+        run: |
+          function SizeOf($p) {
+            if (-not (Test-Path $p)) { return "absent" }
+            $b = (Get-ChildItem -LiteralPath $p -Recurse -Force -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum).Sum
+            "{0:N0} MB" -f ($b / 1MB)
+          }
+          Write-Host "$env:LMS_HOME : $(SizeOf $env:LMS_HOME)"
+          Write-Host "$env:USERPROFILE\.lmstudio : $(SizeOf "$env:USERPROFILE\.lmstudio")"
+          Get-ChildItem -Force $env:LMS_HOME -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.Name)  $(SizeOf $_.FullName)" }
+
+      - name: "Q4: start the daemon and server, start a REST download"
+        run: |
+          & $env:LMS daemon up
+          & $env:LMS server start --port 1234
+          $r = Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/download `
+                 -ContentType "application/json" -Body (@{ model = $env:MODEL } | ConvertTo-Json)
+          $r | ConvertTo-Json -Depth 5
+          if (-not $r.job_id) { throw "No job_id (status: $($r.status))." }
+          "JOB_ID=$($r.job_id)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: "Q4 + Q5: watch progress, then kill the daemon part-way"
+        run: |
+          $deadline = (Get-Date).AddMinutes(30)
+          do {
+            Start-Sleep -Seconds 5
+            $s = Invoke-RestMethod "http://localhost:1234/api/v1/models/download/status/$env:JOB_ID"
+            Write-Host ("{0}  {1:N0} / {2:N0} MB  {3:N1} MB/s  eta={4}" -f $s.status, ($s.downloaded_bytes / 1MB),
+              ($s.total_size_bytes / 1MB), ($s.bytes_per_second / 1MB), $s.estimated_completion)
+          } until ($s.downloaded_bytes -ge 800MB -or $s.status -ne 'downloading' -or (Get-Date) -gt $deadline)
+          $s | ConvertTo-Json -Depth 5
+          if ($s.status -ne 'downloading') { Write-Host "::warning::Download left 'downloading' before the interrupt test: $($s.status)" }
+          Write-Host "--- killing the daemon mid-download (the app being closed) ---"
+          & $env:LMS daemon down
+          Start-Sleep -Seconds 5
+          Write-Host "Partial files on disk:"
+          Get-ChildItem $env:LMS_HOME, "$env:USERPROFILE\.lmstudio" -Recurse -File -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Length -gt 50MB } | ForEach-Object { Write-Host ("  {0}  {1:N0} MB" -f $_.FullName, ($_.Length / 1MB)) }
+
+      - name: "Q5: daemon back up: does the same download resume?"
+        run: |
+          & $env:LMS daemon up
+          & $env:LMS server start --port 1234
+          try {
+            $old = Invoke-RestMethod "http://localhost:1234/api/v1/models/download/status/$env:JOB_ID"
+            Write-Host "Old job after restart:"; $old | ConvertTo-Json -Depth 5
+          } catch { Write-Host "Old job id is gone after the restart: $($_.Exception.Message)" }
+          $r = Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/download `
+                 -ContentType "application/json" -Body (@{ model = $env:MODEL } | ConvertTo-Json)
+          Write-Host "New download request:"; $r | ConvertTo-Json -Depth 5
+          if ($r.status -eq 'already_downloaded') { Write-Host "::warning::Reported already_downloaded after an interrupted download." ; exit 0 }
+          $first = $true
+          $deadline = (Get-Date).AddMinutes(90)
+          do {
+            Start-Sleep -Seconds 10
+            $s = Invoke-RestMethod "http://localhost:1234/api/v1/models/download/status/$($r.job_id)"
+            if ($first) {
+              Write-Host ("FIRST STATUS AFTER RESTART: {0:N0} MB already downloaded" -f ($s.downloaded_bytes / 1MB))
+              $first = $false
+            }
+            Write-Host ("{0}  {1:N0} / {2:N0} MB" -f $s.status, ($s.downloaded_bytes / 1MB), ($s.total_size_bytes / 1MB))
+          } until ($s.status -ne 'downloading' -or (Get-Date) -gt $deadline)
+          $s | ConvertTo-Json -Depth 5
+          if ($s.status -ne 'completed') { throw "Download ended as '$($s.status)'." }
+
+      - name: "Q1: where did the model land?"
+        run: |
+          Get-ChildItem $env:LMS_HOME, "$env:USERPROFILE\.lmstudio" -Recurse -Filter *.gguf -Force -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host ("  {0}  {1:N0} MB" -f $_.FullName, ($_.Length / 1MB)) }
+          & $env:LMS ls
+
+      - name: "Q6: REST load with Elite Intel's settings"
+        run: |
+          $body = @{ model = $env:MODEL; context_length = 8192; flash_attention = $true; echo_load_config = $true } | ConvertTo-Json
+          $r = Invoke-RestMethod -Method Post -Uri http://localhost:1234/api/v1/models/load -ContentType "application/json" -Body $body -TimeoutSec 900
+          $r | ConvertTo-Json -Depth 6
+          Write-Host "--- as /api/v1/models reports it ---"
+          (Invoke-RestMethod http://localhost:1234/api/v1/models).models |
+            Where-Object { $_.key -eq $env:MODEL } | ForEach-Object { $_.loaded_instances | ConvertTo-Json -Depth 6 }
+          $ids = (Invoke-RestMethod http://localhost:1234/v1/models).data.id
+          Write-Host "/v1/models: $($ids -join ', ')"
+
+      - name: "Q7: uninstall: stop, daemon down, delete the home and the pointer"
+        run: |
+          & $env:LMS server stop
+          & $env:LMS unload --all
+          & $env:LMS daemon down
+          Start-Sleep -Seconds 5
+          Write-Host "Processes still running that look like LM Studio:"
+          Get-Process | Where-Object { $_.Name -match 'lm|llm|lms' } | ForEach-Object { Write-Host "  $($_.Name) ($($_.Id)) $($_.Path)" }
+          Remove-Item -Recurse -Force $env:LMS_HOME
+          Remove-Item -Force "$env:USERPROFILE\.lmstudio-home-pointer"
+
+      - name: "Q7: what is left behind?"
+        run: |
+          function Snapshot($file) {
+            $lines = @()
+            foreach ($root in @($env:USERPROFILE, $env:LOCALAPPDATA, $env:APPDATA)) {
+              $lines += Get-ChildItem -Force -LiteralPath $root -ErrorAction SilentlyContinue |
+                ForEach-Object { $_.FullName }
+            }
+            $lines | Sort-Object | Set-Content $file
+          }
+          Snapshot "$env:RUNNER_TEMP\after.txt"
+          $diff = Compare-Object (Get-Content "$env:RUNNER_TEMP\before.txt") (Get-Content "$env:RUNNER_TEMP\after.txt")
+          if (-not $diff) { Write-Host "OK: nothing left behind in the profile, LOCALAPPDATA or APPDATA." }
+          else {
+            Write-Host "::warning::Left behind (=> new since the baseline, <= removed):"
+            $diff | ForEach-Object { Write-Host "  $($_.SideIndicator) $($_.InputObject)" }
+          }
+          $after = [Environment]::GetEnvironmentVariable('Path', 'User')
+          Write-Host "User PATH now: $after"
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      LMS_HOME: /mnt/lmstudio
+
+    steps:
+      - name: "Baseline: what exists before the install"
+        run: |
+          snapshot() { for d in "$HOME" "$HOME/.config" "$HOME/.cache" "$HOME/.local/share"; do ls -A1 "$d" 2>/dev/null | sed "s|^|$d/|"; done | sort; }
+          snapshot > "$RUNNER_TEMP/before.txt"
+          for f in .bashrc .profile .bash_profile .zshrc; do [ -f "$HOME/$f" ] && sha256sum "$HOME/$f"; done > "$RUNNER_TEMP/profiles-before.txt"
+          cat "$RUNNER_TEMP/profiles-before.txt"
+
+      - name: "Q1: write the home pointer to /mnt (a second disk), then install with LMS_NO_MODIFY_PATH=1"
+        run: |
+          sudo mkdir -p "$LMS_HOME" && sudo chown "$(id -u):$(id -g)" "$LMS_HOME"
+          printf '%s' "$LMS_HOME" > "$HOME/.lmstudio-home-pointer"
+          curl -fsSL https://lmstudio.ai/install.sh | LMS_NO_MODIFY_PATH=1 bash
+
+      - name: "Q1: where did it install?"
+        run: |
+          for c in "$LMS_HOME/bin/lms" "$HOME/.lmstudio/bin/lms"; do echo "$c exists=$([ -x "$c" ] && echo yes || echo no)"; done
+          echo "~/.lmstudio exists: $([ -e "$HOME/.lmstudio" ] && echo yes || echo no)"
+          if [ -x "$LMS_HOME/bin/lms" ]; then LMS="$LMS_HOME/bin/lms"; echo "OK: the pointer moved the install"
+          elif [ -x "$HOME/.lmstudio/bin/lms" ]; then LMS="$HOME/.lmstudio/bin/lms"; echo "::warning::The pointer did NOT move the install"
+          else find / -name lms -type f 2>/dev/null | head; exit 1; fi
+          echo "LMS=$LMS" >> "$GITHUB_ENV"
+
+      - name: "Q2: did any shell profile change?"
+        run: |
+          for f in .bashrc .profile .bash_profile .zshrc; do [ -f "$HOME/$f" ] && sha256sum "$HOME/$f"; done > "$RUNNER_TEMP/profiles-after.txt"
+          if diff "$RUNNER_TEMP/profiles-before.txt" "$RUNNER_TEMP/profiles-after.txt"; then echo "OK: profiles unchanged"
+          else echo "::warning::A shell profile changed"; fi
+
+      - name: "Q3: size of LM Studio itself (no model yet)"
+        run: |
+          du -sh "$LMS_HOME" "$HOME/.lmstudio" 2>/dev/null || true
+          du -sh "$LMS_HOME"/* 2>/dev/null || true
+
+      - name: "Q4: daemon, server, REST download with progress"
+        run: |
+          "$LMS" daemon up
+          "$LMS" server start --port 1234
+          r=$(curl -s -X POST http://localhost:1234/api/v1/models/download -H 'Content-Type: application/json' -d "{\"model\":\"$MODEL\"}")
+          echo "$r" | jq .
+          job=$(echo "$r" | jq -r .job_id)
+          [ "$job" != "null" ] || exit 1
+          end=$((SECONDS + 5400))
+          while :; do
+            sleep 10
+            s=$(curl -s "http://localhost:1234/api/v1/models/download/status/$job")
+            echo "$s" | jq -c '{status, mb: (.downloaded_bytes/1048576|floor), total_mb: ((.total_size_bytes // 0)/1048576|floor), mbps: ((.bytes_per_second // 0)/1048576)}'
+            st=$(echo "$s" | jq -r .status)
+            [ "$st" = "downloading" ] && [ $SECONDS -lt $end ] || break
+          done
+          [ "$st" = "completed" ] || { echo "Download ended as $st"; exit 1; }
+
+      - name: "Q1: where did the model land?"
+        run: |
+          find "$LMS_HOME" "$HOME/.lmstudio" -name '*.gguf' -exec ls -la {} \; 2>/dev/null
+          "$LMS" ls
+
+      - name: "Q6: REST load with Elite Intel's settings"
+        run: |
+          curl -s -X POST http://localhost:1234/api/v1/models/load -H 'Content-Type: application/json' \
+            -d "{\"model\":\"$MODEL\",\"context_length\":8192,\"flash_attention\":true,\"echo_load_config\":true}" | jq .
+          curl -s http://localhost:1234/v1/models | jq -c '[.data[].id]'
+
+      - name: "Q7: uninstall and look for leftovers"
+        run: |
+          "$LMS" server stop || true
+          "$LMS" unload --all || true
+          "$LMS" daemon down || true
+          sleep 5
+          echo "Processes that look like LM Studio:"; pgrep -af 'llmster|lms' || echo "  none"
+          rm -rf "$LMS_HOME" "$HOME/.lmstudio-home-pointer"
+          snapshot() { for d in "$HOME" "$HOME/.config" "$HOME/.cache" "$HOME/.local/share"; do ls -A1 "$d" 2>/dev/null | sed "s|^|$d/|"; done | sort; }
+          snapshot > "$RUNNER_TEMP/after.txt"
+          if diff "$RUNNER_TEMP/before.txt" "$RUNNER_TEMP/after.txt"; then echo "OK: nothing left behind"
+          else echo "::warning::Left behind (> new since the baseline)"; fi
