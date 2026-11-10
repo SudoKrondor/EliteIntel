@@ -324,6 +324,15 @@ public class BindingsMonitor {
         }
     }
 
+    /**
+     * Reads the binds file again now, for a change the watch loop cannot see: the user chose which file of a split
+     * preset file the assistant reads (Storage S13f), and nothing in the bindings folder changed. Unsynchronized, as
+     * {@link #ensureBindingsLoaded()} is, and for the same reason.
+     */
+    public void reread() {
+        parseAndUpdateBindings();
+    }
+
     public File getCurrentBindsFile() {
         return currentBindsFile;
     }

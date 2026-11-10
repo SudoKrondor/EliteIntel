@@ -249,6 +249,26 @@ public final class ApplyBar extends JPanel {
             finished.run();
             return;
         }
+        write(finished);
+    }
+
+    /**
+     * APPLY without its confirmation, for a question that was the user asking to write (principle 4) - the split preset
+     * file's YES (Storage S13f). The check, the backup, the write and the report are APPLY's own. On the EDT.
+     *
+     * @param finished as {@link #apply}
+     */
+    void applyAsked(Runnable finished) {
+        if (!Edits.stored().hasEdits()) {
+            finished.run();
+            return;
+        }
+        write(finished);
+    }
+
+    /** APPLY once the user has asked: the check, then the write on its own thread, then the report. On the EDT. */
+    private void write(Runnable finished) {
+        String title = getText("bindings.applyBar.title");
         apply.setEnabled(false);
         discard.setEnabled(false);
         Apply applying = Apply.stored(AliasDesignerReader::defaultLabels);

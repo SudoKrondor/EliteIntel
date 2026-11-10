@@ -33,11 +33,14 @@ public class BindingsTabPanel extends JPanel {
     private final PresetEditorPanel presetEditorPanel = new PresetEditorPanel();
     private final BindingManagementPanel bindingManagementPanel = new BindingManagementPanel();
     private final AliasDesignerPanel aliasDesignerPanel = new AliasDesignerPanel();
-    private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this);
     // WHY: the binds files are in this folder, and Game Install Locations names it - a new one is read again there.
     private final BindingsFolderField bindingsFolder =
             new BindingsFolderField(bindingManagementPanel::refreshInstallLocations);
     private final ApplyBar applyBar = new ApplyBar(bindingsFolder);
+    private final SplitPresetFlow splitPreset = new SplitPresetFlow(this, applyBar);
+    // WHY afterwards: the split preset file's question comes after first-time startup and the check, with BindForge's
+    // other questions at the click, never over them (Krondor, 2026-11-10, Storage S13f).
+    private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this, splitPreset::askIfNeeded);
     private final LeavePrompt leavePrompt = applyBar.leavePrompt(this);
     /** Whether read only was on when last heard. On the EDT. */
     private boolean readOnly;

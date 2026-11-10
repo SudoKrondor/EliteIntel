@@ -24,6 +24,9 @@ import java.util.stream.Stream;
  * {@code ControlSchemes} of the first reachable installation that holds it; a line resolving to neither passes to the
  * next. <strong>A plain {@code <name>.binds} in the bindings folder never counts</strong>, and no file is ever read
  * because it is the newest.
+ * <p>
+ * <strong>When the lines name different binds files</strong>, the file the user chose this run ({@link SplitPresetChoice})
+ * is read instead, while it is still one of the lines (Storage S13f): {@link #splitChoices} lists what they are offered.
  */
 public class BindingsLoader {
     private static final Logger log = LogManager.getLogger(BindingsLoader.class);
@@ -37,7 +40,24 @@ public class BindingsLoader {
             Comparator.comparingLong((Path file) -> FileNames.version(nameOf(file))).reversed()
                     .thenComparing(BindingsLoader::nameOf);
 
+    /** The sections the preset file has a line for, in the file's order. */
+    private static final List<BindingSection> SECTIONS =
+            List.of(BindingSection.GENERAL, BindingSection.SHIP, BindingSection.SRV, BindingSection.ON_FOOT);
+
     private final Supplier<List<Path>> factoryFolders;
+    private final Supplier<Optional<String>> chosen;
+
+    /**
+     * One BindName the preset file's lines name, with the sections that name it, in the file's order (Storage S13f).
+     *
+     * @param bindName as the first line naming it spells it
+     */
+    public record SplitChoice(String bindName, List<BindingSection> sections) {
+        public SplitChoice {
+            Objects.requireNonNull(bindName, "bindName");
+            sections = List.copyOf(sections);
+        }
+    }
 
     /** Factory binds files from the stored list's reachable installations. */
     public BindingsLoader() {
@@ -49,7 +69,15 @@ public class BindingsLoader {
      *                       are tried - asked only when a line's preset has no true binds file
      */
     public BindingsLoader(Supplier<List<Path>> factoryFolders) {
+        this(factoryFolders, SplitPresetChoice::chosen);
+    }
+
+    /**
+     * @param chosen the BindName the user chose for a split preset file, if any - {@link SplitPresetChoice#chosen}
+     */
+    BindingsLoader(Supplier<List<Path>> factoryFolders, Supplier<Optional<String>> chosen) {
         this.factoryFolders = Objects.requireNonNull(factoryFolders, "factoryFolders");
+        this.chosen = Objects.requireNonNull(chosen, "chosen");
     }
 
     public File bindsFileToRead() throws IOException {
@@ -65,23 +93,77 @@ public class BindingsLoader {
      * @throws IOException when no line resolves to a file - nothing is read - or the bindings folder cannot be listed
      */
     public File bindsFileToRead(Path bindingsDir) throws IOException {
-        List<Path> controlSchemes = null;
-        for (String presetName : presetNamesInFileOrder(bindingsDir)) {
-            Optional<Path> own = trueBindsFileOf(bindingsDir, presetName);
-            if (own.isPresent()) {
-                log.info("Selected bindings file for preset '{}': {}", presetName, own.get().getFileName());
-                return own.get().toFile();
+        List<String> presetNames = presetNamesInFileOrder(bindingsDir);
+        Resolver resolver = new Resolver(bindingsDir);
+        // WHY first: the user chose this file for a split preset file (Storage S13f). Only while a line still names it -
+        // a choice the lines no longer hold is no answer to the question, so General-first applies again.
+        Optional<String> chosenLine = chosen.get()
+                .flatMap(name -> presetNames.stream().filter(line -> FileNames.sameFile(line, name)).findFirst());
+        if (chosenLine.isPresent()) {
+            Optional<Path> file = resolver.resolve(chosenLine.get());
+            if (file.isPresent()) {
+                log.info("Selected the bindings file chosen for a split preset file: {}", file.get());
+                return file.get().toFile();
             }
-            if (controlSchemes == null) controlSchemes = factoryFolders.get();
-            Optional<Path> factory = factoryBindsFileOf(controlSchemes, presetName);
-            if (factory.isPresent()) {
-                log.info("Selected factory bindings file for preset '{}': {}", presetName, factory.get());
-                return factory.get().toFile();
+        }
+        for (String presetName : presetNames) {
+            Optional<Path> file = resolver.resolve(presetName);
+            if (file.isPresent()) {
+                log.info("Selected bindings file for preset '{}': {}", presetName, file.get());
+                return file.get().toFile();
             }
             log.warn("No binds file for preset '{}' in the bindings folder or any reachable installation", presetName);
         }
         throw new IOException("No preset in the StartPreset file in " + bindingsDir
                 + " has a binds file in the bindings folder or a reachable installation");
+    }
+
+    /**
+     * What the user is asked to choose from when the preset file's lines name different binds files (Storage S13f): each
+     * BindName the lines name that resolves to a file - its true binds file, else its factory one - with the sections
+     * naming it, in the file's order. Names that differ only in case are one (storage.md, the case rule). <strong>Empty
+     * unless at least two resolve</strong>: with one, there is nothing to choose.
+     *
+     * @throws IOException when the preset file or the bindings folder cannot be read
+     */
+    public List<SplitChoice> splitChoices(Path bindingsDir) throws IOException {
+        Optional<Path> startPresetFile = findStartPresetFile(bindingsDir);
+        if (startPresetFile.isEmpty()) return List.of();
+        StartPresetSections sections = StartPresetSections.parse(Files.readString(startPresetFile.get()));
+        Map<String, List<BindingSection>> byName = new LinkedHashMap<>();
+        for (BindingSection section : SECTIONS) {
+            String line = sections.forSection(section);
+            if (line.isEmpty()) continue;
+            String name = byName.keySet().stream().filter(known -> FileNames.sameFile(known, line)).findFirst()
+                    .orElse(line);
+            byName.computeIfAbsent(name, ignored -> new ArrayList<>()).add(section);
+        }
+        if (byName.size() < 2) return List.of();
+        Resolver resolver = new Resolver(bindingsDir);
+        List<SplitChoice> choices = new ArrayList<>();
+        for (Map.Entry<String, List<BindingSection>> entry : byName.entrySet()) {
+            if (resolver.resolve(entry.getKey()).isPresent()) {
+                choices.add(new SplitChoice(entry.getKey(), entry.getValue()));
+            }
+        }
+        return choices.size() < 2 ? List.of() : List.copyOf(choices);
+    }
+
+    /** A line's file: its preset's true binds file, else its factory one; the installations listed once, when needed. */
+    private final class Resolver {
+        private final Path bindingsDir;
+        private List<Path> controlSchemes;
+
+        Resolver(Path bindingsDir) {
+            this.bindingsDir = bindingsDir;
+        }
+
+        Optional<Path> resolve(String presetName) throws IOException {
+            Optional<Path> own = trueBindsFileOf(bindingsDir, presetName);
+            if (own.isPresent()) return own;
+            if (controlSchemes == null) controlSchemes = factoryFolders.get();
+            return factoryBindsFileOf(controlSchemes, presetName);
+        }
     }
 
     private static Optional<Path> trueBindsFileOf(Path bindingsDir, String presetName) throws IOException {
@@ -147,8 +229,7 @@ public class BindingsLoader {
             }
             StartPresetSections sections = StartPresetSections.parse(Files.readString(startPresetFile.get()));
             Map<BindingSection, String> notRead = new EnumMap<>(BindingSection.class);
-            for (BindingSection section : List.of(
-                    BindingSection.GENERAL, BindingSection.SHIP, BindingSection.SRV, BindingSection.ON_FOOT)) {
+            for (BindingSection section : SECTIONS) {
                 String preset = sections.forSection(section);
                 // WHY bindNameOf, not isFileOfPreset: the file read may be a factory one, named <name>.binds. The
                 // loader never returns a plain file from the bindings folder, so the wider rule cannot let one in.

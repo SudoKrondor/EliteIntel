@@ -37,10 +37,16 @@ public final class FirstTimeStartupFlow {
     private final Component parent;
     private final AtomicBoolean running = new AtomicBoolean();
     private final CheckFlow check;
+    private final Runnable afterwards;
 
-    public FirstTimeStartupFlow(Component parent) {
+    /**
+     * @param afterwards run on the EDT each time a run of this flow is over, whatever it did - the next question at the
+     *                   BindForge click, so it never opens over this flow's dialogs (the split preset file's, Storage S13f)
+     */
+    public FirstTimeStartupFlow(Component parent, Runnable afterwards) {
         this.parent = parent;
         this.check = new CheckFlow(parent);
+        this.afterwards = afterwards;
     }
 
     /**
@@ -301,6 +307,7 @@ public final class FirstTimeStartupFlow {
 
     private void finish() {
         running.set(false);
+        afterwards.run();
     }
 
     private void background(String name, FlowSteps.Step step) {

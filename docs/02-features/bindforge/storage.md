@@ -326,10 +326,36 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
       two - the game upgrades a file in place, and every file has been `.4.2` since Odyssey - so it gets no guard of its
       own (principle 13; Q4).
     - **`listAllBindsFiles` stays for `SetupCheck`**, which asks only whether the folder holds any `.binds` (Q5).
-    - *Planned as its own slice (Alan, 2026-11-08):* when the four lines name different binds files, the assistant asks
-      the user which to use, and whether that file should be the only one the game uses - yes sets all four lines to
+    - *Planned as its own slice (Alan, 2026-11-08):* when the four lines name different binds files, the user is asked
+      which to use, and whether that file should be the only one the game uses - yes sets all four lines to
       it, no uses it and warns that functions may not work when the game's binds and the assistant's differ. See the
       [brief](../../05-build-plan/storage.md#slices).
+
+    **Settled with Storage S13f's sources (Krondor and Alan, 2026-11-10):**
+    - **A dialog, never a conversation with VEGA.** It can come up before an LLM is set up, so the question and its
+      YES / NO are buttons.
+    - **Asked at the first BindForge click of a run, with BindForge's other questions** - after first-time startup and
+      the check - not at Elite-Intel start, where a player who has never seen the app, perhaps a veteran with years of
+      custom binds, would meet it with no context and dismiss it. Once a run, answered or not; again the next run while
+      the lines still differ.
+    - **Nothing is stored, and there is no *do not ask again*.** A box that still asks when the lines change would be a
+      promise the app cannot keep. The file chosen is what the assistant reads for that run, while a line still names
+      it; otherwise the lines are taken General first, as above.
+    - **Offered:** each BindName the lines name that resolves to a file - its true binds file, else its factory one -
+      with the sections naming it; names differing only in case are one. With fewer than two, nothing is asked.
+    - **Yes** sets all four lines to it, as the Preset Editor's SET ALL TO SAME does (`PresetEdits.change`), and applies
+      it at once - the answer is the user asking (principle 4) - through APPLY's check, backup and report, without
+      APPLY's own confirmation.
+    - **No** keeps the lines: the question says what that costs, and the log says it in ERROR for the support bundle;
+      nothing is spoken.
+    - **Only which file is asked** while read only, before first-time startup has made a working copy, and while edits
+      not applied are on the bar (APPLY would write them too).
+    - **Until the user answers, the warning at Elite-Intel start stays** (`KeyBindCheck`), its line for sections on
+      another preset now also saying to open the BindForge tab to choose.
+
+    Built in Storage S13f: `BindingsLoader.splitChoices` and the chosen file read first; `SplitPresetChoice`;
+    `BindingsMonitor.reread`; `ui.screen.bindings.SplitPresetFlow`, `SplitPresetDialog`, `ApplyBar.applyAsked`, and
+    `FirstTimeStartupFlow`'s next question at the click.
 
     Built in Storage S13c: `BindingsLoader` (`getLatestBindsFile` - `bindsFileToRead` since Storage S13eR - `sectionsNotIn`, a constructor taking the
     `ControlSchemes` folders), `GameInstallation.reachable`, `InstallationRegistry.reachableControlSchemes`.
