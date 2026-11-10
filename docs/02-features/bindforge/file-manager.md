@@ -15,8 +15,8 @@ coming, though the other BindForge labels changed that day. These docs keep "Fil
 they describe.
 
 Two sub-tabs: **Game Install Locations** and **Player Backups**. *Edit History, a third, was folded into Player
-Backups on 2026-10-22.* **The [Preset Editor](preset-editor.md#layout) is to be a section here** (Krondor, 2026-11-10;
-P4, not built).
+Backups on 2026-10-22.* ~~**The [Preset Editor](preset-editor.md#layout) is to be a section here** (Krondor, 2026-11-10).~~
+*Replaced the same day: it is a BindForge tab of its own (Alan, 2026-11-10, P4).*
 
 ## Player Backups
 

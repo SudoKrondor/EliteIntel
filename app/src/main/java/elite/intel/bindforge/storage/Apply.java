@@ -115,8 +115,8 @@ public final class Apply {
      * The BindName list, and the installations whose factory binds files are not in it because they could not be
      * reached.
      */
-    record Offered(BindNameList list, List<InstallationRow> unreachable) {
-        Offered {
+    public record Offered(BindNameList list, List<InstallationRow> unreachable) {
+        public Offered {
             unreachable = List.copyOf(unreachable);
         }
     }
@@ -151,8 +151,16 @@ public final class Apply {
                     }
                 },
                 installation -> DeviceFiles.read(installation.root()),
-                files -> offered(files, BindForgeInstallationsManager.getInstance().findAll()),
+                Apply::offered,
                 BindingsCheck.stored());
+    }
+
+    /**
+     * The BindName list for {@code files} over the installations stored - what APPLY checks the preset file against, and
+     * what the Preset Editor's dropdowns offer (P4), so the two never differ. Touches the disk.
+     */
+    public static Offered offered(ConfigurationFiles files) {
+        return offered(files, BindForgeInstallationsManager.getInstance().findAll());
     }
 
     /**

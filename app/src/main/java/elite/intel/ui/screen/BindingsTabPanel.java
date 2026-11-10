@@ -15,7 +15,8 @@ import java.awt.event.HierarchyEvent;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Outer BIND FORGE tab shell hosting the "Binding Profile", "Binding Management" and "Alias Designer" sub-tabs,
+ * Outer BIND FORGE tab shell hosting the "Bind Editor", "Preset Editor", "Binding Management" and "Alias Designer"
+ * sub-tabs,
  * matching the {@code AppTheme.makeSectionTabs()} pattern already used by
  * {@link ActionsTabPanel} and {@link ServicesTabPanel}.
  * <p>
@@ -29,6 +30,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 public class BindingsTabPanel extends JPanel {
 
     private final BindingProfilePanel bindingProfilePanel = new BindingProfilePanel();
+    private final PresetEditorPanel presetEditorPanel = new PresetEditorPanel();
     private final BindingManagementPanel bindingManagementPanel = new BindingManagementPanel();
     private final AliasDesignerPanel aliasDesignerPanel = new AliasDesignerPanel();
     private final FirstTimeStartupFlow firstTimeStartup = new FirstTimeStartupFlow(this);
@@ -78,6 +80,9 @@ public class BindingsTabPanel extends JPanel {
         JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab(getText("bindings.tab.bindingProfile"), bindingProfilePanel);
+        // WHY a tab of its own, beside the Bind Editor: which binds file the game loads is the other half of editing
+        // one (Alan, 2026-11-10, P4).
+        tabs.addTab(getText("bindings.tab.presetEditor"), presetEditorPanel);
         tabs.addTab(getText("bindings.tab.bindingManagement"), bindingManagementPanel);
         tabs.addTab(getText("bindings.tab.aliasDesigner"), aliasDesignerPanel);
         // WHY: a retarget keeps bindings by button number, so on another model some land on other buttons - the
@@ -112,15 +117,16 @@ public class BindingsTabPanel extends JPanel {
 
     /**
      * Greys the editor tabs, or brings them back. A greyed tab that is showing gives way to File Manager, so no editor
-     * is left on screen with nothing of the user's to edit (Alan, 2026-11-02, Storage S11). The Preset Editor's tab,
-     * when it is built (P4), is greyed with these.
+     * is left on screen with nothing of the user's to edit (Alan, 2026-11-02, Storage S11). The Preset Editor is greyed
+     * with them (P4).
      */
     private void editorsUsable(JTabbedPane tabs, boolean usable) {
-        for (Component editor : new Component[]{bindingProfilePanel, aliasDesignerPanel}) {
+        for (Component editor : new Component[]{bindingProfilePanel, presetEditorPanel, aliasDesignerPanel}) {
             int index = tabs.indexOfComponent(editor);
             tabs.setEnabledAt(index, usable);
             tabs.setToolTipTextAt(index, usable ? null : getText("bindings.create.tabLocked"));
         }
+        presetEditorPanel.setEditorsUsable(usable);
         // WHY: File Manager's Bindings File section opens a file in an editor, so it is greyed with them (S15, D3).
         bindingManagementPanel.setEditorsUsable(usable);
         if (!usable && tabs.getSelectedComponent() != bindingManagementPanel) {
@@ -139,6 +145,7 @@ public class BindingsTabPanel extends JPanel {
     public void dispose() {
         UiBus.unregister(this);
         bindingProfilePanel.dispose();
+        presetEditorPanel.dispose();
         bindingManagementPanel.dispose();
         aliasDesignerPanel.dispose();
         applyBar.dispose();
@@ -147,6 +154,7 @@ public class BindingsTabPanel extends JPanel {
     public void initData() {
         bindingsFolder.refresh();
         bindingProfilePanel.initData();
+        presetEditorPanel.initData();
         bindingManagementPanel.initData();
         aliasDesignerPanel.initData();
     }

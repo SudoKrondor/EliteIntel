@@ -17,9 +17,19 @@ General, Ship, SRV and On Foot are four separate values in one file, so in the
 
 ## Layout
 
-**Where it sits: a section inside Binding Management, not a sub-tab of its own** (Krondor, 2026-11-10). That tab has
-the room, and the preset file is a file to manage beside the binds file and the backups; it can move later if it needs
-to. Binding Management is what these docs call [File Manager](file-manager.md); it keeps its on-screen name.
+**Where it sits: a tab of its own, beside the Bind Editor, Binding Management and Alias Designer** (Alan, 2026-11-10,
+P4; built as `ui.screen.bindings.PresetEditorPanel`, between the Bind Editor and Binding Management). *Earlier that day
+Krondor had placed it as a section inside Binding Management, for the room; Alan's ruling replaced it, since which binds
+file the game loads is the other half of editing one, and the mockup draws it as a tab.* It is greyed with the other
+editors while CREATE is pending, and its dropdowns are locked while BindForge is read only.
+
+**Built 2026-11-10 (P4):** the dropdowns offer `Apply.offered(files)`, the very list APPLY checks against, so a line
+chosen here is one APPLY accepts. Each is marked the player's or *(factory)*. **A line naming nothing the list offers -
+empty, or a binds file that is gone - stays first in its dropdown, marked *(not found)* or *(empty)***, with a red
+notice naming the sections: the user sees what the file says and chooses another, and until then APPLY refuses. An
+installation that could not be reached is named in a notice, since its factory binds files are missing from the lists,
+and each of the player's binds files the list does not offer gets its sentence. Set All to Same starts on the General
+line's BindName. Any change writes the four-line form.
 
 Four dropdowns — General, Ship, SRV, On Foot Controls — each populated with the **BindNames** of the binds files in the bindings folder, defaulting to whatever the preset file currently specifies. **A file is included on the strength of its contents, not its extension** (added 2026-09-17): the folder demonstrably holds files with a `.binds` name that are not binds files at all — most often a preset file picked by mistake, since it sits right beside them — and offering one as a binds file would point a section at something the game cannot load. See [what a `.binds` file might not be](file-manager.md#what-a-binds-file-might-not-be). A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut — the change is an edit not applied, and APPLY writes it.
 
