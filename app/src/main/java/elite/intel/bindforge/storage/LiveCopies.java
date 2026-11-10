@@ -42,9 +42,9 @@ import java.util.stream.Stream;
  * </ul>
  * A {@code .binds} the set lacks is left in the bindings folder - removing an old-named one is a rename's (Storage
  * S12). <strong>What does not belong in the bindings folder is moved, never deleted</strong>, when the check names it
- * ({@link Leftovers}; Storage S13d): into a date-stamped folder of its own in Leftover User Files, after the write, a
- * read-only one kept and reported. Only {@link WritePath} calls this, after the backup. Touches the disk - not for the
- * EDT.
+ * ({@link Leftovers}; Storage S13d): into a date-stamped folder of its own in Leftover User Files, after the write,
+ * whatever its read-only flag, which the move does not change (Storage S13eR, S13eR2). Only {@link WritePath} calls
+ * this, after the backup. Touches the disk - not for the EDT.
  */
 final class LiveCopies {
 
@@ -52,7 +52,10 @@ final class LiveCopies {
 
     static final String FOLDER_NOT_FOUND = "folder not found";
 
-    /** A failure line: a .buttonMap the set lacks was kept because its read-only flag could not be read. */
+    /**
+     * A failure line: a file a write would have removed - a {@code .buttonMap} the set lacks, a binds file named for
+     * removal, a further spelling - was kept because its read-only flag could not be read.
+     */
     static final String NOT_REMOVED_FLAG_UNREADABLE = "not removed: whether it is read-only could not be read";
 
     /** The date stamp of a folder in Leftover User Files - a backup's (Storage S13d). */
@@ -385,15 +388,15 @@ final class LiveCopies {
         /**
          * Moves one file into this write's folder in Leftover User Files, made at the first move and stamped as a backup
          * is (Storage S13d). <strong>Moved whatever its read-only flag</strong> (Alan, 2026-11-09, Storage S13eR): the
-         * flag protects a file from being deleted, and a leftover is kept, in Leftover User Files. One that cannot be
-         * moved stays where it is, reported.
+         * flag protects a file from being deleted, and a leftover is kept, in Leftover User Files. <strong>The move
+         * changes no flag</strong> (Alan, 2026-11-09, Storage S13eR2): a read-only file Leftover User Files is on another
+         * drive from cannot be moved, since that move copies and deletes. One that cannot be moved stays where it is,
+         * reported.
          */
         void moveAway(Path file, LeftoverFolder leftovers) {
             if (!Files.isRegularFile(file)) return;
             String name = file.getFileName().toString();
             try {
-                // WHY: a move to another drive copies and deletes, and Windows refuses to delete a read-only file.
-                if (ReadOnlyFlag.isSet(file)) ReadOnlyFlag.set(file, false);
                 if (movedTo == null) {
                     Path folder = uniqueFolder(leftovers.get(), LocalDateTime.now().withNano(0).format(STAMP));
                     Files.createDirectories(folder);
@@ -423,7 +426,7 @@ final class LiveCopies {
             } catch (IOException e) {
                 // WHY: a file whose protection cannot be read may be protected, so it is kept, not taken away, and
                 // reported (Krondor's review, 2026-10-27). Taken for unprotected, it was deleted.
-                failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " ("+ reason(e) + ")");
+                failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " (" + reason(e) + ")");
                 log.warn("Left {} where it is: whether it is read-only could not be read", file, e);
                 return true;
             }

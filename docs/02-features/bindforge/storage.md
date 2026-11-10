@@ -723,8 +723,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
           APPLY (the S13c-S13e review's finding 1). This also replaces that review's D1 of 2026-11-08, which would
           have left a read-only leftover out of the check and logged it; D1 was never built. The rule for a read-only
           binds file or `.buttonMap` a write would **delete** is unchanged.
-        - **Settled from the S13eR review (Alan, 2026-11-09), to be built in Storage S13eR2:** **the move changes no
-          flag.** S13eR cleared a set read-only flag before the move, for a move to another drive; that goes. A
+        - **Settled from the S13eR review (Alan, 2026-11-09), built in Storage S13eR2 the same day:** **the move
+          changes no flag.** S13eR cleared a set read-only flag before the move, for a move to another drive; that goes. A
           read-only leftover on another drive is then not moved and is reported so, as any failed move is. **A plain
           file converted, or merged into its twin, whose move fails keeps no report line of its own** - the failure
           line names it, and the next check moves it as a twin. Accepted (principle 13).
@@ -766,8 +766,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       review's finding 6, which S13e was to fold in). A plain file that reads as a binds file but has no `<Root>` to
       convert by is a bug, so it fails fast (the review's finding 4, likewise).
 
-    *Built in Storage S13eR (2026-11-09):* `LiveCopies.moveAway` no longer asks the read-only flag - it clears one
-    that is set, since a move to another drive copies and deletes and Windows refuses to delete a read-only file;
+    *Built in Storage S13eR (2026-11-09):* `LiveCopies.moveAway` no longer asks the read-only flag - *until Storage
+    S13eR2, the same day, it cleared one that was set, for a move to another drive; now it changes no flag (above)*;
     `StartupNotice.movable`, the report line `bindings.check.result.keptReadOnlyLeftover` (nine bundles) and
     `CheckFlow`'s kept branches are gone.
 

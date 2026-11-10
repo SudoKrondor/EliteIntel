@@ -428,7 +428,7 @@ class LiveCopiesTest {
     /**
      * What does not belong in the bindings folder is moved, never deleted, into one date-stamped folder in Leftover User
      * Files for the write (Storage S13d) - a read-only one too: the flag protects a file from being deleted, and this
-     * one is kept (Alan, 2026-11-09, Storage S13eR).
+     * one is kept (Alan, 2026-11-09, Storage S13eR). The move changes no flag, so it arrives read-only (Storage S13eR2).
      */
     @Test
     void filesNamedToMoveGoToOneStampedFolderWhateverTheirReadOnlyFlag() throws IOException {
@@ -443,6 +443,8 @@ class LiveCopiesTest {
                 Set.of("Spare.binds", "Custom.4.2 (2).binds", "KeyboardMouseOnly.binds"));
 
         WriteReport.Place place = report.bindings();
+        // WHY: the moved copy keeps its flag, so it is unprotected after the test too, or @TempDir cannot delete it.
+        if (place.movedTo() != null) protectedFiles.add(place.movedTo().resolve("KeyboardMouseOnly.binds"));
         assertEquals(List.of("Custom.4.2 (2).binds", "KeyboardMouseOnly.binds", "Spare.binds"),
                 place.moved().stream().sorted().toList());
         try (Stream<Path> made = Files.list(leftovers)) {
@@ -455,6 +457,8 @@ class LiveCopiesTest {
         assertFalse(Files.exists(bindings.resolve("Custom.4.2 (2).binds")));
         assertFalse(Files.exists(readOnly));
         assertEquals("<KeyboardMouseOnly/>", Files.readString(place.movedTo().resolve("KeyboardMouseOnly.binds")));
+        assertTrue(ReadOnlyFlag.isSet(place.movedTo().resolve("KeyboardMouseOnly.binds")),
+                "the move changes no flag (Storage S13eR2)");
         assertEquals(List.of(), place.keptReadOnly());
         assertEquals(List.of(), place.failures());
         assertEquals(List.of(), place.removed());

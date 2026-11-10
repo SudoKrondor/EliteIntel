@@ -213,14 +213,15 @@ class CheckFlowTest {
     void theReportNamesWhatWasMovedAndWhy() {
         Path to = Path.of("Leftover User Files", "2026-11-08_10-00-00");
         Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
-                List.of("Spare.4.2.binds"), List.of(), List.of(), List.of("KeyboardMouseOnly.binds: not moved"),
-                false, List.of("Broken.binds", "Spare.binds", "custom.binds"), to);
+                List.of("Spare.4.2.binds"), List.of(), List.of(), List.of("Spare.binds: not moved"),
+                false, List.of("Broken.binds", "custom.binds"), to);
 
-        assertEquals("\n" + getText("bindings.check.result.moved", "Broken.binds, Spare.binds, custom.binds",
-                        to.toString())
-                        + "\n" + getText("bindings.check.result.plainConverted", "Spare.binds", "Spare.4.2.binds")
-                        + "\n" + getText("bindings.check.result.plainTwin", "custom.binds", CUSTOM),
-                CheckFlow.leftoversReport(written(bindings)));
+        String report = CheckFlow.leftoversReport(written(bindings));
+
+        assertEquals("\n" + getText("bindings.check.result.moved", "Broken.binds, custom.binds", to.toString())
+                + "\n" + getText("bindings.check.result.plainTwin", "custom.binds", CUSTOM), report);
+        assertFalse(report.contains(getText("bindings.check.result.plainConverted", "Spare.binds", "Spare.4.2.binds")),
+                "a converted file that was not moved has no line of its own (Storage S13eR2, D3)");
     }
 
     /** A plain file whose kept lines went into its twin names the twin (Storage S13e). */

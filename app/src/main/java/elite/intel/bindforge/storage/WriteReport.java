@@ -36,8 +36,8 @@ public record WriteReport(Place bindings, List<Place> installations) {
      * @param removed      the files removed, by name - {@code .buttonMap}s the set lacks; in the bindings folder a
      *                     live-only binds file the user kept the working copy's side of, or a renamed one's old name
      * @param keptReadOnly the files that were kept because the user made them read-only, by name - a {@code .buttonMap}
-     *                     or binds file that would have been removed. The
-     *                     screen tells the user how to let them go, in their language (review, 2026-10-25)
+     *                     or binds file that would have been removed. The screen tells the user how to let them go, in
+     *                     their language (review, 2026-10-25)
      * @param failures     what could not be done, one line each - English, for the log and for support, built from the
      *                     system's own messages. A screen says that a place was not updated in its own words, and may
      *                     show these lines as the detail

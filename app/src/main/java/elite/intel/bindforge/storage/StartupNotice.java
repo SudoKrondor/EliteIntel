@@ -32,10 +32,9 @@ import java.util.function.Supplier;
  *     <li><strong>A binds file named like a factory one</strong> ({@link BindNameEntry#shadowsFactory()}) - the working
  *     copy's, once one exists, judged against the reachable installations' factory files.</li>
  *     <li><strong>Files the check will move to Leftover User Files</strong> ({@link Leftovers}; Storage S13b, S13d) -
- *     every one, not only plain binds files, whatever its read-only flag (Alan, 2026-11-08, Q4; 2026-11-09, Storage
- *     S13eR). Two are named; with more, the line says how
- *     many and names the first two in name order. Once a working copy exists, and <strong>not
- *     while read only</strong>, since the check that moves them is off then (Alan, 2026-11-07, Q5).</li>
+ *     every one, not only plain binds files (Alan, 2026-11-08, Q4), whatever its read-only flag (Storage S13eR). Two
+ *     are named; with more, the line says how many and names the first two in name order. Once a working copy exists,
+ *     and <strong>not while read only</strong>, since the check that moves them is off then (Alan, 2026-11-07, Q5).</li>
  * </ol>
  * The missing controller stays the Alias Designer's ({@code MissingControllerWarning}, A13), and the binding warnings
  * stay {@code KeyBindCheck}'s, said before this notice (Alan, 2026-11-06).
