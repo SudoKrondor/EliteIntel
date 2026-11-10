@@ -113,7 +113,7 @@ below follow the rest of that order.
 | P1 | **The BindName list** — the BindNames the four dropdowns offer: every file in the bindings folder that *is* a binds file by its contents, each reduced to its BindName (suffix stripped only when present), plus a sentence for each file that is not one. Settles doc conflict 1 (factory binds files). Read-only, no UI | F1 (done) | **done 2026-10-17** |
 | P2 | ~~**`StartPreset.4.start` master and draft**~~ *replaced by Storage S6* — where each lives (master under `elite-intel/bindings/master/`), what Save writes, Discard, "has the draft changed", and the per-line three-way compare the screen and P5 both need | P1 | **done 2026-10-18** |
 | P3 | ~~**Apply**~~ *replaced by Storage S6, which keeps its checks* — the draft to the live file through `AtomicFiles`, the replaced file kept in Edit History and pruned, the draft promoted to master; refuses a BindName no file answers to; the single-line form and line ending (doc conflict 4); the `BindingsMonitor` question above | P2 | **done 2026-10-20** |
-| P4 | **The screen** — ~~a sub-tab~~ **a section inside Binding Management** (Krondor, 2026-11-10: more room, and the more logical place; it can move later): four dropdowns from the BindName list, Set All to Same, the consistency warning (live, never blocking); every change an edit not applied on the one APPLY / DISCARD bar, with no buttons of its own and no badge; each file the list does not offer turned into its sentence; strings in all nine bundles | Storage S6 | **next** |
+| P4 | **The screen** — **a tab of its own, between the Bind Editor and Binding Management** (Alan, 2026-11-10; *Krondor had ruled a section inside Binding Management earlier that day*): four dropdowns from the BindName list, Set All to Same, the consistency warning (live, never blocking); every change an edit not applied on the one APPLY / DISCARD bar, with no buttons of its own and no badge; each file the list does not offer turned into its sentence; strings in all nine bundles | Storage S6 | **done 2026-11-10** (`PresetEditorPanel`); not yet run against the game |
 | P5 | ~~**Change detection**~~ — dropped 2026-10-24: the check, [Storage S8](storage.md#slices) | — | dropped |
 | P6 | ~~**Unsaved work on exit**~~ — dropped 2026-10-24: the leave prompt, [Storage S7](storage.md#slices) | — | dropped |
 
@@ -136,6 +136,10 @@ below follow the rest of that order.
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
 
+- **2026-11-10 — P4 done: the Preset Editor tab.** A tab of its own between the Bind Editor and Binding Management
+  (Alan, replacing Krondor's same-day section-in-Binding-Management ruling); spec [Layout](../02-features/bindforge/preset-editor.md#layout).
+  The section's slices are all done or dropped. **Next for the preset file:** Storage S13f, which can use P4's write for
+  its "make it the only one".
 - **2026-11-05 — Storage S14a done: P4 is read only too.** While an installation is missing BindForge is read only
   (storage.md, *An installation missing - read only*): the Preset Editor shows its four lines with the dropdowns locked.
   P4 reads `ReadOnlyMode.stored().activeIfKnown()` on the EDT and listens for `BindForgeReadOnlyChangedEvent`; the edits

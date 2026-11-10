@@ -796,7 +796,7 @@ still holds one name, and making it a list is what remains.*
   indicator.** Both land on a similar light blue. **Explicitly parked by Alan — do not resolve without
   raising it directly**, since it touches an existing convention rather than only BindForge's own.
 - *Resolved:* how a slot opens the dialog — its [Capture button](#capture-is-the-only-way-in), to prevent
-  accidental clicks. Where mouse input is chosen — the [MOUSE tab](#mouse-is-chosen-not-captured). Whether
+  accidental clicks. Where mouse input is chosen — the [MOUSE tab](#mouse-a-button-is-pressed-over-the-pad-the-wheel-is-clicked). Whether
   the other slot's Capture control stays live while one is edited — moot, because the dialog is modal.
 
 ### Modifiers, Hold, Inverted, Deadzone
