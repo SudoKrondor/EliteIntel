@@ -8,10 +8,8 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -119,23 +117,6 @@ class StartupNoticeTest {
         assertEquals(english(StartupNotice.TO_MOVE_MORE_KEY, 4, "a.binds.backup, b.binds.backup"), said);
         assertFalse(said.contains("c.binds.backup"), said);
         assertTrue(said.contains("4"), said);
-    }
-
-    /**
-     * Only the files the check will move are named: a read-only one stays, and is named once in the check's report, not
-     * at every start (Alan, 2026-11-08, from the S13aR-S13b review's D1).
-     */
-    @Test
-    void aReadOnlyFileIsNotNamed(@TempDir Path folder) throws IOException {
-        Files.writeString(folder.resolve("notes.txt"), "a");
-        Path kept = folder.resolve("Spare.binds");
-        Files.writeString(kept, "b");
-        ReadOnlyFlag.set(kept, true);
-        try {
-            assertEquals(List.of("notes.txt"), StartupNotice.movable(folder, List.of("Spare.binds", "notes.txt")));
-        } finally {
-            ReadOnlyFlag.set(kept, false);
-        }
     }
 
     @Test

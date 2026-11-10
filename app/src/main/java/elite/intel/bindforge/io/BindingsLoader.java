@@ -52,8 +52,8 @@ public class BindingsLoader {
         this.factoryFolders = Objects.requireNonNull(factoryFolders, "factoryFolders");
     }
 
-    public File getLatestBindsFile() throws IOException {
-        return getLatestBindsFile(PlayerSession.getInstance().getBindingsDir());
+    public File bindsFileToRead() throws IOException {
+        return bindsFileToRead(PlayerSession.getInstance().getBindingsDir());
     }
 
     /**
@@ -64,7 +64,7 @@ public class BindingsLoader {
      *
      * @throws IOException when no line resolves to a file - nothing is read - or the bindings folder cannot be listed
      */
-    public File getLatestBindsFile(Path bindingsDir) throws IOException {
+    public File bindsFileToRead(Path bindingsDir) throws IOException {
         List<Path> controlSchemes = null;
         for (String presetName : presetNamesInFileOrder(bindingsDir)) {
             Optional<Path> own = trueBindsFileOf(bindingsDir, presetName);
@@ -137,7 +137,7 @@ public class BindingsLoader {
      * A section counts as read when its preset is the one {@code readFile} is a file of, from the bindings folder or
      * from {@code ControlSchemes} (Storage S13c).
      *
-     * @param readFile the file {@link #getLatestBindsFile(Path)} returned
+     * @param readFile the file {@link #bindsFileToRead(Path)} returned
      */
     public Map<BindingSection, String> sectionsNotIn(Path bindingsDir, File readFile) {
         try {

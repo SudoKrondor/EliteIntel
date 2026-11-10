@@ -357,6 +357,14 @@ loader therefore reads the true binds file a preset line names, else that preset
 and never a plain file or the newest one (Storage S13c). *No longer a testing item.*
 → [storage.md — Settled with Storage S13a's sources, D6](../02-features/bindforge/storage.md#how-the-files-are-written--2026-10-24)
 
+**29. Does picking a factory preset in game rewrite any `.binds`?** *Added 2026-11-08, the S13c-S13e review's D3 — Alan can
+run this.* VEGA reloads its bindings only when a `.binds` in the bindings folder changes (`BindingsMonitor`). Since
+Storage S13c, a preset line naming a factory preset is read from that preset's factory file, so picking one in the
+game's controls screen may change only `StartPreset.4.start`. Pick a factory preset for General, press Apply, and say
+which files in the bindings folder changed (their modified times). If only `StartPreset.4.start` did, VEGA keeps the
+old preset's keys until the next start, and the monitor should watch `StartPreset.*.start` too.
+→ [Storage brief — S13eR](../05-build-plan/storage.md#slices)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

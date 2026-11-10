@@ -57,8 +57,8 @@ class BindingsLoaderStartPresetTest {
             Files.writeString(bindingsDir.resolve(binds), "<Root/>", StandardCharsets.UTF_8);
         }
 
-        // getLatestBindsFile resolves through the one-line read: General's preset, not Ship's.
-        assertEquals("KeyboardMouseOnly.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
+        // bindsFileToRead resolves through the one-line read: General's preset, not Ship's.
+        assertEquals("KeyboardMouseOnly.4.2.binds", loader.bindsFileToRead(bindingsDir).getName());
     }
 
     @Test
@@ -66,7 +66,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("KeyboardMouseOnly\r\nCustom\r\nCustom\r\nCustom");
         binds("Custom.4.2.binds");
 
-        File read = loader.getLatestBindsFile(bindingsDir);
+        File read = loader.bindsFileToRead(bindingsDir);
 
         assertEquals("Custom.4.2.binds", read.getName());
         assertEquals(Map.of(BindingSection.GENERAL, "KeyboardMouseOnly"), loader.sectionsNotIn(bindingsDir, read));
@@ -79,7 +79,7 @@ class BindingsLoaderStartPresetTest {
         binds("Custom.4.2.binds");
         binds("Other.4.2.binds");
 
-        assertEquals("Custom.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
+        assertEquals("Custom.4.2.binds", loader.bindsFileToRead(bindingsDir).getName());
     }
 
     @Test
@@ -91,7 +91,7 @@ class BindingsLoaderStartPresetTest {
         Files.setLastModifiedTime(bindingsDir.resolve("VKB.4.2.binds"), FileTime.fromMillis(1_000_000));
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(9_000_000));
 
-        File read = loader.getLatestBindsFile(bindingsDir);
+        File read = loader.bindsFileToRead(bindingsDir);
 
         assertEquals("VKB.4.2.binds", read.getName());
         assertEquals(Map.of(BindingSection.GENERAL, "KeyboardMouseOnly"), loader.sectionsNotIn(bindingsDir, read));
@@ -104,14 +104,14 @@ class BindingsLoaderStartPresetTest {
         binds("VKB.4.2.binds");
         binds("Custom.4.2.binds");
 
-        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertThrows(IOException.class, () -> loader.bindsFileToRead(bindingsDir));
     }
 
     @Test
     void aFolderWithNoStartPresetReadsNothing() throws IOException {
         binds("Custom.4.2.binds");
 
-        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertThrows(IOException.class, () -> loader.bindsFileToRead(bindingsDir));
     }
 
     /** A plain file never counts as a preset's file; the preset's factory file is read instead (Storage S13c). */
@@ -121,7 +121,7 @@ class BindingsLoaderStartPresetTest {
         binds("KeyboardMouseOnly.binds");
         Path factory = factory(firstInstallation, "KeyboardMouseOnly.binds");
 
-        File read = withInstallations(firstInstallation).getLatestBindsFile(bindingsDir);
+        File read = withInstallations(firstInstallation).bindsFileToRead(bindingsDir);
 
         assertEquals(factory.toFile(), read);
         assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, read));
@@ -133,7 +133,7 @@ class BindingsLoaderStartPresetTest {
         binds("Mine.binds");
         factory(firstInstallation, "KeyboardMouseOnly.binds");
 
-        assertThrows(IOException.class, () -> withInstallations(firstInstallation).getLatestBindsFile(bindingsDir));
+        assertThrows(IOException.class, () -> withInstallations(firstInstallation).bindsFileToRead(bindingsDir));
     }
 
     @Test
@@ -144,7 +144,7 @@ class BindingsLoaderStartPresetTest {
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(1_000_000));
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.binds"), FileTime.fromMillis(9_000_000));
 
-        assertEquals("Custom.4.2.binds", loader.getLatestBindsFile(bindingsDir).getName());
+        assertEquals("Custom.4.2.binds", loader.bindsFileToRead(bindingsDir).getName());
     }
 
     @Test
@@ -154,7 +154,7 @@ class BindingsLoaderStartPresetTest {
         factory(firstInstallation, "KeyboardMouseOnly.binds");
 
         assertEquals(bindingsDir.resolve("KeyboardMouseOnly.4.2.binds").toFile(),
-                withInstallations(firstInstallation).getLatestBindsFile(bindingsDir));
+                withInstallations(firstInstallation).bindsFileToRead(bindingsDir));
     }
 
     /** General's factory file is its file: the next line's own file is not read before it. */
@@ -164,7 +164,7 @@ class BindingsLoaderStartPresetTest {
         binds("Custom.4.2.binds");
         Path factory = factory(firstInstallation, "KeyboardMouseOnly.binds");
 
-        File read = withInstallations(firstInstallation).getLatestBindsFile(bindingsDir);
+        File read = withInstallations(firstInstallation).bindsFileToRead(bindingsDir);
 
         assertEquals(factory.toFile(), read);
         assertEquals(Map.of(BindingSection.SHIP, "Custom", BindingSection.SRV, "Custom", BindingSection.ON_FOOT,
@@ -178,11 +178,11 @@ class BindingsLoaderStartPresetTest {
         Path second = factory(secondInstallation, "KeyboardMouseOnly.binds");
 
         assertEquals(second.toFile(),
-                withInstallations(firstInstallation, secondInstallation).getLatestBindsFile(bindingsDir));
+                withInstallations(firstInstallation, secondInstallation).bindsFileToRead(bindingsDir));
 
         Path first = factory(firstInstallation, "KeyboardMouseOnly.binds");
         assertEquals(first.toFile(),
-                withInstallations(firstInstallation, secondInstallation).getLatestBindsFile(bindingsDir));
+                withInstallations(firstInstallation, secondInstallation).bindsFileToRead(bindingsDir));
     }
 
     @Test
@@ -190,7 +190,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("keyboardmouseonly\r\nkeyboardmouseonly\r\nkeyboardmouseonly\r\nkeyboardmouseonly");
         Path factory = factory(firstInstallation, "KeyboardMouseOnly.binds");
 
-        File read = withInstallations(firstInstallation).getLatestBindsFile(bindingsDir);
+        File read = withInstallations(firstInstallation).bindsFileToRead(bindingsDir);
 
         assertEquals(factory.toFile(), read);
         assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, read));
@@ -203,7 +203,7 @@ class BindingsLoaderStartPresetTest {
         Path gone = tempDir.resolve("UnpluggedControlSchemes");
         Path factory = factory(secondInstallation, "KeyboardMouseOnly.binds");
 
-        assertEquals(factory.toFile(), withInstallations(gone, secondInstallation).getLatestBindsFile(bindingsDir));
+        assertEquals(factory.toFile(), withInstallations(gone, secondInstallation).bindsFileToRead(bindingsDir));
     }
 
     /**
@@ -218,7 +218,7 @@ class BindingsLoaderStartPresetTest {
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.3.binds"), FileTime.fromMillis(1_000_000));
         Files.setLastModifiedTime(bindingsDir.resolve("Custom.4.2.binds"), FileTime.fromMillis(9_000_000));
 
-        assertEquals("Custom.4.3.binds", loader.getLatestBindsFile(bindingsDir).getName());
+        assertEquals("Custom.4.3.binds", loader.bindsFileToRead(bindingsDir).getName());
     }
 
     @Test
@@ -227,7 +227,7 @@ class BindingsLoaderStartPresetTest {
         binds("VKB.4.2.binds");
         binds("Custom.4.2.binds");
 
-        File read = loader.getLatestBindsFile(bindingsDir);
+        File read = loader.bindsFileToRead(bindingsDir);
 
         assertEquals("VKB.4.2.binds", read.getName());
         assertEquals(Map.of(BindingSection.SHIP, "Custom", BindingSection.ON_FOOT, "Custom"),
@@ -239,7 +239,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("KeyboardMouseOnly\r\nVKB\r\nCustom\r\nCustom");
         binds("VKB.4.2.binds");
 
-        File read = loader.getLatestBindsFile(bindingsDir);
+        File read = loader.bindsFileToRead(bindingsDir);
 
         assertEquals(List.of(BindingSection.GENERAL, BindingSection.SRV, BindingSection.ON_FOOT),
                 List.copyOf(loader.sectionsNotIn(bindingsDir, read).keySet()));
@@ -251,7 +251,7 @@ class BindingsLoaderStartPresetTest {
         binds("VKB.4.2.binds");
         binds("Custom.4.2.binds");
 
-        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.bindsFileToRead(bindingsDir)));
     }
 
     @Test
@@ -259,7 +259,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("VKB");
         binds("VKB.4.2.binds");
 
-        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.bindsFileToRead(bindingsDir)));
     }
 
     /**
@@ -271,7 +271,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
         Path copy = binds("Custom.4.2 (2).binds");
 
-        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertThrows(IOException.class, () -> loader.bindsFileToRead(bindingsDir));
         assertEquals(everySectionOn("Custom"), loader.sectionsNotIn(bindingsDir, copy.toFile()));
     }
 
@@ -284,7 +284,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
         Path dotted = binds("Custom.Old.4.2.binds");
 
-        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertThrows(IOException.class, () -> loader.bindsFileToRead(bindingsDir));
         assertEquals(everySectionOn("Custom"), loader.sectionsNotIn(bindingsDir, dotted.toFile()));
     }
 
@@ -293,7 +293,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("Custom\r\nCustom\r\nCustom\r\nCustom");
         Path other = binds("CustomHotas.4.2.binds");
 
-        assertThrows(IOException.class, () -> loader.getLatestBindsFile(bindingsDir));
+        assertThrows(IOException.class, () -> loader.bindsFileToRead(bindingsDir));
         assertEquals(everySectionOn("Custom"), loader.sectionsNotIn(bindingsDir, other.toFile()));
     }
 
@@ -302,7 +302,7 @@ class BindingsLoaderStartPresetTest {
         startPreset("\r\nCustom\r\n\r\nCustom");
         binds("Custom.4.2.binds");
 
-        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.getLatestBindsFile(bindingsDir)));
+        assertEquals(Map.of(), loader.sectionsNotIn(bindingsDir, loader.bindsFileToRead(bindingsDir)));
     }
 
     @Test

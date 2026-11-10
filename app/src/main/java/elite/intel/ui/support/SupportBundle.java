@@ -532,7 +532,7 @@ public final class SupportBundle {
         if (bindingsDir == null) return Collected.missing("no bindings directory configured");
         if (!Files.isDirectory(bindingsDir)) return Collected.missing("not a directory: " + bindingsDir);
         try {
-            return Collected.of(new BindingsLoader().getLatestBindsFile(bindingsDir).toPath());
+            return Collected.of(new BindingsLoader().bindsFileToRead(bindingsDir).toPath());
         } catch (IOException e) {
             return Collected.missing("could not resolve the active preset in " + bindingsDir + ": " + e);
         }
