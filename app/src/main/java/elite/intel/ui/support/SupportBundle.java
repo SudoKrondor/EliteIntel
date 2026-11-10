@@ -1,5 +1,6 @@
 package elite.intel.ui.support;
 
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.bindforge.storage.Backup;
 import elite.intel.bindforge.storage.BackupContents;
@@ -99,6 +100,7 @@ public final class SupportBundle {
     static final long MAX_SOURCE_BYTES = 32L * 1024 * 1024;
 
     private static final String BINDFORGE_LOG = "bindforge.log";
+    private static final String LM_STUDIO_LOG = "lm-studio.log";
 
     private SupportBundle() {
     }
@@ -129,12 +131,29 @@ public final class SupportBundle {
      * @param bindForge         BindForge's report and raw files (see {@link BindForgeSupport}). Deferred for the same
      *                          reason as {@code micDiagnostics}: it reads the game's folders and the database. Null
      *                          when the caller has no BindForge to report.
+     * @param lmStudio          how LM Studio install assistance stands on this PC (see
+     *                          {@code LmStudioSupport}). Deferred for the same reason as {@code micDiagnostics}: it
+     *                          runs {@code nvidia-smi} and asks LM Studio for its models. Null when the caller has
+     *                          none to report.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
                           @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
                           @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
-                          @Nullable Supplier<BindForgeSupport.Contents> bindForge) {
+                          @Nullable Supplier<BindForgeSupport.Contents> bindForge,
+                          @Nullable Supplier<String> lmStudio) {
+
+        /**
+         * Sources with no LM Studio report to carry.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
+                       @Nullable Supplier<BindForgeSupport.Contents> bindForge) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    bindingsBackupDir, bindForge, null);
+        }
 
         /**
          * Sources with no BindForge report to carry.
@@ -226,8 +245,12 @@ public final class SupportBundle {
 
             copy(zip, "application log", appLog(sources.appLog()), included, omitted);
             copy(zip, "previous application log", previousLog(sources.appLog()), included, omitted);
-            copy(zip, "BindForge log", bindForgeLog(sources.appLog()), included, omitted);
-            copy(zip, "previous BindForge log", previousLog(bindForgeLogPath(sources.appLog())), included, omitted);
+            copy(zip, "BindForge log", siblingLog(sources.appLog(), BINDFORGE_LOG), included, omitted);
+            copy(zip, "previous BindForge log", previousLog(siblingLogPath(sources.appLog(), BINDFORGE_LOG)),
+                    included, omitted);
+            copy(zip, "LM Studio log", siblingLog(sources.appLog(), LM_STUDIO_LOG), included, omitted);
+            copy(zip, "previous LM Studio log", previousLog(siblingLogPath(sources.appLog(), LM_STUDIO_LOG)),
+                    included, omitted);
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
             Collected activeBindings = activeBindings(sources.bindingsDir());
@@ -235,8 +258,10 @@ public final class SupportBundle {
             copy(zip, "bindings backup", previousBindings(sources.bindingsBackupDir(), activeBindings),
                     included, omitted);
             copy(zip, "custom commands", customCommands(sources.customCommands()), included, omitted);
-            writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
+            writeReport(zip, MIC_DIAGNOSTICS_ENTRY, "microphone diagnostics", sources.micDiagnostics(),
+                    included, omitted);
             writeBindForge(zip, sources.bindForge(), included, omitted);
+            writeReport(zip, LmStudioSupport.REPORT_ENTRY, "LM Studio report", sources.lmStudio(), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
         }
@@ -279,41 +304,42 @@ public final class SupportBundle {
     }
 
     /**
-     * Adds the microphone report, or records why there is none.
+     * Adds a computed text report - the microphone's, LM Studio's - or records why there is none.
      * <p>
-     * The supplier is called inside the try because this one source is computed rather than read: it probes
-     * the machine's audio devices, and a machine whose audio subsystem is broken enough to swallow the
+     * The supplier is called inside the try because these sources are computed rather than read: the microphone's
+     * probes the machine's audio devices, and a machine whose audio subsystem is broken enough to swallow the
      * commander's voice is exactly the machine most likely to throw here. Letting that escape would cost the
      * whole bundle - including the journal and the logs - to save one section of it.
      */
-    private static void writeMicDiagnostics(ZipOutputStream zip, @Nullable Supplier<String> micDiagnostics,
-                                            List<String> included, List<String> omitted) throws IOException {
-        // Silent rather than reported, on the same rule as an absent Collected: a caller with no audio
-        // pipeline to ask is not an incomplete bundle, and saying so would make every healthy one read as one.
-        if (micDiagnostics == null) {
+    private static void writeReport(ZipOutputStream zip, String entryName, String label,
+                                    @Nullable Supplier<String> render,
+                                    List<String> included, List<String> omitted) throws IOException {
+        // Silent rather than reported, on the same rule as an absent Collected: a caller with nothing to ask
+        // is not an incomplete bundle, and saying so would make every healthy one read as one.
+        if (render == null) {
             return;
         }
         String report;
         try {
-            report = micDiagnostics.get();
+            report = render.get();
         } catch (RuntimeException | LinkageError e) {
-            log.warn("Diagnostics bundle: could not collect microphone diagnostics", e);
-            omitted.add("microphone diagnostics - could not be collected: " + e);
+            log.warn("Diagnostics bundle: could not collect the {}", label, e);
+            omitted.add(label + " - could not be collected: " + e);
             return;
         }
         // A supplier that ran and produced nothing IS worth reporting, unlike an absent one: the renderer
         // always has something to say, so an empty answer means it failed to say it.
         if (report == null || report.isBlank()) {
-            omitted.add("microphone diagnostics - the report came back empty");
+            omitted.add(label + " - the report came back empty");
             return;
         }
-        writeEntry(zip, MIC_DIAGNOSTICS_ENTRY, report.getBytes(StandardCharsets.UTF_8));
-        included.add(MIC_DIAGNOSTICS_ENTRY);
+        writeEntry(zip, entryName, report.getBytes(StandardCharsets.UTF_8));
+        included.add(entryName);
     }
 
     /**
      * Adds BindForge's report and raw files, or records why there are none. The supplier is called inside the try for
-     * the reason {@link #writeMicDiagnostics} gives: this source is computed, and the fault being reported may be what
+     * the reason {@link #writeReport} gives: this source is computed, and the fault being reported may be what
      * breaks it.
      */
     private static void writeBindForge(ZipOutputStream zip, @Nullable Supplier<BindForgeSupport.Contents> bindForge,
@@ -453,22 +479,24 @@ public final class SupportBundle {
     }
 
     /**
-     * BindForge's own log, written beside the application log (see {@code log4j2.xml}).
+     * A feature's own log, written beside the application log (see {@code log4j2.xml}): BindForge's, LM Studio
+     * install assistance's.
      * <p>
      * WHY a second log rather than the lines already in the first: the application log rolls at every start and shares
-     * its megabyte with the keystroke trail, so an APPLY from a few sessions ago has gone from it by the time anything
-     * goes wrong in the game. This one holds BindForge's lines alone and rolls only on size.
+     * its megabyte with the keystroke trail, so an APPLY from a few sessions ago - or an install that failed before
+     * the commander restarted - has gone from it by the time anyone reports it. These hold one feature's lines alone
+     * and roll only on size.
      * <p>
-     * Absent is silent, like the rolled log: a caller with no such file has no BindForge log to report.
+     * Absent is silent, like the rolled log: a commander who never used the feature has no such file.
      */
-    private static Collected bindForgeLog(@Nullable Path appLog) {
-        Path log = bindForgeLogPath(appLog);
+    private static Collected siblingLog(@Nullable Path appLog, String name) {
+        Path log = siblingLogPath(appLog, name);
         return log != null && Files.isRegularFile(log) ? Collected.of(log) : Collected.absent();
     }
 
     @Nullable
-    private static Path bindForgeLogPath(@Nullable Path appLog) {
-        return appLog == null ? null : appLog.resolveSibling(BINDFORGE_LOG);
+    private static Path siblingLogPath(@Nullable Path appLog, String name) {
+        return appLog == null ? null : appLog.resolveSibling(name);
     }
 
     /**
@@ -680,7 +708,7 @@ public final class SupportBundle {
 
     /**
      * The AI setup section, or a line saying why it is missing. Caught here for the reason
-     * {@link #writeMicDiagnostics} catches: it reads the database, and a report from a session whose database
+     * {@link #writeReport} catches: it reads the database, and a report from a session whose database
      * is failing must still carry its logs.
      */
     private static String aiSetup(@Nullable Supplier<String> aiSetup) {

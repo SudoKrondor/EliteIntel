@@ -53,8 +53,16 @@ public final class LmStudioInstaller {
     private volatile boolean cancelled;
     private volatile InstallStep current = InstallStep.CHECK;
 
+    /**
+     * @param progress also written to the LM Studio log, along with what each command printed (see
+     *                 {@link LoggedProgress})
+     */
     public LmStudioInstaller(InstallProgress progress, FieldsSaver saver) {
-        this(new LocalLmStudioMachine(progress::log), progress, saver, LmStudioInstallManager.getInstance(),
+        this(new LoggedProgress(progress), saver, LmStudioInstallManager.getInstance());
+    }
+
+    private LmStudioInstaller(LoggedProgress progress, FieldsSaver saver, LmStudioInstallManager installs) {
+        this(new LocalLmStudioMachine(progress::log), progress, saver, installs,
                 InstallFolder.REQUIRED_BYTES, Duration.ofSeconds(1), Duration.ofMinutes(5));
     }
 
@@ -78,7 +86,7 @@ public final class LmStudioInstaller {
      * A fresh install into {@code folder}: every step.
      */
     public InstallOutcome install(InstallFolder folder) {
-        return run(() -> {
+        return run("Fresh install into " + folder.home() + (folder.writesPointer() ? ", a chosen folder" : ""), () -> {
             checkSpace(folder);
             Path lms = installInto(folder);
             setUp(lms, true);
@@ -90,7 +98,7 @@ public final class LmStudioInstaller {
      * Picks up the app's own install where it stopped.
      */
     public InstallOutcome continueSetup(Install owned) {
-        return run(() -> {
+        return run("Continuing the app's install in " + owned.homeDir(), () -> {
             skip(InstallStep.CHECK, "Continuing the install in " + owned.homeDir());
             Path lms = ensureInstalled(owned);
             setUp(lms, true);
@@ -103,7 +111,7 @@ public final class LmStudioInstaller {
      * starts, stops or uninstalls it.
      */
     public InstallOutcome setUpExisting(LmStudioHome home) {
-        return run(() -> {
+        return run("Setting up the LM Studio already in " + home.dir(), () -> {
             current = InstallStep.START;
             Path lms = home.lmsCommand()
                     .orElseThrow(() -> new InstallException("No lms command in " + home.dir().resolve("bin")));
@@ -127,16 +135,22 @@ public final class LmStudioInstaller {
         void run() throws InstallException;
     }
 
-    private InstallOutcome run(Steps steps) {
+    /**
+     * @param what which way in, for the LM Studio log: the run's first line there
+     */
+    private InstallOutcome run(String what, Steps steps) {
+        log.info("{} ({} {}, model {})", what, System.getProperty("os.name"), System.getProperty("os.version"), MODEL);
         try {
             steps.run();
             progress.log("LM Studio is set up.");
             return new InstallOutcome.Completed();
         } catch (InstallException e) {
             if (cancelled) {
+                log.info("Stopped by the commander at step {}", current);
                 progress.log("Stopped.");
                 return new InstallOutcome.Cancelled();
             }
+            log.info("Failed at step {}", current, e);
             return failed(e.getMessage());
         } catch (RuntimeException e) {
             // WHY: broad catch at the install's top level - it runs on a worker thread the dialog waits on, and a

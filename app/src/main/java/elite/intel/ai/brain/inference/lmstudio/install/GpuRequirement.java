@@ -52,11 +52,11 @@ public final class GpuRequirement {
         NvidiaSmi.Answer answer = NvidiaSmi.query(
                 "--query-gpu=name,memory.total,compute_cap", "--format=csv,noheader,nounits");
         if (!(answer instanceof NvidiaSmi.Answer.Lines(List<String> lines))) {
-            log.debug("No NVIDIA card readable for the LM Studio install check: {}", answer);
+            log.info("No NVIDIA card readable for the LM Studio install check: {}", answer);
             return false;
         }
         boolean met = isMetBy(lines);
-        log.debug("LM Studio install check: GPUs {} meet the bar: {}", lines, met);
+        log.info("LM Studio install check: GPUs {} meet the bar: {}", lines, met);
         return met;
     }
 
@@ -69,7 +69,11 @@ public final class GpuRequirement {
         return lines.stream().anyMatch(GpuRequirement::meetsTheBar);
     }
 
-    private static boolean meetsTheBar(String line) {
+    /**
+     * Whether one line of {@code nvidia-smi} describes a card that meets the bar. Its last two fields are
+     * {@code memory.total} in MiB and {@code compute_cap}; whatever comes before them is not read.
+     */
+    static boolean meetsTheBar(String line) {
         // WHY from the right: the card's name comes first and is free text, the two numbers after it are not.
         String[] fields = line.split(",");
         if (fields.length < 3) return false;

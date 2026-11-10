@@ -49,7 +49,7 @@ public final class LmStudioHost implements ManagedService {
             appLog("LM Studio: the install in " + owned.get().homeDir() + " has no lms command, so it was not started.");
             return null;
         }
-        return new LmStudioHost(lms.get(), new LocalLmStudioMachine(line -> log.debug("lms: {}", line)));
+        return new LmStudioHost(lms.get(), new LocalLmStudioMachine(line -> log.info("lms: {}", line)));
     }
 
     /**
@@ -89,8 +89,7 @@ public final class LmStudioHost implements ManagedService {
             Runtime.getRuntime().addShutdownHook(onExit);
             appLog("LM Studio started with " + MODEL + ".");
         } catch (InstallException e) {
-            log.warn("LM Studio could not be started", e);
-            appLog("LM Studio could not be started: " + e.getMessage());
+            appLog("LM Studio could not be started: " + e.getMessage(), e);
         }
     }
 
@@ -145,12 +144,20 @@ public final class LmStudioHost implements ManagedService {
         try {
             step.run();
         } catch (InstallException e) {
-            log.warn("LM Studio: could not {}", what, e);
-            appLog("LM Studio: could not " + what + ": " + e.getMessage());
+            appLog("LM Studio: could not " + what + ": " + e.getMessage(), e);
         }
     }
 
+    /**
+     * To the in-app system log, and to the LM Studio log, which outlives a restart.
+     */
     private static void appLog(String line) {
+        log.info(line);
+        UiBus.publish(new AppLogEvent(line));
+    }
+
+    private static void appLog(String line, InstallException failure) {
+        log.warn(line, failure);
         UiBus.publish(new AppLogEvent(line));
     }
 }

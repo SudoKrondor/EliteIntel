@@ -51,6 +51,18 @@
             </Policies>
             <DefaultRolloverStrategy max="1"/>
         </RollingFile>
+        <!-- LM Studio install assistance's own record, for the support bundle, on BindForge's
+             pattern above: an install runs once, and the commander who reports it has usually
+             restarted the app since, which costs the in-app system log and rolls the file above.
+             Takes only the install package's lines and rolls only on size. 2MB at most. -->
+        <RollingFile name="lmStudioFile" fileName="${logPath}/lm-studio.log"
+                     filePattern="${logPath}/lm-studio_%i.log" immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-6p→ %c{1}.%M(%F:%L) - %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="1"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -111,6 +123,13 @@
              all, which otherwise looks identical to having no controllers plugged in. -->
         <Logger name="elite.intel.ui.screen.bindings" level="info">
             <AppenderRef ref="bindForgeFile"/>
+        </Logger>
+        <!-- LM Studio install assistance: every step and line of an install or uninstall, what lms
+             printed, the GPU check's reading, and the host's start and stop. Louder than elite.intel
+             for BindForge's reason: an install that fails ends on screen, in a dialog the commander
+             closes, and at the parent's error level nothing of it would be kept. -->
+        <Logger name="elite.intel.ai.brain.inference.lmstudio.install" level="info">
+            <AppenderRef ref="lmStudioFile" level="info"/>
         </Logger>
         <!-- Also louder than elite.intel, for the same reason as the overlay above. Memory
              consolidation used to announce its failures out loud, which told the commander

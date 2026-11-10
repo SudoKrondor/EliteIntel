@@ -2,6 +2,7 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.ai.brain.vega.memory.MemoryGateway;
@@ -409,7 +410,8 @@ public class AiTabPanel extends JPanel {
                 customCommandsFile(),
                 AiSetupReport::render,
                 bindingsBackupDir(),
-                BindForgeSupport::collect);
+                BindForgeSupport::collect,
+                LmStudioSupport::render);
 
         Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }

@@ -36,7 +36,8 @@ import static elite.intel.ui.theme.HudPalette.HUD_GAP;
  * <p>
  * The commander sees what will happen, where LM Studio will go when it is a fresh install, and presses the button.
  * Each step then shows its state, the download shows its bytes, speed and time left, and a details log shows
- * everything the steps printed - the same lines go to the app log, so a support bundle carries them. Closing or
+ * everything the steps printed - the installer writes the same lines to the LM Studio log, so a support bundle carries
+ * them, also after a restart. Closing or
  * cancelling while it runs asks first, then stops it; what was done is kept. Use {@link #open} as the entry point.
  */
 public final class LmStudioInstallDialog extends JDialog {
@@ -430,7 +431,7 @@ public final class LmStudioInstallDialog extends JDialog {
     }
 
     /**
-     * The installer's reports, handed to the event thread. Log lines also go to the app log, for support bundles.
+     * The installer's reports, handed to the event thread. Log lines also go to the in-app system log.
      */
     private final class ToTheDialog implements InstallProgress {
 

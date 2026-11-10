@@ -66,7 +66,8 @@ LM Studio is one the app cannot drive.
 
 A modal dialog, `LmStudioInstallDialog`, opened by the button. Each step has a status badge: waiting, running,
 done, already done, failed or stopped. The download also gets a progress bar. Everything the steps print goes to
-a collapsible details log, and the same lines go to the app log, so they are in a support bundle. The dialog grows
+a collapsible details log, and the same lines, each step and how the run ended go to `logs/lm-studio.log`, so they
+are in a support bundle even after a restart (see [Support bundle](#support-bundle)). The dialog grows
 to fit as the download, a result or the log appear. It has no scrolling body.
 
 | # | Step | What happens | Progress shown |
@@ -206,6 +207,24 @@ ended. The steps:
 Smoke test round 3 found no processes and no files left after these steps, on either OS.
 
 ---
+
+## Support bundle
+
+Two parts, so that the test machine's run can be read back from a bundle without asking the commander anything.
+
+- **`logs/lm-studio.log`** (`log4j2.xml`, logger `elite.intel.ai.brain.inference.lmstudio.install` at info).
+  Each run of the installer opens with which way in it took (fresh install, continue, set up existing) and the
+  platform. It then records every step started, done or already done, every line the dialog shows, including
+  what LM Studio's script and `lms` printed, the download at each tenth of the way, and how the run ended, with
+  the step and the exception. The uninstall, the host's start and stop, and the GPU check's `nvidia-smi` reading
+  go there too. It rolls only on size (1 MB, one rolled file kept), like `bindforge.log`, so it outlives the
+  restart that usually comes before a report. Both files go in the bundle.
+- **`lm-studio-report.txt`** (`LmStudioSupport`), worked out when the bundle is saved: `nvidia-smi`'s line for
+  each card (driver, name, MiB, compute) judged against the bar, alongside what the app decided this run. Then
+  whether the saved Address names this PC, the home pointer and the home it leads to, the `lms` command, and
+  what the server serves. Then the install record, with its marker, `lms` and model files, the offer the button
+  makes, and whether the host runs with the services. Each section that fails costs only itself. The Address and
+  Model themselves are already in `bundle-info.txt`.
 
 ## Sources
 

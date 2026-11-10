@@ -1,5 +1,6 @@
 package elite.intel.ui.support;
 
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
 import elite.intel.bindforge.storage.Backups;
 import elite.intel.bindforge.storage.BindForgeSupport;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,53 @@ class SupportBundleTest {
         assertEquals("applied before that", entries.get("bindforge_1.log"));
         assertTrue(result.included().contains("bindforge/live/Bindings/StartPreset.4.start"), result.toString());
         assertTrue(entries.get(SupportBundle.INFO_ENTRY).contains(BindForgeSupport.REPORT_ENTRY));
+    }
+
+    @Test
+    void carriesTheLmStudioReportAndLogs(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+        write(tmp, "lm-studio.log", "Step INSTALL: started");
+        write(tmp, "lm-studio_1.log", "the run before");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null, null, null, null, null, null,
+                        () -> "LM Studio install assistance"));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("LM Studio install assistance", entries.get(LmStudioSupport.REPORT_ENTRY));
+        assertEquals("Step INSTALL: started", entries.get("lm-studio.log"));
+        assertEquals("the run before", entries.get("lm-studio_1.log"));
+        assertTrue(result.included().contains(LmStudioSupport.REPORT_ENTRY), result.toString());
+    }
+
+    @Test
+    void noLmStudioLogBesideTheAppLogIsNotAnOmission(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null));
+
+        assertTrue(result.omitted().stream().noneMatch(line -> line.contains("LM Studio")), result.toString());
+    }
+
+    @Test
+    void anLmStudioReportThatThrowsCostsOnlyItself(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "system log line", appLog, null, null, null, null, null, null,
+                        null, () -> {
+                            throw new IllegalStateException("nvidia-smi wedged");
+                        }));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("app", entries.get("elite-intel.log"));
+        assertFalse(entries.containsKey(LmStudioSupport.REPORT_ENTRY));
+        assertTrue(result.omitted().stream().anyMatch(line -> line.startsWith("LM Studio report")
+                && line.contains("nvidia-smi wedged")), result.toString());
     }
 
     @Test

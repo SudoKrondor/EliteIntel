@@ -63,12 +63,15 @@ public final class LmStudioUninstaller {
     /**
      * @param stopHost stops the service running the app's own LM Studio, if it runs, and returns once it has
      * @param saver    writes the Address and the now empty Model
-     * @param report   one line for each thing done, for the app log
+     * @param report   one line for each thing done, for the app log; each is written to the LM Studio log as well
      */
     public LmStudioUninstaller(Runnable stopHost, LmStudioInstaller.FieldsSaver saver, Consumer<String> report) {
-        this(stopHost, saver, new LocalLmStudioMachine(line -> LmStudioUninstaller.log.debug("lms: {}", line)),
+        this(stopHost, saver, new LocalLmStudioMachine(line -> LmStudioUninstaller.log.info("lms: {}", line)),
                 UserPath.forThisPc(), Path.of(System.getProperty("user.home")), LmStudioInstallManager.getInstance(),
-                Duration.ofSeconds(2), report);
+                Duration.ofSeconds(2), line -> {
+                    LmStudioUninstaller.log.info(line);
+                    report.accept(line);
+                });
     }
 
     LmStudioUninstaller(Runnable stopHost, LmStudioInstaller.FieldsSaver saver, LmStudioMachine machine,
@@ -112,6 +115,8 @@ public final class LmStudioUninstaller {
 
     public Outcome uninstall(Install owned) {
         Path home = owned.homeDir();
+        log.info("Uninstalling the app's install in {} ({} {})", home, System.getProperty("os.name"),
+                System.getProperty("os.version"));
         Optional<String> refusal = refusal(owned);
         if (refusal.isPresent()) {
             report.accept("Not uninstalled: " + refusal.get());
