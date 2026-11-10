@@ -8,7 +8,7 @@ Elite Dangerous: Odyssey.
   controllers (`.binds`,
   `DeviceMappings.xml`, `.buttonMap`, `StartPreset.4.start`), with live device-input monitoring and
   controller-layout views.
-- **StarVizion** — live controller-input visualization overlays for desktop and VR.
+- **StarVizion** — live controller-input visualization overlays for desktop and VR. **Planned for V2.0, not V1.2** (Krondor, 2026-11-10).
 
 Ported from the EDO StellarCore documentation set on 2026-08-30. If you are reading any of this for the first
 time, **start with [PORTING-NOTES.md](PORTING-NOTES.md)** — it explains what changed in the move and lists the
@@ -63,6 +63,8 @@ loss matters more than editing it.
 - [Device Provenance](03-data-models/device-provenance.md) — why device ownership must live in the database
 
 ## StarVizion
+
+**V2.0** (Krondor, 2026-11-10). Designed, not built.
 
 - [Overview](02-features/starvizion/overview.md)
 - [Vizlets and the Node System](02-features/starvizion/vizlet-and-node-system.md) — Vizlets, NeuroNodes, the eight primitives

@@ -10,8 +10,13 @@ backup is a date-stamped zip of the live copies, of one of four kinds, and there
 
 ## Structure
 
+**On screen this tab is Binding Management, and stays so** (Krondor, 2026-11-10): the rename to File Manager is not
+coming, though the other BindForge labels changed that day. These docs keep "File Manager" as the name of the section
+they describe.
+
 Two sub-tabs: **Game Install Locations** and **Player Backups**. *Edit History, a third, was folded into Player
-Backups on 2026-10-22.*
+Backups on 2026-10-22.* **The [Preset Editor](preset-editor.md#layout) is to be a section here** (Krondor, 2026-11-10;
+P4, not built).
 
 ## Player Backups
 

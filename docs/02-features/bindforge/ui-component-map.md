@@ -27,12 +27,12 @@ section, the chord capture field, the live keyboard map, the conflict callout an
 
 | # | Missing | Needed by | Blocks, or degrades? |
 |---|---|---|---|
-| 1 | **A collapsible group** — a header row that shows and hides the rows beneath it | Game Mode grid, Settings mode, Alias Designer's inline editor | **Blocks** the grid as specified; static group headers (today's grid) are the fallback |
+| 1 | **A collapsible group** — a header row that shows and hides the rows beneath it | Game Mode grid, Settings mode, Alias Designer's inline editor | **Not needed for V1.2's Bind Editor:** collapsing groups were rejected with GM1 (Krondor, 2026-11-10), so static headers stay. *Was: blocks the grid as specified* |
 | 2 | **Editable table cells beyond boolean and combo** — free text, and numbers | Alias Designer's button and axis labels; the 21 free-number settings | **Blocks** in-cell editing; editing in a form beside the table is the fallback |
-| 3 | **A HUD context menu** | Game Mode's right-click Expand All / Collapse All | Degrades — two buttons do the same job |
-| 4 | **A badge on a tab** | the Anomalies count, the destructive-change Error signal | Degrades — the count goes in the tab title, the app's existing pattern |
+| 3 | **A HUD context menu** | Game Mode's right-click Expand All / Collapse All | **Not needed for V1.2** - rejected with GM1 (2026-11-10). *Was: degrades* |
+| 4 | **A badge on a tab** | the Anomalies count, the destructive-change Error signal | Degrades — the count goes in the tab title, the app's existing pattern. **Built that way:** *Anomalies (n)* |
 | 5 | ~~**Tabs inside a table row**~~ | ~~Alias Designer — one tab per detected installation~~ | **Avoided 2026-10-08** — the markers are one column per installation |
-| 6 | **Esc clears a search field** | the Bind Editor shell | Degrades — the × already clears |
+| 6 | **Esc clears a search field** | the Bind Editor shell | **Rejected for V1.2** with GM1 (2026-11-10) — the × clears |
 | 7 | ~~**A middle place in a dialog's footer**~~ | Alias Designer's Device Editor — CLEAR between BACK and SAVE (2026-10-10) | **Built with A9** — `HudModalSpec.middle`, and in the canon's §10 |
 
 **Two tensions with the canon**, which are design questions rather than missing code — see

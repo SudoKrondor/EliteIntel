@@ -1,6 +1,7 @@
 # StarVizion — Overview
 
 **Elite-Intel feature:** StarVizion
+**Release:** V2.0, not V1.2 (Krondor, 2026-11-10)
 **Status:** Design consolidated from prior planning; not yet built. An earlier prototype explored some of these ideas but was never wired into a finished, user-facing state — this specification is a fresh design target, not a description of that prototype.
 
 ---

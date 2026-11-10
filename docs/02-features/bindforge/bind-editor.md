@@ -2,8 +2,14 @@
 
 The Bind Editor is where the player views and edits their actual key/button/axis bindings. It organises the same underlying binding data through multiple **modes**, each offering a different lens on it. Conflict detection is shared infrastructure used by every mode, not owned by any single one — see [Shared Conflict Detection](#shared-conflict-detection) below.
 
-**Three of the seven modes ship in V1.2: [Game Mode](#game-mode), [Anomalies](#anomalies) and
-[Settings](#settings--settled-2026-09-19).** Action Groups,
+**On screen in V1.2 (final, Krondor, 2026-11-10): one tab row - All, General, Ship, SRV, On-Foot, then Anomalies
+and Dead Zones & Sensitivity - over one grid.** The five section tabs are what this document calls
+[Game Mode](#game-mode), which has no tab of its own since 2026-11-06; [Anomalies](#anomalies) is the rows drawn red;
+Dead Zones & Sensitivity is [Settings](#settings--settled-2026-09-19). The sub-tab is labelled **Bind Editor** since
+2026-11-10 (it was Binding Profile). **Rejected for V1.2 (2026-11-10):** settings rows, booleans and dropdowns in the
+grid (E6), and the grid shell of GM1 - collapsing groups, the section filter bar, Esc to clear the search and conflict
+colour on the slot cell; the grid built 2026-11-06 replaces them. Where a section below describes those, it is the
+earlier design. Action Groups,
 Input Mode, Control Types and Controller Mode are [deferred to a later release](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16),
 and their tabs are not in the mode bar at all for V1.2. Their designs stay in this document, which is what
 makes them cheap to build when they come back — each mode's own section below carries its status.
@@ -67,8 +73,9 @@ makes them cheap to build when they come back — each mode's own section below 
   Bind Editor**, and renaming it in this box is the way out; APPLY is not blocked. A text box rather
   than an editable dropdown, so picking a file can never rename one by accident. *Until 2026-10-24 renaming was
   deferred; duplicating a binds file still is.*
-- A Search box, above all mode tabs — filters whichever list is currently showing in whichever mode tab is active. **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
-- A **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the user is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
+- A Search box — in the footer since 2026-11-03, shared by every tab — filters whichever list is currently showing in whichever mode tab is active. *Built: the ×. Esc to clear was rejected with GM1 (2026-11-10).* **It clears in one action**: a × appears inside the field once there is anything to clear, and Esc does the same for anyone whose hands are already on the keyboard — which, in a bind editor, is most of them. Clearing restores the full list and returns focus to the field. Controller Mode is picture-based, not a list, so how (or whether) Search applies there is still open.
+- ~~A **Show Anomalies Only** checkbox~~ **Not in V1.2:** the footer has **Show conflicts only**, **Show unassigned**
+  and **Show required by Vega only** instead, on every section tab (2026-11-06). The design as written: a **Show Anomalies Only** checkbox, on the same line as Search. **It belongs to Game Mode and appears only there** (settled 2026-09-15). It filters the grid to rows carrying an anomaly — any of the [four kinds](#four-kinds-one-question), not conflicts alone. Leaving Game Mode hides it **and clears it**, so a filter is never left applied where nothing on screen explains it. **Why it exists when [Anomalies](#anomalies) has its own tab:** the tab answers *what is wrong*, gathering every anomaly by kind and severity away from the game's own layout; the checkbox answers *what is wrong here*, keeping the sections and groups the user is already working in. *Until 2026-09-15 this was shared shell state that meant something different in each mode. [Action Groups](#action-groups) has no filter of its own as a result, and needs none: it is not where conflicts get fixed.*
 - A **Show Unassigned** checkbox, beside the other filters (Krondor and Alan, 2026-11-06). It belongs to Game Mode and narrows the grid to controls with **nothing bound on the keyboard or any controller**. A control bound only on a controller is assigned, so it stays out; if Vega needs it, the AI Access column and Show Required by Vega Only say so. It replaces the Missing Bindings tab, which listed every control with no keyboard key. The footer is the one place for filters. Each row's last cell offers what fits it: **Clear** where there is a keyboard key or a bound axis; **Auto Fix** where there is none, Vega requires the control and a key could go on it, the same set Auto-Assign VEGA Required Binds fills (Krondor, 2026-11-06); otherwise nothing. Game Menu, Eject All Cargo and a row with both slots on controllers never offer it, even when a custom command makes them required, because Auto Fix would only refuse.
 - One tab row: **All, General, Ship, SRV, On-Foot**, then **Anomalies** and **[Dead Zones & Sensitivity](#settings--settled-2026-09-19)**
   in V1.2 (Krondor and Alan, 2026-11-06). The five section tabs are [Game Mode](#game-mode), which is no longer a tab of its own:
@@ -76,13 +83,18 @@ makes them cheap to build when they come back — each mode's own section below 
   documented below but [are not in the mode bar](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16)
   for that release — not greyed out, not labelled “coming soon”, not present. Nothing on screen promises a
   view that cannot be opened.
-- A collapsible-group binding grid: left-click toggles one group; right-click opens Expand All / Collapse All, scoped to the currently visible groups.
-- A roughly 75/25 split between the binding grid and the Binding Editor panel.
+- ~~A collapsible-group binding grid: left-click toggles one group; right-click opens Expand All / Collapse All, scoped to the currently visible groups.~~
+  **Rejected for V1.2 (Krondor, 2026-11-10, GM1):** the grid's groups do not collapse; the section tabs and the
+  footer filters narrow it instead.
+- ~~A roughly 75/25 split between the binding grid and the Binding Editor panel.~~ **Not built:** a click on a row
+  opens the capture dialog, or the axis dialog for an axis row; there is no side panel.
 
 ## Game Mode
 
-**Status: exists as Krondor's Binding Profile, and grows in phase 3** — corrected 2026-09-13; this line
-used to say *built*, which overstated it. Elite-Intel's `BindingProfilePanel` already organises bindings to
+**Status: final for V1.2 (Krondor, 2026-11-10).** Game Mode is the five section tabs of the Bind Editor's one tab
+row, not a tab of its own (2026-11-06), drawn by `GameModePanel`. What it still owes is in the capture dialog, not the
+grid - see the table below. *Until 2026-11-10 this line read: "exists as Krondor's Binding Profile, and grows in
+phase 3".* Elite-Intel's `BindingProfilePanel` already organises bindings to
 match the in-game controls UI — the same four top-level sections and the same group structure the game
 uses — with the game's own row names (`BindingDisplayNames`), search, and a show-conflicts-only filter.
 See [Binding Zone Map (domain knowledge)](domain-knowledge/EliteDangerous-ActionCatalog.md) for the full,
@@ -90,15 +102,20 @@ cross-verified section/subgroup/action inventory.
 
 ### What Game Mode still needs
 
-| Addition | Where it is specified | State, checked against the code 2026-11-03 |
+| Addition | Where it is specified | State, checked against the code 2026-11-10 |
 |---|---|---|
-| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) | **Partly built:** keyboard, buttons, hats and axis directions. Axis rows, mouse and cross-device chords are E3-E5 |
-| The 93 **settings entries**, which appear nowhere today | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) | **Not built** (E6) |
+| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) | **Partly built:** keyboard, buttons, hats, axis directions and axis rows (E3, in `AssignAxisDialog`). **Owed:** the MOUSE tab (E4), and a controller input with SHIFT, ALT or CTRL held (E5, those three keys only - Krondor, 2026-11-10) |
+| The 93 **settings entries** as grid rows | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) | **Rejected for V1.2** (E6, Krondor, 2026-11-10). The number settings are on Dead Zones & Sensitivity |
 | The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) | **Built**, as AI ACCESS |
-| Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) | **Not built:** the action name still carries the status for the whole row (`BindingSlotCellRenderer`). FN-1 fixed the scan, not the colouring |
+| Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) | **Rejected for V1.2** with GM1 (Krondor, 2026-11-10). The whole row is coloured (`BindingSlotCellRenderer`) |
+| Conflicts between **two controller inputs** in the red rows and Anomalies | [Conflicts (the kind)](#conflicts-the-kind) | **Owed** (D6, Krondor, 2026-11-10). The scan compares only slots whose main input is a keyboard key; SAVE in the dialog already blocks such a pair |
 | The in-game name and the XML tag in the capture dialog | [What the dialog shows](#what-the-dialog-shows) | **Built** (E1) |
 
 ### Settings entries are rows too — settled 2026-09-16
+
+**Rejected for V1.2 (Krondor, 2026-11-10, E6):** no settings rows, booleans or dropdowns in the grid. The number
+settings are on the Dead Zones & Sensitivity tab; the rest of this section is the earlier design, kept for a later
+release.
 
 **BindForge is a bind manager, not an assistant accessory.** Alan: *“we are not just facilitating Elite
 Intel's need for bindings anymore, this is a full bind management system. that means we need the user to
@@ -644,6 +661,8 @@ be read before the binding lands.
 
 #### MOUSE is chosen, not captured
 
+**Owed for V1.2 (E4, Krondor, 2026-11-10); not built.** The capture dialog has a KEYBOARD tab and a tab per controller only.
+
 The MOUSE tab lists mouse inputs to click: the buttons, as `Mouse_1` upward, and the wheel as the half-axes
 `Pos_Mouse_ZAxis` (up) and `Neg_Mouse_ZAxis` (down). It never listens for mouse movement or clicks — see
 [Mouse inputs are chosen, not captured](#mouse-inputs-are-chosen-not-captured) for why a stray scroll must not
@@ -783,6 +802,8 @@ All of the following are confirmed by direct in-game testing, not just inferred 
 
 - Capturing a compound combination (main input plus modifiers) is a single motion — whatever is held when the completing input arrives becomes the modifier set, and the completing input becomes the slot's value. No separate "now capture the modifier" step exists.
 - Cross-device modifiers are real and confirmed working in-game — for example, a keyboard key combined with two separate joystick buttons in one binding.
+  **V1.2 builds one direction only (E5, Krondor, 2026-11-10): a controller input with SHIFT, ALT or CTRL held.** A
+  keyboard key with a controller button held, and any other keyboard key as a modifier, are not in V1.2.
 - **A bind slot can combine a maximum of four inputs total** — one main input plus up to three modifiers.
 - **Axis bindings can never take a modifier at all**, confirmed by direct testing — attempting to add a modifier to an axis binding silently drops it and produces a plain single-input rebind instead. The only two things that vary on an axis slot are Inverted and Deadzone.
 - **Hold** stays an inline toggle on a button slot. **Inverted** and **Deadzone** are inline on the axis row and
@@ -1139,6 +1160,11 @@ it puts the control back on the list.
 
 ### Conflicts (the kind)
 
+**In V1.2 (2026-11-03): the red rows, gathered on the Anomalies tab - no sub-tabs, no grouping by shared input.**
+**Owed for V1.2 (D6, Krondor, 2026-11-10): conflicts between two controller inputs.** `BindingConflictScanner.scanReadOnlySlots`
+puts in only the slots whose main input is a keyboard key, so two actions on `Joy_5` are drawn as fine, though SAVE in
+the capture dialog refuses the pair (`SlotInputConflicts`). The rest of this section is the earlier design.
+
 **Status: in scope for V1.2, and designed.** Surfaces the [Shared Conflict Detection](#shared-conflict-detection) service's output directly, rather than requiring the player to spot conflict colouring row-by-row inside Game Mode. The conflict count appears on the CONFLICTS sub-tab; the mode tab's own badge [counts every anomaly](#structure).
 
 **Layout:** conflicts are grouped by the shared input causing them — each group header names the shared key/chord and how many binds share it, expandable/collapsible the same way Game Mode's grid groups work. Inside a group, each row is tagged with its section plus the action name — the same row shape Game Mode uses, so a conflict reads the same wherever the user meets it. *Until 2026-09-16 this sentence pointed at Input Mode's list, which is now [deferred](../../00-overview/v1.2-scope.md#the-v12-release-is-trimmed--settled-2026-09-16).*
@@ -1150,7 +1176,8 @@ it puts the control back on the list.
 **On screen this tab is Dead Zones & Sensitivity (2026-11-06).** "Settings" was too vague a label. These docs and `SettingsModePanel` keep the old name.
 
 **Scope for V1.2, settled 2026-11-03 (Krondor and Alan): the sensitivities, dead zones and power
-curves.** The booleans and dropdowns described below are not on the tab yet, and no inline rows exist in Game Mode.
+curves.** The booleans and dropdowns described below, and inline rows in Game Mode, were **rejected for V1.2**
+(Krondor, 2026-11-10, E6): the tab is final as the number rows.
 **Sliders, since 2026-11-04:** each row has a slider over the
 [measured range](reference-data/settings-choice-fields.md#free-numbers--slider-or-typed-value) and the number beside it. The number is checked only against `ControlSchemes/Help.txt`:
 *any number greater than 0.0* for mouse sensitivity and *any number between 0.0 and

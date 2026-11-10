@@ -17,6 +17,10 @@ General, Ship, SRV and On Foot are four separate values in one file, so in the
 
 ## Layout
 
+**Where it sits: a section inside Binding Management, not a sub-tab of its own** (Krondor, 2026-11-10). That tab has
+the room, and the preset file is a file to manage beside the binds file and the backups; it can move later if it needs
+to. Binding Management is what these docs call [File Manager](file-manager.md); it keeps its on-screen name.
+
 Four dropdowns — General, Ship, SRV, On Foot Controls — each populated with the **BindNames** of the binds files in the bindings folder, defaulting to whatever the preset file currently specifies. **A file is included on the strength of its contents, not its extension** (added 2026-09-17): the folder demonstrably holds files with a `.binds` name that are not binds files at all — most often a preset file picked by mistake, since it sits right beside them — and offering one as a binds file would point a section at something the game cannot load. See [what a `.binds` file might not be](file-manager.md#what-a-binds-file-might-not-be). A "Set All to Same" dropdown-plus-button bulk-sets all four at once; this is a shortcut — the change is an edit not applied, and APPLY writes it.
 
 **The dropdowns also offer the factory binds files** (settled 2026-10-17, Alan, P1) — see [the BindName list](#the-bindname-list--settled-2026-10-17-alan-p1).
