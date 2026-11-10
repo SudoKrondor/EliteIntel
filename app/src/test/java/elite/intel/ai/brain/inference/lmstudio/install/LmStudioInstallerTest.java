@@ -36,6 +36,7 @@ class LmStudioInstallerTest {
     private final LmStudioInstallManager installs = LmStudioInstallManager.getInstance();
     private final RecordingProgress progress = new RecordingProgress();
     private final List<String> saved = new ArrayList<>();
+    private final List<Path> stoppedOnExit = new ArrayList<>();
     private FakeLmStudioMachine machine;
     private Path home;
 
@@ -114,6 +115,25 @@ class LmStudioInstallerTest {
         assertEquals(home, installs.find().orElseThrow().homeDir());
     }
 
+    @Test
+    void theAppsOwnInstallIsStoppedAtExitEvenWhenItStopsPartWay() {
+        machine.listedAfter = -1;
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertInstanceOf(InstallOutcome.Failed.class, outcome);
+        assertEquals(List.of(lmsIn(home)), stoppedOnExit, "no service runs an unfinished install, so the exit stops it");
+    }
+
+    @Test
+    void anInstallThatFailsBeforeLmStudioIsThereLeavesNothingToStop() {
+        machine.scriptInstallsLms = false;
+
+        installer(0).install(InstallFolder.inside(chosen));
+
+        assertTrue(stoppedOnExit.isEmpty());
+    }
+
     // -------------------------------------------------------------------------
     // Continuing
     // -------------------------------------------------------------------------
@@ -143,6 +163,17 @@ class LmStudioInstallerTest {
     }
 
     @Test
+    void continuingStopsAtExitTheLmStudioAnEarlierRunLeftRunning() throws IOException {
+        Install owned = installs.recordStarted(home, false);
+        machine.installLms();
+        machine.serverAnswering = true;
+
+        installer(0).continueSetup(owned);
+
+        assertEquals(List.of(lmsIn(home)), stoppedOnExit);
+    }
+
+    @Test
     void continuingWithoutLmsRunsTheScriptAgainAndRestoresThePointer() {
         Install owned = installs.recordStarted(home, true);
 
@@ -168,6 +199,7 @@ class LmStudioInstallerTest {
         assertFalse(progress.steps.contains("start INSTALL"));
         assertTrue(progress.steps.contains("skip START"));
         assertEquals(List.of(LmStudioDefaults.ADDRESS + " " + MODEL), saved);
+        assertTrue(stoppedOnExit.isEmpty(), "the commander's own LM Studio keeps running however they set it up");
     }
 
     @Test
@@ -277,7 +309,7 @@ class LmStudioInstallerTest {
     @Test
     void cancellingTheAppsOwnDownloadPausesItByStoppingTheDaemon() {
         LmStudioInstaller installer = new LmStudioInstaller(machine, progress, this::save, installs, 0,
-                Duration.ofMillis(1), Duration.ofMinutes(5), Duration.ZERO);
+                Duration.ofMillis(1), Duration.ofMinutes(5), Duration.ZERO, stoppedOnExit::add);
         machine.statuses = new ArrayDeque<>(List.of(status(DownloadState.DOWNLOADING, 1_000)));
         machine.onStatus = installer::cancel;
 
@@ -297,7 +329,11 @@ class LmStudioInstallerTest {
 
     private LmStudioInstaller installerWaitingForListing(long requiredBytes, Duration listingWait) {
         return new LmStudioInstaller(machine, progress, this::save, installs, requiredBytes, Duration.ZERO,
-                Duration.ZERO, listingWait);
+                Duration.ZERO, listingWait, stoppedOnExit::add);
+    }
+
+    private static Path lmsIn(Path home) {
+        return new LmStudioHome(home).lmsCommand().orElseThrow();
     }
 
     private void save(String address, String model) {

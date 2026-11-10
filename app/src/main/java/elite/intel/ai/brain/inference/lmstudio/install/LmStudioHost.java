@@ -28,12 +28,13 @@ public final class LmStudioHost implements ManagedService {
 
     private final Path lms;
     private final LmStudioMachine machine;
-    private final Thread onExit = new Thread(this::shutDown, "lm-studio-shutdown");
+    private final LmStudioExitStop exitStop;
     private volatile boolean running;
 
-    LmStudioHost(Path lms, LmStudioMachine machine) {
+    LmStudioHost(Path lms, LmStudioMachine machine, LmStudioExitStop exitStop) {
         this.lms = lms;
         this.machine = machine;
+        this.exitStop = exitStop;
     }
 
     /**
@@ -49,7 +50,14 @@ public final class LmStudioHost implements ManagedService {
             appLog("LM Studio: the install in " + owned.get().homeDir() + " has no lms command, so it was not started.");
             return null;
         }
-        return new LmStudioHost(lms.get(), new LocalLmStudioMachine(line -> log.info("lms: {}", line)));
+        return new LmStudioHost(lms.get(), loggedMachine(), LmStudioExitStop.INSTANCE);
+    }
+
+    /**
+     * A machine whose {@code lms} output goes to the LM Studio log only - for work no dialog is watching.
+     */
+    static LmStudioMachine loggedMachine() {
+        return new LocalLmStudioMachine(line -> log.info("lms: {}", line));
     }
 
     /**
@@ -86,7 +94,7 @@ public final class LmStudioHost implements ManagedService {
             }
             loadWithVegasContext();
             running = true;
-            Runtime.getRuntime().addShutdownHook(onExit);
+            exitStop.arm(lms, this::shutDown);
             appLog("LM Studio started with " + MODEL + ".");
         } catch (InstallException e) {
             appLog("LM Studio could not be started: " + e.getMessage(), e);
@@ -115,12 +123,8 @@ public final class LmStudioHost implements ManagedService {
     @Override
     public void stop() {
         if (!running) return;
-        try {
-            Runtime.getRuntime().removeShutdownHook(onExit);
-        } catch (IllegalStateException exiting) {
-            // WHY: the app is already exiting, and the hook is stopping LM Studio itself.
-            return;
-        }
+        // WHY: when the app is already exiting, the exit hook is stopping LM Studio itself.
+        if (!exitStop.disarm()) return;
         shutDown();
     }
 
@@ -130,6 +134,13 @@ public final class LmStudioHost implements ManagedService {
      */
     private void shutDown() {
         running = false;
+        shutDown(lms, machine);
+    }
+
+    /**
+     * Unloads every model, stops the server and the daemon, each tried even when one before it failed.
+     */
+    static void shutDown(Path lms, LmStudioMachine machine) {
         tryTo("unload the model", () -> machine.unloadAll(lms));
         tryTo("stop the server", () -> machine.stopServer(lms));
         tryTo("stop the daemon", () -> machine.daemonDown(lms));

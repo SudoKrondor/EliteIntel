@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.function.Consumer;
 
 /**
  * Installs LM Studio, or sets up one already here, step by step (docs/LM_STUDIO_INSTALL_ASSISTANCE.md, "The
@@ -53,6 +54,10 @@ public final class LmStudioInstaller {
      * How long a finished download may take to show in LM Studio's model list before the install gives up on it.
      */
     private final Duration listingWait;
+    /**
+     * Has the app's own LM Studio, given its {@code lms}, stopped when the app exits.
+     */
+    private final Consumer<Path> stopOnExit;
 
     private volatile boolean cancelled;
     private volatile InstallStep current = InstallStep.CHECK;
@@ -67,12 +72,13 @@ public final class LmStudioInstaller {
 
     private LmStudioInstaller(LoggedProgress progress, FieldsSaver saver, LmStudioInstallManager installs) {
         this(new LocalLmStudioMachine(progress::log), progress, saver, installs,
-                InstallFolder.REQUIRED_BYTES, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(2));
+                InstallFolder.REQUIRED_BYTES, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(2),
+                lms -> LmStudioExitStop.INSTANCE.arm(lms, () -> LmStudioHost.shutDown(lms, LmStudioHost.loggedMachine())));
     }
 
     LmStudioInstaller(LmStudioMachine machine, InstallProgress progress, FieldsSaver saver,
                       LmStudioInstallManager installs, long requiredBytes, Duration downloadPoll,
-                      Duration downloadStall, Duration listingWait) {
+                      Duration downloadStall, Duration listingWait, Consumer<Path> stopOnExit) {
         this.machine = machine;
         this.progress = progress;
         this.saver = saver;
@@ -81,6 +87,7 @@ public final class LmStudioInstaller {
         this.downloadPoll = downloadPoll;
         this.downloadStall = downloadStall;
         this.listingWait = listingWait;
+        this.stopOnExit = stopOnExit;
     }
 
     // -------------------------------------------------------------------------
@@ -237,6 +244,10 @@ public final class LmStudioInstaller {
     // -------------------------------------------------------------------------
 
     private void setUp(Path lms, boolean owned) throws InstallException {
+        // WHY before the start, and whether or not it then starts it: the app's own LM Studio is stopped at exit
+        // however this run ends - an unfinished install has no service to stop it, and one an earlier run left
+        // running is still the app's. A machine of its own, since this run's may be cancelled by then.
+        if (owned) stopOnExit.accept(lms);
         start(lms);
         download(lms, owned);
         OptionalLong before = load(lms);

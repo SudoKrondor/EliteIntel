@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,10 +22,13 @@ class LmStudioHostTest {
     @TempDir
     Path home;
 
+    private final List<Thread> exitHooks = new ArrayList<>();
+    private final LmStudioExitStop exitStop = new LmStudioExitStop(exitHooks::add, exitHooks::remove);
+
     @Test
     void startingBringsUpTheServerAndLoadsTheModel() {
         FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
-        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine);
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop);
 
         host.start();
 
@@ -37,7 +41,7 @@ class LmStudioHostTest {
         FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
         machine.serverAnswering = true;
         machine.loaded = true;
-        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine);
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop);
 
         host.start();
 
@@ -60,7 +64,7 @@ class LmStudioHostTest {
         machine.serverAnswering = true;
         machine.loaded = true;
         machine.loadedContext = loadedContext;
-        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine);
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop);
 
         host.start();
 
@@ -72,7 +76,7 @@ class LmStudioHostTest {
     @Test
     void stoppingUnloadsTheModelAndStopsTheServerAndTheDaemon() {
         FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
-        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine);
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop);
         host.start();
         machine.calls.clear();
 
@@ -82,15 +86,44 @@ class LmStudioHostTest {
     }
 
     @Test
+    void aStartedHostIsStoppedAtExitUntilItIsStoppedItself() {
+        FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop);
+
+        host.start();
+        assertTrue(exitStop.isArmed());
+
+        host.stop();
+        assertFalse(exitStop.isArmed(), "stopped by the services, so nothing is left for the exit to stop");
+        assertTrue(exitHooks.isEmpty());
+    }
+
+    @Test
+    void aStopWhileTheAppIsExitingLeavesTheStopToTheExitHook() {
+        FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
+        LmStudioExitStop exiting = new LmStudioExitStop(exitHooks::add, hook -> {
+            throw new IllegalStateException("Shutdown in progress");
+        });
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exiting);
+        host.start();
+        machine.calls.clear();
+
+        host.stop();
+
+        assertTrue(machine.calls.isEmpty(), "the exit hook stops it, once");
+    }
+
+    @Test
     void aFailedStartStopsNothingElseAndIsNotStoppedLater() {
         FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
         machine.cancel(); // its daemon commands now fail, as a broken install's would
-        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine);
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop);
 
         assertDoesNotThrow(host::start, "the other services carry on without LM Studio");
         host.stop();
 
         assertFalse(machine.calls.contains("unload all"), "nothing was started, so nothing is stopped");
+        assertFalse(exitStop.isArmed());
     }
 
     @Test

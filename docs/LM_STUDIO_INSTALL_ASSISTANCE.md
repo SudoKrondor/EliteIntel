@@ -194,7 +194,12 @@ nothing.
 - **Stop:** `lms unload --all`, `lms server stop`, `lms daemon down`, each tried even if one before it failed.
   The model's VRAM is then free whenever the app's services are stopped.
 - **App exit:** the app exits without stopping its services, so a running host also leaves a shutdown hook that
-  stops LM Studio the same way.
+  stops LM Studio the same way. An install run of the app's own - fresh or **Continue setup**, finished or not -
+  arms the same hook before its Start step, because an unfinished install has no host to stop the daemon it
+  started (a Windows tester's kept running after the app closed, 2026-11-10). It is one hook (`LmStudioExitStop`):
+  the first to arm it keeps it, a host stopped with the services takes it back, and it skips an LM Studio whose `lms`
+  an uninstall has deleted. **Set up LM Studio** never arms it. Only a normal exit runs it: a process ended from the
+  task manager stops nothing.
 - **Brain restart:** a change to the LLM settings restarts the brain, and the host is brought in line first. It
   starts when the settings now call for it, which is how an install that just finished gets its host, and stops
   when they no longer do, such as a switch to the cloud. It is left alone when nothing changed for it, because a
