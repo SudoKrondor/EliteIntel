@@ -723,6 +723,11 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
           APPLY (the S13c-S13e review's finding 1). This also replaces that review's D1 of 2026-11-08, which would
           have left a read-only leftover out of the check and logged it; D1 was never built. The rule for a read-only
           binds file or `.buttonMap` a write would **delete** is unchanged.
+        - **Settled from the S13eR review (Alan, 2026-11-09), to be built in Storage S13eR2:** **the move changes no
+          flag.** S13eR cleared a set read-only flag before the move, for a move to another drive; that goes. A
+          read-only leftover on another drive is then not moved and is reported so, as any failed move is. **A plain
+          file converted, or merged into its twin, whose move fails keeps no report line of its own** - the failure
+          line names it, and the next check moves it as a twin. Accepted (principle 13).
       - **BindForge is not a backup system.** After the move it does nothing with that folder: it is not listed in File
         Manager, nothing restores from it, and it is never cleaned. The user opens it in the file manager.
       - *To confirm at the sources:* a leftover `StartPreset.start` (no generation number) is moved too, as the rule's
