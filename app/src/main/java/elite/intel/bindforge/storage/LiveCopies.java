@@ -387,11 +387,12 @@ final class LiveCopies {
 
         /**
          * Moves one file into this write's folder in Leftover User Files, made at the first move and stamped as a backup
-         * is (Storage S13d). <strong>Moved whatever its read-only flag</strong> (Alan, 2026-11-09, Storage S13eR): the
-         * flag protects a file from being deleted, and a leftover is kept, in Leftover User Files. <strong>The move
-         * changes no flag</strong> (Alan, 2026-11-09, Storage S13eR2): a read-only file Leftover User Files is on another
-         * drive from cannot be moved, since that move copies and deletes. One that cannot be moved stays where it is,
-         * reported.
+         * is (Storage S13d); a first move that fails takes the folder away again. <strong>Moved whatever its read-only
+         * flag</strong> (Alan, 2026-11-09, Storage S13eR): the flag protects a file from being deleted, and a leftover is
+         * kept, in Leftover User Files. <strong>The move changes no flag</strong> (Alan, 2026-11-09, Storage S13eR2), and
+         * the flag does not stop it: on Windows both folders are under LOCALAPPDATA, one drive, so the move is a rename;
+         * on Linux a move to another drive copies and unlinks, which a read-only file allows. One that cannot be moved
+         * stays where it is, reported.
          */
         void moveAway(Path file, LeftoverFolder leftovers) {
             if (!Files.isRegularFile(file)) return;
@@ -409,6 +410,23 @@ final class LiveCopies {
             } catch (IOException e) {
                 failures.add(name + ": not moved to Leftover User Files: " + reason(e));
                 log.warn("Could not move {} to Leftover User Files", file, e);
+                if (moved.isEmpty()) discardEmptyFolder();
+            }
+        }
+
+        /**
+         * Takes this write's folder in Leftover User Files away again while nothing has gone into it, so a first move
+         * that fails leaves no empty folder - the file stays, and every check after tries it again.
+         */
+        private void discardEmptyFolder() {
+            if (movedTo == null) return;
+            try {
+                Files.deleteIfExists(movedTo);
+                movedTo = null;
+            } catch (IOException e) {
+                // WHY: something is in it - what a failed copy-and-delete left behind - so it stays, for the user to
+                // find, and the failure line already names the file.
+                log.warn("Could not take away the folder {} in Leftover User Files that nothing was moved to", movedTo, e);
             }
         }
 

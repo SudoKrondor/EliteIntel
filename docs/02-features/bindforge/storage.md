@@ -724,8 +724,11 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
           have left a read-only leftover out of the check and logged it; D1 was never built. The rule for a read-only
           binds file or `.buttonMap` a write would **delete** is unchanged.
         - **Settled from the S13eR review (Alan, 2026-11-09), built in Storage S13eR2 the same day:** **the move
-          changes no flag.** S13eR cleared a set read-only flag before the move, for a move to another drive; that goes. A
-          read-only leftover on another drive is then not moved and is reported so, as any failed move is. **A plain
+          changes no flag.** S13eR cleared a set read-only flag before the move, for a move to another drive; that goes.
+          *Corrected 2026-11-10 (the S13eR2 review's finding 1):* the flag does not stop the move either. On Windows the
+          bindings folder and Leftover User Files are both under `LOCALAPPDATA`, one drive, so the move is a rename; on
+          Linux a move to another drive copies and unlinks, which a read-only file allows. *Until then this said a
+          read-only leftover on another drive is not moved.* A move that does fail is reported, as any failed move is. **A plain
           file converted, or merged into its twin, whose move fails keeps no report line of its own** - the failure
           line names it, and the next check moves it as a twin. Accepted (principle 13).
       - **BindForge is not a backup system.** After the move it does nothing with that folder: it is not listed in File
@@ -760,7 +763,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       under a Wine prefix). One that fails stays where it is and is reported.
     - *Decided while building:* one write's moves go into one date-stamped folder (`yyyy-MM-dd_HH-mm-ss`, as a backup is
       stamped; `-2` for a second write in the same second), made at the first move, so a write that moves nothing makes
-      no folder. The moves run after the write; if a binds file could not be written they are held back with the
+      no folder. A first move that fails takes the folder away again (the S13eR2 review's finding 2, 2026-11-10): the
+      file stays, every check after tries it again, and each try had left one more empty folder. The moves run after the write; if a binds file could not be written they are held back with the
       removals, since a converted file's binds file may be the one that failed. A file only moved changes nothing of the
       working copy, so APPLY's backup holds the working copy only when a plain file is converted (the S13aR-S13b
       review's finding 6, which S13e was to fold in). A plain file that reads as a binds file but has no `<Root>` to

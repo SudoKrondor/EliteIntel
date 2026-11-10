@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -492,20 +493,48 @@ class LiveCopiesTest {
         assertFalse(Files.exists(leftovers));
     }
 
-    /** A move that fails leaves the file where it is, reported. */
+    /**
+     * A move that fails leaves the file where it is, reported, and no empty date-stamped folder behind - the next check
+     * tries the file again, and each try would leave one more.
+     */
     @Test
     void aMoveThatFailsLeavesTheFileAndIsReported() throws IOException {
         write(bindings.resolve("a.txt"), "a");
+        Path leftovers = temp.resolve("Leftover User Files");
         LiveCopies failing = new LiveCopies(new BackupSources(bindings, List.of()), (from, to) -> {
             throw new IOException("disk full");
-        }, () -> temp.resolve("Leftover User Files"));
+        }, () -> leftovers);
 
         WriteReport report = failing.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(), Set.of("a.txt"));
 
         assertTrue(Files.exists(bindings.resolve("a.txt")));
         assertEquals(List.of(), report.bindings().moved());
+        assertNull(report.bindings().movedTo());
         assertTrue(report.bindings().failures().stream().anyMatch(line -> line.startsWith("a.txt: not moved")),
                 report.bindings().failures().toString());
+        try (Stream<Path> made = Files.list(leftovers)) {
+            assertEquals(List.of(), made.toList(), "the folder made for the failed move is taken away again");
+        }
+    }
+
+    /** A later move that fails keeps the folder: what moved before it is there. */
+    @Test
+    void aMoveThatFailsAfterOneThatWorkedKeepsTheFolder() throws IOException {
+        write(bindings.resolve("a.txt"), "a");
+        write(bindings.resolve("b.txt"), "b");
+        LiveCopies.Mover refusingB = (from, to) -> {
+            if (from.getFileName().toString().equals("b.txt")) throw new IOException("disk full");
+            Files.move(from, to);
+        };
+        LiveCopies partly = new LiveCopies(new BackupSources(bindings, List.of()), refusingB,
+                () -> temp.resolve("Leftover User Files"));
+
+        WriteReport report = partly.write(set(), LiveCopies.LeaveAlone.NONE, Set.of(),
+                new LinkedHashSet<>(List.of("a.txt", "b.txt")));
+
+        assertEquals(List.of("a.txt"), report.bindings().moved());
+        assertEquals("a", Files.readString(report.bindings().movedTo().resolve("a.txt")));
+        assertTrue(Files.exists(bindings.resolve("b.txt")));
     }
 
     /** A binds file that fails holds the moves back too: a converted plain file's binds file may be the one. */
