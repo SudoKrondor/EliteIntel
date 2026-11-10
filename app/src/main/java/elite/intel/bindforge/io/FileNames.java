@@ -59,8 +59,11 @@ public final class FileNames {
      * What may stay in the bindings folder, ignoring case - a binds file, a preset file, the game's loading log (Alan,
      * 2026-11-08, Storage S13d Q5: so nothing that could be the game's own file is ever moved).
      */
+    // WHY: built from the two patterns above so the shapes are written once; ignoring case here alone is Storage
+    // S13d's Q5, the one exception to the kinds being matched exactly.
     private static final Pattern STAYS_IN_BINDINGS_FOLDER = Pattern.compile(
-            ".+\\.\\d+\\.\\d+\\.binds|StartPreset\\.\\d+\\.start|BindingLoadingErrors\\.log", Pattern.CASE_INSENSITIVE);
+            BINDS_FILE.pattern() + "|" + PRESET_FILE.pattern() + "|BindingLoadingErrors\\.log",
+            Pattern.CASE_INSENSITIVE);
 
     /** The most digits a version number is read with; a longer one counts as the largest. */
     private static final int MAX_DIGITS = 6;

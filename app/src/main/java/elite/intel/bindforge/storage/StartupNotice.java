@@ -32,8 +32,8 @@ import java.util.function.Supplier;
  *     <li><strong>A binds file named like a factory one</strong> ({@link BindNameEntry#shadowsFactory()}) - the working
  *     copy's, once one exists, judged against the reachable installations' factory files.</li>
  *     <li><strong>Files the check will move to Leftover User Files</strong> ({@link Leftovers}; Storage S13b, S13d) -
- *     every one, not only plain binds files, but a read-only one, which the check leaves where it is and names once in
- *     its report (Alan, 2026-11-08, Q4 and the S13aR-S13b review's D1). Two are named; with more, the line says how
+ *     every one, not only plain binds files, whatever its read-only flag (Alan, 2026-11-08, Q4; 2026-11-09, Storage
+ *     S13eR). Two are named; with more, the line says how
  *     many and names the first two in name order. Once a working copy exists, and <strong>not
  *     while read only</strong>, since the check that moves them is off then (Alan, 2026-11-07, Q5).</li>
  * </ol>
@@ -226,23 +226,7 @@ public final class StartupNotice {
         if (!WorkingCopy.stored().exists()) return List.of();
         Path folder = PlayerSession.getInstance().getBindingsDir();
         if (folder == null) return List.of();
-        return movable(folder, Leftovers.read(folder).files());
-    }
-
-    /**
-     * {@code names} in {@code folder} but those the check would leave where they are: read-only, or whether they are
-     * cannot be read (Alan, 2026-11-08, from the S13aR-S13b review's D1) - named once in the check's report, not at
-     * every start.
-     */
-    static List<String> movable(Path folder, List<String> names) {
-        return names.stream().filter(name -> {
-            try {
-                return !ReadOnlyFlag.isSet(folder.resolve(name));
-            } catch (IOException e) {
-                log.warn("Could not read whether {} is read-only, so it is left out of the notice", name, e);
-                return false;
-            }
-        }).toList();
+        return Leftovers.read(folder).files();
     }
 
     /** The BindNames among {@code entries} that are the user's and named like a factory one. */

@@ -206,17 +206,18 @@ class CheckFlowTest {
     }
 
     /**
-     * The report (D4): what was moved and where; each plain file moved, and why, and one converted even when its plain
-     * file was kept read-only; one kept read-only and not converted is left to the kept-read-only line.
+     * The report (D4): what was moved and where, and each plain file moved, and why. One that could not be moved has
+     * no line here - the failure line names it.
      */
     @Test
     void theReportNamesWhatWasMovedAndWhy() {
         Path to = Path.of("Leftover User Files", "2026-11-08_10-00-00");
         Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"),
-                List.of("Spare.4.2.binds"), List.of(), List.of("Spare.binds", "KeyboardMouseOnly.binds"), List.of(),
-                false, List.of("Broken.binds", "custom.binds"), to);
+                List.of("Spare.4.2.binds"), List.of(), List.of(), List.of("KeyboardMouseOnly.binds: not moved"),
+                false, List.of("Broken.binds", "Spare.binds", "custom.binds"), to);
 
-        assertEquals("\n" + getText("bindings.check.result.moved", "Broken.binds, custom.binds", to.toString())
+        assertEquals("\n" + getText("bindings.check.result.moved", "Broken.binds, Spare.binds, custom.binds",
+                        to.toString())
                         + "\n" + getText("bindings.check.result.plainConverted", "Spare.binds", "Spare.4.2.binds")
                         + "\n" + getText("bindings.check.result.plainTwin", "custom.binds", CUSTOM),
                 CheckFlow.leftoversReport(written(bindings)));
@@ -281,17 +282,13 @@ class CheckFlowTest {
         assertEquals(Map.of(row.id(), Side.LIVE), CheckFlow.kept(found, found, Map.of(row.id(), Side.LIVE)));
     }
 
-    /**
-     * Finding 3 of the S13aR-S13b review: the kept-read-only lines. A binds file the write would have removed has the
-     * old line; a file it would have moved has its own (Storage S13d, Q6).
-     */
+    /** A read-only binds file the write would have removed is kept, and named in the kept-read-only line. */
     @Test
-    void aReadOnlyFileKeptHasTheLineForWhatWouldHaveBeenDone() {
+    void aReadOnlyBindsFileKeptIsNamed() {
         Place bindings = new Place(WriteReport.Kind.BINDINGS_FOLDER, null, Path.of("Bindings"), List.of(), List.of(),
-                List.of("Live.4.2.binds", "Spare.binds", "notes.txt"), List.of());
+                List.of("Live.4.2.binds"), List.of());
 
-        assertEquals("\n" + getText("bindings.check.result.keptReadOnly", "Live.4.2.binds")
-                        + "\n" + getText("bindings.check.result.keptReadOnlyLeftover", "Spare.binds, notes.txt"),
+        assertEquals("\n" + getText("bindings.check.result.keptReadOnly", "Live.4.2.binds"),
                 CheckFlow.keptReadOnly(written(bindings)));
     }
 

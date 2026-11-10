@@ -55,9 +55,6 @@ final class LiveCopies {
     /** A failure line: a .buttonMap the set lacks was kept because its read-only flag could not be read. */
     static final String NOT_REMOVED_FLAG_UNREADABLE = "not removed: whether it is read-only could not be read";
 
-    /** A failure line: a file was not moved to Leftover User Files because its read-only flag could not be read. */
-    static final String NOT_MOVED_FLAG_UNREADABLE = "not moved: whether it is read-only could not be read";
-
     /** The date stamp of a folder in Leftover User Files - a backup's (Storage S13d). */
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
@@ -376,7 +373,7 @@ final class LiveCopies {
 
         /** Removes one file; a read-only one is kept and reported, never unprotected to delete it. */
         void remove(Path file) {
-            if (!Files.isRegularFile(file) || kept(file, NOT_REMOVED_FLAG_UNREADABLE)) return;
+            if (!Files.isRegularFile(file) || kept(file)) return;
             try {
                 Files.delete(file);
                 removed.add(file.getFileName().toString());
@@ -387,13 +384,16 @@ final class LiveCopies {
 
         /**
          * Moves one file into this write's folder in Leftover User Files, made at the first move and stamped as a backup
-         * is (Storage S13d). A read-only one is kept and reported, as a removal is (Q6): Windows would let it move, but
-         * the user protected it. One that cannot be moved stays where it is, reported.
+         * is (Storage S13d). <strong>Moved whatever its read-only flag</strong> (Alan, 2026-11-09, Storage S13eR): the
+         * flag protects a file from being deleted, and a leftover is kept, in Leftover User Files. One that cannot be
+         * moved stays where it is, reported.
          */
         void moveAway(Path file, LeftoverFolder leftovers) {
-            if (!Files.isRegularFile(file) || kept(file, NOT_MOVED_FLAG_UNREADABLE)) return;
+            if (!Files.isRegularFile(file)) return;
             String name = file.getFileName().toString();
             try {
+                // WHY: a move to another drive copies and deletes, and Windows refuses to delete a read-only file.
+                if (ReadOnlyFlag.isSet(file)) ReadOnlyFlag.set(file, false);
                 if (movedTo == null) {
                     Path folder = uniqueFolder(leftovers.get(), LocalDateTime.now().withNano(0).format(STAMP));
                     Files.createDirectories(folder);
@@ -411,9 +411,9 @@ final class LiveCopies {
 
         /**
          * Whether {@code file} is kept because the user made it read-only - or because whether they did cannot be read,
-         * reported with {@code notDone}. A protected file is never unprotected to take it away.
+         * reported as a failure. A protected file is never unprotected to delete it.
          */
-        private boolean kept(Path file, String notDone) {
+        private boolean kept(Path file) {
             String name = file.getFileName().toString();
             // WHY: the user protected it, so it is not taken away against that - asked first, because on Linux the
             // delete would succeed whatever the file's own permission. They are told how to let it go, rather than shown
@@ -423,7 +423,7 @@ final class LiveCopies {
             } catch (IOException e) {
                 // WHY: a file whose protection cannot be read may be protected, so it is kept, not taken away, and
                 // reported (Krondor's review, 2026-10-27). Taken for unprotected, it was deleted.
-                failures.add(name + ": " + notDone + " (" + reason(e) + ")");
+                failures.add(name + ": " + NOT_REMOVED_FLAG_UNREADABLE + " ("+ reason(e) + ")");
                 log.warn("Left {} where it is: whether it is read-only could not be read", file, e);
                 return true;
             }

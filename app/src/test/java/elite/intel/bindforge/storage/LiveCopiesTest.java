@@ -427,22 +427,24 @@ class LiveCopiesTest {
 
     /**
      * What does not belong in the bindings folder is moved, never deleted, into one date-stamped folder in Leftover User
-     * Files for the write (Storage S13d); a read-only one is kept and reported (Q6).
+     * Files for the write (Storage S13d) - a read-only one too: the flag protects a file from being deleted, and this
+     * one is kept (Alan, 2026-11-09, Storage S13eR).
      */
     @Test
-    void filesNamedToMoveGoToOneStampedFolderUnlessReadOnly() throws IOException {
+    void filesNamedToMoveGoToOneStampedFolderWhateverTheirReadOnlyFlag() throws IOException {
         write(bindings.resolve("Spare.binds"), "<Spare/>");
         write(bindings.resolve("Custom.4.2 (2).binds"), "<copy/>");
-        Path kept = bindings.resolve("KeyboardMouseOnly.binds");
-        write(kept, "<KeyboardMouseOnly/>");
-        protect(kept);
+        Path readOnly = bindings.resolve("KeyboardMouseOnly.binds");
+        write(readOnly, "<KeyboardMouseOnly/>");
+        protect(readOnly);
         Path leftovers = temp.resolve("Leftover User Files");
 
         WriteReport report = movingTo(leftovers).write(set(), LiveCopies.LeaveAlone.NONE, Set.of(),
                 Set.of("Spare.binds", "Custom.4.2 (2).binds", "KeyboardMouseOnly.binds"));
 
         WriteReport.Place place = report.bindings();
-        assertEquals(List.of("Custom.4.2 (2).binds", "Spare.binds"), place.moved().stream().sorted().toList());
+        assertEquals(List.of("Custom.4.2 (2).binds", "KeyboardMouseOnly.binds", "Spare.binds"),
+                place.moved().stream().sorted().toList());
         try (Stream<Path> made = Files.list(leftovers)) {
             assertEquals(List.of(place.movedTo()), made.toList(), "one folder for the write");
         }
@@ -451,8 +453,10 @@ class LiveCopiesTest {
         assertEquals("<Spare/>", Files.readString(place.movedTo().resolve("Spare.binds")));
         assertFalse(Files.exists(bindings.resolve("Spare.binds")));
         assertFalse(Files.exists(bindings.resolve("Custom.4.2 (2).binds")));
-        assertTrue(Files.exists(kept));
-        assertEquals(List.of("KeyboardMouseOnly.binds"), place.keptReadOnly());
+        assertFalse(Files.exists(readOnly));
+        assertEquals("<KeyboardMouseOnly/>", Files.readString(place.movedTo().resolve("KeyboardMouseOnly.binds")));
+        assertEquals(List.of(), place.keptReadOnly());
+        assertEquals(List.of(), place.failures());
         assertEquals(List.of(), place.removed());
     }
 

@@ -218,7 +218,7 @@ public class BindingsMonitor {
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
                         if (changed.toString().endsWith(".binds")) {
-                            File activeFile = bindingsLoader.getLatestBindsFile();
+                            File activeFile = bindingsLoader.bindsFileToRead();
                             boolean activeFileWasModified = activeFile.getName().equals(changed.toString());
                             boolean activeFileChanged = !activeFile.equals(currentBindsFile);
                             if (activeFileWasModified || activeFileChanged) {
@@ -257,7 +257,7 @@ public class BindingsMonitor {
 
     private void parseAndUpdateBindings() {
         try {
-            currentBindsFile = bindingsLoader.getLatestBindsFile();
+            currentBindsFile = bindingsLoader.bindsFileToRead();
             Map<String, KeyBindingsParser.BindingSlots> slots = parser.parseBindingSlots(currentBindsFile);
             snapshot = new BindingsSnapshot(slots, parser.toExecutableBindings(slots));
             parsedFileFingerprint = fingerprintOf(currentBindsFile);
@@ -330,12 +330,12 @@ public class BindingsMonitor {
 
     /**
      * Returns the file currently being monitored, falling back to a fresh
-     * {@link BindingsLoader#getLatestBindsFile()} lookup if monitoring hasn't started or hasn't
+     * {@link BindingsLoader#bindsFileToRead()} lookup if monitoring hasn't started or hasn't
      * found one yet. Shared by anything that needs "the active game binds file" outside the
      * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
      */
     public File resolveActiveBindsFile() throws IOException {
-        return currentBindsFile != null ? currentBindsFile : bindingsLoader.getLatestBindsFile();
+        return currentBindsFile != null ? currentBindsFile : bindingsLoader.bindsFileToRead();
     }
 
     /**

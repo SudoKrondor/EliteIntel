@@ -18,7 +18,7 @@ public class ToolGenerateBindings {
     public static void main(String[] args) {
         try {
             KeyBindingsParser parser = KeyBindingsParser.getInstance();
-            File bindingsFile = new BindingsLoader().getLatestBindsFile();
+            File bindingsFile = new BindingsLoader().bindsFileToRead();
             Map<String, KeyBindingsParser.KeyBinding> bindings = new TreeMap<>(parser.parseBindings(bindingsFile));
 
             StringBuilder sb = new StringBuilder();

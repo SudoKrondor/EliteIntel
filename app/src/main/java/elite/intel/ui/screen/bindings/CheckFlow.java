@@ -657,9 +657,8 @@ final class CheckFlow {
     /**
      * What was moved to Leftover User Files, and where (Storage S13d), then a line for each plain binds file moved - why,
      * or what it was converted to (Storage S13b, D4), or the twin its kept lines went into (Storage S13e). A converted or
-     * merged one kept because it is read-only is still named, since its binds file was written; it is in
-     * {@link #keptReadOnly}'s line too. Nothing for a file held back when the
-     * bindings folder's write failed: the failure line says so. Shared with APPLY's report.
+     * merged one that could not be moved has no line here: the failure line names it. Nothing for a file held back when
+     * the bindings folder's write failed: the failure line says so. Shared with APPLY's report.
      */
     static String leftoversReport(Written written) {
         WriteReport.Place bindings = written.report().bindings();
@@ -670,15 +669,13 @@ final class CheckFlow {
         }
         for (PlainBinds.Tidied file : written.leftovers().plain().tidied()) {
             boolean moved = holds(bindings.moved(), file.file());
-            boolean kept = holds(bindings.keptReadOnly(), file.file());
             String line = switch (file.fate()) {
                 case TWIN -> moved ? getText("bindings.check.result.plainTwin", file.file(), file.about()) : null;
-                case MERGED -> moved || kept
-                        ? getText("bindings.check.result.plainMerged", file.file(), file.about()) : null;
+                case MERGED -> moved ? getText("bindings.check.result.plainMerged", file.file(), file.about()) : null;
                 case TWIN_LEAVES -> moved
                         ? getText("bindings.check.result.plainTwinLeaves", file.file(), file.about()) : null;
                 case FACTORY -> moved ? getText("bindings.check.result.plainFactory", file.file(), file.about()) : null;
-                case CONVERTED -> moved || kept
+                case CONVERTED -> moved
                         ? getText("bindings.check.result.plainConverted", file.file(), file.about()) : null;
             };
             if (line != null) text.append('\n').append(line);
@@ -691,22 +688,13 @@ final class CheckFlow {
     }
 
     /**
-     * The files in the bindings folder kept because they are read-only, shared with APPLY's report since S8b removes
-     * such files too: a live-only binds file the write would have removed, and - a line of its own - a file it would
-     * have moved to Leftover User Files (Storage S13d, Q6).
+     * The binds files in the bindings folder kept because they are read-only - a live-only one the write would have
+     * removed - shared with APPLY's report since S8b removes such files too. A file moved to Leftover User Files is
+     * never kept for its flag (Storage S13eR).
      */
     static String keptReadOnly(Written written) {
-        Set<String> toMove = written.leftovers().move();
         List<String> kept = written.report().bindings().keptReadOnly();
-        List<String> notRemoved = kept.stream().filter(name -> !holds(toMove, name)).toList();
-        List<String> notMoved = kept.stream().filter(name -> holds(toMove, name)).toList();
-        StringBuilder text = new StringBuilder();
-        if (!notRemoved.isEmpty()) {
-            text.append('\n').append(getText("bindings.check.result.keptReadOnly", String.join(", ", notRemoved)));
-        }
-        if (!notMoved.isEmpty()) {
-            text.append('\n').append(getText("bindings.check.result.keptReadOnlyLeftover", String.join(", ", notMoved)));
-        }
-        return text.toString();
+        if (kept.isEmpty()) return "";
+        return '\n' + getText("bindings.check.result.keptReadOnly", String.join(", ", kept));
     }
 }

@@ -331,7 +331,7 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
       it, no uses it and warns that functions may not work when the game's binds and the assistant's differ. See the
       [brief](../../05-build-plan/storage.md#slices).
 
-    Built in Storage S13c: `BindingsLoader` (`getLatestBindsFile`, `sectionsNotIn`, a constructor taking the
+    Built in Storage S13c: `BindingsLoader` (`getLatestBindsFile` - `bindsFileToRead` since Storage S13eR - `sectionsNotIn`, a constructor taking the
     `ControlSchemes` folders), `GameInstallation.reachable`, `InstallationRegistry.reachableControlSchemes`.
     *Until 2026-11-08 a line whose preset had no file in the bindings folder passed to the next, and when no line had
     one the newest `.binds` in the folder was read, a plain file included.*
@@ -667,9 +667,10 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       named: alone it asks nothing - the first click tells it, APPLY writes and the report names it (*until 2026-11-08;
       it now goes to Leftover User Files, below*). A converted file
       changes the working copy, so APPLY's backup holds the working copy as it was.
-    - **D4: the report names each file removed, and why, or converted, and to what**; the log does too. **A read-only
+    - **D4: the report names each file removed, and why, or converted, and to what**; the log does too. ~~**A read-only
       plain file is kept and reported** with the kept-read-only line, as any removal is; a converted one's binds file is
-      still written (Q4).
+      still written (Q4).~~ *Replaced 2026-11-09 (Alan, Storage S13eR): a plain file is moved whatever its read-only
+      flag - below.*
     - **At Elite-Intel start** the plain files are the notice's fourth line, after the factory-name line - once a
       working copy exists, and **not while read only**, since the check that tidies them up is off then (Q5). *Since
       2026-11-08 the line names only the files the check will move* - below.
@@ -711,15 +712,25 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
         Krondor's finding that restoring APPLY's backup could lose a converted file's bindings - that backup, taken
         before the write, holds neither the plain file nor the converted one, and the plain file now survives the
         conversion in Leftover User Files.
-      - **A read-only file the check cannot move** stays where it is and is named once in the check's report, with the
-        kept-read-only line, as any removal is (Q4).
+      - ~~**A read-only file the check cannot move** stays where it is and is named once in the check's report, with the
+        kept-read-only line, as any removal is (Q4).~~
+        - **Replaced 2026-11-09 (Alan, at Storage S13eR's sources): a leftover is moved whatever its read-only flag.**
+          There is no read-only rule for what does not belong in the bindings folder, plain files included: the flag
+          protects a file from being deleted, and a leftover is kept, in Leftover User Files. Alan: *"A plain
+          read-only file that ends up in the bindings folder is garbage... this never happens."* (principle 13). It
+          was never asked for - the rule was carried over from removals (rule 10, *Settled with Storage S3's sources*)
+          at S13b's Q4 and S13d's Q6 - and it made the check ask about such a file at every first click and every
+          APPLY (the S13c-S13e review's finding 1). This also replaces that review's D1 of 2026-11-08, which would
+          have left a read-only leftover out of the check and logged it; D1 was never built. The rule for a read-only
+          binds file or `.buttonMap` a write would **delete** is unchanged.
       - **BindForge is not a backup system.** After the move it does nothing with that folder: it is not listed in File
         Manager, nothing restores from it, and it is never cleaned. The user opens it in the file manager.
       - *To confirm at the sources:* a leftover `StartPreset.start` (no generation number) is moved too, as the rule's
         words say; a folder inside the bindings folder is left alone; a warning holding only files to move offers
         *Tidy up* / *Not now* as one holding only plain files does (Q2), Not now cancelling APPLY (Q3).
-    - **The line at Elite-Intel start names only the files the check will actually move** (the review's D1). A
-      read-only file is not named at every start - only once, in the check's report. *To confirm at the sources:* the
+    - **The line at Elite-Intel start names only the files the check will actually move** (the review's D1). ~~A
+      read-only file is not named at every start - only once, in the check's report.~~ *Since 2026-11-09 (Storage
+      S13eR) the check moves a read-only one too, so the line names it.* *To confirm at the sources:* the
       line counts every file the check will move, not only plain ones.
 
     **Settled with Storage S13d's sources (Alan, 2026-11-08, Q1-Q7 as recommended)** - Leftover User Files:
@@ -737,9 +748,9 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **Q5: what stays is matched ignoring case** - `<name>.<major>.<minor>.binds`, `StartPreset.N.start` and
       `BindingLoadingErrors.log` in any case - so nothing that could be the game's own file is moved
       (`FileNames.staysInBindingsFolder`). Every other match of a kind stays exact (S13a).
-    - **Q6: a read-only file is kept**, checked before the move as a removal checks it - Windows would let it move, but
+    - ~~**Q6: a read-only file is kept**, checked before the move as a removal checks it - Windows would let it move, but
       the user protected it. The report gives it its own line, saying it was left rather than moved; the startup line
-      leaves it out.
+      leaves it out.~~ **Replaced 2026-11-09 (Alan, Storage S13eR):** moved like any other, above.
     - **Q7: the move is `Files.move`**, which copies and deletes when the two folders are on different drives (possible
       under a Wine prefix). One that fails stays where it is and is reported.
     - *Decided while building:* one write's moves go into one date-stamped folder (`yyyy-MM-dd_HH-mm-ss`, as a backup is
@@ -749,6 +760,11 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       working copy, so APPLY's backup holds the working copy only when a plain file is converted (the S13aR-S13b
       review's finding 6, which S13e was to fold in). A plain file that reads as a binds file but has no `<Root>` to
       convert by is a bug, so it fails fast (the review's finding 4, likewise).
+
+    *Built in Storage S13eR (2026-11-09):* `LiveCopies.moveAway` no longer asks the read-only flag - it clears one
+    that is set, since a move to another drive copies and deletes and Windows refuses to delete a read-only file;
+    `StartupNotice.movable`, the report line `bindings.check.result.keptReadOnlyLeftover` (nine bundles) and
+    `CheckFlow`'s kept branches are gone.
 
     Built in Storage S13d: `bindforge.storage.Leftovers` (read, plan, log); `FileNames.staysInBindingsFolder`;
     `AppPaths.getLeftoverUserFilesDir`; `LiveCopies` moving (`LeftoverFolder`), `WriteReport.Place.moved` / `movedTo`;
@@ -787,11 +803,16 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **Q5: `Tidied.to` became `about`**, its Javadoc saying what it holds for each fate (the review's finding 7): a
       factory file's name would read *"KeyboardMouseOnly.binds holds the factory file KeyboardMouseOnly.binds"*.
     - **Q6: a plain file lacking only what its twin has** is moved with the existing *"is already in the game's folder"*
-      report line. One whose kept lines went into its twin has a line of its own; one kept read-only still has it, since
-      the twin was written.
+      report line. One whose kept lines went into its twin has a line of its own. *Until 2026-11-09 one kept read-only
+      still had that line, since the twin was written; no leftover is kept for its flag now (Storage S13eR, above).*
     - *Decided while building:* APPLY's backup holds the working copy when a twin is merged into, as when a file is
       converted. The device files' reconcile reads the binds files the binds rows settle, without a plain file's lines -
       a device only a plain file names does not rank red there, as with a converted file since S13b. Left (principle 13).
+    - ~~*Accepted (Alan, 2026-11-08, the S13c-S13e review's D2, principle 13):* when a plain file's only twin is a live-only
+      binds file and the user answers *Put mine back*, that twin leaves the set, the plain file has no twin at the
+      write and is converted - possibly onto the twin's own name - and the rows the warning showed go unused.~~
+      *Replaced the next day by Q4's amendment above (Krondor, 2026-11-09): the plain file is only moved. Struck at
+      Storage S13eR's sources (Alan, 2026-11-09, Q1).*
     - *Also, from the S13aR-S13b review (D5):* escaping the `PresetName` lives in `Create.withPresetName` (finding 5),
       and the support report names a second spelling it left out (finding 8).
 
