@@ -175,10 +175,91 @@ class DeviceEditsTest {
 
     @Test
     void clearTakesOutTheElementAndItsLabels() throws IOException {
-        ConfigurationFiles cleared = DeviceEdits.clear(set(), "LVWAP");
+        ConfigurationFiles cleared = DeviceEdits.clear(set(), "LVWAP").files();
 
         assertEquals(List.of("T-Rudder"), names(cleared), "Frontier's is never touched");
         assertTrue(cleared.buttonMaps().isEmpty());
+    }
+
+    /**
+     * CLEAR on a device the bindings name moves them to its hardware ID, VID then PID, upper case - how the game names a
+     * device with no entry (A19). Other controllers' ids are left alone.
+     */
+    @Test
+    void clearMovesTheBindingsToTheHardwareId() throws IOException {
+        DeviceEdits.Changed changed = DeviceEdits.clear(set(), "LVWAP");
+
+        assertEquals(2, changed.bindingsMoved());
+        String binds = binds(changed.files());
+        assertFalse(binds.contains("\"LVWAP\""));
+        assertTrue(binds.contains("<Primary Device=\"334483F4\" Key=\"Joy_1\""));
+        assertTrue(binds.contains("<Secondary Device=\"334483F4\" Key=\"Joy_2\""));
+        assertTrue(binds.contains("Device=\"334403F5\"") && binds.contains("Device=\"334403F4\""));
+        assertTrue(binds.contains("Device=\"T-Rudder\""));
+    }
+
+    @Test
+    void theClearTargetIsTheHardwareIdShownAsVidColonPid() throws IOException {
+        DeviceEdits.ClearTarget target = DeviceEdits.clearTarget(set(), "LVWAP").orElseThrow();
+
+        assertEquals("334483F4", target.device());
+        assertFalse(target.element());
+        assertEquals("3344:83F4", target.shown());
+    }
+
+    /** One device spelled two ways costs the whole file (format 4.3), so the id in another case is written the same. */
+    @Test
+    void clearWritesTheIdInOtherCasesTheSameWayButNotPidFirst() throws IOException {
+        ConfigurationFiles files = set().withBindingsFile(BINDS, bytes("""
+                <Root PresetName="Custom">
+                  <A><Primary Device="LVWAP" Key="Joy_1" /><Secondary Device="334483f4" Key="Joy_2" /></A>
+                  <B><Primary Device="83F43344" Key="Joy_3" /></B>
+                </Root>
+                """));
+
+        String binds = binds(DeviceEdits.clear(files, "LVWAP").files());
+
+        assertFalse(binds.contains("334483f4"));
+        assertTrue(binds.contains("<Secondary Device=\"334483F4\""));
+        assertTrue(binds.contains("Device=\"83F43344\""), "a rewrite never matches defensively");
+    }
+
+    /** A shadow's bindings go to the element the game matches once it is gone - Frontier's - never to hex. */
+    @Test
+    void clearingAShadowMovesTheBindingsToFrontiersElement() throws IOException {
+        ConfigurationFiles shadowed =
+                DeviceEdits.shadow(set(), "T-Rudder", "MyRudder", "044F", "B679", FIRE, false, stock, shipped).files();
+
+        DeviceEdits.ClearTarget target = DeviceEdits.clearTarget(shadowed, "MyRudder").orElseThrow();
+        DeviceEdits.Changed cleared = DeviceEdits.clear(shadowed, "MyRudder");
+
+        assertTrue(target.element());
+        assertEquals("T-Rudder", target.shown());
+        assertEquals(1, cleared.bindingsMoved());
+        assertTrue(binds(cleared.files()).contains("<Binding Device=\"T-Rudder\""));
+        assertEquals(List.of("LVWAP", "T-Rudder"), names(cleared.files()));
+    }
+
+    /** An element with only alternatives names no one controller: nowhere to move to, so CLEAR refuses to strand them. */
+    @Test
+    void anElementWithNoPairOfItsOwnHasNoTarget() throws IOException {
+        ConfigurationFiles files = set().withDeviceMappings(bytes("<Root><LVWAP>"
+                + "<Alternative><PID>83F4</PID><VID>3344</VID></Alternative>"
+                + "<Alternative><PID>83F5</PID><VID>3344</VID></Alternative></LVWAP></Root>"));
+
+        assertTrue(DeviceEdits.clearTarget(files, "LVWAP").isEmpty());
+        assertThrows(IOException.class, () -> DeviceEdits.clear(files, "LVWAP"));
+    }
+
+    /** With no binding naming it, such an element clears as before - there is nothing to move. */
+    @Test
+    void anElementWithNoPairOfItsOwnClearsWhenNoBindingNamesIt() throws IOException {
+        ConfigurationFiles files = set()
+                .withDeviceMappings(bytes("<Root><LVWAP><Alternative><PID>83F4</PID><VID>3344</VID></Alternative>"
+                        + "<Alternative><PID>83F5</PID><VID>3344</VID></Alternative></LVWAP></Root>"))
+                .withBindingsFile(BINDS, bytes("<Root><A><Primary Device=\"Keyboard\" Key=\"Key_A\" /></A></Root>"));
+
+        assertTrue(DeviceEdits.elements(DeviceEdits.clear(files, "LVWAP").files()).isEmpty());
     }
 
     /** RESET LABELS removes the user's map - or, where Frontier ships one, puts Frontier's back byte for byte. */
@@ -198,13 +279,45 @@ class DeviceEditsTest {
     @Test
     void undoPutsBackWhatTheWorkingCopyHolds() throws IOException {
         ConfigurationFiles applied = set();
-        ConfigurationFiles cleared = DeviceEdits.clear(applied, "LVWAP");
+        ConfigurationFiles cleared = DeviceEdits.clear(applied, "LVWAP").files();
 
         ConfigurationFiles restored = DeviceEdits.restore(cleared, applied, "LVWAP", stock);
 
         assertEquals(List.of("LVWAP", "T-Rudder"), names(restored));
         assertTrue(text(restored.deviceMappings()).contains("<SupportsIcons"));
         assertEquals(Map.of("Joy_1", "LEFT TRIGGER"), DeviceEdits.labels(restored, "LVWAP"));
+        assertEquals(binds(applied), binds(restored), "the bindings CLEAR moved are back on the name");
+    }
+
+    /**
+     * The undo moves the hardware ID back to the name, never the working copy's binds files whole - so a binding
+     * edited since the CLEAR is kept, on the name (A19).
+     */
+    @Test
+    void undoKeepsBindingsEditedSinceTheClear() throws IOException {
+        ConfigurationFiles applied = set();
+        ConfigurationFiles cleared = DeviceEdits.clear(applied, "LVWAP").files();
+        String edited = binds(cleared).replace("</Root>", "<D><Primary Device=\"334483F4\" Key=\"Joy_9\" /></D></Root>");
+        cleared = cleared.withBindingsFile(BINDS, bytes(edited));
+
+        String restored = binds(DeviceEdits.restore(cleared, applied, "LVWAP", stock));
+
+        assertTrue(restored.contains("<Primary Device=\"LVWAP\" Key=\"Joy_9\""));
+        assertTrue(restored.contains("<Primary Device=\"LVWAP\" Key=\"Joy_1\""));
+        assertFalse(restored.contains("334483F4"));
+    }
+
+    /** A shadow's undo moves its bindings back from Frontier's element, as shadowing moved them there. */
+    @Test
+    void undoingAShadowsClearMovesTheBindingsBack() throws IOException {
+        ConfigurationFiles shadowed =
+                DeviceEdits.shadow(set(), "T-Rudder", "MyRudder", "044F", "B679", FIRE, false, stock, shipped).files();
+        ConfigurationFiles cleared = DeviceEdits.clear(shadowed, "MyRudder").files();
+
+        ConfigurationFiles restored = DeviceEdits.restore(cleared, shadowed, "MyRudder", stock);
+
+        assertEquals(List.of("MyRudder", "LVWAP", "T-Rudder"), names(restored));
+        assertEquals(binds(shadowed), binds(restored));
     }
 
     // ------------------------------------------------------------------ the set

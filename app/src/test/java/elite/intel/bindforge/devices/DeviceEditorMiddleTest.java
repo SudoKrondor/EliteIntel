@@ -18,7 +18,7 @@ class DeviceEditorMiddleTest {
 
     @Test
     void theUsersDeviceCanBeCleared() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 0);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 0, true);
 
         assertEquals(Kind.CLEAR, middle.kind());
         assertTrue(middle.enabled());
@@ -26,23 +26,34 @@ class DeviceEditorMiddleTest {
     }
 
     /**
-     * An edit to an entry .binds depends on must update .binds with it. Clearing would mean moving those bindings to
-     * the hardware ID, which is A19's - so CLEAR is refused, and says how many bindings are at stake.
+     * An edit to an entry .binds depends on updates .binds with it: CLEAR moves the bindings (A19), so it is offered,
+     * carrying the count its question names.
      */
     @Test
-    void clearIsRefusedWhileBindingsNameTheDevice() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 142);
+    void clearIsOfferedWhileBindingsNameTheDevice() {
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 142, true);
 
         assertEquals(Kind.CLEAR, middle.kind());
-        assertFalse(middle.enabled());
-        assertEquals(Why.NAMED_IN_BINDS, middle.why());
+        assertTrue(middle.enabled());
+        assertEquals(Why.NONE, middle.why());
         assertEquals(142, middle.bindings());
+    }
+
+    /** An element with no pair of its own has nowhere to move them, so CLEAR is refused rather than strand them. */
+    @Test
+    void clearIsRefusedWhenTheBindingsHaveNowhereToGo() {
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, true, 142, false);
+
+        assertFalse(middle.enabled());
+        assertEquals(Why.NO_HARDWARE_ID, middle.why());
+        assertEquals(142, middle.bindings());
+        assertTrue(DeviceEditorMiddle.of("LVWAP", false, true, true, 0, false).enabled(), "nothing to move");
     }
 
     /** .binds names inputs by token, never by label, so a reset never touches it. */
     @Test
     void aBuiltInsLabelsCanBeResetWhateverTheBindingsName() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, true, true, 30);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, true, true, 30, true);
 
         assertEquals(Kind.RESET_LABELS, middle.kind());
         assertTrue(middle.enabled());
@@ -50,7 +61,7 @@ class DeviceEditorMiddleTest {
 
     @Test
     void aBuiltInWithNoLabelsOfTheUsersHasNothingToReset() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, false, false, 0);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("T-Rudder", true, false, false, 0, true);
 
         assertFalse(middle.enabled());
         assertEquals(Why.NOTHING_TO_RESET, middle.why());
@@ -58,7 +69,7 @@ class DeviceEditorMiddleTest {
 
     @Test
     void aDeviceClearedInTheEditsOffersItsUndo() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, false, 142);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("LVWAP", false, true, false, 142, true);
 
         assertEquals(Kind.UNDO_CLEAR, middle.kind());
         assertTrue(middle.enabled(), "the undo is never refused: it puts back what the working copy holds");
@@ -67,18 +78,18 @@ class DeviceEditorMiddleTest {
 
     @Test
     void aBuiltInResetInTheEditsOffersItsUndo() {
-        assertEquals(Kind.UNDO_RESET, DeviceEditorMiddle.of("T-Rudder", true, true, false, 0).kind());
+        assertEquals(Kind.UNDO_RESET, DeviceEditorMiddle.of("T-Rudder", true, true, false, 0, true).kind());
     }
 
     /** The edits are what CLEAR acts on: a device named only there, not yet applied, can be cleared from them. */
     @Test
     void aDeviceOnlyTheEditsHoldCanStillBeCleared() {
-        assertTrue(DeviceEditorMiddle.of("TRudder2", false, false, true, 0).enabled());
+        assertTrue(DeviceEditorMiddle.of("TRudder2", false, false, true, 0, true).enabled());
     }
 
     @Test
     void aDeviceNeitherHoldsHasNothingToClear() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of("Lvwap", false, false, false, 0);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of("Lvwap", false, false, false, 0, true);
 
         assertFalse(middle.enabled());
         assertEquals(Why.NOT_ADDED, middle.why());
@@ -86,7 +97,7 @@ class DeviceEditorMiddleTest {
 
     @Test
     void aDeviceWithNoNameHasNothingToClear() {
-        DeviceEditorMiddle middle = DeviceEditorMiddle.of(null, false, false, false, 0);
+        DeviceEditorMiddle middle = DeviceEditorMiddle.of(null, false, false, false, 0, true);
 
         assertFalse(middle.enabled());
         assertEquals(Why.NO_NAME, middle.why());
@@ -95,8 +106,8 @@ class DeviceEditorMiddleTest {
     /** Bindings that cannot be read refuse CLEAR rather than guess; a reset needs nothing from them (review). */
     @Test
     void unreadableBindingsRefuseClearButNotReset() {
-        DeviceEditorMiddle clear = DeviceEditorMiddle.of("LVWAP", false, true, true, OptionalInt.empty());
-        DeviceEditorMiddle reset = DeviceEditorMiddle.of("T-Rudder", true, true, true, OptionalInt.empty());
+        DeviceEditorMiddle clear = DeviceEditorMiddle.of("LVWAP", false, true, true, OptionalInt.empty(), true);
+        DeviceEditorMiddle reset = DeviceEditorMiddle.of("T-Rudder", true, true, true, OptionalInt.empty(), true);
 
         assertFalse(clear.enabled());
         assertEquals(Why.BINDS_UNREAD, clear.why());

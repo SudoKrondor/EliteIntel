@@ -91,6 +91,8 @@ final class DeviceEditorDialog extends JDialog {
      * @param saved       the labels the device had when the dialog opened, in the edits
      * @param gameDrawsIt whether the game draws this device's inputs itself, so untouched defaults are not written
      * @param middle      what the middle button is, and whether it can be pressed
+     * @param clearTarget where CLEAR moves the bindings naming the device (A19), or {@code null} for a built-in, a
+     *                    device with no name, or an element with no pair of its own
      * @param rename      whether the name can be changed, and why not
      * @param taken       the names a new name must not clash with - empty unless {@code rename} allows it
      * @param covering    Frontier's element covering the controller's hardware, or {@code null} when none does
@@ -99,7 +101,7 @@ final class DeviceEditorDialog extends JDialog {
      */
     record Opening(MyDevice device, String deviceName, Integer liveId, DeviceDescription description,
                    boolean gamepad, DeviceEditorInputs inputs, Map<String, String> saved, boolean gameDrawsIt,
-                   DeviceEditorMiddle middle, DeviceRename.Allowed rename,
+                   DeviceEditorMiddle middle, DeviceEdits.ClearTarget clearTarget, DeviceRename.Allowed rename,
                    Set<String> taken, Covering covering, boolean readOnly) {
         Opening {
             taken = Set.copyOf(taken);
@@ -298,7 +300,7 @@ final class DeviceEditorDialog extends JDialog {
             row = line(panel, row, getText(rule.kind() == DeviceEditorMiddle.Kind.UNDO_RESET
                     ? "bindings.aliasDesigner.editor.reset"
                     : "bindings.aliasDesigner.editor.cleared"), HudPalette.HUD_COLOR_ROLE_WARNING);
-        } else if (rule.why() == DeviceEditorMiddle.Why.NAMED_IN_BINDS
+        } else if (rule.why() == DeviceEditorMiddle.Why.NO_HARDWARE_ID
                 || rule.why() == DeviceEditorMiddle.Why.BINDS_UNREAD) {
             row = line(panel, row, whyText(rule), HudPalette.HUD_COLOR_ROLE_WARNING);
         }
@@ -630,7 +632,7 @@ final class DeviceEditorDialog extends JDialog {
             case NO_NAME -> getText("bindings.aliasDesigner.editor.why.noName");
             case NOT_ADDED -> getText("bindings.aliasDesigner.editor.why.notAdded");
             case NOTHING_TO_RESET -> getText("bindings.aliasDesigner.editor.why.nothingToReset");
-            case NAMED_IN_BINDS -> getText("bindings.aliasDesigner.editor.namedInBinds", rule.bindings(),
+            case NO_HARDWARE_ID -> getText("bindings.aliasDesigner.editor.why.noHardwareId", rule.bindings(),
                     opening.deviceName());
             case BINDS_UNREAD -> getText("bindings.aliasDesigner.editor.why.bindsUnread");
         };
@@ -653,9 +655,7 @@ final class DeviceEditorDialog extends JDialog {
         }
         boolean reset = rule.kind() == DeviceEditorMiddle.Kind.RESET_LABELS;
         if (!HudConfirmDialog.confirm(this, getText("bindings.aliasDesigner.editor.heading"),
-                getText(reset
-                        ? "bindings.aliasDesigner.editor.reset.confirm"
-                        : "bindings.aliasDesigner.editor.clear.confirm", name),
+                reset ? getText("bindings.aliasDesigner.editor.reset.confirm", name) : clearQuestion(rule, name),
                 getText(reset
                         ? "bindings.aliasDesigner.editor.button.resetLabels"
                         : "bindings.aliasDesigner.editor.button.clear"),
@@ -669,8 +669,23 @@ final class DeviceEditorDialog extends JDialog {
         }
         runAndClose(current -> {
             requireNamed(current, name, stock);
-            return DeviceEdits.clear(current, name);
+            return DeviceEdits.clear(current, name).files();
         }, "bindings.aliasDesigner.editor.actionFailed");
+    }
+
+    /**
+     * CLEAR's question: with bindings naming the device, where they move and what that costs, before what APPLY does
+     * (alias-designer.md, <em>An edit .binds depends on updates .binds</em>; A19).
+     */
+    private String clearQuestion(DeviceEditorMiddle rule, String name) {
+        String apply = getText("bindings.aliasDesigner.editor.clear.confirm", name);
+        DeviceEdits.ClearTarget target = opening.clearTarget();
+        if (rule.bindings() == 0 || target == null) return apply;
+        String moves = getText(target.element()
+                        ? "bindings.aliasDesigner.editor.clear.movesToElement"
+                        : "bindings.aliasDesigner.editor.clear.movesToHardwareId",
+                rule.bindings(), name, target.shown());
+        return moves + "\n\n" + apply;
     }
 
     /**

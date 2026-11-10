@@ -1585,9 +1585,8 @@ What it reaches:
 - **CLEAR on a device the bindings use moves those bindings to its hardware ID** — VID then PID, upper case, as the
   game itself writes a device with no entry ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08))
   — as part of the same edit (2026-10-24, Alan). Its confirmation says so: *"142 bindings name LVWAP. Clearing it
-  moves them to its hardware ID, 3344:83F4 — they keep working while the stick is plugged in, but lose its name."*
-  *Built today: the move to a hardware ID is not, so CLEAR is refused for such a device and says how many bindings
-  name it — a build state, for the build plan.*
+  moves them to its hardware ID, 3344:83F4 — they keep working while the controller is plugged in, but lose its
+  name."* *("the stick" until 2026-11-10: CLEAR reaches throttles and pedals too.)* Built in A19, below.
 
 **Rules from A10** (2026-10-11; kept 2026-10-24, Alan):
 
@@ -1600,6 +1599,32 @@ What it reaches:
 *Until 2026-10-24 the rewrite was ordered across a draft, its baseline and the game's file — the game's `.binds` last,
 all or nothing — to protect a separate draft (F2, 2026-10-12); with the binds files in the working copy it is part of
 the edit.*
+
+#### Built — 2026-11-10 (Alan, A19)
+
+CLEAR on a device the bindings name is no longer refused: `DeviceEdits.clear` takes out the element and its
+`.buttonMap` and moves the bindings in the same edit, to `DeviceEdits.clearTarget`. The question names the count and
+where they go, then what APPLY does. Alan settled four questions, 2026-11-10:
+
+- **Where they go is what the game would write once the entry is gone** ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)):
+  the next element in `DeviceMappings.xml` claiming the element's own VID/PID - **Frontier's, for a shadow** - and
+  only when none does, the hardware ID. A shadow's question reads *"…moves them to T-Rudder, the game's own entry for
+  this controller — they keep working, but lose your name for it."*
+- **The hardware ID is the element's own pair**, never the live controller's, so an unplugged device clears too. **An
+  element with no pair of its own** - only `<Alternative>` pairs, which only a hand-made file has - names no one
+  controller, so CLEAR is refused while bindings name it (`DeviceEditorMiddle.Why.NO_HARDWARE_ID`); with none naming
+  it, it clears as before.
+- **UNDO CLEAR moves them back** - every reference to the hardware ID, in any case, or for a shadow every reference to
+  the element they went to, as shadowing moves them - never the working copy's binds files put back whole, which
+  would throw away bindings edited since the CLEAR.
+- **The id already in a binds file in another case is written the same way** (`334483f4` becomes `334483F4`), since
+  the game rejects a file spelling one device two ways ([format §4.3](domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)).
+  One written PID first is left alone: a rewrite never matches defensively.
+
+*Found:* after CLEAR and APPLY a connected controller has no name, so onboarding offers it again - the state
+"before it was ever configured" the spec asks for - and onboarding's FINISH moves the hardware ID back to the name it
+is given (`DeviceNames.needingName`; before APPLY the working copy still names it, so the editor offers UNDO CLEAR
+instead). A cleared shadow is Frontier's built-in again and is not offered.
 
 #### Built — 2026-10-11 (Alan, A10)
 

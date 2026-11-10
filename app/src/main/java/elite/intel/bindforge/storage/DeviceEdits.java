@@ -1,5 +1,6 @@
 package elite.intel.bindforge.storage;
 
+import elite.intel.bindforge.devicefiles.BindsDeviceReferences;
 import elite.intel.bindforge.devicefiles.ButtonMapReader;
 import elite.intel.bindforge.devicefiles.ButtonMapWriter;
 import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
@@ -17,11 +18,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * What each Alias Designer action does to a set of the game input configuration files - the working copy with the
@@ -38,6 +41,9 @@ import java.util.TreeMap;
  * Frontier's own back.
  */
 public final class DeviceEdits {
+
+    /** One half of a hardware ID: four hex digits, as {@code DeviceReferenceRewrite} writes them. */
+    private static final Pattern HEX_HALF = Pattern.compile("[0-9A-F]{4}");
 
     private DeviceEdits() {
     }
@@ -244,12 +250,83 @@ public final class DeviceEdits {
     }
 
     /**
-     * CLEAR (A10): the device's element and its {@code .buttonMap} taken out. The caller refuses it while bindings
-     * name the device - moving them to its hardware ID is A19's.
+     * Where CLEAR moves the bindings naming a device (A19): what the game itself would call the controller once the
+     * element is gone.
+     *
+     * @param device   the {@code Device=} value the bindings move to
+     * @param hardware the element's own pair
+     * @param element  whether {@code device} is another element claiming the pair - a shadowed built-in - rather than
+     *                 the hardware ID
      */
-    public static ConfigurationFiles clear(ConfigurationFiles files, String name) throws IOException {
+    public record ClearTarget(String device, HardwareId hardware, boolean element) {
+        public ClearTarget {
+            Objects.requireNonNull(device, "device");
+            Objects.requireNonNull(hardware, "hardware");
+        }
+
+        /** As the user is shown it: the element's name, or the hardware ID as {@code VID:PID}. */
+        public String shown() {
+            return element ? device : hardware.vid() + ":" + hardware.pid();
+        }
+    }
+
+    /**
+     * Where CLEAR would move the bindings naming the user's device {@code name} (A19; Alan, 2026-11-10). The game names
+     * a device by the first element claiming its VID/PID and by VID then PID in hex when none does (format section
+     * 4.0), so: the next element in the file claiming the element's own pair - Frontier's, for a shadow - or else the
+     * hardware ID, upper case.
+     *
+     * @return empty when the set holds no element by that name, or the element has no well-formed pair of its own - an
+     *         element with only {@code <Alternative>} pairs, made by hand, names no one controller to move them to
+     * @throws IOException if the set's {@code DeviceMappings.xml} cannot be read
+     */
+    public static Optional<ClearTarget> clearTarget(ConfigurationFiles files, String name) throws IOException {
+        List<DeviceEntry> all = elements(files);
+        HardwareId pair = all.stream().filter(e -> e.name().equals(name)).findFirst()
+                .map(DeviceEntry::primary).orElse(null);
+        if (pair == null || !HEX_HALF.matcher(pair.vid()).matches() || !HEX_HALF.matcher(pair.pid()).matches()) {
+            return Optional.empty();
+        }
+        // WHY exact: DeviceMappingsMerge.remove takes out every element spelled exactly so, and only those.
+        Optional<String> next = all.stream()
+                .filter(e -> !e.name().equals(name) && e.hardware().contains(pair))
+                .map(DeviceEntry::name)
+                .findFirst();
+        return Optional.of(next.map(element -> new ClearTarget(element, pair, true))
+                .orElseGet(() -> new ClearTarget(pair.vid() + pair.pid(), pair, false)));
+    }
+
+    /**
+     * CLEAR (A10, A19): the device's element and its {@code .buttonMap} taken out, and every binding naming it moved to
+     * {@link #clearTarget} - one edit, so no binds file is left naming a device the game no longer knows (Alan,
+     * 2026-10-24). A hardware-ID reference already in a binds file in another case is written the same way, since
+     * the game rejects a file that spells one device two ways (format section 4.3; Alan, 2026-11-10); one written PID
+     * first is left alone - a rewrite never matches defensively.
+     *
+     * @throws IOException if bindings name the device and there is nowhere to move them ({@link #clearTarget} is
+     *                     empty) - the screen refuses CLEAR first - or a file cannot be changed
+     */
+    public static Changed clear(ConfigurationFiles files, String name) throws IOException {
+        Optional<ClearTarget> target = clearTarget(files, name);
+        List<DeviceReferenceRewrite> moves = target.map(t -> clearMoves(name, t)).orElse(List.of());
+        if (target.isEmpty() && BindsDeviceReferences.bindingsNaming(List.of(name),
+                BindsDeviceReferences.countsIn(files.bindings()).names()) > 0) {
+            throw new IOException(name + " has no hardware ID of its own to move its bindings to");
+        }
         byte[] deviceMappings = DeviceMappingsMerge.remove(files.deviceMappings(), Set.of(name)).content();
-        return files.withDeviceMappings(deviceMappings).withButtonMaps(withoutMap(files.buttonMaps(), name));
+        BindsFiles.Rewritten rewritten = BindsFiles.rewrite(files.bindings(), moves);
+        return new Changed(new ConfigurationFiles(rewritten.bindings(), deviceMappings,
+                withoutMap(files.buttonMaps(), name)), rewritten.moved());
+    }
+
+    private static List<DeviceReferenceRewrite> clearMoves(String name, ClearTarget target) {
+        if (target.element()) return List.of(DeviceReferenceRewrite.rename(name, target.device()));
+        List<DeviceReferenceRewrite> moves = new ArrayList<>();
+        moves.add(DeviceReferenceRewrite.nameToHardwareId(name, target.hardware().vid(), target.hardware().pid()));
+        // WHY: matched ignoring case, and the exact spelling left alone, so this catches every other case of the id.
+        String lower = target.device().toLowerCase(Locale.ROOT);
+        if (!lower.equals(target.device())) moves.add(new DeviceReferenceRewrite(Set.of(lower), target.device()));
+        return moves;
     }
 
     /**
@@ -264,7 +341,10 @@ public final class DeviceEdits {
 
     /**
      * UNDO CLEAR and UNDO RESET: the device's element and {@code .buttonMap} as the working copy holds them, put back
-     * into the edits.
+     * into the edits. For the user's element, the bindings CLEAR moved come back to its name (A19; Alan, 2026-11-10):
+     * every reference to its hardware ID, in any case - what the game writes once an element claims the pair - or, for
+     * a shadow, every reference to the element CLEAR moved them to, as shadowing moves them. The binds files are never
+     * put back whole, since that would throw away bindings edited since the CLEAR.
      *
      * @param applied the working copy - what the last write left
      */
@@ -285,6 +365,11 @@ public final class DeviceEdits {
             order.add(at, name);
             result = result.withDeviceMappings(DeviceMappingsMerge.copyIn(files.deviceMappings(),
                     applied.deviceMappings(), name, order).content());
+            Optional<ClearTarget> target = clearTarget(result, name);
+            if (target.isPresent()) {
+                result = result.withBindings(BindsFiles.rewrite(result.bindings(),
+                        List.of(new DeviceReferenceRewrite(Set.of(target.get().device()), name))).bindings());
+            }
         }
         Map<String, byte[]> maps = withoutMap(result.buttonMaps(), name);
         buttonMapFile(applied, name).ifPresent(file -> maps.put(file, applied.buttonMaps().get(file)));

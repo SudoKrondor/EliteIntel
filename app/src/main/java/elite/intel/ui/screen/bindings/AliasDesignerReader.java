@@ -312,8 +312,10 @@ final class AliasDesignerReader {
                 ? DeviceEditorInputs.ofSavedLabels(saved)
                 : DeviceEditorInputs.ofController(live.buttonCount(), live.axisCount(), description);
 
+        DeviceEdits.ClearTarget clearTarget =
+                name == null || frontiers ? null : DeviceEdits.clearTarget(edited, name).orElse(null);
         DeviceEditorMiddle middle = DeviceEditorMiddle.of(name, frontiers, holds(applied, name, frontiers, stock, shipped),
-                holds(edited, name, frontiers, stock, shipped), bindingsNaming(edited, name));
+                holds(edited, name, frontiers, stock, shipped), bindingsNaming(edited, name), clearTarget != null);
         DeviceRename.Owner owner = frontiers ? DeviceRename.Owner.FRONTIER : DeviceRename.Owner.USER;
         DeviceRename.Presence presence = device.attached() ? DeviceRename.Presence.ATTACHED
                 : DeviceRename.Presence.UNPLUGGED;
@@ -329,7 +331,7 @@ final class AliasDesignerReader {
                 : new DeviceEditorDialog.Covering(covering.name(), covering.hardware().size() > 1,
                 frontierNameHeld(edited, covering, shipped));
         return new DeviceEditorDialog.Opening(device, name, live == null ? null : live.id(), description, gamepad, inputs,
-                saved, name != null && stock.gameDrawsIt(name), middle, rename, taken, frontier,
+                saved, name != null && stock.gameDrawsIt(name), middle, clearTarget, rename, taken, frontier,
                 // WHY active(), not activeIfKnown(): this read is off the EDT, and may be the first to ask (S14b).
                 ReadOnlyMode.stored().active());
     }
