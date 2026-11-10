@@ -49,6 +49,10 @@ public final class LmStudioInstaller {
      * A download whose byte count has not moved for this long is treated as stuck.
      */
     private final Duration downloadStall;
+    /**
+     * How long a finished download may take to show in LM Studio's model list before the install gives up on it.
+     */
+    private final Duration listingWait;
 
     private volatile boolean cancelled;
     private volatile InstallStep current = InstallStep.CHECK;
@@ -63,12 +67,12 @@ public final class LmStudioInstaller {
 
     private LmStudioInstaller(LoggedProgress progress, FieldsSaver saver, LmStudioInstallManager installs) {
         this(new LocalLmStudioMachine(progress::log), progress, saver, installs,
-                InstallFolder.REQUIRED_BYTES, Duration.ofSeconds(1), Duration.ofMinutes(5));
+                InstallFolder.REQUIRED_BYTES, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(2));
     }
 
     LmStudioInstaller(LmStudioMachine machine, InstallProgress progress, FieldsSaver saver,
                       LmStudioInstallManager installs, long requiredBytes, Duration downloadPoll,
-                      Duration downloadStall) {
+                      Duration downloadStall, Duration listingWait) {
         this.machine = machine;
         this.progress = progress;
         this.saver = saver;
@@ -76,6 +80,7 @@ public final class LmStudioInstaller {
         this.requiredBytes = requiredBytes;
         this.downloadPoll = downloadPoll;
         this.downloadStall = downloadStall;
+        this.listingWait = listingWait;
     }
 
     // -------------------------------------------------------------------------
@@ -259,6 +264,7 @@ public final class LmStudioInstaller {
         if (start instanceof DownloadStart.Started(String jobId)) {
             begin(InstallStep.DOWNLOAD);
             awaitDownload(jobId, lms, owned);
+            awaitListed();
             finish(InstallStep.DOWNLOAD);
         } else {
             skip(InstallStep.DOWNLOAD, MODEL + " is already downloaded");
@@ -294,6 +300,29 @@ public final class LmStudioInstaller {
             } else if (Duration.between(lastMoved, Instant.now()).compareTo(downloadStall) >= 0) {
                 throw new InstallException("The download of " + MODEL + " made no progress for "
                         + downloadStall.toMinutes() + " min");
+            }
+            pause(downloadPoll);
+        }
+    }
+
+    /**
+     * Waits for LM Studio to list the model it just downloaded. WHY: it reports the download complete before it has
+     * registered the files, and an {@code lms load} in that gap fails with "Model not found" - a Windows tester's did,
+     * in the same second the download completed (2026-11-10). A list request that fails meanwhile is waited out too.
+     */
+    private void awaitListed() throws InstallException {
+        Instant deadline = Instant.now().plus(listingWait);
+        String lastProblem = "";
+        while (true) {
+            throwIfCancelled();
+            try {
+                if (machine.isListed(MODEL)) return;
+            } catch (InstallException notAnswering) {
+                lastProblem = " (" + notAnswering.getMessage() + ")";
+            }
+            if (!Instant.now().isBefore(deadline)) {
+                throw new InstallException("LM Studio finished downloading " + MODEL + " but did not list it within "
+                        + listingWait.toSeconds() + " s" + lastProblem);
             }
             pause(downloadPoll);
         }

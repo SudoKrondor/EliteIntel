@@ -43,6 +43,11 @@ interface LmStudioMachine {
 
     DownloadStatus downloadStatus(String jobId) throws InstallException;
 
+    /**
+     * Whether LM Studio lists {@code model} as downloaded, so {@code lms load} can find it.
+     */
+    boolean isListed(String model) throws InstallException;
+
     boolean isLoaded(String model) throws InstallException;
 
     /**

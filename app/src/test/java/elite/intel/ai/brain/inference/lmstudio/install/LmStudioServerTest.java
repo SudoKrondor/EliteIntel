@@ -84,6 +84,20 @@ class LmStudioServerTest {
     }
 
     @Test
+    void aDownloadedModelIsListedWhetherOrNotItIsLoaded() throws InstallException {
+        String models = """
+                {"models": [
+                  {"type": "llm", "key": "google/gemma-4-e4b", "loaded_instances": []},
+                  {"type": "embedding", "key": "text-embedding-nomic-embed-text-v1.5",
+                   "loaded_instances": [{"id": "text-embedding-nomic-embed-text-v1.5"}]}
+                ]}""";
+
+        assertTrue(LmStudioServer.isListed(models, "google/gemma-4-e4b"));
+        assertTrue(LmStudioServer.isListed(models, "text-embedding-nomic-embed-text-v1.5"));
+        assertFalse(LmStudioServer.isListed(models, "qwen/qwen3-8b"));
+    }
+
+    @Test
     void theLoadedContextWindowIsRead() throws InstallException {
         String models = """
                 {"models": [

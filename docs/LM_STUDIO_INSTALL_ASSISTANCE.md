@@ -104,7 +104,7 @@ to fit as the download, a result or the log appear. It has no scrolling body.
 | 1 | **Check** | Free space on the chosen drive must be at least **10 GB**: LM Studio is 2.4 GB on Windows and 3.4 GB on Linux, and the model is 6 GB | badge |
 | 2 | **Install LM Studio** | Creates the home and writes the [install record and its marker](#the-install-record), writes the pointer if a folder was chosen, then downloads LM Studio's official script and runs it with `LMS_NO_MODIFY_PATH=1` | badge, log |
 | 3 | **Start LM Studio** | `lms daemon up`, then `lms server start --port 1234 --bind 127.0.0.1` | badge |
-| 4 | **Download the model** | `POST /api/v1/models/download` for `google/gemma-4-e4b`, then polls its status once a second | badge and a bar: *"2.1 of 6.0 GB · 48 MB/s · 1 min left"* |
+| 4 | **Download the model** | `POST /api/v1/models/download` for `google/gemma-4-e4b` (given 2 minutes to answer: a freshly installed llmster can take well over 5 s), then polls its status once a second. A finished download is then waited on, for up to 2 minutes, until `GET /api/v1/models` lists the model: LM Studio reports the download complete before `lms load` can find it | badge and a bar: *"2.1 of 6.0 GB · 48 MB/s · 1 min left"* |
 | 5 | **Load the model** | `lms load google/gemma-4-e4b --context-length 8192 --gpu max --yes`. A model already loaded is unloaded first: its settings may not be these, and step 6 must measure this load | badge |
 | 6 | **Check the GPU took it** | Graphics memory in use (`nvidia-smi`, plus [AMD's](#amd-cards-beta)) must have risen by **at least 4 GB** since before the load | badge |
 | 7 | **Test** | One tool-call request in the shape `LmStudioLlmAdapter` sends. A tool call must come back | badge |

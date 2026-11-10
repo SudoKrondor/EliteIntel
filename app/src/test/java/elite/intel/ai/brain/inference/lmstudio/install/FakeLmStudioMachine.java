@@ -32,6 +32,11 @@ final class FakeLmStudioMachine implements LmStudioMachine {
      */
     int loadedContext = LocalLmStudioMachine.CONTEXT_LENGTH;
     boolean toolCall = true;
+    /**
+     * How many more times the model list is asked before it lists the model; negative never lists it.
+     */
+    int listedAfter;
+    int listingAsks;
     boolean cancelled;
     DownloadStart downloadStart = new DownloadStart.Started("job_1");
     Deque<DownloadStatus> statuses = new ArrayDeque<>(List.of(
@@ -117,6 +122,13 @@ final class FakeLmStudioMachine implements LmStudioMachine {
     public DownloadStatus downloadStatus(String jobId) {
         onStatus.run();
         return statuses.size() > 1 ? statuses.poll() : statuses.peek();
+    }
+
+    @Override
+    public boolean isListed(String model) {
+        listingAsks++;
+        if (listedAfter < 0) return false;
+        return listedAfter-- <= 0;
     }
 
     @Override

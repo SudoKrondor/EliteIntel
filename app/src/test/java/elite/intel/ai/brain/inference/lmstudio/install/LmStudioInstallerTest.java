@@ -185,6 +185,37 @@ class LmStudioInstallerTest {
     // -------------------------------------------------------------------------
 
     @Test
+    void theLoadWaitsUntilLmStudioListsTheDownloadedModel() {
+        machine.listedAfter = 3;
+
+        InstallOutcome outcome = installerWaitingForListing(0, Duration.ofMinutes(1)).install(InstallFolder.inside(chosen));
+
+        assertEquals(new InstallOutcome.Completed(), outcome);
+        assertEquals(4, machine.listingAsks);
+        assertTrue(machine.calls.contains("load"));
+    }
+
+    @Test
+    void aDownloadedModelLmStudioNeverListsFailsTheDownloadBeforeAnyLoad() {
+        machine.listedAfter = -1;
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertEquals(InstallStep.DOWNLOAD, ((InstallOutcome.Failed) outcome).step());
+        assertTrue(((InstallOutcome.Failed) outcome).reason().contains("did not list"));
+        assertFalse(machine.calls.contains("load"));
+    }
+
+    @Test
+    void aModelAlreadyDownloadedIsNotWaitedFor() {
+        machine.downloadStart = new DownloadStart.AlreadyDownloaded();
+        machine.listedAfter = -1;
+
+        assertEquals(new InstallOutcome.Completed(), installer(0).install(InstallFolder.inside(chosen)));
+        assertEquals(0, machine.listingAsks);
+    }
+
+    @Test
     void aModelAlreadyLoadedIsReloadedWithElitesSettings() {
         machine.loaded = true;
 
@@ -246,7 +277,7 @@ class LmStudioInstallerTest {
     @Test
     void cancellingTheAppsOwnDownloadPausesItByStoppingTheDaemon() {
         LmStudioInstaller installer = new LmStudioInstaller(machine, progress, this::save, installs, 0,
-                Duration.ofMillis(1), Duration.ofMinutes(5));
+                Duration.ofMillis(1), Duration.ofMinutes(5), Duration.ZERO);
         machine.statuses = new ArrayDeque<>(List.of(status(DownloadState.DOWNLOADING, 1_000)));
         machine.onStatus = installer::cancel;
 
@@ -261,7 +292,12 @@ class LmStudioInstallerTest {
     // -------------------------------------------------------------------------
 
     private LmStudioInstaller installer(long requiredBytes) {
-        return new LmStudioInstaller(machine, progress, this::save, installs, requiredBytes, Duration.ZERO, Duration.ZERO);
+        return installerWaitingForListing(requiredBytes, Duration.ZERO);
+    }
+
+    private LmStudioInstaller installerWaitingForListing(long requiredBytes, Duration listingWait) {
+        return new LmStudioInstaller(machine, progress, this::save, installs, requiredBytes, Duration.ZERO,
+                Duration.ZERO, listingWait);
     }
 
     private void save(String address, String model) {

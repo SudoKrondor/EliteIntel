@@ -117,6 +117,11 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     }
 
     @Override
+    public boolean isListed(String model) throws InstallException {
+        return server.isListed(model);
+    }
+
+    @Override
     public boolean isLoaded(String model) throws InstallException {
         return server.isLoaded(model);
     }

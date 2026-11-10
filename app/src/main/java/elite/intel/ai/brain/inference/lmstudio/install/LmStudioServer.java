@@ -32,6 +32,12 @@ final class LmStudioServer {
      * A first request can wait on the model being paged back in, so the test is given longer than a status call.
      */
     private static final Duration TEST_REQUEST = Duration.ofMinutes(2);
+    /**
+     * WHY not {@link #QUICK}: a freshly installed llmster can hold the download request well past 5 s while it finishes
+     * getting ready - a Windows tester's timed out at 5 s right after the server came up (2026-11-10). One long wait,
+     * not retries, so a slow answer can never start a second download.
+     */
+    private static final Duration DOWNLOAD_START = Duration.ofMinutes(2);
 
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(QUICK).build();
 
@@ -56,6 +62,14 @@ final class LmStudioServer {
      */
     boolean isLoaded(String model) throws InstallException {
         return isLoaded(send(get("/api/v1/models", QUICK)), model);
+    }
+
+    /**
+     * Whether LM Studio lists {@code model} among its downloaded models, loaded or not - which {@code lms load}
+     * needs.
+     */
+    boolean isListed(String model) throws InstallException {
+        return isListed(send(get("/api/v1/models", QUICK)), model);
     }
 
     /**
@@ -93,7 +107,7 @@ final class LmStudioServer {
     DownloadStart startDownload(String model) throws InstallException {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
-        return parseDownloadStart(send(post("/api/v1/models/download", body, QUICK)));
+        return parseDownloadStart(send(post("/api/v1/models/download", body, DOWNLOAD_START)));
     }
 
     DownloadStatus downloadStatus(String jobId) throws InstallException {
@@ -177,6 +191,10 @@ final class LmStudioServer {
         return loadedInstance(modelsJson, model).isPresent();
     }
 
+    static boolean isListed(String modelsJson, String model) throws InstallException {
+        return listedEntry(modelsJson, model).isPresent();
+    }
+
     /**
      * The context length of {@code model}'s first loaded instance, or empty when none is loaded or it does not say.
      */
@@ -189,14 +207,19 @@ final class LmStudioServer {
     }
 
     private static Optional<JsonObject> loadedInstance(String modelsJson, String model) throws InstallException {
+        Optional<JsonObject> listed = listedEntry(modelsJson, model);
+        if (listed.isEmpty()) return Optional.empty();
+        JsonArray instances = listed.get().getAsJsonArray("loaded_instances");
+        if (instances == null || instances.isEmpty()) return Optional.empty();
+        return Optional.of(instances.get(0).getAsJsonObject());
+    }
+
+    private static Optional<JsonObject> listedEntry(String modelsJson, String model) throws InstallException {
         JsonArray models = object(modelsJson).getAsJsonArray("models");
         if (models == null) throw new InstallException("LM Studio's model list has no models: " + modelsJson);
         for (JsonElement entry : models) {
             JsonObject listed = entry.getAsJsonObject();
-            if (!model.equalsIgnoreCase(text(listed, "key"))) continue;
-            JsonArray instances = listed.getAsJsonArray("loaded_instances");
-            if (instances == null || instances.isEmpty()) return Optional.empty();
-            return Optional.of(instances.get(0).getAsJsonObject());
+            if (model.equalsIgnoreCase(text(listed, "key"))) return Optional.of(listed);
         }
         return Optional.empty();
     }
