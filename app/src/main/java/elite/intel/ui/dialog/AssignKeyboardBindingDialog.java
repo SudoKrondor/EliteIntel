@@ -3,7 +3,9 @@ package elite.intel.ui.dialog;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.devices.ControllerCapture;
+import elite.intel.bindforge.devices.ControllerKeyboardModifiers;
 import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.io.SlotAssignment;
 import elite.intel.bindforge.model.*;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
@@ -48,11 +50,17 @@ import static elite.intel.ui.theme.HudPalette.*;
  * The orange card is the one being filled; clicking the other card switches to it. The clicked cell decides which
  * card starts orange.
  * <p>
- * <strong>One picker, which belongs to the orange card</strong> (Alan, 2026-10-15): KEYBOARD and a tab per
- * connected controller, opening on the device that card's slot holds. Two pickers side by side read as wired to
- * the two cards, and the game puts any device in either slot. A key pressed in the capture field, a button or hat
- * pressed on a controller - buttons already held become its modifiers - or an input clicked in a list goes into
- * the orange card, and its tab comes forward (bind-editor.md, <em>Capture Dialog</em>).
+ * <strong>One picker, which belongs to the orange card</strong> (Alan, 2026-10-15): KEYBOARD, MOUSE and a tab
+ * per connected controller, opening on the device that card's slot holds. Two pickers side by side read as wired to
+ * the two cards, and the game puts any device in either slot. A key pressed in the capture field, a mouse button
+ * pressed over the MOUSE pad, a button or hat pressed on a controller - buttons already held become its modifiers -
+ * or an input clicked in a list goes into the orange card, and its tab comes forward (bind-editor.md, <em>Capture
+ * Dialog</em>).
+ * <p>
+ * <strong>A controller input may be held with SHIFT, CTRL or ALT, and with no other key</strong> (E5, Krondor,
+ * 2026-11-10): three checkboxes on every controller tab, never a captured key, because any other key held with a
+ * stick button could collide with what Vega presses. The boxes follow the orange card while it holds a controller
+ * input; otherwise they wait for the next one.
  * <p>
  * <strong>An input another control holds cannot be assigned</strong>, from either source (Alan, 2026-10-15): the
  * card names that control in red and SAVE stays dimmed until the commander has freed it there. A warning that can
@@ -289,6 +297,12 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private JTabbedPane sourceTabs;
     private final Map<ControllerInputsPanel, JComponent> tabOf = new HashMap<>();
     private JComponent keyboardTab;
+    private MouseInputsPanel mousePanel;
+    private JComponent mouseTab;
+    /** Which of SHIFT, CTRL and ALT a controller input is held with: the orange card's, or the next pick's. */
+    private final EnumSet<ControllerKeyboardModifiers.Key> withKeys = EnumSet.noneOf(ControllerKeyboardModifiers.Key.class);
+    /** The three boxes on each controller tab, all showing {@link #withKeys}. */
+    private final List<Map<ControllerKeyboardModifiers.Key, JCheckBox>> withKeyBoxes = new ArrayList<>();
     private BindingSlotType active;
     private List<AssignSelection> result = List.of();
 
@@ -593,13 +607,50 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     /**
-     * The picker: KEYBOARD, then a tab per connected controller - greyed for one with no name, which cannot be
-     * written. Pressing a key or a controller input works from any tab and brings its own forward.
+     * The MOUSE tab: the pad a button is pressed over, and the wheel's two directions to click.
+     */
+    private JComponent mouseSource() {
+        mousePanel = new MouseInputsPanel(
+                token -> holderOf(edits.get(active), new BindingInput(BindingInput.MOUSE, token), List.of()).isPresent(),
+                this::pickMouse);
+        mousePanel.setPickEnabled(!viewOnly);
+        JPanel tab = transparentPanel(new BorderLayout(0, 6));
+        tab.setBorder(BorderFactory.createEmptyBorder(6, 6, 3, 6));
+        tab.add(HudBanner.multiline(getText("bindings.assign.mouse.hint"), StatusBadge.State.INFO), BorderLayout.NORTH);
+        tab.add(mousePanel, BorderLayout.CENTER);
+        return tab;
+    }
+
+    /**
+     * WITH SHIFT, WITH CTRL and WITH ALT for one controller tab; every tab's boxes show the same three.
+     */
+    private JComponent withKeysRow() {
+        JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        Map<ControllerKeyboardModifiers.Key, JCheckBox> boxes = new EnumMap<>(ControllerKeyboardModifiers.Key.class);
+        for (ControllerKeyboardModifiers.Key key : ControllerKeyboardModifiers.Key.values()) {
+            JCheckBox box = AppTheme.makeCheckBox(getText("bindings.assign.with." + key.name().toLowerCase(Locale.ROOT)), false);
+            box.setToolTipText(viewOnly ? getText("bindings.readOnly.tooltip") : getText("bindings.assign.with.tooltip"));
+            box.setEnabled(!viewOnly);
+            // WHY an action listener: setSelected, which keeps the tabs in step, fires none.
+            box.addActionListener(e -> onWithKey(key, box.isSelected()));
+            boxes.put(key, box);
+            row.add(box);
+        }
+        withKeyBoxes.add(boxes);
+        return row;
+    }
+
+    /**
+     * The picker: KEYBOARD, MOUSE, then a tab per connected controller - greyed for one with no name, which cannot
+     * be written. Pressing a key or a controller input works from any tab and brings its own forward; a mouse button
+     * is captured only over the MOUSE pad.
      */
     private JComponent sources() {
         sourceTabs = AppTheme.makeSectionTabs();
         keyboardTab = keyboardSource();
         sourceTabs.addTab(getText("bindings.assign.tab.keyboard"), keyboardTab);
+        mouseTab = mouseSource();
+        sourceTabs.addTab(getText("bindings.assign.tab.mouse"), mouseTab);
         for (CaptureControllers.Controller controller : controllers) {
             if (!controller.named()) {
                 sourceTabs.addTab(controller.tabTitle(), transparentPanel(new BorderLayout()));
@@ -615,9 +666,12 @@ public class AssignKeyboardBindingDialog extends JDialog {
             if (controller.connected()) livePanels.put(controller.liveId(), panel);
             JPanel tab = transparentPanel(new BorderLayout(0, 6));
             tab.setBorder(BorderFactory.createEmptyBorder(6, 6, 3, 6));
-            tab.add(HudBanner.multiline(getText(controller.connected()
+            JPanel north = transparentPanel(new BorderLayout(0, 6));
+            north.add(HudBanner.multiline(getText(controller.connected()
                     ? "bindings.assign.controller.hint"
-                    : "bindings.assign.controller.notConnected"), StatusBadge.State.INFO), BorderLayout.NORTH);
+                    : "bindings.assign.controller.notConnected"), StatusBadge.State.INFO), BorderLayout.CENTER);
+            north.add(withKeysRow(), BorderLayout.SOUTH);
+            tab.add(north, BorderLayout.NORTH);
             tab.add(panel, BorderLayout.CENTER);
             tabOf.put(panel, tab);
             sourceTabs.addTab(controller.tabTitle(), tab);
@@ -626,13 +680,15 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     /**
-     * Brings forward the tab of the device the orange card's slot holds: its controller's, or KEYBOARD for a key,
-     * an empty slot, or a controller that is not plugged in.
+     * Brings forward the tab of the device the orange card's slot holds: its controller's, MOUSE for a mouse input,
+     * or KEYBOARD for a key, an empty slot, or a controller that is not plugged in.
      */
     private void showSourceOf(SlotEdit edit) {
         BindingInput after = edit.inputAfter();
         JComponent tab = keyboardTab;
-        if (after != null) {
+        if (after != null && BindingInput.MOUSE.equalsIgnoreCase(after.device())) {
+            tab = mouseTab;
+        } else if (after != null) {
             for (ControllerInputsPanel panel : panels) {
                 if (panel.deviceName().equalsIgnoreCase(after.device())) tab = tabOf.get(panel);
             }
@@ -657,6 +713,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private void setActive(BindingSlotType type) {
         if (active == type) return;
         active = type;
+        // WHY: boxes ticked for one card must not ride into the other card's next pick unseen.
+        if (!isController(edits.get(type).inputAfter())) withKeys.clear();
         showSourceOf(edits.get(type));
         refresh(true);
     }
@@ -705,6 +763,19 @@ public class AssignKeyboardBindingDialog extends JDialog {
      * A controller input, pressed or clicked, goes into the orange card; its controller's tab comes forward.
      */
     private void pickControl(ControllerCapture.Captured captured) {
+        pick(new ControllerCapture.Captured(captured.input(),
+                ControllerKeyboardModifiers.withKeys(captured.modifiers(), withKeys)));
+    }
+
+    /**
+     * A mouse input, pressed over the pad or clicked, goes into the orange card on its own: the three boxes are the
+     * controllers' (Krondor, 2026-11-10).
+     */
+    private void pickMouse(String token) {
+        pick(new ControllerCapture.Captured(new BindingInput(BindingInput.MOUSE, token), List.of()));
+    }
+
+    private void pick(ControllerCapture.Captured captured) {
         if (viewOnly) return;
         SlotEdit edit = edits.get(active);
         choose(edit, e -> {
@@ -713,6 +784,51 @@ public class AssignKeyboardBindingDialog extends JDialog {
         });
         showSourceOf(edit);
         refresh(true);
+    }
+
+    /**
+     * A box ticked or cleared. While the orange card holds a controller input, it changes that input's keys at once
+     * - refused, like any pick, when the chord is taken; otherwise it waits for the next controller input.
+     */
+    private void onWithKey(ControllerKeyboardModifiers.Key key, boolean selected) {
+        if (viewOnly) return;
+        if (selected) withKeys.add(key);
+        else withKeys.remove(key);
+        SlotEdit edit = edits.get(active);
+        BindingInput input = edit.inputAfter();
+        if (isController(input)) {
+            List<BindingInput> modifiers = ControllerKeyboardModifiers.withKeys(edit.modifiersAfter(), withKeys);
+            if (edit.kind == Kind.SWAPPED) {
+                rekeySwapped(edit, input, modifiers);
+            } else {
+                choose(edit, e -> {
+                    e.kind = Kind.CONTROLLER;
+                    e.control = new ControllerCapture.Captured(input, modifiers);
+                });
+            }
+        }
+        refresh(false);
+    }
+
+    /**
+     * WHY its own path: a swapped input carries the other slot's Hold, which turning it into a fresh pick would
+     * drop. The chord is new, though, so it is checked as a pick is.
+     */
+    private void rekeySwapped(SlotEdit edit, BindingInput input, List<BindingInput> modifiers) {
+        SlotContents was = edit.swapped;
+        edit.swapped = new SlotContents(input, modifiers, was.hold(), was.keyboard());
+        String reason = controllerReason(edit, input, modifiers);
+        if (reason == null) {
+            edit.rejected = null;
+            return;
+        }
+        String picked = newText(edit);
+        edit.swapped = was;
+        edit.rejected = picked + " \u2014 " + reason;
+    }
+
+    private static boolean isController(BindingInput input) {
+        return input != null && BindingInput.isDeviceName(input.device());
     }
 
     /**
@@ -752,10 +868,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         // its own key was refused whenever another control shared it.
         boolean wasOwn = isOwnChord(edit.inputAfter(), edit.modifiersAfter());
         if (edit.kind == Kind.CONTROLLER) {
-            if (wasOwn) return null;
-            return holderOf(edit, edit.control.input(), edit.control.modifiers())
-                    .map(holder -> getText("bindings.assign.controller.inUse", BindingDisplayNames.label(holder)))
-                    .orElse(null);
+            return controllerReason(edit, edit.control.input(), edit.control.modifiers());
         }
         if (edit.kind != Kind.KEYBOARD) return null;
         if (!EliteKeyboardKeys.isAssignable(edit.key)) {
@@ -780,6 +893,18 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 bindingId, edit.type, edit.key, modifierKeys, existingSlots);
         return conflict == null ? null
                 : getText("bindings.assign.conflict", BindingDisplayNames.label(conflict.otherBinding()));
+    }
+
+    /**
+     * Why a controller or mouse input with these modifiers cannot go into the slot, or {@code null} when it can.
+     */
+    private String controllerReason(SlotEdit edit, BindingInput input, List<BindingInput> modifiers) {
+        // WHY first: held buttons and ticked keys together can pass the game's three, which the writer refuses.
+        if (modifiers.size() > SlotAssignment.MAX_MODIFIERS) return getText("bindings.assign.tooManyModifiers");
+        if (isOwnChord(input, modifiers)) return null;
+        return holderOf(edit, input, modifiers)
+                .map(holder -> getText("bindings.assign.controller.inUse", BindingDisplayNames.label(holder)))
+                .orElse(null);
     }
 
     private boolean isOccupied(SlotEdit edit) {
@@ -882,6 +1007,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
             held.addAll(heldOn(panel.deviceName(), true));
             panel.show(tokenOn(activeEdit, panel.deviceName()), held, ownAloneOn(panel.deviceName()), bringForward);
         }
+        Set<String> mouseHeld = new HashSet<>(heldOn(BindingInput.MOUSE, false));
+        mouseHeld.addAll(heldOn(BindingInput.MOUSE, true));
+        mousePanel.show(tokenOn(activeEdit, BindingInput.MOUSE), mouseHeld, ownAloneOn(BindingInput.MOUSE));
+        showWithKeys(activeEdit);
 
         aiAccessBanner.setVisible(takesControlFromVega());
         saveButton.setEnabled(!viewOnly && anyChanged && !anyBlocked);
@@ -898,6 +1027,20 @@ public class AssignKeyboardBindingDialog extends JDialog {
             pack();
             fitToScreen();
             setLocation(at);
+        }
+    }
+
+    /**
+     * Ticks the boxes on every controller tab: the orange card's keys while it holds a controller input, else the
+     * ones waiting for the next.
+     */
+    private void showWithKeys(SlotEdit activeEdit) {
+        if (isController(activeEdit.inputAfter())) {
+            withKeys.clear();
+            withKeys.addAll(ControllerKeyboardModifiers.heldIn(activeEdit.modifiersAfter()));
+        }
+        for (Map<ControllerKeyboardModifiers.Key, JCheckBox> boxes : withKeyBoxes) {
+            boxes.forEach((key, box) -> box.setSelected(withKeys.contains(key)));
         }
     }
 

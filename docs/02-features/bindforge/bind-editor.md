@@ -104,7 +104,7 @@ cross-verified section/subgroup/action inventory.
 
 | Addition | Where it is specified | State, checked against the code 2026-11-10 |
 |---|---|---|
-| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) | **Partly built:** keyboard, buttons, hats, axis directions and axis rows (E3, in `AssignAxisDialog`). **Owed:** the MOUSE tab (E4), and a controller input with SHIFT, ALT or CTRL held (E5, those three keys only - Krondor, 2026-11-10) |
+| Capture for **every device**, through the capture dialog | [Capture Dialog](#capture-dialog--settled-2026-09-13) | **Built:** keyboard, buttons, hats, axis directions and axis rows (E3, in `AssignAxisDialog`), the MOUSE tab (E4) and a controller input with SHIFT, ALT or CTRL held (E5, those three keys only - Krondor, 2026-11-10). E4 and E5 have not run against the game yet |
 | The 93 **settings entries** as grid rows | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) | **Rejected for V1.2** (E6, Krondor, 2026-11-10). The number settings are on Dead Zones & Sensitivity |
 | The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) | **Built**, as AI ACCESS |
 | Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) | **Rejected for V1.2** with GM1 (Krondor, 2026-11-10). The whole row is coloured (`BindingSlotCellRenderer`) |
@@ -659,14 +659,17 @@ This is Krondor's flow as it ships, and it **replaces the earlier commit-on-pres
 capture saved itself instantly. A warning about a reserved chord or the game-menu key is only useful if it can
 be read before the binding lands.
 
-#### MOUSE is chosen, not captured
+#### MOUSE: a button is pressed over the pad, the wheel is clicked
 
-**Owed for V1.2 (E4, Krondor, 2026-11-10); not built.** The capture dialog has a KEYBOARD tab and a tab per controller only.
-
-The MOUSE tab lists mouse inputs to click: the buttons, as `Mouse_1` upward, and the wheel as the half-axes
-`Pos_Mouse_ZAxis` (up) and `Neg_Mouse_ZAxis` (down). It never listens for mouse movement or clicks — see
-[Mouse inputs are chosen, not captured](#mouse-inputs-are-chosen-not-captured) for why a stray scroll must not
-bind anything. The button count is whatever the system reports, never a hardcoded four.
+**Built 2026-11-10 (E4); changed from a pick list the same day (Krondor).** The MOUSE tab sits between KEYBOARD and
+the controllers (`MouseInputsPanel`). A mouse button pressed **while the pointer is over its pad** is captured, the
+left one too - the hint says so. A click anywhere else works the dialog as usual, which is what the old pick-list rule
+protected. The wheel's half-axes, `Pos_Mouse_ZAxis` (up) and `Neg_Mouse_ZAxis` (down), are two cells to click and
+are never captured, because a stray scroll must not bind anything
+([Mouse inputs are chosen, not captured](#mouse-inputs-are-chosen-not-captured)). AWT numbers the buttons left,
+middle, right and the game left, right, middle, so 2 and 3 swap; the side buttons keep their numbers (back is
+`Mouse_4`), and nothing caps the count. A mouse input takes no keyboard modifier from this tab. **Not yet run on
+real hardware:** which number Linux and Windows give the side buttons.
 
 #### What counts as an axis — what the device reports, not what it looks like
 
@@ -803,7 +806,12 @@ All of the following are confirmed by direct in-game testing, not just inferred 
 - Capturing a compound combination (main input plus modifiers) is a single motion — whatever is held when the completing input arrives becomes the modifier set, and the completing input becomes the slot's value. No separate "now capture the modifier" step exists.
 - Cross-device modifiers are real and confirmed working in-game — for example, a keyboard key combined with two separate joystick buttons in one binding.
   **V1.2 builds one direction only (E5, Krondor, 2026-11-10): a controller input with SHIFT, ALT or CTRL held.** A
-  keyboard key with a controller button held, and any other keyboard key as a modifier, are not in V1.2.
+  keyboard key with a controller button held, and any other keyboard key as a modifier, are not in V1.2: any other
+  key held with a stick button could collide with what Vega presses in ways nobody can predict. **Built 2026-11-10**
+  as three checkboxes on every controller tab, WITH SHIFT, WITH CTRL and WITH ALT, never a captured key. A tick
+  writes the left key; a key the slot already holds keeps its side. The boxes follow the orange card while it holds
+  a controller input and otherwise wait for the next one. Held buttons and ticked keys together still stop at three
+  modifiers (`ControllerKeyboardModifiers`).
 - **A bind slot can combine a maximum of four inputs total** — one main input plus up to three modifiers.
 - **Axis bindings can never take a modifier at all**, confirmed by direct testing — attempting to add a modifier to an axis binding silently drops it and produces a plain single-input rebind instead. The only two things that vary on an axis slot are Inverted and Deadzone.
 - **Hold** stays an inline toggle on a button slot. **Inverted** and **Deadzone** are inline on the axis row and
@@ -1227,6 +1235,9 @@ the user picks something else — see
 [real files are messier than any specification](#real-files-are-messier-than-any-specification).
 
 ## Mouse Inputs Are Chosen, Not Captured
+
+*The button half is superseded (Krondor, 2026-11-10): a button is pressed over the MOUSE tab's pad, so a click
+elsewhere still works the dialog. The wheel half stands. See [MOUSE](#mouse-a-button-is-pressed-over-the-pad-the-wheel-is-clicked).*
 
 **Settled 2026-09-07.** Keyboard and controller inputs are captured by pressing them. **Mouse inputs are
 picked from a list instead**, and the game itself sets that precedent — Elite's own Mouse Controls screen

@@ -146,7 +146,7 @@ behind it.
 | Grey out what cannot fill the slot | `setEnabledAt(i, false)` ✓ — `HudTabbedPane` dims a disabled tab at every level |
 | Keyboard capture and the live keyboard map | `KeyChordCaptureField`, `KeyboardAvailabilityView` ✓ |
 | A controller's inputs, grouped under `.buttonMap` headings | `HudTable` with group separator rows ✓ (§6) |
-| Mouse — chosen, not captured | a list or `HudComboBox` ✓ |
+| Mouse — a button pressed over a pad, the wheel clicked (E4) | `MouseInputsPanel` ✓ |
 | Title as the in-game name, then where it lives | `commandTitleBlock`, `hudReadoutLabel` / `hudReadoutValue` ✓ |
 
 **Controller capture is new wiring, not a new component.** *"The input pressed decides the tab"* — pressing a
