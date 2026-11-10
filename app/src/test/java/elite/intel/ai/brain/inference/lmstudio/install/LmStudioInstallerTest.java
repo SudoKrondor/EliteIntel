@@ -134,6 +134,15 @@ class LmStudioInstallerTest {
     }
 
     @Test
+    void continuingWhereOnlyLmsIsLeftRunsTheScriptAgain() throws IOException {
+        Install owned = installs.recordStarted(home, false);
+        machine.leaveOnlyLms();
+
+        assertEquals(new InstallOutcome.Completed(), installer(0).continueSetup(owned));
+        assertTrue(machine.calls.contains("script"), "an lms with nothing to start is no install");
+    }
+
+    @Test
     void continuingWithoutLmsRunsTheScriptAgainAndRestoresThePointer() {
         Install owned = installs.recordStarted(home, true);
 

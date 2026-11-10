@@ -80,8 +80,12 @@ marker. It comes before the GPU and Address checks, so an install the app made c
 removed, even after the card was swapped or the Address changed. A record whose folder has no matching marker is
 ignored, not forgotten: a drive that is only unplugged today must still be uninstallable tomorrow.
 
-**"LM Studio found"** means an `lms` binary at `<LM Studio home>/bin/lms(.exe)`. The home is the folder named
-in `~/.lmstudio-home-pointer` if that file exists, else `~/.lmstudio`. The desktop app and llmster both put
+**"LM Studio found"** means an `lms` binary at `<LM Studio home>/bin/lms(.exe)` **and** an install record in
+`<LM Studio home>/.internal` - `llmster-install-location.json` or `app-install-location.json` - whose `path` names
+a program that is still there. That is what `lms daemon up` itself goes by. Removing LM Studio leaves its home
+behind, `lms` included (a Windows tester, 2026-11-10), and that `lms` then fails with "no valid installation could
+be found", so such a home counts as no LM Studio and the button offers **Install LM Studio**. The home is the folder
+named in `~/.lmstudio-home-pointer` if that file exists, else `~/.lmstudio`. The desktop app and llmster both put
 `lms` there. If no `lms` is found but something answers on the Address, the button is hidden. That
 LM Studio is one the app cannot drive.
 
@@ -126,7 +130,7 @@ the guides have always used. REST does the download, because only REST reports p
 what was done, so the button then says **Continue setup**.
 
 **Every step can run again.** A step whose work is already done is skipped: **Continue setup** skips the space
-check, skips the script when `lms` is already in the home, skips the start when the server answers, and skips the
+check, skips the script when LM Studio is already installed in the home (as above, not `lms` alone), skips the start when the server answers, and skips the
 download when LM Studio says the model is already downloaded. Continuing is simply running the install again.
 
 **A download that stops moving** (no change in `downloaded_bytes` for 5 minutes) fails the step.

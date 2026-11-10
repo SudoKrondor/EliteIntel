@@ -18,7 +18,7 @@ import java.util.OptionalLong;
 
 /**
  * Answers as a healthy PC would, unless a test says otherwise, and records what it was asked to do. Its script
- * "installs" by creating {@code lms}. Changes nothing on the PC.
+ * "installs" by creating {@code lms} and llmster's install record. Changes nothing on the PC.
  */
 final class FakeLmStudioMachine implements LmStudioMachine {
     final Path home;
@@ -44,7 +44,20 @@ final class FakeLmStudioMachine implements LmStudioMachine {
         this.home = home;
     }
 
+    /**
+     * What LM Studio's script leaves: {@code lms}, and llmster with the record that names it.
+     */
     void installLms() throws IOException {
+        leaveOnlyLms();
+        Path llmster = Files.createDirectories(home.resolve("llmster").resolve("0.0.27-1")).resolve("llmster");
+        Files.writeString(llmster, "");
+        LmStudioHomeTest.writeRecord(home, LmStudioHome.INSTALL_RECORDS.getFirst(), llmster);
+    }
+
+    /**
+     * What removing LM Studio leaves: its home with {@code lms} still in {@code bin}, but nothing for it to start.
+     */
+    void leaveOnlyLms() throws IOException {
         Path bin = Files.createDirectories(home.resolve("bin"));
         Files.writeString(bin.resolve(OsDetector.getOs() == OsDetector.OS.WINDOWS ? "lms.exe" : "lms"), "");
     }

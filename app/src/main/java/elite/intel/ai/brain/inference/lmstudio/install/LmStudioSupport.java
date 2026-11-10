@@ -129,6 +129,7 @@ public final class LmStudioSupport {
                 + "  Home pointer ~/" + LmStudioHome.POINTER_FILE + ": " + pointer(userHome) + '\n'
                 + "  LM Studio's home: " + home.dir() + '\n'
                 + "  lms: " + lms(home) + '\n'
+                + "  Installed programs: " + programs(home) + '\n'
                 + "  Server at the saved Address: " + listing(LMStudioClient.getInstance().listModels()) + '\n';
     }
 
@@ -144,6 +145,12 @@ public final class LmStudioSupport {
 
     private static String lms(LmStudioHome home) {
         return home.lmsCommand().map(Path::toString).orElse("none in " + home.dir().resolve("bin"));
+    }
+
+    private static String programs(LmStudioHome home) {
+        List<Path> programs = home.installedPrograms();
+        return programs.isEmpty() ? "none, so LM Studio is not installed here"
+                : String.join(", ", programs.stream().map(Path::toString).toList());
     }
 
     static String listing(ModelListing listing) {

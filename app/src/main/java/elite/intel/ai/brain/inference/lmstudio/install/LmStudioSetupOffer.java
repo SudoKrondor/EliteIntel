@@ -74,8 +74,8 @@ public enum LmStudioSetupOffer {
         if (!GpuRequirement.isMetByThisPc() || !isOnThisPc(address)) {
             return NONE;
         }
-        boolean lmsFound = LmStudioHome.locate().lmsCommand().isPresent();
-        return decide(lmsFound, LMStudioClient.getInstance().listModels(), session.getLmStudioCommandModel());
+        boolean installed = LmStudioHome.locate().installedLms().isPresent();
+        return decide(installed, LMStudioClient.getInstance().listModels(), session.getLmStudioCommandModel());
     }
 
     /**
@@ -94,9 +94,12 @@ public enum LmStudioSetupOffer {
 
     /**
      * What to offer on a PC that meets the GPU bar and keeps LM Studio on this machine.
+     *
+     * @param installed whether LM Studio is installed here ({@link LmStudioHome#installedLms()}). A home LM Studio
+     *                  was removed from, with only its {@code lms} left, is not: the install script puts it back.
      */
-    static LmStudioSetupOffer decide(boolean lmsFound, ModelListing served, String configuredModel) {
-        if (lmsFound) {
+    static LmStudioSetupOffer decide(boolean installed, ModelListing served, String configuredModel) {
+        if (installed) {
             return isAlreadySetUp(served, configuredModel) ? NONE : SET_UP_EXISTING;
         }
         // WHY NONE when something answers without an lms here: that LM Studio is one the app cannot drive.

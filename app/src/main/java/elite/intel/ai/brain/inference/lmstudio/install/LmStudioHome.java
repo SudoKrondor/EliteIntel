@@ -1,5 +1,8 @@
 package elite.intel.ai.brain.inference.lmstudio.install;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import elite.intel.io.AtomicFiles;
 import elite.intel.util.OsDetector;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -26,6 +30,13 @@ public record LmStudioHome(Path dir) {
 
     static final String POINTER_FILE = ".lmstudio-home-pointer";
     static final String DEFAULT_DIR = ".lmstudio";
+
+    /**
+     * Where LM Studio records the programs {@code lms} starts: llmster's (what LM Studio's install script installs)
+     * and the desktop app's. Each is JSON whose {@code path} names the program. {@code lms daemon up} goes by these
+     * and fails with "no valid installation could be found" when none names a program that is there.
+     */
+    static final List<String> INSTALL_RECORDS = List.of("llmster-install-location.json", "app-install-location.json");
 
     /**
      * LM Studio's home for the user running the app.
@@ -75,11 +86,47 @@ public record LmStudioHome(Path dir) {
     }
 
     /**
-     * The {@code lms} command, when LM Studio is installed here.
+     * The {@code lms} command, when one is in {@code bin} - whether or not LM Studio is still installed. Use
+     * {@link #installedLms()} to ask whether there is an LM Studio {@code lms} can start.
      */
     public Optional<Path> lmsCommand() {
         String name = OsDetector.getOs() == OsDetector.OS.WINDOWS ? "lms.exe" : "lms";
         Path command = dir.resolve("bin").resolve(name);
         return Files.isRegularFile(command) ? Optional.of(command) : Optional.empty();
+    }
+
+    /**
+     * The {@code lms} command, when LM Studio is really installed here: {@code lms} in {@code bin} and an
+     * {@linkplain #INSTALL_RECORDS install record} naming a program that is there.
+     * <p>
+     * WHY not {@code lms} alone: removing LM Studio leaves its home behind, {@code bin/lms.exe} included (a Windows
+     * tester's support bundle, 2026-11-10), and that {@code lms} then fails to start anything.
+     */
+    public Optional<Path> installedLms() {
+        return lmsCommand().filter(lms -> !installedPrograms().isEmpty());
+    }
+
+    /**
+     * The programs LM Studio's install records name that are still there; empty when LM Studio was removed.
+     */
+    public List<Path> installedPrograms() {
+        return INSTALL_RECORDS.stream()
+                .map(name -> recordedProgram(dir.resolve(".internal").resolve(name)))
+                .flatMap(Optional::stream)
+                .filter(Files::exists)
+                .toList();
+    }
+
+    private static Optional<Path> recordedProgram(Path record) {
+        if (!Files.isRegularFile(record)) return Optional.empty();
+        try {
+            JsonElement path = JsonParser.parseString(Files.readString(record, StandardCharsets.UTF_8))
+                    .getAsJsonObject().get("path");
+            return path != null && path.isJsonPrimitive() ? Optional.of(Path.of(path.getAsString())) : Optional.empty();
+        } catch (IOException | JsonParseException | IllegalStateException | InvalidPathException unreadable) {
+            // WHY no install: lms reads the same file, and one it cannot follow starts nothing either.
+            log.warn("Could not read LM Studio's install record {}: {}", record, unreadable.getMessage());
+            return Optional.empty();
+        }
     }
 }

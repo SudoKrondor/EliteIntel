@@ -209,7 +209,7 @@ public final class LmStudioInstaller {
     }
 
     private Path ensureInstalled(Install owned) throws InstallException {
-        Optional<Path> installed = new LmStudioHome(owned.homeDir()).lmsCommand();
+        Optional<Path> installed = new LmStudioHome(owned.homeDir()).installedLms();
         if (installed.isPresent()) {
             skip(InstallStep.INSTALL, "LM Studio is already installed in " + owned.homeDir());
             return installed.get();
