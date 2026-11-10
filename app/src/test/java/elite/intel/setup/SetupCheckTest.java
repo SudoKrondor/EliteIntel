@@ -309,7 +309,7 @@ class SetupCheckTest {
         for (Language language : Language.values()) {
             String text = MultiLingualTextProvider.getText(language, "speech.setup.noLlm");
 
-            assertTrue(text.contains("Mistral"), language + " does not name Mistral");
+            assertFalse(text.contains("Mistral"), language + " still points at the retired free Mistral tier");
             assertTrue(text.contains("Gemma 4 E4B"), language + " does not name the local model");
             assertTrue(text.toLowerCase().contains("intel"),
                     language + " does not point at the site");
