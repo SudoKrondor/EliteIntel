@@ -23,4 +23,12 @@ class GpuMemoryTest {
     void noCardsIsUnknown() {
         assertEquals(OptionalLong.empty(), GpuMemory.sum(List.of()));
     }
+
+    @Test
+    void bothVendorsAreAddedAndEitherStandsAlone() {
+        assertEquals(OptionalLong.of(9_000), GpuMemory.add(OptionalLong.of(1_000), OptionalLong.of(8_000)));
+        assertEquals(OptionalLong.of(8_000), GpuMemory.add(OptionalLong.empty(), OptionalLong.of(8_000)));
+        assertEquals(OptionalLong.of(1_000), GpuMemory.add(OptionalLong.of(1_000), OptionalLong.empty()));
+        assertEquals(OptionalLong.empty(), GpuMemory.add(OptionalLong.empty(), OptionalLong.empty()));
+    }
 }

@@ -59,7 +59,7 @@ public enum LmStudioSetupOffer {
     }
 
     /**
-     * What to offer, from the saved settings and this PC. Slow - it runs {@code nvidia-smi} and asks LM Studio for
+     * What to offer, from the saved settings and this PC. Slow - it reads the graphics cards and asks LM Studio for
      * its models - so call it off the event thread.
      */
     public static LmStudioSetupOffer forThisPc() {

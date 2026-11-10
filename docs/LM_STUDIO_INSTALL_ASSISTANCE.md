@@ -26,12 +26,37 @@ memory. A 24 GB card reports a little under 24,576 MiB.
 | RTX 3090 / 3090 Ti / 4090 / 5090, A5000 and up | pass | cc ≥ 8.6, ≥ 24 GB |
 | Titan RTX (cc 7.5), Tesla P40 / M40, Quadro P6000 | fail | too old or too slow, though they have 24 GB |
 | Any 12 or 16 GB card | fail | game and model do not fit together |
-| AMD and Intel, including the 24 GB RX 7900 XTX | fail | `nvidia-smi` cannot see them. Not in this release |
-| No `nvidia-smi`, or it hangs (5 s limit) | fail | |
+| AMD with at least 23,000 MiB (RX 7900 XTX, Radeon PRO W7800 / W7900 / W6800) | pass, **beta** | See [AMD cards (beta)](#amd-cards-beta) |
+| AMD with less (RX 7900 XT 20 GB, 9070 XT, 6900 XT) | fail | game and model do not fit together |
+| Intel | fail | no Intel card has 24 GB, so none is looked for |
+| No `nvidia-smi` and no AMD card, or `nvidia-smi` hangs (5 s limit) | fail | |
 
 OSHI is not used for this: its VRAM figure is wrong on both platforms (see `HardwareReport.gpus`).
 
 When the check fails, the button is **not shown**. The manual guides remain the path for everyone else.
+
+### AMD cards (beta)
+
+Added 2026-11-10 for the V1.2 beta, **without an AMD card to test on**. LM Studio runs on AMD through its
+llama.cpp Vulkan and ROCm engines. What is not known yet is whether the headless install picks one by itself, and
+how fast `gemma-4-e4b` runs on it next to the game.
+
+- **The bar is memory only: at least 23,000 MiB**, the same as NVIDIA's. AMD publishes nothing like NVIDIA's
+  compute capability, and the 24 GB cards a gaming PC holds are all RDNA 2 or newer. A 32 GB FirePro W9100 or a
+  Radeon Instinct MI50 would pass, and that is accepted: they are not gaming PC cards.
+- **NVIDIA comes first.** A PC with a passing NVIDIA card is the tested path, with no warning, even if it also has
+  a passing AMD card.
+- **The dialog says it is a beta** (`lmStudioInstall.amdBeta`, a warning banner under the intro): the card has the
+  memory, but the setup is untested on AMD and may fail, and a support bundle helps us fix it.
+- **Where the numbers come from** (`AmdCards`). AMD ships no `nvidia-smi`, and `rocm-smi` comes only with ROCm:
+  - **Linux:** `amdgpu`'s own files, for every `/sys/class/drm/cardN` whose `device/vendor` is `0x1002`:
+    `mem_info_vram_total` for the bar, `mem_info_vram_used` for step 6, both in bytes.
+  - **Windows:** the card's memory is `HardwareInformation.qwMemorySize` under the display adapter's registry key
+    (`HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-...}\000N`, AMD when `MatchingDeviceId` holds
+    `ven_1002`). WMI's `AdapterRAM` is 32-bit and stops at 4 GB. Memory in use for step 6 is the
+    `GPU Adapter Memory\Dedicated Usage` counter summed over **every** adapter, read through OSHI (PDH by English
+    name, falling back to WMI's untranslated class). That counter names adapters by number, not vendor, so on such
+    a PC `nvidia-smi`'s figure is not added on top of it.
 
 ---
 
@@ -77,7 +102,7 @@ to fit as the download, a result or the log appear. It has no scrolling body.
 | 3 | **Start LM Studio** | `lms daemon up`, then `lms server start --port 1234 --bind 127.0.0.1` | badge |
 | 4 | **Download the model** | `POST /api/v1/models/download` for `google/gemma-4-e4b`, then polls its status once a second | badge and a bar: *"2.1 of 6.0 GB · 48 MB/s · 1 min left"* |
 | 5 | **Load the model** | `lms load google/gemma-4-e4b --context-length 8192 --gpu max --yes`. A model already loaded is unloaded first: its settings may not be these, and step 6 must measure this load | badge |
-| 6 | **Check the GPU took it** | `nvidia-smi` memory in use must have risen by **at least 4 GB** since before the load | badge |
+| 6 | **Check the GPU took it** | Graphics memory in use (`nvidia-smi`, plus [AMD's](#amd-cards-beta)) must have risen by **at least 4 GB** since before the load | badge |
 | 7 | **Test** | One tool-call request in the shape `LmStudioLlmAdapter` sends. A tool call must come back | badge |
 | 8 | **Save** | Address `http://localhost:1234/v1/chat/completions`, Model `google/gemma-4-e4b`, saved through the panel's existing `save()`, which restarts only the brain | badge |
 
@@ -220,7 +245,8 @@ Two parts, so that the test machine's run can be read back from a bundle without
   go there too. It rolls only on size (1 MB, one rolled file kept), like `bindforge.log`, so it outlives the
   restart that usually comes before a report. Both files go in the bundle.
 - **`lm-studio-report.txt`** (`LmStudioSupport`), worked out when the bundle is saved: `nvidia-smi`'s line for
-  each card (driver, name, MiB, compute) judged against the bar, alongside what the app decided this run. Then
+  each card (driver, name, MiB, compute) and each AMD card (name, MiB) judged against the bar, the graphics memory
+  in use as step 6 reads it, and what the app decided this run (NVIDIA, AMD beta, or not met). Then
   whether the saved Address names this PC, the home pointer and the home it leads to, the `lms` command, and
   what the server serves. Then the install record, with its marker, `lms` and model files, the offer the button
   makes, and whether the host runs with the services. Each section that fails costs only itself. The Address and
@@ -232,7 +258,8 @@ Every field, control and figure the feature shows, and where it comes from.
 
 | Shown | Where | Source |
 |---|---|---|
-| Button visible or hidden | Panel | GPU check (`nvidia-smi`), the Address field, the `lms` binary, the install record |
+| Button visible or hidden | Panel | GPU check (`nvidia-smi`, `AmdCards`), the Address field, the `lms` binary, the install record |
+| AMD beta warning | Dialog | `GpuRequirement.forThisPc()` is `MET_BY_AMD` |
 | Button caption | Panel | The table under [What the button says](#what-the-button-says) |
 | Install folder | Dialog | Default `~/.lmstudio`, or the commander's choice + `/LMStudio` |
 | Free space on that drive | Dialog | `FileStore.getUsableSpace()` of the folder's volume |
@@ -240,7 +267,7 @@ Every field, control and figure the feature shows, and where it comes from.
 | Step checklist and current step | Dialog | The installer's own progress, reported per step |
 | Script and command output | Dialog log | stdout/stderr of the script and each `lms` command |
 | Download bar, GB done / total, speed, time left | Dialog | `GET /api/v1/models/download/status/{job_id}`: `downloaded_bytes`, `total_size_bytes`, `bytes_per_second`, `estimated_completion` |
-| "The GPU took the model" | Dialog | `nvidia-smi --query-gpu=memory.used` before and after the load |
+| "The GPU took the model" | Dialog | `nvidia-smi --query-gpu=memory.used` and AMD's memory in use, before and after the load |
 | Test result | Dialog | Whether the test request's reply contains a tool call |
 | Models listed before uninstall | Confirm dialog | `*.gguf` files under `home_dir/models`, with sizes from the file system |
 | Address and Model after setup | Panel | Constants: `http://localhost:1234/v1/chat/completions`, `google/gemma-4-e4b` (the panel's existing defaults) |
@@ -265,7 +292,7 @@ Every new UI string goes into all nine `gui*.properties` bundles.
 
 ## Not in this release
 
-- AMD and Intel GPUs
+- Intel GPUs (AMD is in, as a [beta](#amd-cards-beta))
 - Starting LM Studio at login
 - Choosing a different model
 - The website guides (a separate task once beta testing confirms the feature)
@@ -276,3 +303,6 @@ The smoke tests ran on GitHub's GPU-less runners. These need the V1.2 beta:
 - `--gpu max` actually placing the model on the GPU
 - VRAM use next to the game
 - The Windows install and uninstall on a commander's own PC
+- Everything on AMD: the card reading on both OSes, which engine LM Studio picks, `--gpu max` placing the model,
+  the step 6 counter on Windows, and the speed next to the game. A Windows tester with an RX 7900 XTX is asked for
+  in the test lab

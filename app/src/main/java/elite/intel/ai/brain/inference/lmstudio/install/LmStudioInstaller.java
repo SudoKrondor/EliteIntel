@@ -321,7 +321,7 @@ public final class LmStudioInstaller {
         begin(InstallStep.GPU_CHECK);
         OptionalLong after = machine.gpuMemoryUsedMib();
         if (before.isEmpty() || after.isEmpty()) {
-            throw new InstallException("nvidia-smi could not say how much graphics memory is in use");
+            throw new InstallException("The graphics driver could not say how much graphics memory is in use");
         }
         long rise = after.getAsLong() - before.getAsLong();
         progress.log("Graphics memory in use rose by " + rise + " MiB");

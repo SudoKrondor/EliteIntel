@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,17 +26,34 @@ class LmStudioSupportTest {
     void eachCardIsJudgedAgainstTheBar() {
         String text = LmStudioSupport.graphicsCard(new NvidiaSmi.Answer.Lines(List.of(
                 "566.36, NVIDIA GeForce RTX 3090, 24576, 8.6",
-                "566.36, NVIDIA GeForce RTX 4080, 16376, 8.9")), true);
+                "566.36, NVIDIA GeForce RTX 4080, 16376, 8.9")), List.of(), OptionalLong.of(1_200),
+                GpuRequirement.Verdict.MET_BY_NVIDIA);
 
         assertTrue(text.contains("23000 MiB and compute capability 8.6"), text);
         assertTrue(text.contains("RTX 3090, 24576, 8.6 - meets the bar"), text);
         assertTrue(text.contains("RTX 4080, 16376, 8.9 - below the bar"), text);
-        assertTrue(text.contains("Decided this run, which the button follows: meets the bar"), text);
+        assertTrue(text.contains("AMD: none found"), text);
+        assertTrue(text.contains("Graphics memory in use now: 1200 MiB"), text);
+        assertTrue(text.contains("Decided this run, which the button follows: meets the bar (NVIDIA)"), text);
+    }
+
+    @Test
+    void anAmdCardIsJudgedAndTheBetaIsSaid() {
+        String text = LmStudioSupport.graphicsCard(new NvidiaSmi.Answer.Nothing(), List.of(
+                new AmdCards.Card("AMD Radeon RX 7900 XTX", OptionalLong.of(24_560)),
+                new AmdCards.Card("AMD Radeon(TM) Graphics", OptionalLong.empty())),
+                OptionalLong.empty(), GpuRequirement.Verdict.MET_BY_AMD);
+
+        assertTrue(text.contains("AMD card: AMD Radeon RX 7900 XTX, 24560 MiB - meets the bar"), text);
+        assertTrue(text.contains("AMD card: AMD Radeon(TM) Graphics, memory not reported - below the bar"), text);
+        assertTrue(text.contains("Graphics memory in use now: could not be read"), text);
+        assertTrue(text.contains("meets the bar (AMD, beta)"), text);
     }
 
     @Test
     void noNvidiaSmiIsSaidAsSuch() {
-        String text = LmStudioSupport.graphicsCard(new NvidiaSmi.Answer.Nothing(), false);
+        String text = LmStudioSupport.graphicsCard(new NvidiaSmi.Answer.Nothing(), List.of(),
+                OptionalLong.empty(), GpuRequirement.Verdict.NOT_MET);
 
         assertTrue(text.contains("nvidia-smi: nothing - not on the PATH"), text);
         assertTrue(text.contains("does not meet the bar"), text);

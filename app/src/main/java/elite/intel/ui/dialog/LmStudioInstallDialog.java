@@ -48,6 +48,10 @@ public final class LmStudioInstallDialog extends JDialog {
     private static final double BYTES_PER_MB = 1024.0 * 1024;
 
     private final LmStudioSetupOffer offer;
+    /**
+     * Whether the PC passed the GPU check on an AMD card: the dialog then says that is a beta.
+     */
+    private final boolean onAmd;
     private final LmStudioInstaller.FieldsSaver saver;
     private final Map<InstallStep, StatusBadge> badges = new EnumMap<>(InstallStep.class);
 
@@ -69,9 +73,11 @@ public final class LmStudioInstallDialog extends JDialog {
     private boolean stopping;
     private boolean closeWhenStopped;
 
-    private LmStudioInstallDialog(Component parent, LmStudioSetupOffer offer, LmStudioInstaller.FieldsSaver saver) {
+    private LmStudioInstallDialog(Component parent, LmStudioSetupOffer offer, boolean onAmd,
+                                  LmStudioInstaller.FieldsSaver saver) {
         super(SwingUtilities.getWindowAncestor(parent), getText(captionKey(offer)), ModalityType.APPLICATION_MODAL);
         this.offer = offer;
+        this.onAmd = onAmd;
         this.saver = saver;
         setUndecorated(true);
         setMinimumSize(new Dimension(760, 0));
@@ -110,15 +116,17 @@ public final class LmStudioInstallDialog extends JDialog {
     /**
      * Opens the dialog for {@code offer} and returns once it is closed.
      *
+     * @param onAmd whether the PC passed on an AMD card, which the dialog warns is a beta
      * @param saver writes the Address and Model the install ends with
      * @throws IllegalArgumentException for an offer that is not an install or a set-up
      */
-    public static void open(Component parent, LmStudioSetupOffer offer, LmStudioInstaller.FieldsSaver saver) {
+    public static void open(Component parent, LmStudioSetupOffer offer, boolean onAmd,
+                            LmStudioInstaller.FieldsSaver saver) {
         if (offer != LmStudioSetupOffer.INSTALL && offer != LmStudioSetupOffer.SET_UP_EXISTING
                 && offer != LmStudioSetupOffer.CONTINUE_SETUP) {
             throw new IllegalArgumentException("The install dialog does not handle " + offer);
         }
-        LmStudioInstallDialog dialog = new LmStudioInstallDialog(parent, offer, saver);
+        LmStudioInstallDialog dialog = new LmStudioInstallDialog(parent, offer, onAmd, saver);
         AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(parent), () -> dialog.setVisible(true));
     }
 
@@ -145,6 +153,13 @@ public final class LmStudioInstallDialog extends JDialog {
         intro.setAlignmentX(Component.LEFT_ALIGNMENT);
         page.add(intro);
         page.add(Box.createVerticalStrut(HUD_GAP));
+
+        if (onAmd) {
+            HudBanner amdBeta = HudBanner.multiline(getText("lmStudioInstall.amdBeta"), StatusBadge.State.STANDBY);
+            amdBeta.setAlignmentX(Component.LEFT_ALIGNMENT);
+            page.add(amdBeta);
+            page.add(Box.createVerticalStrut(HUD_GAP));
+        }
 
         if (offer == LmStudioSetupOffer.INSTALL) {
             page.add(buildFolderSection());

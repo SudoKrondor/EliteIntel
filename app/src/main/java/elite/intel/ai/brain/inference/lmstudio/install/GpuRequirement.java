@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.OptionalLong;
 
 /**
  * Whether this PC can run the game and the local model together: an RTX 3090 (24 GB) or better.
@@ -13,8 +14,9 @@ import java.util.List;
  * the GPU, so 18 GB does not hold up in practice. A 12 GB card is enough only for a PC that runs nothing but the
  * model, which is the manual second-PC setup in the website guide, not this one-click one.
  * <p>
- * Read from {@code nvidia-smi}, because OSHI's VRAM figure is wrong on both platforms. AMD and Intel cards are not
- * seen at all and so never pass; that is a known limit of this release, not an oversight.
+ * NVIDIA cards are read from {@code nvidia-smi}, because OSHI's VRAM figure is wrong on both platforms. AMD cards
+ * ({@link AmdCards}) are a <b>beta</b>: the same memory bar, nothing about the chip, and untested on real hardware,
+ * so the install dialog says so. Intel has no card with 24 GB and is not looked for.
  * <p>
  * See {@code docs/LM_STUDIO_INSTALL_ASSISTANCE.md}, "Who sees the button".
  */
@@ -37,27 +39,67 @@ public final class GpuRequirement {
     }
 
     /**
-     * Whether any card in this PC meets the bar. Asked once per run - the cards do not change while the app is up -
-     * and off the event thread, since {@code nvidia-smi} can take up to {@link NvidiaSmi#TIMEOUT} to answer.
+     * Which card, if any, lets this PC pass.
+     */
+    public enum Verdict {
+        NOT_MET,
+        /**
+         * An NVIDIA card meets the bar: the tested path.
+         */
+        MET_BY_NVIDIA,
+        /**
+         * No NVIDIA card does, an AMD card does: offered as a beta, with a warning that it is untested.
+         */
+        MET_BY_AMD
+    }
+
+    /**
+     * Which card in this PC meets the bar. Asked once per run - the cards do not change while the app is up - and off
+     * the event thread, since {@code nvidia-smi} can take up to {@link NvidiaSmi#TIMEOUT} to answer.
+     */
+    public static Verdict forThisPc() {
+        return Cached.VERDICT;
+    }
+
+    /**
+     * Whether any card in this PC meets the bar; see {@link #forThisPc()}.
      */
     public static boolean isMetByThisPc() {
-        return Cached.MET;
+        return forThisPc() != Verdict.NOT_MET;
     }
 
     private static final class Cached {
-        private static final boolean MET = readThisPc();
+        private static final Verdict VERDICT = readThisPc();
     }
 
-    private static boolean readThisPc() {
+    private static Verdict readThisPc() {
         NvidiaSmi.Answer answer = NvidiaSmi.query(
                 "--query-gpu=name,memory.total,compute_cap", "--format=csv,noheader,nounits");
-        if (!(answer instanceof NvidiaSmi.Answer.Lines(List<String> lines))) {
+        if (answer instanceof NvidiaSmi.Answer.Lines(List<String> lines)) {
+            boolean met = isMetBy(lines);
+            log.info("LM Studio install check: NVIDIA GPUs {} meet the bar: {}", lines, met);
+            // WHY NVIDIA first: it is the tested path, so a PC with both kinds of passing card gets no beta warning.
+            if (met) return Verdict.MET_BY_NVIDIA;
+        } else {
             log.info("No NVIDIA card readable for the LM Studio install check: {}", answer);
-            return false;
         }
-        boolean met = isMetBy(lines);
-        log.info("LM Studio install check: GPUs {} meet the bar: {}", lines, met);
-        return met;
+        List<AmdCards.Card> amd = AmdCards.onThisPc();
+        boolean amdMet = isMetByAmd(amd);
+        log.info("LM Studio install check: AMD GPUs {} meet the bar: {}", amd, amdMet);
+        return amdMet ? Verdict.MET_BY_AMD : Verdict.NOT_MET;
+    }
+
+    /**
+     * Whether any of these AMD cards meets the bar. Memory only: unlike NVIDIA's compute capability, AMD publishes
+     * nothing that ranks its chips, and the 24 GB cards a gaming PC holds are all RDNA 2 or newer.
+     */
+    static boolean isMetByAmd(List<AmdCards.Card> cards) {
+        return cards.stream().anyMatch(GpuRequirement::meetsTheBar);
+    }
+
+    static boolean meetsTheBar(AmdCards.Card card) {
+        OptionalLong memory = card.memoryMib();
+        return memory.isPresent() && memory.getAsLong() >= MIN_MEMORY_MIB;
     }
 
     /**

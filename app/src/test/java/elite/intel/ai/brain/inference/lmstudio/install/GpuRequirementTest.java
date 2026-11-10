@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,5 +62,23 @@ class GpuRequirementTest {
     @Test
     void noCardsIsNotAPass() {
         assertFalse(GpuRequirement.isMetBy(List.of()));
+    }
+
+    @Test
+    void anAmdCardWith24GbPasses() {
+        assertTrue(GpuRequirement.isMetByAmd(List.of(
+                new AmdCards.Card("AMD Radeon RX 7900 XTX", OptionalLong.of(24_560)))));
+    }
+
+    @Test
+    void anAmdCardWithLessFails() {
+        assertFalse(GpuRequirement.isMetByAmd(List.of(
+                new AmdCards.Card("AMD Radeon RX 7900 XT", OptionalLong.of(20_464)),
+                new AmdCards.Card("AMD Radeon RX 9070 XT", OptionalLong.of(16_304)))));
+    }
+
+    @Test
+    void anAmdCardThatDoesNotReportItsMemoryFails() {
+        assertFalse(GpuRequirement.isMetByAmd(List.of(new AmdCards.Card("AMD card 0000", OptionalLong.empty()))));
     }
 }

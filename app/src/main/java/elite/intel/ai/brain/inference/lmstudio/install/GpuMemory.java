@@ -1,12 +1,13 @@
 package elite.intel.ai.brain.inference.lmstudio.install;
 
+import com.sun.jna.Platform;
 import elite.intel.util.NvidiaSmi;
 
 import java.util.List;
 import java.util.OptionalLong;
 
 /**
- * GPU memory in use right now, summed over every NVIDIA card, read before and after the model loads.
+ * GPU memory in use right now, summed over every card, read before and after the model loads.
  * <p>
  * WHY this and not timing: {@code lms load --gpu max} does not fail when the model cannot go on the GPU - on a
  * machine without a usable one it loads onto the CPU and says nothing (smoke test, round 1). The memory in use rising
@@ -24,14 +25,31 @@ final class GpuMemory {
     }
 
     /**
-     * MiB in use on all NVIDIA cards, or empty when {@code nvidia-smi} cannot say.
+     * MiB in use on all cards, or empty when no driver can say.
      */
     static OptionalLong usedMib() {
+        OptionalLong amd = AmdCards.usedMib();
+        // WHY not asked on Windows once the AMD reading answers: that reading already counts every adapter, NVIDIA's
+        // too, so adding nvidia-smi's would count an NVIDIA card twice.
+        if (Platform.isWindows() && amd.isPresent()) return amd;
+        return add(nvidiaUsedMib(), amd);
+    }
+
+    private static OptionalLong nvidiaUsedMib() {
         if (NvidiaSmi.query("--query-gpu=memory.used", "--format=csv,noheader,nounits")
                 instanceof NvidiaSmi.Answer.Lines(List<String> lines)) {
             return sum(lines);
         }
         return OptionalLong.empty();
+    }
+
+    /**
+     * The two vendors' readings together; either alone when only it answered.
+     */
+    static OptionalLong add(OptionalLong nvidia, OptionalLong amd) {
+        if (nvidia.isEmpty()) return amd;
+        if (amd.isEmpty()) return nvidia;
+        return OptionalLong.of(nvidia.getAsLong() + amd.getAsLong());
     }
 
     static OptionalLong sum(List<String> lines) {

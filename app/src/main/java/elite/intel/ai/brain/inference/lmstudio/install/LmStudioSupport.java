@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -23,11 +24,11 @@ import java.util.function.Supplier;
  * the LM Studio log, which the bundle carries beside this.
  * <p>
  * WHY: the questions a report about the setup button starts with - why there is no button, why it offers what it
- * offers, which LM Studio it found - each turn on a state no log line states: what {@code nvidia-smi} says about the
+ * offers, which LM Studio it found - each turn on a state no log line states: what the graphics drivers say about the
  * card against the bar, where LM Studio's home pointer leads, whether the install record's marker still matches.
  * <p>
  * Worked out only when the commander saves a bundle. <strong>One section that fails costs that section</strong>, with
- * what stopped it written in its place. Reads only. Runs {@code nvidia-smi}, asks LM Studio for its models and reads
+ * what stopped it written in its place. Reads only. Reads the graphics cards, asks LM Studio for its models and reads
  * the database - not for the EDT.
  */
 public final class LmStudioSupport {
@@ -70,16 +71,19 @@ public final class LmStudioSupport {
         // WHY the same last two fields as GpuRequirement's query: each line is judged by its own reading of them.
         NvidiaSmi.Answer answer = NvidiaSmi.query(
                 "--query-gpu=driver_version,name,memory.total,compute_cap", "--format=csv,noheader,nounits");
-        return graphicsCard(answer, GpuRequirement.isMetByThisPc());
+        return graphicsCard(answer, AmdCards.onThisPc(), GpuMemory.usedMib(), GpuRequirement.forThisPc());
     }
 
     /**
-     * @param metThisRun what the app decided the first time it asked this run, which is what the button follows
+     * @param usedMib    graphics memory in use now, as the install's GPU check would read it
+     * @param decided    what the app decided the first time it asked this run, which is what the button follows
      */
-    static String graphicsCard(NvidiaSmi.Answer answer, boolean metThisRun) {
+    static String graphicsCard(NvidiaSmi.Answer answer, List<AmdCards.Card> amd, OptionalLong usedMib,
+                               GpuRequirement.Verdict decided) {
         StringBuilder text = new StringBuilder(String.format(Locale.ROOT,
-                "  The bar: an NVIDIA card with %d MiB and compute capability %d.%d%n",
-                GpuRequirement.MIN_MEMORY_MIB, GpuRequirement.MIN_COMPUTE_MAJOR, GpuRequirement.MIN_COMPUTE_MINOR));
+                "  The bar: an NVIDIA card with %d MiB and compute capability %d.%d, or (beta) an AMD card with %d MiB%n",
+                GpuRequirement.MIN_MEMORY_MIB, GpuRequirement.MIN_COMPUTE_MAJOR, GpuRequirement.MIN_COMPUTE_MINOR,
+                GpuRequirement.MIN_MEMORY_MIB));
         switch (answer) {
             case NvidiaSmi.Answer.Lines(List<String> lines) -> {
                 for (String line : lines) {
@@ -95,9 +99,20 @@ public final class LmStudioSupport {
             case NvidiaSmi.Answer.Unreadable(IOException cause) -> text.append(
                     "  nvidia-smi: its output could not be read: ").append(cause).append('\n');
         }
-        return text.append("  Decided this run, which the button follows: ")
-                .append(metThisRun ? "meets the bar" : "does not meet the bar")
-                .append('\n').toString();
+        if (amd.isEmpty()) text.append("  AMD: none found\n");
+        for (AmdCards.Card card : amd) {
+            text.append("  AMD card: ").append(card.name()).append(", ")
+                    .append(card.memoryMib().isPresent() ? card.memoryMib().getAsLong() + " MiB" : "memory not reported")
+                    .append(GpuRequirement.meetsTheBar(card) ? " - meets the bar" : " - below the bar")
+                    .append('\n');
+        }
+        text.append("  Graphics memory in use now: ")
+                .append(usedMib.isPresent() ? usedMib.getAsLong() + " MiB" : "could not be read").append('\n');
+        return text.append("  Decided this run, which the button follows: ").append(switch (decided) {
+            case NOT_MET -> "does not meet the bar";
+            case MET_BY_NVIDIA -> "meets the bar (NVIDIA)";
+            case MET_BY_AMD -> "meets the bar (AMD, beta)";
+        }).append('\n').toString();
     }
 
     // -------------------------------------------------------------------------

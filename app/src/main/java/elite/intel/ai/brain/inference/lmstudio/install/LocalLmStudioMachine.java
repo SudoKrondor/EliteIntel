@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 
 /**
  * The real {@link LmStudioMachine}: LM Studio's own script and {@code lms}, its server on this PC, and
- * {@code nvidia-smi}.
+ * the graphics memory readings ({@link GpuMemory}).
  */
 final class LocalLmStudioMachine implements LmStudioMachine {
 

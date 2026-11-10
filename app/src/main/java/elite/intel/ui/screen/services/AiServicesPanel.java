@@ -3,6 +3,7 @@ package elite.intel.ui.screen.services;
 import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
 import elite.intel.ai.brain.inference.lmstudio.install.InstallException;
+import elite.intel.ai.brain.inference.lmstudio.install.GpuRequirement;
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSetupOffer;
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioUninstaller;
 import elite.intel.ai.mouth.TtsProvider;
@@ -76,6 +77,10 @@ public class AiServicesPanel extends JPanel {
      * What {@link #lmStudioSetupButton} does when pressed: the offer it was last shown for.
      */
     private LmStudioSetupOffer lmStudioSetupOffer = LmStudioSetupOffer.NONE;
+    /**
+     * Whether {@link #lmStudioSetupOffer} stands on an AMD card, which the install dialog warns is a beta.
+     */
+    private boolean lmStudioOnAmd;
     private HudComboBox<ProviderOption> providerCombo;
     private JPasswordField apiKeyField;
     /**
@@ -393,21 +398,28 @@ public class AiServicesPanel extends JPanel {
     private void refreshLmStudioSetupOffer() {
         Thread.ofVirtual().name("lm-studio-setup-offer").start(() -> {
             LmStudioSetupOffer offer;
+            boolean onAmd;
             try {
                 offer = LmStudioSetupOffer.forThisPc();
+                // WHY asked here and not in the dialog: the first reading of the cards can take seconds.
+                onAmd = offer != LmStudioSetupOffer.NONE && offer != LmStudioSetupOffer.UNINSTALL
+                        && GpuRequirement.forThisPc() == GpuRequirement.Verdict.MET_BY_AMD;
             } catch (RuntimeException e) {
                 // WHY: broad catch at the worker-thread boundary - the button is a convenience, so a failed check
                 // leaves it hidden and the manual guides still work, rather than dying unseen on a virtual thread.
                 log.error("Could not work out what to offer for LM Studio setup", e);
                 offer = LmStudioSetupOffer.NONE;
+                onAmd = false;
             }
             LmStudioSetupOffer shown = offer;
-            SwingUtilities.invokeLater(() -> showLmStudioSetupOffer(shown));
+            boolean shownOnAmd = onAmd;
+            SwingUtilities.invokeLater(() -> showLmStudioSetupOffer(shown, shownOnAmd));
         });
     }
 
-    private void showLmStudioSetupOffer(LmStudioSetupOffer offer) {
+    private void showLmStudioSetupOffer(LmStudioSetupOffer offer, boolean onAmd) {
         lmStudioSetupOffer = offer;
+        lmStudioOnAmd = onAmd;
         offer.captionKey().ifPresent(key -> lmStudioSetupButton.setText(getText(key)));
         lmStudioSetupButton.setVisible(offer.captionKey().isPresent());
         localCol.revalidate();
@@ -417,7 +429,7 @@ public class AiServicesPanel extends JPanel {
     private void openLmStudioSetup() {
         switch (lmStudioSetupOffer) {
             case INSTALL, SET_UP_EXISTING, CONTINUE_SETUP -> {
-                LmStudioInstallDialog.open(this, lmStudioSetupOffer, this::saveLmStudioSetup);
+                LmStudioInstallDialog.open(this, lmStudioSetupOffer, lmStudioOnAmd, this::saveLmStudioSetup);
                 refreshLmStudioSetupOffer();
             }
             case UNINSTALL -> LmStudioSetupOffer.ownedInstall().ifPresent(this::uninstallLmStudio);
