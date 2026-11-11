@@ -396,7 +396,7 @@ public final class BindingsComparison {
      */
     private static List<LineItem> elementItems(String file, BindsElements.Top mine, BindsElements.Top theirs) {
         String element = mine != null ? mine.name() : theirs.name();
-        if (mine != null && theirs != null && mine.value().equals(theirs.value())) return List.of();
+        if (mine != null && theirs != null && mine.sameValue(theirs)) return List.of();
         if (mine != null && theirs != null && sameShape(mine, theirs)) {
             List<LineItem> items = new ArrayList<>();
             for (BindsElements.Child child : mine.children()) {
@@ -408,7 +408,15 @@ public final class BindingsComparison {
             if (!items.isEmpty()) return items;
         }
         return List.of(new LineItem(file, element, Kind.ELEMENT, element, null, null,
-                mine == null ? null : describe(mine.node()), theirs == null ? null : describe(theirs.node())));
+                mine == null ? null : describe(mine), theirs == null ? null : describe(theirs)));
+    }
+
+    /**
+     * A whole element, readably: its first copy, or every copy when they differ - <em>0 / 1</em> (Storage S18, Q3).
+     */
+    private static String describe(BindsElements.Top element) {
+        if (!element.copiesDiffer()) return describe(element.node());
+        return String.join(" / ", element.copies().stream().map(copy -> describe(copy.node())).toList());
     }
 
     /**
@@ -497,7 +505,10 @@ public final class BindingsComparison {
         BindsElements a = BindsElements.of(mine).orElseThrow(() -> notMerged(version.newer()));
         BindsElements b = BindsElements.of(theirs).orElseThrow(() -> notMerged(version.newer()));
         for (LineItem item : version.items()) {
-            if (answerOf(item, answers) != Side.WORKING_COPY) continue;
+            if (answerOf(item, answers) != Side.WORKING_COPY) {
+                splices.addAll(copiesMadeEqual(b, item));
+                continue;
+            }
             switch (item.kind()) {
                 case SLOT -> {
                     BindsElements.Child gameChild = b.elements().get(item.element()).child(item.part()).orElseThrow();
@@ -505,7 +516,7 @@ public final class BindingsComparison {
                     splices.add(new BindsElements.Splice(gameChild.range(), a.text(mineChild.range())));
                 }
                 // WHY: the roles swapped - the game's file is the one spliced, the working copy's text the one taken.
-                case ELEMENT -> splices.add(elementSplice(b, a, item.element()));
+                case ELEMENT -> splices.addAll(elementSplices(b, a, item.element()));
                 case FILE, DETAILS, PRESET_LINE -> throw new IllegalStateException("not a row of a newer version");
             }
         }
@@ -546,7 +557,10 @@ public final class BindingsComparison {
         BindsElements b = BindsElements.of(theirs).orElseThrow(() -> notMerged(file.file()));
         List<BindsElements.Splice> splices = new ArrayList<>();
         for (LineItem item : file.items()) {
-            if (answers.get(item.id()) != Side.LIVE) continue;
+            if (answers.get(item.id()) != Side.LIVE) {
+                splices.addAll(copiesMadeEqual(a, item));
+                continue;
+            }
             switch (item.kind()) {
                 case DETAILS -> splices.add(new BindsElements.Splice(a.rootStartTag(), b.text(b.rootStartTag())));
                 case SLOT -> {
@@ -554,7 +568,7 @@ public final class BindingsComparison {
                     BindsElements.Child theirChild = b.elements().get(item.element()).child(item.part()).orElseThrow();
                     splices.add(new BindsElements.Splice(mineChild.range(), b.text(theirChild.range())));
                 }
-                case ELEMENT -> splices.add(elementSplice(a, b, item.element()));
+                case ELEMENT -> splices.addAll(elementSplices(a, b, item.element()));
                 case FILE, PRESET_LINE -> throw new IllegalStateException("not a row of a binds file merged by row");
             }
         }
@@ -564,14 +578,37 @@ public final class BindingsComparison {
         return merged;
     }
 
-    private static BindsElements.Splice elementSplice(BindsElements mine, BindsElements theirs, String element) {
+    /**
+     * A row kept on the side being written: when that side's copies of the element differ, its first copy is written
+     * to every copy, so a merge never writes copies that differ (storage.md rule 14, <em>Settled with Storage S18's
+     * sources</em>, Q3; the S18 code-integrity review's D1). Otherwise nothing.
+     */
+    private static List<BindsElements.Splice> copiesMadeEqual(BindsElements written, LineItem item) {
+        if (item.kind() != Kind.ELEMENT) return List.of();
+        BindsElements.Top element = written.elements().get(item.element());
+        if (element == null || !element.copiesDiffer()) return List.of();
+        return elementSplices(written, written, item.element());
+    }
+
+    /**
+     * {@code theirs}' element put into {@code mine} (storage.md rule 14, <em>Settled with Storage S18's sources</em>):
+     * held by both, every copy in {@code mine} becomes {@code theirs}' first, each where it is, so no copy is added or
+     * removed and none differs (Q2, Q3); held by {@code mine} only, every copy goes; by {@code theirs} only, it is added
+     * once, before {@code </Root>}.
+     */
+    private static List<BindsElements.Splice> elementSplices(BindsElements mine, BindsElements theirs, String element) {
         BindsElements.Top a = mine.elements().get(element);
         BindsElements.Top b = theirs.elements().get(element);
-        if (a != null && b != null) return new BindsElements.Splice(a.range(), theirs.text(b.range()));
-        if (a != null) return new BindsElements.Splice(mine.wholeLines(a.range()), "");
+        if (a != null && b != null) {
+            String kept = theirs.text(b.range());
+            return a.copies().stream().map(copy -> new BindsElements.Splice(copy.range(), kept)).toList();
+        }
+        if (a != null) {
+            return a.copies().stream().map(copy -> new BindsElements.Splice(mine.wholeLines(copy.range()), "")).toList();
+        }
         int at = mine.insertionPoint();
         String line = theirs.indentOf(b.range().start()) + theirs.text(b.range()) + mine.lineEnding();
-        return new BindsElements.Splice(new BindsElements.Range(at, at), line);
+        return List.of(new BindsElements.Splice(new BindsElements.Range(at, at), line));
     }
 
     private static IOException notMerged(String file) {

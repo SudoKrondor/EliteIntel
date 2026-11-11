@@ -899,7 +899,7 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       slot for a button, else per element. The merge never writes a file whose copies differ.
     - **A whole-file row is only for a file that cannot be read at all** - not well-formed, or one whose scan and
       parse disagree - or one that is on one side only.
-    - *To confirm at the slice's sources (Storage S18):*
+    - *To confirm at the slice's sources (Storage S18):* - answered in *Settled with Storage S18's sources*, below.
       - one file whose copies hold different values - none has been seen, and which copy the game reads is not known
         (a hand test: set them differently, start the game, see which the widget follows and what the game saves
         back - [testing item 31](../../00-overview/testing-required.md#bindforge));
@@ -909,6 +909,34 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       - everything else that reads a binds file this way: a newer version, a plain file against its twin, the reset
         test, the edits put on top at APPLY;
       - whether the Bind Editor's own write of a setting changes every copy.
+
+    **Settled with Storage S18's sources (Alan, 2026-11-11, Q1-Q5 as recommended)** - an element held more than once:
+
+    - **Q1: the number of copies does not count.** A repeated element is compared by its value, so one
+      `<MouseGUI Value="0" />` equals two. Otherwise every file made from a factory file (CREATE, a converted plain
+      file) would ask about `MouseGUI` once the game first saved it, and a reset file the game had saved would never
+      be named a reset - the factory file holds it once.
+    - **Q2: a write never adds or removes a copy of an element both sides hold.** The file written keeps its own
+      copies, each replaced with the kept value where it is. An element only one side holds is added once, or every
+      copy of it removed.
+    - **Q3: a file whose copies differ** - none seen. Its element's value is every copy's value in order, so it
+      differs from any file whose copies agree; the row shows them all (*0 / 1*). Keeping that side writes its
+      **first** copy to every copy, so a merge never writes copies that differ - whichever side the row keeps,
+      the side the file is written from included (the S18 code-integrity review's D1, 2026-11-11: until then a row
+      kept on that side left its copies as they were). To revisit when
+      [testing item 31](../../00-overview/testing-required.md#bindforge) says which copy the game reads.
+    - **Q4: a repeated element is always one row, never per slot** - children or not (none with children seen); the
+      kept side's first copy is written to every copy.
+    - **Q5: an overwrite copies the file as it is.** *Put mine back* and *Use the game's files* write the whole file,
+      copies that differ included; *the merge never writes a file whose copies differ* is about the rows a merge
+      splices (principle 13). *Found while building (2026-11-11):* a merge with every row of a file answered in-game
+      takes the game's file whole, as it always has, so it is that overwrite too.
+    - **The Bind Editor's write of a setting is left alone.** `BindingsWriter.assignSetting` refuses a repeated setting
+      and `BindsValues` reads it as not editable, so the Bind Editor never writes `MouseGUI` today; writing every copy
+      there is [E10](../../05-build-plan/bind-editor-editing.md#slices)'s.
+
+    Built in Storage S18: `BindsElements.Copy`, `Top.copies` / `values` / `sameValue` / `repeated` / `copiesDiffer`;
+    `BindingsComparison`'s `elementSplices` (every copy), `copiesMadeEqual` and `describe(Top)`.
 
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything

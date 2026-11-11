@@ -37,8 +37,12 @@ import java.util.TreeMap;
  * scan of the same text, matched element by element, so a merge replaces exactly the element that differed and every
  * other byte of the file stays as it was.
  * <p>
- * A file this cannot read - not XML, a DOCTYPE, two top-level elements of one name, or a scan that does not match the
- * parse - is {@link Optional#empty()}: the check then treats it as one whole file. Pure: nothing is read from disk.
+ * <strong>An element held more than once is one line item</strong> (storage.md rule 14, <em>Settled 2026-11-11</em>):
+ * every file the game saves holds {@code MouseGUI} twice, so a repeated top-level name keeps every copy's place, and a
+ * merge writes the kept side to each of them (Storage S18).
+ * <p>
+ * A file this cannot read - not XML, a DOCTYPE, or a scan that does not match the parse - is
+ * {@link Optional#empty()}: the check then treats it as one whole file. Pure: nothing is read from disk.
  */
 final class BindsElements {
 
@@ -58,11 +62,62 @@ final class BindsElements {
     }
 
     /**
-     * One top-level element.
+     * One copy of a top-level element, where it is in the file.
      *
-     * @param children its child elements in order; empty when two share a name, so it is compared and merged whole
+     * @param value its value, for comparing
      */
-    record Top(String name, Range range, String value, Element node, List<Child> children) {
+    record Copy(Range range, Element node, String value) {
+    }
+
+    /**
+     * One top-level element - every copy the file holds of it, as one line item (storage.md rule 14, <em>Settled
+     * 2026-11-11</em>: the game writes {@code MouseGUI} twice).
+     *
+     * @param copies   every copy, in the file's order - at least one
+     * @param children the first copy's child elements in order; empty when two share a name, and always empty when
+     *                 the element is repeated, so it is compared and merged whole (Storage S18, Q4)
+     */
+    record Top(String name, List<Copy> copies, List<Child> children) {
+
+        Top {
+            copies = List.copyOf(copies);
+            if (copies.isEmpty()) throw new IllegalArgumentException(name + " has no copy");
+            children = copies.size() > 1 ? List.of() : List.copyOf(children);
+        }
+
+        /**
+         * What it is compared by: its one value when every copy agrees, however many copies there are (Storage S18, Q1);
+         * every copy's value in order when they differ (Q3).
+         */
+        List<String> values() {
+            List<String> values = copies.stream().map(Copy::value).toList();
+            return copiesDiffer() ? values : List.of(values.getFirst());
+        }
+
+        /** Whether {@code other} holds the same value - {@link #values()} equal. */
+        boolean sameValue(Top other) {
+            return values().equals(other.values());
+        }
+
+        /** Where its first copy is. */
+        Range range() {
+            return copies.getFirst().range();
+        }
+
+        /** Its first copy - the one a merge writes to every copy of the other side (Q3). */
+        Element node() {
+            return copies.getFirst().node();
+        }
+
+        /** Whether the file holds it more than once. */
+        boolean repeated() {
+            return copies.size() > 1;
+        }
+
+        /** Whether its copies hold different values - none seen in a file the game saved. */
+        boolean copiesDiffer() {
+            return copies.stream().map(Copy::value).distinct().count() > 1;
+        }
 
         /** Whether it is compared slot by slot: a button, with a {@code <Primary>} or {@code <Secondary>}. */
         boolean bySlot() {
@@ -109,15 +164,20 @@ final class BindsElements {
         Element root = document.getDocumentElement();
         List<Element> tops = childElements(root);
         if (!root.getTagName().equals(scanned.name) || tops.size() != scanned.children.size()) return Optional.empty();
-        Map<String, Top> elements = new LinkedHashMap<>();
+        Map<String, List<Copy>> copies = new LinkedHashMap<>();
+        Map<String, List<Child>> firstChildren = new LinkedHashMap<>();
         for (int i = 0; i < tops.size(); i++) {
             Element element = tops.get(i);
             Scanned node = scanned.children.get(i);
-            if (!element.getTagName().equals(node.name) || elements.containsKey(node.name)) return Optional.empty();
+            if (!element.getTagName().equals(node.name)) return Optional.empty();
             Optional<List<Child>> children = children(element, node);
             if (children.isEmpty()) return Optional.empty();
-            elements.put(node.name, new Top(node.name, node.range(), value(element), element, children.get()));
+            copies.computeIfAbsent(node.name, name -> new ArrayList<>())
+                    .add(new Copy(node.range(), element, value(element)));
+            firstChildren.putIfAbsent(node.name, children.get());
         }
+        Map<String, Top> elements = new LinkedHashMap<>();
+        copies.forEach((name, each) -> elements.put(name, new Top(name, each, firstChildren.get(name))));
         int rootEndTag = text.lastIndexOf("</", scanned.end);
         if (rootEndTag < scanned.startTagEnd) rootEndTag = -1;
         return Optional.of(new BindsElements(text, bom, new Range(scanned.start, scanned.startTagEnd), rootEndTag,
@@ -171,7 +231,7 @@ final class BindsElements {
     private boolean sameElements(BindsElements other) {
         if (!elements.keySet().equals(other.elements.keySet())) return false;
         for (Top element : elements.values()) {
-            if (!element.value().equals(other.elements.get(element.name()).value())) return false;
+            if (!element.sameValue(other.elements.get(element.name()))) return false;
         }
         return true;
     }
