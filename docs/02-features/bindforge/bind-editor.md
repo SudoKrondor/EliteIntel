@@ -1245,19 +1245,9 @@ curves.** The booleans and dropdowns described below, and inline rows in Game Mo
 *any number greater than 0.0* for mouse sensitivity and *any number between 0.0 and
 1.0* for a mouse deadzone. A value past the game's stops is accepted, and the row names the range. `HeadlookMotionSensitivity` has no measured range and keeps the number alone.
 
-**One boolean, since 2026-11-11 (Alan): Show Mouse Widget (`MouseGUI`), a toggle - yes or no.** It amends the
-rejection above for this one setting; every other boolean, the dropdowns and the inline rows stay rejected for V1.2.
-Alan found it missing from the tab while studying why the game writes `MouseGUI` twice.
-
-- **It is one setting with one value, and changing it writes every copy of `MouseGUI` in the file** - a binds file
-  the game has saved holds two ([storage.md rule 14, *Settled 2026-11-11*](storage.md#when-a-live-copy-differs)). The
-  editor never leaves the copies different.
-- **It is an edit not applied like any other** (storage.md rule 6): nothing is written until APPLY, and DISCARD
-  drops it.
-- **While read only it is greyed**, as the numbers and sliders are, saying why on hover.
-- *To confirm at the slice's sources (E9):* the control the [HUD canon](ui-component-map.md) gives a yes/no; where on
-  the tab it sits; the label, from the action catalog's *Show Mouse Widget*; what it shows for a file whose copies
-  differ, and for one with no `MouseGUI` at all; whether a file holding one copy keeps one.
+**The booleans have a tab of their own since 2026-11-11 (Alan): [Toggles](#toggles--settled-2026-11-11-alan).** This
+tab stays the number rows. *Earlier that day Show Mouse Widget (`MouseGUI`) was put here as this tab's one boolean
+(E9); Alan moved it to Toggles when that tab was specified.*
 
 **Status: in scope for V1.2.** A third mode tab, after Anomalies, listing **every [settings entry](#settings-entries-are-rows-too--settled-2026-09-16) in the file at once** — all 93 of
 them in a real 4.2 file, grouped the way the game groups them. Alan: *“in the game mode the settings show
@@ -1301,6 +1291,61 @@ working.
 The rule underneath is unchanged: BindForge **shows the unknown value and writes it back untouched** unless
 the user picks something else — see
 [real files are messier than any specification](#real-files-are-messier-than-any-specification).
+
+## Toggles — settled 2026-11-11 (Alan)
+
+**A fourth mode tab, Toggles, after Dead Zones & Sensitivity: every yes/no setting the binds file holds, each a
+toggle.** Alan, 2026-11-11: *"maybe we need another tab in the bind editor section called 'Toggles' and we put all the
+34 yes/no settings on that tab in groups like the dead zones and sensitivity tab."*
+
+**It amends E6's rejection of the booleans** (Krondor, 2026-11-10): they come back, on a tab of their own. The
+dropdowns, and settings rows inline in the Game Mode grid, stay rejected for V1.2.
+
+**What it lists.** Every settings entry in the file whose value is `0` or `1` and whose name is in the
+[booleans list](reference-data/settings-choice-fields.md#booleans--checkbox-no-vocabulary-to-capture) - but `Hold`,
+`Inverted` and `ToggleOn`, which are parts of a binding and belong to the bind dialogs. A setting the file does not
+hold has no row. In Alan's `DualVirpilDawnTreader.4.2.binds` that is 35, counted 2026-11-11 - Show Mouse Widget
+(`MouseGUI`, below) and these 34:
+
+| Kind | Settings |
+|---|---|
+| Mouse decay, per mode (17) | `MouseXDecay`, `MouseYDecay`; `MouseBuggySteeringXDecay`, `MouseBuggyRollingXDecay`, `MouseBuggyYDecay`; `MouseTurretXDecay`, `MouseTurretYDecay`; `MultiCrewThirdPersonMouseXDecay`, `MultiCrewThirdPersonMouseYDecay`; `FreeCamMouseXDecay`, `FreeCamMouseYDecay`; `FSSMouseXDecay`, `FSSMouseYDecay`; `SAAThirdPersonMouseXDecay`, `SAAThirdPersonMouseYDecay`; `PlacementCamMouseXDecay`, `PlacementCamMouseYDecay` |
+| Headlook (7) | `MouseHeadlook`, `MouseHeadlookInvert`, `HeadlookDefault`, `HeadlookResetOnToggle`, `HeadlookSmoothing`, `MotionHeadlook`, `yawRotateHeadlook` |
+| Menu groups (3) | `EnableMenuGroups`, `EnableMenuGroupsSRV`, `EnableMenuGroupsOnFoot` |
+| Ship and SRV (4) | `DeployHardpointsOnFire`, `EnableRumbleTrigger`, `EnableCameraLockOn`, `DriveAssistDefault` |
+| On foot (2) | `EnableAimAssistOnFoot`, `HumanoidItemWheel_AcceptMouseInput` |
+| Other (1) | `FocusOnTextEntryField` |
+
+The kinds above are how they were counted, not the tab's groups.
+
+**Grouped as Dead Zones & Sensitivity groups its rows**, so a setting is found in the same place on either tab.
+
+**A row is the setting's name and its toggle.** Changing one is an edit not applied (storage.md rule 6): nothing is
+written until APPLY, and DISCARD drops it. The shell's Search reaches the tab as it reaches every list. Like
+[Settings](#settings--settled-2026-09-19), it carries no ASSISTANT column, no capture, no Primary/Secondary and no
+conflict state.
+
+**While read only every toggle is greyed**, saying why on hover, as the numbers and sliders are
+([storage.md, Storage S14b](storage.md#an-installation-missing--read-only-2026-11-03-alan)).
+
+**Show Mouse Widget (`MouseGUI`) is one of them** (Alan, 2026-11-11; moved here from Dead Zones & Sensitivity the
+same day). It is one setting with one value, and **changing it writes every copy of `MouseGUI` in the file** - a
+binds file the game has saved holds two
+([storage.md rule 14, *Settled 2026-11-11*](storage.md#when-a-live-copy-differs)). The editor never leaves the copies
+different.
+
+**A value that is neither `0` nor `1` is shown as it is written and left untouched** unless the user changes it - the
+rule for [an unrecognised value](#where-an-unrecognised-value-shows--and-what-it-settles).
+
+*To confirm at the slice's sources (E10):*
+- the control the [HUD canon](ui-component-map.md) gives a yes/no, and the tab's label in all nine bundles;
+- the groups' headings and order, read from how `SettingsModePanel` groups its rows;
+- each row's name - whether the in-game control names already loaded cover every one of these;
+- how a 0/1 is written - `BindingsWriter` writes a setting's number today;
+- a setting written in a form the editor cannot change, which the number rows say to change in the game;
+- Show Mouse Widget's toggle for a file whose copies of `MouseGUI` differ
+  ([testing item 31](../../00-overview/testing-required.md#bindforge)), and whether a file holding one copy keeps
+  one.
 
 ## Mouse Inputs Are Chosen, Not Captured
 
