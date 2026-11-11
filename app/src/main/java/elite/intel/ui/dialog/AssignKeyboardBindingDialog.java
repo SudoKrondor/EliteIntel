@@ -10,7 +10,6 @@ import elite.intel.bindforge.model.*;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
 import elite.intel.bindforge.rules.ReservedKeyChords;
-import elite.intel.bindforge.rules.SlotInputConflicts;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.events.DeviceAxisEvent;
 import elite.intel.devices.events.DeviceButtonEvent;
@@ -961,10 +960,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     /**
-     * The other control holding exactly these inputs for this slot's Hold, if any - on any device.
+     * The other control these inputs clash with for this slot's Hold, if any - on any device, by the rules the red rows
+     * are drawn with (D6).
      */
     private Optional<String> holderOf(SlotEdit edit, BindingInput input, List<BindingInput> modifiers) {
-        return SlotInputConflicts.holderOf(bindingId, input, modifiers, edit.hold(), readOnlySlots);
+        return BindingConflictScanner.holderOf(bindingId, input, modifiers, edit.hold(), readOnlySlots);
     }
 
     /**

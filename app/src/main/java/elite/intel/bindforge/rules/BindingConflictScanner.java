@@ -2,13 +2,15 @@ package elite.intel.bindforge.rules;
 
 import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.BindingInput;
 import elite.intel.bindforge.model.BindingModifier;
 import elite.intel.bindforge.model.BindingSlotType;
 
 import java.util.*;
 
 /**
- * Detects keyboard binding conflicts using Elite Dangerous's input-matching model.
+ * Detects binding conflicts using Elite Dangerous's input-matching model - on the keyboard, and in the Bindings tab's
+ * scan on a controller or the mouse too (D6, Alan, 2026-11-10).
  * <p>
  * ED matches a binding by its <strong>exact</strong> chord - the main key plus exactly its modifier
  * set. Holding extra modifiers does NOT trigger a binding that has fewer of them: bare {@code Key_6}
@@ -20,8 +22,15 @@ import java.util.*;
  * rest of the chord - from the commander's hand and from EliteIntel alike - and for that moment it is
  * the whole chord, so the bare binding fires. Reported from a support bundle of 2026-09-30: Galaxy Map
  * on {@code Ctrl+Shift+J} with UI Focus (hold) on bare {@code Left Shift}, so every attempt to open the
- * map pulled the view back toward the panels and the map never opened. Only the six keyboard modifier
- * keys are judged this way; a bare <em>main</em> key and a modified chord on it still coexist.
+ * map pulled the view back toward the panels and the map never opened. The six keyboard modifier keys are judged
+ * this way wherever they sit, and a controller or mouse input when the other chord writes it as a {@code <Modifier>}
+ * (D6): the game records the input held first as the modifier, so that one goes down alone first. A bare <em>main</em>
+ * input and a modified chord on it still coexist.
+ * <p>
+ * <strong>A controller or mouse input is named with its device</strong> ({@code LVWAP/JOY_1}), upper case, since
+ * {@code Joy_1} on two sticks is two buttons and the game matches device names and tokens ignoring case. A keyboard
+ * token stays as the file writes it ({@code Key_K}). Two identical controllers under one name are one device here:
+ * the {@code DeviceIndex} a binds file may carry is not read, as its meaning is not measured (Alan, 2026-11-10).
  * <p>
  * (An earlier model treated a bare key as a subset that "swallowed" modified chords on that key.
  * In-game testing disproved it - the failure that suggested it was a stale-bindings state, where ED
@@ -98,11 +107,25 @@ public final class BindingConflictScanner {
      * {@code hold} is the slot's {@code <Hold Value="1"/>}: Elite fires it on a long press instead of a tap, and
      * shows it in its own controls screen as {@code [1](HOLD)}. A press and a hold on one key are two separate
      * controls - Use Health Pack is a long press on the key whose tap selects the primary weapon.
+     *
+     * @param modifiers      the tokens the slot writes as {@code <Modifier>}s, which a controller shadow needs: the
+     *                       chord's own set says nothing of position (D6)
+     * @param controllerMain whether the slot's main input is on a controller or the mouse, so a clash on it is never
+     *                       blocking - EliteIntel presses only the keyboard (D6)
      */
-    record SlotRef(String action, KeyBindingsParser.BindingSlotType slot, boolean hold) {
+    record SlotRef(String action, KeyBindingsParser.BindingSlotType slot, boolean hold, Set<String> modifiers,
+                   boolean controllerMain) {
+
+        SlotRef {
+            modifiers = Set.copyOf(modifiers);
+        }
 
         SlotRef(String action, KeyBindingsParser.BindingSlotType slot) {
             this(action, slot, false);
+        }
+
+        SlotRef(String action, KeyBindingsParser.BindingSlotType slot, boolean hold) {
+            this(action, slot, hold, Set.of(), false);
         }
     }
 
@@ -134,8 +157,8 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * {@link #scanSlots}, over every slot the file holds whose main key is on the keyboard - a modifier held on a
-     * controller included (FN-6). The Bindings tab's scan.
+     * {@link #scanSlots}, over every slot the file holds - a modifier held on a controller included (FN-6), and since
+     * D6 a main input on a controller or the mouse. The Bindings tab's scan.
      * <p>
      * WHY a second entry point: {@link #scanSlots} reads the execution view, which drops a slot EliteIntel cannot
      * press. {@code [HOTAS Joy_1] + K} is one of those, and two actions on it still both fire in the game. The
@@ -158,7 +181,14 @@ public final class BindingConflictScanner {
                                    KeyBindingsParser.ReadOnlyBindingSlot slot) {
         Set<String> chord = chordOf(slot);
         if (!chord.isEmpty()) {
-            keysets.put(new SlotRef(action, slot.slotType(), slot.hold()), chord);
+            Set<String> modifiers = new HashSet<>();
+            for (BindingModifier modifier : slot.bindingModifiers()) {
+                if (modifier.key() != null && !modifier.key().isBlank()) {
+                    modifiers.add(token(modifier.device(), modifier.key()));
+                }
+            }
+            keysets.put(new SlotRef(action, slot.slotType(), slot.hold(), modifiers,
+                    !KEYBOARD.equals(slot.device())), chord);
         }
     }
 
@@ -208,7 +238,7 @@ public final class BindingConflictScanner {
                 if (sameChord && refA.hold() != refB.hold()) {
                     continue; // a tap and a long press on one key are two controls, not a clash
                 }
-                String shadowed = sameChord ? null : shadowedModifier(ksA, ksB);
+                String shadowed = sameChord ? null : shadowedModifier(ksA, refA.modifiers(), ksB, refB.modifiers());
                 if (!sameChord && shadowed == null) {
                     continue; // ED matches the exact chord; only identical chords or a shadowed modifier clash
                 }
@@ -230,35 +260,51 @@ public final class BindingConflictScanner {
                     description = BindingConflictRules.describeModifierShadow(b, a, shadowed);
                 }
                 // A shadow is never blocking: the blocking families are identical chords on a key the
-                // interface walk taps, which is a different failure with its own every-start warning.
+                // interface walk taps, which is a different failure with its own every-start warning. Nor is a clash
+                // on a controller or mouse input: EliteIntel presses only the keyboard, so it costs the commander's
+                // hand, never the assistant (D6).
                 conflicts.add(new Conflict(a, chordA, b, chordB, description,
-                        sameChord && BindingConflictRules.isBlocking(a, b)));
+                        sameChord && !refA.controllerMain() && BindingConflictRules.isBlocking(a, b)));
             }
         }
         return conflicts;
     }
 
     /**
-     * The modifier key one of the two key-sets holds as part of a chord while the other binds it on its
-     * own, or {@code null} when neither does. Symmetric in its arguments.
-     * <p>
-     * Only the keyboard modifier keys qualify ({@link BindingModifier#isSupportedKeyboardModifier}): they
-     * are what goes down first and stands alone for a moment. A bare main key against a modified chord on
-     * that key is the case Elite's exact matching keeps apart - see the class comment.
+     * {@link #shadowedModifier(Set, Set, Set, Set)} with no {@code <Modifier>} positions known, so only the keyboard
+     * modifier keys can be shadowed - the keyboard scans and the test-only entry points.
      */
     static String shadowedModifier(Set<String> ksA, Set<String> ksB) {
+        return shadowedModifier(ksA, Set.of(), ksB, Set.of());
+    }
+
+    /**
+     * The input one of the two key-sets holds as part of a chord while the other binds it on its own, or
+     * {@code null} when neither does. Symmetric in its arguments.
+     * <p>
+     * The keyboard modifier keys qualify wherever they sit ({@link BindingModifier#isSupportedKeyboardModifier}):
+     * they are what goes down first and stands alone for a moment. A controller or mouse input qualifies when the
+     * chord writes it as a {@code <Modifier>} (D6, Alan, 2026-11-10) - the game records the input held first as the
+     * modifier, so that is the one pressed alone first, the HOTAS shift button. A bare main input against a modified
+     * chord on it is the case Elite's exact matching keeps apart - see the class comment.
+     *
+     * @param modsA the tokens {@code ksA} writes as {@code <Modifier>}s; the same for {@code modsB}
+     */
+    static String shadowedModifier(Set<String> ksA, Set<String> modsA, Set<String> ksB, Set<String> modsB) {
         if (ksA.size() == 1 && ksB.size() > 1) {
-            return bareModifierHeldIn(ksA, ksB);
+            return bareModifierHeldIn(ksA, ksB, modsB);
         }
         if (ksB.size() == 1 && ksA.size() > 1) {
-            return bareModifierHeldIn(ksB, ksA);
+            return bareModifierHeldIn(ksB, ksA, modsA);
         }
         return null;
     }
 
-    private static String bareModifierHeldIn(Set<String> bare, Set<String> chord) {
+    private static String bareModifierHeldIn(Set<String> bare, Set<String> chord, Set<String> chordModifiers) {
         String key = bare.iterator().next();
-        return BindingModifier.isSupportedKeyboardModifier(KEYBOARD, key) && chord.contains(key) ? key : null;
+        if (!chord.contains(key)) return null;
+        if (BindingModifier.isSupportedKeyboardModifier(KEYBOARD, key)) return key;
+        return isControllerToken(key) && chordModifiers.contains(key) ? key : null;
     }
 
     /**
@@ -345,6 +391,40 @@ public final class BindingConflictScanner {
     }
 
     /**
+     * Which other control already holds an input the capture dialog is about to assign - on any device - judged by the
+     * rules {@link #scanReadOnlySlots} draws red with, so SAVE and the red rows cannot disagree (D6, Alan, 2026-11-10;
+     * replaces {@code SlotInputConflicts}). The same inputs with the same Hold clash; so does a shadow - the input
+     * bound alone where another chord holds it as a modifier, or the other way round. Two controls that are never live
+     * together never clash.
+     * <p>
+     * <strong>A clash blocks the assignment</strong> (Alan, 2026-10-15): the commander frees the input from the
+     * control that holds it first.
+     *
+     * @param bindingId the control being edited - neither of its own slots counts
+     * @param modifiers the inputs held with it, a controller input's ticked SHIFT, CTRL or ALT included (E5)
+     * @param hold      the Hold the slot will carry, which is the one it has now
+     * @param slots     every slot the file holds, as {@link KeyBindingsParser#parseReadOnlyBindingSlots} reads them
+     * @return the first other control, by id, it clashes with; empty when the input is free
+     */
+    public static Optional<String> holderOf(String bindingId, BindingInput input, List<BindingInput> modifiers,
+                                            boolean hold, Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
+        if (input == null || input.key() == null || input.key().isBlank()) return Optional.empty();
+        Set<String> modifierTokens = new HashSet<>();
+        for (BindingInput modifier : modifiers) modifierTokens.add(token(modifier.device(), modifier.key()));
+        Set<String> candidate = new HashSet<>(modifierTokens);
+        candidate.add(token(input.device(), input.key()));
+        Map<SlotRef, Set<String>> existing = new LinkedHashMap<>();
+        for (Map.Entry<String, KeyBindingsParser.ReadOnlyBindingSlots> e : slots.entrySet()) {
+            if (e.getValue() == null) continue;
+            putIfChord(existing, e.getKey(), e.getValue().primary());
+            putIfChord(existing, e.getKey(), e.getValue().secondary());
+        }
+        CandidateConflict conflict =
+                candidateConflictInSlotKeysets(bindingId, candidate, modifierTokens, hold, existing);
+        return conflict == null ? Optional.empty() : Optional.of(conflict.otherBinding());
+    }
+
+    /**
      * Keyset-based core, so it can be tested without KeyBindings. Test-only - see {@link #scanKeysets}.
      */
     static CandidateConflict candidateConflict(String bindingId, Set<String> candidate, Map<String, Set<String>> existing) {
@@ -362,6 +442,15 @@ public final class BindingConflictScanner {
 
     static CandidateConflict candidateConflictInSlotKeysets(
             String bindingId, Set<String> candidate, boolean candidateHold, Map<SlotRef, Set<String>> existing) {
+        return candidateConflictInSlotKeysets(bindingId, candidate, Set.of(), candidateHold, existing);
+    }
+
+    /**
+     * @param candidateModifiers the tokens the candidate holds as {@code <Modifier>}s, for a controller shadow
+     */
+    private static CandidateConflict candidateConflictInSlotKeysets(
+            String bindingId, Set<String> candidate, Set<String> candidateModifiers, boolean candidateHold,
+            Map<SlotRef, Set<String>> existing) {
         if (candidate.isEmpty()) {
             return null; // a blank or unbound chord collides with nothing
         }
@@ -375,7 +464,8 @@ public final class BindingConflictScanner {
                 continue; // a binding never conflicts with its own other slot
             }
             boolean sameChord = candidate.equals(e.getValue());
-            if (!sameChord && shadowedModifier(candidate, e.getValue()) == null) {
+            if (!sameChord
+                    && shadowedModifier(candidate, candidateModifiers, e.getValue(), e.getKey().modifiers()) == null) {
                 continue; // exact chord match, or a modifier one side binds on its own
             }
             if (sameChord && candidateHold != e.getKey().hold()) {
@@ -412,9 +502,9 @@ public final class BindingConflictScanner {
     }
 
     /**
-     * The chord one parsed slot holds, or an empty set when the slot is empty or its main key is not on the
-     * keyboard. A modifier held on a controller is named with its device ({@code 231D3200/Joy_1}), since
-     * {@code Joy_1} on two sticks is two different buttons; a keyboard modifier stays its bare token.
+     * The chord one parsed slot holds, or an empty set when the slot is empty. An input on a controller or the mouse -
+     * the main one since D6, a modifier since FN-6 - is named with its device ({@code 231D3200/JOY_1}), since
+     * {@code Joy_1} on two sticks is two different buttons; a keyboard input stays its bare token.
      * <p>
      * Public because a caller holding a {@link Conflict} may need to find which of an action's two
      * slots the scan actually matched on. Since the scan reads both, "the Primary if it holds a key"
@@ -422,14 +512,32 @@ public final class BindingConflictScanner {
      * them nothing. Taking the slot rather than its parts also saves each caller a hand-rolled unpack.
      */
     public static Set<String> chordOf(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        if (slot == null || !KEYBOARD.equals(slot.device())) {
+        if (slot == null || !KeyBindingsParser.isAssigned(slot)) {
             return Set.of();
         }
-        return chordOf(slot.key(), slot.bindingModifiers().stream().map(BindingConflictScanner::modifierToken).toList());
+        List<String> modifiers = slot.bindingModifiers().stream()
+                .filter(m -> m.key() != null && !m.key().isBlank())
+                .map(m -> token(m.device(), m.key()))
+                .toList();
+        if (KEYBOARD.equals(slot.device())) {
+            return chordOf(slot.key(), modifiers);
+        }
+        Set<String> keys = new HashSet<>(modifiers);
+        keys.add(token(slot.device(), slot.key()));
+        return keys;
     }
 
-    private static String modifierToken(BindingModifier modifier) {
-        return KEYBOARD.equals(modifier.device()) ? modifier.key() : modifier.device() + "/" + modifier.key();
+    /**
+     * One input as the scan names it: a keyboard key as its bare token, anything else as {@code DEVICE/TOKEN}, upper
+     * case - the game matches device names and tokens ignoring case, and one binds file spells a device one way.
+     */
+    private static String token(String device, String key) {
+        return KEYBOARD.equals(device) ? key : (device + "/" + key).toUpperCase(Locale.ROOT);
+    }
+
+    /** Whether a scan token names an input on a controller or the mouse, not the keyboard. */
+    private static boolean isControllerToken(String token) {
+        return token.indexOf('/') >= 0;
     }
 
     /**

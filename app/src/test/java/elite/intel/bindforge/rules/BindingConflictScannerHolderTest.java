@@ -14,10 +14,11 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * An input another control holds blocks the capture dialog's SAVE - by the game's exact-chord model, and only
- * between controls that can be live together.
+ * An input another control holds blocks the capture dialog's SAVE - by the game's exact-chord model and the modifier
+ * shadow, only between controls that can be live together, and by the same rules the red rows are drawn with (D6,
+ * which moved this from {@code SlotInputConflicts} into {@link BindingConflictScanner#holderOf}).
  */
-class SlotInputConflictsTest {
+class BindingConflictScannerHolderTest {
 
     private static final BindingInput HAT_UP = new BindingInput("VKB-Stick", "Joy_6");
     private static final BindingInput TRIGGER = new BindingInput("VKB-Stick", "Joy_1");
@@ -27,7 +28,7 @@ class SlotInputConflictsTest {
         Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("VKB-Stick", "Joy_6", false)));
 
         assertEquals(Optional.of("PrimaryFire"),
-                SlotInputConflicts.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
     }
 
     @Test
@@ -35,15 +36,16 @@ class SlotInputConflictsTest {
         Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("vkb-stick", "JOY_6", false)));
 
         assertEquals(Optional.of("PrimaryFire"),
-                SlotInputConflicts.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
     }
 
+    /** Also the chord's main button bound alone is not a shadow: holding the modifier keeps them apart. */
     @Test
     void theSameButtonWithAModifierHeldIsAnotherControl() {
         Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("VKB-Stick", "Joy_6", false)));
 
         assertEquals(Optional.empty(),
-                SlotInputConflicts.holderOf("LandingGearToggle", HAT_UP, List.of(TRIGGER), false, slots));
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(TRIGGER), false, slots));
     }
 
     @Test
@@ -53,7 +55,7 @@ class SlotInputConflictsTest {
                 false, BindingSlotType.SECONDARY, false, false);
         Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", new ReadOnlyBindingSlots(empty(), chord));
 
-        assertEquals(Optional.of("PrimaryFire"), SlotInputConflicts.holderOf("LandingGearToggle", HAT_UP,
+        assertEquals(Optional.of("PrimaryFire"), BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP,
                 List.of(new BindingInput("Keyboard", "Key_LeftShift"), TRIGGER), false, slots));
     }
 
@@ -62,7 +64,7 @@ class SlotInputConflictsTest {
         Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("VKB-Stick", "Joy_6", true)));
 
         assertEquals(Optional.empty(),
-                SlotInputConflicts.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
     }
 
     @Test
@@ -71,7 +73,7 @@ class SlotInputConflictsTest {
                 Map.of("BuggyPrimaryFireButton", primary(slot("VKB-Stick", "Joy_6", false)));
 
         assertEquals(Optional.empty(),
-                SlotInputConflicts.holderOf("PrimaryFire", HAT_UP, List.of(), false, slots));
+                BindingConflictScanner.holderOf("PrimaryFire", HAT_UP, List.of(), false, slots));
     }
 
     @Test
@@ -79,7 +81,44 @@ class SlotInputConflictsTest {
         Map<String, ReadOnlyBindingSlots> slots = Map.of("LandingGearToggle", primary(slot("VKB-Stick", "Joy_6", false)));
 
         assertEquals(Optional.empty(),
-                SlotInputConflicts.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
+    }
+
+    /** {@code Joy_6} on two sticks is two buttons (D6, Alan, 2026-11-10). */
+    @Test
+    void theSameButtonOnAnotherControllerIsFree() {
+        Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("RVWAP", "Joy_6", false)));
+
+        assertEquals(Optional.empty(),
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
+    }
+
+    /** A button bound alone where another chord holds it as a modifier fires first, alone: a shadow blocks SAVE. */
+    @Test
+    void aButtonAnotherChordHoldsAsAModifierIsTaken() {
+        ReadOnlyBindingSlot shifted = new ReadOnlyBindingSlot("VKB-Stick", "Joy_6", null,
+                List.of(new BindingModifier("VKB-Stick", "Joy_1")), false, BindingSlotType.PRIMARY, false, false);
+        Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(shifted));
+
+        assertEquals(Optional.of("PrimaryFire"),
+                BindingConflictScanner.holderOf("LandingGearToggle", TRIGGER, List.of(), false, slots));
+    }
+
+    /** The other way round: a chord whose modifier another control binds alone. */
+    @Test
+    void aChordWhoseModifierIsBoundAloneIsTaken() {
+        Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("VKB-Stick", "Joy_1", false)));
+
+        assertEquals(Optional.of("PrimaryFire"),
+                BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(TRIGGER), false, slots));
+    }
+
+    @Test
+    void aMouseButtonAnotherControlHoldsIsTaken() {
+        Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("Mouse", "Mouse_4", false)));
+
+        assertEquals(Optional.of("PrimaryFire"), BindingConflictScanner.holderOf("LandingGearToggle",
+                new BindingInput("Mouse", "Mouse_4"), List.of(), false, slots));
     }
 
     private static ReadOnlyBindingSlots primary(ReadOnlyBindingSlot slot) {

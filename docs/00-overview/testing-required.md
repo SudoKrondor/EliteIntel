@@ -365,6 +365,14 @@ which files in the bindings folder changed (their modified times). If only `Star
 old preset's keys until the next start, and the monitor should watch `StartPreset.*.start` too.
 → [Storage brief — S13eR](../05-build-plan/storage.md#slices)
 
+**30. What does `DeviceIndex` mean in a `.binds`?** *Added 2026-11-10, D6 — needs two identical controllers (Alan's
+Virpil pair under one name would do, or a tester's).* Binds fixtures in the tests carry `DeviceIndex="0"`, `"1"` and
+`"2"` on a `Device=` (`<Primary Device="T16000MTHROTTLE" DeviceIndex="1" Key="Joy_7">`), which suggests the game tells
+two identical controllers apart by index under one name; nothing in the docs records it, and the parser drops it. With
+two identical controllers attached, bind one button on each in the game's controls screen and send the `.binds`. If
+the index separates them, BindForge's conflict scan (which today treats two identical controllers as one device) and
+the parser need it. → [Conflicts (the kind)](../02-features/bindforge/bind-editor.md#conflicts-the-kind)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

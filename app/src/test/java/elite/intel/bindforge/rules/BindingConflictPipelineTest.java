@@ -197,7 +197,7 @@ class BindingConflictPipelineTest {
         assertEquals(1, conflicts.size(), "the shared controller-modified K should be reported once: " + conflicts);
         assertEquals("LandingGearToggle", conflicts.get(0).actionA());
         assertEquals("ToggleCargoScoop", conflicts.get(0).actionB());
-        assertEquals(Set.of("Key_K", "231D3200/Joy_1"), conflicts.get(0).chord());
+        assertEquals(Set.of("Key_K", "231D3200/JOY_1"), conflicts.get(0).chord());
         assertTrue(BindingConflictScanner.scanSlots(KeyBindingsParser.getInstance().parseBindingSlots(file)).isEmpty(),
                 "the execution view keeps dropping a slot EliteIntel cannot press");
     }
@@ -275,24 +275,167 @@ class BindingConflictPipelineTest {
     }
 
     /**
-     * The Bindings tab's full-file scan keeps that rule: a slot whose main key is on a controller is no chord.
+     * D6 (Alan, 2026-11-10): the Bindings tab's full-file scan compares a slot whose main input is on a controller, as
+     * SAVE in the capture dialog always did - two actions on one stick button both fire. The execution view, which
+     * feeds the spoken startup warning, still drops them.
      */
     @Test
-    void aControllerSlotIsNotComparedAsAChordOnTheBindingsTab() throws Exception {
+    void twoActionsOnOneControllerButtonClashOnTheBindingsTab() throws Exception {
+        File file = bindsFile("""
+                	<LandingGearToggle>
+                		<Primary Device="T16000MTHROTTLE" DeviceIndex="0" Key="Joy_5" />
+                		<Secondary Device="{NoDevice}" Key="" />
+                	</LandingGearToggle>
+                	<ToggleCargoScoop>
+                		<Primary Device="{NoDevice}" Key="" />
+                		<Secondary Device="t16000mthrottle" DeviceIndex="0" Key="Joy_5" />
+                	</ToggleCargoScoop>
+                """);
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanReadOnlySlots(
+                KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(file));
+
+        assertEquals(1, conflicts.size(), "one button, matched ignoring case: " + conflicts);
+        assertEquals(Set.of("T16000MTHROTTLE/JOY_5"), conflicts.get(0).chord());
+        assertTrue(BindingConflictScanner.scanSlots(KeyBindingsParser.getInstance().parseBindingSlots(file)).isEmpty());
+    }
+
+    /** {@code Joy_5} on two controllers is two buttons, and a keyboard key is never a controller's. */
+    @Test
+    void theSameButtonOnTwoControllersIsTwoInputs() throws Exception {
         Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
                 .parseReadOnlyBindingSlots(bindsFile("""
-                        	<UI_Up>
-                        		<Primary Device="T16000MTHROTTLE" DeviceIndex="0" Key="Joy_5">
-                        			<Modifier Device="Keyboard" Key="Key_LeftShift" />
+                        	<LandingGearToggle>
+                        		<Primary Device="LVWAP" Key="Joy_5" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</LandingGearToggle>
+                        	<ToggleCargoScoop>
+                        		<Primary Device="RVWAP" Key="Joy_5" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</ToggleCargoScoop>
+                        	<DeployHardpointToggle>
+                        		<Primary Device="Keyboard" Key="Key_5" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</DeployHardpointToggle>
+                        """));
+
+        assertTrue(BindingConflictScanner.scanReadOnlySlots(slots).isEmpty(),
+                "three different inputs: " + BindingConflictScanner.scanReadOnlySlots(slots));
+    }
+
+    /** A chord of two buttons on one stick is one input set, in any order; the same chord twice clashes. */
+    @Test
+    void aChordOfTwoControllerButtonsClashesWithTheSameChord() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<LandingGearToggle>
+                        		<Primary Device="LVWAP" Key="Joy_5">
+                        			<Modifier Device="LVWAP" Key="Joy_1" />
                         		</Primary>
                         		<Secondary Device="{NoDevice}" Key="" />
-                        	</UI_Up>
-                        	<CamPitchUp>
-                        		<Primary Device="T16000MTHROTTLE" DeviceIndex="0" Key="Joy_5">
-                        			<Modifier Device="Keyboard" Key="Key_LeftShift" />
+                        	</LandingGearToggle>
+                        	<ToggleCargoScoop>
+                        		<Primary Device="LVWAP" Key="Joy_1">
+                        			<Modifier Device="LVWAP" Key="Joy_5" />
                         		</Primary>
                         		<Secondary Device="{NoDevice}" Key="" />
-                        	</CamPitchUp>
+                        	</ToggleCargoScoop>
+                        """));
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanReadOnlySlots(slots);
+
+        assertEquals(1, conflicts.size(), "" + conflicts);
+        assertEquals(Set.of("LVWAP/JOY_5", "LVWAP/JOY_1"), conflicts.get(0).chord());
+    }
+
+    /**
+     * The HOTAS shift button: {@code Joy_1} held for {@code Joy_1 + Joy_5}, and bound alone to another action. The
+     * game records the button held first as the modifier, and it fires alone first - a shadow (D6). The chord's main
+     * button bound alone is not one.
+     */
+    @Test
+    void aShiftButtonBoundAloneShadowsTheChordThatHoldsIt() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<LandingGearToggle>
+                        		<Primary Device="LVWAP" Key="Joy_5">
+                        			<Modifier Device="LVWAP" Key="Joy_1" />
+                        		</Primary>
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</LandingGearToggle>
+                        	<ToggleCargoScoop>
+                        		<Primary Device="LVWAP" Key="Joy_1" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</ToggleCargoScoop>
+                        	<DeployHardpointToggle>
+                        		<Primary Device="LVWAP" Key="Joy_5" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</DeployHardpointToggle>
+                        """));
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanReadOnlySlots(slots);
+
+        assertEquals(1, conflicts.size(), "only the shift button: " + conflicts);
+        BindingConflictScanner.Conflict conflict = conflicts.get(0);
+        assertEquals("LandingGearToggle", conflict.actionA());
+        assertEquals("ToggleCargoScoop", conflict.actionB());
+        assertEquals(Set.of("LVWAP/JOY_1"), conflict.chordB());
+    }
+
+    /** A controller button held as a keyboard key's modifier (FN-6), and bound alone elsewhere, is a shadow too. */
+    @Test
+    void aControllerModifierOfAKeyboardChordBoundAloneIsAShadow() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<LandingGearToggle>
+                        		<Primary Device="Keyboard" Key="Key_K">
+                        			<Modifier Device="231D3200" Key="Joy_1" />
+                        		</Primary>
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</LandingGearToggle>
+                        	<ToggleCargoScoop>
+                        		<Primary Device="231D3200" Key="Joy_1" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</ToggleCargoScoop>
+                        """));
+
+        assertEquals(1, BindingConflictScanner.scanReadOnlySlots(slots).size());
+    }
+
+    /** A clash on a controller button is never blocking: EliteIntel presses only the keyboard (D6). */
+    @Test
+    void aClashOnAControllerButtonIsNeverBlocking() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<UI_Select>
+                        		<Primary Device="LVWAP" Key="Joy_2" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</UI_Select>
+                        	<QuickCommsPanel>
+                        		<Primary Device="LVWAP" Key="Joy_2" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</QuickCommsPanel>
+                        """));
+
+        List<BindingConflictScanner.Conflict> conflicts = BindingConflictScanner.scanReadOnlySlots(slots);
+
+        assertEquals(1, conflicts.size(), "" + conflicts);
+        assertTrue(!conflicts.get(0).blocking());
+    }
+
+    /** A ship control and an SRV one on one button are never live together, on a controller as on the keyboard. */
+    @Test
+    void aShipAndAnSrvControlOnOneButtonNeverClash() throws Exception {
+        Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots = KeyBindingsParser.getInstance()
+                .parseReadOnlyBindingSlots(bindsFile("""
+                        	<PrimaryFire>
+                        		<Primary Device="LVWAP" Key="Joy_1" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</PrimaryFire>
+                        	<BuggyPrimaryFireButton>
+                        		<Primary Device="LVWAP" Key="Joy_1" />
+                        		<Secondary Device="{NoDevice}" Key="" />
+                        	</BuggyPrimaryFireButton>
                         """));
 
         assertTrue(BindingConflictScanner.scanReadOnlySlots(slots).isEmpty());

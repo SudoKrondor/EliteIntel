@@ -108,7 +108,7 @@ cross-verified section/subgroup/action inventory.
 | The 93 **settings entries** as grid rows | [Settings entries are rows too](#settings-entries-are-rows-too--settled-2026-09-16) | **Rejected for V1.2** (E6, Krondor, 2026-11-10). The number settings are on Dead Zones & Sensitivity |
 | The **ASSISTANT** column | [The mechanism: an ASSISTANT column](#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) | **Built**, as AI ACCESS |
 | Conflict colouring on the **slot cell**, not the whole row | [FN-1](#fn-1-in-detail--scoped-2026-09-12) | **Rejected for V1.2** with GM1 (Krondor, 2026-11-10). The whole row is coloured (`BindingSlotCellRenderer`) |
-| Conflicts between **two controller inputs** in the red rows and Anomalies | [Conflicts (the kind)](#conflicts-the-kind) | **Owed** (D6, Krondor, 2026-11-10). The scan compares only slots whose main input is a keyboard key; SAVE in the dialog already blocks such a pair |
+| Conflicts between **two controller inputs** in the red rows and Anomalies | [Conflicts (the kind)](#conflicts-the-kind) | **Built** (D6, 2026-11-10): controller and mouse inputs are scanned, by the rules SAVE in the dialog uses (`BindingConflictScanner.holderOf`) |
 | The in-game name and the XML tag in the capture dialog | [What the dialog shows](#what-the-dialog-shows) | **Built** (E1) |
 
 ### Settings entries are rows too — settled 2026-09-16
@@ -747,7 +747,7 @@ everything automatic, unchanged.
 - **The dialog refuses an input another control holds — on every tab (Alan, 2026-10-15, Bind Editor
   E1).** It names that control and SAVE stays dimmed until the user has freed the input there. *"Users do not read popup
   boxes, they just click
-  OK"*: a warning that can be clicked past is not read, so the flow itself makes them stop. The keyboard tab already worked this way; controllers follow it, by the game's exact-chord model and the same context rule (`SlotInputConflicts`, `BindingConflictRules.isSafeOverlap`).
+  OK"*: a warning that can be clicked past is not read, so the flow itself makes them stop. The keyboard tab already worked this way; controllers follow it, by the game's exact-chord model and the same context rule (`SlotInputConflicts`, `BindingConflictRules.isSafeOverlap`; since D6, 2026-11-10, `BindingConflictScanner.holderOf`, which adds the modifier shadow).
   **The writer stays permissive** — what follows is what it accepts, not what the dialog offers.
 - **A chord another slot uses is not refused** by the writer. The dialog was to warn — *"Conflicts with {0}; may not
   work"* — and the
@@ -1169,9 +1169,32 @@ it puts the control back on the list.
 ### Conflicts (the kind)
 
 **In V1.2 (2026-11-03): the red rows, gathered on the Anomalies tab - no sub-tabs, no grouping by shared input.**
-**Owed for V1.2 (D6, Krondor, 2026-11-10): conflicts between two controller inputs.** `BindingConflictScanner.scanReadOnlySlots`
-puts in only the slots whose main input is a keyboard key, so two actions on `Joy_5` are drawn as fine, though SAVE in
-the capture dialog refuses the pair (`SlotInputConflicts`). The rest of this section is the earlier design.
+**Built for V1.2 (D6, 2026-11-10): conflicts between two controller inputs.** Until then
+`BindingConflictScanner.scanReadOnlySlots` put in only the slots whose main input was a keyboard key, so two actions on
+`Joy_5` were drawn as fine, though SAVE in the capture dialog refused the pair (`SlotInputConflicts`, Krondor). Alan
+settled the rules 2026-11-10:
+
+- **Every device.** A main input on a controller or the mouse is scanned as a keyboard key is: the same inputs with the
+  same Hold, in either slot, between two controls that can be live together (`BindingConflictRules.isSafeOverlap`,
+  which knows actions, not devices).
+- **`Joy_1` on two controllers is two buttons.** An input is named by its device and token together
+  (`LVWAP/JOY_1`), both matched ignoring case, as the game matches them. **Two identical controllers under one name
+  are one device**: the `DeviceIndex` a binds file may carry is not read until [testing item
+  30](../../00-overview/testing-required.md#bindforge) measures what it means.
+- **The HOTAS shift button is a shadow.** A controller or mouse input bound alone where another chord writes it as a
+  `<Modifier>` - `Joy_1` alone, and `Joy_1` held for `Joy_5` - is flagged as the keyboard's modifier shadow is: the game
+  records the input held first as the modifier, so it goes down alone first and fires its own binding. The chord's main
+  input bound alone is not one. It holds for a keyboard key with a controller modifier (FN-6) too.
+- **Never blocking.** A clash on a controller or mouse input is an ordinary red row: blocking means VEGA cannot drive
+  the interface, and VEGA presses only the keyboard.
+- **SAVE and the red rows judge alike.** `SlotInputConflicts` became `BindingConflictScanner.holderOf`, so the dialog
+  refuses a controller shadow as well as the same chord, and a controller input's ticked SHIFT, CTRL or ALT (E5) stays
+  in its chord. The keyboard tab's SAVE still uses `candidateConflictInSlots`, the execution view.
+- **Axes are not scanned**, here or at SAVE: two controls on one axis are left to the beta test to show whether it
+  matters.
+- **The spoken startup warning is unchanged**: it reads the execution view, which drops a slot EliteIntel cannot press.
+
+The rest of this section is the earlier design.
 
 **Status: in scope for V1.2, and designed.** Surfaces the [Shared Conflict Detection](#shared-conflict-detection) service's output directly, rather than requiring the player to spot conflict colouring row-by-row inside Game Mode. The conflict count appears on the CONFLICTS sub-tab; the mode tab's own badge [counts every anomaly](#structure).
 

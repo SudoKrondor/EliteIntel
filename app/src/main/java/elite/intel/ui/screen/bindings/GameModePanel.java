@@ -649,8 +649,8 @@ class GameModePanel extends JPanel {
     /**
      * Maps every conflicting binding id to the partners it collides with, grouped by the chord each
      * collision happens on. The {@code keySet} drives the RED/green row coloring; the grouped
-     * partner lists feed the hover callout. Every slot the file holds is scanned, a modifier held on a
-     * controller included ({@link BindingConflictScanner#scanReadOnlySlots}).
+     * partner lists feed the hover callout. Every slot the file holds is scanned, on any device
+     * ({@link BindingConflictScanner#scanReadOnlySlots}, D6).
      */
     private ConflictIndex computeConflicts(
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> bindings) {
@@ -990,8 +990,8 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * WHY no keyboard-usable test: the scan reads a slot whose modifier is held on a controller (FN-6), and
-     * {@link BindingConflictScanner#chordOf} already gives an empty chord for a slot with no keyboard main key.
+     * WHY no keyboard-usable test: the scan reads every slot - a modifier held on a controller (FN-6), a main input on
+     * a controller or the mouse (D6) - and {@link BindingConflictScanner#chordOf} gives an empty chord for an empty one.
      */
     private boolean matchesChord(KeyBindingsParser.ReadOnlyBindingSlot slot, Set<String> chord) {
         return chord.equals(BindingConflictScanner.chordOf(slot));
@@ -1149,7 +1149,7 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * Each slot's own keyboard clash, as the grid found it - so the dialog reports that slot's collision, not
+     * Each slot's own clash, on any device, as the grid found it - so the dialog reports that slot's collision, not
      * whichever of the binding's chords happened to be indexed first. A missing or empty slot has none.
      */
     private Map<BindingSlotType, AssignKeyboardBindingDialog.ExistingConflict> existingConflicts(
