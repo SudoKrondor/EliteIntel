@@ -60,15 +60,13 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     }
 
     /**
-     * Runs an {@code lms} command, hiding the console windows LM Studio opens meanwhile ({@link LmStudioWindowHider}).
+     * Runs an {@code lms} command.
      */
     private void runLms(Path lms, Duration timeout, String... arguments) throws InstallException {
         List<String> command = new ArrayList<>();
         command.add(lms.toString());
         command.addAll(List.of(arguments));
-        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(homeOf(lms), log)) {
-            runner.run(command, timeout);
-        }
+        runner.run(command, timeout);
     }
 
     /**
@@ -92,7 +90,7 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     public void runInstallScript() throws InstallException {
         boolean windows = OsDetector.getOs() == OsDetector.OS.WINDOWS;
         Path script = download(windows ? WINDOWS_SCRIPT : LINUX_SCRIPT, windows ? ".ps1" : ".sh");
-        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(LmStudioHome.locate().dir(), log)) {
+        try {
             runner.run(windows
                     ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString())
                     : List.of("bash", script.toString()), SCRIPT);
@@ -142,29 +140,27 @@ final class LocalLmStudioMachine implements LmStudioMachine {
         builder.environment().put("LMS_NO_MODIFY_PATH", "1");
         log.accept("> " + llmster + " (its output goes to " + output + ")");
         Process process;
-        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(homeOf(lms), log)) {
-            try {
-                process = builder.start();
-            } catch (IOException e) {
-                throw new InstallException("Could not start " + llmster + ": " + e.getMessage(), e);
+        try {
+            process = builder.start();
+        } catch (IOException e) {
+            throw new InstallException("Could not start " + llmster + ": " + e.getMessage(), e);
+        }
+        Instant deadline = Instant.now().plus(COMMAND);
+        while (true) {
+            OptionalLong pid = daemonPid(lms);
+            if (pid.isPresent()) {
+                log.accept("llmster started (PID: " + pid.getAsLong() + ").");
+                return;
             }
-            Instant deadline = Instant.now().plus(COMMAND);
-            while (true) {
-                OptionalLong pid = daemonPid(lms);
-                if (pid.isPresent()) {
-                    log.accept("llmster started (PID: " + pid.getAsLong() + ").");
-                    return;
-                }
-                if (!process.isAlive()) {
-                    throw new InstallException(llmster + " stopped with exit code " + process.exitValue()
-                            + " before it was running (its output is in " + output + ")");
-                }
-                if (Instant.now().isAfter(deadline)) {
-                    process.destroy();
-                    throw new InstallException(llmster + " was not running within " + COMMAND.toMinutes() + " min");
-                }
-                pause(Duration.ofSeconds(1));
+            if (!process.isAlive()) {
+                throw new InstallException(llmster + " stopped with exit code " + process.exitValue()
+                        + " before it was running (its output is in " + output + ")");
             }
+            if (Instant.now().isAfter(deadline)) {
+                process.destroy();
+                throw new InstallException(llmster + " was not running within " + COMMAND.toMinutes() + " min");
+            }
+            pause(Duration.ofSeconds(1));
         }
     }
 
