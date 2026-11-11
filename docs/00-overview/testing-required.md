@@ -391,6 +391,16 @@ and no *Gave up working out which binds file to read*. Then change a second bind
 inside the `WatchService` loop.
 → [overview.md — External change detection](../02-features/bindforge/overview.md#external-change-detection--2026-10-23)
 
+**33. Does a binding changed in the game reach BindForge's check without a restart?** *Added 2026-11-11, Storage S17 —
+Alan can run this.* With Elite-Intel running, click the BindForge tab once, so the session's first check has run, then
+switch to another Elite-Intel tab. Change a binding in the game's controls screen and press Apply. Nothing should open
+in Elite-Intel. The log should show *The bindings folder changed: the check runs again at the next BindForge click*.
+Click the BindForge tab: the check's warning should name the binds file, and Merge should offer the changed binding as
+a row. Then choose Not now, click another tab and back: nothing should be asked until the folder changes again. Last,
+press APPLY with an edit on the bar and click away and back: the check runs and says nothing, since the files are as
+BindForge wrote them. Covers the watch loop's event, which has no unit test.
+→ [storage.md — Opening BindForge](../02-features/bindforge/storage.md#opening-bindforge)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

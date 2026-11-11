@@ -199,15 +199,23 @@ inert actions, `Opening.readOnly` on `DeviceEditorDialog`, and `BindForgeReadOnl
    BindForge** (principle 5): the check waits for the click. BindForge still does not watch the files itself, and
    the check at APPLY is unchanged.
 
-   *To confirm at the slice's sources (Storage S17):*
-   - which changes count - the monitor reacts only to names ending `.binds`, so a change to `StartPreset.4.start`
-     alone, or to an installation's device files, clears nothing;
-   - BindForge's own writes change the folder too (APPLY, RESTORE, the check's write), and would send the next
-     click through a check that finds nothing;
-   - after **Not now**, whether the next click asks again or only a further change does;
-   - a user who is on the BindForge tab when the game saves, and does not leave it;
-   - edits not applied put the first click's check off to the next click, and read only turns it off - presumably
-     the same here.
+   **Settled with Storage S17's sources (Alan, 2026-11-11, Q1-Q5 as recommended):**
+   - **Q1: any file created or changed in the bindings folder counts** - not only `.binds` names, so a preset changed
+     in the game, or a stray file dropped in, sends the next click through the check, which judges everything there.
+     The game's own `BindingLoadingErrors.log` at each start counts too, and costs a check that says nothing. A file
+     removed is not noticed (principle 13). An installation's device files are not watched.
+   - **Q2: BindForge's own writes count too** (APPLY, RESTORE, first-time startup, the check's write): the next click's
+     check finds the files as BindForge wrote them and shows nothing. Telling its own writes apart would hang on the
+     monitor's timing.
+   - **Q3: Not now leaves the flag set**, as at the first click; only a further change in the folder asks again.
+   - **Q4: a user who stays on BindForge** while the game saves is asked nothing until they leave the tab and click it
+     again, or press APPLY, whose check catches it. A click on a BindForge sub-tab is not a click on the BindForge tab.
+   - **Q5: edits not applied and read only** behave as at the first click: edits put the check off to the next click,
+     and read only turns it off.
+
+   Built in Storage S17: `ui.event.BindingsFolderChangedEvent`, published by `BindingsMonitor`'s watch loop once per
+   batch of folder events; heard by `BindingsTabPanel`, which clears the flag through
+   `FirstTimeStartupFlow.checkAgainAtNextClick` and `CheckFlow.checkAgain`; the flag is `ui.screen.bindings.SessionCheck`.
 
 ## Editing and applying
 

@@ -72,6 +72,14 @@ public final class FirstTimeStartupFlow {
         });
     }
 
+    /**
+     * The bindings folder changed: the check runs again at the next click on the BindForge tab, not now - nothing opens
+     * while the user is on another tab or stays on BindForge (storage.md rule 5; Storage S17, Q4). Any thread.
+     */
+    public void checkAgainAtNextClick() {
+        CheckFlow.checkAgain();
+    }
+
     private void showList(FirstTimeStartup startup, List<InstallationRow> rows) {
         InstallationRegistry registry = new InstallationRegistry(
                 GameInstallationProvider.forThisPlatform(PlayerSession.getInstance().getBindingsDir()));

@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -46,6 +45,9 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  *       check starts, stops it running again until Elite-Intel restarts; Not now leaves it set (Alan, 2026-10-30). A
  *       read that fails is told, and not tried again this session - APPLY still runs the check (Storage S8R, the
  *       S7-S8b review). Edits on screen put it off to the next click, since its write would throw them away.
+ *       <strong>A change in the bindings folder clears the flag</strong> ({@link #checkAgain}; Storage S17), so the
+ *       next click runs the check again - a binding changed in the game while Elite-Intel runs is asked about without
+ *       an APPLY or a restart. Nothing opens until that click (Alan, 2026-11-11).
  *       <strong>The device files are checked here too</strong> (Storage S9a): every installation that differs is named
  *       in the same warning; taking the game's files takes the one installation that differs, or opens first setup's
  *       reconcile, with the working copy as one side, when several do; merge answers the binds rows, then opens the
@@ -73,8 +75,8 @@ final class CheckFlow {
 
     private static final Logger log = LogManager.getLogger(CheckFlow.class);
 
-    /** Whether the check has run in this Elite-Intel session (storage.md rule 5). */
-    private static final AtomicBoolean CHECKED_THIS_SESSION = new AtomicBoolean();
+    /** Whether the check has run in this Elite-Intel session, or since the bindings folder changed (storage.md rule 5). */
+    private static final SessionCheck SESSION = new SessionCheck();
 
     /** The write once the user has answered - the check's own, or APPLY's - and how it is told. Off the EDT. */
     interface Writing {
@@ -189,18 +191,28 @@ final class CheckFlow {
     }
 
     /**
+     * The bindings folder changed: the next click on the BindForge tab runs the check again (storage.md rule 5; Storage
+     * S17). BindForge's own writes come here too, and the check then finds the files as it wrote them and shows nothing
+     * (Alan, 2026-11-11, S17 Q2). Any thread.
+     */
+    static void checkAgain() {
+        if (SESSION.checked()) log.info("The bindings folder changed: the check runs again at the next BindForge click");
+        SESSION.again();
+    }
+
+    /**
      * The check, once a session: reads and compares the binds and preset files and every installation's device files,
      * and hands back the warning for the EDT, or {@code null} when there is nothing to say. Off the EDT.
      *
      * @param then run on the EDT once the check is over, whatever the user chose
      */
     Runnable firstClick(Runnable then) {
-        if (CHECKED_THIS_SESSION.get()) return null;
+        if (SESSION.checked()) return null;
         if (Edits.stored().hasEdits()) {
             log.info("The check waits for the next BindForge click: there are edits not applied");
             return null;
         }
-        if (!CHECKED_THIS_SESSION.compareAndSet(false, true)) return null;
+        if (!SESSION.start()) return null;
         Checked checked;
         try {
             checked = prepared(BindingsCheck.stored().find());

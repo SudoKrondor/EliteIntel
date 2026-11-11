@@ -488,7 +488,9 @@ BindForge tab is opened in a session, and at APPLY ([storage.md](storage.md) rul
 APPLY catches anything that changed while BindForge was open, before anything is written (2026-10-23, Alan).
 **Since 2026-11-11 (Alan) a fourth:** the next click on the BindForge tab after the bindings folder changed, so a
 binding changed in the game while Elite-Intel runs is asked about without an APPLY or a restart
-([storage.md](storage.md#opening-bindforge) rule 5; Storage S17, not built yet).
+([storage.md](storage.md#opening-bindforge) rule 5; built in Storage S17). `BindingsMonitor` publishes
+`BindingsFolderChangedEvent` after any change in the bindings folder; BindForge only clears its session flag then, and
+nothing opens until the click.
 *Until 2026-10-23 `DeviceFilesMonitor` polled every installation's device files every two seconds to refresh the
 Alias Designer screen.*
 
@@ -501,8 +503,8 @@ and writing it again, and the monitor read it at the moment of the change, befor
 `IOException`, and the monitor thread ended - the assistant pressed the old file's keys and the Bind Editor got no
 refresh until Elite-Intel restarted (Alan's log, 2026-11-11 08:15:23). Now it waits first, and a change whose file
 cannot be worked out is tried again once a second, five times, while the folder stays quiet; after that it is logged
-as an error and waits for the next change. It still reacts only to `.binds` names, and BindForge's check still does
-not watch the files.
+as an error and waits for the next change. Its reload still reacts only to `.binds` names, and BindForge's check still
+does not watch the files; since Storage S17 any change also tells BindForge the check is due again.
 
 **A reload that works on a retry takes in the file's conflicts, as any other reload does (Alan, 2026-11-11, Storage
 S18R).** After every batch of folder events the monitor runs `checkForConflictsAndPersist()`; a reload that worked

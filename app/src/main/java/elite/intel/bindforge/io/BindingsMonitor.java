@@ -14,6 +14,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.BindingsFolderChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +44,8 @@ import static elite.intel.util.StringUtls.localizedSpeech;
  * - Automatically reloads and parses bindings when a new or modified file is
  * detected.
  * - Provides access to the current bindings map.
+ * - Publishes {@link BindingsFolderChangedEvent} after any change in the folder, so BindForge's check runs again at the
+ * next click on its tab (Storage S17). BindForge still does not watch the files itself.
  * <p>
  * Thread Safety:
  * - This class uses synchronization to ensure thread-safe access to start and
@@ -233,7 +236,8 @@ public class BindingsMonitor {
                     continue;
                 }
 
-                for (WatchEvent<?> event : key.pollEvents()) {
+                List<WatchEvent<?>> events = key.pollEvents();
+                for (WatchEvent<?> event : events) {
                     WatchEvent.Kind<?> kind = event.kind();
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
@@ -242,6 +246,10 @@ public class BindingsMonitor {
                         }
                     }
                 }
+                // WHY any file, and an overflow too: BindForge's check judges everything in the folder, so any change
+                // sends the next BindForge click through it; one that turns out to be nothing costs a silent read
+                // (Alan, 2026-11-11, Storage S17 Q1 and Q2).
+                if (!events.isEmpty()) UiBus.publish(new BindingsFolderChangedEvent());
                 checkForConflictsAndPersist();
                 boolean valid = key.reset();
                 if (!valid) {

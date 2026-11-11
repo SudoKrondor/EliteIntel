@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
+import elite.intel.ui.event.BindingsFolderChangedEvent;
 import elite.intel.ui.screen.bindings.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -73,6 +74,15 @@ public class BindingsTabPanel extends JPanel {
             readOnly = now;
             if (ended && isShowing()) firstTimeStartup.offerIfNeeded();
         });
+    }
+
+    /**
+     * Anything in the bindings folder changed - a save from the game's controls screen, say: the check runs again at the
+     * next click on this tab (storage.md rule 5; Storage S17). Heard on the monitor thread; it only clears a flag.
+     */
+    @Subscribe
+    public void onBindingsFolderChanged(BindingsFolderChangedEvent event) {
+        firstTimeStartup.checkAgainAtNextClick();
     }
 
     private void buildUi() {
