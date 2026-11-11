@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Capture is a single motion, as in the game: whatever is held when the completing input arrives becomes its
- * modifiers.
+ * modifiers. A button or hat is picked when it is let go (E8); an axis direction the moment it moves.
  */
 class ControllerCaptureTest {
 
@@ -24,63 +24,122 @@ class ControllerCaptureTest {
     private final ControllerCapture capture = new ControllerCapture();
 
     @Test
-    void aButtonPressIsItsGameTokenNumberedFromOne() {
-        assertEquals(Optional.of(new Captured(input(STICK, "Joy_6"), List.of())), button(STICK, 5, true));
+    void aButtonIsPickedWhenLetGoAsItsGameTokenNumberedFromOne() {
+        assertEquals(Optional.empty(), button(STICK, 5, true), "a press picks nothing yet");
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_6"), List.of())), button(STICK, 5, false));
+    }
+
+    /** E8 (Alan, 2026-11-10): a chord is never picked first as the bare button held for it. */
+    @Test
+    void aChordIsPickedWholeAndNeverAsTheButtonHeldForIt() {
+        assertEquals(Optional.empty(), button(STICK, 0, true));
+        assertEquals(Optional.empty(), button(STICK, 5, true));
+
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_6"), List.of(input(STICK, "Joy_1")))),
+                button(STICK, 5, false));
+        assertEquals(Optional.empty(), button(STICK, 0, false), "nothing pressed since the pick");
     }
 
     @Test
-    void aReleaseCapturesNothing() {
+    void lettingGoOfTheModifierFirstPicksTheSameChord() {
+        button(STICK, 0, true);
         button(STICK, 5, true);
+
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_6"), List.of(input(STICK, "Joy_1")))),
+                button(STICK, 0, false));
         assertEquals(Optional.empty(), button(STICK, 5, false));
+    }
+
+    /** With the shift button still held, a second button pressed and let go is a second pick. */
+    @Test
+    void aShiftButtonHeldPicksEachButtonPressedWithIt() {
+        button(STICK, 0, true);
+        button(STICK, 5, true);
+        button(STICK, 5, false);
+        button(STICK, 6, true);
+
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_7"), List.of(input(STICK, "Joy_1")))),
+                button(STICK, 6, false));
     }
 
     @Test
     void buttonsHeldOnAnyControllerBecomeModifiersInPressOrder() {
         button(THROTTLE, 0, true);
         button(STICK, 1, true);
+        button(STICK, 5, true);
 
         assertEquals(Optional.of(new Captured(input(STICK, "Joy_6"), List.of(input(THROTTLE, "Joy_1"), input(STICK, "Joy_2")))),
-                button(STICK, 5, true));
+                button(STICK, 5, false));
     }
 
     @Test
     void aReleasedButtonIsNoLongerAModifier() {
         button(STICK, 0, true);
         button(STICK, 0, false);
+        button(STICK, 5, true);
 
-        assertEquals(List.of(), button(STICK, 5, true).orElseThrow().modifiers());
+        assertEquals(List.of(), button(STICK, 5, false).orElseThrow().modifiers());
     }
 
     @Test
     void atMostThreeModifiersAreKept() {
         for (int b = 0; b < 4; b++) button(STICK, b, true);
+        button(STICK, 9, true);
 
-        assertEquals(3, button(STICK, 9, true).orElseThrow().modifiers().size());
+        assertEquals(3, button(STICK, 9, false).orElseThrow().modifiers().size());
     }
 
     @Test
-    void aHatDirectionIsAPovToken() {
-        assertEquals(Optional.of(new Captured(input(STICK, "Joy_POV1Up"), List.of())),
-                capture.hat(STICK, 0, DeviceHatEvent.UP));
-        assertEquals(Optional.empty(), capture.hat(STICK, 0, 0));
-        assertEquals(Optional.of(new Captured(input(STICK, "Joy_POV2Left"), List.of())),
-                capture.hat(STICK, 1, DeviceHatEvent.LEFT));
+    void aHatDirectionIsAPovTokenPickedWhenLetGo() {
+        assertEquals(Optional.empty(), capture.hat(STICK, 0, DeviceHatEvent.UP));
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_POV1Up"), List.of())), capture.hat(STICK, 0, 0));
+        capture.hat(STICK, 1, DeviceHatEvent.LEFT);
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_POV2Left"), List.of())), capture.hat(STICK, 1, 0));
     }
 
     @Test
-    void aDiagonalCapturesTheFirstDirectionAndHoldsTheOther() {
-        assertEquals(Optional.of(new Captured(input(STICK, "Joy_POV1Up"), List.of())),
-                capture.hat(STICK, 0, DeviceHatEvent.UP | DeviceHatEvent.RIGHT));
+    void aDiagonalPicksTheFirstDirectionAndHoldsTheOther() {
+        capture.hat(STICK, 0, DeviceHatEvent.UP | DeviceHatEvent.RIGHT);
+        button(STICK, 0, true);
+
         assertEquals(List.of(input(STICK, "Joy_POV1Up"), input(STICK, "Joy_POV1Right")),
-                button(STICK, 0, true).orElseThrow().modifiers());
+                button(STICK, 0, false).orElseThrow().modifiers());
+    }
+
+    @Test
+    void aDiagonalLetGoPicksTheFirstDirectionWithTheOtherHeld() {
+        capture.hat(STICK, 0, DeviceHatEvent.UP | DeviceHatEvent.RIGHT);
+
+        assertEquals(Optional.of(new Captured(input(STICK, "Joy_POV1Up"), List.of(input(STICK, "Joy_POV1Right")))),
+                capture.hat(STICK, 0, 0));
+    }
+
+    /** An axis is picked the moment it moves; a button held with it, let go afterwards, does not replace that pick. */
+    @Test
+    void aButtonLetGoAfterAnAxisPickPicksNothing() {
+        capture.rest(STICK, GameAxis.RX, 0.0f);
+        button(STICK, 0, true);
+
+        assertEquals(Optional.of(new Captured(input(STICK, "Pos_Joy_RXAxis"), List.of(input(STICK, "Joy_1")))),
+                capture.axis(STICK, GameAxis.RX, 0.8f));
+        assertEquals(Optional.empty(), button(STICK, 0, false));
     }
 
     @Test
     void anUnpluggedControllerHoldsNothing() {
         button(STICK, 0, true);
         capture.release(STICK);
+        button(THROTTLE, 0, true);
 
-        assertEquals(List.of(), button(THROTTLE, 0, true).orElseThrow().modifiers());
+        assertEquals(List.of(), button(THROTTLE, 0, false).orElseThrow().modifiers());
+    }
+
+    @Test
+    void anUnpluggedControllersPressPicksNothingLater() {
+        button(STICK, 0, true);
+        capture.release(STICK);
+
+        assertEquals(Optional.empty(), button(STICK, 0, false));
     }
 
     @Test
@@ -156,7 +215,8 @@ class ControllerCaptureTest {
     @Test
     void aGamePadHeldTriggerIsNotAModifier() {
         capture.gamepadAxis("GamePad", GameAxis.Z, 0.8f);
-        assertEquals(List.of(), button("GamePad", 0, true).orElseThrow().modifiers());
+        button("GamePad", 0, true);
+        assertEquals(List.of(), button("GamePad", 0, false).orElseThrow().modifiers());
     }
 
     @Test
@@ -190,8 +250,10 @@ class ControllerCaptureTest {
 
     @Test
     void gamePadDPadUsesGamePadTokens() {
+        ControllerCapture pad = new ControllerCapture();
+        assertEquals(Optional.empty(), pad.gamepadHat("GamePad", 0, DeviceHatEvent.RIGHT));
         assertEquals(Optional.of(new Captured(input("GamePad", "GamePad_DPadRight"), List.of())),
-                new ControllerCapture().gamepadHat("GamePad", 0, DeviceHatEvent.RIGHT));
+                pad.gamepadHat("GamePad", 0, 0));
         assertEquals(List.of("GamePad_DPadUp", "GamePad_DPadRight", "GamePad_DPadDown", "GamePad_DPadLeft"),
                 ControllerCapture.gamepadDPadTokens());
     }

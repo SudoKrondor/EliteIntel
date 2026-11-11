@@ -15,8 +15,15 @@ import java.util.*;
  * Deadzone</em>): whatever is held when the completing input arrives becomes the modifier set, up to three, and the
  * completing input is the slot's value. Held inputs count on any controller, in the order they were pressed.
  * <p>
+ * <strong>A button or hat is picked when it is let go, not when it is pressed</strong> (E8, Alan, 2026-11-10), so
+ * a chord is never picked first as the bare button held for it. A release picks when something was pressed since the
+ * last pick: the input pressed last, with every other input still held as its modifiers. Holding a shift button and
+ * pressing two buttons in turn picks twice; letting go of the shift button afterwards picks nothing. <strong>An axis
+ * direction or a trigger is still picked the moment it moves</strong>: a throttle pushed from one end may never come
+ * back, so it would never be let go.
+ * <p>
  * A hat direction is an input like a button. A diagonal on an 8-way hat pushes two directions in one report:
- * the first in the spec's order (up, right, down, left) is captured, and the other counts as held.
+ * the first in the spec's order (up, right, down, left) is the input, and the other counts as held.
  * <p>
  * Pure and not thread-safe: the dialog feeds it on the EDT.
  */
@@ -45,6 +52,10 @@ public final class ControllerCapture {
             List.of("GamePad_DPadUp", "GamePad_DPadRight", "GamePad_DPadDown", "GamePad_DPadLeft");
 
     private final Set<BindingInput> held = new LinkedHashSet<>();
+    /** The button or hat direction pressed last - what a release picks. */
+    private BindingInput lastPressed;
+    /** Whether a button or hat direction was pressed since the last pick, so a release picks. */
+    private boolean pressedSincePick;
     private final Map<String, Integer> hatDirections = new HashMap<>();
     private final Map<String, Integer> axisDirections = new HashMap<>();
     /** Where each axis rests - the first value seen for it. */
@@ -53,15 +64,16 @@ public final class ControllerCapture {
     /**
      * @param device  the controller's {@code .binds} name
      * @param token   the button's token, from {@link #buttonToken}
-     * @return what to assign when this was a press; empty on a release
+     * @return what to assign when this release picks; empty on a press, and on a release with nothing pressed since
+     * the last pick
      */
     public Optional<Captured> button(String device, String token, boolean pressed) {
         BindingInput input = new BindingInput(device, token);
-        if (!pressed) {
-            held.remove(input);
+        if (pressed) {
+            pressed(input);
             return Optional.empty();
         }
-        return Optional.of(press(input));
+        return released(input);
     }
 
     /**
@@ -117,18 +129,26 @@ public final class ControllerCapture {
         String key = device + "#" + sdlIndex;
         int before = hatDirections.getOrDefault(key, 0);
         hatDirections.put(key, directions);
-        Captured captured = null;
+        // WHY releases first: a report can let one direction go and push another as the hat rolls, and the release
+        // picks what was held before this report.
+        Optional<Captured> picked = Optional.empty();
+        List<BindingInput> pushed = new ArrayList<>();
         for (int i = 0; i < HAT_BITS.length; i++) {
             BindingInput input = new BindingInput(device, tokens.get(i));
             boolean was = (before & HAT_BITS[i]) != 0;
             boolean is = (directions & HAT_BITS[i]) != 0;
-            if (was && !is) held.remove(input);
-            if (!was && is) {
-                if (captured == null) captured = press(input);
-                else held.add(input);
+            if (was && !is) {
+                Optional<Captured> release = released(input);
+                if (picked.isEmpty()) picked = release;
             }
+            if (!was && is) pushed.add(input);
         }
-        return Optional.ofNullable(captured);
+        if (!pushed.isEmpty()) {
+            // WHY: of a diagonal, the first direction in the spec's order is the input, and the other is only held.
+            pressed(pushed.getFirst());
+            held.addAll(pushed.subList(1, pushed.size()));
+        }
+        return picked;
     }
 
     /**
@@ -233,20 +253,56 @@ public final class ControllerCapture {
      */
     public void release(String device) {
         held.removeIf(input -> input.device().equals(device));
+        if (lastPressed != null && lastPressed.device().equals(device)) {
+            lastPressed = null;
+            pressedSincePick = false;
+        }
         hatDirections.keySet().removeIf(key -> key.startsWith(device + "#"));
         axisDirections.keySet().removeIf(key -> key.startsWith(device + "#"));
         rests.keySet().removeIf(key -> key.startsWith(device + "#"));
     }
 
+    /**
+     * An axis direction or a trigger, picked the moment it moves. A button held with it, let go afterwards, picks
+     * nothing: the axis was the pick.
+     */
     private Captured press(BindingInput input) {
+        List<BindingInput> modifiers = modifiersOf(input);
+        held.add(input);
+        pressedSincePick = false;
+        return new Captured(input, modifiers);
+    }
+
+    /** A button or hat direction pressed: held, and what the next release picks. */
+    private void pressed(BindingInput input) {
+        held.add(input);
+        lastPressed = input;
+        pressedSincePick = true;
+    }
+
+    /**
+     * A button or hat direction let go: the input pressed last, with every other one still held as its modifiers, when
+     * something was pressed since the last pick.
+     */
+    private Optional<Captured> released(BindingInput input) {
+        Optional<Captured> picked = Optional.empty();
+        if (pressedSincePick && lastPressed != null && held.contains(lastPressed)) {
+            picked = Optional.of(new Captured(lastPressed, modifiersOf(lastPressed)));
+            pressedSincePick = false;
+        }
+        held.remove(input);
+        return picked;
+    }
+
+    /** Every other input held, in the order pressed, up to the game's three; an axis held is never a modifier. */
+    private List<BindingInput> modifiersOf(BindingInput input) {
         List<BindingInput> modifiers = new ArrayList<>();
         for (BindingInput other : held) {
             if (modifiers.size() == SlotAssignment.MAX_MODIFIERS) break;
             if (isAxisInput(other)) continue;
             if (!other.sameInputAs(input)) modifiers.add(other);
         }
-        held.add(input);
-        return new Captured(input, modifiers);
+        return modifiers;
     }
 
     private static boolean isAxisInput(BindingInput input) {

@@ -824,6 +824,14 @@ still holds one name, and making it a list is what remains.*
 All of the following are confirmed by direct in-game testing, not just inferred from the file format:
 
 - Capturing a compound combination (main input plus modifiers) is a single motion — whatever is held when the completing input arrives becomes the modifier set, and the completing input becomes the slot's value. No separate "now capture the modifier" step exists.
+  **BindForge picks a controller's button or hat when it is let go** (E8, Alan, 2026-11-10, as shortcut editors on
+  Windows and Linux do), so a chord is never picked first as the bare button held for it. The chord is the same: the
+  input pressed last, with every other input still held. A release picks only when something was pressed since the
+  last pick, so holding a shift button and pressing two buttons in turn picks twice, and letting go of the shift button
+  then picks nothing. **An axis direction or a trigger is still picked the moment it moves** - a throttle pushed from
+  one end may never come back - and a button held with it picks nothing when let go. The keyboard and the MOUSE tab
+  are unchanged, and a click on a cell picks at once. *Until 2026-11-10 every press picked, and a chord replaced the
+  bare button a moment later (`ControllerCapture`).*
 - Cross-device modifiers are real and confirmed working in-game — for example, a keyboard key combined with two separate joystick buttons in one binding.
   **V1.2 builds one direction only (E5, Krondor, 2026-11-10): a controller input with SHIFT, ALT or CTRL held.** A
   keyboard key with a controller button held, and any other keyboard key as a modifier, are not in V1.2: any other
