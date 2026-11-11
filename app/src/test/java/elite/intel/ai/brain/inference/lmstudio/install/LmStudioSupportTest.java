@@ -26,12 +26,12 @@ class LmStudioSupportTest {
     void eachCardIsJudgedAgainstTheBar() {
         String text = LmStudioSupport.graphicsCard(new NvidiaSmi.Answer.Lines(List.of(
                 "566.36, NVIDIA GeForce RTX 3090, 24576, 8.6",
-                "566.36, NVIDIA GeForce RTX 4080, 16376, 8.9")), List.of(), OptionalLong.of(1_200),
+                "566.36, NVIDIA GeForce RTX 3050, 6144, 8.6")), List.of(), OptionalLong.of(1_200),
                 GpuRequirement.Verdict.MET_BY_NVIDIA);
 
-        assertTrue(text.contains("23000 MiB and compute capability 8.6"), text);
-        assertTrue(text.contains("RTX 3090, 24576, 8.6 - meets the bar"), text);
-        assertTrue(text.contains("RTX 4080, 16376, 8.9 - below the bar"), text);
+        assertTrue(text.contains("one card with 23000 MiB, or two or more of one vendor with 19500 MiB together"), text);
+        assertTrue(text.contains("RTX 3090, 24576, 8.6 - counts"), text);
+        assertTrue(text.contains("RTX 3050, 6144, 8.6 - does not count"), text);
         assertTrue(text.contains("AMD: none found"), text);
         assertTrue(text.contains("Graphics memory in use now: 1200 MiB"), text);
         assertTrue(text.contains("Decided this run, which the button follows: meets the bar (NVIDIA)"), text);
@@ -44,8 +44,8 @@ class LmStudioSupportTest {
                 new AmdCards.Card("AMD Radeon(TM) Graphics", OptionalLong.empty())),
                 OptionalLong.empty(), GpuRequirement.Verdict.MET_BY_AMD);
 
-        assertTrue(text.contains("AMD card: AMD Radeon RX 7900 XTX, 24560 MiB - meets the bar"), text);
-        assertTrue(text.contains("AMD card: AMD Radeon(TM) Graphics, memory not reported - below the bar"), text);
+        assertTrue(text.contains("AMD card: AMD Radeon RX 7900 XTX, 24560 MiB - counts"), text);
+        assertTrue(text.contains("AMD card: AMD Radeon(TM) Graphics, memory not reported - does not count"), text);
         assertTrue(text.contains("Graphics memory in use now: could not be read"), text);
         assertTrue(text.contains("meets the bar (AMD, beta)"), text);
     }

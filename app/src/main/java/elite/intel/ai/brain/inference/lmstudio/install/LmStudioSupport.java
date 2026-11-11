@@ -81,14 +81,15 @@ public final class LmStudioSupport {
     static String graphicsCard(NvidiaSmi.Answer answer, List<AmdCards.Card> amd, OptionalLong usedMib,
                                GpuRequirement.Verdict decided) {
         StringBuilder text = new StringBuilder(String.format(Locale.ROOT,
-                "  The bar: an NVIDIA card with %d MiB and compute capability %d.%d, or (beta) an AMD card with %d MiB%n",
-                GpuRequirement.MIN_MEMORY_MIB, GpuRequirement.MIN_COMPUTE_MAJOR, GpuRequirement.MIN_COMPUTE_MINOR,
-                GpuRequirement.MIN_MEMORY_MIB));
+                "  The bar: one card with %d MiB, or two or more of one vendor with %d MiB together; a card counts"
+                        + " from %d MiB, and an NVIDIA one only from compute capability %d.%d (AMD is beta)%n",
+                GpuRequirement.MIN_MEMORY_MIB, GpuRequirement.MIN_COMBINED_MIB, GpuRequirement.MIN_COUNTED_MIB,
+                GpuRequirement.MIN_COMPUTE_MAJOR, GpuRequirement.MIN_COMPUTE_MINOR));
         switch (answer) {
             case NvidiaSmi.Answer.Lines(List<String> lines) -> {
                 for (String line : lines) {
                     text.append("  Card (driver, name, MiB, compute): ").append(line)
-                            .append(GpuRequirement.meetsTheBar(line) ? " - meets the bar" : " - below the bar")
+                            .append(GpuRequirement.counts(line) ? " - counts" : " - does not count")
                             .append('\n');
                 }
             }
@@ -103,7 +104,7 @@ public final class LmStudioSupport {
         for (AmdCards.Card card : amd) {
             text.append("  AMD card: ").append(card.name()).append(", ")
                     .append(card.memoryMib().isPresent() ? card.memoryMib().getAsLong() + " MiB" : "memory not reported")
-                    .append(GpuRequirement.meetsTheBar(card) ? " - meets the bar" : " - below the bar")
+                    .append(GpuRequirement.counts(card) ? " - counts" : " - does not count")
                     .append('\n');
         }
         text.append("  Graphics memory in use now: ")

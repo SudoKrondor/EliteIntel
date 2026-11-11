@@ -17,15 +17,24 @@ existing LM Studio path is used exactly as it is today.
 hold up in practice, especially on Windows. A 12 GB card is enough only for a PC that runs nothing but the
 model, which is the manual second-PC setup in the website guide.
 
-The check reads `nvidia-smi --query-gpu=name,memory.total,compute_cap --format=csv,noheader,nounits`. It
-passes when **any one card** reports compute capability **8.6 or higher** and **at least 23,000 MiB** of
-memory. A 24 GB card reports a little under 24,576 MiB.
+**Two or more cards pass with about 20 GB between them** (decided 2026-11-10). Neither the game nor LM Studio is
+told which card to use: LM Studio spreads the model over them, and the load on each card evens out. A 12 GB
+RTX 5070 with an 8 GB RTX 3070 Ti runs the game and the model together (a developer's PC, reported 2026-11-10).
+
+The check reads `nvidia-smi --query-gpu=name,memory.total,compute_cap --format=csv,noheader,nounits`. A card
+**counts** when it reports compute capability **8.6 or higher** and **at least 7,500 MiB** (an 8 GB card reports
+about 8,192). It passes when **one counted card** has **at least 23,000 MiB** (a 24 GB card reports a little under
+24,576), or **two or more counted cards** have **at least 19,500 MiB together**. A card that does not count adds
+nothing: an old 11 GB 2080 Ti beside a 12 GB card does not pass. Cards are added up **per vendor only**, because
+LM Studio's CUDA engine does not split a model between NVIDIA and AMD.
 
 | Card | Result | Why |
 |---|---|---|
 | RTX 3090 / 3090 Ti / 4090 / 5090, A5000 and up | pass | cc ≥ 8.6, ≥ 24 GB |
 | Titan RTX (cc 7.5), Tesla P40 / M40, Quadro P6000 | fail | too old or too slow, though they have 24 GB |
-| Any 12 or 16 GB card | fail | game and model do not fit together |
+| Any 12 or 16 GB card alone | fail | game and model do not fit together |
+| Two cards of 8.6+ with 19,500 MiB or more together (5070 12 GB + 3070 Ti 8 GB, 4080 16 GB + 3060 Ti 8 GB) | pass | the model is spread over both |
+| Two 8 GB cards, or a counted card beside a 6 GB or pre-8.6 one | fail | not enough memory that counts |
 | AMD with at least 23,000 MiB (RX 7900 XTX, Radeon PRO W7800 / W7900 / W6800) | pass, **beta** | See [AMD cards (beta)](#amd-cards-beta) |
 | AMD with less (RX 7900 XT 20 GB, 9070 XT, 6900 XT) | fail | game and model do not fit together |
 | Intel | fail | no Intel card has 24 GB, so none is looked for |
@@ -41,7 +50,8 @@ Added 2026-11-10 for the V1.2 beta, **without an AMD card to test on**. LM Studi
 llama.cpp Vulkan and ROCm engines. What is not known yet is whether the headless install picks one by itself, and
 how fast `gemma-4-e4b` runs on it next to the game.
 
-- **The bar is memory only: at least 23,000 MiB**, the same as NVIDIA's. AMD publishes nothing like NVIDIA's
+- **The bar is memory only: at least 23,000 MiB**, the same as NVIDIA's (or two or more AMD cards of at least
+  7,500 MiB each with 19,500 MiB together, as for NVIDIA). AMD publishes nothing like NVIDIA's
   compute capability, and the 24 GB cards a gaming PC holds are all RDNA 2 or newer. A 32 GB FirePro W9100 or a
   Radeon Instinct MI50 would pass, and that is accepted: they are not gaming PC cards.
 - **NVIDIA comes first.** A PC with a passing NVIDIA card is the tested path, with no warning, even if it also has

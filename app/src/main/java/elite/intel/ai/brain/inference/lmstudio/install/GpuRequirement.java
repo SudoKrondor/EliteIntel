@@ -8,11 +8,18 @@ import java.util.List;
 import java.util.OptionalLong;
 
 /**
- * Whether this PC can run the game and the local model together: an RTX 3090 (24 GB) or better.
+ * Whether this PC can run the game and the local model together: an RTX 3090 (24 GB) or better, or two or more
+ * cards of one vendor with about 20 GB between them.
  * <p>
  * WHY that bar: the game takes 8.5 GB or more, the model about 6 GB, and browsers, OBS and Windows itself also use
- * the GPU, so 18 GB does not hold up in practice. A 12 GB card is enough only for a PC that runs nothing but the
- * model, which is the manual second-PC setup in the website guide, not this one-click one.
+ * the GPU, so one 18 GB card does not hold up in practice. A 12 GB card is enough only for a PC that runs nothing
+ * but the model, which is the manual second-PC setup in the website guide, not this one-click one.
+ * <p>
+ * WHY a lower bar for several cards: with neither the game nor LM Studio told which card to use, LM Studio spreads
+ * the model over them and the load on each card evens out. A 12 GB RTX 5070 with an 8 GB RTX 3070 Ti runs the game
+ * and the model together (reported 2026-11-10). Cards are added up per vendor only, because LM Studio's CUDA engine
+ * does not split a model between NVIDIA and AMD, and a card too old or too small to help ({@link #counts}) adds
+ * nothing.
  * <p>
  * NVIDIA cards are read from {@code nvidia-smi}, because OSHI's VRAM figure is wrong on both platforms. AMD cards
  * ({@link AmdCards}) are a <b>beta</b>: the same memory bar, nothing about the chip, and untested on real hardware,
@@ -28,6 +35,17 @@ public final class GpuRequirement {
      * A 24 GB card reports a little under 24,576 MiB, and by how much varies with the card and the driver.
      */
     static final int MIN_MEMORY_MIB = 23_000;
+
+    /**
+     * Two or more cards pass with this much between them: a 12 GB and an 8 GB card report about 20,400 MiB.
+     */
+    static final int MIN_COMBINED_MIB = 19_500;
+
+    /**
+     * The least a card must have to count towards {@link #MIN_COMBINED_MIB}. An 8 GB card reports about 8,192 MiB,
+     * so this keeps out the 6 GB and smaller ones, which would hold too little of the model to be worth the split.
+     */
+    static final int MIN_COUNTED_MIB = 7_500;
 
     /**
      * Ampere's RTX 3090. Turns away the old 24 GB cards: the Titan RTX (7.5), Tesla P40 (6.1) and M40 (5.2).
@@ -94,40 +112,65 @@ public final class GpuRequirement {
      * nothing that ranks its chips, and the 24 GB cards a gaming PC holds are all RDNA 2 or newer.
      */
     static boolean isMetByAmd(List<AmdCards.Card> cards) {
-        return cards.stream().anyMatch(GpuRequirement::meetsTheBar);
-    }
-
-    static boolean meetsTheBar(AmdCards.Card card) {
-        OptionalLong memory = card.memoryMib();
-        return memory.isPresent() && memory.getAsLong() >= MIN_MEMORY_MIB;
+        return isMetByMemory(cards.stream().map(GpuRequirement::countedMib).toList());
     }
 
     /**
-     * Whether any of {@code nvidia-smi}'s lines describes a card that meets the bar. Each line is
+     * Whether this AMD card counts towards the bar.
+     */
+    static boolean counts(AmdCards.Card card) {
+        return countedMib(card).isPresent();
+    }
+
+    private static OptionalLong countedMib(AmdCards.Card card) {
+        OptionalLong memory = card.memoryMib();
+        return memory.isPresent() && memory.getAsLong() >= MIN_COUNTED_MIB ? memory : OptionalLong.empty();
+    }
+
+    /**
+     * Whether {@code nvidia-smi}'s lines describe cards that meet the bar together. Each line is
      * {@code name, memory.total in MiB, compute_cap}; a line it cannot read (a card answering {@code [N/A]}) is
-     * simply not a card that passes.
+     * simply not a card that counts.
      */
     static boolean isMetBy(List<String> lines) {
-        return lines.stream().anyMatch(GpuRequirement::meetsTheBar);
+        return isMetByMemory(lines.stream().map(GpuRequirement::countedMib).toList());
     }
 
     /**
-     * Whether one line of {@code nvidia-smi} describes a card that meets the bar. Its last two fields are
-     * {@code memory.total} in MiB and {@code compute_cap}; whatever comes before them is not read.
+     * Whether the card on this line of {@code nvidia-smi} counts towards the bar.
      */
-    static boolean meetsTheBar(String line) {
+    static boolean counts(String line) {
+        return countedMib(line).isPresent();
+    }
+
+    /**
+     * The memory of the card on one line of {@code nvidia-smi}, when it is new enough and big enough to count. Its
+     * last two fields are {@code memory.total} in MiB and {@code compute_cap}; whatever comes before them is not read.
+     */
+    private static OptionalLong countedMib(String line) {
         // WHY from the right: the card's name comes first and is free text, the two numbers after it are not.
         String[] fields = line.split(",");
-        if (fields.length < 3) return false;
+        if (fields.length < 3) return OptionalLong.empty();
         try {
             int memoryMib = Integer.parseInt(fields[fields.length - 2].strip());
             String[] compute = fields[fields.length - 1].strip().split("\\.");
             int major = Integer.parseInt(compute[0]);
             int minor = compute.length > 1 ? Integer.parseInt(compute[1]) : 0;
             boolean newEnough = major > MIN_COMPUTE_MAJOR || (major == MIN_COMPUTE_MAJOR && minor >= MIN_COMPUTE_MINOR);
-            return newEnough && memoryMib >= MIN_MEMORY_MIB;
+            return newEnough && memoryMib >= MIN_COUNTED_MIB ? OptionalLong.of(memoryMib) : OptionalLong.empty();
         } catch (NumberFormatException unreadable) {
-            return false;
+            return OptionalLong.empty();
         }
+    }
+
+    /**
+     * One card with {@link #MIN_MEMORY_MIB}, or two or more with {@link #MIN_COMBINED_MIB} between them.
+     *
+     * @param counted each card's memory, empty for a card that does not count
+     */
+    private static boolean isMetByMemory(List<OptionalLong> counted) {
+        List<Long> cards = counted.stream().filter(OptionalLong::isPresent).map(OptionalLong::getAsLong).toList();
+        if (cards.stream().anyMatch(mib -> mib >= MIN_MEMORY_MIB)) return true;
+        return cards.size() >= 2 && cards.stream().mapToLong(Long::longValue).sum() >= MIN_COMBINED_MIB;
     }
 }
