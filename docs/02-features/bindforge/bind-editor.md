@@ -23,6 +23,9 @@ makes them cheap to build when they come back — each mode's own section below 
   back showing it. **Built in S15 (2026-11-04).** When there is no file to show - a read that failed, or no binds file
   of the user's - the line reads `EDITING  No binds file` (Alan, 2026-11-04). The items below that speak of the
   dropdown describe it in its new place; what it lists and what LOAD does were unchanged by the move.
+- **The keyboard hint and Key Input Pacing sit at the foot, above the search — settled 2026-11-10 (Alan).** The
+  row *"Elite Intel uses keyboard bindings for execution."* with the pacing slider was under the `EDITING` line;
+  it is VEGA's, not the binds file's, so it moved under the grid, and the tab row follows the file's name directly.
 - The Bindings File dropdown plus Load button (in File Manager since S15). Load opens the file from the working copy; a live copy that differs from it is [the check's](storage.md) to raise (rule 14).
   **Built on the edits — 2026-10-28 (Alan, Storage S5).** The list offers **every binds file in the working copy**,
   with the edits not applied on it — not only the active one, and not filtered to the files the Preset Editor's
