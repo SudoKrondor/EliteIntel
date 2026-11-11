@@ -47,14 +47,7 @@ final class LocalLmStudioMachine implements LmStudioMachine {
 
     private static final Duration SCRIPT = Duration.ofMinutes(30);
     private static final Duration COMMAND = Duration.ofMinutes(2);
-    /**
-     * How long {@code lms load} may go without reporting progress, and how long it may take in all. WHY not one fixed
-     * limit: a Windows tester's first load on a new install crawled through its last few percent and ran past 5 minutes,
-     * while every load after it took 5 seconds (2026-11-10). Each percent took longest just before the end (97 to 98 took
-     * 71 s), so the quiet limit leaves a wide margin over that.
-     */
-    private static final Duration LOAD_QUIET = Duration.ofMinutes(5);
-    private static final Duration LOAD = Duration.ofMinutes(30);
+    private static final Duration LOAD = Duration.ofMinutes(5);
     private static final Duration SERVER_STARTUP = Duration.ofSeconds(60);
 
     private final ProcessRunner runner;
@@ -67,23 +60,13 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     }
 
     /**
-     * Runs an {@code lms} command, hiding the console windows LM Studio opens meanwhile ({@link LmStudioWindowHider}).
+     * Runs an {@code lms} command.
      */
     private void runLms(Path lms, Duration timeout, String... arguments) throws InstallException {
-        runLms(lms, timeout, timeout, arguments);
-    }
-
-    /**
-     * As {@link #runLms(Path, Duration, String...)}, stopping the command when it goes {@code quietLimit} without
-     * output or runs past {@code limit} in all.
-     */
-    private void runLms(Path lms, Duration quietLimit, Duration limit, String... arguments) throws InstallException {
         List<String> command = new ArrayList<>();
         command.add(lms.toString());
         command.addAll(List.of(arguments));
-        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(homeOf(lms), log)) {
-            runner.run(command, quietLimit, limit);
-        }
+        runner.run(command, timeout);
     }
 
     /**
@@ -107,7 +90,7 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     public void runInstallScript() throws InstallException {
         boolean windows = OsDetector.getOs() == OsDetector.OS.WINDOWS;
         Path script = download(windows ? WINDOWS_SCRIPT : LINUX_SCRIPT, windows ? ".ps1" : ".sh");
-        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(LmStudioHome.locate().dir(), log)) {
+        try {
             runner.run(windows
                     ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString())
                     : List.of("bash", script.toString()), SCRIPT);
@@ -157,29 +140,27 @@ final class LocalLmStudioMachine implements LmStudioMachine {
         builder.environment().put("LMS_NO_MODIFY_PATH", "1");
         log.accept("> " + llmster + " (its output goes to " + output + ")");
         Process process;
-        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(homeOf(lms), log)) {
-            try {
-                process = builder.start();
-            } catch (IOException e) {
-                throw new InstallException("Could not start " + llmster + ": " + e.getMessage(), e);
+        try {
+            process = builder.start();
+        } catch (IOException e) {
+            throw new InstallException("Could not start " + llmster + ": " + e.getMessage(), e);
+        }
+        Instant deadline = Instant.now().plus(COMMAND);
+        while (true) {
+            OptionalLong pid = daemonPid(lms);
+            if (pid.isPresent()) {
+                log.accept("llmster started (PID: " + pid.getAsLong() + ").");
+                return;
             }
-            Instant deadline = Instant.now().plus(COMMAND);
-            while (true) {
-                OptionalLong pid = daemonPid(lms);
-                if (pid.isPresent()) {
-                    log.accept("llmster started (PID: " + pid.getAsLong() + ").");
-                    return;
-                }
-                if (!process.isAlive()) {
-                    throw new InstallException(llmster + " stopped with exit code " + process.exitValue()
-                            + " before it was running (its output is in " + output + ")");
-                }
-                if (Instant.now().isAfter(deadline)) {
-                    process.destroy();
-                    throw new InstallException(llmster + " was not running within " + COMMAND.toMinutes() + " min");
-                }
-                pause(Duration.ofSeconds(1));
+            if (!process.isAlive()) {
+                throw new InstallException(llmster + " stopped with exit code " + process.exitValue()
+                        + " before it was running (its output is in " + output + ")");
             }
+            if (Instant.now().isAfter(deadline)) {
+                process.destroy();
+                throw new InstallException(llmster + " was not running within " + COMMAND.toMinutes() + " min");
+            }
+            pause(Duration.ofSeconds(1));
         }
     }
 
@@ -294,27 +275,10 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     /**
      * With the flags the website guides have always used. The CLI rather than REST, because REST has no GPU-offload
      * setting.
-     * <p>
-     * A load the command gave up on still counts when the server has the model loaded. WHY: {@code lms} only asks the
-     * daemon to load it, and the daemon goes on after {@code lms} is stopped - the Windows tester's model was loaded
-     * moments after the load step had given up on it (2026-11-10).
      */
     @Override
     public void load(Path lms, String model) throws InstallException {
-        try {
-            runLms(lms, LOAD_QUIET, LOAD, "load", model, "--context-length", String.valueOf(CONTEXT_LENGTH),
-                    "--gpu", "max", "--yes");
-        } catch (InstallException failed) {
-            if (runner.isCancelled() || !loadedAfterAll(model)) throw failed;
-        }
-    }
-
-    private boolean loadedAfterAll(String model) {
-        try {
-            return server.isLoaded(model);
-        } catch (InstallException notAnswering) {
-            return false;
-        }
+        runLms(lms, LOAD, "load", model, "--context-length", String.valueOf(CONTEXT_LENGTH), "--gpu", "max", "--yes");
     }
 
     @Override
