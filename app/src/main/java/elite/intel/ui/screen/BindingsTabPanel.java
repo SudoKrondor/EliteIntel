@@ -123,6 +123,10 @@ public class BindingsTabPanel extends JPanel {
             }
         });
 
+        // WHY: Run First-Time Startup Again runs it at once - the user is on the BindForge tab already, so waiting for the
+        // next click on it left them to leave and come back (Alan, 2026-11-11, Storage S19).
+        bindingManagementPanel.setRunAgain(firstTimeStartup::runAgainNow);
+
         add(applyBar, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
         applyBar.onCreateState(state -> editorsUsable(tabs, state.editors()));

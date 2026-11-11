@@ -353,12 +353,25 @@ button instead of a sub-tab, before Alan settled that File Manager is where inst
 - **Add missing checks for `EliteDangerous64.exe`** in the installation's Odyssey product folder, as well as its
   `ControlSchemes` folder.
 
-**Run first-time startup again — for testing, and to be hidden or removed before V1.2 ships** (2026-10-24, Alan). A
-button on this sub-tab that clears the "first-time startup complete" flag ([storage.md](storage.md) rule 1) and
-nothing else — no backup is deleted, no game file is touched, and the working copy stays until first-time startup
-replaces it. It asks first (`HudConfirmDialog`). The next click on the BindForge tab runs first-time startup again,
-from the live copies, with its backup first. **It is shown to every user**, because Elite-Intel has no way to tell a
-tester from anyone else; the build plan carries the reminder to take it out.
+**Run first-time startup again — BindForge set up again from the game's files** (2026-10-24, Alan; kept and run at
+once since 2026-11-11). A button on this sub-tab, for every user, that clears the "first-time startup complete" flag
+([storage.md](storage.md) rule 1) and runs first-time startup straight away - the installation list, the reconcile,
+the summary, then the write, from the live copies, with its backup first. No backup is deleted, and nothing is written
+until its summary is confirmed; the working copy stays until first-time startup replaces it. It asks first
+(`HudConfirmDialog`).
+
+**Settled 2026-11-11 (Alan, Storage S19):**
+
+- **The button stays.** It was for testing and to be removed before V1.2 shipped (2026-10-24); Krondor kept it while
+  testers might need to start over (2026-11-10). It is now for anyone who wants BindForge set up again from the game's
+  files.
+- **First-time startup runs as soon as the button is confirmed**, on screen. Until S19 it waited for the next click on
+  the BindForge tab - which the user was already on, so they had to leave BindForge and come back, with nothing saying so.
+- **Q1 - edits not applied:** first-time startup's write throws them away, so when there are any the confirmation says
+  so, in RESTORE's words.
+- **Q2 - abandoned part way** (the list, the reconcile or the summary closed): the flag stays clear and the next click
+  on the BindForge tab offers first-time startup again, as for any first-time startup not finished. Nothing was written.
+- **Q3 - read only:** the button stays greyed, as below.
 
 **A missing installation is never removed on its own.** A row whose folder has gone stays in the list, marked
 missing, because an unplugged drive and an uninstall look identical from here.

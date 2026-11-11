@@ -18,7 +18,6 @@ import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
-import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,8 +65,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
  * S9a, Alan, 2026-10-31). Before first-time startup, or while the working copy cannot be read, there is nothing to
  * compare with, and it says <em>Found</em> or <em>Missing</em>.
  * <p>
- * <strong>Run First-Time Startup Again</strong> is for testing V1.2, shown to every user, and is to be hidden or
- * removed before V1.2 ships (Alan, 2026-10-24; build plan, <em>Before V1.2 ships</em>).
+ * <strong>Run First-Time Startup Again</strong> sets BindForge up again from the game's files, for every user, and runs
+ * first-time startup as soon as it is confirmed (Alan, 2026-11-11, Storage S19; until then it was for testing and to be
+ * removed before V1.2 shipped, and first-time startup waited for the next click on the BindForge tab).
  */
 public class GameInstallLocationsPanel extends JPanel {
 
@@ -87,6 +87,8 @@ public class GameInstallLocationsPanel extends JPanel {
 
     private JButton removeButton;
     private JButton runAgainButton;
+    /** First-time startup run again, at once - wired by the BindForge tab, which owns the flow. */
+    private Runnable runAgain;
 
     public GameInstallLocationsPanel() {
         this(new InstallationRegistry(
@@ -116,6 +118,14 @@ public class GameInstallLocationsPanel extends JPanel {
     /** Wired by the BindForge tab: the Bind Editor LOAD opens a file in. */
     public void setBindEditor(BindsFileSection.BindEditor bindEditor) {
         bindsFileSection.setBindEditor(bindEditor);
+    }
+
+    /**
+     * Wired by the BindForge tab: what a confirmed Run First-Time Startup Again runs - first-time startup, straight away
+     * (Storage S19).
+     */
+    public void setRunAgain(Runnable runAgain) {
+        this.runAgain = runAgain;
     }
 
     /** CREATE greyed the editors, or brought them back - the Bindings File section follows them (D3). On the EDT. */
@@ -167,8 +177,7 @@ public class GameInstallLocationsPanel extends JPanel {
         removeButton.setEnabled(false);
         removeButton.addActionListener(e -> performRemove());
 
-        // WHY: shown to every user, because Elite-Intel cannot tell a tester from anyone else - to be hidden or removed
-        // before V1.2 ships (Alan, 2026-10-24; build plan, storage.md, Before V1.2 ships).
+        // WHY: kept for every user - setting BindForge up again from the game's files (Alan, 2026-11-11, Storage S19).
         runAgainButton = makeButtonSubtle(getText("bindings.installLocations.button.runFirstTimeStartupAgain"));
         runAgainButton.addActionListener(e -> performRunAgain());
 
@@ -251,25 +260,25 @@ public class GameInstallLocationsPanel extends JPanel {
     }
 
     /**
-     * Clears the "first-time startup complete" flag and nothing else - no backup is deleted, no game file is touched
-     * (file-manager.md, <em>Game Install Locations</em>). The next time the BindForge tab is opened, first-time startup
-     * runs from the live copies, with its backup first.
+     * Asks first, then runs first-time startup straight away, from the live copies, with its backup first - the flag
+     * cleared and nothing else until its summary is confirmed (file-manager.md, <em>Game Install Locations</em>;
+     * Storage S19). Edits not applied are thrown away by its write, so the confirmation says so when there are any (Q1).
      */
     private void performRunAgain() {
+        if (runAgain == null) {
+            log.error("Run First-Time Startup Again pressed before the BindForge tab wired it");
+            return;
+        }
+        String text = getText("bindings.installLocations.runAgain.confirm.text");
+        if (Edits.stored().hasEdits()) {
+            text += "\n\n" + getText("bindings.installLocations.runAgain.confirm.edits");
+        }
         boolean confirmed = HudConfirmDialog.confirm(this,
                 getText("bindings.installLocations.runAgain.confirm.title"),
-                getText("bindings.installLocations.runAgain.confirm.text"),
+                text,
                 getText("bindings.installLocations.runAgain.confirm.do"),
                 getText("button.cancel"));
-        if (!confirmed) return;
-        try {
-            FirstTimeStartup.stored().runAgain();
-        } catch (RuntimeException e) {
-            // WHY: the flag is a database write, whose failures are unchecked - the user pressed a button and is told.
-            log.warn("Could not clear the first-time startup flag", e);
-            HudConfirmDialog.info(this, getText("bindings.installLocations.runAgain.confirm.title"),
-                    getText("bindings.installLocations.runAgain.failed", StringUtls.messageOf(e)), getText("button.ok"));
-        }
+        if (confirmed) runAgain.run();
     }
 
     /**

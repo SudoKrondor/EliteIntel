@@ -15,9 +15,10 @@ Every rule applies to all of them, in every installation, unless it says otherwi
 
 ## First-time startup
 
-Runs once, controlled by a stored "first-time startup complete" flag. *While V1.2 is tested, File Manager has a
-button that clears the flag so first-time startup runs again — [Run first-time startup again](file-manager.md#game-install-locations),
-to be hidden or removed before V1.2 ships (2026-10-24, Alan).*
+Runs once, controlled by a stored "first-time startup complete" flag. File Manager has a button that clears the flag
+and runs first-time startup again at once — [Run first-time startup again](file-manager.md#game-install-locations)
+(2026-10-24, Alan; kept for every user and run at once since 2026-11-11, Storage S19). *Until S19 it was for testing,
+to be removed before V1.2 shipped, and first-time startup waited for the next click on the BindForge tab.*
 
 1. When the user clicks the BindForge tab and the flag is not complete:
    - **Find installations.** BindForge lists every installation Elite-Intel already knows about, with two buttons:
@@ -496,7 +497,8 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **The working copy is read at every click on the BindForge tab** once first-time startup is complete; one that
       cannot be read, or is missing, is said so with the newest backup offered - **Restore** or **Not now**. **With no
       backup at all, first-time startup is offered instead**, from the live files - **Set Up Again** or **Not now** -
-      the one way out once Run first-time startup again is gone (Alan, 2026-10-25, from the S3 review).
+      (Alan, 2026-10-25, from the S3 review). *It was to be the one way out once Run first-time startup again was gone;
+      since 2026-11-11 that button stays (Storage S19).*
     - **If first-time startup cannot be marked complete** after a restore, the report says it will be offered again at
       the next click (review, 2026-10-25).
     - **No bindings folder: RESTORE refuses before the backup**, in the setup check's words

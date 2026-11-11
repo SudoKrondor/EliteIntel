@@ -264,11 +264,11 @@ public final class FirstTimeStartup {
     /**
      * Run first-time startup again (file-manager.md, <em>Game Install Locations</em>): clears the flag and nothing
      * else - no backup is deleted, no game file is touched, and the working copy stays until first-time startup
-     * replaces it.
+     * replaces it. The screen then runs first-time startup straight away (Storage S19).
      */
     public void runAgain() {
         flag.clear();
-        log.info("First-time startup will run again at the next click on the BindForge tab");
+        log.info("First-time startup flag cleared: first-time startup runs again");
     }
 
     private static Map<String, byte[]> readBindings(Path folder) throws IOException {

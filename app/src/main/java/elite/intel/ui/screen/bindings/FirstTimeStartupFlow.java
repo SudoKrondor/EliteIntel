@@ -73,6 +73,30 @@ public final class FirstTimeStartupFlow {
     }
 
     /**
+     * Run first-time startup again, pressed in Game Install Locations and confirmed there: clears the flag, then runs
+     * first-time startup straight away, on screen - not at the next click on the BindForge tab, which the user is
+     * already on (Alan, 2026-11-11, Storage S19). Abandoned part way, the flag stays clear and the next click offers it
+     * again, as for any first-time startup not finished (S19, Q2). A run already under way is left to finish. On the EDT.
+     */
+    public void runAgainNow() {
+        if (!running.compareAndSet(false, true)) return;
+        background("BindForge-FirstTimeStartupAgain", () -> {
+            FirstTimeStartup startup = FirstTimeStartup.stored();
+            try {
+                startup.runAgain();
+            } catch (RuntimeException e) {
+                // WHY: the flag is a database write, whose failures are unchecked. Nothing changed, and the user who
+                // pressed the button is told so in its own words.
+                log.warn("Could not clear the first-time startup flag", e);
+                return () -> FlowSteps.tell(parent, getText("bindings.installLocations.runAgain.confirm.title"),
+                        getText("bindings.installLocations.runAgain.failed", StringUtls.messageOf(e)), this::finish);
+            }
+            List<InstallationRow> rows = startup.installations();
+            return () -> showList(startup, rows);
+        });
+    }
+
+    /**
      * The bindings folder changed: the check runs again at the next click on the BindForge tab, not now - nothing opens
      * while the user is on another tab or stays on BindForge (storage.md rule 5; Storage S17, Q4). Any thread.
      */
@@ -117,8 +141,7 @@ public final class FirstTimeStartupFlow {
 
     /**
      * The check when the working copy reads (Storage S8a); otherwise the step that says so and offers the newest
-     * backup - or, with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3 review), the
-     * one way out once Run first-time startup again is gone. A working copy that is missing while first-time startup is
+     * backup - or, with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3 review). A working copy that is missing while first-time startup is
      * complete counts as one that cannot be read.
      */
     private Runnable workingCopyCheck(FirstTimeStartup startup) {

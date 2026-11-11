@@ -228,6 +228,11 @@ public class BindingManagementPanel extends JPanel {
         gameInstallLocationsPanel.setBindEditor(bindEditor);
     }
 
+    /** Wired by the BindForge tab: what Run First-Time Startup Again runs once confirmed (Storage S19). */
+    public void setRunAgain(Runnable runAgain) {
+        gameInstallLocationsPanel.setRunAgain(runAgain);
+    }
+
     /** CREATE greyed the editors, or brought them back. On the EDT. */
     public void setEditorsUsable(boolean usable) {
         gameInstallLocationsPanel.setEditorsUsable(usable);
