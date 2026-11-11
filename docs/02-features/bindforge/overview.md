@@ -504,6 +504,14 @@ cannot be worked out is tried again once a second, five times, while the folder 
 as an error and waits for the next change. It still reacts only to `.binds` names, and BindForge's check still does
 not watch the files.
 
+**A reload that works on a retry takes in the file's conflicts, as any other reload does (Alan, 2026-11-11, Storage
+S18R).** After every batch of folder events the monitor runs `checkForConflictsAndPersist()`; a reload that worked
+only on a retry - the save from the game's controls screen - skipped it until the next change, and now runs it too.
+**That call speaks nothing:** the watch loop drops the conflicts it returns, so a conflict a save adds is stored as
+already told and `KeyBindCheck` does not say it at the next start either. That was so before S18R and is left as it
+is (Alan, 2026-11-11, D3 (a)); speaking from the watch loop would be a slice of its own. *Corrects the S18R brief's
+first reading, that the call held up a spoken alert.*
+
 ### BindForge must not publish `BindingsUpdatedEvent`
 
 **Verified 2026-09-06 — and the conclusion is the opposite of what this section first assumed.**

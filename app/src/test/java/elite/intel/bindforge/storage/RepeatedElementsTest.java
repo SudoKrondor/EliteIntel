@@ -197,7 +197,7 @@ class RepeatedElementsTest {
         String mine = twice("0", "0");
         String game = twice("1", "0");
 
-        assertEquals(game, settle(mine, game, compare(mine, game), Side.LIVE));
+        assertEquals(game, gamesFileWhole(mine, game));
     }
 
     // ---- Q3: copies that differ
@@ -344,10 +344,11 @@ class RepeatedElementsTest {
         return merged;
     }
 
-    /** The working copy's file once every row is answered {@code side} - for {@code LIVE}, the game's file whole. */
-    private static String settle(String mine, String game, Differences differences, Side side) throws IOException {
+    /** The working copy's file once every row of {@code mine} against {@code game} is answered in-game. */
+    private static String gamesFileWhole(String mine, String game) throws IOException {
+        Differences differences = compare(mine, game);
         Map<String, Side> answers = new HashMap<>();
-        differences.items().forEach(row -> answers.put(row.id(), side));
+        differences.items().forEach(row -> answers.put(row.id(), Side.LIVE));
         return text(BindingsComparison.settle(files(mine), files(game), differences, answers).bindings().get(CUSTOM));
     }
 

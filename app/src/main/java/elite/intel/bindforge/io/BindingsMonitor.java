@@ -60,6 +60,12 @@ import static elite.intel.util.StringUtls.localizedSpeech;
  */
 public class BindingsMonitor {
     private static final Logger log = LogManager.getLogger(BindingsMonitor.class);
+    /**
+     * How many quiet seconds a reload is tried again in when the file to read could not be worked out. The game's
+     * save is over well inside one; the rest is margin, and the limit keeps a folder that is genuinely broken from
+     * writing a warning every second for the whole session.
+     */
+    private static final int RELOAD_RETRIES = 5;
     private static volatile BindingsMonitor instance;
     private final KeyBindingsParser parser;
     private final BindingsLoader bindingsLoader = new BindingsLoader();
@@ -83,14 +89,6 @@ public class BindingsMonitor {
      * a commander sitting in the controls menu rebinding.
      */
     private String parsedFileFingerprint;
-    /**
-     * How many quiet seconds a reload is tried again in when the file to read could not be worked out. The game's
-     * save is over well inside one; the rest is margin, and the limit keeps a folder that is genuinely broken from
-     * writing a warning every second for the whole session.
-     */
-    private static final int RELOAD_RETRIES = 5;
-    /** Whether the last reload could not work out which file to read. Monitor thread only. */
-    private boolean reloadOwed;
 
     /**
      * The Elite controls a built-in command presses - {@link Bindings.GameCommand#isDrivenByApp()}.
@@ -222,8 +220,12 @@ public class BindingsMonitor {
                         return;
                     }
                     if (retriesLeft > 0) {
-                        retriesLeft = reloadAfterChange(null) ? 0 : retriesLeft - 1;
-                        if (retriesLeft == 0 && reloadOwed) {
+                        if (reloadAfterChange(null)) {
+                            retriesLeft = 0;
+                            // As after a batch of folder events below: the file just read is the one a save from the
+                            // game's controls screen wrote, so its conflicts are taken in now, not at the next change.
+                            checkForConflictsAndPersist();
+                        } else if (--retriesLeft == 0) {
                             log.error("Gave up working out which binds file to read after a change; the bindings in "
                                     + "use are the last ones read, until the bindings folder changes again");
                         }
@@ -281,10 +283,8 @@ public class BindingsMonitor {
         } catch (IOException e) {
             log.warn("Could not work out which binds file to read after a change in the bindings folder; "
                     + "trying again: {}", e.getMessage());
-            reloadOwed = true;
             return false;
         }
-        reloadOwed = false;
         boolean activeFileWasModified = changed == null || activeFile.getName().equals(changed);
         boolean activeFileChanged = !activeFile.equals(currentBindsFile);
         if (!activeFileWasModified && !activeFileChanged) {
@@ -294,15 +294,36 @@ public class BindingsMonitor {
         if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
             log.debug("Ignoring repeat change event for unchanged file: {}", activeFile.getName());
         } else {
-            parseAndUpdateBindings();
+            parseAndUpdateBindings(activeFile);
             log.info("Reloaded bindings from: {}", currentBindsFile.getName());
         }
         return true;
     }
 
+    /**
+     * Works out which binds file to read and reads it - for the first parse at start, {@link #ensureBindingsLoaded()}
+     * and {@link #reread()}, which have no file in hand. A file that cannot be worked out is reported as a failed
+     * update, as a file that cannot be parsed is.
+     */
     private void parseAndUpdateBindings() {
+        File toRead;
         try {
-            currentBindsFile = bindingsLoader.bindsFileToRead();
+            toRead = bindingsLoader.bindsFileToRead();
+        } catch (Exception e) {
+            reportUpdateFailed(e);
+            return;
+        }
+        parseAndUpdateBindings(toRead);
+    }
+
+    /**
+     * Reads {@code toRead}, the file already worked out. WHY a file passed in rather than looked up again: after a
+     * change, {@link #reloadAfterChange} has just looked it up, and a second lookup could land while the game is
+     * rewriting {@code StartPreset.4.start} - failing with no retry, which is what the retry exists to avoid.
+     */
+    private void parseAndUpdateBindings(File toRead) {
+        try {
+            currentBindsFile = toRead;
             Map<String, KeyBindingsParser.BindingSlots> slots = parser.parseBindingSlots(currentBindsFile);
             snapshot = new BindingsSnapshot(slots, parser.toExecutableBindings(slots));
             parsedFileFingerprint = fingerprintOf(currentBindsFile);
@@ -311,11 +332,15 @@ public class BindingsMonitor {
             UiBus.publish(new BindingsUpdatedEvent());
             log.info("Key bindings updated from: {}", currentBindsFile.getName());
         } catch (Exception e) {
-            log.error("Failed to parse key bindings from: {}",
-                    currentBindsFile != null ? currentBindsFile.getName() : "null", e);
-            GameEventBus.publish(
-                    new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
+            reportUpdateFailed(e);
         }
+    }
+
+    private void reportUpdateFailed(Exception e) {
+        log.error("Failed to parse key bindings from: {}",
+                currentBindsFile != null ? currentBindsFile.getName() : "null", e);
+        GameEventBus.publish(
+                new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
     }
 
     /**

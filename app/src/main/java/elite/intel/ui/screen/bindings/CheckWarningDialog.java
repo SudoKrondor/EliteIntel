@@ -71,7 +71,7 @@ final class CheckWarningDialog extends JDialog {
     private static final int MIN_WIDTH = 580;
     /** The widest the grid may make the dialog. */
     private static final int MAX_WIDTH = 900;
-    /** The widest one column may become; a longer cell ends in an ellipsis and shows whole as its tooltip. */
+    /** The widest one column may become; a longer cell ends in an ellipsis. Every cell shows whole as its tooltip. */
     private static final int MAX_COLUMN = 380;
     private static final int GAP = 10;
 
@@ -186,7 +186,7 @@ final class CheckWarningDialog extends JDialog {
         dispose();
     }
 
-    /** Each row in its tone's text colour, the whole text as its tooltip when the column cuts it short. */
+    /** Each row in its tone's text colour, and every cell's whole text as its tooltip, cut short by its column or not. */
     private static final class ToneRenderer extends HudTable.CellRenderer {
 
         private final List<Row> rows;

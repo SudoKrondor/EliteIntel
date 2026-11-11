@@ -382,6 +382,15 @@ Repeat with the first `0` and the second `1`. BindForge always writes both the s
 answer says what to show for a hand-edited file whose copies differ.
 → [storage.md rule 14 — Settled 2026-11-11](../02-features/bindforge/storage.md#when-a-live-copy-differs)
 
+**32. Does the bindings folder watcher survive a save from the game?** *Added 2026-11-11, Storage S18R — Alan can run
+this.* The game saves `StartPreset.4.start` by emptying it and writing it again, which used to end `BindingsMonitor`
+for the rest of the session. With Elite-Intel running, change any binding in the game's controls screen and press
+Apply. The log should show *Reloaded bindings from:* the active binds file - perhaps after a *trying again* warning -
+and no *Gave up working out which binds file to read*. Then change a second binding and press Apply again: a second
+*Reloaded bindings* line says the watcher is still running. Covers the retry, which has no unit test because it lives
+inside the `WatchService` loop.
+→ [overview.md — External change detection](../02-features/bindforge/overview.md#external-change-detection--2026-10-23)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.
