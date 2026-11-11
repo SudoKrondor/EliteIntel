@@ -1245,6 +1245,20 @@ curves.** The booleans and dropdowns described below, and inline rows in Game Mo
 *any number greater than 0.0* for mouse sensitivity and *any number between 0.0 and
 1.0* for a mouse deadzone. A value past the game's stops is accepted, and the row names the range. `HeadlookMotionSensitivity` has no measured range and keeps the number alone.
 
+**One boolean, since 2026-11-11 (Alan): Show Mouse Widget (`MouseGUI`), a toggle - yes or no.** It amends the
+rejection above for this one setting; every other boolean, the dropdowns and the inline rows stay rejected for V1.2.
+Alan found it missing from the tab while studying why the game writes `MouseGUI` twice.
+
+- **It is one setting with one value, and changing it writes every copy of `MouseGUI` in the file** - a binds file
+  the game has saved holds two ([storage.md rule 14, *Settled 2026-11-11*](storage.md#when-a-live-copy-differs)). The
+  editor never leaves the copies different.
+- **It is an edit not applied like any other** (storage.md rule 6): nothing is written until APPLY, and DISCARD
+  drops it.
+- **While read only it is greyed**, as the numbers and sliders are, saying why on hover.
+- *To confirm at the slice's sources (E9):* the control the [HUD canon](ui-component-map.md) gives a yes/no; where on
+  the tab it sits; the label, from the action catalog's *Show Mouse Widget*; what it shows for a file whose copies
+  differ, and for one with no `MouseGUI` at all; whether a file holding one copy keeps one.
+
 **Status: in scope for V1.2.** A third mode tab, after Anomalies, listing **every [settings entry](#settings-entries-are-rows-too--settled-2026-09-16) in the file at once** — all 93 of
 them in a real 4.2 file, grouped the way the game groups them. Alan: *“in the game mode the settings show
 inline with the binds. but we could also make it easy to see them all at once”*.

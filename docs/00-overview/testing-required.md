@@ -373,6 +373,15 @@ two identical controllers attached, bind one button on each in the game's contro
 the index separates them, BindForge's conflict scan (which today treats two identical controllers as one device) and
 the parser need it. → [Conflicts (the kind)](../02-features/bindforge/bind-editor.md#conflicts-the-kind)
 
+**31. Which `MouseGUI` does the game read when the two differ?** *Added 2026-11-11 — Alan can run this.* Every binds
+file the game saves holds `<MouseGUI Value="…" />` twice, once among the mouse settings and once after
+`EnableMenuGroups`, and in every file seen the two values agree. With the game closed, back up the active binds file,
+then set the first to `1` and the second to `0` by hand. Start the game and say whether the mouse widget shows. Then
+change any binding in the game's controls, press Apply, and say what the two values are in the file the game wrote.
+Repeat with the first `0` and the second `1`. BindForge always writes both the same, so nothing waits on this; the
+answer says what to show for a hand-edited file whose copies differ.
+→ [storage.md rule 14 — Settled 2026-11-11](../02-features/bindforge/storage.md#when-a-live-copy-differs)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

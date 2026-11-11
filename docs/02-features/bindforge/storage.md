@@ -902,7 +902,7 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - *To confirm at the slice's sources (Storage S18):*
       - one file whose copies hold different values - none has been seen, and which copy the game reads is not known
         (a hand test: set them differently, start the game, see which the widget follows and what the game saves
-        back);
+        back - [testing item 31](../../00-overview/testing-required.md#bindforge));
       - the two sides holding a different number of copies - a file the game has not saved yet holds one - and
         whether a write ever adds or removes a copy;
       - a repeated element that has children - none has been seen;
