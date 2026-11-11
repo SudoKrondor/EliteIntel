@@ -373,12 +373,16 @@ class RepeatedElementsTest {
         return new String(content, StandardCharsets.UTF_8);
     }
 
-    /** A reference file as the game saved it, read where it is (as {@code preseteditor.Specimens} does). */
+    /**
+     * A reference file as the game saved it, read where it is (as {@code preseteditor.Specimens} does). The game
+     * writes CRLF, but git stores these files with LF and a checkout may hand them back either way ({@code autocrlf}),
+     * so the line ends are put back to CRLF here - the edits above match the game's bytes on every checkout.
+     */
     private static String reference(String name) throws IOException {
         Path root = Path.of("").toAbsolutePath();
         while (root != null && !Files.isDirectory(root.resolve("docs"))) root = root.getParent();
         assertNotNull(root, "could not find the repository root");
         return Files.readString(root.resolve("docs/02-features/bindforge/reference-data").resolve(name),
-                StandardCharsets.UTF_8);
+                StandardCharsets.UTF_8).replaceAll("\r?\n", "\r\n");
     }
 }
