@@ -25,7 +25,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  * way the Device Editor names it. Clicking a cell picks it, for anyone working from the list rather than the hardware;
  * pressing it - or pushing the axis - on the controller does the same through the dialog.
  * <p>
- * <strong>AXIS DIRECTIONS has a − and a + cell for every axis</strong> (E2, Alan, 2026-11-10, as the spec has it):
+ * <strong>AXIS DIRECTIONS has a − and a + cell for every axis</strong> (E2, Krondor, 2026-11-10, as the spec has it):
  * {@code Neg_} and {@code Pos_} on a button slot, each picked, coloured and clashing on its own, so a direction can be
  * picked with the controller unplugged. <strong>A GamePad's page only shows</strong>, one cell per axis: its stick
  * tokens are not measured (E7), and its triggers are captured by pulling them.

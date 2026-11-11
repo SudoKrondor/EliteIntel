@@ -135,7 +135,7 @@ public class AssignAxisDialog extends JDialog {
      */
     public Optional<Choice> showDialog() {
         // WHY with no controller live: one may connect while the dialog is open - the Device Service starting late, or
-        // a stick plugged in (Alan, 2026-11-10).
+        // a stick plugged in (Krondor, 2026-11-10).
         boolean listening = changeable();
         if (listening) DeviceBus.register(this);
         try {
@@ -165,7 +165,7 @@ public class AssignAxisDialog extends JDialog {
     }
 
     /**
-     * A controller connected while the dialog is open (Alan, 2026-11-10): opened while the services were starting, the
+     * A controller connected while the dialog is open (Krondor, 2026-11-10): opened while the services were starting, the
      * dialog listed every controller as unplugged and none ever came to life. Its tab becomes live - or is added.
      */
     @Subscribe

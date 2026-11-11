@@ -1600,11 +1600,11 @@ What it reaches:
 all or nothing — to protect a separate draft (F2, 2026-10-12); with the binds files in the working copy it is part of
 the edit.*
 
-#### Built — 2026-11-10 (Alan, A19)
+#### Built — 2026-11-10 (Krondor, A19)
 
 CLEAR on a device the bindings name is no longer refused: `DeviceEdits.clear` takes out the element and its
 `.buttonMap` and moves the bindings in the same edit, to `DeviceEdits.clearTarget`. The question names the count and
-where they go, then what APPLY does. Alan settled four questions, 2026-11-10:
+where they go, then what APPLY does. Krondor settled four questions, 2026-11-10:
 
 - **Where they go is what the game would write once the entry is gone** ([format §4.0](domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08)):
   the next element in `DeviceMappings.xml` claiming the element's own VID/PID - **Frontier's, for a shadow** - and

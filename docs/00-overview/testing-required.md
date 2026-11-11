@@ -365,7 +365,7 @@ which files in the bindings folder changed (their modified times). If only `Star
 old preset's keys until the next start, and the monitor should watch `StartPreset.*.start` too.
 → [Storage brief — S13eR](../05-build-plan/storage.md#slices)
 
-**30. What does `DeviceIndex` mean in a `.binds`?** *Added 2026-11-10, D6 — needs two identical controllers (Alan's
+**30. What does `DeviceIndex` mean in a `.binds`?** *Added 2026-11-10, D6 — needs two identical controllers (Krondor's
 Virpil pair under one name would do, or a tester's).* Binds fixtures in the tests carry `DeviceIndex="0"`, `"1"` and
 `"2"` on a `Device=` (`<Primary Device="T16000MTHROTTLE" DeviceIndex="1" Key="Joy_7">`), which suggests the game tells
 two identical controllers apart by index under one name; nothing in the docs records it, and the parser drops it. With

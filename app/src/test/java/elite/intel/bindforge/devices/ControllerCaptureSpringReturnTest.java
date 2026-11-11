@@ -9,7 +9,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * A spring-loaded axis pushed one way and let go must leave that direction picked (Alan, 2026-11-10: pulling a stick's
+ * A spring-loaded axis pushed one way and let go must leave that direction picked (Krondor, 2026-11-10: pulling a stick's
  * RZ up picked positive, and letting the spring take it back to centre picked negative). Each test feeds the values
  * the Device Service would report, in order, and checks what the dialog would hold at the end - the last direction
  * captured.

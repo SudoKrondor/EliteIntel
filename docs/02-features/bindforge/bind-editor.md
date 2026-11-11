@@ -649,7 +649,7 @@ game has four different rows called *Move Forward*, which is why CONTROL carries
 tag is what the file, a support bundle and another player's `.binds` all say. Today the dialog's
 **SELECTED BINDING** row shows only the tag, so the first thing a user reads is `CamTranslateZHold`.
 
-**A controller that connects while the dialog is open comes to life in it** (Alan, 2026-11-10, found on real
+**A controller that connects while the dialog is open comes to life in it** (Krondor, 2026-11-10, found on real
 hardware). The Device Service starts after the voice models load, so a dialog opened during startup listed every
 controller as unplugged, and pressing or pushing did nothing until the dialog was reopened. Both capture dialogs - a
 button row's and an axis row's - now listen for a controller connecting, whether or not one was live when they
@@ -703,10 +703,10 @@ and real files use it: `DualVirpilDawnTreader.4.1.binds` puts `Neg_Joy_YAxis` on
 slot and `Neg_Joy_RYAxis` on Toggle HUD. The AXIS DIRECTIONS page offers a *+* and a *−* for every axis the
 device reports.
 
-**Built — 2026-11-10 (Alan, E2): the + and − cells, as above, beside capture by movement.** Until then the page had
+**Built — 2026-11-10 (Krondor, E2): the + and − cells, as above, beside capture by movement.** Until then the page had
 one cell per axis, for show only, so a user without the hardware attached could not pick a direction; capturing one by
 moving the axis was built and tested (`ControllerCapture.axis`, Andrea's `847987878`, 2026-10-25, with the rest rule
-below from Storage S4R) and is unchanged. Alan chose the cells, keeping movement-only capture as the way back if they
+below from Storage S4R) and is unchanged. Krondor chose the cells, keeping movement-only capture as the way back if they
 are regretted. Settled with the sources:
 
 - **Each direction is its own cell** (`ControllerInputsPanel.axisTokens`): − then + for every axis, clicked like a
@@ -723,7 +723,7 @@ are regretted. Settled with the sources:
 
 **An axis is captured by how far it moves from where it rests, not from centre** (Alan, 2026-10-27, from Krondor's
 storage review; Storage S4R). Measured from centre, a throttle, slider or toe brake resting at one end was captured as
-soon as it jittered. **Where an axis rests is read from the device when the dialog opens** (Alan, 2026-11-10,
+soon as it jittered. **Where an axis rests is read from the device when the dialog opens** (Krondor, 2026-11-10,
 found on real hardware: pulling a spring-loaded stick's RZ up picked positive, and letting it spring back to centre
 picked negative). A still stick reports nothing, so the first value capture saw was already part-way through the
 push, and the return to centre was measured from there as a push the other way. The dialog now gives capture each
@@ -824,7 +824,7 @@ still holds one name, and making it a list is what remains.*
 All of the following are confirmed by direct in-game testing, not just inferred from the file format:
 
 - Capturing a compound combination (main input plus modifiers) is a single motion — whatever is held when the completing input arrives becomes the modifier set, and the completing input becomes the slot's value. No separate "now capture the modifier" step exists.
-  **BindForge picks a controller's button or hat when it is let go** (E8, Alan, 2026-11-10, as shortcut editors on
+  **BindForge picks a controller's button or hat when it is let go** (E8, Krondor, 2026-11-10, as shortcut editors on
   Windows and Linux do), so a chord is never picked first as the bare button held for it. The chord is the same: the
   input pressed last, with every other input still held. A release picks only when something was pressed since the
   last pick, so holding a shift button and pressing two buttons in turn picks twice, and letting go of the shift button
@@ -1199,7 +1199,7 @@ it puts the control back on the list.
 **In V1.2 (2026-11-03): the red rows, gathered on the Anomalies tab - no sub-tabs, no grouping by shared input.**
 **Built for V1.2 (D6, 2026-11-10): conflicts between two controller inputs.** Until then
 `BindingConflictScanner.scanReadOnlySlots` put in only the slots whose main input was a keyboard key, so two actions on
-`Joy_5` were drawn as fine, though SAVE in the capture dialog refused the pair (`SlotInputConflicts`, Krondor). Alan
+`Joy_5` were drawn as fine, though SAVE in the capture dialog refused the pair (`SlotInputConflicts`, Krondor). Krondor
 settled the rules 2026-11-10:
 
 - **Every device.** A main input on a controller or the mouse is scanned as a keyboard key is: the same inputs with the

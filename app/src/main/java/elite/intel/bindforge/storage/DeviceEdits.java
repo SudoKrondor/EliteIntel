@@ -271,7 +271,7 @@ public final class DeviceEdits {
     }
 
     /**
-     * Where CLEAR would move the bindings naming the user's device {@code name} (A19; Alan, 2026-11-10). The game names
+     * Where CLEAR would move the bindings naming the user's device {@code name} (A19; Krondor, 2026-11-10). The game names
      * a device by the first element claiming its VID/PID and by VID then PID in hex when none does (format section
      * 4.0), so: the next element in the file claiming the element's own pair - Frontier's, for a shadow - or else the
      * hardware ID, upper case.
@@ -298,9 +298,9 @@ public final class DeviceEdits {
 
     /**
      * CLEAR (A10, A19): the device's element and its {@code .buttonMap} taken out, and every binding naming it moved to
-     * {@link #clearTarget} - one edit, so no binds file is left naming a device the game no longer knows (Alan,
+     * {@link #clearTarget} - one edit, so no binds file is left naming a device the game no longer knows (Krondor,
      * 2026-10-24). A hardware-ID reference already in a binds file in another case is written the same way, since
-     * the game rejects a file that spells one device two ways (format section 4.3; Alan, 2026-11-10); one written PID
+     * the game rejects a file that spells one device two ways (format section 4.3; Krondor, 2026-11-10); one written PID
      * first is left alone - a rewrite never matches defensively.
      *
      * @throws IOException if bindings name the device and there is nowhere to move them ({@link #clearTarget} is
@@ -341,7 +341,7 @@ public final class DeviceEdits {
 
     /**
      * UNDO CLEAR and UNDO RESET: the device's element and {@code .buttonMap} as the working copy holds them, put back
-     * into the edits. For the user's element, the bindings CLEAR moved come back to its name (A19; Alan, 2026-11-10):
+     * into the edits. For the user's element, the bindings CLEAR moved come back to its name (A19; Krondor, 2026-11-10):
      * every reference to its hardware ID, in any case - what the game writes once an element claims the pair - or, for
      * a shadow, every reference to the element CLEAR moved them to, as shadowing moves them. The binds files are never
      * put back whole, since that would throw away bindings edited since the CLEAR.

@@ -423,7 +423,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     /**
-     * A controller connected while the dialog is open (Alan, 2026-11-10): opened while the services were starting, the
+     * A controller connected while the dialog is open (Krondor, 2026-11-10): opened while the services were starting, the
      * dialog listed every controller as unplugged and none ever came to life. Its tab becomes live - or is added - and
      * the slots being edited are left as they are.
      */

@@ -275,7 +275,7 @@ class BindingConflictPipelineTest {
     }
 
     /**
-     * D6 (Alan, 2026-11-10): the Bindings tab's full-file scan compares a slot whose main input is on a controller, as
+     * D6 (Krondor, 2026-11-10): the Bindings tab's full-file scan compares a slot whose main input is on a controller, as
      * SAVE in the capture dialog always did - two actions on one stick button both fire. The execution view, which
      * feeds the spoken startup warning, still drops them.
      */

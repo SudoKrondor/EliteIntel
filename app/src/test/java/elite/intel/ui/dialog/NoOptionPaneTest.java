@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Every confirm and message popup is a {@link HudConfirmDialog}, never a {@code JOptionPane} (the UI canon; HC, Alan,
+ * Every confirm and message popup is a {@link HudConfirmDialog}, never a {@code JOptionPane} (the UI canon; HC, Krondor,
  * 2026-11-10, when the last 31 were replaced). {@code JOptionPane} opens Swing's own decorated dialog with Swing's own
  * OK and Cancel, untranslated, beside the HUD's. Only {@code HudConfirmDialog} may name it, in its Javadoc.
  */

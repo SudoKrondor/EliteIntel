@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * Detects binding conflicts using Elite Dangerous's input-matching model - on the keyboard, and in the Bindings tab's
- * scan on a controller or the mouse too (D6, Alan, 2026-11-10).
+ * scan on a controller or the mouse too (D6, Krondor, 2026-11-10).
  * <p>
  * ED matches a binding by its <strong>exact</strong> chord - the main key plus exactly its modifier
  * set. Holding extra modifiers does NOT trigger a binding that has fewer of them: bare {@code Key_6}
@@ -30,7 +30,7 @@ import java.util.*;
  * <strong>A controller or mouse input is named with its device</strong> ({@code LVWAP/JOY_1}), upper case, since
  * {@code Joy_1} on two sticks is two buttons and the game matches device names and tokens ignoring case. A keyboard
  * token stays as the file writes it ({@code Key_K}). Two identical controllers under one name are one device here:
- * the {@code DeviceIndex} a binds file may carry is not read, as its meaning is not measured (Alan, 2026-11-10).
+ * the {@code DeviceIndex} a binds file may carry is not read, as its meaning is not measured (Krondor, 2026-11-10).
  * <p>
  * (An earlier model treated a bare key as a subset that "swallowed" modified chords on that key.
  * In-game testing disproved it - the failure that suggested it was a stale-bindings state, where ED
@@ -284,7 +284,7 @@ public final class BindingConflictScanner {
      * <p>
      * The keyboard modifier keys qualify wherever they sit ({@link BindingModifier#isSupportedKeyboardModifier}):
      * they are what goes down first and stands alone for a moment. A controller or mouse input qualifies when the
-     * chord writes it as a {@code <Modifier>} (D6, Alan, 2026-11-10) - the game records the input held first as the
+     * chord writes it as a {@code <Modifier>} (D6, Krondor, 2026-11-10) - the game records the input held first as the
      * modifier, so that is the one pressed alone first, the HOTAS shift button. A bare main input against a modified
      * chord on it is the case Elite's exact matching keeps apart - see the class comment.
      *
@@ -392,7 +392,7 @@ public final class BindingConflictScanner {
 
     /**
      * Which other control already holds an input the capture dialog is about to assign - on any device - judged by the
-     * rules {@link #scanReadOnlySlots} draws red with, so SAVE and the red rows cannot disagree (D6, Alan, 2026-11-10;
+     * rules {@link #scanReadOnlySlots} draws red with, so SAVE and the red rows cannot disagree (D6, Krondor, 2026-11-10;
      * replaces {@code SlotInputConflicts}). The same inputs with the same Hold clash; so does a shadow - the input
      * bound alone where another chord holds it as a modifier, or the other way round. Two controls that are never live
      * together never clash.

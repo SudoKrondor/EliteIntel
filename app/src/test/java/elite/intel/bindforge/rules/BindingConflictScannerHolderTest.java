@@ -84,7 +84,7 @@ class BindingConflictScannerHolderTest {
                 BindingConflictScanner.holderOf("LandingGearToggle", HAT_UP, List.of(), false, slots));
     }
 
-    /** {@code Joy_6} on two sticks is two buttons (D6, Alan, 2026-11-10). */
+    /** {@code Joy_6} on two sticks is two buttons (D6, Krondor, 2026-11-10). */
     @Test
     void theSameButtonOnAnotherControllerIsFree() {
         Map<String, ReadOnlyBindingSlots> slots = Map.of("PrimaryFire", primary(slot("RVWAP", "Joy_6", false)));

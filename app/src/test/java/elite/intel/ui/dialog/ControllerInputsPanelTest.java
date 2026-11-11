@@ -43,7 +43,7 @@ class ControllerInputsPanelTest {
                 ControllerInputsPanel.hatTokens(controller));
     }
 
-    /** E2 (Alan, 2026-11-10): a − and a + cell for every axis, in the game's order. */
+    /** E2 (Krondor, 2026-11-10): a − and a + cell for every axis, in the game's order. */
     @Test
     void axisDirectionsAreAMinusAndAPlusCellPerAxis() {
         CaptureControllers.Controller controller =

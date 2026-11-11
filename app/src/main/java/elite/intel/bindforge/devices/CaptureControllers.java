@@ -159,7 +159,7 @@ public final class CaptureControllers {
 
     /**
      * One controller as a capture dialog shows it, for a device that connected while the dialog was open - plugged in,
-     * or found when the Device Service started after the dialog opened (Alan, 2026-11-10: a dialog opened while the
+     * or found when the Device Service started after the dialog opened (Krondor, 2026-11-10: a dialog opened while the
      * services were starting never saw the controllers). The same rules as {@link #connected()}.
      *
      * @param labels the edits, as the dialog read them when it opened
@@ -177,7 +177,7 @@ public final class CaptureControllers {
 
     /**
      * Tells {@code capture} where each of a connected controller's axes rests now, read from the Device Service - so a
-     * still stick, which reports nothing until it moves, is not measured from part-way through its first push (Alan,
+     * still stick, which reports nothing until it moves, is not measured from part-way through its first push (Krondor,
      * 2026-11-10). Nothing for a controller that is not connected.
      */
     public static void restAxes(ControllerCapture capture, Controller controller) {
@@ -225,7 +225,7 @@ public final class CaptureControllers {
     }
 
     /**
-     * The axes an unplugged controller's AXIS DIRECTIONS page offers (E2, Alan, 2026-11-10): the ones its saved names
+     * The axes an unplugged controller's AXIS DIRECTIONS page offers (E2, Krondor, 2026-11-10): the ones its saved names
      * or its bindings mention - an axis label, or a direction bound - or, when they mention none, all eight the game
      * names, as an axis row offers ({@link #forAxes}). Which axes it really has is not known while it is unplugged.
      * Pure.

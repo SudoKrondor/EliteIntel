@@ -15,7 +15,7 @@ import java.util.*;
  * Deadzone</em>): whatever is held when the completing input arrives becomes the modifier set, up to three, and the
  * completing input is the slot's value. Held inputs count on any controller, in the order they were pressed.
  * <p>
- * <strong>A button or hat is picked when it is let go, not when it is pressed</strong> (E8, Alan, 2026-11-10), so
+ * <strong>A button or hat is picked when it is let go, not when it is pressed</strong> (E8, Krondor, 2026-11-10), so
  * a chord is never picked first as the bare button held for it. A release picks when something was pressed since the
  * last pick: the input pressed last, with every other input still held as its modifiers. Holding a shift button and
  * pressing two buttons in turn picks twice; letting go of the shift button afterwards picks nothing. <strong>An axis
@@ -179,7 +179,7 @@ public final class ControllerCapture {
     }
 
     /**
-     * Where an axis rests, read from the device when capture begins (Alan, 2026-11-10). A still stick reports nothing,
+     * Where an axis rests, read from the device when capture begins (Krondor, 2026-11-10). A still stick reports nothing,
      * so without this the first value seen - already part-way through a push - is taken as the rest, and the spring
      * taking the stick back to centre is captured as a push the other way. With none given, the first value seen is
      * the rest, as before.

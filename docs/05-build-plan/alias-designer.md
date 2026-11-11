@@ -148,10 +148,10 @@ installations with each other before then. Once the master exists, each row offe
 | A16 | **First setup's name choices that need Rename** — a name conflict whose losing name `.binds` uses: keep the winner with the loser as its `previous_name`, so the first Apply moves the bindings (A11's machinery). Design first: two losing names `.binds` uses (one `previous_name` per device), and first setup stuck because `.binds` uses both names. [Spec](../02-features/bindforge/alias-designer.md#names-that-needed-rename--2026-10-17-alan-a16) | A11 (done) | **done 2026-10-17** |
 | A17 | **When hardware changes, for a controller with no name** — `.binds` names a missing controller by hardware id only and an unnamed one is attached: a yes names the new controller *and* moves the bindings from the **old** id to the name. Needs a stored "old id → name" record, since Apply's hex move only finds a device's current VID/PID. Reuse A12's question, answers and hold-back. [Spec](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17) | A12 (done) | **done 2026-10-17** — split out of A12 2026-10-15 (Alan) |
 | A14 | **Catch-up** — an installation that missed an Apply (missing, locked, unavailable) is found again, at Elite-Intel startup or by the check: ask *"write your recent changes to it?"*, Yes being ~~`DeviceFilesPush.push(installId)`~~ Apply's push to that installation alone, removals and renames included (Alan, 2026-10-15). [Spec](../02-features/bindforge/alias-designer.md#catch-up--2026-10-15-alan-a14) | A10 (done) | **done 2026-10-15** |
-| A19 | **CLEAR on a device the bindings use** — moves those bindings to its hardware ID (VID then PID, upper case) as part of the same edit not applied, with the confirmation the spec words; today CLEAR is refused for such a device. [Spec](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan) | Storage S4b | pending |
+| A19 | **CLEAR on a device the bindings use** — moves those bindings to its hardware ID (VID then PID, upper case) as part of the same edit not applied, with the confirmation the spec words; until then CLEAR was refused for such a device. [Spec](../02-features/bindforge/alias-designer.md#an-edit-binds-depends-on-updates-binds--2026-10-11-alan), [Built](../02-features/bindforge/alias-designer.md#built--2026-11-10-krondor-a19) | Storage S4b | **done 2026-11-10** |
 | A18 | **Gamepads** — `DeviceService` reads a pad through SDL's Gamepad API when `SDL_IsGamepad` holds (new gamepad events, `isGamepad(id)`; joystick events unchanged); the pure table from its named inputs to the game's `GamePad` tokens; the Device Editor shows a `<GamePad>` read-only, lit by name. Design proposed by Krondor 2026-10-23, **to settle with Alan first**. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | the tester's `.binds` ([testing item 27](../00-overview/testing-required.md#bindforge)) for the token family | **blocked** on item 27. Partly overtaken (checked 2026-11-03): `847987878` captures a pad's buttons, D-pad and triggers and describes its axes, without SDL's Gamepad API; no gamepad events or read-only Device Editor yet |
 
-**Next here is A19, after [Storage S4b](storage.md#slices)** finishes moving the screen onto the working copy. A18 stays
+**A19 is done (2026-11-10); nothing here is next.** A18 stays
 blocked. *Before 2026-10-24:* **every slice but A18 was
 done** — A16 and A17 on 2026-10-17; A15 on 2026-10-16; A7, A11, A12 and A14 on 2026-10-15. A18 was added 2026-10-23 from a tester's report. Next is a review of A17 in its own session (`/check-code-integrity`), then whatever Alan picks from the
 owed items below (the Linux bindings-folder slice, the orphan's **Remove** way out) or the next section, Preset Editor. Core C6, the exit
@@ -169,6 +169,13 @@ game's `.binds` **last**; a hex reference rewritten **from the value `BindsDevic
 
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the
 next slice needs.*
+
+- **2026-11-10 — A19 done: CLEAR moves the bindings** (Krondor, four questions, all as recommended; recorded in the
+  spec, [Built — A19](../02-features/bindforge/alias-designer.md#built--2026-11-10-krondor-a19)). They go where the game
+  would put them once the entry is gone: the next element claiming the pair (Frontier's, for a shadow), else the
+  hardware ID; UNDO CLEAR moves them back; an element with no pair of its own is refused while bindings name it.
+  **Found:** after CLEAR and APPLY onboarding offers the controller again, which is the intended state. Still open from
+  A17's review: P1, whether an 8-hex name should be refused.
 
 - **2026-10-24 — build plan rewritten to back up, edit, apply** (Alan). This screen's mechanics move to the working
   copy in [Storage S4](storage.md#slices), first setup's in S2; the divergence list, markers and catch-up are

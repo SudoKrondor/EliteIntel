@@ -12,7 +12,7 @@ import java.util.OptionalInt;
  * and its labels cannot be edited: the dialog says APPLY will remove it.
  * <p>
  * <strong>CLEAR on a device the binds files name moves those bindings</strong> - to its hardware ID, or to the
- * element the game would match once it is gone (A19; Alan, 2026-11-10). An edit to an entry {@code .binds} depends on
+ * element the game would match once it is gone (A19; Krondor, 2026-11-10). An edit to an entry {@code .binds} depends on
  * updates {@code .binds} with it (Alan, 2026-10-11). It is refused only when there is nowhere to move them - an
  * element with no pair of its own - or the binds files cannot be read. RESET LABELS is never refused for them:
  * {@code .binds} names inputs by token, never by label.
@@ -43,7 +43,7 @@ public record DeviceEditorMiddle(Kind kind, boolean enabled, Why why, int bindin
         NOTHING_TO_RESET,
         /**
          * The binds files name it, and its element carries no VID/PID of its own - only {@code <Alternative>} pairs,
-         * made by hand - so there is no one controller to move the bindings to (Alan, 2026-11-10).
+         * made by hand - so there is no one controller to move the bindings to (Krondor, 2026-11-10).
          */
         NO_HARDWARE_ID,
         /**

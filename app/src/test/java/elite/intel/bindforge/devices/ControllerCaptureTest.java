@@ -29,7 +29,7 @@ class ControllerCaptureTest {
         assertEquals(Optional.of(new Captured(input(STICK, "Joy_6"), List.of())), button(STICK, 5, false));
     }
 
-    /** E8 (Alan, 2026-11-10): a chord is never picked first as the bare button held for it. */
+    /** E8 (Krondor, 2026-11-10): a chord is never picked first as the bare button held for it. */
     @Test
     void aChordIsPickedWholeAndNeverAsTheButtonHeldForIt() {
         assertEquals(Optional.empty(), button(STICK, 0, true));
