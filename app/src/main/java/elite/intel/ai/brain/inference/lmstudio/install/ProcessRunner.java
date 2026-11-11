@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +24,10 @@ final class ProcessRunner {
     private final Consumer<String> log;
     private volatile Process running;
     private volatile boolean cancelled;
+    // When the command running now last printed something new. Written by its output reader, read by the waiting thread.
+    private volatile Instant lastNews = Instant.EPOCH;
+
+    private static final Duration WAIT_SLICE = Duration.ofMillis(200);
 
     ProcessRunner(Consumer<String> log) {
         this.log = log;
@@ -35,6 +40,20 @@ final class ProcessRunner {
      *                                cancelled
      */
     List<String> run(List<String> command, Duration timeout) throws InstallException {
+        return run(command, timeout, timeout);
+    }
+
+    /**
+     * Runs {@code command} for as long as it keeps printing something new, up to {@code limit} in all, and returns its
+     * cleaned output lines. WHY: how long a model load takes depends on the PC, and the first load on a new install
+     * can take many times longer than every load after it. A Windows tester's first load ran for over 5 minutes, while
+     * every reload after it took 5 seconds (2026-11-10). A load that keeps reporting progress is working; one that falls
+     * silent for {@code quietLimit} is not.
+     *
+     * @throws InstallException when it cannot start, exits with an error, prints nothing new for {@code quietLimit},
+     *                                runs past {@code limit}, or is cancelled
+     */
+    List<String> run(List<String> command, Duration quietLimit, Duration limit) throws InstallException {
         if (cancelled) throw new InstallException("Cancelled");
         ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true);
         builder.environment().put("LMS_NO_MODIFY_PATH", "1");
@@ -48,7 +67,7 @@ final class ProcessRunner {
         }
         running = process;
         try {
-            return awaitExit(process, command, timeout);
+            return awaitExit(process, command, quietLimit, limit);
         } finally {
             running = null;
         }
@@ -56,13 +75,23 @@ final class ProcessRunner {
 
     // WHY one method for the read and the wait: the output is read on its own thread while this one waits, and the two
     // belong together - a process whose output nobody reads blocks once the pipe fills and never exits.
-    private List<String> awaitExit(Process process, List<String> command, Duration timeout) throws InstallException {
+    private List<String> awaitExit(Process process, List<String> command, Duration quietLimit, Duration limit)
+            throws InstallException {
         List<String> output = new ArrayList<>();
+        Instant started = Instant.now();
+        lastNews = started;
         Thread reader = Thread.ofVirtual().name("lm-studio-output").start(() -> readLines(process, output));
         try {
-            if (!process.waitFor(timeout.toSeconds(), TimeUnit.SECONDS)) {
-                process.destroyForcibly();
-                throw new InstallException(command.getFirst() + " did not finish within " + timeout.toMinutes() + " min");
+            while (!process.waitFor(WAIT_SLICE.toMillis(), TimeUnit.MILLISECONDS)) {
+                Instant now = Instant.now();
+                if (Duration.between(started, now).compareTo(limit) >= 0) {
+                    process.destroyForcibly();
+                    throw new InstallException(command.getFirst() + " did not finish within " + describe(limit));
+                }
+                if (Duration.between(lastNews, now).compareTo(quietLimit) >= 0) {
+                    process.destroyForcibly();
+                    throw new InstallException(command.getFirst() + " reported no progress for " + describe(quietLimit));
+                }
             }
             reader.join(Duration.ofSeconds(5));
         } catch (InterruptedException e) {
@@ -88,6 +117,7 @@ final class ProcessRunner {
                 // WHY drop a repeat: a spinner redraws the same words many times a second.
                 if (text == null || text.equals(previous)) continue;
                 previous = text;
+                lastNews = Instant.now();
                 synchronized (output) {
                     output.add(text);
                 }
@@ -106,6 +136,10 @@ final class ProcessRunner {
         cancelled = true;
         Process process = running;
         if (process != null) process.destroyForcibly();
+    }
+
+    private static String describe(Duration duration) {
+        return duration.toSeconds() < 120 ? duration.toSeconds() + " s" : duration.toMinutes() + " min";
     }
 
     boolean isCancelled() {

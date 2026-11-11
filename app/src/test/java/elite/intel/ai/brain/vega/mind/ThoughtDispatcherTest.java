@@ -332,6 +332,83 @@ class ThoughtDispatcherTest {
     }
 
     @Test
+    void turnsQueuedBehindATurnTheAiDidNotAnswerAreDroppedButAReflexStillRuns() throws InterruptedException {
+        // The Windows tester's queue (2026-11-10): "where are we right now" waited behind a turn that timed out, then
+        // went to the same model and failed too. Now the first turn's "try again" stands for both.
+        CompletableFuture<LlmResult> firstAnswer = new CompletableFuture<>();
+        List<LlmRequest> requests = new CopyOnWriteArrayList<>();
+        LlmGateway slowThenFine = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                requests.add(request);
+                return requests.size() == 1 ? firstAnswer : new TerminatingLlm().submit(request);
+            }
+
+            @Override
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        List<String> executed = new CopyOnWriteArrayList<>();
+        ExecutionGateway tracking = request -> {
+            executed.add(request.toolName());
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
+        FakeSpeech speech = new FakeSpeech();
+        ThoughtDependencies dependencies = new ThoughtDependencies(
+                slowThenFine, speech, tracking, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new VegaState(),
+                invocation -> false, new ConfirmationCoordinator(),
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ReflexResolver reflex = new ReflexResolver(
+                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)));
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("check check");
+        waitUntil(() -> requests.size() == 1);
+        dispatcher.submitCommanderInput("where are we right now");
+        dispatcher.submitCommanderInput("navigation");
+        firstAnswer.complete(new LlmResult(LlmResult.Status.SERVICE_UNAVAILABLE, List.of()));
+        dispatcher.stop();
+
+        assertEquals(1, requests.size(), "the queued question was dropped, not sent to the model");
+        assertEquals(List.of("open_nav"), executed, "a reflex needs no model, so it still ran");
+        assertEquals(List.of(Thought.serviceUnreachablePhrase()),
+                speech.requests.stream().map(SpeechRequest::text).toList(), "one try-again, not one per dropped turn");
+    }
+
+    @Test
+    void aTurnTheAiAnsweredBadlyDoesNotDropTheQueue() throws InterruptedException {
+        // An unusable answer is not a dead model: the next turn may well get a good one.
+        CompletableFuture<LlmResult> firstAnswer = new CompletableFuture<>();
+        List<LlmRequest> requests = new CopyOnWriteArrayList<>();
+        LlmGateway badThenFine = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                requests.add(request);
+                return requests.size() == 1 ? firstAnswer : new TerminatingLlm().submit(request);
+            }
+
+            @Override
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(badThenFine));
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("check check");
+        waitUntil(() -> requests.size() == 1);
+        dispatcher.submitCommanderInput("where are we right now");
+        firstAnswer.complete(new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of()));
+        dispatcher.stop();
+
+        assertEquals(2, requests.size());
+    }
+
+    @Test
     void nonReflexInputFallsThroughToTheCommanderLlmPath() {
         // The resolver matches nothing, so the input takes the normal CommanderThought path - the LLM is engaged.
         CapturingLlm llm = new CapturingLlm();

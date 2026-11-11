@@ -63,6 +63,11 @@ interface LmStudioMachine {
 
     OptionalLong gpuMemoryUsedMib();
 
+    /**
+     * Sends VEGA's kind of request and reports whether a tool call came back.
+     *
+     * @throws NoAnswerInTimeException when the server took the request but did not answer in time
+     */
     boolean answersWithToolCall(String model) throws InstallException;
 
     /**

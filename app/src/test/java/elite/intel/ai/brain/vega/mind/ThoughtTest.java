@@ -35,7 +35,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -380,6 +382,29 @@ class ThoughtTest {
         assertFalse(speech.requests.get(0).text().isBlank());
         assertTrue(memory.writes.isEmpty());
         assertTrue(execution.requests.isEmpty());
+    }
+
+    @Test
+    void aRoundThatRanOutOfTimeSaysTheAiDidNotAnswer() {
+        // The Windows tester's turn (2026-11-10): the model was too slow, and the commander heard the phrase for a
+        // request that is impossible, not the one for a service that did not answer.
+        llm.nextFailure = new CompletionException(new TimeoutException());
+
+        Thought.commander(Urgency.NORMAL, "check check", dependencies()).run();
+
+        assertEquals(List.of(Thought.serviceUnreachablePhrase()),
+                speech.requests.stream().map(SpeechRequest::text).toList());
+        assertTrue(memory.writes.isEmpty());
+    }
+
+    @Test
+    void aRoundThatFailedForAnotherReasonKeepsThePlainFailurePhrase() {
+        llm.nextFailure = new IllegalStateException("provider client defect");
+
+        Thought.commander(Urgency.NORMAL, "check check", dependencies()).run();
+
+        assertEquals(List.of(Thought.executionFailurePhrase()),
+                speech.requests.stream().map(SpeechRequest::text).toList());
     }
 
     @Test
@@ -749,10 +774,17 @@ class ThoughtTest {
     private static final class FakeLlm implements LlmGateway {
         private final Deque<LlmResult> results = new ArrayDeque<>();
         private final List<LlmRequest> requests = new CopyOnWriteArrayList<>();
+        /** Makes the next round fail with this instead of answering. */
+        private Throwable nextFailure;
 
         @Override
         public CompletableFuture<LlmResult> submit(LlmRequest request) {
             requests.add(request);
+            if (nextFailure != null) {
+                Throwable failure = nextFailure;
+                nextFailure = null;
+                return CompletableFuture.failedFuture(failure);
+            }
             return CompletableFuture.completedFuture(results.removeFirst());
         }
 

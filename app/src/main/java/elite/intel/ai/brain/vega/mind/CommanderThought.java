@@ -8,8 +8,8 @@ import elite.intel.ai.brain.vega.clarify.PendingClarification;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactContext;
 import elite.intel.ai.brain.vega.memory.facts.MergedFactCandidates;
+import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.llm.*;
-import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
 import elite.intel.ai.brain.vega.prompt.ComposedPrompt;
 import elite.intel.ai.brain.vega.prompt.Fact;
 import elite.intel.ai.brain.vega.tools.IntelActionTypeResolver.IntelActionType;
@@ -504,11 +504,18 @@ public final class CommanderThought extends Thought {
 
     // Tool-outcome settlement lives on Thought so deterministic reflexes follow the same memory rules.
 
+    /** A commander turn is one LLM round: without the model's answer it has nothing to settle. */
+    @Override
+    boolean needsTheModel() {
+        return true;
+    }
+
     /**
      * Handles a turn that produced nothing to settle: speaks a fixed service phrase (no LLM) and leaves
      * conversational memory untouched. The turn ends.
      * <p>
-     * A provider that never answered ({@link LlmResult.Status#SERVICE_UNAVAILABLE}) says so, because the
+     * A provider that never answered ({@link LlmResult.Status#SERVICE_UNAVAILABLE}, which includes a round that
+     * ran out of time) says so, because the
      * generic "I can't do that right now" is the phrase for a request that is impossible here and now -
      * hearing it after a 503 sends the commander hunting for a broken feature instead of simply asking again.
      * Everything else - an unusable model response, or a failure inside this turn's own code, for which
@@ -523,8 +530,12 @@ public final class CommanderThought extends Thought {
         VegaDiagnostics.info(trace(), "settle", serviceUnreachable
                 ? "cannot execute (LLM service unreachable)"
                 : "cannot execute (unrecoverable LLM response)");
-        String phrase = serviceUnreachable ? serviceUnreachablePhrase() : executionFailurePhrase();
-        dependencies.speechGateway().submit(new SpeechRequest(newId(), phrase, urgency()));
+        if (serviceUnreachable) {
+            // The phrase says to try again: the turns queued behind this one would only wait on the same model.
+            markEndedWithoutAnAnswer();
+        }
+        // WHY through voice(): it writes the "voice:" line, without which a support bundle cannot show this was said.
+        voice(serviceUnreachable ? serviceUnreachablePhrase() : executionFailurePhrase(), urgency() == Urgency.URGENT);
     }
 
     /**

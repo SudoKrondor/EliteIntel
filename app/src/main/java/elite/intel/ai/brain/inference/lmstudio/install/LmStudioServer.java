@@ -11,6 +11,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,9 +30,10 @@ final class LmStudioServer {
 
     private static final Duration QUICK = Duration.ofSeconds(5);
     /**
-     * A first request can wait on the model being paged back in, so the test is given longer than a status call.
+     * A first request can wait on the model being paged back in, so the test is given longer than a status call. A
+     * test that runs out of it is tried again by the installer ({@link NoAnswerInTimeException}).
      */
-    private static final Duration TEST_REQUEST = Duration.ofMinutes(2);
+    static final Duration TEST_REQUEST = Duration.ofMinutes(2);
     /**
      * WHY not {@link #QUICK}: a freshly installed llmster can hold the download request well past 5 s while it finishes
      * getting ready - a Windows tester's timed out at 5 s right after the server came up (2026-11-10). One long wait,
@@ -99,9 +101,21 @@ final class LmStudioServer {
     /**
      * Where a download stands. {@code bytesPerSecond} is 0 and {@code estimatedCompletion} empty unless it is
      * downloading.
+     *
+     * @param reply the server's whole answer, for the log when the download failed. WHY kept whole: LM Studio documents
+     *              no reason field for a failed download, so whatever else it sends is the only clue there is.
      */
     record DownloadStatus(DownloadState state, long downloadedBytes, long totalBytes, double bytesPerSecond,
-                          Optional<Instant> estimatedCompletion) {
+                          Optional<Instant> estimatedCompletion, String reply) {
+
+        DownloadStatus {
+            reply = reply == null ? "" : reply;
+        }
+
+        DownloadStatus(DownloadState state, long downloadedBytes, long totalBytes, double bytesPerSecond,
+                       Optional<Instant> estimatedCompletion) {
+            this(state, downloadedBytes, totalBytes, bytesPerSecond, estimatedCompletion, "");
+        }
     }
 
     DownloadStart startDownload(String model) throws InstallException {
@@ -121,6 +135,8 @@ final class LmStudioServer {
     /**
      * Sends one request shaped as {@code LmStudioLlmAdapter} sends VEGA's - a required tool call, reasoning off, no
      * streaming - and reports whether a tool call came back.
+     *
+     * @throws NoAnswerInTimeException when no answer came within {@link #TEST_REQUEST}
      */
     boolean answersWithToolCall(String model) throws InstallException {
         return hasToolCall(send(post("/v1/chat/completions", toolCallTest(model), TEST_REQUEST)));
@@ -184,7 +200,7 @@ final class LmStudioServer {
         }
         return new DownloadStatus(parsed, number(status, "downloaded_bytes"), number(status, "total_size_bytes"),
                 status.has("bytes_per_second") ? status.get("bytes_per_second").getAsDouble() : 0,
-                instant(text(status, "estimated_completion")));
+                instant(text(status, "estimated_completion")), json.strip());
     }
 
     static boolean isLoaded(String modelsJson, String model) throws InstallException {
@@ -280,6 +296,8 @@ final class LmStudioServer {
         HttpResponse<String> response;
         try {
             response = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        } catch (HttpTimeoutException e) {
+            throw new NoAnswerInTimeException("LM Studio did not answer " + request.uri() + ": " + e.getMessage(), e);
         } catch (IOException e) {
             throw new InstallException("LM Studio did not answer " + request.uri() + ": " + e.getMessage(), e);
         } catch (InterruptedException e) {

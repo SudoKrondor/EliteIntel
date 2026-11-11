@@ -100,8 +100,44 @@ final class ThoughtLane {
         }
     }
 
+    /**
+     * Drops the queued thoughts that cannot run without the model, after a thought ended with the model not answering.
+     * WHY: the one ahead already told the commander the AI service did not answer and to try again. A Windows tester's
+     * question queued behind a timed-out turn waited 43 s, then was sent to the same model and failed again
+     * (2026-11-10). A thought that needs no model - a reflex - still runs.
+     */
+    private void dropQueuedThoughtsNeedingTheModel() {
+        for (Runnable task : queue.toArray(new Runnable[0])) {
+            // WHY remove() decides: a worker may take the same task in between, and only one of the two may own it.
+            if (task instanceof QueuedThought queued && queued.thought.needsTheModel() && queue.remove(task)) {
+                pending.decrementAndGet();
+                VegaDiagnostics.info(queued.thought.trace(), "drop",
+                        "queued behind a turn the AI service did not answer; dropped");
+            }
+        }
+    }
+
+    /**
+     * A queued thought and the task that runs it. WHY a class of its own: the queue holds tasks, and a drop needs to
+     * know which thought each one runs. Identity equality, so {@link BlockingDeque#remove(Object)} takes this task.
+     */
+    private static final class QueuedThought implements Runnable {
+        private final Thought thought;
+        private final Runnable task;
+
+        private QueuedThought(Thought thought, Runnable task) {
+            this.thought = thought;
+            this.task = task;
+        }
+
+        @Override
+        public void run() {
+            task.run();
+        }
+    }
+
     private Runnable wrap(Thought thought) {
-        return () -> {
+        return new QueuedThought(thought, () -> {
             long startMillis = System.currentTimeMillis();
             long startNanos = System.nanoTime();
             String laneThread = Thread.currentThread().getName();
@@ -117,9 +153,13 @@ final class ThoughtLane {
             } finally {
                 VegaDiagnostics.exitThought();
             }
+            // WHY here: this worker takes the next queued thought as soon as this returns, so the drop must come first.
+            if (thought.endedWithoutAnAnswer()) {
+                dropQueuedThoughtsNeedingTheModel();
+            }
             completion.whenComplete((ignored, failure) ->
                     finishThought(thought, laneThread, startNanos, failure));
-        };
+        });
     }
 
     /** Completes lane ownership when both the cognitive stage and any detached handler work have settled. */

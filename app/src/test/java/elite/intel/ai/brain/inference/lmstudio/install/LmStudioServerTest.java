@@ -53,6 +53,19 @@ class LmStudioServerTest {
     }
 
     @Test
+    void aFailedDownloadKeepsLmStudiosWholeReply() throws InstallException {
+        // LM Studio documents no reason field, so a field it sends anyway must still reach the log.
+        String json = """
+                {"job_id": "job_1", "status": "failed", "downloaded_bytes": 700, "total_size_bytes": 5900,
+                 "error": "connection reset"}""";
+
+        DownloadStatus failed = LmStudioServer.parseDownloadStatus(json);
+
+        assertEquals(DownloadState.FAILED, failed.state());
+        assertEquals(json.strip(), failed.reply());
+    }
+
+    @Test
     void aFinishedOrPausedDownloadHasNoSpeed() throws InstallException {
         DownloadStatus paused = LmStudioServer.parseDownloadStatus("""
                 {"job_id": "job_384ea067c8", "downloaded_bytes": 1728357133, "total_size_bytes": 6326908631,

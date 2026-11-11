@@ -248,12 +248,39 @@ class LmStudioInstallerTest {
     }
 
     @Test
-    void aModelAlreadyLoadedIsReloadedWithElitesSettings() {
+    void aModelLoadedWithAnotherContextIsReloadedWithElitesSettings() {
         machine.loaded = true;
+        machine.loadedContext = 4096;
+
+        installer(0).install(InstallFolder.inside(chosen));
+
+        assertTrue(machine.calls.contains("unload"));
+        assertTrue(machine.calls.indexOf("unload") < machine.calls.indexOf("load"));
+    }
+
+    @Test
+    void aModelLoadedWithoutAReportedContextIsReloaded() {
+        machine.loaded = true;
+        machine.loadedContext = 0;
 
         installer(0).install(InstallFolder.inside(chosen));
 
         assertTrue(machine.calls.indexOf("unload") < machine.calls.indexOf("load"));
+    }
+
+    @Test
+    void aModelLoadedWithVegasContextIsKeptAndTheGpuCheckSkipped() {
+        // The Windows tester's Continue (2026-11-10): the reload cut off a commander turn that was using the model.
+        machine.loaded = true;
+        machine.loadedContext = LocalLmStudioMachine.CONTEXT_LENGTH;
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertEquals(new InstallOutcome.Completed(), outcome);
+        assertFalse(machine.calls.contains("unload"), machine.calls.toString());
+        assertFalse(machine.calls.contains("load"), machine.calls.toString());
+        assertTrue(progress.steps.containsAll(List.of("skip LOAD", "skip GPU_CHECK")), progress.steps.toString());
+        assertTrue(machine.calls.contains("test"), "the test still proves the kept model answers");
     }
 
     @Test
@@ -274,6 +301,54 @@ class LmStudioInstallerTest {
         InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
 
         assertEquals(InstallStep.TEST, ((InstallOutcome.Failed) outcome).step());
+    }
+
+    @Test
+    void aModelThatIsOnlySlowToAnswerIsAskedAgain() {
+        // The Windows tester's case (2026-11-10): the first test got no answer in 2 minutes, the next one passed.
+        machine.slowTestAnswers = 1;
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertEquals(new InstallOutcome.Completed(), outcome);
+        assertEquals(2, machine.calls.stream().filter("test"::equals).count());
+        assertTrue(progress.lines.stream().anyMatch(line -> line.contains("Asking again (2 of 4)")), progress.lines.toString());
+    }
+
+    @Test
+    void aModelThatNeverAnswersFailsTheTestAfterEveryTry() {
+        machine.slowTestAnswers = LmStudioInstaller.TEST_ATTEMPTS;
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertEquals(InstallStep.TEST, ((InstallOutcome.Failed) outcome).step());
+        assertEquals(LmStudioInstaller.TEST_ATTEMPTS, machine.calls.stream().filter("test"::equals).count());
+        assertTrue(saved.isEmpty());
+    }
+
+    @Test
+    void aReplyWithoutAToolCallIsNotAskedAgain() {
+        machine.toolCall = false;
+
+        installer(0).install(InstallFolder.inside(chosen));
+
+        assertEquals(1, machine.calls.stream().filter("test"::equals).count());
+    }
+
+    @Test
+    void aFailedDownloadSaysHowFarItGotAndLogsLmStudiosReply() {
+        // The Windows tester's first try (2026-11-10) said only that the download failed.
+        String reply = "{\"status\": \"failed\", \"downloaded_bytes\": 1500, \"total_size_bytes\": 6000}";
+        long gb = 1024L * 1024 * 1024;
+        machine.statuses = new ArrayDeque<>(List.of(
+                new DownloadStatus(DownloadState.FAILED, (long) (0.7 * gb), (long) (5.9 * gb), 0, Optional.empty(), reply)));
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        InstallOutcome.Failed failed = assertInstanceOf(InstallOutcome.Failed.class, outcome);
+        assertEquals(InstallStep.DOWNLOAD, failed.step());
+        assertTrue(failed.reason().endsWith("failed at " + String.format("%.1f of %.1f GB", 0.7, 5.9)), failed.reason());
+        assertTrue(progress.lines.contains("LM Studio's download status: " + reply), progress.lines.toString());
     }
 
     @Test
@@ -347,6 +422,7 @@ class LmStudioInstallerTest {
     private static final class RecordingProgress implements InstallProgress {
         final List<String> steps = new ArrayList<>();
         final List<Long> downloaded = new ArrayList<>();
+        final List<String> lines = new ArrayList<>();
 
         @Override
         public void stepStarted(InstallStep step) {
@@ -365,6 +441,7 @@ class LmStudioInstallerTest {
 
         @Override
         public void log(String line) {
+            lines.add(line);
         }
 
         @Override

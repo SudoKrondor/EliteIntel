@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 
@@ -30,6 +31,12 @@ public final class LmStudioInstaller {
 
     private static final String MODEL = LmStudioDefaults.MODEL;
     private static final double BYTES_PER_GB = 1024.0 * 1024 * 1024;
+    /**
+     * How many times the setup test asks before a model that is only slow to answer fails it: 8 minutes in all at
+     * {@code LmStudioServer.TEST_REQUEST} each. The Windows tester's model went from no answer in 2 minutes to an answer
+     * in 21 s (2026-11-10).
+     */
+    static final int TEST_ATTEMPTS = 4;
 
     /**
      * Writes the Address and Model the install ends with. The AI Services panel's own save, so the brain restarts as
@@ -152,6 +159,7 @@ public final class LmStudioInstaller {
      */
     private InstallOutcome run(String what, Steps steps) {
         log.info("{} ({} {}, model {})", what, System.getProperty("os.name"), System.getProperty("os.version"), MODEL);
+        LmStudioSetupState.began();
         try {
             steps.run();
             progress.log("LM Studio is set up.");
@@ -169,6 +177,8 @@ public final class LmStudioInstaller {
             // database or programming error must end as a failed step the commander sees, not a dialog left waiting.
             log.error("LM Studio install failed at {}", current, e);
             return failed(String.valueOf(e.getMessage()));
+        } finally {
+            LmStudioSetupState.ended();
         }
     }
 
@@ -250,8 +260,14 @@ public final class LmStudioInstaller {
         if (owned) stopOnExit.accept(lms);
         start(lms);
         download(lms, owned);
-        OptionalLong before = load(lms);
-        checkGpu(before);
+        if (isLoadedForVega()) {
+            skip(InstallStep.LOAD, MODEL + " is loaded already with VEGA's " + LocalLmStudioMachine.CONTEXT_LENGTH
+                    + "-token context");
+            skip(InstallStep.GPU_CHECK, "The model was loaded before this run, so there is no load to measure");
+        } else {
+            OptionalLong before = load(lms);
+            checkGpu(before);
+        }
         test();
         save();
     }
@@ -300,7 +316,7 @@ public final class LmStudioInstaller {
                 case COMPLETED -> {
                     return;
                 }
-                case FAILED -> throw new InstallException("LM Studio reported that the download of " + MODEL + " failed");
+                case FAILED -> throw downloadFailed(status);
                 case PAUSED -> throw new InstallException("The download of " + MODEL + " was paused");
                 case DOWNLOADING -> {
                 }
@@ -314,6 +330,20 @@ public final class LmStudioInstaller {
             }
             pause(downloadPoll);
         }
+    }
+
+    /**
+     * Says how far the failed download got, and puts LM Studio's whole status reply in the setup log. WHY: "the
+     * download failed" alone told a Windows tester and us nothing (2026-11-10), and LM Studio documents no reason
+     * field, so the reply is logged as it came for whatever it does carry.
+     */
+    private InstallException downloadFailed(DownloadStatus status) {
+        if (!status.reply().isEmpty()) progress.log("LM Studio's download status: " + status.reply());
+        String where = status.totalBytes() > 0
+                ? String.format(" at %.1f of %.1f GB", status.downloadedBytes() / BYTES_PER_GB,
+                status.totalBytes() / BYTES_PER_GB)
+                : "";
+        return new InstallException("LM Studio reported that the download of " + MODEL + " failed" + where);
     }
 
     /**
@@ -340,15 +370,28 @@ public final class LmStudioInstaller {
     }
 
     /**
-     * Loads the model with Elite Intel's settings, unloading it first if it is loaded already - with settings that may
-     * not be these, and so that the GPU check measures this load.
+     * Whether the model is loaded already with exactly VEGA's context window, so loading it again would change nothing.
+     * <p>
+     * WHY keep it rather than reload so the GPU check can measure a load: the reload unloads the model under whatever
+     * is using it. A Windows tester's Continue cut off a commander turn in flight, which ended in silence (2026-11-10).
+     * The window is the tell that the app loaded it: LM Studio's own default is not 8192, and {@code LmStudioHost}
+     * trusts the same reading when it starts the services. The price is that this path skips the GPU check.
+     */
+    private boolean isLoadedForVega() throws InstallException {
+        OptionalInt context = machine.loadedContextLength(MODEL);
+        return context.isPresent() && context.getAsInt() == LocalLmStudioMachine.CONTEXT_LENGTH;
+    }
+
+    /**
+     * Loads the model with Elite Intel's settings, unloading it first if it is loaded already with another context
+     * window, or one LM Studio did not report - and so that the GPU check measures this load.
      *
      * @return GPU memory in use just before the load
      */
     private OptionalLong load(Path lms) throws InstallException {
         begin(InstallStep.LOAD);
         if (machine.isLoaded(MODEL)) {
-            progress.log(MODEL + " is loaded already. Reloading it with Elite Intel's settings.");
+            progress.log(MODEL + " is loaded already with other settings. Reloading it with Elite Intel's settings.");
             machine.unload(lms, MODEL);
         }
         OptionalLong before = machine.gpuMemoryUsedMib();
@@ -372,10 +415,27 @@ public final class LmStudioInstaller {
         finish(InstallStep.GPU_CHECK);
     }
 
+    /**
+     * Asks the model for a tool call, trying again while it is only slow to answer. WHY: the first answers after a new
+     * install or load can take minutes, and then come in seconds - see {@link NoAnswerInTimeException}.
+     */
     private void test() throws InstallException {
         begin(InstallStep.TEST);
-        if (!machine.answersWithToolCall(MODEL)) {
-            throw new InstallException("LM Studio answered the test request without a tool call");
+        for (int attempt = 1; ; attempt++) {
+            try {
+                if (!machine.answersWithToolCall(MODEL)) {
+                    throw new InstallException("LM Studio answered the test request without a tool call");
+                }
+                break;
+            } catch (NoAnswerInTimeException slow) {
+                if (attempt == TEST_ATTEMPTS) {
+                    throw new InstallException("LM Studio did not answer the test request in " + TEST_ATTEMPTS
+                            + " tries: " + slow.getMessage(), slow);
+                }
+                throwIfCancelled();
+                progress.log("LM Studio is slow to give its first answer, which is usual right after a new install. "
+                        + "Asking again (" + (attempt + 1) + " of " + TEST_ATTEMPTS + ")");
+            }
         }
         finish(InstallStep.TEST);
     }

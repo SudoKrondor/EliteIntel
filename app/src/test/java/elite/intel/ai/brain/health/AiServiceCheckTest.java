@@ -34,7 +34,7 @@ class AiServiceCheckTest {
     @Test
     void nothingConfiguredSendsNothing() {
         ScriptedGateway gateway = new ScriptedGateway(wire -> fail("nothing should be sent"));
-        AiServiceVerdict verdict = check(new AiServiceCheck.Configuration(true, true, "", Optional.empty()),
+        AiServiceVerdict verdict = check(new AiServiceCheck.Configuration(true, true, "", Optional.empty(), false),
                 () -> fail("LM Studio should not be asked"), gateway).run();
 
         assertInstanceOf(AiServiceVerdict.NotConfigured.class, verdict);
@@ -52,11 +52,25 @@ class AiServiceCheckTest {
 
     @Test
     void aCloudSetupWithNoProviderSendsNothing() {
-        AiServiceVerdict verdict = check(new AiServiceCheck.Configuration(false, false, "", Optional.empty()),
+        AiServiceVerdict verdict = check(new AiServiceCheck.Configuration(false, false, "", Optional.empty(), false),
                 () -> fail("LM Studio should not be asked"), new ScriptedGateway(wire -> fail("nothing sent"))).run();
 
         assertInstanceOf(AiServiceVerdict.NoProvider.class, verdict);
         assertTrue(verdict.isSetupGap());
+    }
+
+    @Test
+    void anUnfinishedLmStudioSetupIsNeverProbedNorReportedAsConnected() {
+        // The Windows tester's case (2026-11-10): the model answered a tiny request just after the setup's load step
+        // had failed, and the check said "Connection successful" while commander turns timed out.
+        ScriptedGateway gateway = answering(Duration.ofMillis(900));
+        AiServiceVerdict verdict = check(new AiServiceCheck.Configuration(false, true, GEMMA, Optional.empty(), true),
+                () -> fail("LM Studio should not be asked mid-setup"), gateway).run();
+
+        assertInstanceOf(AiServiceVerdict.LocalSetupUnfinished.class, verdict);
+        assertFalse(verdict.connected());
+        assertTrue(verdict.isSetupGap(), "the setup window already shows it, so the check must not speak");
+        assertEquals(0, gateway.requests);
     }
 
     @Test
@@ -165,11 +179,11 @@ class AiServiceCheckTest {
     }
 
     private static AiServiceCheck.Configuration local(String model) {
-        return new AiServiceCheck.Configuration(false, true, model, Optional.empty());
+        return new AiServiceCheck.Configuration(false, true, model, Optional.empty(), false);
     }
 
     private static AiServiceCheck.Configuration cloud(ProviderEnum provider) {
-        return new AiServiceCheck.Configuration(false, false, "", Optional.of(provider));
+        return new AiServiceCheck.Configuration(false, false, "", Optional.of(provider), false);
     }
 
     private ScriptedGateway answering(Duration replyTime) {

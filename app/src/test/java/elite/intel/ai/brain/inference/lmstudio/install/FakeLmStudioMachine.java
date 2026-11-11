@@ -33,6 +33,10 @@ final class FakeLmStudioMachine implements LmStudioMachine {
     int loadedContext = LocalLmStudioMachine.CONTEXT_LENGTH;
     boolean toolCall = true;
     /**
+     * How many test requests get no answer in time before one is answered.
+     */
+    int slowTestAnswers;
+    /**
      * How many more times the model list is asked before it lists the model; negative never lists it.
      */
     int listedAfter;
@@ -138,7 +142,7 @@ final class FakeLmStudioMachine implements LmStudioMachine {
 
     @Override
     public OptionalInt loadedContextLength(String model) {
-        return loaded ? OptionalInt.of(loadedContext) : OptionalInt.empty();
+        return loaded && loadedContext > 0 ? OptionalInt.of(loadedContext) : OptionalInt.empty();
     }
 
     @Override
@@ -166,8 +170,12 @@ final class FakeLmStudioMachine implements LmStudioMachine {
     }
 
     @Override
-    public boolean answersWithToolCall(String model) {
+    public boolean answersWithToolCall(String model) throws InstallException {
         calls.add("test");
+        if (slowTestAnswers > 0) {
+            slowTestAnswers--;
+            throw new NoAnswerInTimeException("LM Studio did not answer the test: request timed out", null);
+        }
         return toolCall;
     }
 

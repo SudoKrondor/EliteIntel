@@ -54,6 +54,10 @@ public abstract class Thought {
      * Localized service phrase for a turn lost because the LLM provider never answered, not because the request was impossible.
      */
     private static final String SERVICE_UNREACHABLE_KEY = "handler.common.aiServiceUnreachable";
+    /**
+     * What a round that ran out of time reports: the provider did not answer.
+     */
+    private static final LlmResult NO_ANSWER = new LlmResult(LlmResult.Status.SERVICE_UNAVAILABLE, List.of());
 
     /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
     private final String trace;
@@ -75,6 +79,8 @@ public abstract class Thought {
     private boolean firstToolStarted;
 
     /** Creates a thought from its immutable turn signals and the shared service context. */
+    private volatile boolean endedWithoutAnAnswer;
+
     protected Thought(ThoughtContext context, ThoughtDependencies dependencies) {
         this.context = context;
         this.dependencies = dependencies;
@@ -170,6 +176,27 @@ public abstract class Thought {
     public abstract void run();
 
     /**
+     * Whether this thought cannot do anything without an answer from the model, so a queued one is dropped once the
+     * turn ahead of it ended with the model not answering ({@link #endedWithoutAnAnswer()}). Default: no.
+     */
+    boolean needsTheModel() {
+        return false;
+    }
+
+    /**
+     * Whether this thought ended because the model never answered - unreachable, refused, or past the deadline.
+     * Read by its lane once the thought's cognitive stage returns.
+     */
+    final boolean endedWithoutAnAnswer() {
+        return endedWithoutAnAnswer;
+    }
+
+    /** Records that the model never answered this thought, so its lane drops the queued thoughts that need it. */
+    protected final void markEndedWithoutAnAnswer() {
+        endedWithoutAnAnswer = true;
+    }
+
+    /**
      * Starts the lane-owned lifecycle and returns its real completion. The default is synchronous; thoughts that
      * detach slow handler work override this so the lane worker may accept the next turn while lifecycle tracking,
      * watchdog interruption, and {@code isIdle()} continue until the detached work settles.
@@ -239,6 +266,14 @@ public abstract class Thought {
                     describeResult(result) + " | " + (System.currentTimeMillis() - startedMillis) + " ms");
             return result;
         } catch (RuntimeException llmFailure) {
+            if (!isStopped() && isTimeout(llmFailure)) {
+                // WHY a result, not null: the provider never answered, which is "the service did not answer" -
+                // not a failure of this turn's own code. A Windows tester's local model, still slow from its first
+                // load, ran past the deadline and the commander heard "I can't do that right now" (2026-11-10).
+                log.warn("VEGA LLM round got no answer within the deadline: {}", llmFailure.getMessage());
+                VegaDiagnostics.debug(trace, "llm", "response: no answer within the deadline");
+                return NO_ANSWER;
+            }
             if (!isStopped()) {
                 // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
                 log.warn("VEGA LLM round failed; treating as no usable result", llmFailure);
@@ -248,6 +283,13 @@ public abstract class Thought {
         } finally {
             inFlight = null;
         }
+    }
+
+    private static boolean isTimeout(Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current instanceof TimeoutException) return true;
+        }
+        return false;
     }
 
     /**

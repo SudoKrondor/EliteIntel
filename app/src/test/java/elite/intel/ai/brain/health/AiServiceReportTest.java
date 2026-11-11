@@ -60,6 +60,13 @@ class AiServiceReportTest {
     }
 
     @Test
+    void anUnfinishedSetupSaysWhereToFinishIt() {
+        assertEquals("LM Studio setup is not finished, so I cannot rely on it yet. "
+                        + "Press Continue setup on the AI Services tab.",
+                AiServiceReport.spoken(new AiServiceVerdict.LocalSetupUnfinished()));
+    }
+
+    @Test
     void secondsFollowTheLanguagePluralRules() {
         SystemSession.getInstance().setLanguage(Language.RU);
 

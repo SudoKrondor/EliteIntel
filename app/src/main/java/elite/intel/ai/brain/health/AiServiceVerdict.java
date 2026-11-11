@@ -18,11 +18,12 @@ public sealed interface AiServiceVerdict {
     }
 
     /**
-     * True for the setup gaps {@code SetupCheck} already speaks about at startup, where a second announcement
-     * of the same thing would only repeat it.
+     * True for the setup gaps the commander already knows about, where an announcement would only repeat it: the
+     * ones {@code SetupCheck} speaks about at startup, and an LM Studio setup the setup window is running or showed
+     * stopping part-way.
      */
     default boolean isSetupGap() {
-        return this instanceof NotConfigured || this instanceof NoProvider;
+        return this instanceof NotConfigured || this instanceof NoProvider || this instanceof LocalSetupUnfinished;
     }
 
     /**
@@ -35,6 +36,13 @@ public sealed interface AiServiceVerdict {
      * Set up for a cloud model, but no provider is chosen.
      */
     record NoProvider() implements AiServiceVerdict {
+    }
+
+    /**
+     * LM Studio is being set up, or the app's own setup of it stopped part-way: whatever it answers is no sign that
+     * VEGA works. Nothing is sent to it.
+     */
+    record LocalSetupUnfinished() implements AiServiceVerdict {
     }
 
     /**

@@ -21,6 +21,7 @@ public final class AiServiceReport {
         return switch (verdict) {
             case AiServiceVerdict.NotConfigured ignored -> say("notConfigured");
             case AiServiceVerdict.NoProvider ignored -> say("noProvider");
+            case AiServiceVerdict.LocalSetupUnfinished ignored -> say("localSetupUnfinished");
             case AiServiceVerdict.LocalHostNotRunning ignored -> say("localNotRunning");
             case AiServiceVerdict.LocalModelMissing ignored -> say("localModelMissing");
             case AiServiceVerdict.Unreachable unreachable -> say("unreachable", unreachable.service());
