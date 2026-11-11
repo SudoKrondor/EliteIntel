@@ -882,6 +882,34 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     `Fate.MERGED`, `Plan.merged` / `changesTheSet`; `BindingsCheck.Found.plainRows` / `items` / `rows` / `anyRows`;
     `CheckFlow.leftoverLines` (`bindings.check.file.plainRows`) and `leftoversReport` (`bindings.check.result.plainMerged`).
 
+    **Settled 2026-11-11 (Alan)** - an element the game writes twice:
+
+    - **What was found.** Every binds file the game saves holds `<MouseGUI Value="…" />` twice at the top level: once
+      among the mouse settings, once after `EnableMenuGroups`. Measured on Alan's four live files, the four reference
+      files (`Custom.3.0.binds` included, so it is old) and his oldest backups; in all of them the two values agree.
+      Frontier's 30 factory files hold it once, and the game adds the second when it saves
+      ([EliteDangerous-BindsFileFormat.md](domain-knowledge/EliteDangerous-BindsFileFormat.md)). It is the only
+      repeated top-level name in any of them.
+    - **The bug.** The comparison took a file with a repeated top-level name as one it could not read element by
+      element (`BindsElements.of`), so every file the game had saved gave one row, *the whole file*: Alan changed two
+      bindings in the game and the merge offered only the file (2026-11-11). The tests were built from files holding
+      it once.
+    - **The rule: an element the file holds more than once is one line item.** It gives one row, and the side kept is
+      written to every copy of it, each where it is. Every other element then gives its rows as this rule says - per
+      slot for a button, else per element. The merge never writes a file whose copies differ.
+    - **A whole-file row is only for a file that cannot be read at all** - not well-formed, or one whose scan and
+      parse disagree - or one that is on one side only.
+    - *To confirm at the slice's sources (Storage S18):*
+      - one file whose copies hold different values - none has been seen, and which copy the game reads is not known
+        (a hand test: set them differently, start the game, see which the widget follows and what the game saves
+        back);
+      - the two sides holding a different number of copies - a file the game has not saved yet holds one - and
+        whether a write ever adds or removes a copy;
+      - a repeated element that has children - none has been seen;
+      - everything else that reads a binds file this way: a newer version, a plain file against its twin, the reset
+        test, the edits put on top at APPLY;
+      - whether the Bind Editor's own write of a setting changes every copy.
+
 15. **When Elite-Intel starts**, once first-time startup is complete, it reads the live copies and compares them with
     the working copy, as the check does — reading only: nothing is written and no backup is made. If anything
     differs, it says once, spoken and logged: *"Your control files were changed outside BindForge. Open BindForge to

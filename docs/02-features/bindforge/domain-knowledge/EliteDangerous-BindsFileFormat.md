@@ -515,6 +515,11 @@ A pad on Frontier's `<GamePad>` element (Xbox 360, One and others; 80 VID/PID pa
 ## 6. File-Level Structural Quirks
 
 - **Duplicate element names are possible** — e.g. an element name like `MouseGUI` can legitimately appear twice in the same file. Nothing in the format prevents this; a parser must not assume element names are unique within the document.
+  **Measured 2026-11-11:** `MouseGUI` is twice in every file the game has saved - once among the mouse settings, once
+  after `EnableMenuGroups` - in `Custom.3.0.binds` as in the 4.2 files, the two values the same in every file seen.
+  Frontier's 30 factory files hold it once; the game adds the second when it saves (a hand copy of
+  `KeyboardMouseOnly.binds` held one, the `.4.2.binds` the game made of it two). No other top-level name is repeated in
+  those files. Which copy the game reads when the two differ is not known.
 - **Multi-context variants of the same logical action are independent elements**, not variations of one element — e.g. `YawAxisRaw`, `YawAxisAlternate`, and `YawAxis_Landing` are three completely separate, independently-bindable elements that happen to be semantically related (base / alternate-controls / landing-override variants of "yaw axis"). Each must be parsed and stored independently.
 - Configuration (STANDALONE SETTING) elements routinely appear immediately adjacent to the binding element they logically relate to. Proximity in the file is incidental ordering, not a structural signal of any kind.
 
