@@ -28,7 +28,7 @@ public final class HudConfirmDialog extends JDialog {
 
     private HudConfirmDialog(Component parent, String title, String message,
                              String primaryLabel, String extraLabel, String dismissLabel, boolean enterChooses) {
-        super(SwingUtilities.getWindowAncestor(parent), ModalityType.APPLICATION_MODAL);
+        super(ownerOf(parent), ModalityType.APPLICATION_MODAL);
         buildUi(title, message, primaryLabel, extraLabel, dismissLabel, enterChooses);
     }
 
@@ -143,8 +143,19 @@ public final class HudConfirmDialog extends JDialog {
         HudConfirmDialog dlg = new HudConfirmDialog(parent, title, message,
                 primaryLabel, extraLabel, dismissLabel, enterChooses);
         // Dim the parent for the modal's lifetime (canon 10 / 10.1); the scrim is removed on close.
-        AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(parent), () -> dlg.setVisible(true));
+        AppTheme.runWithModalScrim(ownerOf(parent), () -> dlg.setVisible(true));
         return dlg.result;
+    }
+
+    /**
+     * The window the dialog belongs to: {@code parent} itself when it is one - the main window, for the game clock
+     * warning - else the window holding it. {@link SwingUtilities#getWindowAncestor} alone gives none for a window, so
+     * the dialog would have no owner and no scrim, sit in the middle of the screen, and could fall behind the app
+     * (HC, 2026-11-10).
+     */
+    private static Window ownerOf(Component parent) {
+        if (parent == null) return null;
+        return parent instanceof Window window ? window : SwingUtilities.getWindowAncestor(parent);
     }
 
     /** Two-button yes/no style confirm; returns {@code true} when the primary action was chosen. */

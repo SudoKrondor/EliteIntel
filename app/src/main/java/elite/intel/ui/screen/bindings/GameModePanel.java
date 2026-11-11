@@ -15,6 +15,7 @@ import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.ui.dialog.AssignAxisDialog;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudPanel;
@@ -335,13 +336,8 @@ class GameModePanel extends JPanel {
         if (loadedFile == null || currentSlots.isEmpty() || editRunner.running() || readOnly()) {
             return;
         }
-        int choice = JOptionPane.showConfirmDialog(
-                dialogOwner,
-                getText("bindings.autofix.confirm.text"),
-                getText("bindings.autofix.confirm.title"),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        if (choice != JOptionPane.OK_OPTION) {
+        if (!HudConfirmDialog.confirm(dialogOwner, getText("bindings.autofix.confirm.title"),
+                getText("bindings.autofix.confirm.text"), getText("button.continue"), getText("button.cancel"))) {
             return;
         }
 
@@ -415,8 +411,8 @@ class GameModePanel extends JPanel {
         appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.GAME_MENU_LEFT_UNBOUND, "bindings.autofix.skipped.gameMenu");
         appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.LEFT_UNBOUND_ON_PURPOSE, "bindings.autofix.skipped.onPurpose");
 
-        JOptionPane.showMessageDialog(
-                dialogOwner, sb.toString(), getText("bindings.autofix.result.title"), JOptionPane.INFORMATION_MESSAGE);
+        HudConfirmDialog.info(dialogOwner, getText("bindings.autofix.result.title"),
+                sb.toString(), getText("button.close"));
     }
 
     private void appendReason(
@@ -433,19 +429,13 @@ class GameModePanel extends JPanel {
 
     private void showSingleResult(String bindingId, ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
         if (outcome.saved() > 0) {
-            JOptionPane.showMessageDialog(
-                    dialogOwner,
-                    getText("bindings.autofix.single.success", BindingDisplayNames.label(bindingId)),
-                    getText("bindings.autofix.result.title"),
-                    JOptionPane.INFORMATION_MESSAGE);
+            HudConfirmDialog.info(dialogOwner, getText("bindings.autofix.result.title"),
+                    getText("bindings.autofix.single.success", BindingDisplayNames.label(bindingId)), getText("button.close"));
             return;
         }
         if (outcome.failed() > 0) {
-            JOptionPane.showMessageDialog(
-                    dialogOwner,
-                    getText("bindings.change.failed"),
-                    getText("bindings.autofix.result.title"),
-                    JOptionPane.ERROR_MESSAGE);
+            HudConfirmDialog.info(dialogOwner, getText("bindings.autofix.result.title"),
+                    getText("bindings.change.failed"), getText("button.close"));
             return;
         }
         if (plan.skipped().isEmpty()) {
@@ -458,8 +448,8 @@ class GameModePanel extends JPanel {
             case GAME_MENU_LEFT_UNBOUND -> "bindings.autofix.single.skipped.gameMenu";
             case LEFT_UNBOUND_ON_PURPOSE -> "bindings.autofix.single.skipped.onPurpose";
         };
-        JOptionPane.showMessageDialog(
-                dialogOwner, getText(messageKey), getText("bindings.autofix.result.title"), JOptionPane.WARNING_MESSAGE);
+        HudConfirmDialog.info(dialogOwner, getText("bindings.autofix.result.title"),
+                getText(messageKey), getText("button.close"));
     }
 
     private record ApplyOutcome(int saved, int failed) {

@@ -60,7 +60,8 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
   measured** (found 2026-10-23, Krondor; updated 2026-11-03). A pad's buttons, D-pad and triggers are captured under `GamePad_` tokens since `847987878`, no longer `Joy_N`, and its sticks are not captured. Whether the game reads those tokens waits on testing item 27. E7 finishes it. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
 - **Checked 2026-11-10:** the uses are now in `GameModePanel` (12, among them Auto-Assign's confirm and results and
   `fixAllMissing`), `BindingSaveResultPresenter` (4) and `ClearKeyboardBindingDialog` (2). A V1.2 task of its own
-  ([v1.2-remaining-work.md](v1.2-remaining-work.md)). As first recorded:
+  ([v1.2-remaining-work.md](v1.2-remaining-work.md)). **Done 2026-11-10 (HC), widened to the whole app:** none is left,
+  and `NoOptionPaneTest` keeps it so. As first recorded:
   **18 `JOptionPane` uses in the Bind Editor, against hard rule 16** (`HudConfirmDialog`, never `JOptionPane`) - in
   `BindingProfilePanel` (the Auto-Assign confirm and its results among them), `ClearKeyboardBindingDialog.onCleared`
   and `BindingSaveResultPresenter`. Older than S5; found in the S5/S6 review (Alan, 2026-10-29, D8). Its own item - move them to `HudConfirmDialog` when a slice is in those files, the first one first.

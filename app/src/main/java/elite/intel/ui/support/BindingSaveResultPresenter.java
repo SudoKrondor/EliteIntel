@@ -2,8 +2,8 @@ package elite.intel.ui.support;
 
 
 import elite.intel.bindforge.io.BindingSaveResult;
+import elite.intel.ui.dialog.HudConfirmDialog;
 
-import javax.swing.*;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -24,21 +24,13 @@ public class BindingSaveResultPresenter {
     }
 
     private void showInfo(String message) {
-        JOptionPane.showMessageDialog(
-                parent,
-                message,
-                getText("bindings.assign.dialogTitle"),
-                JOptionPane.INFORMATION_MESSAGE
-        );
+        HudConfirmDialog.info(parent, getText("bindings.assign.dialogTitle"),
+                message, getText("button.close"));
     }
 
     private void showError(String message) {
-        JOptionPane.showMessageDialog(
-                parent,
-                message,
-                getText("bindings.assign.dialogTitle"),
-                JOptionPane.ERROR_MESSAGE
-        );
+        HudConfirmDialog.info(parent, getText("bindings.assign.dialogTitle"),
+                message, getText("button.close"));
     }
 
     private String messageFor(BindingSaveResult result) {

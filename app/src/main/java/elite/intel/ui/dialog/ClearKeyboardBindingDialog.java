@@ -156,11 +156,8 @@ public class ClearKeyboardBindingDialog extends JDialog {
 
     private void onCleared(ClearOutcome outcome) {
         if (outcome.cleared() == Cleared.REFUSED) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("bindings.clear.failed"),
-                    getText("bindings.clear.dialogTitle"),
-                    JOptionPane.ERROR_MESSAGE);
+            HudConfirmDialog.info(this, getText("bindings.clear.dialogTitle"),
+                    getText("bindings.clear.failed"), getText("button.close"));
         }
         updateState(outcome.slots());
         if (!clearPrimaryButton.isEnabled() && !clearSecondaryButton.isEnabled()) {

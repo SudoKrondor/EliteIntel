@@ -142,12 +142,8 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
         if (BrowserUtil.openUrl(buildIssueUrl())) {
             dispose();
         } else {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("actions.commands.suggest.browserError"),
-                    getText("actions.commands.suggest.title"),
-                    JOptionPane.ERROR_MESSAGE
-            );
+            HudConfirmDialog.info(this, getText("actions.commands.suggest.title"),
+                    getText("actions.commands.suggest.browserError"), getText("button.close"));
         }
     }
 

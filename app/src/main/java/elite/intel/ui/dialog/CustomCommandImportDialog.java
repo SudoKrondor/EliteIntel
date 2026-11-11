@@ -86,10 +86,8 @@ public final class CustomCommandImportDialog extends JDialog {
         try {
             json = Files.readString(chooser.getSelectedFile().toPath(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(parent,
-                getText("actions.customCommands.import.error"),
-                getText("actions.customCommands.import.title"),
-                JOptionPane.ERROR_MESSAGE);
+            HudConfirmDialog.info(parent, getText("actions.customCommands.import.title"),
+                    getText("actions.customCommands.import.error"), getText("button.close"));
             return null;
         }
 
@@ -97,18 +95,14 @@ public final class CustomCommandImportDialog extends JDialog {
         try {
             candidates = CustomCommandExportImportService.parseImport(json, existing);
         } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(parent,
-                getText("actions.customCommands.import.error"),
-                getText("actions.customCommands.import.title"),
-                JOptionPane.ERROR_MESSAGE);
+            HudConfirmDialog.info(parent, getText("actions.customCommands.import.title"),
+                    getText("actions.customCommands.import.error"), getText("button.close"));
             return null;
         }
 
         if (candidates.isEmpty()) {
-            JOptionPane.showMessageDialog(parent,
-                getText("actions.customCommands.import.empty"),
-                getText("actions.customCommands.import.title"),
-                JOptionPane.INFORMATION_MESSAGE);
+            HudConfirmDialog.info(parent, getText("actions.customCommands.import.title"),
+                    getText("actions.customCommands.import.empty"), getText("button.close"));
             return List.of();
         }
 
@@ -190,10 +184,8 @@ public final class CustomCommandImportDialog extends JDialog {
     private void doImport() {
         List<CustomCommandDefinition> selected = tableModel.selectedDefinitions();
         if (selected.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                getText("actions.customCommands.import.noSelection"),
-                getText("actions.customCommands.import.title"),
-                JOptionPane.WARNING_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.import.title"),
+                    getText("actions.customCommands.import.noSelection"), getText("button.close"));
             return;
         }
         result = selected;
