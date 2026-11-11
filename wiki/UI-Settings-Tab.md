@@ -19,7 +19,7 @@ Supported: English, Russian, Ukrainian, German, French, Spanish, Italian, Portug
 Portuguese.
 
 > The **journal folder** has moved to the [Commander tab](UI-Commander-Tab), and the **bindings
-> folder** to the [Bindings tab](UI-Bindings-Tab).
+> folder** to the [BindForge tab](UI-Bindings-Tab).
 
 ---
 
@@ -48,7 +48,10 @@ Switch between **LMStudio Setup** (local) and **Cloud Setup**.
 The supported local model is **`google/gemma-4-e4b`**. Elite Intel warns you at startup if your
 local model is something else; other models may work poorly or not at all.
 
-On a PC with an NVIDIA RTX 3090 (24 GB) or better, a button under these fields sets LM Studio up for you:
+If your PC can hold the game and the model together, a button under these fields sets LM Studio up for
+you. That means one NVIDIA RTX 30-series or newer card with 24 GB (an RTX 3090 or better), or two or more
+such cards with about 20 GB between them, each with at least 8 GB. AMD cards with the same memory are
+offered the button as a **beta**. See [Choose your LLM](installing-local-llms) for the details.
 
 | Button | What it does |
 |--------|--------------|
@@ -57,8 +60,9 @@ On a PC with an NVIDIA RTX 3090 (24 GB) or better, a button under these fields s
 | **Continue setup** | Picks up an install that stopped part-way |
 | **Uninstall LM Studio** | Removes the LM Studio Elite Intel installed, with its models, after listing them |
 
-An LM Studio installed this way starts and stops with Elite Intel's services. See
-[Choose your LLM](installing-local-llms) for the details.
+An LM Studio installed this way starts and stops with Elite Intel's services, and is stopped when you
+close the app even if its setup did not finish. An LM Studio you installed yourself is never started,
+stopped or removed.
 
 Guides for running LM Studio on a second PC: [LM Studio on Linux](Install-LM-Studio-Linux) ·
 [LM Studio on Windows](Install-LM-Studio-Windows) ·
@@ -224,10 +228,10 @@ none, so you enter them again after restoring.
 **Restore...** puts a backup back. What it replaces is kept in a safety folder inside the app data
 folder, and Elite Intel restarts to finish. A backup made by a newer version needs the app updated
 first. Folders that do not exist on the new computer are reset, so check the journal folder on the
-Commander tab and the bindings folder on the Bindings tab afterwards.
+Commander tab and the bindings folder on the BindForge tab afterwards.
 
 > This backs up **Elite Intel**. To back up your **game control files**, use
-> [Player Backups](UI-Bindings-Tab) on the Bindings tab.
+> [Player Backups](UI-Bindings-Tab) on the BindForge tab.
 
 ---
 

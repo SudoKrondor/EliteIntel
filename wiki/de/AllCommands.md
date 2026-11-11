@@ -231,7 +231,9 @@ Jeder *Finde*-Befehl plottet eine Route zum Gefundenen und zeigt es im
 - *„Nächsten Interstellar Factor finden“* / *„wo kann ich mein Kopfgeld abbezahlen“*
 - *„Tankstelle finden“* / *„ich brauche Treibstoff“*
 - *„Nächsten Fleet Carrier finden“*
-- *„Brain Trees innerhalb von 500 Lichtjahren finden“*
+- *„Wo finde ich Tellur?“* / *„wo kann ich Eisen innerhalb von 50 Lichtjahren farmen?“* — der nächste
+  Brain Tree oder, falls keiner, der beste Planet oder Mond für ein Rohmaterial
+- *„Brain Trees mit Selen finden“* — nur Brain-Tree-Orte
 - *„Wo kann ich Painit innerhalb von 200 Lichtjahren abbauen“* / *„Abbauort finden“*
 - *„Dieses System aus Suchen ausschließen“* (oder *„Zielsystem aus Suchen ausschließen“*) — wenn
   eine Suche dich immer wieder an einen Ort schickt, der nicht funktioniert. *„Dieses System

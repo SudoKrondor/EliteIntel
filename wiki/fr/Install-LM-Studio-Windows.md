@@ -12,7 +12,8 @@ Ce guide installe LM Studio à la main sur un PC qui **ne fait tourner que le mo
 réseau, pendant que le jeu tourne sur votre PC de jeu, qui ne supporte alors plus aucune charge d'inférence.
 
 > **Le jeu et le modèle sur un même PC ?** Ce guide n'est alors pas nécessaire. Si votre PC de jeu a une NVIDIA
-> RTX 3090 (24 Go) ou mieux, Elite Intel installe et configure LM Studio pour vous : voir
+> RTX 3090 (24 Go) ou mieux, ou deux cartes ou plus totalisant environ 20 Go, Elite Intel installe et
+> configure LM Studio pour vous : voir
 > [Choisir votre LLM](installing-local-llms).
 
 ### Matériel du PC du LLM

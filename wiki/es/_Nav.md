@@ -16,7 +16,7 @@ UI: Interfaz
 UI-Vega-Tab: Pestaña Vega
 UI-Commander-Tab: Pestaña Comandante
 UI-Actions-Tab: Pestaña Acciones
-UI-Bindings-Tab: BindForge (pestaña Bindings)
+UI-Bindings-Tab: BindForge
 UI-Settings-Tab: Pestaña Servicios
 UI-Jukebox-Tab: Pestaña Jukebox
 UI-Stats-Tab: Pestaña Estadísticas

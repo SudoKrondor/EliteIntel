@@ -229,7 +229,9 @@ Cada orden de *buscar* traza una ruta a lo que encuentra y lo pone en el
 - *«Buscar factores interestelares más cercanos»* — para pagar tus multas y recompensas.
 - *«Buscar estación de combustible»* / *«necesito combustible»*
 - *«Buscar fleet carrier más cercano»*
-- *«Buscar brain trees en un radio de 500 años luz»*
+- *«¿Dónde encuentro telurio?»* / *«¿dónde farmear hierro en un radio de 50 años luz?»* — el brain tree
+  más cercano o, si no hay, el mejor planeta o luna para un material en bruto
+- *«Buscar brain trees con selenio»* — solo brain trees
 - *«¿Dónde puedo minar painita?»* / *«buscar sitio de minería»*
 - *«Excluir este sistema de las búsquedas»* (o *«ese sistema»* — tu destino) — cuando una búsqueda
   te manda una y otra vez a un sitio que no sirve. *«Desbloquear este sistema»*, dicho desde

@@ -58,7 +58,7 @@ which provider actually answered.
 | Button | What it does |
 |--------|--------------|
 | **START / STOP SERVICES** | Toggles the whole AI stack. The button disables itself while starting or stopping so it cannot be double-fired. |
-| **SLEEP / WAKE UP** | Awake, Vega listens continuously. Asleep, she ignores everything except a wake phrase (`wake up`) or a `listen`-prefixed order — *"Listen up, gear down."* Disabled while push-to-talk is on: then the mapped button is the gate. |
+| **SLEEP / WAKE UP** | Awake, Vega listens continuously. Asleep, she ignores everything except a wake phrase (`wake up`) or a `listen`-prefixed order — *"Listen up, gear down."* Disabled while push-to-talk is on: then the mapped button is the gate. A new install starts asleep. |
 | **DISPLAY / HIDE OVERLAY** | Shows the always-on-top [HUD overlay](UI-HUD-Overlay). The app remembers which way you left it and restores it on the next launch. If the overlay binary is missing the toggle says so in the log rather than claiming an overlay that is not there. |
 | **OVERLAY SETUP** | Opens [HUD overlay settings](UI-HUD-Overlay) — transparency, text size, colours, and where it is drawn (monitor, VR headset, both, or a capture window). |
 | **Audio Devices** | Pick your microphone and speaker. A change takes effect straight away: only the speech recognition (microphone) or the voice (speaker) restarts. |

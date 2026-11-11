@@ -54,7 +54,7 @@ Lieber eine Cloud-Stimme? **Google TTS** steht als Option bereit. Dafür ist ein
 
 ## Deine Steuerung, geschützt
 
-**[BindForge](UI-Bindings-Tab)** bearbeitet deine Steuerung für Elite Dangerous von außerhalb des Spiels: Tastatur, Maus, Joystick, HOTAS und Pedale. Lege jedes Gerät auf jeden Slot, behebe Konflikte, stimme Empfindlichkeiten und Totzonen ab und gib deinen Controllern echte Namen und Tastenbeschriftungen.
+**[BindForge](UI-Bindings-Tab)** bearbeitet deine Steuerung für Elite Dangerous von außerhalb des Spiels: Tastatur, Maus, Joystick, HOTAS und Pedale. Lege jede Taste, Maustaste oder Stick-Taste auf jeden Slot, finde Konflikte auf jedem Gerät, wähle, welche Belegungsdatei das Spiel lädt, stimme Empfindlichkeiten und Totzonen ab und gib deinen Controllern echte Namen und Tastenbeschriftungen.
 
 Eine aufwendige Belegung kostet Stunden, und ein Spiel-Update kann sie zurücksetzen. BindForge sichert deine Steuerungsdateien jeden Tag und vor jeder Änderung und kann sie zurückspielen, wenn du sie brauchst.
 
@@ -64,7 +64,7 @@ Eine aufwendige Belegung kostet Stunden, und ein Spiel-Update kann sie zurückse
 
 Elite Intel funktioniert mit dem Sprachmodell, das zu deinem Setup passt:
 
-**Kostenlos und offline** - [LM Studio](https://lmstudio.ai/) mit einem lokalen Modell  
+**Kostenlos und offline** - [LM Studio](https://lmstudio.ai/) mit einem lokalen Modell. Mit genug Grafikspeicher installiert und richtet Elite Intel es dir mit einem Klick ein  
 **Kostenpflichtige Cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Wechsle den Anbieter jederzeit im Reiter Dienste. Keine Neuinstallation erforderlich.

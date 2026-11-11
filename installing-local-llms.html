@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/commander.png" class="inline" height="20" alt=""> Commander Tab</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/actions.png" class="inline" height="20" alt=""> Actions Tab</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge (Bindings Tab)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/services.png" class="inline" height="20" alt=""> Services Tab</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
@@ -155,10 +155,17 @@ LM Studio is free software from Element Labs, not part of Elite Intel.</p>
 <p>From then on, Elite Intel starts LM Studio when you start its services and stops it when you stop them or
 close the app, so the model uses your graphics card&#39;s memory only while Elite Intel is running. To remove it,
 press <strong>Uninstall LM Studio</strong>: it lists what will be deleted before it deletes anything.</p>
-<p><strong>The button appears only on an NVIDIA RTX 3090 (24 GB) or better.</strong> The game takes 8.5 GB or more of video
-memory and the model about 6 GB, and your browser, OBS and Windows use some too, so a smaller card does not
-hold both reliably. AMD cards are not detected yet: AMD owners can follow the
-<a href="AMD-RX-7800XT-LLM-Setup.html">AMD guide</a>.</p>
+<p><strong>The button appears only when your graphics cards can hold the game and the model together.</strong> The game
+takes 8.5 GB or more of video memory and the model about 6 GB, and your browser, OBS and Windows use some
+too, so a smaller card does not hold both reliably. The button is offered on:</p>
+<ul>
+<li><strong>One NVIDIA card with 24 GB</strong>, RTX 30 series or newer: an RTX 3090 or better.</li>
+<li><strong>Two or more NVIDIA cards with about 20 GB between them</strong>, each RTX 30 series or newer with at least
+8 GB — for example a 12 GB RTX 5070 with an 8 GB RTX 3070 Ti.</li>
+<li><strong>AMD cards with the same memory, as a beta.</strong> The install dialog warns you that AMD is a beta. If it
+does not work for you, the <a href="AMD-RX-7800XT-LLM-Setup.html">AMD guide</a> sets it up by hand.</li>
+</ul>
+<p>NVIDIA and AMD cards are never added together.</p>
 <p>Already have LM Studio? The button says <strong>Set up LM Studio</strong> instead. It adds the model and fills in the
 fields, and leaves your LM Studio otherwise exactly as it is: Elite Intel never starts, stops or removes an
 LM Studio you installed yourself.</p>
@@ -259,7 +266,8 @@ Elite Intel picks the right one for your provider.</p>
 <h2>Which one should I use?</h2>
 <p><strong>Run LM Studio locally if:</strong></p>
 <ul>
-<li>Your gaming PC has an NVIDIA RTX 3090 24 GB or better: Elite Intel sets it up for you</li>
+<li>Your gaming PC has 24 GB of video memory on one card (an RTX 3090 or better), or about 20 GB across two
+or more: Elite Intel sets it up for you</li>
 <li>Or you have a second PC on your network with 12 GB of video memory and RTX 3080-class power</li>
 <li>You want everything to stay on your own hardware</li>
 </ul>

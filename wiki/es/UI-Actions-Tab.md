@@ -164,9 +164,9 @@ Consejos:
 - **Las frases se pueden separar con comas**, además de con saltos de línea.
 - **Los retrasos dependen de tu PC.** Si el mapa no está listo cuando llega el siguiente paso,
   aumenta los retrasos — o mueve **Ritmo de entrada de teclas** de la
-  [pestaña Bindings](UI-Bindings-Tab) hacia Lento.
+  [pestaña BindForge](UI-Bindings-Tab) hacia Lento.
 - **Cada paso de binding necesita una asignación de teclado** en el juego. Si un control no está
-  asignado, la [pestaña Bindings](UI-Bindings-Tab) lo muestra en *Bindings faltantes*.
+  asignado, la [pestaña BindForge](UI-Bindings-Tab) lo muestra como *Vega necesita una tecla*.
 - Vega abre y lee el mapa galáctico del mismo modo para sus propios comandos de ruta, así que un
   comando que parte de un mapa **recién abierto** es el patrón fiable — no empieces con un mapa
   que ya está abierto.

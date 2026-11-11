@@ -26,7 +26,7 @@ was fehlt — es lohnt sich aber, das vorab zu erledigen:
 |------|-------|
 | Auf ein Sprachmodell verweisen | [Dienste → KI-Dienste](UI-Settings-Tab) |
 | Journal-Ordner prüfen | [Reiter Kommandant](UI-Commander-Tab) |
-| BindForge einrichten lassen und Vega die nötigen Tasten geben | [Reiter Bindings](UI-Bindings-Tab) |
+| BindForge einrichten lassen und Vega die nötigen Tasten geben | [Reiter BindForge](UI-Bindings-Tab) |
 | Audio kalibrieren | [Vega-Reiter](UI-Vega-Tab) → **AUDIO KALIBRIEREN** |
 
 ---

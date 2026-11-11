@@ -16,8 +16,8 @@ construit deux de A à Z.
   Démarrez d'abord les services dans l'[onglet Vega](UI-Vega-Tab).
 - **Chaque commande utilisée doit avoir un raccourci clavier.** Elite Intel appuie sur des touches ;
   une commande assignée uniquement à votre HOTAS ne peut pas être déclenchée par une macro.
-  L'[onglet Commandes](UI-Bindings-Tab) montre ce qui manque, et **Attribuer automatiquement les
-  raccourcis manquants** le corrige d'un coup.
+  L'[onglet BindForge](UI-Bindings-Tab) montre ce qui manque, et **Attribuer automatiquement les
+  raccourcis requis par VEGA** le corrige d'un coup.
 
 ---
 
@@ -142,7 +142,7 @@ communications. Sinon les lettres arrivent aux commandes du vaisseau comme des a
 
 - **Les délais sont la solution habituelle.** Si une étape semble sautée, le jeu n'était pas prêt.
   Allongez le délai qui la précède, ou poussez **Cadence des saisies clavier** dans
-  l'[onglet Commandes](UI-Bindings-Tab) vers Lent — cela ajoute une pause après chaque frappe envoyée.
+  l'[onglet BindForge](UI-Bindings-Tab) vers Lent — cela ajoute une pause après chaque frappe envoyée.
 - **Plusieurs phrases, un sens clair.** Inutile de dire une phrase mot pour mot ; Vega associe par
   le sens. Plus vos phrases se distinguent des autres commandes, plus la vôtre sera choisie de façon
   fiable.
@@ -169,7 +169,7 @@ Les messages de validation à l'enregistrement s'affichent en anglais.
 | *At least one step is required* / *… is required* / *durationMs must be positive* | Il manque à une étape son raccourci, son texte, sa touche ou sa durée |
 | La macro tourne mais une étape est sautée | Ajoutez ou allongez un Délai avant cette étape, ou ralentissez la cadence des saisies |
 | Vega répond autre chose | Rendez vos phrases plus distinctives, ou lancez-la tapée : `@Vega <phrase>` |
-| Une étape de raccourci ne fait rien | Cette commande n'a pas de raccourci clavier — voir l'[onglet Commandes](UI-Bindings-Tab) |
+| Une étape de raccourci ne fait rien | Cette commande n'a pas de raccourci clavier — voir l'[onglet BindForge](UI-Bindings-Tab) |
 
 ----
 Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

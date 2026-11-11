@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BindForge — the Bindings Tab  EliteIntel</title>
+    <title>BindForge — the BindForge Tab  EliteIntel</title>
     <meta name="description" content="protects your Elite Dangerous controls from outside the game: keyboard, mouse, joystick, HOTAS and">
     <link rel="canonical" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
@@ -12,7 +12,7 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
-    <meta property="og:title" content="BindForge — the Bindings Tab  EliteIntel">
+    <meta property="og:title" content="BindForge — the BindForge Tab  EliteIntel">
     <meta property="og:description" content="protects your Elite Dangerous controls from outside the game: keyboard, mouse, joystick, HOTAS and">
     <meta property="og:url" content="https://www.elite-intel.org/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/commander.png" class="inline" height="20" alt=""> Commander Tab</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/actions.png" class="inline" height="20" alt=""> Actions Tab</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge (Bindings Tab)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/services.png" class="inline" height="20" alt=""> Services Tab</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
@@ -96,13 +96,13 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>BindForge — the Bindings Tab</h1>
-<p><img src="images/keyboard.png" class="inline" height="20" alt="Bindings"> <strong>BindForge</strong> edits and
+<h1>BindForge — the BindForge Tab</h1>
+<p><img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> <strong>BindForge</strong> edits and
 protects your Elite Dangerous controls from outside the game: keyboard, mouse, joystick, HOTAS and
 pedals. It looks after all the files behind them — your <code>.binds</code> files, the preset file that says
 which one loads, and the <code>DeviceMappings.xml</code> and <code>.buttonMap</code> files that name your controllers and
 label their buttons.</p>
-<p>It lives on the <strong>Bindings</strong> tab, which has three sub-tabs and one bar above them:</p>
+<p>It has a tab of its own, <strong>BindForge</strong>, with four sub-tabs and one bar above them:</p>
 <table>
 <thead>
 <tr>
@@ -112,15 +112,19 @@ label their buttons.</p>
 </thead>
 <tbody><tr>
 <td><strong><a href="#the-apply-bar">Apply bar</a></strong></td>
-<td>The one <strong>Apply</strong> and <strong>Discard</strong> for everything on this tab</td>
+<td>Your User Configuration Folder, and the one <strong>Apply</strong> and <strong>Discard</strong> for everything on this tab</td>
 </tr>
 <tr>
-<td><strong><a href="#binding-profile">Binding Profile</a></strong></td>
-<td>The Bind Editor. Every control in the game, with <strong>Game Mode</strong>, <strong>Anomalies</strong> and <strong>Settings</strong> views</td>
+<td><strong><a href="#binding-profile">Bind Editor</a></strong></td>
+<td>Every control in the game, by section, with the <strong>Anomalies</strong> and <strong>Dead Zones &amp; Sensitivity</strong> views</td>
+</tr>
+<tr>
+<td><strong><a href="#preset-editor">Preset Editor</a></strong></td>
+<td>Which binds file the game loads for General, Ship, SRV and On-Foot controls</td>
 </tr>
 <tr>
 <td><strong><a href="#binding-management">Binding Management</a></strong></td>
-<td>The File Manager. Your game installations, your binds files, and your backups</td>
+<td>Your game installations, your binds files, and your backups</td>
 </tr>
 <tr>
 <td><strong><a href="#alias-designer">Alias Designer</a></strong></td>
@@ -128,7 +132,7 @@ label their buttons.</p>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Vega still presses only keyboard keys.</strong> You can now bind any device in any slot, but a control
+<p><strong>Vega still presses only keyboard keys.</strong> You can bind any device in any slot, but a control
 needs a keyboard key for Vega to operate it. The <strong>AI access</strong> column shows you which ones do.</p>
 </blockquote>
 <hr>
@@ -157,6 +161,16 @@ restore a backup from <a href="#player-backups">Player Backups</a> instead.</p>
 <hr>
 <p><a id="the-apply-bar"></a></p>
 <h2>The Apply bar</h2>
+<p>The bar above the sub-tabs holds the <strong>User Configuration Folder</strong> and the <strong>Discard</strong> and <strong>Apply</strong>
+buttons.</p>
+<p><strong>User Configuration Folder</strong> is where your <code>.binds</code> files and the preset file live, and every
+installation shares it. It is detected automatically. Use the <strong>⋮</strong> picker if yours is somewhere
+unusual.</p>
+<blockquote>
+<p><strong>&quot;Cannot find bindings&quot; with the right folder?</strong> Elite Dangerous does not write a <code>.binds</code> file
+until you customise something. Open <em>Options → Controls</em> in the game, change any binding, and
+Elite Intel picks the file up.</p>
+</blockquote>
 <p>Nothing you do on these tabs touches the game until you press <strong>Apply</strong>. Your changes collect as
 edits, and <strong>Apply</strong> and <strong>Discard</strong> light up as soon as there are some.</p>
 <table>
@@ -182,10 +196,19 @@ Controls screen after applying. Vega reminds you.</p>
 </blockquote>
 <p>If you leave the tab or close the app with edits not applied, you are asked to <strong>Apply</strong>,
 <strong>Discard</strong> or <strong>Go back</strong>.</p>
+<p><a id="read-only"></a></p>
+<h3>Read only while an installation is missing</h3>
+<p>If one of your game installations cannot be found — usually because its drive is unplugged —
+BindForge turns <strong>read only</strong>. The bar says which installation is missing, Vega tells you at startup,
+and nothing on the tab can be changed, so that installation never falls out of step with the others.</p>
+<p>Plug the drive back in and restart Elite Intel, or <strong>Remove</strong> the installation in
+<a href="#game-install-locations">Game Install Locations</a> if it is gone for good. <strong>Override</strong> on the bar
+turns editing back on until Elite Intel closes: Apply then writes to the installations that are
+there, and when the missing one returns it is compared at the next start and you choose what to keep.</p>
 <h3>When the game changed your files</h3>
 <p>The game can change its own files, and a game update can reset them. BindForge compares them with its
 working copy the first time you open the tab in a session, and again at every Apply. If they differ,
-it lists what changed and lets you choose:</p>
+Vega tells you at startup, and the tab lists what changed and lets you choose:</p>
 <table>
 <thead>
 <tr>
@@ -212,22 +235,24 @@ Closing it during an Apply cancels the Apply and keeps your edits.</p>
 with new controls in it. BindForge never writes your old file over that one. If all your bindings
 carried over, you just <strong>Approve</strong> it. If some differ, <strong>Reconcile...</strong> keeps the new controls and
 asks about each line that differs.</p>
+<p><strong>Files that do not belong there.</strong> If the game&#39;s bindings folder holds files the game does not use —
+a hand-copied binds file with no version in its name, say, or an unrelated file — Vega mentions it and
+the check offers <strong>Tidy up</strong>. That moves them to <strong>Leftover User Files</strong>, in Elite Intel&#39;s own folder.
+Nothing is deleted, and you can open that folder yourself. A binds file without a version is first
+copied into your files with a version in its name, unless you already have one by that name.</p>
 <hr>
 <p><a id="binding-profile"></a></p>
-<h2>Binding Profile</h2>
-<p><img src="images/ui-tab-bindings-profile.png" alt="Binding profile"></p>
-<p>This is the Bind Editor. The <strong>Editing</strong> line at the top names the binds file you are looking at. To
-open a different one, use <a href="#bindings-file">Bindings File</a> under <em>Binding Management</em>.</p>
+<h2>Bind Editor</h2>
+<p><img src="images/ui-tab-bindings-profile.png" alt="Bind Editor"></p>
+<p>The <strong>Editing</strong> line at the top names the binds file you are looking at. To open a different one, use
+<a href="#bindings-file">Bindings File</a> under <em>Binding Management</em>.</p>
 <p><strong>Key Input Pacing</strong> is a <strong>Fast ↔ Slow</strong> slider for the pause Elite Intel holds after each keystroke
 it sends to the game. If the game drops keystrokes on slower hardware — a macro that only half-runs,
 a panel that opens on the wrong tab — move it towards <strong>Slow</strong>.</p>
-<p><strong>Search bindings...</strong>, along the bottom, works in all three views. It matches the section, group,
-control name and raw <code>.binds</code> tag, plus the controller and button names on a binding.</p>
-<h3>Game Mode</h3>
-<p>Every control, grouped under the game&#39;s own headings and in the same order as its Controls screen, so
-you can read the two side by side. Tabs along the top narrow the list to <strong>All</strong>, <strong>General</strong>,
-<strong>Ship</strong>, <strong>SRV</strong> or <strong>On-Foot</strong>, each with a count. Below them are two lists, <strong>Used bindings</strong> and
-<strong>Missing bindings</strong>.</p>
+<p>One row of tabs runs across the editor: <strong>All</strong>, <strong>General</strong>, <strong>Ship</strong>, <strong>SRV</strong> and <strong>On-Foot</strong>, each
+with a count, then <strong><a href="#anomalies">Anomalies</a></strong> and <strong><a href="#dead-zones-and-sensitivity">Dead Zones &amp;
+Sensitivity</a></strong>. The section tabs show every control, grouped under the
+game&#39;s own headings and in the same order as its Controls screen, so you can read the two side by side.</p>
 <table>
 <thead>
 <tr>
@@ -241,23 +266,15 @@ you can read the two side by side. Tabs along the top narrow the list to <strong
 </tr>
 <tr>
 <td><strong>Primary</strong> / <strong>Secondary</strong></td>
-<td>The two slots Elite Dangerous gives every control, showing your own names for controllers and buttons</td>
+<td>The two slots Elite Dangerous gives every control, showing your own names for controllers and buttons. On an axis row, Primary is the axis and Secondary its direction and dead zone</td>
 </tr>
 <tr>
 <td><strong>AI access</strong></td>
 <td>Whether Vega can operate this control (see below)</td>
 </tr>
 <tr>
-<td><strong>Status</strong></td>
-<td><code>Missing</code> · <code>No keyboard</code> (bound, but only to a controller) · <code>Not defined</code></td>
-</tr>
-<tr>
-<td><strong>Quick fix</strong></td>
-<td><em>Missing</em> list: gives this one control a safe free keyboard key</td>
-</tr>
-<tr>
-<td><strong>Clear</strong></td>
-<td><em>Used</em> list: removes the keyboard binding, leaving controller and HOTAS bindings alone</td>
+<td><strong>Action</strong></td>
+<td><strong>Clear</strong> removes the keyboard key (or the axis), leaving controller and HOTAS bindings alone. <strong>Auto fix</strong> appears on a control Vega needs that has no key, and gives it a safe free one</td>
 </tr>
 </tbody></table>
 <table>
@@ -280,9 +297,13 @@ you can read the two side by side. Tabs along the top narrow the list to <strong
 <td>Vega needs this control and nothing is bound to it</td>
 </tr>
 </tbody></table>
-<p>Beside the search are the two filters and the auto-assign button:</p>
+<p>Along the bottom are the search, three filters and the auto-assign button:</p>
 <ul>
+<li><strong>Search bindings...</strong> matches the section, group, control name and raw <code>.binds</code> tag, plus the
+controller and button names on a binding. It works on every tab, and the counts on the section tabs
+show where the hits are.</li>
 <li><strong>Show conflicts only</strong> — only the rows in conflict.</li>
+<li><strong>Show unassigned</strong> — only the controls with nothing bound, on the keyboard or on any controller.</li>
 <li><strong>Show required by Vega only</strong> — only the controls Vega presses, for its built-in commands and
 your custom commands.</li>
 <li><strong><a href="#auto-assign-vega-required-binds">Auto-Assign VEGA Required Binds</a></strong> — see below.</li>
@@ -292,16 +313,28 @@ your custom commands.</li>
 highlighted card is the one your next input goes into. Click the other card to fill that one instead,
 or use the swap button between them to exchange Primary and Secondary.</p>
 <p><img src="images/ui-bindings-assign.png" alt="Assign a control"></p>
-<p>Below the cards there is a <strong>Keyboard</strong> tab, plus one tab for each connected controller.</p>
+<p>Below the cards there is a <strong>Keyboard</strong> tab, a <strong>Mouse</strong> tab, and one tab for each connected controller.</p>
 <ul>
 <li><strong>Keyboard</strong> — click the field, then press the keys together with any modifiers, up to three. Esc
 cancels. Hold Ctrl, Shift or Alt to see the keyboard map for that combination: <strong>green is free, red
 is already used.</strong> Reserved keys, such as the game-menu key and Alt+F4, cannot be assigned.</li>
+<li><strong>Mouse</strong> — point at the box and press the mouse button you want. The left button counts too, and
+clicks anywhere else in the window work as usual. The wheel is never picked up by accident: click
+<strong>Wheel up</strong> or <strong>Wheel down</strong> instead.</li>
 <li><strong>A controller</strong> — press a button or push a hat on the controller, or click one in the <strong>Buttons</strong>
-or <strong>Hats</strong> list. Buttons you are already holding become modifiers. Green is free, red is used by
-another control, and blue is what this control holds now. A controller needs a name from the
-<a href="#alias-designer">Alias Designer</a> first.</li>
+or <strong>Hats</strong> list. A button or hat is picked <strong>when you let go of it</strong>, so a shift-button combination
+is always picked whole. Buttons you are already holding become modifiers: keep the shift button held
+and press other buttons one after another to try each combination. The <strong>Axis directions</strong> page has
+a <strong>−</strong> and a <strong>+</strong> for each axis, for controls that act on one direction of an axis; push the axis
+or click the one you want.</li>
+<li><strong>With Shift</strong>, <strong>With Ctrl</strong> and <strong>With Alt</strong>, on each controller tab, bind a stick or throttle
+button together with that keyboard key. Only these three can be combined with a controller, so they
+never clash with the keys Vega presses.</li>
 </ul>
+<p>Green is free, red is used by another control, and blue is what this control holds now. A controller
+needs a name from the <a href="#alias-designer">Alias Designer</a> first. A controller that is not plugged in can
+still be bound by clicking its inputs, and one you plug in while the dialog is open comes to life in it.
+A slot holds at most three modifiers — held buttons and keys together.</p>
 <p>An input another control already holds cannot be assigned. The card names that control, and <strong>Save</strong>
 stays dimmed until you free it there. If a change would take away the last keyboard key on a control
 Vega uses, the dialog warns you. <strong>Save</strong> keeps your changes as edits, ready for <strong>Apply</strong>.</p>
@@ -316,15 +349,22 @@ own.</p>
 <em>Inverted</em>), its <strong>Dead zone</strong>, and, on the controls that have one, its <strong>Throttle range</strong> (<em>Full
 range</em> or <em>Forward only</em>). Several controls can share one axis, and that is normal: the dialog tells
 you what else is on it, and you decide.</p>
+<p><a id="anomalies"></a></p>
 <h3>Anomalies</h3>
 <p><img src="images/ui-bindings-anomalies.png" alt="Anomalies"></p>
 <p>The rows that are in conflict, gathered in one place, with their count on the tab. These are the same
-rows Game Mode draws in red, and clicking one opens the same dialog. <strong>When Vega warns you about a
-binding conflict, look here.</strong></p>
+rows the section tabs draw in red, and clicking one opens the same dialog. <strong>When Vega warns you about
+a binding conflict, look here.</strong></p>
+<p>Conflicts are found on every device: keyboard, mouse, joystick and HOTAS. The same button number on two
+controllers is two different buttons — <code>Joy_1</code> on your left stick never clashes with <code>Joy_1</code> on your
+right.</p>
 <p>Elite Dangerous treats a chord as conflicting only when it is <em>exactly</em> the same chord — <code>G</code> and
 <code>Shift+G</code> coexist happily. Elite Intel follows the same rule. Controls that can never be active at the
-same time, such as a ship control and an SRV control, are not flagged. Hover over a row to see <strong>Shares
-<em>key</em> with:</strong> and the list, for every slot in conflict.</p>
+same time are not flagged: a ship control and an SRV control, or a System Colonisation placement control
+and a flight control (the game switches flight off while you place a facility). Hover over a row to see
+<strong>Shares <em>key</em> with:</strong> and the list, for every slot in conflict.</p>
+<p><strong>Shift buttons.</strong> If you hold a stick button as a modifier for other bindings and also bind that
+button on its own, pressing it fires that control as well. BindForge warns you about it.</p>
 <p>You may also see <strong>Ship/SRV twin — many bind it the same as:</strong> on a row. That is a suggestion, not a
 conflict: some ship and SRV controls are conventionally bound to the same key.</p>
 <p>Vega also <strong>speaks</strong> about bindings that will actually break things, and names the keys in the
@@ -338,8 +378,9 @@ Escape opens that menu anyway.</li>
 <li><strong>A control on a combination the operating system takes first</strong> (such as Alt+F4). Pressing it
 closes the game or leaves your session.</li>
 </ul>
-<h3>Settings</h3>
-<p><img src="images/ui-bindings-settings.png" alt="Binding settings"></p>
+<p><a id="dead-zones-and-sensitivity"></a></p>
+<h3>Dead Zones &amp; Sensitivity</h3>
+<p><img src="images/ui-bindings-settings.png" alt="Dead Zones & Sensitivity"></p>
 <p>The sensitivities, dead zones and power curves your binds file holds, grouped the way the game groups
 them. Each has a slider and a number beside it. Drag the slider, or type a number and press Enter.</p>
 <p>The slider covers the same range as the game&#39;s own slider. The number is the exact value, and it is
@@ -347,7 +388,8 @@ the only way past the slider&#39;s limits. A value already outside them stays as
 <p><a id="auto-assign-vega-required-binds"></a></p>
 <h3>Auto-Assign VEGA Required Binds</h3>
 <p>One button that gives a safe, layout-friendly keyboard key to every control <strong>Vega presses</strong> that has
-none, including the controls your custom commands use. Other controls are left as they are.</p>
+none, including the controls your custom commands use. Other controls are left as they are; to bind
+one of those, click its Primary or Secondary cell.</p>
 <ul>
 <li>Existing bindings on any device are never changed. Only an empty slot is filled.</li>
 <li>No key is ever reused.</li>
@@ -358,22 +400,48 @@ left, or no slot it could edit safely. Two controls stay <strong>unbound on purp
 (Escape already opens it) and <em>eject all cargo</em> (it empties the hold into space, and no Elite Intel
 command presses it).</p>
 <hr>
+<p><a id="preset-editor"></a></p>
+<h2>Preset Editor</h2>
+<p><img src="images/ui-bindings-preset-editor.png" alt="Preset Editor"></p>
+<p>The game reads its controls in four sections — <strong>General</strong>, <strong>Ship</strong>, <strong>SRV</strong> and <strong>On-Foot</strong> — and
+each section loads the binds file its line in the preset file names. The Preset Editor shows those four
+lines as dropdowns and lets you point each one at any of your binds files. Frontier&#39;s own presets are in
+the lists too, marked <em>(factory)</em>. The lists show the name the game shows, so <code>Custom.4.2.binds</code>
+appears as <em>Custom</em>.</p>
+<ul>
+<li><strong>Set all to same</strong> points all four sections at the file chosen beside it, in one step.</li>
+<li>A section that names a file BindForge cannot find, or nothing at all, is shown in <strong>red</strong>. The game
+would load something else there, so <strong>Apply</strong> refuses until you choose a real file.</li>
+<li>A note appears when the four sections use different files. The game supports that, so it never stops
+you.</li>
+</ul>
+<p>As everywhere on the tab, nothing is written until you press <strong>Apply</strong>, and <strong>Discard</strong> puts the
+dropdowns back.</p>
+<p><a id="which-binds-file"></a></p>
+<h3>Which binds file does Vega read?</h3>
+<p>Vega reads the keys it presses from <strong>one</strong> binds file. If your four sections use different files,
+the first time you open the BindForge tab in a session it asks <strong>Which binds file?</strong> and lists them.
+Pick one, and it asks whether that should be <strong>the only binds file the game uses</strong>:</p>
+<ul>
+<li><strong>Yes</strong> — BindForge backs up your files and sets all four sections to it straight away. This is the
+safe choice: the keys Vega presses are then the keys the game uses.</li>
+<li><strong>No</strong> — Vega reads the file you picked for this session. Controls in a section that uses another
+file may not work when Vega presses them. The question comes back at the next start, for as long as
+the sections stay on different files.</li>
+</ul>
+<p>If your General controls are on a different file from the one Vega reads, Vega also warns you at
+startup — route plotting is the usual casualty, because the galaxy map keys may not be the ones the game
+is using.</p>
+<hr>
 <p><a id="binding-management"></a></p>
 <h2>Binding Management</h2>
-<p>The File Manager, with two tabs of its own: <strong>Game Install Locations</strong> and <strong>Player Backups</strong>.</p>
+<p>Your files, with two tabs of its own: <strong>Game Install Locations</strong> and <strong>Player Backups</strong>.</p>
+<p><a id="game-install-locations"></a></p>
 <h3>Game Install Locations</h3>
 <p><img src="images/ui-bindings-install-locations.png" alt="Game install locations"></p>
-<p><strong>User Configuration Folder</strong> is where your <code>.binds</code> files and the preset file live, and every
-installation shares it. It is detected automatically. Use the <strong>⋮</strong> picker if yours is somewhere
-unusual.</p>
-<blockquote>
-<p><strong>&quot;Cannot find bindings&quot; with the right folder?</strong> Elite Dangerous does not write a <code>.binds</code> file
-until you customise something. Open <em>Options → Controls</em> in the game, change any binding, and
-Elite Intel picks the file up.</p>
-</blockquote>
 <p><a id="bindings-file"></a></p>
 <p><strong>Bindings File</strong> lists your binds files, including any edits not applied. Choose one and press
-<strong>Load</strong> to open it in Binding Profile, or type a new name and press <strong>Rename</strong>. A rename is an edit
+<strong>Load</strong> to open it in the Bind Editor, or type a new name and press <strong>Rename</strong>. A rename is an edit
 like any other, and it reaches the game when you press <strong>Apply</strong>.</p>
 <p><strong>Game Installations</strong> lists every copy of the game BindForge knows about. Each one has its own
 <code>DeviceMappings.xml</code> and <code>.buttonMap</code> files, and BindForge keeps them identical.</p>
@@ -481,7 +549,7 @@ would delete your backups along with it.</p>
 <p>Out of the box, the game knows many controllers only by a hardware ID, and its Controls screen shows
 their buttons as anonymous numbers. The Alias Designer gives each controller a real name, and each
 button, axis and hat a label of your choice. The labels appear in the game&#39;s Controls screen and in
-Binding Profile.</p>
+the Bind Editor.</p>
 <p><strong>My Devices</strong> lists your controllers: <strong>Device</strong>, <strong>VID / PID</strong>, <strong>Status</strong> (<em>Attached</em> or
 <em>Missing</em>) and <strong>Alias</strong>. <strong>Built-in Devices</strong> is a read-only list of the controllers Frontier ships
 with the game. <strong>Check Again</strong> re-reads what is attached.</p>
@@ -505,7 +573,11 @@ and axes show a live meter.</li>
 </ul>
 <p><strong>Save</strong> keeps your edits for <strong>Apply</strong>; nothing reaches the game until then.</p>
 <ul>
-<li><strong>Clear</strong> removes the device&#39;s entry and labels from your game files when you apply.</li>
+<li><strong>Clear</strong> removes the device&#39;s entry and labels from your game files when you apply. If your
+bindings use the controller, they are not lost: they move to its hardware ID, so they keep working
+while it is plugged in but lose your name for it. (On one of Frontier&#39;s built-in controllers that
+you renamed, they go back under the game&#39;s own name.) The question tells you how many bindings move
+and where. <strong>Undo Clear</strong> puts them back.</li>
 <li><strong>Reset Labels</strong> puts the default labels back.</li>
 </ul>
 <p>On one of Frontier&#39;s built-in devices you can change the labels. To use a name of your own, plug it

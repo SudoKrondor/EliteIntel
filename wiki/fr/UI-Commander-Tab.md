@@ -24,7 +24,7 @@ l'emplacement standard de votre plateforme est utilisé. C'est ainsi qu'Elite In
 votre vaisseau ; s'il est faux, l'application est pratiquement aveugle et le dit au démarrage. Un dossier
 inutilisable est refusé et le réglage précédent est conservé.
 
-> Le **dossier des raccourcis** se trouve dans l'[onglet Commandes](UI-Bindings-Tab), sous *Gestion des raccourcis*.
+> Le **dossier des raccourcis** se trouve dans l'[onglet BindForge](UI-Bindings-Tab), sur la barre au-dessus de ses sous-onglets.
 
 ### Importer d'anciens journaux
 
@@ -172,6 +172,11 @@ quelque chose parle trop, ou pas assez.
 | &nbsp;&nbsp;↳ **Annoncer l'arrivée** | Une phrase à l'arrivée |
 | &nbsp;&nbsp;↳ **Annoncer les sauts restants** | Sauts restants sur la route |
 | &nbsp;&nbsp;&nbsp;&nbsp;↳ **Annoncer la disponibilité d'étoile à carburant** | Si la destination a une étoile récoltable — dit dans la phrase des sauts restants |
+
+Une étoile **Wolf-Rayet** devant vous sur l'itinéraire reçoit toujours un avertissement vocal (elle est
+très chaude), et un objet extrêmement rare (une étoile exotique, une planète errante ou une nébuleuse) est
+mentionné. Les deux suivent la classe d'étoile dans l'annonce du point de passage et ne dépendent pas de
+l'interrupteur carburant.
 
 La plupart se basculent aussi à la voix (*« désactive les annonces radar »*, *« désactive toutes
 les annonces »*), c'est pourquoi la page les relit à chaque ouverture de l'onglet.

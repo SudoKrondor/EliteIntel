@@ -76,8 +76,14 @@ coordonnées de surface. Elle ne trace pas de route vers un système nommé à v
   *« trouve Vista Genomics le plus proche »*, *« trouve l'Interstellar Factor le plus proche. »* Vega
   trace la route et laisse un rappel avec la station ; à l'arrivée, demandez *« quel est le rappel
   actif ? »*
-- **Brain trees** : *« Trouve des brain trees pour [matériau] dans un rayon de 500 années-lumière. »*
-  Trouve un brain tree gardien qui fournit ce matériau brut.
+- **Matières premières** : *« Où trouver du tellure ? »* Vega vous envoie vers le céphalobore (brain tree)
+  gardien le plus proche qui en fournit dans un rayon de 500 années-lumière, car ce sont eux qui rapportent
+  le plus. S'il n'y en a aucun à portée, elle choisit une planète ou une lune : la plus riche en ce matériau
+  à moins de deux sauts, sinon la plus proche qui en a. Donnez un rayon pour rester près : *« où farmer du
+  fer dans un rayon de 50 années-lumière ? »* Si vous demandez des *céphalobores* nommément, elle ne
+  propose que des céphalobores, et vous dit où se trouve le plus proche s'il n'y en a aucun à portée. Les
+  matériaux manufacturés et encodés ne se trouvent pas sur les planètes : elle vous indique le négociant
+  de matériaux à aller voir.
 - **Sites de minage** : *« Où miner de l'osmium dans 200 années-lumière ? »* Fonctionne aussi pour
   le tritium.
 - **Acheter et vendre** : *« Trouve une marchandise bromellite »* — précisez *la plus proche* ou

@@ -54,7 +54,7 @@ Si has usado software de reconocimiento de voz con Elite Dangerous antes, espera
 
 ## Tus controles, protegidos
 
-**[BindForge](UI-Bindings-Tab)** edita tus controles de Elite Dangerous desde fuera del juego: teclado, ratón, joystick, HOTAS y pedales. Asigna cualquier dispositivo a cualquier ranura, repara conflictos, ajusta sensibilidades y zonas muertas, y da a tus mandos nombres reales y etiquetas de botones.
+**[BindForge](UI-Bindings-Tab)** edita tus controles de Elite Dangerous desde fuera del juego: teclado, ratón, joystick, HOTAS y pedales. Asigna cualquier tecla, botón del ratón o botón de palanca a cualquier ranura, encuentra conflictos en todos los dispositivos, elige qué archivo de bindings carga el juego, ajusta sensibilidades y zonas muertas, y da a tus mandos nombres reales y etiquetas de botones.
 
 Una configuración compleja lleva horas, y una actualización del juego puede restablecerla. BindForge hace copias de tus archivos de controles cada día y antes de cada cambio, y puede devolverlos cuando los necesites.
 
@@ -64,7 +64,7 @@ Una configuración compleja lleva horas, y una actualización del juego puede re
 
 Elite Intel funciona con el modelo de lenguaje que mejor se adapte a tu configuración:
 
-**Gratis y sin conexión** - [LM Studio](https://lmstudio.ai/) ejecutando un modelo local  
+**Gratis y sin conexión** - [LM Studio](https://lmstudio.ai/) ejecutando un modelo local. Con memoria de vídeo suficiente, Elite Intel lo instala y lo configura por ti con un clic  
 **Nube de pago** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Cambia de proveedor en cualquier momento desde la pestaña Servicios. No se requiere reinstalación.

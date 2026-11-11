@@ -231,7 +231,9 @@ l'[overlay HUD](UI-HUD-Overlay).
 - *« Trouve l'Interstellar Factor le plus proche »* / *« où payer mes amendes »*
 - *« Trouve une station de ravitaillement »*
 - *« Trouve le porte-vaisseau le plus proche »*
-- *« Trouve des brain trees dans un rayon de 500 années-lumière »*
+- *« Où trouver du tellure ? »* / *« où farmer du fer dans un rayon de 50 années-lumière ? »* — le
+  céphalobore le plus proche ou, à défaut, la meilleure planète ou lune pour une matière première
+- *« Trouve des céphalobores avec du sélénium »* — céphalobores uniquement
 - *« Où miner de la painite »* / *« trouve un site de minage »*
 - *« Exclure ce système des recherches »* (ou *« le système de destination »*) — quand une recherche
   vous renvoie sans cesse vers un endroit qui ne fonctionne pas. *« Débannis ce système »*, dit

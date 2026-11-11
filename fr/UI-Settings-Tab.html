@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Onglet Commandant</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Onglet Actions</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (onglet Commandes)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="../images/services.png" class="inline" height="20" alt=""> Onglet Services</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
@@ -110,7 +110,7 @@ et Vega annonce le changement à voix haute.</p>
 <p>Prises en charge : anglais, russe, ukrainien, allemand, français, espagnol, italien, portugais, portugais du Brésil.</p>
 <blockquote>
 <p>Le <strong>dossier du journal</strong> se trouve désormais dans l&#39;<a href="UI-Commander-Tab.html">onglet Commandant</a>, et le <strong>dossier des raccourcis</strong>
-dans l&#39;<a href="UI-Bindings-Tab.html">onglet Commandes</a>.</p>
+dans l&#39;<a href="UI-Bindings-Tab.html">onglet BindForge</a>.</p>
 </blockquote>
 <hr>
 <h2>Services IA</h2>
@@ -141,7 +141,10 @@ attente vous propose <em>Enregistrer</em>, <em>Abandonner</em> ou <em>Continuer 
 </tbody></table>
 <p>Le modèle local pris en charge est <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel vous prévient au démarrage
 si votre modèle local est différent ; d&#39;autres modèles peuvent mal fonctionner, voire pas du tout.</p>
-<p>Sur un PC avec une NVIDIA RTX 3090 (24 Go) ou mieux, un bouton sous ces champs configure LM Studio pour vous :</p>
+<p>Si votre PC peut faire tourner le jeu et le modèle ensemble, un bouton sous ces champs configure LM Studio pour
+vous. Cela veut dire une carte NVIDIA de la série RTX 30 ou plus récente avec 24 Go (une RTX 3090 ou mieux), ou
+deux cartes de ce type ou plus totalisant environ 20 Go, chacune avec au moins 8 Go. Les cartes AMD avec la même
+mémoire reçoivent le bouton en <strong>bêta</strong>. Détails dans <a href="installing-local-llms.html">Choisir votre LLM</a>.</p>
 <table>
 <thead>
 <tr>
@@ -166,8 +169,9 @@ si votre modèle local est différent ; d&#39;autres modèles peuvent mal foncti
 <td>Retire le LM Studio installé par Elite Intel, avec ses modèles, après les avoir listés</td>
 </tr>
 </tbody></table>
-<p>Un LM Studio installé ainsi démarre et s&#39;arrête avec les services d&#39;Elite Intel. Détails dans
-<a href="installing-local-llms.html">Choisir votre LLM</a>.</p>
+<p>Un LM Studio installé ainsi démarre et s&#39;arrête avec les services d&#39;Elite Intel, et s&#39;arrête à la fermeture
+de l&#39;application même si sa configuration n&#39;a pas abouti. Un LM Studio que vous avez installé vous-même n&#39;est
+jamais démarré, arrêté ni supprimé.</p>
 <p>Guides pour LM Studio sur un second PC : <a href="Install-LM-Studio-Linux.html">LM Studio sous Linux</a> ·
 <a href="Install-LM-Studio-Windows.html">LM Studio sous Windows</a> ·
 <a href="AMD-RX-7800XT-LLM-Setup.html">Série AMD RX</a> ·
@@ -388,10 +392,10 @@ la sauvegarde n&#39;en contient aucune et vous les saisissez à nouveau après l
 <p><strong>Restaurer...</strong> remet une sauvegarde. Ce qu&#39;elle remplace est gardé dans un dossier de sécurité dans le dossier de données de
 l&#39;application, et Elite Intel redémarre pour terminer. Une sauvegarde faite par une version plus récente nécessite d&#39;abord de
 mettre à jour l&#39;application. Les dossiers qui n&#39;existent pas sur le nouvel ordinateur sont réinitialisés ; vérifiez donc ensuite
-le dossier du journal dans l&#39;onglet Commandant et celui des raccourcis dans l&#39;onglet Commandes.</p>
+le dossier du journal dans l&#39;onglet Commandant et celui des raccourcis dans l&#39;onglet BindForge.</p>
 <blockquote>
 <p>Ceci sauvegarde <strong>Elite Intel</strong>. Pour sauvegarder vos <strong>fichiers de commandes du jeu</strong>, utilisez les
-<a href="UI-Bindings-Tab.html">Sauvegardes du joueur</a> dans l&#39;onglet Commandes.</p>
+<a href="UI-Bindings-Tab.html">Sauvegardes du joueur</a> dans l&#39;onglet BindForge.</p>
 </blockquote>
 <hr>
 <h2>Où sont stockés les réglages</h2>

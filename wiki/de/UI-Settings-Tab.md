@@ -19,7 +19,7 @@ Unterstützt: Englisch, Russisch, Ukrainisch, Deutsch, Französisch, Spanisch, I
 brasilianisches Portugiesisch.
 
 > Der **Journal-Ordner** liegt jetzt im [Reiter Kommandant](UI-Commander-Tab), der **Belegungsordner** im
-> [Reiter Bindings](UI-Bindings-Tab).
+> [Reiter BindForge](UI-Bindings-Tab).
 
 ---
 
@@ -49,8 +49,10 @@ Das unterstützte lokale Modell ist **`google/gemma-4-e4b`**. Elite Intel warnt 
 dein lokales Modell ein anderes ist; andere Modelle funktionieren womöglich schlecht oder gar
 nicht.
 
-Auf einem PC mit einer NVIDIA RTX 3090 (24 GB) oder besser richtet eine Schaltfläche unter diesen Feldern
-LM Studio für dich ein:
+Kann dein PC Spiel und Modell zusammen halten, richtet eine Schaltfläche unter diesen Feldern LM Studio für
+dich ein. Das heißt: eine NVIDIA-Karte der RTX-30-Serie oder neuer mit 24 GB (eine RTX 3090 oder besser) oder
+zwei oder mehr solcher Karten mit zusammen etwa 20 GB, jede mit mindestens 8 GB. AMD-Karten mit demselben
+Speicher bekommen die Schaltfläche als **Beta**. Details unter [LLM auswählen](installing-local-llms).
 
 | Schaltfläche | Was sie tut |
 |--------------|-------------|
@@ -59,8 +61,9 @@ LM Studio für dich ein:
 | **Einrichtung fortsetzen** | Setzt eine unterbrochene Installation fort |
 | **LM Studio deinstallieren** | Entfernt das von Elite Intel installierte LM Studio samt Modellen, nachdem es sie aufgelistet hat |
 
-Ein so installiertes LM Studio startet und stoppt mit den Diensten von Elite Intel. Details unter
-[LLM auswählen](installing-local-llms).
+Ein so installiertes LM Studio startet und stoppt mit den Diensten von Elite Intel und wird beim Schließen
+der App beendet, auch wenn seine Einrichtung nicht fertig wurde. Ein LM Studio, das du selbst installiert
+hast, wird nie gestartet, gestoppt oder entfernt.
 
 Anleitungen für LM Studio auf einem zweiten PC: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
 [LM Studio unter Windows](Install-LM-Studio-Windows) ·
@@ -227,10 +230,10 @@ API-Schlüssel**, enthält die Sicherung keine, und du gibst sie nach dem Wieder
 **Wiederherstellen...** spielt eine Sicherung zurück. Was sie ersetzt, bleibt in einem Sicherheitsordner im
 App-Datenordner, und Elite Intel startet neu, um abzuschließen. Eine Sicherung aus einer neueren Version verlangt
 zuerst ein App-Update. Ordner, die es auf dem neuen Rechner nicht gibt, werden zurückgesetzt; prüfe danach also den
-Journal-Ordner im Reiter Kommandant und den Belegungsordner im Reiter Bindings.
+Journal-Ordner im Reiter Kommandant und den Belegungsordner im Reiter BindForge.
 
 > Das sichert **Elite Intel**. Um deine **Steuerungsdateien des Spiels** zu sichern, nutze die
-> [Spielersicherungen](UI-Bindings-Tab) im Reiter Bindings.
+> [Spielersicherungen](UI-Bindings-Tab) im Reiter BindForge.
 
 ---
 

@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (pestaña Bindings)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="../images/services.png" class="inline" height="20" alt=""> Pestaña Servicios</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
@@ -110,7 +110,7 @@ candado de al lado para cambiarlo; después vuelve a bloquearse solo.</p>
 <p>Admitidos: inglés, ruso, ucraniano, alemán, francés, español, italiano, portugués, portugués de Brasil.</p>
 <blockquote>
 <p>La <strong>carpeta del journal</strong> ahora está en la <a href="UI-Commander-Tab.html">pestaña Comandante</a>, y la <strong>carpeta de bindings</strong> en
-la <a href="UI-Bindings-Tab.html">pestaña Bindings</a>.</p>
+la <a href="UI-Bindings-Tab.html">pestaña BindForge</a>.</p>
 </blockquote>
 <hr>
 <h2>Servicios de IA</h2>
@@ -141,7 +141,10 @@ pulsas <strong>Guardar</strong>, y si intentas salir con cambios sin guardar te 
 </tbody></table>
 <p>El modelo local admitido es <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel te avisa al arrancar si tu
 modelo local es otro; otros modelos pueden funcionar mal o no funcionar.</p>
-<p>En un PC con una NVIDIA RTX 3090 (24 GB) o superior, un botón bajo estos campos configura LM Studio por ti:</p>
+<p>Si tu PC puede con el juego y el modelo a la vez, un botón bajo estos campos configura LM Studio por ti. Eso
+significa una tarjeta NVIDIA de la serie RTX 30 o posterior con 24 GB (una RTX 3090 o superior), o dos o más
+de esas tarjetas con unos 20 GB entre todas, cada una con al menos 8 GB. Las tarjetas AMD con la misma
+memoria reciben el botón como <strong>beta</strong>. Más detalles en <a href="installing-local-llms.html">Elegir tu LLM</a>.</p>
 <table>
 <thead>
 <tr>
@@ -166,8 +169,9 @@ modelo local es otro; otros modelos pueden funcionar mal o no funcionar.</p>
 <td>Quita el LM Studio que instaló Elite Intel, con sus modelos, tras mostrarlos</td>
 </tr>
 </tbody></table>
-<p>Un LM Studio instalado así se inicia y se detiene con los servicios de Elite Intel. Más detalles en
-<a href="installing-local-llms.html">Elegir tu LLM</a>.</p>
+<p>Un LM Studio instalado así se inicia y se detiene con los servicios de Elite Intel, y se detiene al cerrar
+la aplicación aunque su configuración no terminara. Un LM Studio que instalaste tú nunca se inicia, se
+detiene ni se elimina.</p>
 <p>Guías para LM Studio en un segundo PC: <a href="Install-LM-Studio-Linux.html">LM Studio en Linux</a> ·
 <a href="Install-LM-Studio-Windows.html">LM Studio en Windows</a> ·
 <a href="AMD-RX-7800XT-LLM-Setup.html">Serie AMD RX</a> ·
@@ -387,10 +391,10 @@ introduces de nuevo después de restaurar.</p>
 <p><strong>Restaurar...</strong> devuelve una copia. Lo que sustituye se guarda en una carpeta de seguridad dentro de la carpeta de datos
 de la app, y Elite Intel se reinicia para terminar. Una copia hecha con una versión más reciente requiere actualizar antes
 la app. Las carpetas que no existen en el ordenador nuevo se restablecen, así que comprueba después la carpeta del journal
-en la pestaña Comandante y la de bindings en la pestaña Bindings.</p>
+en la pestaña Comandante y la de bindings en la pestaña BindForge.</p>
 <blockquote>
 <p>Esto hace una copia de <strong>Elite Intel</strong>. Para copiar tus <strong>archivos de controles del juego</strong>, usa
-<a href="UI-Bindings-Tab.html">Copias del jugador</a> en la pestaña Bindings.</p>
+<a href="UI-Bindings-Tab.html">Copias del jugador</a> en la pestaña BindForge.</p>
 </blockquote>
 <hr>
 <h2>Dónde se guardan los ajustes</h2>

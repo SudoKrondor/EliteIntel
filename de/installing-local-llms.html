@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Reiter Vega</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Reiter Kommandant</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (Reiter Bindings)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Reiter Dienste</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
@@ -156,10 +156,17 @@ Schritt fehl, sagt der Dialog, welcher und warum, und ein erneuter Klick macht d
 <p>Danach startet Elite Intel LM Studio, wenn du seine Dienste startest, und beendet es, wenn du sie stoppst
 oder die App schließt. Das Modell belegt den Speicher deiner Grafikkarte also nur, solange Elite Intel läuft.
 Zum Entfernen drücke <strong>LM Studio deinstallieren</strong>: Es zeigt, was gelöscht wird, bevor es etwas löscht.</p>
-<p><strong>Die Schaltfläche erscheint nur bei einer NVIDIA RTX 3090 (24 GB) oder besser.</strong> Das Spiel braucht 8,5 GB
-Grafikspeicher oder mehr, das Modell etwa 6 GB, und Browser, OBS und Windows brauchen auch etwas, deshalb
-fasst eine kleinere Karte nicht beides zuverlässig. AMD-Karten werden noch nicht erkannt: AMD-Besitzer folgen
-der <a href="AMD-RX-7800XT-LLM-Setup.html">AMD-Anleitung</a>.</p>
+<p><strong>Die Schaltfläche erscheint nur, wenn deine Grafikkarten Spiel und Modell zusammen halten können.</strong> Das
+Spiel braucht 8,5 GB Grafikspeicher oder mehr, das Modell etwa 6 GB, und Browser, OBS und Windows brauchen
+auch etwas, deshalb fasst eine kleinere Karte nicht beides zuverlässig. Die Schaltfläche erscheint bei:</p>
+<ul>
+<li><strong>einer NVIDIA-Karte mit 24 GB</strong>, RTX-30-Serie oder neuer: einer RTX 3090 oder besser.</li>
+<li><strong>zwei oder mehr NVIDIA-Karten mit zusammen etwa 20 GB</strong>, jede RTX-30-Serie oder neuer mit mindestens
+8 GB — zum Beispiel eine 12-GB-RTX-5070 mit einer 8-GB-RTX-3070-Ti.</li>
+<li><strong>AMD-Karten mit demselben Speicher, als Beta.</strong> Der Installationsdialog weist dich darauf hin. Klappt es
+bei dir nicht, richtet die <a href="AMD-RX-7800XT-LLM-Setup.html">AMD-Anleitung</a> es von Hand ein.</li>
+</ul>
+<p>NVIDIA- und AMD-Karten werden nie zusammengezählt.</p>
 <p>Du hast LM Studio schon? Dann heißt die Schaltfläche <strong>LM Studio einrichten</strong>. Sie fügt das Modell hinzu und
 füllt die Felder aus, und sonst bleibt dein LM Studio genau, wie es ist: Elite Intel startet, stoppt oder
 entfernt nie ein LM Studio, das du selbst installiert hast.</p>
@@ -262,7 +269,8 @@ nicht: Elite Intel nimmt das passende für deinen Anbieter.</p>
 <h2>Was soll ich nehmen?</h2>
 <p><strong>Nimm LM Studio lokal, wenn:</strong></p>
 <ul>
-<li>dein Spiele-PC eine NVIDIA RTX 3090 24 GB oder besser hat: Elite Intel richtet es für dich ein</li>
+<li>dein Spiele-PC 24 GB Grafikspeicher auf einer Karte hat (eine RTX 3090 oder besser) oder etwa 20 GB
+auf zwei oder mehr: Elite Intel richtet es für dich ein</li>
 <li>oder du einen zweiten PC im Netzwerk mit 12 GB Grafikspeicher und Leistung der Klasse RTX 3080 hast</li>
 <li>alles auf deiner eigenen Hardware bleiben soll</li>
 </ul>

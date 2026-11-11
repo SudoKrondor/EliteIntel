@@ -12,7 +12,8 @@ Diese Anleitung richtet LM Studio von Hand auf einem PC ein, der **nur das Model
 deinem Netzwerk, während das Spiel auf deinem Spiele-PC läuft, der dann keinerlei Inferenzlast trägt.
 
 > **Spiel und Modell auf einem PC?** Dann brauchst du diese Anleitung nicht. Hat dein Spiele-PC eine NVIDIA RTX
-> 3090 (24 GB) oder besser, installiert und richtet Elite Intel LM Studio für dich ein: siehe
+> 3090 (24 GB) oder besser oder zwei oder mehr Karten mit zusammen etwa 20 GB, installiert und richtet
+> Elite Intel LM Studio für dich ein: siehe
 > [LLM auswählen](installing-local-llms).
 
 ### Hardware für den LLM-PC

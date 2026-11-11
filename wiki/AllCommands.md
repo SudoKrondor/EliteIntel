@@ -224,7 +224,9 @@ Every *find* command plots a route to what it finds, and puts it on the
 - *"Find nearest interstellar factor"* / *"where can I pay off my bounty?"*
 - *"Find a fuel station"* / *"I need fuel"*
 - *"Find nearest fleet carrier"*
-- *"Find brain trees within 500 light years"*
+- *"Where can I find tellurium?"* / *"where can I farm iron within 50 light years?"* — the nearest
+  brain-tree site, or failing that the best planet or moon, for a raw material
+- *"Find brain trees for selenium"* — brain-tree sites only
 - *"Find where to mine painite within 200 light years"* / *"find mining site"*
 - *"Exclude this system from searches"* (or *"that system"* — your destination) — when a search
   keeps sending you somewhere that does not work. *"Allow this system in searches again"*, said

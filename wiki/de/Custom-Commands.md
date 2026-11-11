@@ -16,7 +16,7 @@ davon von Grund auf.
   Starte zuerst die Dienste im [Vega-Reiter](UI-Vega-Tab).
 - **Jede verwendete Steuerung braucht eine Tastaturbelegung.** Elite Intel drückt Tasten; eine
   Steuerung, die nur auf deinem HOTAS liegt, kann ein Makro nicht drücken. Der
-  [Reiter Bindings](UI-Bindings-Tab) zeigt, was fehlt, und **Fehlende Belegungen automatisch
+  [Reiter BindForge](UI-Bindings-Tab) zeigt, was fehlt, und **VEGA-Pflichtbelegungen automatisch
   zuweisen** behebt es in einem Rutsch.
 
 ---
@@ -143,7 +143,7 @@ kommen die Buchstaben als Tastendrücke bei deiner Schiffssteuerung an.
 
 - **Verzögerungen sind die übliche Lösung.** Wird ein Schritt scheinbar übersprungen, war das Spiel
   noch nicht bereit. Verlängere die Verzögerung davor oder schiebe **Tempo der Tastatureingabe** im
-  [Reiter Bindings](UI-Bindings-Tab) Richtung Langsam — das fügt nach jedem gesendeten Tastendruck
+  [Reiter BindForge](UI-Bindings-Tab) Richtung Langsam — das fügt nach jedem gesendeten Tastendruck
   eine Pause ein.
 - **Mehrere Phrasen, eindeutige Bedeutung.** Du musst keine Phrase wörtlich sagen; Vega ordnet nach
   Bedeutung zu. Je mehr sich deine Phrasen von anderen Befehlen unterscheiden, desto zuverlässiger
@@ -172,7 +172,7 @@ Die Prüfmeldungen beim Speichern erscheinen auf Englisch.
 | *At least one step is required* / *… is required* / *durationMs must be positive* | Einem Schritt fehlt Bindung, Text, Taste oder Dauer |
 | Das Makro läuft, aber etwas wird übersprungen | Verzögerung davor einfügen oder verlängern, oder Tempo der Tastatureingabe verlangsamen |
 | Vega reagiert mit etwas anderem | Phrasen unverwechselbarer machen oder getippt ausführen: `@Vega <Phrase>` |
-| Ein Binding-Schritt tut nichts | Diese Steuerung hat keine Tastaturbelegung — siehe [Reiter Bindings](UI-Bindings-Tab) |
+| Ein Binding-Schritt tut nichts | Diese Steuerung hat keine Tastaturbelegung — siehe [Reiter BindForge](UI-Bindings-Tab) |
 
 ----
 Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

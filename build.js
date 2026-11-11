@@ -212,7 +212,7 @@ const DEFAULT_NAV = {
     'UI-Vega-Tab':                     'Vega Tab',
     'UI-Commander-Tab':                'Commander Tab',
     'UI-Actions-Tab':                  'Actions Tab',
-    'UI-Bindings-Tab':                 'BindForge (Bindings Tab)',
+    'UI-Bindings-Tab':                 'BindForge Tab',
     'UI-Settings-Tab':                 'Services Tab',
     'UI-Jukebox-Tab':                  'Jukebox Tab',
     'UI-Stats-Tab':                    'Stats Tab',

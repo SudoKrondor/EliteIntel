@@ -15,7 +15,7 @@ UI: Интерфейс
 UI-Vega-Tab: Вкладка «Вега»
 UI-Commander-Tab: Вкладка «Командир»
 UI-Actions-Tab: Вкладка «Действия»
-UI-Bindings-Tab: BindForge (вкладка «Бинды»)
+UI-Bindings-Tab: BindForge
 UI-Settings-Tab: Вкладка «Сервисы»
 Matrix-How-To: ❓ Впервые в Matrix? Начните здесь
 UI-Jukebox-Tab: Вкладка «Музыка»

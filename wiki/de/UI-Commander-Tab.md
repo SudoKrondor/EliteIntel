@@ -26,7 +26,7 @@ Standardort deiner Plattform verwendet. So weiß Elite Intel, was um dein Schiff
 falsch, ist die App praktisch blind und sagt das beim Start. Ein unbrauchbarer Ordner wird abgelehnt und
 die vorherige Einstellung bleibt.
 
-> Der **Belegungsordner** liegt im [Reiter Bindings](UI-Bindings-Tab) unter *Bindungsverwaltung*.
+> Der **Belegungsordner** liegt im [Reiter BindForge](UI-Bindings-Tab), in der Leiste über seinen Unterreitern.
 
 ### Alte Journale importieren
 
@@ -175,6 +175,10 @@ redet oder zu wenig.
 | &nbsp;&nbsp;↳ **Ankunft ansagen** | Eine Zeile bei der Ankunft |
 | &nbsp;&nbsp;↳ **Verbleibende Sprünge ansagen** | Verbleibende Sprünge der Route |
 | &nbsp;&nbsp;&nbsp;&nbsp;↳ **Verfügbarkeit von Treibstoffsternen ansagen** | Ob das Ziel einen schöpfbaren Stern hat — gesprochen als Teil der Zeile zu den verbleibenden Sprüngen |
+
+Ein **Wolf-Rayet**-Stern voraus auf deiner Route bekommt immer eine gesprochene Warnung (er ist sehr
+heiß), und ein extrem seltenes Objekt — ein exotischer Stern, ein Einzelgängerplanet oder ein Nebel —
+wird erwähnt. Beides folgt der Sternklasse in der Wegpunktansage und hängt nicht vom Treibstoff-Schalter ab.
 
 Die meisten lassen sich auch per Stimme umschalten (*„Radar Ansagen aus“*, *„alle Ansagen
 ausschalten“*), daher liest die Seite sie bei jedem Öffnen des Reiters neu ein.

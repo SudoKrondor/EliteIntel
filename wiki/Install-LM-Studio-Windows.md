@@ -12,7 +12,8 @@ This guide sets LM Studio up by hand on a PC that **runs only the model**: a sec
 the game runs on your gaming PC, which then does no inference work at all.
 
 > **Game and model on one PC?** You don't need this guide. If your gaming PC has an NVIDIA RTX 3090 (24 GB) or
-> better, Elite Intel installs and sets up LM Studio for you: see [Choose your LLM](installing-local-llms).
+> better, or two or more cards with about 20 GB between them, Elite Intel installs and sets up LM Studio for
+> you: see [Choose your LLM](installing-local-llms).
 
 ### Hardware for the LLM PC
 

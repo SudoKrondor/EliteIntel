@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BindForge — der Reiter Bindings  EliteIntel</title>
+    <title>BindForge — der Reiter BindForge  EliteIntel</title>
     <meta name="description" content="und schützt deine Steuerung für Elite Dangerous von außerhalb des Spiels: Tastatur, Maus, Joystick,">
     <link rel="canonical" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
@@ -12,7 +12,7 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
-    <meta property="og:title" content="BindForge — der Reiter Bindings  EliteIntel">
+    <meta property="og:title" content="BindForge — der Reiter BindForge  EliteIntel">
     <meta property="og:description" content="und schützt deine Steuerung für Elite Dangerous von außerhalb des Spiels: Tastatur, Maus, Joystick,">
     <meta property="og:url" content="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Reiter Vega</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Reiter Kommandant</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Reiter Aktionen</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (Reiter Bindings)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Reiter Dienste</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Reiter Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Reiter Statistik</a>
@@ -96,13 +96,13 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>BindForge — der Reiter Bindings</h1>
-<p><img src="../images/keyboard.png" class="inline" height="20" alt="Bindings"> <strong>BindForge</strong> bearbeitet
+<h1>BindForge — der Reiter BindForge</h1>
+<p><img src="../images/keyboard.png" class="inline" height="20" alt="BindForge"> <strong>BindForge</strong> bearbeitet
 und schützt deine Steuerung für Elite Dangerous von außerhalb des Spiels: Tastatur, Maus, Joystick,
 HOTAS und Pedale. Es kümmert sich um alle Dateien dahinter — deine <code>.binds</code>-Dateien, die Preset-Datei,
 die festlegt, welche davon geladen wird, sowie die Dateien <code>DeviceMappings.xml</code> und <code>.buttonMap</code>, die
 deine Controller benennen und ihre Tasten beschriften.</p>
-<p>Es liegt im Reiter <strong>Bindings</strong>, der drei Unterreiter und darüber eine Leiste hat:</p>
+<p>Es hat einen eigenen Reiter, <strong>BindForge</strong>, mit vier Unterreitern und darüber einer Leiste:</p>
 <table>
 <thead>
 <tr>
@@ -112,15 +112,19 @@ deine Controller benennen und ihre Tasten beschriften.</p>
 </thead>
 <tbody><tr>
 <td><strong><a href="#the-apply-bar">Anwenden-Leiste</a></strong></td>
-<td>Das eine <strong>Anwenden</strong> und <strong>Verwerfen</strong> für alles in diesem Reiter</td>
+<td>Dein Benutzerkonfigurationsordner und das eine <strong>Anwenden</strong> und <strong>Verwerfen</strong> für alles in diesem Reiter</td>
 </tr>
 <tr>
-<td><strong><a href="#binding-profile">Bindungsprofil</a></strong></td>
-<td>Der Bind Editor. Jede Steuerung des Spiels, mit den Ansichten <strong>Spielmodus</strong>, <strong>Anomalien</strong> und <strong>Einstellungen</strong></td>
+<td><strong><a href="#binding-profile">Bindungseditor</a></strong></td>
+<td>Jede Steuerung des Spiels, nach Abschnitten, mit den Ansichten <strong>Anomalien</strong> und <strong>Totzonen &amp; Empfindlichkeit</strong></td>
+</tr>
+<tr>
+<td><strong><a href="#preset-editor">Preset-Editor</a></strong></td>
+<td>Welche Belegungsdatei das Spiel für die Steuerung Allgemein, Schiff, SRV und Zu Fuß lädt</td>
 </tr>
 <tr>
 <td><strong><a href="#binding-management">Bindungsverwaltung</a></strong></td>
-<td>Der File Manager. Deine Spielinstallationen, deine Belegungsdateien und deine Sicherungen</td>
+<td>Deine Spielinstallationen, deine Belegungsdateien und deine Sicherungen</td>
 </tr>
 <tr>
 <td><strong><a href="#alias-designer">Alias-Designer</a></strong></td>
@@ -128,9 +132,9 @@ deine Controller benennen und ihre Tasten beschriften.</p>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Vega drückt weiterhin nur Tastaturtasten.</strong> Du kannst jetzt jedes Gerät auf jeden Slot legen,
-aber damit Vega eine Steuerung bedienen kann, braucht sie eine Tastaturtaste. Die Spalte <strong>KI-Zugriff</strong>
-zeigt dir, bei welchen das so ist.</p>
+<p><strong>Vega drückt weiterhin nur Tastaturtasten.</strong> Du kannst jedes Gerät auf jeden Slot legen, aber damit
+Vega eine Steuerung bedienen kann, braucht sie eine Tastaturtaste. Die Spalte <strong>KI-Zugriff</strong> zeigt
+dir, bei welchen das so ist.</p>
 </blockquote>
 <hr>
 <h2>Beim ersten Öffnen</h2>
@@ -162,6 +166,16 @@ Bist du ein zurückkehrender Spieler, stelle stattdessen eine Sicherung aus den
 <hr>
 <p><a id="the-apply-bar"></a></p>
 <h2>Die Anwenden-Leiste</h2>
+<p>Die Leiste über den Unterreitern enthält den <strong>Benutzerkonfigurationsordner</strong> und die Knöpfe
+<strong>Verwerfen</strong> und <strong>Anwenden</strong>.</p>
+<p><strong>Benutzerkonfigurationsordner</strong> ist der Ort deiner <code>.binds</code>-Dateien und der Preset-Datei, und alle
+Installationen teilen ihn sich. Er wird automatisch erkannt. Nutze die Auswahl <strong>⋮</strong>, falls deiner an
+einem ungewöhnlichen Ort liegt.</p>
+<blockquote>
+<p><strong>„Belegungen nicht gefunden&quot; trotz richtigem Ordner?</strong> Elite Dangerous schreibt erst dann eine
+<code>.binds</code>-Datei, wenn du etwas angepasst hast. Öffne im Spiel <em>Optionen → Steuerung</em>, ändere eine
+beliebige Belegung, und Elite Intel findet die Datei.</p>
+</blockquote>
 <p>Nichts, was du in diesen Reitern tust, berührt das Spiel, bevor du <strong>Anwenden</strong> drückst. Deine
 Änderungen sammeln sich, und <strong>Anwenden</strong> und <strong>Verwerfen</strong> leuchten auf, sobald es welche gibt.</p>
 <table>
@@ -188,10 +202,22 @@ dich daran.</p>
 </blockquote>
 <p>Verlässt du den Reiter oder schließt die App mit nicht angewendeten Änderungen, wirst du gefragt:
 <strong>Anwenden</strong>, <strong>Verwerfen</strong> oder <strong>Zurück</strong>.</p>
+<p><a id="read-only"></a></p>
+<h3>Schreibgeschützt, solange eine Installation fehlt</h3>
+<p>Kann eine deiner Spielinstallationen nicht gefunden werden — meist weil ihr Laufwerk abgesteckt ist —,
+schaltet BindForge auf <strong>schreibgeschützt</strong>. Die Leiste nennt die fehlende Installation, Vega sagt es
+dir beim Start, und nichts im Reiter lässt sich ändern, damit diese Installation nicht aus dem Gleichschritt
+mit den anderen gerät.</p>
+<p>Stecke das Laufwerk wieder an und starte Elite Intel neu, oder <strong>Entferne</strong> die Installation unter
+<a href="#game-install-locations">Spielinstallationen</a>, wenn sie endgültig weg ist. <strong>Übergehen</strong> in der Leiste
+schaltet das Bearbeiten wieder ein, bis Elite Intel geschlossen wird: Anwenden schreibt dann in die
+vorhandenen Installationen, und wenn die fehlende zurückkommt, wird sie beim nächsten Start verglichen,
+und du wählst, was du behältst.</p>
 <h3>Wenn das Spiel deine Dateien geändert hat</h3>
 <p>Das Spiel kann seine eigenen Dateien ändern, und ein Spiel-Update kann sie zurücksetzen. BindForge
 vergleicht sie mit seiner Arbeitskopie, wenn du den Reiter in einer Sitzung zum ersten Mal öffnest, und
-erneut bei jedem Anwenden. Weichen sie ab, listet es auf, was sich geändert hat, und lässt dich wählen:</p>
+erneut bei jedem Anwenden. Weichen sie ab, sagt Vega es dir beim Start, und der Reiter listet auf, was
+sich geändert hat, und lässt dich wählen:</p>
 <table>
 <thead>
 <tr>
@@ -219,23 +245,27 @@ bleiben erhalten.</p>
 unter neuem Namen mit neuen Steuerungen darin. BindForge schreibt deine alte Datei nie darüber. Wurden
 alle deine Belegungen übernommen, musst du nur <strong>Zustimmen</strong>. Weichen einige ab, behält <strong>Abgleichen...</strong>
 die neuen Steuerungen und fragt bei jeder abweichenden Zeile nach.</p>
+<p><strong>Dateien, die dort nicht hingehören.</strong> Liegen im Belegungsordner des Spiels Dateien, die das Spiel
+nicht nutzt — etwa eine von Hand kopierte Belegungsdatei ohne Version im Namen oder eine fremde Datei —,
+erwähnt Vega das, und die Prüfung bietet <strong>Aufräumen</strong> an. Das verschiebt sie nach <strong>Leftover User
+Files</strong> im eigenen Ordner von Elite Intel. Nichts wird gelöscht, und du kannst den Ordner selbst öffnen.
+Eine Belegungsdatei ohne Version wird zuerst mit Version im Namen zu deinen Dateien kopiert, es sei denn,
+du hast schon eine mit diesem Namen.</p>
 <hr>
 <p><a id="binding-profile"></a></p>
-<h2>Bindungsprofil</h2>
-<p><img src="../images/ui-tab-bindings-profile.png" alt="Bindungsprofil"></p>
-<p>Das ist der Bind Editor. Die Zeile <strong>Bearbeitet</strong> oben nennt die Belegungsdatei, die du gerade siehst.
-Um eine andere zu öffnen, nutze <a href="#bindings-file">Belegungsdatei</a> unter <em>Bindungsverwaltung</em>.</p>
+<h2>Bindungseditor</h2>
+<p><img src="../images/ui-tab-bindings-profile.png" alt="Bindungseditor"></p>
+<p>Die Zeile <strong>Bearbeitet</strong> oben nennt die Belegungsdatei, die du gerade siehst. Um eine andere zu öffnen,
+nutze <a href="#bindings-file">Belegungsdatei</a> unter <em>Bindungsverwaltung</em>.</p>
 <p><strong>Tempo der Tastatureingabe</strong> ist ein Regler <strong>Schnell ↔ Langsam</strong> für die Pause, die Elite Intel nach
 jedem an das Spiel gesendeten Tastendruck hält. Verschluckt das Spiel auf langsamerer Hardware
 Tastendrücke — ein Makro läuft nur halb, ein Panel öffnet im falschen Reiter —, schiebe ihn Richtung
 <strong>Langsam</strong>.</p>
-<p><strong>Bindungen suchen...</strong> am unteren Rand funktioniert in allen drei Ansichten. Es durchsucht Abschnitt,
-Gruppe, Steuerungsname und rohen <code>.binds</code>-Tag sowie die Controller- und Tastennamen einer Belegung.</p>
-<h3>Spielmodus</h3>
-<p>Jede Steuerung, gruppiert unter den Überschriften des Spiels und in derselben Reihenfolge wie sein
-Steuerungsbildschirm, sodass du beide nebeneinander lesen kannst. Reiter oben schränken die Liste auf
-<strong>Alle</strong>, <strong>Allgemein</strong>, <strong>Schiff</strong>, <strong>SRV</strong> oder <strong>Zu Fuß</strong> ein, jeweils mit Anzahl. Darunter liegen
-zwei Listen: <strong>Verwendete Belegungen</strong> und <strong>Fehlende Belegungen</strong>.</p>
+<p>Eine Reihe von Reitern läuft über den Editor: <strong>Alle</strong>, <strong>Allgemein</strong>, <strong>Schiff</strong>, <strong>SRV</strong> und <strong>Zu
+Fuß</strong>, jeweils mit Anzahl, dann <strong><a href="#anomalies">Anomalien</a></strong> und <strong><a href="#dead-zones-and-sensitivity">Totzonen &amp;
+Empfindlichkeit</a></strong>. Die Abschnittsreiter zeigen jede Steuerung, gruppiert
+unter den Überschriften des Spiels und in derselben Reihenfolge wie sein Steuerungsbildschirm, sodass du
+beide nebeneinander lesen kannst.</p>
 <table>
 <thead>
 <tr>
@@ -249,23 +279,15 @@ zwei Listen: <strong>Verwendete Belegungen</strong> und <strong>Fehlende Belegun
 </tr>
 <tr>
 <td><strong>Primär</strong> / <strong>Sekundär</strong></td>
-<td>Die zwei Slots, die Elite Dangerous jeder Steuerung gibt, mit deinen eigenen Namen für Controller und Tasten</td>
+<td>Die zwei Slots, die Elite Dangerous jeder Steuerung gibt, mit deinen eigenen Namen für Controller und Tasten. In einer Achsenzeile ist Primär die Achse und Sekundär ihre Richtung und Totzone</td>
 </tr>
 <tr>
 <td><strong>KI-Zugriff</strong></td>
 <td>Ob Vega diese Steuerung bedienen kann (siehe unten)</td>
 </tr>
 <tr>
-<td><strong>Status</strong></td>
-<td><code>Fehlt</code> · <code>Keine Tastaturbelegung</code> (belegt, aber nur auf einem Controller) · <code>Nicht definiert</code></td>
-</tr>
-<tr>
-<td><strong>Schnellkorrektur</strong></td>
-<td>Liste <em>Fehlende</em>: gibt dieser einen Steuerung eine sichere freie Tastaturtaste</td>
-</tr>
-<tr>
-<td><strong>Löschen</strong></td>
-<td>Liste <em>Verwendete</em>: entfernt die Tastaturbelegung; Controller- und HOTAS-Belegungen bleiben</td>
+<td><strong>Aktion</strong></td>
+<td><strong>Löschen</strong> entfernt die Tastaturtaste (oder die Achse); Controller- und HOTAS-Belegungen bleiben. <strong>Auto-Fix</strong> erscheint bei einer Steuerung, die Vega braucht und die keine Taste hat, und gibt ihr eine sichere freie</td>
 </tr>
 </tbody></table>
 <table>
@@ -288,9 +310,14 @@ zwei Listen: <strong>Verwendete Belegungen</strong> und <strong>Fehlende Belegun
 <td>Vega braucht diese Steuerung, und nichts ist darauf gelegt</td>
 </tr>
 </tbody></table>
-<p>Neben der Suche liegen die beiden Filter und der Knopf für die automatische Zuweisung:</p>
+<p>Am unteren Rand liegen die Suche, drei Filter und der Knopf für die automatische Zuweisung:</p>
 <ul>
+<li><strong>Bindungen suchen...</strong> durchsucht Abschnitt, Gruppe, Steuerungsname und rohen <code>.binds</code>-Tag sowie
+die Controller- und Tastennamen einer Belegung. Sie wirkt in jedem Reiter, und die Zahlen auf den
+Abschnittsreitern zeigen, wo die Treffer liegen.</li>
 <li><strong>Nur Konflikte anzeigen</strong> — nur die Zeilen mit Konflikt.</li>
+<li><strong>Nicht belegte anzeigen</strong> — nur die Steuerungen, auf denen nichts liegt, weder auf der Tastatur noch
+auf einem Controller.</li>
 <li><strong>Nur von Vega benötigte anzeigen</strong> — nur die Steuerungen, die Vega drückt, für ihre integrierten
 Befehle und deine eigenen Befehle.</li>
 <li><strong><a href="#auto-assign-vega-required-binds">VEGA-Pflichtbelegungen automatisch zuweisen</a></strong> — siehe unten.</li>
@@ -301,17 +328,32 @@ beide Slots als Karten, und die hervorgehobene Karte bekommt deine nächste Eing
 andere Karte, um stattdessen diese zu füllen, oder tausche Primär und Sekundär mit dem Knopf zwischen
 ihnen.</p>
 <p><img src="../images/ui-bindings-assign.png" alt="Steuerung zuweisen"></p>
-<p>Unter den Karten gibt es einen Reiter <strong>Tastatur</strong> und je einen für jeden angeschlossenen Controller.</p>
+<p>Unter den Karten gibt es einen Reiter <strong>Tastatur</strong>, einen Reiter <strong>Maus</strong> und je einen für jeden
+angeschlossenen Controller.</p>
 <ul>
 <li><strong>Tastatur</strong> — klicke in das Feld und drücke die Tasten zusammen mit Modifikatoren, bis zu drei. Esc
 bricht ab. Halte Strg, Umschalt oder Alt, um die Tastaturkarte für diese Kombination zu sehen:
 <strong>Grün ist frei, Rot ist belegt.</strong> Reservierte Tasten, etwa die Spielmenü-Taste und Alt+F4, lassen
 sich nicht zuweisen.</li>
+<li><strong>Maus</strong> — zeige auf das Feld und drücke die gewünschte Maustaste. Die linke Taste zählt auch, und
+Klicks an anderer Stelle im Fenster wirken wie gewohnt. Das Mausrad wird nie versehentlich erfasst:
+Klicke stattdessen auf <strong>Rad hoch</strong> oder <strong>Rad runter</strong>.</li>
 <li><strong>Ein Controller</strong> — drücke eine Taste oder einen Hat am Controller, oder klicke in der Liste
-<strong>Tasten</strong> oder <strong>Hats</strong> darauf. Bereits gehaltene Tasten werden zu Modifikatoren. Grün ist frei, Rot
-ist von einer anderen Steuerung belegt, Blau ist, was diese Steuerung jetzt hält. Ein Controller
-braucht zuerst einen Namen aus dem <a href="#alias-designer">Alias-Designer</a>.</li>
+<strong>Tasten</strong> oder <strong>Hats</strong> darauf. Eine Taste oder ein Hat wird <strong>beim Loslassen</strong> gewählt, sodass eine
+Kombination mit Shift-Taste immer vollständig erfasst wird. Bereits gehaltene Tasten werden zu
+Modifikatoren: Halte die Shift-Taste und drücke nacheinander andere Tasten, um jede Kombination
+auszuprobieren. Die Seite <strong>Achsenrichtungen</strong> hat für jede Achse ein <strong>−</strong> und ein <strong>+</strong>, für
+Steuerungen, die auf eine Richtung einer Achse reagieren; bewege die Achse oder klicke auf das
+gewünschte.</li>
+<li><strong>Mit Umschalt</strong>, <strong>Mit Strg</strong> und <strong>Mit Alt</strong> auf jedem Controller-Reiter belegen eine Stick- oder
+Schubhebeltaste zusammen mit dieser Tastaturtaste. Nur diese drei lassen sich mit einem Controller
+kombinieren, damit sie nie mit den Tasten kollidieren, die Vega drückt.</li>
 </ul>
+<p>Grün ist frei, Rot ist von einer anderen Steuerung belegt, Blau ist, was diese Steuerung jetzt hält. Ein
+Controller braucht zuerst einen Namen aus dem <a href="#alias-designer">Alias-Designer</a>. Ein nicht
+angeschlossener Controller lässt sich trotzdem belegen, indem du auf seine Eingaben klickst, und einer,
+den du bei offenem Dialog ansteckst, wird darin sofort aktiv. Ein Slot hält höchstens drei
+Modifikatoren — gehaltene Tasten und Tastaturtasten zusammen.</p>
 <p>Eine Eingabe, die schon eine andere Steuerung hält, lässt sich nicht zuweisen. Die Karte nennt diese
 Steuerung, und <strong>Speichern</strong> bleibt gedimmt, bis du sie dort freigibst. Würde eine Änderung einer von
 Vega genutzten Steuerung die letzte Tastaturtaste nehmen, warnt dich der Dialog. <strong>Speichern</strong> behält
@@ -328,15 +370,23 @@ eigenen Dialog.</p>
 oder <em>Invertiert</em>), <strong>Totzone</strong> und, bei den Steuerungen, die das haben, <strong>Schubbereich</strong> (<em>Voller
 Bereich</em> oder <em>Nur vorwärts</em>) ein. Mehrere Steuerungen können sich eine Achse teilen, und das ist
 normal: Der Dialog sagt dir, was noch darauf liegt, und du entscheidest.</p>
+<p><a id="anomalies"></a></p>
 <h3>Anomalien</h3>
 <p><img src="../images/ui-bindings-anomalies.png" alt="Anomalien"></p>
 <p>Die Zeilen mit Konflikt an einem Ort gesammelt, mit ihrer Anzahl auf dem Reiter. Es sind dieselben
-Zeilen, die der Spielmodus rot zeichnet, und ein Klick öffnet denselben Dialog. <strong>Warnt dich Vega vor
-einem Belegungskonflikt, schau hier nach.</strong></p>
+Zeilen, die die Abschnittsreiter rot zeichnen, und ein Klick öffnet denselben Dialog. <strong>Warnt dich Vega
+vor einem Belegungskonflikt, schau hier nach.</strong></p>
+<p>Konflikte werden auf jedem Gerät gefunden: Tastatur, Maus, Joystick und HOTAS. Dieselbe Tastennummer auf
+zwei Controllern sind zwei verschiedene Tasten — <code>Joy_1</code> auf deinem linken Stick kollidiert nie mit
+<code>Joy_1</code> auf deinem rechten.</p>
 <p>Elite Dangerous sieht einen Konflikt nur, wenn eine Kombination <em>exakt</em> gleich ist — <code>G</code> und
 <code>Umschalt+G</code> vertragen sich problemlos. Elite Intel folgt derselben Regel. Steuerungen, die nie
-gleichzeitig aktiv sein können, etwa eine Schiffs- und eine SRV-Steuerung, werden nicht gemeldet. Fahre
-über eine Zeile, um <strong>Teilt <em>Taste</em> mit:</strong> und die Liste zu sehen, für jeden Slot mit Konflikt.</p>
+gleichzeitig aktiv sein können, werden nicht gemeldet: eine Schiffs- und eine SRV-Steuerung, oder eine
+Platzierungssteuerung der Systemkolonisierung und eine Flugsteuerung (das Spiel schaltet den Flug ab,
+während du eine Einrichtung platzierst). Fahre über eine Zeile, um <strong>Teilt <em>Taste</em> mit:</strong> und die Liste
+zu sehen, für jeden Slot mit Konflikt.</p>
+<p><strong>Shift-Tasten.</strong> Hältst du eine Stick-Taste als Modifikator für andere Belegungen und belegst diese
+Taste zusätzlich allein, löst ein Druck darauf auch diese Steuerung aus. BindForge warnt dich davor.</p>
 <p>Du siehst vielleicht auch <strong>Schiff/SRV-Gegenstück - viele belegen es gleich wie:</strong> auf einer Zeile. Das
 ist ein Vorschlag, kein Konflikt: Manche Schiffs- und SRV-Steuerungen liegen üblicherweise auf derselben
 Taste.</p>
@@ -351,8 +401,9 @@ Spielmenü-Belegung im Spiel löschen — Escape öffnet dieses Menü sowieso.</
 <li><strong>Eine Steuerung auf einer Kombination, die das Betriebssystem zuerst nimmt</strong> (etwa Alt+F4). Sie zu
 drücken schließt das Spiel oder beendet deine Sitzung.</li>
 </ul>
-<h3>Einstellungen</h3>
-<p><img src="../images/ui-bindings-settings.png" alt="Einstellungen der Belegungen"></p>
+<p><a id="dead-zones-and-sensitivity"></a></p>
+<h3>Totzonen &amp; Empfindlichkeit</h3>
+<p><img src="../images/ui-bindings-settings.png" alt="Totzonen & Empfindlichkeit"></p>
 <p>Die Empfindlichkeiten, Totzonen und Kurven deiner Belegungsdatei, gruppiert wie im Spiel. Jede hat einen
 Regler und daneben eine Zahl. Ziehe den Regler, oder tippe eine Zahl und drücke Enter.</p>
 <p>Der Regler deckt denselben Bereich ab wie der Regler des Spiels. Die Zahl ist der genaue Wert und der
@@ -362,7 +413,7 @@ ihn bewegst.</p>
 <h3>VEGA-Pflichtbelegungen automatisch zuweisen</h3>
 <p>Ein Knopf, der jeder Steuerung, die <strong>Vega drückt</strong> und die keine Taste hat, eine sichere,
 layoutfreundliche Tastaturtaste gibt, auch den Steuerungen, die deine eigenen Befehle nutzen. Andere
-Steuerungen bleiben, wie sie sind.</p>
+Steuerungen bleiben, wie sie sind; um eine davon zu belegen, klicke auf ihre Zelle Primär oder Sekundär.</p>
 <ul>
 <li>Bestehende Belegungen auf jedem Gerät werden nie geändert. Nur ein leerer Slot wird gefüllt.</li>
 <li>Keine Taste wird doppelt vergeben.</li>
@@ -373,22 +424,51 @@ keine freie sichere Taste mehr, oder kein sicher bearbeitbarer Slot. Zwei Steuer
 unbelegt</strong>: das Spielmenü (Escape öffnet es schon) und <em>gesamte Fracht abwerfen</em> (es leert den Laderaum
 ins All, und kein Befehl von Elite Intel drückt es).</p>
 <hr>
+<p><a id="preset-editor"></a></p>
+<h2>Preset-Editor</h2>
+<p><img src="../images/ui-bindings-preset-editor.png" alt="Preset-Editor"></p>
+<p>Das Spiel liest seine Steuerung in vier Abschnitten — <strong>Allgemein</strong>, <strong>Schiff</strong>, <strong>SRV</strong> und <strong>Zu Fuß</strong>
+—, und jeder Abschnitt lädt die Belegungsdatei, die seine Zeile in der Preset-Datei nennt. Der
+Preset-Editor zeigt diese vier Zeilen als Auswahllisten und lässt dich jede auf eine deiner
+Belegungsdateien richten. Die eigenen Presets von Frontier stehen ebenfalls in den Listen, markiert mit
+<em>(Werk)</em>. Die Listen zeigen den Namen, den das Spiel zeigt, also erscheint <code>Custom.4.2.binds</code> als
+<em>Custom</em>.</p>
+<ul>
+<li><strong>Alle gleich setzen</strong> richtet alle vier Abschnitte in einem Schritt auf die daneben gewählte Datei.</li>
+<li>Ein Abschnitt, der eine Datei nennt, die BindForge nicht findet, oder gar keine, wird <strong>rot</strong>
+angezeigt. Das Spiel würde dort etwas anderes laden, also verweigert <strong>Anwenden</strong>, bis du eine echte
+Datei wählst.</li>
+<li>Ein Hinweis erscheint, wenn die vier Abschnitte verschiedene Dateien nutzen. Das Spiel unterstützt das,
+also hält es dich nie auf.</li>
+</ul>
+<p>Wie überall in diesem Reiter wird nichts geschrieben, bevor du <strong>Anwenden</strong> drückst, und <strong>Verwerfen</strong>
+setzt die Auswahllisten zurück.</p>
+<p><a id="which-binds-file"></a></p>
+<h3>Welche Belegungsdatei liest Vega?</h3>
+<p>Vega liest die Tasten, die sie drückt, aus <strong>einer</strong> Belegungsdatei. Nutzen deine vier Abschnitte
+verschiedene Dateien, fragt sie beim ersten Öffnen des Reiters BindForge in einer Sitzung <strong>Welche
+Bindungsdatei?</strong> und listet sie auf. Wähle eine, und sie fragt, ob das <strong>die einzige Belegungsdatei</strong>
+sein soll, die das Spiel nutzt:</p>
+<ul>
+<li><strong>Ja</strong> — BindForge sichert deine Dateien und setzt sofort alle vier Abschnitte darauf. Das ist die
+sichere Wahl: Die Tasten, die Vega drückt, sind dann die Tasten, die das Spiel nutzt.</li>
+<li><strong>Nein</strong> — Vega liest für diese Sitzung die gewählte Datei. Steuerungen in einem Abschnitt, der eine
+andere Datei nutzt, funktionieren vielleicht nicht, wenn Vega sie drückt. Die Frage kommt beim nächsten
+Start wieder, solange die Abschnitte auf verschiedenen Dateien liegen.</li>
+</ul>
+<p>Liegt deine Steuerung Allgemein auf einer anderen Datei als der, die Vega liest, warnt Vega dich außerdem
+beim Start — meist leidet die Routenplanung, weil die Tasten der Galaxiekarte nicht die sein könnten, die
+das Spiel nutzt.</p>
+<hr>
 <p><a id="binding-management"></a></p>
 <h2>Bindungsverwaltung</h2>
-<p>Der File Manager, mit zwei eigenen Reitern: <strong>Spielinstallationen</strong> und <strong>Spielersicherungen</strong>.</p>
+<p>Deine Dateien, mit zwei eigenen Reitern: <strong>Spielinstallationen</strong> und <strong>Spielersicherungen</strong>.</p>
+<p><a id="game-install-locations"></a></p>
 <h3>Spielinstallationen</h3>
 <p><img src="../images/ui-bindings-install-locations.png" alt="Spielinstallationen"></p>
-<p><strong>Benutzerkonfigurationsordner</strong> ist der Ort deiner <code>.binds</code>-Dateien und der Preset-Datei, und alle
-Installationen teilen ihn sich. Er wird automatisch erkannt. Nutze die Auswahl <strong>⋮</strong>, falls deiner an
-einem ungewöhnlichen Ort liegt.</p>
-<blockquote>
-<p><strong>„Belegungen nicht gefunden&quot; trotz richtigem Ordner?</strong> Elite Dangerous schreibt erst dann eine
-<code>.binds</code>-Datei, wenn du etwas angepasst hast. Öffne im Spiel <em>Optionen → Steuerung</em>, ändere eine
-beliebige Belegung, und Elite Intel findet die Datei.</p>
-</blockquote>
 <p><a id="bindings-file"></a></p>
 <p><strong>Belegungsdatei</strong> listet deine Belegungsdateien einschließlich nicht angewendeter Änderungen. Wähle eine
-und drücke <strong>Laden</strong>, um sie im Bindungsprofil zu öffnen, oder tippe einen neuen Namen und drücke
+und drücke <strong>Laden</strong>, um sie im Bindungseditor zu öffnen, oder tippe einen neuen Namen und drücke
 <strong>Umbenennen</strong>. Eine Umbenennung ist eine Änderung wie jede andere und erreicht das Spiel, wenn du
 <strong>Anwenden</strong> drückst.</p>
 <p><strong>Spielinstallationen</strong> listet jede Kopie des Spiels, die BindForge kennt. Jede hat ihre eigenen
@@ -499,7 +579,7 @@ einer Spielinstallation wird abgelehnt, weil ein Spiel-Update deine Sicherungen 
 <p>Von Haus aus kennt das Spiel viele Controller nur über eine Hardware-ID, und sein Steuerungsbildschirm
 zeigt ihre Tasten als anonyme Nummern. Der Alias-Designer gibt jedem Controller einen echten Namen und
 jeder Taste, Achse und jedem Hat eine Beschriftung deiner Wahl. Die Beschriftungen erscheinen im
-Steuerungsbildschirm des Spiels und im Bindungsprofil.</p>
+Steuerungsbildschirm des Spiels und im Bindungseditor.</p>
 <p><strong>Meine Geräte</strong> listet deine Controller: <strong>Gerät</strong>, <strong>VID / PID</strong>, <strong>Status</strong> (<em>Angeschlossen</em> oder
 <em>Fehlt</em>) und <strong>Alias</strong>. <strong>Integrierte Geräte</strong> ist eine schreibgeschützte Liste der Controller, die
 Frontier mit dem Spiel ausliefert. <strong>Erneut prüfen</strong> liest neu, was angeschlossen ist.</p>
@@ -523,7 +603,12 @@ du siehst, welche welche ist; Achsen zeigen eine Live-Anzeige.</li>
 </ul>
 <p><strong>Speichern</strong> behält deine Änderungen für <strong>Anwenden</strong>; bis dahin erreicht nichts das Spiel.</p>
 <ul>
-<li><strong>Leeren</strong> entfernt beim Anwenden den Eintrag und die Beschriftungen des Geräts aus deinen Spieldateien.</li>
+<li><strong>Leeren</strong> entfernt beim Anwenden den Eintrag und die Beschriftungen des Geräts aus deinen
+Spieldateien. Nutzen deine Belegungen den Controller, gehen sie nicht verloren: Sie wechseln auf seine
+Hardware-ID, funktionieren also weiter, solange er angeschlossen ist, verlieren aber deinen Namen für
+ihn. (Bei einem integrierten Controller von Frontier, den du umbenannt hast, kehren sie unter den
+eigenen Namen des Spiels zurück.) Die Frage nennt dir, wie viele Belegungen wohin wechseln. <strong>Leeren
+rückgängig</strong> holt sie zurück.</li>
 <li><strong>Beschriftungen zurücksetzen</strong> stellt die Standardbeschriftungen wieder her.</li>
 </ul>
 <p>Bei einem integrierten Gerät von Frontier kannst du die Beschriftungen ändern. Für einen eigenen Namen

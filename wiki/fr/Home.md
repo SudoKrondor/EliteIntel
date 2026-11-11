@@ -54,7 +54,7 @@ Vous préférez une voix cloud ? **Google TTS** est disponible en option. Une cl
 
 ## Vos commandes, protégées
 
-**[BindForge](UI-Bindings-Tab)** modifie vos commandes Elite Dangerous depuis l'extérieur du jeu : clavier, souris, joystick, HOTAS et palonniers. Assignez n'importe quel périphérique à n'importe quel emplacement, réparez les conflits, réglez les sensibilités et les zones mortes, et donnez à vos contrôleurs de vrais noms et des libellés de boutons.
+**[BindForge](UI-Bindings-Tab)** modifie vos commandes Elite Dangerous depuis l'extérieur du jeu : clavier, souris, joystick, HOTAS et palonniers. Assignez n'importe quelle touche, bouton de souris ou bouton de manche à n'importe quel emplacement, trouvez les conflits sur tous les périphériques, choisissez quel fichier de raccourcis le jeu charge, réglez les sensibilités et les zones mortes, et donnez à vos contrôleurs de vrais noms et des libellés de boutons.
 
 Une configuration complexe demande des heures, et une mise à jour du jeu peut la réinitialiser. BindForge sauvegarde vos fichiers de commandes chaque jour et avant chaque modification, et peut les remettre quand vous en avez besoin.
 
@@ -64,7 +64,7 @@ Une configuration complexe demande des heures, et une mise à jour du jeu peut l
 
 Elite Intel fonctionne avec le modèle de langage adapté à votre configuration :
 
-**Gratuit et hors ligne** - [LM Studio](https://lmstudio.ai/) avec un modèle local  
+**Gratuit et hors ligne** - [LM Studio](https://lmstudio.ai/) avec un modèle local. Avec assez de mémoire vidéo, Elite Intel l'installe et le configure pour vous en un clic  
 **Cloud payant** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Changez de fournisseur à tout moment dans l'onglet Services. Aucune réinstallation n'est nécessaire.

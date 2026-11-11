@@ -69,8 +69,14 @@ Oberflächenkoordinaten. Zu einem laut genannten System plottet sie nicht — si
   Broker finden“*, *„nächste Vista Genomics finden“*, *„nächsten Interstellar Factor finden.“* Vega
   plottet die Route und hinterlässt eine Erinnerung mit der Station; frag bei Ankunft *„was war die
   Erinnerung?“*
-- **Brain Trees**: *„Brain Trees für [Material] innerhalb von 500 Lichtjahren finden.“* Findet
-  einen Guardian-Brain-Tree, der dieses Rohmaterial liefert.
+- **Rohmaterialien**: *„Wo finde ich Tellur?“* Vega schickt dich zum nächsten Guardian-Brain-Tree, der es
+  innerhalb von 500 Lichtjahren liefert, weil Brain Trees am meisten abwerfen. Ist keiner in Reichweite,
+  wählt sie stattdessen einen Planeten oder Mond: den reichsten an diesem Material innerhalb von zwei
+  Sprüngen, sonst den nächsten, der es hat. Nenne eine Reichweite, um es nah zu halten — *„wo kann ich
+  Eisen innerhalb von 50 Lichtjahren farmen?“* Fragst du ausdrücklich nach *Brain Trees*, schlägt sie
+  nur Brain Trees vor und sagt dir, wo der nächste liegt, falls keiner in Reichweite ist. Hergestellte
+  und codierte Materialien gibt es nicht auf Planeten: Sie nennt dir stattdessen den passenden
+  Materialhändler.
 - **Abbauorte**: *„Wo kann ich Osmium innerhalb von 200 Lichtjahren abbauen?“* Funktioniert auch
   für Tritium.
 - **Kaufen und verkaufen**: *„Wo kann ich Bromellit kaufen?“* — mit *nächste* oder *bester

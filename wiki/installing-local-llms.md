@@ -42,10 +42,17 @@ From then on, Elite Intel starts LM Studio when you start its services and stops
 close the app, so the model uses your graphics card's memory only while Elite Intel is running. To remove it,
 press **Uninstall LM Studio**: it lists what will be deleted before it deletes anything.
 
-**The button appears only on an NVIDIA RTX 3090 (24 GB) or better.** The game takes 8.5 GB or more of video
-memory and the model about 6 GB, and your browser, OBS and Windows use some too, so a smaller card does not
-hold both reliably. AMD cards are not detected yet: AMD owners can follow the
-[AMD guide](AMD-RX-7800XT-LLM-Setup).
+**The button appears only when your graphics cards can hold the game and the model together.** The game
+takes 8.5 GB or more of video memory and the model about 6 GB, and your browser, OBS and Windows use some
+too, so a smaller card does not hold both reliably. The button is offered on:
+
+- **One NVIDIA card with 24 GB**, RTX 30 series or newer: an RTX 3090 or better.
+- **Two or more NVIDIA cards with about 20 GB between them**, each RTX 30 series or newer with at least
+  8 GB — for example a 12 GB RTX 5070 with an 8 GB RTX 3070 Ti.
+- **AMD cards with the same memory, as a beta.** The install dialog warns you that AMD is a beta. If it
+  does not work for you, the [AMD guide](AMD-RX-7800XT-LLM-Setup) sets it up by hand.
+
+NVIDIA and AMD cards are never added together.
 
 Already have LM Studio? The button says **Set up LM Studio** instead. It adds the model and fills in the
 fields, and leaves your LM Studio otherwise exactly as it is: Elite Intel never starts, stops or removes an
@@ -122,7 +129,8 @@ How to get a key from each provider: [Cloud LLM setup](cloud-llm-options).
 ## Which one should I use?
 
 **Run LM Studio locally if:**
-- Your gaming PC has an NVIDIA RTX 3090 24 GB or better: Elite Intel sets it up for you
+- Your gaming PC has 24 GB of video memory on one card (an RTX 3090 or better), or about 20 GB across two
+  or more: Elite Intel sets it up for you
 - Or you have a second PC on your network with 12 GB of video memory and RTX 3080-class power
 - You want everything to stay on your own hardware
 

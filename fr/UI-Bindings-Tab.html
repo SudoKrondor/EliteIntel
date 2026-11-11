@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BindForge — l&#39;onglet Commandes  EliteIntel</title>
+    <title>BindForge — l&#39;onglet BindForge  EliteIntel</title>
     <meta name="description" content="protège vos commandes Elite Dangerous depuis l&#39;extérieur du jeu : clavier, souris, joystick, HOTAS et">
     <link rel="canonical" href="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
@@ -12,7 +12,7 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
-    <meta property="og:title" content="BindForge — l&#39;onglet Commandes  EliteIntel">
+    <meta property="og:title" content="BindForge — l&#39;onglet BindForge  EliteIntel">
     <meta property="og:description" content="protège vos commandes Elite Dangerous depuis l&#39;extérieur du jeu : clavier, souris, joystick, HOTAS et">
     <meta property="og:url" content="https://www.elite-intel.org/fr/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Onglet Vega</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Onglet Commandant</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Onglet Actions</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (onglet Commandes)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Onglet Services</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Onglet Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Onglet Statistiques</a>
@@ -96,13 +96,13 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>BindForge — l&#39;onglet Commandes</h1>
-<p><img src="../images/keyboard.png" class="inline" height="20" alt="Commandes"> <strong>BindForge</strong> modifie et
+<h1>BindForge — l&#39;onglet BindForge</h1>
+<p><img src="../images/keyboard.png" class="inline" height="20" alt="BindForge"> <strong>BindForge</strong> modifie et
 protège vos commandes Elite Dangerous depuis l&#39;extérieur du jeu : clavier, souris, joystick, HOTAS et
 palonniers. Il s&#39;occupe de tous les fichiers qui se trouvent derrière : vos fichiers <code>.binds</code>, le fichier de
 preset qui indique lequel est chargé, ainsi que les fichiers <code>DeviceMappings.xml</code> et <code>.buttonMap</code> qui nomment
 vos contrôleurs et libellent leurs boutons.</p>
-<p>Il se trouve dans l&#39;onglet <strong>Commandes</strong>, qui a trois sous-onglets et une barre au-dessus d&#39;eux :</p>
+<p>Il a son propre onglet, <strong>BindForge</strong>, avec quatre sous-onglets et une barre au-dessus d&#39;eux :</p>
 <table>
 <thead>
 <tr>
@@ -112,15 +112,19 @@ vos contrôleurs et libellent leurs boutons.</p>
 </thead>
 <tbody><tr>
 <td><strong><a href="#the-apply-bar">Barre Appliquer</a></strong></td>
-<td>Le seul <strong>Appliquer</strong> et <strong>Abandonner</strong> pour tout cet onglet</td>
+<td>Votre dossier de configuration utilisateur, et le seul <strong>Appliquer</strong> et <strong>Abandonner</strong> pour tout cet onglet</td>
 </tr>
 <tr>
-<td><strong><a href="#binding-profile">Profil de raccourcis</a></strong></td>
-<td>Le Bind Editor. Toutes les commandes du jeu, avec les vues <strong>Mode de jeu</strong>, <strong>Anomalies</strong> et <strong>Paramètres</strong></td>
+<td><strong><a href="#binding-profile">Éditeur de raccourcis</a></strong></td>
+<td>Toutes les commandes du jeu, par section, avec les vues <strong>Anomalies</strong> et <strong>Zones mortes et sensibilité</strong></td>
+</tr>
+<tr>
+<td><strong><a href="#preset-editor">Éditeur de presets</a></strong></td>
+<td>Quel fichier de raccourcis le jeu charge pour les commandes Général, Vaisseau, SRV et À pied</td>
 </tr>
 <tr>
 <td><strong><a href="#binding-management">Gestion des raccourcis</a></strong></td>
-<td>Le File Manager. Vos installations du jeu, vos fichiers de raccourcis et vos sauvegardes</td>
+<td>Vos installations du jeu, vos fichiers de raccourcis et vos sauvegardes</td>
 </tr>
 <tr>
 <td><strong><a href="#alias-designer">Concepteur d&#39;alias</a></strong></td>
@@ -128,9 +132,9 @@ vos contrôleurs et libellent leurs boutons.</p>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Vega n&#39;appuie toujours que sur des touches du clavier.</strong> Vous pouvez désormais assigner n&#39;importe quel
-périphérique à n&#39;importe quel emplacement, mais une commande a besoin d&#39;une touche clavier pour que Vega
-puisse l&#39;utiliser. La colonne <strong>Accès IA</strong> vous montre lesquelles en ont une.</p>
+<p><strong>Vega n&#39;appuie toujours que sur des touches du clavier.</strong> Vous pouvez assigner n&#39;importe quel périphérique
+à n&#39;importe quel emplacement, mais une commande a besoin d&#39;une touche clavier pour que Vega puisse
+l&#39;utiliser. La colonne <strong>Accès IA</strong> vous montre lesquelles en ont une.</p>
 </blockquote>
 <hr>
 <h2>À la première ouverture</h2>
@@ -159,6 +163,16 @@ au jeu, restaurez plutôt une sauvegarde depuis <a href="#player-backups">Sauveg
 <hr>
 <p><a id="the-apply-bar"></a></p>
 <h2>La barre Appliquer</h2>
+<p>La barre au-dessus des sous-onglets contient le <strong>Dossier de configuration utilisateur</strong> et les boutons
+<strong>Abandonner</strong> et <strong>Appliquer</strong>.</p>
+<p><strong>Dossier de configuration utilisateur</strong> est l&#39;endroit où se trouvent vos fichiers <code>.binds</code> et le fichier de
+preset, et toutes les installations le partagent. Il est détecté automatiquement. Utilisez le sélecteur <strong>⋮</strong> si
+le vôtre est dans un endroit inhabituel.</p>
+<blockquote>
+<p><strong>« Raccourcis introuvables » avec le bon dossier ?</strong> Elite Dangerous n&#39;écrit un fichier <code>.binds</code> qu&#39;une fois
+que vous avez personnalisé quelque chose. Ouvrez <em>Options → Commandes</em> dans le jeu, modifiez n&#39;importe quel
+raccourci, et Elite Intel détecte le fichier.</p>
+</blockquote>
 <p>Rien de ce que vous faites dans ces onglets ne touche le jeu avant que vous cliquiez sur <strong>Appliquer</strong>. Vos
 modifications s&#39;accumulent, et <strong>Appliquer</strong> et <strong>Abandonner</strong> s&#39;allument dès qu&#39;il y en a.</p>
 <table>
@@ -184,10 +198,21 @@ fermez son écran Commandes après avoir appliqué. Vega vous le rappelle.</p>
 </blockquote>
 <p>Si vous quittez l&#39;onglet ou fermez l&#39;application avec des modifications non appliquées, on vous demande de
 choisir entre <strong>Appliquer</strong>, <strong>Abandonner</strong> et <strong>Revenir</strong>.</p>
+<p><a id="read-only"></a></p>
+<h3>Lecture seule tant qu&#39;une installation manque</h3>
+<p>Si l&#39;une de vos installations du jeu est introuvable (en général parce que son disque est débranché),
+BindForge passe en <strong>lecture seule</strong>. La barre indique quelle installation manque, Vega vous le dit au
+démarrage, et rien dans l&#39;onglet ne peut être modifié, pour que cette installation ne se désynchronise pas
+des autres.</p>
+<p>Rebranchez le disque et redémarrez Elite Intel, ou <strong>Supprimez</strong> l&#39;installation dans
+<a href="#game-install-locations">Emplacements du jeu</a> si elle a disparu pour de bon. <strong>Outrepasser</strong>, sur la barre,
+réactive la modification jusqu&#39;à la fermeture d&#39;Elite Intel : Appliquer écrit alors dans les installations
+présentes, et quand celle qui manque revient, elle est comparée au démarrage suivant et vous choisissez ce que
+vous gardez.</p>
 <h3>Quand le jeu a modifié vos fichiers</h3>
 <p>Le jeu peut modifier ses propres fichiers, et une mise à jour peut les réinitialiser. BindForge les compare à
 sa copie de travail à la première ouverture de l&#39;onglet dans chaque session, puis à chaque Appliquer. S&#39;ils
-diffèrent, il liste ce qui a changé et vous laisse choisir :</p>
+diffèrent, Vega vous le dit au démarrage, et l&#39;onglet liste ce qui a changé et vous laisse choisir :</p>
 <table>
 <thead>
 <tr>
@@ -214,23 +239,25 @@ tard. Le fermer pendant un Appliquer l&#39;annule et conserve vos modifications.
 sous un nouveau nom avec de nouvelles commandes. BindForge n&#39;écrit jamais votre ancien fichier par-dessus. Si
 tous vos raccourcis ont été repris, il suffit de cliquer sur <strong>Approuver</strong>. Si certains diffèrent,
 <strong>Rapprocher...</strong> garde les nouvelles commandes et vous interroge sur chaque ligne différente.</p>
+<p><strong>Des fichiers qui n&#39;ont rien à faire là.</strong> Si le dossier de raccourcis du jeu contient des fichiers que le jeu
+n&#39;utilise pas (un fichier de raccourcis copié à la main sans version dans son nom, par exemple, ou un fichier
+étranger), Vega le signale et la vérification propose <strong>Ranger</strong>. Cela les déplace dans <strong>Leftover User
+Files</strong>, dans le dossier propre d&#39;Elite Intel. Rien n&#39;est supprimé, et vous pouvez ouvrir ce dossier vous-même.
+Un fichier de raccourcis sans version est d&#39;abord copié parmi vos fichiers avec une version dans son nom, sauf
+si vous en avez déjà un de ce nom.</p>
 <hr>
 <p><a id="binding-profile"></a></p>
-<h2>Profil de raccourcis</h2>
-<p><img src="../images/ui-tab-bindings-profile.png" alt="Profil de raccourcis"></p>
-<p>C&#39;est le Bind Editor. La ligne <strong>Modification</strong> en haut indique le fichier de raccourcis affiché. Pour en ouvrir
-un autre, utilisez <a href="#bindings-file">Fichier de raccourcis</a> dans <em>Gestion des raccourcis</em>.</p>
+<h2>Éditeur de raccourcis</h2>
+<p><img src="../images/ui-tab-bindings-profile.png" alt="Éditeur de raccourcis"></p>
+<p>La ligne <strong>Modification</strong> en haut indique le fichier de raccourcis affiché. Pour en ouvrir un autre, utilisez
+<a href="#bindings-file">Fichier de raccourcis</a> dans <em>Gestion des raccourcis</em>.</p>
 <p><strong>Cadence des saisies clavier</strong> est un curseur <strong>Rapide ↔ Lent</strong> pour la pause qu&#39;Elite Intel observe après
 chaque touche envoyée au jeu. Si le jeu perd des touches sur une machine plus lente (une macro à moitié
 exécutée, un panneau ouvert sur le mauvais onglet), déplacez-le vers <strong>Lent</strong>.</p>
-<p><strong>Rechercher des raccourcis...</strong>, en bas, fonctionne dans les trois vues. La recherche porte sur la section, le
-groupe, le nom de la commande et la balise <code>.binds</code> brute, ainsi que sur les noms de contrôleurs et de boutons
-d&#39;un raccourci.</p>
-<h3>Mode de jeu</h3>
-<p>Toutes les commandes, groupées sous les titres du jeu et dans le même ordre que son écran Commandes, pour lire
-les deux côte à côte. Les onglets du haut limitent la liste à <strong>Tout</strong>, <strong>Général</strong>, <strong>Vaisseau</strong>, <strong>SRV</strong> ou
-<strong>À pied</strong>, chacun avec son nombre. En dessous se trouvent deux listes : <strong>Commandes utilisées</strong> et <strong>Commandes
-manquantes</strong>.</p>
+<p>Une seule rangée d&#39;onglets parcourt l&#39;éditeur : <strong>Tout</strong>, <strong>Général</strong>, <strong>Vaisseau</strong>, <strong>SRV</strong> et <strong>À pied</strong>,
+chacun avec son nombre, puis <strong><a href="#anomalies">Anomalies</a></strong> et <strong><a href="#dead-zones-and-sensitivity">Zones mortes et
+sensibilité</a></strong>. Les onglets de section montrent toutes les commandes, groupées sous
+les titres du jeu et dans le même ordre que son écran Commandes, pour lire les deux côte à côte.</p>
 <table>
 <thead>
 <tr>
@@ -244,23 +271,15 @@ manquantes</strong>.</p>
 </tr>
 <tr>
 <td><strong>Primaire</strong> / <strong>Secondaire</strong></td>
-<td>Les deux emplacements qu&#39;Elite Dangerous donne à chaque commande, avec vos propres noms de contrôleurs et de boutons</td>
+<td>Les deux emplacements qu&#39;Elite Dangerous donne à chaque commande, avec vos propres noms de contrôleurs et de boutons. Sur une ligne d&#39;axe, Primaire est l&#39;axe et Secondaire son sens et sa zone morte</td>
 </tr>
 <tr>
 <td><strong>Accès IA</strong></td>
 <td>Si Vega peut utiliser cette commande (voir plus bas)</td>
 </tr>
 <tr>
-<td><strong>Statut</strong></td>
-<td><code>Manquante</code> · <code>Pas de clavier</code> (assignée, mais uniquement à un contrôleur) · <code>Non définie</code></td>
-</tr>
-<tr>
-<td><strong>Correction rapide</strong></td>
-<td>Liste des <em>manquantes</em> : donne à cette commande une touche libre et sûre</td>
-</tr>
-<tr>
-<td><strong>Effacer</strong></td>
-<td>Liste des <em>utilisées</em> : retire le raccourci clavier et laisse intacts ceux du contrôleur et du HOTAS</td>
+<td><strong>Action</strong></td>
+<td><strong>Effacer</strong> retire la touche clavier (ou l&#39;axe) et laisse intacts les raccourcis du contrôleur et du HOTAS. <strong>Corriger</strong> apparaît sur une commande dont Vega a besoin et qui n&#39;a pas de touche, et lui en donne une libre et sûre</td>
 </tr>
 </tbody></table>
 <table>
@@ -283,31 +302,51 @@ manquantes</strong>.</p>
 <td>Vega a besoin de cette commande et rien n&#39;y est assigné</td>
 </tr>
 </tbody></table>
-<p>À côté de la recherche se trouvent les deux filtres et le bouton d&#39;attribution automatique :</p>
+<p>En bas se trouvent la recherche, trois filtres et le bouton d&#39;attribution automatique :</p>
 <ul>
-<li><strong>Afficher uniquement les conflits</strong> : uniquement les lignes en conflit.</li>
-<li><strong>Afficher uniquement ce dont Vega a besoin</strong> : uniquement les commandes que Vega actionne, pour ses commandes
-intégrées et vos commandes personnalisées.</li>
+<li><strong>Rechercher des raccourcis...</strong> porte sur la section, le groupe, le nom de la commande et la balise <code>.binds</code>
+brute, ainsi que sur les noms de contrôleurs et de boutons d&#39;un raccourci. Elle fonctionne dans tous les
+onglets, et les nombres sur les onglets de section montrent où se trouvent les résultats.</li>
+<li><strong>Conflits seulement</strong> : uniquement les lignes en conflit.</li>
+<li><strong>Non assignées</strong> : uniquement les commandes sur lesquelles rien n&#39;est assigné, ni au clavier ni sur un
+contrôleur.</li>
+<li><strong>Requis par Vega</strong> : uniquement les commandes que Vega actionne, pour ses commandes intégrées et vos
+commandes personnalisées.</li>
 <li><strong><a href="#auto-assign-vega-required-binds">Attribuer automatiquement les raccourcis requis par VEGA</a></strong> : voir plus bas.</li>
 </ul>
 <h3>Assigner un bouton ou une touche</h3>
-<p>Cliquez sur l&#39;un des deux emplacements d&#39;une ligne pour ouvrir <strong>Assigner une touche clavier</strong>. La fenêtre montre
-les deux emplacements sous forme de cartes, et la carte en surbrillance reçoit votre prochaine saisie. Cliquez sur
-l&#39;autre carte pour la remplir à la place, ou utilisez le bouton entre elles pour échanger Primaire et Secondaire.</p>
+<p>Cliquez sur l&#39;un des deux emplacements d&#39;une ligne pour ouvrir <strong>Assigner une touche clavier</strong>. La fenêtre
+montre les deux emplacements sous forme de cartes, et la carte en surbrillance reçoit votre prochaine saisie.
+Cliquez sur l&#39;autre carte pour la remplir à la place, ou utilisez le bouton entre elles pour échanger Primaire
+et Secondaire.</p>
 <p><img src="../images/ui-bindings-assign.png" alt="Assigner une commande"></p>
-<p>Sous les cartes se trouvent un onglet <strong>Clavier</strong> et un onglet par contrôleur connecté.</p>
+<p>Sous les cartes se trouvent un onglet <strong>Clavier</strong>, un onglet <strong>Souris</strong> et un onglet par contrôleur connecté.</p>
 <ul>
-<li><strong>Clavier</strong> : cliquez dans le champ, puis appuyez sur les touches avec leurs modificateurs, jusqu&#39;à trois. Échap
-annule. Maintenez Ctrl, Maj ou Alt pour voir la carte du clavier pour cette combinaison : <strong>vert est libre, rouge
-est déjà utilisé.</strong> Les touches réservées, comme celle du menu du jeu et Alt+F4, ne peuvent pas être assignées.</li>
+<li><strong>Clavier</strong> : cliquez dans le champ, puis appuyez sur les touches avec leurs modificateurs, jusqu&#39;à trois.
+Échap annule. Maintenez Ctrl, Maj ou Alt pour voir la carte du clavier pour cette combinaison : <strong>vert est
+libre, rouge est déjà utilisé.</strong> Les touches réservées, comme celle du menu du jeu et Alt+F4, ne peuvent pas
+être assignées.</li>
+<li><strong>Souris</strong> : pointez sur la case et appuyez sur le bouton de souris voulu. Le bouton gauche compte aussi, et
+les clics ailleurs dans la fenêtre fonctionnent comme d&#39;habitude. La molette n&#39;est jamais captée par
+accident : cliquez sur <strong>Molette haut</strong> ou <strong>Molette bas</strong>.</li>
 <li><strong>Un contrôleur</strong> : appuyez sur un bouton ou un chapeau du contrôleur, ou cliquez sur un élément de la liste
-<strong>Boutons</strong> ou <strong>Chapeaux</strong>. Les boutons déjà maintenus deviennent des modificateurs. Vert est libre, rouge est
-utilisé par une autre commande, et bleu est ce que cette commande détient. Un contrôleur a d&#39;abord besoin d&#39;un
-nom du <a href="#alias-designer">Concepteur d&#39;alias</a>.</li>
+<strong>Boutons</strong> ou <strong>Chapeaux</strong>. Un bouton ou un chapeau est choisi <strong>quand vous le relâchez</strong>, si bien qu&#39;une
+combinaison avec un bouton de shift est toujours captée en entier. Les boutons déjà maintenus deviennent des
+modificateurs : gardez le bouton de shift enfoncé et appuyez sur d&#39;autres boutons l&#39;un après l&#39;autre pour
+essayer chaque combinaison. La page <strong>Directions d&#39;axe</strong> a un <strong>−</strong> et un <strong>+</strong> pour chaque axe, pour les
+commandes qui agissent sur un sens d&#39;un axe ; bougez l&#39;axe ou cliquez sur celui que vous voulez.</li>
+<li><strong>Avec Maj</strong>, <strong>Avec Ctrl</strong> et <strong>Avec Alt</strong>, sur chaque onglet de contrôleur, assignent un bouton du manche ou
+de la manette des gaz avec cette touche clavier. Seules ces trois-là peuvent être combinées avec un
+contrôleur, pour ne jamais entrer en collision avec les touches que Vega actionne.</li>
 </ul>
+<p>Vert est libre, rouge est utilisé par une autre commande, et bleu est ce que cette commande détient. Un
+contrôleur a d&#39;abord besoin d&#39;un nom du <a href="#alias-designer">Concepteur d&#39;alias</a>. Un contrôleur débranché peut
+quand même être assigné en cliquant sur ses entrées, et celui que vous branchez pendant que la fenêtre est
+ouverte s&#39;y anime aussitôt. Un emplacement contient au plus trois modificateurs, boutons maintenus et touches
+confondus.</p>
 <p>Une saisie détenue par une autre commande ne peut pas être assignée. La carte nomme cette commande, et
-<strong>Enregistrer</strong> reste grisé tant que vous ne l&#39;avez pas libérée. Si un changement retire la dernière touche d&#39;une
-commande utilisée par Vega, la fenêtre vous avertit. <strong>Enregistrer</strong> garde vos modifications, prêtes pour
+<strong>Enregistrer</strong> reste grisé tant que vous ne l&#39;avez pas libérée. Si un changement retire la dernière touche
+d&#39;une commande utilisée par Vega, la fenêtre vous avertit. <strong>Enregistrer</strong> garde vos modifications, prêtes pour
 <strong>Appliquer</strong>.</p>
 <blockquote>
 <p><strong>Les manettes ne sont que partiellement prises en charge pour l&#39;instant.</strong> Leurs sticks ne peuvent pas encore
@@ -317,69 +356,107 @@ commande utilisée par Vega, la fenêtre vous avertit. <strong>Enregistrer</stro
 <p>Les commandes d&#39;axe, comme le tangage, le lacet et les gaz, se trouvent parmi les autres lignes et ouvrent leur
 propre fenêtre.</p>
 <p><img src="../images/ui-bindings-axis.png" alt="Assigner un axe"></p>
-<p>Bougez un axe du contrôleur, ou cliquez sur un axe de la liste. Réglez ensuite son <strong>Sens</strong> (<em>Normal</em> ou <em>Inversé</em>),
-sa <strong>Zone morte</strong> et, sur les commandes qui en ont une, sa <strong>Plage des gaz</strong> (<em>Plage complète</em> ou <em>Avant uniquement</em>).
-Plusieurs commandes peuvent partager un axe, et c&#39;est normal : la fenêtre vous indique ce qui s&#39;y trouve déjà, et
-vous décidez.</p>
+<p>Bougez un axe du contrôleur, ou cliquez sur un axe de la liste. Réglez ensuite son <strong>Sens</strong> (<em>Normal</em> ou
+<em>Inversé</em>), sa <strong>Zone morte</strong> et, sur les commandes qui en ont une, sa <strong>Plage des gaz</strong> (<em>Plage complète</em> ou
+<em>Avant uniquement</em>). Plusieurs commandes peuvent partager un axe, et c&#39;est normal : la fenêtre vous indique ce
+qui s&#39;y trouve déjà, et vous décidez.</p>
+<p><a id="anomalies"></a></p>
 <h3>Anomalies</h3>
 <p><img src="../images/ui-bindings-anomalies.png" alt="Anomalies"></p>
-<p>Les lignes en conflit réunies au même endroit, avec leur nombre sur l&#39;onglet. Ce sont les mêmes lignes que le Mode de
-jeu dessine en rouge, et un clic ouvre la même fenêtre. <strong>Quand Vega vous signale un conflit de raccourcis, regardez
-ici.</strong></p>
-<p>Elite Dangerous ne considère un conflit que si une combinaison est <em>exactement</em> la même : <code>G</code> et <code>Maj+G</code> cohabitent
-sans problème. Elite Intel suit la même règle. Les commandes qui ne peuvent jamais être actives en même temps, comme
-une commande de vaisseau et une de SRV, ne sont pas signalées. Survolez une ligne pour voir <strong>Partage <em>touche</em> avec :</strong>
-et la liste, pour chaque emplacement en conflit.</p>
+<p>Les lignes en conflit réunies au même endroit, avec leur nombre sur l&#39;onglet. Ce sont les mêmes lignes que les
+onglets de section dessinent en rouge, et un clic ouvre la même fenêtre. <strong>Quand Vega vous signale un conflit de
+raccourcis, regardez ici.</strong></p>
+<p>Les conflits sont recherchés sur tous les périphériques : clavier, souris, joystick et HOTAS. Le même numéro de
+bouton sur deux contrôleurs désigne deux boutons différents : <code>Joy_1</code> sur votre manche gauche n&#39;entre jamais en
+conflit avec <code>Joy_1</code> sur le droit.</p>
+<p>Elite Dangerous ne considère un conflit que si une combinaison est <em>exactement</em> la même : <code>G</code> et <code>Maj+G</code>
+cohabitent sans problème. Elite Intel suit la même règle. Les commandes qui ne peuvent jamais être actives en
+même temps ne sont pas signalées : une commande de vaisseau et une de SRV, ou une commande de placement de la
+Colonisation de systèmes et une commande de vol (le jeu coupe le vol pendant que vous placez une installation).
+Survolez une ligne pour voir <strong>Partage <em>touche</em> avec :</strong> et la liste, pour chaque emplacement en conflit.</p>
+<p><strong>Boutons de shift.</strong> Si vous maintenez un bouton du manche comme modificateur pour d&#39;autres raccourcis et que
+vous assignez aussi ce bouton seul, l&#39;actionner déclenche aussi cette commande. BindForge vous en avertit.</p>
 <p>Vous pouvez aussi voir <strong>Équivalent vaisseau/SRV</strong> sur une ligne. Ce n&#39;est pas un conflit mais une suggestion :
 certaines commandes de vaisseau et de SRV sont habituellement assignées à la même touche.</p>
 <p>Vega <strong>parle</strong> aussi des raccourcis qui cassent vraiment quelque chose, et nomme les touches dans le journal de
 diagnostics :</p>
 <ul>
-<li><strong>Déplacement de la carte de la galaxie et navigation de l&#39;interface sur la même touche.</strong> Le tracé d&#39;itinéraire ne
-peut pas fonctionner tant que la carte et l&#39;interface n&#39;ont pas des touches séparées.</li>
-<li><strong>Une commande sur votre touche de menu du jeu.</strong> Elite ouvre le menu sur toute combinaison finissant par cette
-touche, donc la commande ne peut jamais être actionnée. La solution est d&#39;effacer ce raccourci dans le jeu : Échap
-ouvre ce menu de toute façon.</li>
-<li><strong>Une commande sur une combinaison que le système d&#39;exploitation prend en premier</strong> (comme Alt+F4). L&#39;actionner ferme
-le jeu ou quitte votre session.</li>
+<li><strong>Déplacement de la carte de la galaxie et navigation de l&#39;interface sur la même touche.</strong> Le tracé
+d&#39;itinéraire ne peut pas fonctionner tant que la carte et l&#39;interface n&#39;ont pas des touches séparées.</li>
+<li><strong>Une commande sur votre touche de menu du jeu.</strong> Elite ouvre le menu sur toute combinaison finissant par
+cette touche, donc la commande ne peut jamais être actionnée. La solution est d&#39;effacer ce raccourci dans le
+jeu : Échap ouvre ce menu de toute façon.</li>
+<li><strong>Une commande sur une combinaison que le système d&#39;exploitation prend en premier</strong> (comme Alt+F4).
+L&#39;actionner ferme le jeu ou quitte votre session.</li>
 </ul>
-<h3>Paramètres</h3>
-<p><img src="../images/ui-bindings-settings.png" alt="Paramètres des raccourcis"></p>
-<p>Les sensibilités, zones mortes et courbes de votre fichier de raccourcis, groupées comme dans le jeu. Chacune a un
-curseur et un nombre à côté. Faites glisser le curseur, ou tapez un nombre et appuyez sur Entrée.</p>
-<p>Le curseur couvre la même plage que celui du jeu. Le nombre est la valeur exacte, et le seul moyen de dépasser les
-limites du curseur. Une valeur déjà en dehors reste telle quelle jusqu&#39;à ce que vous la déplaciez.</p>
+<p><a id="dead-zones-and-sensitivity"></a></p>
+<h3>Zones mortes et sensibilité</h3>
+<p><img src="../images/ui-bindings-settings.png" alt="Zones mortes et sensibilité"></p>
+<p>Les sensibilités, zones mortes et courbes de votre fichier de raccourcis, groupées comme dans le jeu. Chacune a
+un curseur et un nombre à côté. Faites glisser le curseur, ou tapez un nombre et appuyez sur Entrée.</p>
+<p>Le curseur couvre la même plage que celui du jeu. Le nombre est la valeur exacte, et le seul moyen de dépasser
+les limites du curseur. Une valeur déjà en dehors reste telle quelle jusqu&#39;à ce que vous la déplaciez.</p>
 <p><a id="auto-assign-vega-required-binds"></a></p>
 <h3>Attribuer automatiquement les raccourcis requis par VEGA</h3>
-<p>Un bouton qui donne une touche sûre et adaptée à votre disposition à chaque commande que <strong>Vega actionne</strong> et qui n&#39;en
-a pas, y compris celles qu&#39;utilisent vos commandes personnalisées. Les autres commandes restent telles quelles.</p>
+<p>Un bouton qui donne une touche sûre et adaptée à votre disposition à chaque commande que <strong>Vega actionne</strong> et
+qui n&#39;en a pas, y compris celles qu&#39;utilisent vos commandes personnalisées. Les autres commandes restent telles
+quelles ; pour en assigner une, cliquez sur sa cellule Primaire ou Secondaire.</p>
 <ul>
-<li>Les raccourcis existants sur n&#39;importe quel périphérique ne sont jamais modifiés. Seul un emplacement vide est rempli.</li>
+<li>Les raccourcis existants sur n&#39;importe quel périphérique ne sont jamais modifiés. Seul un emplacement vide est
+rempli.</li>
 <li>Aucune touche n&#39;est réutilisée.</li>
 <li>Les modifications restent en attente, pour que vous les vérifiiez avant d&#39;<strong>Appliquer</strong>.</li>
 </ul>
-<p>Il indique ce qu&#39;il a fait, ce qu&#39;il a ignoré et pourquoi : les deux emplacements déjà sur un contrôleur, plus de touche
-sûre libre, ou aucun emplacement modifiable en sécurité. Deux commandes restent <strong>sans raccourci volontairement</strong> : le
-menu du jeu (Échap l&#39;ouvre déjà) et <em>éjecter toute la cargaison</em> (cela vide la soute dans l&#39;espace, et aucune commande
-d&#39;Elite Intel ne l&#39;actionne).</p>
+<p>Il indique ce qu&#39;il a fait, ce qu&#39;il a ignoré et pourquoi : les deux emplacements déjà sur un contrôleur, plus
+de touche sûre libre, ou aucun emplacement modifiable en sécurité. Deux commandes restent <strong>sans raccourci
+volontairement</strong> : le menu du jeu (Échap l&#39;ouvre déjà) et <em>éjecter toute la cargaison</em> (cela vide la soute dans
+l&#39;espace, et aucune commande d&#39;Elite Intel ne l&#39;actionne).</p>
+<hr>
+<p><a id="preset-editor"></a></p>
+<h2>Éditeur de presets</h2>
+<p><img src="../images/ui-bindings-preset-editor.png" alt="Éditeur de presets"></p>
+<p>Le jeu lit ses commandes en quatre sections (<strong>Général</strong>, <strong>Vaisseau</strong>, <strong>SRV</strong> et <strong>À pied</strong>), et chaque
+section charge le fichier de raccourcis que nomme sa ligne dans le fichier de preset. L&#39;Éditeur de presets
+affiche ces quatre lignes sous forme de listes déroulantes et vous laisse diriger chacune vers n&#39;importe lequel
+de vos fichiers de raccourcis. Les presets de Frontier figurent aussi dans les listes, marqués <em>(usine)</em>. Les
+listes montrent le nom que montre le jeu : <code>Custom.4.2.binds</code> apparaît donc comme <em>Custom</em>.</p>
+<ul>
+<li><strong>Tout mettre pareil</strong> dirige les quatre sections vers le fichier choisi à côté, en une seule étape.</li>
+<li>Une section qui nomme un fichier que BindForge ne trouve pas, ou aucun, s&#39;affiche en <strong>rouge</strong>. Le jeu y
+chargerait autre chose, donc <strong>Appliquer</strong> refuse tant que vous n&#39;avez pas choisi un vrai fichier.</li>
+<li>Une note apparaît quand les quatre sections utilisent des fichiers différents. Le jeu le permet, donc elle ne
+vous bloque jamais.</li>
+</ul>
+<p>Comme partout dans l&#39;onglet, rien n&#39;est écrit avant que vous cliquiez sur <strong>Appliquer</strong>, et <strong>Abandonner</strong> remet
+les listes comme avant.</p>
+<p><a id="which-binds-file"></a></p>
+<h3>Quel fichier de raccourcis Vega lit-elle ?</h3>
+<p>Vega lit les touches qu&#39;elle actionne dans <strong>un seul</strong> fichier de raccourcis. Si vos quatre sections utilisent
+des fichiers différents, à la première ouverture de l&#39;onglet BindForge dans une session, elle demande <strong>Quel
+fichier de raccourcis ?</strong> et les liste. Choisissez-en un, et elle demande s&#39;il doit être <strong>le seul fichier de
+raccourcis</strong> utilisé par le jeu :</p>
+<ul>
+<li><strong>Oui</strong> : BindForge sauvegarde vos fichiers et y règle aussitôt les quatre sections. C&#39;est le choix sûr : les
+touches que Vega actionne sont alors celles qu&#39;utilise le jeu.</li>
+<li><strong>Non</strong> : Vega lit le fichier choisi pour cette session. Les commandes d&#39;une section qui utilise un autre
+fichier risquent de ne pas fonctionner quand Vega les actionne. La question revient au démarrage suivant, tant
+que les sections restent sur des fichiers différents.</li>
+</ul>
+<p>Si vos commandes Général sont sur un autre fichier que celui que lit Vega, Vega vous avertit aussi au
+démarrage : c&#39;est généralement le tracé d&#39;itinéraire qui en pâtit, car les touches de la carte de la galaxie ne
+sont peut-être pas celles qu&#39;utilise le jeu.</p>
 <hr>
 <p><a id="binding-management"></a></p>
 <h2>Gestion des raccourcis</h2>
-<p>Le File Manager, avec deux onglets à lui : <strong>Emplacements du jeu</strong> et <strong>Sauvegardes du joueur</strong>.</p>
+<p>Vos fichiers, avec deux onglets à eux : <strong>Emplacements du jeu</strong> et <strong>Sauvegardes du joueur</strong>.</p>
+<p><a id="game-install-locations"></a></p>
 <h3>Emplacements du jeu</h3>
 <p><img src="../images/ui-bindings-install-locations.png" alt="Emplacements du jeu"></p>
-<p><strong>Dossier de configuration utilisateur</strong> est l&#39;endroit où se trouvent vos fichiers <code>.binds</code> et le fichier de preset, et
-toutes les installations le partagent. Il est détecté automatiquement. Utilisez le sélecteur <strong>⋮</strong> si le vôtre est dans
-un endroit inhabituel.</p>
-<blockquote>
-<p><strong>« Raccourcis introuvables » avec le bon dossier ?</strong> Elite Dangerous n&#39;écrit un fichier <code>.binds</code> qu&#39;une fois que vous
-avez personnalisé quelque chose. Ouvrez <em>Options → Commandes</em> dans le jeu, modifiez n&#39;importe quel raccourci, et Elite
-Intel détecte le fichier.</p>
-</blockquote>
 <p><a id="bindings-file"></a></p>
-<p><strong>Fichier de raccourcis</strong> liste vos fichiers de raccourcis, y compris les modifications non appliquées. Choisissez-en un et
-cliquez sur <strong>Charger</strong> pour l&#39;ouvrir dans Profil de raccourcis, ou tapez un nouveau nom et cliquez sur <strong>Renommer</strong>. Un
-renommage est une modification comme une autre, et il atteint le jeu quand vous cliquez sur <strong>Appliquer</strong>.</p>
+<p><strong>Fichier de raccourcis</strong> liste vos fichiers de raccourcis, y compris les modifications non appliquées.
+Choisissez-en un et cliquez sur <strong>Charger</strong> pour l&#39;ouvrir dans l&#39;Éditeur de raccourcis, ou tapez un nouveau nom
+et cliquez sur <strong>Renommer</strong>. Un renommage est une modification comme une autre, et il atteint le jeu quand vous
+cliquez sur <strong>Appliquer</strong>.</p>
 <p><strong>Installations du jeu</strong> liste chaque copie du jeu que BindForge connaît. Chacune a ses propres fichiers
 <code>DeviceMappings.xml</code> et <code>.buttonMap</code>, et BindForge les maintient identiques.</p>
 <table>
@@ -410,14 +487,16 @@ renommage est une modification comme une autre, et il atteint le jeu quand vous 
 <td><em>Correspond</em> à votre copie de travail, <em>Diffère</em> ou <em>Non trouvée</em></td>
 </tr>
 </tbody></table>
-<p><strong>Ajouter une manquante</strong> ajoute une installation que BindForge n&#39;a pas détectée. <strong>Supprimer</strong> empêche BindForge de la
-sauvegarder ou d&#39;y écrire. Si vous déplacez le jeu, cliquez sur <strong>Supprimer</strong>, puis sur <strong>Ajouter une manquante</strong>.</p>
+<p><strong>Ajouter une manquante</strong> ajoute une installation que BindForge n&#39;a pas détectée. <strong>Supprimer</strong> empêche
+BindForge de la sauvegarder ou d&#39;y écrire. Si vous déplacez le jeu, cliquez sur <strong>Supprimer</strong>, puis sur
+<strong>Ajouter une manquante</strong>.</p>
 <p><a id="player-backups"></a></p>
 <h3>Sauvegardes du joueur</h3>
 <p><img src="../images/ui-tab-bindings-management.png" alt="Sauvegardes du joueur"></p>
-<p>Protéger vos commandes est la raison principale d&#39;être de BindForge. Une configuration complexe demande des heures, et une
-mise à jour du jeu peut la réinitialiser. BindForge sauvegarde tout de lui-même, et chaque sauvegarde est un <code>.zip</code> daté
-contenant vos fichiers de raccourcis, le fichier de preset et les fichiers de périphérique de chaque installation.</p>
+<p>Protéger vos commandes est la raison principale d&#39;être de BindForge. Une configuration complexe demande des
+heures, et une mise à jour du jeu peut la réinitialiser. BindForge sauvegarde tout de lui-même, et chaque
+sauvegarde est un <code>.zip</code> daté contenant vos fichiers de raccourcis, le fichier de preset et les fichiers de
+périphérique de chaque installation.</p>
 <p>La colonne <strong>Motif</strong> indique pourquoi chaque sauvegarde existe, et cela détermine sa durée de conservation :</p>
 <table>
 <thead>
@@ -473,55 +552,62 @@ contenant vos fichiers de raccourcis, le fichier de preset et les fichiers de p�
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Ne restaurez que vos propres sauvegardes.</strong> La sauvegarde d&#39;un autre joueur contient ses contrôleurs, pas les vôtres.</p>
+<p><strong>Ne restaurez que vos propres sauvegardes.</strong> La sauvegarde d&#39;un autre joueur contient ses contrôleurs, pas
+les vôtres.</p>
 </blockquote>
-<p><strong>Paramètres de sauvegarde</strong> définit où vont les sauvegardes (<strong>Enregistrer les sauvegardes dans</strong>, avec <strong>Parcourir...</strong> et
-<strong>Utiliser le dossier par défaut</strong>) et les deux règles de conservation. Un dossier situé dans une installation du jeu est
-refusé, car une mise à jour supprimerait vos sauvegardes avec lui.</p>
+<p><strong>Paramètres de sauvegarde</strong> définit où vont les sauvegardes (<strong>Enregistrer les sauvegardes dans</strong>, avec
+<strong>Parcourir...</strong> et <strong>Utiliser le dossier par défaut</strong>) et les deux règles de conservation. Un dossier situé dans
+une installation du jeu est refusé, car une mise à jour supprimerait vos sauvegardes avec lui.</p>
 <hr>
 <p><a id="alias-designer"></a></p>
 <h2>Concepteur d&#39;alias</h2>
 <p><img src="../images/ui-bindings-alias-designer.png" alt="Concepteur d'alias"></p>
-<p>D&#39;origine, le jeu ne connaît beaucoup de contrôleurs que par un identifiant matériel, et son écran Commandes affiche leurs
-boutons sous forme de numéros anonymes. Le Concepteur d&#39;alias donne à chaque contrôleur un vrai nom, et à chaque bouton,
-axe et chapeau un libellé de votre choix. Les libellés apparaissent dans l&#39;écran Commandes du jeu et dans Profil de
-raccourcis.</p>
-<p><strong>Mes périphériques</strong> liste vos contrôleurs : <strong>Périphérique</strong>, <strong>VID / PID</strong>, <strong>État</strong> (<em>Connecté</em> ou <em>Absent</em>) et
-<strong>Alias</strong>. <strong>Périphériques intégrés</strong> est une liste en lecture seule des contrôleurs fournis par Frontier avec le jeu.
-<strong>Vérifier à nouveau</strong> relit ce qui est connecté.</p>
+<p>D&#39;origine, le jeu ne connaît beaucoup de contrôleurs que par un identifiant matériel, et son écran Commandes
+affiche leurs boutons sous forme de numéros anonymes. Le Concepteur d&#39;alias donne à chaque contrôleur un vrai
+nom, et à chaque bouton, axe et chapeau un libellé de votre choix. Les libellés apparaissent dans l&#39;écran
+Commandes du jeu et dans l&#39;Éditeur de raccourcis.</p>
+<p><strong>Mes périphériques</strong> liste vos contrôleurs : <strong>Périphérique</strong>, <strong>VID / PID</strong>, <strong>État</strong> (<em>Connecté</em> ou
+<em>Absent</em>) et <strong>Alias</strong>. <strong>Périphériques intégrés</strong> est une liste en lecture seule des contrôleurs fournis par
+Frontier avec le jeu. <strong>Vérifier à nouveau</strong> relit ce qui est connecté.</p>
 <p><a id="naming-a-controller"></a></p>
 <h3>Nommer un contrôleur</h3>
-<p>Quand un contrôleur n&#39;a pas de nom, <strong>Nommez vos contrôleurs</strong> vous guide. Cela se lance après la configuration initiale et
-avec <strong>Vérifier à nouveau</strong>, et vous pouvez le démarrer pour un seul contrôleur depuis son engrenage. <strong>Passer</strong> prend le
-nom par défaut.</p>
-<p>Un nom utilise les lettres de A à Z, des chiffres, <code>-</code> et <code>_</code>, et commence par une lettre, sans espaces ni accents. Il ne
-peut pas être trop proche d&#39;un nom déjà utilisé. Les raccourcis qui ne connaissent le contrôleur que par son identifiant
-matériel passent au nouveau nom quand vous appliquez.</p>
+<p>Quand un contrôleur n&#39;a pas de nom, <strong>Nommez vos contrôleurs</strong> vous guide. Cela se lance après la configuration
+initiale et avec <strong>Vérifier à nouveau</strong>, et vous pouvez le démarrer pour un seul contrôleur depuis son
+engrenage. <strong>Passer</strong> prend le nom par défaut.</p>
+<p>Un nom utilise les lettres de A à Z, des chiffres, <code>-</code> et <code>_</code>, et commence par une lettre, sans espaces ni
+accents. Il ne peut pas être trop proche d&#39;un nom déjà utilisé. Les raccourcis qui ne connaissent le contrôleur
+que par son identifiant matériel passent au nouveau nom quand vous appliquez.</p>
 <h3>L&#39;Éditeur de périphérique</h3>
 <p>Cliquez sur l&#39;<strong>engrenage</strong> de la ligne d&#39;un périphérique pour l&#39;ouvrir.</p>
 <p><img src="../images/ui-bindings-device-editor.png" alt="Éditeur de périphérique"></p>
 <ul>
-<li><strong>Périphérique</strong> : le nom, le VID, le PID, le nom matériel et l&#39;état. Changez le nom ici, et <strong>Appliquer</strong> le renomme dans
-chaque installation et déplace les raccourcis qui l&#39;utilisent.</li>
-<li><strong>Axes</strong>, <strong>Boutons</strong>, <strong>Chapeaux</strong> : tapez un libellé pour chaque entrée. Les onglets n&#39;apparaissent que pour les types
-d&#39;entrée du contrôleur. Utilisez une entrée et sa case <strong>s&#39;allume</strong>, pour voir laquelle est laquelle, et les axes affichent
-une jauge en direct.</li>
+<li><strong>Périphérique</strong> : le nom, le VID, le PID, le nom matériel et l&#39;état. Changez le nom ici, et <strong>Appliquer</strong> le
+renomme dans chaque installation et déplace les raccourcis qui l&#39;utilisent.</li>
+<li><strong>Axes</strong>, <strong>Boutons</strong>, <strong>Chapeaux</strong> : tapez un libellé pour chaque entrée. Les onglets n&#39;apparaissent que pour
+les types d&#39;entrée du contrôleur. Utilisez une entrée et sa case <strong>s&#39;allume</strong>, pour voir laquelle est
+laquelle, et les axes affichent une jauge en direct.</li>
 </ul>
 <p><strong>Enregistrer</strong> garde vos modifications pour <strong>Appliquer</strong> ; rien n&#39;atteint le jeu avant cela.</p>
 <ul>
-<li><strong>Effacer</strong> retire l&#39;entrée et les libellés du périphérique de vos fichiers du jeu quand vous appliquez.</li>
+<li><strong>Effacer</strong> retire l&#39;entrée et les libellés du périphérique de vos fichiers du jeu quand vous appliquez. Si
+vos raccourcis utilisent ce contrôleur, ils ne sont pas perdus : ils passent à son identifiant matériel, donc
+ils continuent de fonctionner tant qu&#39;il est branché, mais perdent le nom que vous lui aviez donné. (Sur un
+contrôleur intégré de Frontier que vous aviez renommé, ils reviennent sous le nom propre du jeu.) La question
+vous dit combien de raccourcis sont déplacés et où. <strong>Annuler l&#39;effacement</strong> les remet en place.</li>
 <li><strong>Réinitialiser les libellés</strong> remet les libellés par défaut.</li>
 </ul>
-<p>Sur un périphérique intégré de Frontier, vous pouvez changer les libellés. Pour utiliser un nom à vous, branchez-le et tapez
-le nom dans la case : votre entrée passe avant celle de Frontier, et retaper le nom de Frontier vous ramène en arrière.</p>
+<p>Sur un périphérique intégré de Frontier, vous pouvez changer les libellés. Pour utiliser un nom à vous,
+branchez-le et tapez le nom dans la case : votre entrée passe avant celle de Frontier, et retaper le nom de
+Frontier vous ramène en arrière.</p>
 <h3>Quand votre matériel change</h3>
-<p>S&#39;il manque un contrôleur nommé utilisé par vos raccourcis, Vega vous le dit : ses raccourcis ne seront pas chargés tant
-qu&#39;il n&#39;est pas connecté. Une mise à jour de firmware peut aussi changer l&#39;identifiant produit d&#39;un contrôleur, et un
-remplacement en a un nouveau. BindForge peut le repérer, et <strong>Est-ce le même contrôleur ?</strong> demande lequel des contrôleurs
-connectés c&#39;est. Répondez, et ses raccourcis le suivront quand vous appliquerez.</p>
+<p>S&#39;il manque un contrôleur nommé utilisé par vos raccourcis, Vega vous le dit : ses raccourcis ne seront pas
+chargés tant qu&#39;il n&#39;est pas connecté. Une mise à jour de firmware peut aussi changer l&#39;identifiant produit d&#39;un
+contrôleur, et un remplacement en a un nouveau. BindForge peut le repérer, et <strong>Est-ce le même contrôleur ?</strong>
+demande lequel des contrôleurs connectés c&#39;est. Répondez, et ses raccourcis le suivront quand vous appliquerez.</p>
 <blockquote>
-<p>Les raccourcis désignent les boutons par leur numéro. Si le remplacement est un autre modèle, certains raccourcis peuvent se
-retrouver sur des boutons inattendus. <strong>Vérifier dans le Bind Editor</strong> vous y mène directement.</p>
+<p>Les raccourcis désignent les boutons par leur numéro. Si le remplacement est un autre modèle, certains
+raccourcis peuvent se retrouver sur des boutons inattendus. <strong>Vérifier dans le Bind Editor</strong> vous y mène
+directement.</p>
 </blockquote>
 <hr>
 <p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>

@@ -169,9 +169,9 @@ Tipps:
 - **Phrasen können auch durch Kommas** getrennt werden, nicht nur durch neue Zeilen.
 - **Verzögerungen hängen von deinem PC ab.** Ist die Karte noch nicht bereit, wenn der nächste
   Schritt kommt, erhöhe die Verzögerungen — oder schiebe **Tempo der Tastatureingabe** im
-  [Reiter Bindings](UI-Bindings-Tab) Richtung Langsam.
+  [Reiter BindForge](UI-Bindings-Tab) Richtung Langsam.
 - **Jeder Binding-Schritt braucht eine Tastaturbelegung** im Spiel. Ist eine Steuerung
-  unbelegt, zeigt der [Reiter Bindings](UI-Bindings-Tab) sie unter *Fehlende Belegungen*.
+  unbelegt, zeigt der [Reiter BindForge](UI-Bindings-Tab) sie als *Vega braucht eine Taste*.
 - Vega öffnet und liest die Galaxiekarte für ihre eigenen Routenbefehle genauso, daher ist ein
   Befehl, der von einer **frisch geöffneten** Karte ausgeht, das zuverlässige Muster — starte
   nicht von einer bereits offenen Karte.

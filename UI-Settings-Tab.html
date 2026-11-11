@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/commander.png" class="inline" height="20" alt=""> Commander Tab</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/actions.png" class="inline" height="20" alt=""> Actions Tab</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge (Bindings Tab)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge Tab</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub active"><img src="images/services.png" class="inline" height="20" alt=""> Services Tab</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
@@ -111,7 +111,7 @@ beside it to change it, and it locks itself again afterwards.</p>
 Portuguese.</p>
 <blockquote>
 <p>The <strong>journal folder</strong> has moved to the <a href="UI-Commander-Tab.html">Commander tab</a>, and the <strong>bindings
-folder</strong> to the <a href="UI-Bindings-Tab.html">Bindings tab</a>.</p>
+folder</strong> to the <a href="UI-Bindings-Tab.html">BindForge tab</a>.</p>
 </blockquote>
 <hr>
 <h2>AI Services</h2>
@@ -142,7 +142,10 @@ dimmed so it is obvious which one is live.</p>
 </tbody></table>
 <p>The supported local model is <strong><code>google/gemma-4-e4b</code></strong>. Elite Intel warns you at startup if your
 local model is something else; other models may work poorly or not at all.</p>
-<p>On a PC with an NVIDIA RTX 3090 (24 GB) or better, a button under these fields sets LM Studio up for you:</p>
+<p>If your PC can hold the game and the model together, a button under these fields sets LM Studio up for
+you. That means one NVIDIA RTX 30-series or newer card with 24 GB (an RTX 3090 or better), or two or more
+such cards with about 20 GB between them, each with at least 8 GB. AMD cards with the same memory are
+offered the button as a <strong>beta</strong>. See <a href="installing-local-llms.html">Choose your LLM</a> for the details.</p>
 <table>
 <thead>
 <tr>
@@ -167,8 +170,9 @@ local model is something else; other models may work poorly or not at all.</p>
 <td>Removes the LM Studio Elite Intel installed, with its models, after listing them</td>
 </tr>
 </tbody></table>
-<p>An LM Studio installed this way starts and stops with Elite Intel&#39;s services. See
-<a href="installing-local-llms.html">Choose your LLM</a> for the details.</p>
+<p>An LM Studio installed this way starts and stops with Elite Intel&#39;s services, and is stopped when you
+close the app even if its setup did not finish. An LM Studio you installed yourself is never started,
+stopped or removed.</p>
 <p>Guides for running LM Studio on a second PC: <a href="Install-LM-Studio-Linux.html">LM Studio on Linux</a> ·
 <a href="Install-LM-Studio-Windows.html">LM Studio on Windows</a> ·
 <a href="AMD-RX-7800XT-LLM-Setup.html">AMD RX series</a> ·
@@ -389,10 +393,10 @@ none, so you enter them again after restoring.</p>
 <p><strong>Restore...</strong> puts a backup back. What it replaces is kept in a safety folder inside the app data
 folder, and Elite Intel restarts to finish. A backup made by a newer version needs the app updated
 first. Folders that do not exist on the new computer are reset, so check the journal folder on the
-Commander tab and the bindings folder on the Bindings tab afterwards.</p>
+Commander tab and the bindings folder on the BindForge tab afterwards.</p>
 <blockquote>
 <p>This backs up <strong>Elite Intel</strong>. To back up your <strong>game control files</strong>, use
-<a href="UI-Bindings-Tab.html">Player Backups</a> on the Bindings tab.</p>
+<a href="UI-Bindings-Tab.html">Player Backups</a> on the BindForge tab.</p>
 </blockquote>
 <hr>
 <h2>Where the settings live</h2>

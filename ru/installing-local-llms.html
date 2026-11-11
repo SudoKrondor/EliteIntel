@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (вкладка «Бинды»)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервисы»</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
@@ -141,15 +141,45 @@
 </tbody></table>
 <p>LM Studio — единственный локальный сервер инференции, который поддерживает Elite Intel, а
 <code>google/gemma-4-e4b</code> — единственная поддерживаемая локальная модель.</p>
-<h3>Требования к GPU</h3>
-<p>Железо, нужное для запуска игры и LLM на одной машине:</p>
+<h3>На игровом ПК: Elite Intel всё настроит сам</h3>
+<p>Если ваш ПК тянет игру и модель одновременно, под полями <strong>LMStudio</strong> появляется кнопка. Нажмите
+<strong>Установить LM Studio</strong>, и Elite Intel:</p>
+<ol>
+<li>установит LM Studio на выбранный вами диск,</li>
+<li>скачает <code>google/gemma-4-e4b</code> (около 6 ГБ),</li>
+<li>загрузит её на видеокарту и проверит, что она действительно там,</li>
+<li>протестирует её и заполнит <strong>Адрес</strong> и <strong>Модель</strong> за вас.</li>
+</ol>
+<p>Каждый шаг виден по мере выполнения, у загрузки есть индикатор прогресса. Если шаг не удался, окно скажет,
+какой и почему, а повторное нажатие кнопки продолжит с того же места. Нужно около 10 ГБ на диске. LM Studio —
+бесплатная программа от Element Labs, а не часть Elite Intel.</p>
+<p>Дальше Elite Intel запускает LM Studio вместе со своими сервисами и останавливает его, когда вы их
+останавливаете или закрываете приложение, так что модель занимает видеопамять только пока работает
+Elite Intel. Чтобы удалить его, нажмите <strong>Удалить LM Studio</strong>: перед удалением будет показано, что именно
+удаляется.</p>
+<p><strong>Кнопка появляется, только если ваши видеокарты вмещают игру и модель вместе.</strong> Игре нужно 8,5 ГБ
+видеопамяти и больше, модели — около 6 ГБ, и ещё немного берут браузер, OBS и Windows, поэтому карта поменьше
+надёжно не вместит и то и другое. Кнопка появляется при:</p>
 <ul>
-<li>RTX 3090 24 ГБ VRAM</li>
-<li>AMD RX 7800 XT</li>
+<li><strong>одной карте NVIDIA с 24 ГБ</strong>, серии RTX 30 или новее: RTX 3090 или лучше;</li>
+<li><strong>двух или более картах NVIDIA с примерно 20 ГБ на всех</strong>, каждая серии RTX 30 или новее и не меньше
+8 ГБ, — например, RTX 5070 на 12 ГБ вместе с RTX 3070 Ti на 8 ГБ;</li>
+<li><strong>картах AMD с тем же объёмом памяти — в виде беты.</strong> Окно установки предупредит, что поддержка AMD
+в бете. Если у вас не получится, <a href="AMD-RX-7800XT-LLM-Setup.html">руководство по AMD</a> поможет настроить вручную.</li>
 </ul>
-<p>Объём VRAM важнее скорости видеокарты. Карты с 12 ГБ VRAM недостаточно, какой бы новой она ни была.
-Если у вас есть второй ПК с мощной видеокартой, запустите LM Studio на нём и направьте на него
-Elite Intel. Тогда игровой ПК вообще не занимается инференцией.</p>
+<p>Карты NVIDIA и AMD никогда не суммируются.</p>
+<p>Уже есть LM Studio? Тогда кнопка называется <strong>Настроить LM Studio</strong>. Она добавит модель и заполнит поля, а
+в остальном оставит ваш LM Studio как есть: Elite Intel никогда не запускает, не останавливает и не удаляет
+LM Studio, который вы установили сами.</p>
+<h3>На втором ПК: настройте сами</h3>
+<p>Если игровой ПК не вмещает игру и модель вместе, запустите LM Studio на другом ПК в сети, который занят
+только моделью, и укажите его адрес в поле <strong>Адрес</strong>. Тогда игровой ПК вообще не занимается инференцией.</p>
+<p>ПК для LLM нужно:</p>
+<ul>
+<li><strong>12 ГБ видеопамяти</strong> — с запасом для модели;</li>
+<li><strong>производительность уровня RTX 3080 или выше.</strong> Более медленная карта вместит модель, но будет отвечать
+слишком медленно.</li>
+</ul>
 <p>Справочная таблица по видеокартам от <strong>Kevin Rank</strong>:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">Справочник по GPU</a></p>
 <h3>Руководства по установке</h3>
@@ -240,7 +270,9 @@ Elite Intel. Если вы следуете старому руководств�
 <h2>Что выбрать?</h2>
 <p><strong>Запускайте LM Studio локально, если:</strong></p>
 <ul>
-<li>у вас RTX 3090 24 ГБ или аналог, либо второй ПК в сети с такой картой</li>
+<li>на игровом ПК 24 ГБ видеопамяти на одной карте (RTX 3090 или лучше) или около 20 ГБ на двух и более:
+Elite Intel всё настроит сам</li>
+<li>или у вас есть второй ПК в сети с 12 ГБ видеопамяти и производительностью уровня RTX 3080</li>
 <li>вы хотите, чтобы всё оставалось на вашем собственном железе</li>
 </ul>
 <p><strong>Используйте облачного провайдера, если:</strong></p>

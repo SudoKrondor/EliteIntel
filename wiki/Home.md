@@ -60,7 +60,7 @@ Each ship in your fleet gets its own voice and personality — see the [Commande
 
 ## Your Controls, Protected
 
-**[BindForge](UI-Bindings-Tab)** edits your Elite Dangerous controls from outside the game: keyboard, mouse, joystick, HOTAS and pedals. Bind any device in any slot, repair conflicts, tune sensitivities and dead zones, and give your controllers real names and button labels.
+**[BindForge](UI-Bindings-Tab)** edits your Elite Dangerous controls from outside the game: keyboard, mouse, joystick, HOTAS and pedals. Bind any key, mouse button or stick button in any slot, find conflicts on every device, choose which binds file the game loads, tune sensitivities and dead zones, and give your controllers real names and button labels.
 
 A complex binding set takes hours to build, and a game update can reset it. BindForge backs up your control files every day and before every change, and can put them back when you need them.
 
@@ -70,7 +70,7 @@ A complex binding set takes hours to build, and a game update can reset it. Bind
 
 Elite Intel works with the language model that suits your setup:
 
-**Free and offline** - [LM Studio](https://lmstudio.ai/) running a local model  
+**Free and offline** - [LM Studio](https://lmstudio.ai/) running a local model. With enough video memory, Elite Intel installs and sets it up for you in one click  
 **Paid cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
 
 Switch providers at any time on the Services tab. No reinstallation required.

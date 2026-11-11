@@ -18,7 +18,7 @@ candado de al lado para cambiarlo; después vuelve a bloquearse solo.
 Admitidos: inglés, ruso, ucraniano, alemán, francés, español, italiano, portugués, portugués de Brasil.
 
 > La **carpeta del journal** ahora está en la [pestaña Comandante](UI-Commander-Tab), y la **carpeta de bindings** en
-> la [pestaña Bindings](UI-Bindings-Tab).
+> la [pestaña BindForge](UI-Bindings-Tab).
 
 ---
 
@@ -47,7 +47,10 @@ Cambia entre **LMStudio** (local) y **Configuración en la nube**.
 El modelo local admitido es **`google/gemma-4-e4b`**. Elite Intel te avisa al arrancar si tu
 modelo local es otro; otros modelos pueden funcionar mal o no funcionar.
 
-En un PC con una NVIDIA RTX 3090 (24 GB) o superior, un botón bajo estos campos configura LM Studio por ti:
+Si tu PC puede con el juego y el modelo a la vez, un botón bajo estos campos configura LM Studio por ti. Eso
+significa una tarjeta NVIDIA de la serie RTX 30 o posterior con 24 GB (una RTX 3090 o superior), o dos o más
+de esas tarjetas con unos 20 GB entre todas, cada una con al menos 8 GB. Las tarjetas AMD con la misma
+memoria reciben el botón como **beta**. Más detalles en [Elegir tu LLM](installing-local-llms).
 
 | Botón | Qué hace |
 |-------|----------|
@@ -56,8 +59,9 @@ En un PC con una NVIDIA RTX 3090 (24 GB) o superior, un botón bajo estos campos
 | **Continuar la configuración** | Retoma una instalación que se detuvo a medias |
 | **Desinstalar LM Studio** | Quita el LM Studio que instaló Elite Intel, con sus modelos, tras mostrarlos |
 
-Un LM Studio instalado así se inicia y se detiene con los servicios de Elite Intel. Más detalles en
-[Elegir tu LLM](installing-local-llms).
+Un LM Studio instalado así se inicia y se detiene con los servicios de Elite Intel, y se detiene al cerrar
+la aplicación aunque su configuración no terminara. Un LM Studio que instalaste tú nunca se inicia, se
+detiene ni se elimina.
 
 Guías para LM Studio en un segundo PC: [LM Studio en Linux](Install-LM-Studio-Linux) ·
 [LM Studio en Windows](Install-LM-Studio-Windows) ·
@@ -222,10 +226,10 @@ introduces de nuevo después de restaurar.
 **Restaurar...** devuelve una copia. Lo que sustituye se guarda en una carpeta de seguridad dentro de la carpeta de datos
 de la app, y Elite Intel se reinicia para terminar. Una copia hecha con una versión más reciente requiere actualizar antes
 la app. Las carpetas que no existen en el ordenador nuevo se restablecen, así que comprueba después la carpeta del journal
-en la pestaña Comandante y la de bindings en la pestaña Bindings.
+en la pestaña Comandante y la de bindings en la pestaña BindForge.
 
 > Esto hace una copia de **Elite Intel**. Para copiar tus **archivos de controles del juego**, usa
-> [Copias del jugador](UI-Bindings-Tab) en la pestaña Bindings.
+> [Copias del jugador](UI-Bindings-Tab) en la pestaña BindForge.
 
 ---
 

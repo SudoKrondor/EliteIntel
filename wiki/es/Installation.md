@@ -26,7 +26,7 @@ cualquier cosa que falte, pero conviene hacerlos de antemano:
 |------|-------|
 | Apuntarlo a un modelo de lenguaje | [Servicios → Servicios de IA](UI-Settings-Tab) |
 | Comprobar la carpeta del diario | [Pestaña Comandante](UI-Commander-Tab) |
-| Dejar que BindForge se configure y dar a Vega las teclas que necesita | [Pestaña Bindings](UI-Bindings-Tab) |
+| Dejar que BindForge se configure y dar a Vega las teclas que necesita | [Pestaña BindForge](UI-Bindings-Tab) |
 | Calibrar el audio | [Pestaña Vega](UI-Vega-Tab) → **CALIBRAR AUDIO** |
 
 ---

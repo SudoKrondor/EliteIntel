@@ -162,9 +162,9 @@ Tips:
 
 - **Phrases can be separated by commas** as well as by new lines.
 - **Delays depend on your PC.** If the map is not ready when the next step fires, raise the
-  delays — or move **Key Input Pacing** on the [Bindings tab](UI-Bindings-Tab) towards Slow.
+  delays — or move **Key Input Pacing** on the [BindForge tab](UI-Bindings-Tab) towards Slow.
 - **Every Binding step needs a keyboard binding** in the game. If a control is unbound, the
-  [Bindings tab](UI-Bindings-Tab) shows it under *Missing bindings*.
+  [BindForge tab](UI-Bindings-Tab) shows it as *Vega needs a key*.
 - Vega opens and reads the galaxy map the same way for her own route commands, so a command
   that starts from a **freshly opened** map is the reliable pattern — do not start from a map
   that is already open.

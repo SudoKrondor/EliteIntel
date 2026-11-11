@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BindForge: la pestaña Bindings  EliteIntel</title>
+    <title>BindForge: la pestaña BindForge  EliteIntel</title>
     <meta name="description" content="protege tus controles de Elite Dangerous desde fuera del juego: teclado, ratón, joystick, HOTAS y">
     <link rel="canonical" href="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Bindings-Tab.html">
@@ -12,7 +12,7 @@
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Bindings-Tab.html">
     <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html">
-    <meta property="og:title" content="BindForge: la pestaña Bindings  EliteIntel">
+    <meta property="og:title" content="BindForge: la pestaña BindForge  EliteIntel">
     <meta property="og:description" content="protege tus controles de Elite Dangerous desde fuera del juego: teclado, ratón, joystick, HOTAS y">
     <meta property="og:url" content="https://www.elite-intel.org/es/UI-Bindings-Tab.html">
     <meta property="og:type" content="website">
@@ -58,7 +58,7 @@
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
             <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
             <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge (pestaña Bindings)</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub active"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
             <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Pestaña Servicios</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
@@ -96,13 +96,13 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>BindForge: la pestaña Bindings</h1>
-<p><img src="../images/keyboard.png" class="inline" height="20" alt="Bindings"> <strong>BindForge</strong> edita y
+<h1>BindForge: la pestaña BindForge</h1>
+<p><img src="../images/keyboard.png" class="inline" height="20" alt="BindForge"> <strong>BindForge</strong> edita y
 protege tus controles de Elite Dangerous desde fuera del juego: teclado, ratón, joystick, HOTAS y
 pedales. Se ocupa de todos los archivos que hay detrás: tus archivos <code>.binds</code>, el archivo de preset que
 indica cuál se carga, y los archivos <code>DeviceMappings.xml</code> y <code>.buttonMap</code>, que dan nombre a tus mandos y
 etiquetan sus botones.</p>
-<p>Está en la pestaña <strong>Bindings</strong>, que tiene tres subpestañas y una barra encima de ellas:</p>
+<p>Tiene su propia pestaña, <strong>BindForge</strong>, con cuatro subpestañas y una barra encima de ellas:</p>
 <table>
 <thead>
 <tr>
@@ -112,15 +112,19 @@ etiquetan sus botones.</p>
 </thead>
 <tbody><tr>
 <td><strong><a href="#the-apply-bar">Barra de Aplicar</a></strong></td>
-<td>El único <strong>Aplicar</strong> y <strong>Descartar</strong> para todo lo de esta pestaña</td>
+<td>Tu carpeta de configuración del usuario, y el único <strong>Aplicar</strong> y <strong>Descartar</strong> para todo lo de esta pestaña</td>
 </tr>
 <tr>
-<td><strong><a href="#binding-profile">Perfil de bindings</a></strong></td>
-<td>El Bind Editor. Todos los controles del juego, con las vistas <strong>Modo de juego</strong>, <strong>Anomalías</strong> y <strong>Ajustes</strong></td>
+<td><strong><a href="#binding-profile">Editor de bindings</a></strong></td>
+<td>Todos los controles del juego, por sección, con las vistas <strong>Anomalías</strong> y <strong>Zonas muertas y sensibilidad</strong></td>
+</tr>
+<tr>
+<td><strong><a href="#preset-editor">Editor de presets</a></strong></td>
+<td>Qué archivo de bindings carga el juego para los controles General, Nave, SRV y A pie</td>
 </tr>
 <tr>
 <td><strong><a href="#binding-management">Gestión de bindings</a></strong></td>
-<td>El File Manager. Tus instalaciones del juego, tus archivos de bindings y tus copias de seguridad</td>
+<td>Tus instalaciones del juego, tus archivos de bindings y tus copias de seguridad</td>
 </tr>
 <tr>
 <td><strong><a href="#alias-designer">Diseñador de alias</a></strong></td>
@@ -128,9 +132,9 @@ etiquetan sus botones.</p>
 </tr>
 </tbody></table>
 <blockquote>
-<p><strong>Vega sigue pulsando solo teclas del teclado.</strong> Ahora puedes asignar cualquier dispositivo a
-cualquier ranura, pero un control necesita una tecla para que Vega pueda manejarlo. La columna
-<strong>Acceso IA</strong> te muestra cuáles la tienen.</p>
+<p><strong>Vega sigue pulsando solo teclas del teclado.</strong> Puedes asignar cualquier dispositivo a cualquier
+ranura, pero un control necesita una tecla para que Vega pueda manejarlo. La columna <strong>Acceso IA</strong> te
+muestra cuáles la tienen.</p>
 </blockquote>
 <hr>
 <h2>La primera vez que la abres</h2>
@@ -159,6 +163,16 @@ juego, restaura en su lugar una copia desde <a href="#player-backups">Copias del
 <hr>
 <p><a id="the-apply-bar"></a></p>
 <h2>La barra de Aplicar</h2>
+<p>La barra sobre las subpestañas contiene la <strong>Carpeta de configuración del usuario</strong> y los botones
+<strong>Descartar</strong> y <strong>Aplicar</strong>.</p>
+<p><strong>Carpeta de configuración del usuario</strong> es donde están tus archivos <code>.binds</code> y el archivo de preset, y
+todas las instalaciones la comparten. Se detecta automáticamente. Usa el selector <strong>⋮</strong> si la tuya está en
+un lugar poco habitual.</p>
+<blockquote>
+<p><strong>¿«No encuentra los bindings» con la carpeta correcta?</strong> Elite Dangerous no escribe un archivo <code>.binds</code>
+hasta que personalizas algo. Abre <em>Opciones → Controles</em> en el juego, cambia cualquier asignación, y
+Elite Intel detecta el archivo.</p>
+</blockquote>
 <p>Nada de lo que hagas en estas pestañas toca el juego hasta que pulses <strong>Aplicar</strong>. Tus cambios se van
 acumulando, y <strong>Aplicar</strong> y <strong>Descartar</strong> se iluminan en cuanto hay alguno.</p>
 <table>
@@ -184,10 +198,19 @@ abre y cierra su pantalla de Controles después de aplicar. Vega te lo recuerda.
 </blockquote>
 <p>Si sales de la pestaña o cierras la app con cambios sin aplicar, se te pregunta si quieres <strong>Aplicar</strong>,
 <strong>Descartar</strong> o <strong>Volver</strong>.</p>
+<p><a id="read-only"></a></p>
+<h3>Solo lectura mientras falta una instalación</h3>
+<p>Si no se encuentra una de tus instalaciones del juego (normalmente porque su unidad está desconectada),
+BindForge pasa a <strong>solo lectura</strong>. La barra dice qué instalación falta, Vega te lo dice al arrancar, y
+nada de la pestaña se puede cambiar, para que esa instalación no se desfase de las demás.</p>
+<p>Vuelve a conectar la unidad y reinicia Elite Intel, o <strong>Quita</strong> la instalación en
+<a href="#game-install-locations">Ubicaciones del juego</a> si ya no va a volver. <strong>Anular</strong> en la barra vuelve a
+activar la edición hasta que cierres Elite Intel: Aplicar escribe entonces en las instalaciones presentes,
+y cuando vuelva la que falta se compara en el siguiente arranque y eliges qué conservar.</p>
 <h3>Cuando el juego cambió tus archivos</h3>
 <p>El juego puede cambiar sus propios archivos, y una actualización puede restablecerlos. BindForge los
 compara con su copia de trabajo la primera vez que abres la pestaña en cada sesión, y otra vez en cada
-Aplicar. Si difieren, muestra qué cambió y te deja elegir:</p>
+Aplicar. Si difieren, Vega te lo dice al arrancar, y la pestaña muestra qué cambió y te deja elegir:</p>
 <table>
 <thead>
 <tr>
@@ -214,23 +237,26 @@ más tarde. Cerrarlo durante un Aplicar lo cancela y conserva tus cambios.</p>
 nombre y con controles nuevos. BindForge nunca escribe tu archivo antiguo encima. Si todos tus bindings
 pasaron, solo tienes que <strong>Aprobar</strong>. Si algunos difieren, <strong>Conciliar...</strong> conserva los controles nuevos
 y te pregunta por cada línea distinta.</p>
+<p><strong>Archivos que no deberían estar ahí.</strong> Si la carpeta de bindings del juego contiene archivos que el juego
+no usa (por ejemplo un archivo de bindings copiado a mano sin versión en el nombre, o un archivo ajeno),
+Vega lo menciona y la comprobación ofrece <strong>Ordenar</strong>. Eso los mueve a <strong>Leftover User Files</strong>, en la
+carpeta propia de Elite Intel. No se borra nada, y puedes abrir esa carpeta tú mismo. Un archivo de
+bindings sin versión se copia antes a tus archivos con una versión en el nombre, salvo que ya tengas uno
+con ese nombre.</p>
 <hr>
 <p><a id="binding-profile"></a></p>
-<h2>Perfil de bindings</h2>
-<p><img src="../images/ui-tab-bindings-profile.png" alt="Perfil de bindings"></p>
-<p>Este es el Bind Editor. La línea <strong>Editando</strong> de arriba indica el archivo de bindings que estás viendo.
-Para abrir otro, usa <a href="#bindings-file">Archivo de bindings</a> en <em>Gestión de bindings</em>.</p>
+<h2>Editor de bindings</h2>
+<p><img src="../images/ui-tab-bindings-profile.png" alt="Editor de bindings"></p>
+<p>La línea <strong>Editando</strong> de arriba indica el archivo de bindings que estás viendo. Para abrir otro, usa
+<a href="#bindings-file">Archivo de bindings</a> en <em>Gestión de bindings</em>.</p>
 <p><strong>Ritmo de entrada de teclas</strong> es un deslizador <strong>Rápido ↔ Lento</strong> para la pausa que Elite Intel hace
 tras cada pulsación que envía al juego. Si el juego pierde pulsaciones en equipos más lentos (una macro
 que se ejecuta a medias, un panel que se abre en la pestaña equivocada), muévelo hacia <strong>Lento</strong>.</p>
-<p><strong>Buscar bindings...</strong>, en la parte inferior, funciona en las tres vistas. Busca en la sección, el grupo,
-el nombre del control y la etiqueta <code>.binds</code> en bruto, además de los nombres de mandos y botones de un
-binding.</p>
-<h3>Modo de juego</h3>
-<p>Todos los controles, agrupados bajo los encabezados del propio juego y en el mismo orden que su pantalla
-de Controles, para que puedas leer ambas a la vez. Las pestañas de arriba reducen la lista a <strong>Todo</strong>,
-<strong>General</strong>, <strong>Nave</strong>, <strong>SRV</strong> o <strong>A pie</strong>, cada una con su recuento. Debajo hay dos listas: <strong>Bindings
-usados</strong> y <strong>Bindings faltantes</strong>.</p>
+<p>Una sola fila de pestañas recorre el editor: <strong>Todo</strong>, <strong>General</strong>, <strong>Nave</strong>, <strong>SRV</strong> y <strong>A pie</strong>, cada
+una con su recuento, y luego <strong><a href="#anomalies">Anomalías</a></strong> y <strong><a href="#dead-zones-and-sensitivity">Zonas muertas y
+sensibilidad</a></strong>. Las pestañas de sección muestran todos los controles,
+agrupados bajo los encabezados del propio juego y en el mismo orden que su pantalla de Controles, para que
+puedas leer ambas a la vez.</p>
 <table>
 <thead>
 <tr>
@@ -244,23 +270,15 @@ usados</strong> y <strong>Bindings faltantes</strong>.</p>
 </tr>
 <tr>
 <td><strong>Primario</strong> / <strong>Secundario</strong></td>
-<td>Las dos ranuras que Elite Dangerous da a cada control, con tus propios nombres de mandos y botones</td>
+<td>Las dos ranuras que Elite Dangerous da a cada control, con tus propios nombres de mandos y botones. En una fila de eje, Primario es el eje y Secundario su dirección y zona muerta</td>
 </tr>
 <tr>
 <td><strong>Acceso IA</strong></td>
 <td>Si Vega puede manejar este control (ver abajo)</td>
 </tr>
 <tr>
-<td><strong>Estado</strong></td>
-<td><code>Faltante</code> · <code>Sin teclado</code> (asignado, pero solo a un mando) · <code>No definido</code></td>
-</tr>
-<tr>
-<td><strong>Corrección rápida</strong></td>
-<td>Lista de <em>faltantes</em>: da a este control una tecla libre y segura</td>
-</tr>
-<tr>
-<td><strong>Borrar</strong></td>
-<td>Lista de <em>usados</em>: quita la asignación de teclado y deja intactas las de mando y HOTAS</td>
+<td><strong>Acción</strong></td>
+<td><strong>Borrar</strong> quita la tecla (o el eje) y deja intactas las asignaciones de mando y HOTAS. <strong>Corregir</strong> aparece en un control que Vega necesita y que no tiene tecla, y le da una libre y segura</td>
 </tr>
 </tbody></table>
 <table>
@@ -283,9 +301,13 @@ usados</strong> y <strong>Bindings faltantes</strong>.</p>
 <td>Vega necesita este control y no tiene nada asignado</td>
 </tr>
 </tbody></table>
-<p>Junto a la búsqueda están los dos filtros y el botón de autoasignación:</p>
+<p>En la parte inferior están la búsqueda, tres filtros y el botón de autoasignación:</p>
 <ul>
+<li><strong>Buscar bindings...</strong> busca en la sección, el grupo, el nombre del control y la etiqueta <code>.binds</code> en
+bruto, además de los nombres de mandos y botones de un binding. Funciona en todas las pestañas, y los
+recuentos de las pestañas de sección muestran dónde están los resultados.</li>
 <li><strong>Mostrar solo conflictos</strong>: solo las filas en conflicto.</li>
+<li><strong>Mostrar sin asignar</strong>: solo los controles sin nada asignado, ni en el teclado ni en ningún mando.</li>
 <li><strong>Mostrar solo lo que necesita Vega</strong>: solo los controles que pulsa Vega, para sus comandos integrados
 y tus comandos personalizados.</li>
 <li><strong><a href="#auto-assign-vega-required-binds">Autoasignar bindings requeridos por VEGA</a></strong>: ver abajo.</li>
@@ -295,16 +317,28 @@ y tus comandos personalizados.</li>
 ambas ranuras como tarjetas, y la resaltada es la que recibirá tu siguiente entrada. Haz clic en la otra
 para llenar esa, o usa el botón entre ellas para intercambiar Primario y Secundario.</p>
 <p><img src="../images/ui-bindings-assign.png" alt="Asignar un control"></p>
-<p>Bajo las tarjetas hay una pestaña <strong>Teclado</strong> y otra por cada mando conectado.</p>
+<p>Bajo las tarjetas hay una pestaña <strong>Teclado</strong>, una pestaña <strong>Ratón</strong> y otra por cada mando conectado.</p>
 <ul>
 <li><strong>Teclado</strong>: haz clic en el campo y pulsa las teclas junto con los modificadores, hasta tres. Esc
 cancela. Mantén Ctrl, Mayús o Alt para ver el mapa del teclado de esa combinación: <strong>verde está libre,
 rojo ya está en uso.</strong> Las teclas reservadas, como la del menú del juego y Alt+F4, no se pueden asignar.</li>
+<li><strong>Ratón</strong>: apunta a la casilla y pulsa el botón del ratón que quieras. El botón izquierdo también
+cuenta, y los clics en cualquier otra parte de la ventana funcionan como siempre. La rueda nunca se
+captura por accidente: haz clic en <strong>Rueda arriba</strong> o <strong>Rueda abajo</strong>.</li>
 <li><strong>Un mando</strong>: pulsa un botón o un hat del mando, o haz clic en uno de la lista <strong>Botones</strong> o <strong>Hats</strong>.
-Los botones que ya tienes pulsados se convierten en modificadores. Verde está libre, rojo lo usa otro
-control, y azul es lo que tiene ahora este control. Un mando necesita antes un nombre del
-<a href="#alias-designer">Diseñador de alias</a>.</li>
+Un botón o un hat se elige <strong>al soltarlo</strong>, así que una combinación con botón de shift siempre se capta
+entera. Los botones que ya tienes pulsados se convierten en modificadores: mantén el botón de shift y
+pulsa otros botones uno tras otro para probar cada combinación. La página <strong>Direcciones de eje</strong> tiene
+un <strong>−</strong> y un <strong>+</strong> para cada eje, para los controles que actúan sobre una dirección de un eje; mueve el
+eje o haz clic en el que quieras.</li>
+<li><strong>Con Mayús</strong>, <strong>Con Ctrl</strong> y <strong>Con Alt</strong>, en cada pestaña de mando, asignan un botón de la palanca o
+del acelerador junto con esa tecla. Solo estas tres se pueden combinar con un mando, para que nunca
+choquen con las teclas que pulsa Vega.</li>
 </ul>
+<p>Verde está libre, rojo lo usa otro control, y azul es lo que tiene ahora este control. Un mando necesita
+antes un nombre del <a href="#alias-designer">Diseñador de alias</a>. Un mando desconectado se puede asignar igualmente
+haciendo clic en sus entradas, y uno que conectes con el diálogo abierto cobra vida en él. Una ranura admite
+como máximo tres modificadores, entre botones mantenidos y teclas.</p>
 <p>Una entrada que ya tiene otro control no se puede asignar. La tarjeta nombra ese control, y <strong>Guardar</strong>
 sigue atenuado hasta que la liberes allí. Si un cambio fuera a quitar la última tecla de un control que
 Vega usa, el diálogo te avisa. <strong>Guardar</strong> conserva tus cambios, listos para <strong>Aplicar</strong>.</p>
@@ -320,15 +354,22 @@ diálogo.</p>
 <em>Invertido</em>), su <strong>Zona muerta</strong> y, en los controles que lo tienen, su <strong>Rango del acelerador</strong> (<em>Rango
 completo</em> o <em>Solo avance</em>). Varios controles pueden compartir un eje, y es normal: el diálogo te dice qué
 más hay en él, y tú decides.</p>
+<p><a id="anomalies"></a></p>
 <h3>Anomalías</h3>
 <p><img src="../images/ui-bindings-anomalies.png" alt="Anomalías"></p>
 <p>Las filas en conflicto reunidas en un solo lugar, con su recuento en la pestaña. Son las mismas filas que
-el Modo de juego dibuja en rojo, y al hacer clic se abre el mismo diálogo. <strong>Cuando Vega te avise de un
-conflicto de bindings, mira aquí.</strong></p>
+las pestañas de sección dibujan en rojo, y al hacer clic se abre el mismo diálogo. <strong>Cuando Vega te avise
+de un conflicto de bindings, mira aquí.</strong></p>
+<p>Los conflictos se buscan en todos los dispositivos: teclado, ratón, joystick y HOTAS. El mismo número de
+botón en dos mandos son dos botones distintos: <code>Joy_1</code> de tu palanca izquierda nunca choca con <code>Joy_1</code> de
+la derecha.</p>
 <p>Elite Dangerous solo considera conflicto una combinación <em>exactamente</em> igual: <code>G</code> y <code>Mayús+G</code> conviven sin
-problema. Elite Intel sigue la misma regla. Los controles que nunca pueden estar activos a la vez, como
-uno de nave y uno de SRV, no se marcan. Pasa el ratón sobre una fila para ver <strong>Comparte <em>tecla</em> con:</strong> y
-la lista, para cada ranura en conflicto.</p>
+problema. Elite Intel sigue la misma regla. Los controles que nunca pueden estar activos a la vez no se
+marcan: uno de nave y uno de SRV, o un control de colocación de la Colonización de sistemas y uno de vuelo
+(el juego desactiva el vuelo mientras colocas una instalación). Pasa el ratón sobre una fila para ver
+<strong>Comparte <em>tecla</em> con:</strong> y la lista, para cada ranura en conflicto.</p>
+<p><strong>Botones de shift.</strong> Si mantienes un botón de la palanca como modificador para otros bindings y además
+asignas ese botón solo, al pulsarlo también se dispara ese control. BindForge te avisa.</p>
 <p>También puedes ver <strong>Equivalente nave/SRV - muchos lo asignan igual que:</strong> en una fila. No es un conflicto
 sino una sugerencia: algunos controles de nave y de SRV suelen asignarse a la misma tecla.</p>
 <p>Vega además <strong>habla</strong> de los bindings que de verdad rompen algo, y nombra las teclas en el registro de
@@ -342,8 +383,9 @@ juego: Escape abre ese menú de todos modos.</li>
 <li><strong>Un control en una combinación que el sistema operativo captura primero</strong> (como Alt+F4). Pulsarlo
 cierra el juego o abandona tu sesión.</li>
 </ul>
-<h3>Ajustes</h3>
-<p><img src="../images/ui-bindings-settings.png" alt="Ajustes de bindings"></p>
+<p><a id="dead-zones-and-sensitivity"></a></p>
+<h3>Zonas muertas y sensibilidad</h3>
+<p><img src="../images/ui-bindings-settings.png" alt="Zonas muertas y sensibilidad"></p>
 <p>Las sensibilidades, zonas muertas y curvas de potencia de tu archivo de bindings, agrupadas como en el
 juego. Cada una tiene un deslizador y un número al lado. Arrastra el deslizador, o escribe un número y
 pulsa Enter.</p>
@@ -352,7 +394,8 @@ pasar de los límites del deslizador. Un valor que ya esté fuera se queda como 
 <p><a id="auto-assign-vega-required-binds"></a></p>
 <h3>Autoasignar bindings requeridos por VEGA</h3>
 <p>Un botón que da una tecla segura y adaptada a tu distribución a cada control que <strong>Vega pulsa</strong> y que no
-tiene tecla, incluidos los que usan tus comandos personalizados. Los demás controles se quedan como están.</p>
+tiene tecla, incluidos los que usan tus comandos personalizados. Los demás controles se quedan como están;
+para asignar uno de ellos, haz clic en su celda Primario o Secundario.</p>
 <ul>
 <li>Los bindings existentes de cualquier dispositivo nunca cambian. Solo se llena una ranura vacía.</li>
 <li>Ninguna tecla se reutiliza.</li>
@@ -363,23 +406,50 @@ libre, o ninguna ranura editable con seguridad. Dos controles se dejan <strong>s
 menú del juego (Escape ya lo abre) y <em>expulsar toda la carga</em> (vacía la bodega al espacio, y ningún comando
 de Elite Intel lo pulsa).</p>
 <hr>
+<p><a id="preset-editor"></a></p>
+<h2>Editor de presets</h2>
+<p><img src="../images/ui-bindings-preset-editor.png" alt="Editor de presets"></p>
+<p>El juego lee sus controles en cuatro secciones (<strong>General</strong>, <strong>Nave</strong>, <strong>SRV</strong> y <strong>A pie</strong>), y cada
+sección carga el archivo de bindings que nombra su línea en el archivo de preset. El Editor de presets
+muestra esas cuatro líneas como listas desplegables y te deja apuntar cada una a cualquiera de tus archivos
+de bindings. Los presets propios de Frontier también están en las listas, marcados <em>(de fábrica)</em>. Las
+listas muestran el nombre que muestra el juego, así que <code>Custom.4.2.binds</code> aparece como <em>Custom</em>.</p>
+<ul>
+<li><strong>Poner todas igual</strong> apunta las cuatro secciones al archivo elegido a su lado, de una vez.</li>
+<li>Una sección que nombra un archivo que BindForge no encuentra, o ninguno, se muestra en <strong>rojo</strong>. El
+juego cargaría otra cosa ahí, así que <strong>Aplicar</strong> se niega hasta que elijas un archivo real.</li>
+<li>Aparece una nota cuando las cuatro secciones usan archivos distintos. El juego lo admite, así que nunca
+te detiene.</li>
+</ul>
+<p>Como en toda la pestaña, no se escribe nada hasta que pulses <strong>Aplicar</strong>, y <strong>Descartar</strong> devuelve las
+listas a como estaban.</p>
+<p><a id="which-binds-file"></a></p>
+<h3>¿Qué archivo de bindings lee Vega?</h3>
+<p>Vega lee las teclas que pulsa de <strong>un solo</strong> archivo de bindings. Si tus cuatro secciones usan archivos
+distintos, la primera vez que abres la pestaña BindForge en una sesión pregunta <strong>¿Qué archivo de
+bindings?</strong> y los enumera. Elige uno, y te pregunta si debe ser <strong>el único archivo de bindings</strong> que use
+el juego:</p>
+<ul>
+<li><strong>Sí</strong>: BindForge copia tus archivos y pone las cuatro secciones en él de inmediato. Es la opción
+segura: las teclas que pulsa Vega son entonces las que usa el juego.</li>
+<li><strong>No</strong>: Vega lee el archivo elegido durante esta sesión. Los controles de una sección que usa otro
+archivo puede que no funcionen cuando Vega los pulse. La pregunta vuelve en el siguiente arranque,
+mientras las secciones sigan en archivos distintos.</li>
+</ul>
+<p>Si tus controles General están en un archivo distinto del que lee Vega, Vega también te avisa al arrancar:
+lo que suele fallar es el trazado de rutas, porque las teclas del mapa galáctico pueden no ser las que usa
+el juego.</p>
+<hr>
 <p><a id="binding-management"></a></p>
 <h2>Gestión de bindings</h2>
-<p>El File Manager, con dos pestañas propias: <strong>Ubicaciones del juego</strong> y <strong>Copias del jugador</strong>.</p>
+<p>Tus archivos, con dos pestañas propias: <strong>Ubicaciones del juego</strong> y <strong>Copias del jugador</strong>.</p>
+<p><a id="game-install-locations"></a></p>
 <h3>Ubicaciones del juego</h3>
 <p><img src="../images/ui-bindings-install-locations.png" alt="Ubicaciones del juego"></p>
-<p><strong>Carpeta de configuración del usuario</strong> es donde están tus archivos <code>.binds</code> y el archivo de preset, y
-todas las instalaciones la comparten. Se detecta automáticamente. Usa el selector <strong>⋮</strong> si la tuya está en
-un lugar poco habitual.</p>
-<blockquote>
-<p><strong>¿«No encuentra los bindings» con la carpeta correcta?</strong> Elite Dangerous no escribe un archivo <code>.binds</code>
-hasta que personalizas algo. Abre <em>Opciones → Controles</em> en el juego, cambia cualquier asignación, y
-Elite Intel detecta el archivo.</p>
-</blockquote>
 <p><a id="bindings-file"></a></p>
 <p><strong>Archivo de bindings</strong> muestra tus archivos de bindings, incluidos los cambios sin aplicar. Elige uno y
-pulsa <strong>Cargar</strong> para abrirlo en Perfil de bindings, o escribe un nombre nuevo y pulsa <strong>Renombrar</strong>. Un
-cambio de nombre es un cambio más, y llega al juego cuando pulsas <strong>Aplicar</strong>.</p>
+pulsa <strong>Cargar</strong> para abrirlo en el Editor de bindings, o escribe un nombre nuevo y pulsa <strong>Renombrar</strong>.
+Un cambio de nombre es un cambio más, y llega al juego cuando pulsas <strong>Aplicar</strong>.</p>
 <p><strong>Instalaciones del juego</strong> muestra cada copia del juego que BindForge conoce. Cada una tiene sus propios
 archivos <code>DeviceMappings.xml</code> y <code>.buttonMap</code>, y BindForge los mantiene idénticos.</p>
 <table>
@@ -485,8 +555,8 @@ juego se rechaza, porque una actualización borraría tus copias con ella.</p>
 <p><img src="../images/ui-bindings-alias-designer.png" alt="Diseñador de alias"></p>
 <p>De fábrica, el juego conoce muchos mandos solo por un ID de hardware, y su pantalla de Controles muestra
 sus botones como números anónimos. El Diseñador de alias da a cada mando un nombre real, y a cada botón,
-eje y hat la etiqueta que elijas. Las etiquetas aparecen en la pantalla de Controles del juego y en Perfil
-de bindings.</p>
+eje y hat la etiqueta que elijas. Las etiquetas aparecen en la pantalla de Controles del juego y en el
+Editor de bindings.</p>
 <p><strong>Mis dispositivos</strong> muestra tus mandos: <strong>Dispositivo</strong>, <strong>VID / PID</strong>, <strong>Estado</strong> (<em>Conectado</em> o
 <em>Ausente</em>) y <strong>Alias</strong>. <strong>Dispositivos integrados</strong> es una lista de solo lectura de los mandos que Frontier
 incluye en el juego. <strong>Comprobar de nuevo</strong> vuelve a leer lo que está conectado.</p>
@@ -510,7 +580,11 @@ es cuál, y los ejes muestran un medidor en vivo.</li>
 </ul>
 <p><strong>Guardar</strong> conserva tus cambios para <strong>Aplicar</strong>; hasta entonces nada llega al juego.</p>
 <ul>
-<li><strong>Borrar</strong> quita la entrada y las etiquetas del dispositivo de tus archivos del juego al aplicar.</li>
+<li><strong>Borrar</strong> quita la entrada y las etiquetas del dispositivo de tus archivos del juego al aplicar. Si tus
+bindings usan el mando, no se pierden: pasan a su ID de hardware, así que siguen funcionando mientras
+esté conectado, pero pierden el nombre que le diste. (En un mando integrado de Frontier que renombraste,
+vuelven al nombre propio del juego.) La pregunta te dice cuántos bindings se mueven y adónde.
+<strong>Deshacer borrado</strong> los devuelve.</li>
 <li><strong>Restablecer etiquetas</strong> devuelve las etiquetas predeterminadas.</li>
 </ul>
 <p>En un dispositivo integrado de Frontier puedes cambiar las etiquetas. Para usar un nombre propio, conéctalo

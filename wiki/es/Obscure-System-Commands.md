@@ -70,8 +70,13 @@ superficie. No traza rutas a un sistema que nombras en voz alta — ver
   codificados / fabricados»*, *«buscar intermediario tecnológico humano / guardian»*, *«buscar
   Vista Genomics más cercano»*, *«buscar factores interestelares más cercanos.»* Vega traza la ruta
   y deja un recordatorio con la estación; al llegar, pregunta *«¿cuál era el recordatorio?»*
-- **Brain trees**: *«Buscar brain trees para [material] en un radio de 500 años luz.»* Encuentra un
-  brain tree guardián que da ese material sin procesar.
+- **Materiales en bruto**: *«¿Dónde encuentro telurio?»* Vega te envía al brain tree guardián más
+  cercano que lo dé en un radio de 500 años luz, porque los brain trees son los que más rinden. Si no hay
+  ninguno a tu alcance, elige un planeta o una luna: el más rico en ese material a menos de dos saltos, o
+  si no el más cercano que lo tenga. Indica un radio para no ir lejos: *«¿dónde farmear hierro en un
+  radio de 50 años luz?»* Si pides *brain trees* por su nombre, solo te propone brain trees, y te dice
+  dónde está el más cercano si no hay ninguno a tu alcance. Los materiales manufacturados y codificados
+  no se encuentran en planetas: te indica el comerciante de materiales al que acudir.
 - **Sitios de minería**: *«¿Dónde puedo minar osmio en 200 años luz?»* También sirve para tritio.
 - **Comprar y vender**: *«¿Dónde puedo comprar bromellita?»* — añade *más cercano* o *mejor
   precio*; también vale para módulos. *«¿Dónde puedo vender oro?»*

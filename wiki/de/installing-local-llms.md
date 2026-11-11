@@ -43,10 +43,17 @@ Danach startet Elite Intel LM Studio, wenn du seine Dienste startest, und beende
 oder die App schließt. Das Modell belegt den Speicher deiner Grafikkarte also nur, solange Elite Intel läuft.
 Zum Entfernen drücke **LM Studio deinstallieren**: Es zeigt, was gelöscht wird, bevor es etwas löscht.
 
-**Die Schaltfläche erscheint nur bei einer NVIDIA RTX 3090 (24 GB) oder besser.** Das Spiel braucht 8,5 GB
-Grafikspeicher oder mehr, das Modell etwa 6 GB, und Browser, OBS und Windows brauchen auch etwas, deshalb
-fasst eine kleinere Karte nicht beides zuverlässig. AMD-Karten werden noch nicht erkannt: AMD-Besitzer folgen
-der [AMD-Anleitung](AMD-RX-7800XT-LLM-Setup).
+**Die Schaltfläche erscheint nur, wenn deine Grafikkarten Spiel und Modell zusammen halten können.** Das
+Spiel braucht 8,5 GB Grafikspeicher oder mehr, das Modell etwa 6 GB, und Browser, OBS und Windows brauchen
+auch etwas, deshalb fasst eine kleinere Karte nicht beides zuverlässig. Die Schaltfläche erscheint bei:
+
+- **einer NVIDIA-Karte mit 24 GB**, RTX-30-Serie oder neuer: einer RTX 3090 oder besser.
+- **zwei oder mehr NVIDIA-Karten mit zusammen etwa 20 GB**, jede RTX-30-Serie oder neuer mit mindestens
+  8 GB — zum Beispiel eine 12-GB-RTX-5070 mit einer 8-GB-RTX-3070-Ti.
+- **AMD-Karten mit demselben Speicher, als Beta.** Der Installationsdialog weist dich darauf hin. Klappt es
+  bei dir nicht, richtet die [AMD-Anleitung](AMD-RX-7800XT-LLM-Setup) es von Hand ein.
+
+NVIDIA- und AMD-Karten werden nie zusammengezählt.
 
 Du hast LM Studio schon? Dann heißt die Schaltfläche **LM Studio einrichten**. Sie fügt das Modell hinzu und
 füllt die Felder aus, und sonst bleibt dein LM Studio genau, wie es ist: Elite Intel startet, stoppt oder
@@ -125,7 +132,8 @@ Wie du bei jedem Anbieter einen Schlüssel bekommst: [Cloud-LLM einrichten](clou
 ## Was soll ich nehmen?
 
 **Nimm LM Studio lokal, wenn:**
-- dein Spiele-PC eine NVIDIA RTX 3090 24 GB oder besser hat: Elite Intel richtet es für dich ein
+- dein Spiele-PC 24 GB Grafikspeicher auf einer Karte hat (eine RTX 3090 oder besser) oder etwa 20 GB
+  auf zwei oder mehr: Elite Intel richtet es für dich ein
 - oder du einen zweiten PC im Netzwerk mit 12 GB Grafikspeicher und Leistung der Klasse RTX 3080 hast
 - alles auf deiner eigenen Hardware bleiben soll
 

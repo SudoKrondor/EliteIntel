@@ -14,7 +14,7 @@ Cette section passe en revue chaque onglet, chaque contrôle, et ce qu'il fait r
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | Le poste de pilotage. Démarrer et arrêter les services, suivre la conversation, lire l'état en direct, ouvrir l'overlay HUD en jeu. |
 | <img src="images/commander.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Le dossier du journal, voix et personnalités de la flotte, automatisations, annonces vocales, le catalogue Exo-Maîtrise et vos signets. |
 | <img src="images/actions.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Tout ce qu'Elite Intel sait faire. Parcourir le catalogue des commandes intégrées et créer vos propres macros. |
-| <img src="images/keyboard.png" class="inline" height="20" alt="Commandes"> **[Commandes](UI-Bindings-Tab)** | **BindForge.** Modifiez toutes les commandes d'Elite Dangerous sur n'importe quel périphérique, nommez vos contrôleurs et sauvegardez tous vos fichiers de commandes. |
+| <img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> **[BindForge](UI-Bindings-Tab)** | Modifiez toutes les commandes d'Elite Dangerous sur n'importe quel périphérique, choisissez quel fichier de raccourcis le jeu charge, nommez vos contrôleurs et sauvegardez tous vos fichiers de commandes. |
 | <img src="images/services.png" class="inline" height="20" alt="Services"> **[Services](UI-Settings-Tab)** | La tuyauterie. Langue, modèle de langage, moteur de voix, audio, push-to-talk et une sauvegarde de vos réglages et données. |
 | <img src="images/speaker.png" class="inline" height="20" alt="Jukebox"> **[Jukebox](UI-Jukebox-Tab)** | Votre propre musique, jouée sous Vega et baissée automatiquement quand elle parle. |
 | <img src="images/stats.png" class="inline" height="20" alt="Statistiques"> **[Statistiques](UI-Stats-Tab)** | Consommation de tokens et télémétrie LLM de la session en cours. |
@@ -26,6 +26,11 @@ une surface VR optionnelle), pilotée depuis l'onglet Vega.
 
 ## Premier lancement
 
+Une nouvelle installation **démarre en veille**, pour qu'une pièce bruyante ou des haut-parleurs captés
+par le micro ne déclenchent pas Vega pendant la configuration. Dites *« réveille-toi »* ou cliquez sur
+**SE RÉVEILLER** dans l'[onglet Vega](UI-Vega-Tab) quand vous êtes prêt. Tant qu'aucun modèle de langage
+n'est configuré, Vega n'agit pas sur ce que vous dites : elle vous indique ce qui manque.
+
 Elite Intel énonce à voix haute ses avertissements de configuration au démarrage des services,
 pour que vous n'ayez pas à chercher ce qui manque. Par ordre d'importance :
 
@@ -36,7 +41,7 @@ pour que vous n'ayez pas à chercher ce qui manque. Par ordre d'importance :
 2. **Le dossier du journal.** Sans lui, Elite Intel ne voit rien de ce qui se passe autour de
    votre vaisseau. [Commandant → Profil commandant](UI-Commander-Tab).
 3. **Vos commandes.** Sans fichier de raccourcis, Elite Intel ne peut pas piloter votre vaisseau. Ouvrez une
-   fois l'[onglet Commandes](UI-Bindings-Tab) pour que BindForge se configure, puis cliquez sur **Attribuer
+   fois l'[onglet BindForge](UI-Bindings-Tab) pour que BindForge se configure, puis cliquez sur **Attribuer
    automatiquement les raccourcis requis par VEGA** pour donner à Vega les touches dont elle a besoin. Si Vega
    dit que vos fichiers de commandes n'existent pas encore, terminez votre entraînement de commandant, puis dans
    *Options → Commandes* du jeu, réglez le déplacement de l'interface de la carte de la galaxie sur les touches
@@ -56,7 +61,7 @@ pour que vous n'ayez pas à chercher ce qui manque. Par ordre d'importance :
   s'appliquent dès que vous les changez ; aucun bouton Enregistrer à oublier.
 - **Deux exceptions vous attendent.** *Services → Services IA* conserve vos modifications jusqu'à ce que vous
   cliquiez sur **Enregistrer**, et vous demande *Enregistrer*, *Abandonner* ou *Continuer l'édition* si vous
-  quittez avec des modifications en attente. Les modifications de l'onglet Commandes attendent que vous cliquiez
+  quittez avec des modifications en attente. Les modifications de l'onglet BindForge attendent que vous cliquiez
   sur **Appliquer**, et tout est sauvegardé avant qu'elles n'atteignent Elite Dangerous.
 - **Changer de langue reconstruit la fenêtre.** Choisir une autre langue dans l'onglet *Services* redessine
   immédiatement tous les onglets dans cette langue, et Vega annonce le changement.

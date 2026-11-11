@@ -26,7 +26,7 @@ missing — but they are worth doing up front:
 |------|-------|
 | Point it at a language model | [Services → AI Services](UI-Settings-Tab) |
 | Check the journal folder | [Commander tab](UI-Commander-Tab) |
-| Let BindForge set up, then give Vega the keys she needs | [Bindings tab](UI-Bindings-Tab) |
+| Let BindForge set up, then give Vega the keys she needs | [BindForge tab](UI-Bindings-Tab) |
 | Calibrate audio | [Vega tab](UI-Vega-Tab) → **CALIBRATE AUDIO** |
 
 ---

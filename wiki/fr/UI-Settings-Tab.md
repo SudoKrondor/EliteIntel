@@ -18,7 +18,7 @@ Le sélecteur est **verrouillé** pour qu'un clic ou un défilement accidentel n
 Prises en charge : anglais, russe, ukrainien, allemand, français, espagnol, italien, portugais, portugais du Brésil.
 
 > Le **dossier du journal** se trouve désormais dans l'[onglet Commandant](UI-Commander-Tab), et le **dossier des raccourcis**
-> dans l'[onglet Commandes](UI-Bindings-Tab).
+> dans l'[onglet BindForge](UI-Bindings-Tab).
 
 ---
 
@@ -47,7 +47,10 @@ Basculez entre **LMStudio** (local) et **Configuration cloud**.
 Le modèle local pris en charge est **`google/gemma-4-e4b`**. Elite Intel vous prévient au démarrage
 si votre modèle local est différent ; d'autres modèles peuvent mal fonctionner, voire pas du tout.
 
-Sur un PC avec une NVIDIA RTX 3090 (24 Go) ou mieux, un bouton sous ces champs configure LM Studio pour vous :
+Si votre PC peut faire tourner le jeu et le modèle ensemble, un bouton sous ces champs configure LM Studio pour
+vous. Cela veut dire une carte NVIDIA de la série RTX 30 ou plus récente avec 24 Go (une RTX 3090 ou mieux), ou
+deux cartes de ce type ou plus totalisant environ 20 Go, chacune avec au moins 8 Go. Les cartes AMD avec la même
+mémoire reçoivent le bouton en **bêta**. Détails dans [Choisir votre LLM](installing-local-llms).
 
 | Bouton | Ce qu'il fait |
 |--------|---------------|
@@ -56,8 +59,9 @@ Sur un PC avec une NVIDIA RTX 3090 (24 Go) ou mieux, un bouton sous ces champs c
 | **Reprendre la configuration** | Reprend une installation interrompue |
 | **Désinstaller LM Studio** | Retire le LM Studio installé par Elite Intel, avec ses modèles, après les avoir listés |
 
-Un LM Studio installé ainsi démarre et s'arrête avec les services d'Elite Intel. Détails dans
-[Choisir votre LLM](installing-local-llms).
+Un LM Studio installé ainsi démarre et s'arrête avec les services d'Elite Intel, et s'arrête à la fermeture
+de l'application même si sa configuration n'a pas abouti. Un LM Studio que vous avez installé vous-même n'est
+jamais démarré, arrêté ni supprimé.
 
 Guides pour LM Studio sur un second PC : [LM Studio sous Linux](Install-LM-Studio-Linux) ·
 [LM Studio sous Windows](Install-LM-Studio-Windows) ·
@@ -223,10 +227,10 @@ la sauvegarde n'en contient aucune et vous les saisissez à nouveau après la re
 **Restaurer...** remet une sauvegarde. Ce qu'elle remplace est gardé dans un dossier de sécurité dans le dossier de données de
 l'application, et Elite Intel redémarre pour terminer. Une sauvegarde faite par une version plus récente nécessite d'abord de
 mettre à jour l'application. Les dossiers qui n'existent pas sur le nouvel ordinateur sont réinitialisés ; vérifiez donc ensuite
-le dossier du journal dans l'onglet Commandant et celui des raccourcis dans l'onglet Commandes.
+le dossier du journal dans l'onglet Commandant et celui des raccourcis dans l'onglet BindForge.
 
 > Ceci sauvegarde **Elite Intel**. Pour sauvegarder vos **fichiers de commandes du jeu**, utilisez les
-> [Sauvegardes du joueur](UI-Bindings-Tab) dans l'onglet Commandes.
+> [Sauvegardes du joueur](UI-Bindings-Tab) dans l'onglet BindForge.
 
 ---
 

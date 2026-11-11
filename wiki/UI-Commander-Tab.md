@@ -24,7 +24,7 @@ and the standard location for your platform is used. This is how Elite Intel kno
 around your ship, so if it is wrong the app is effectively blind, and it will say so at startup. A
 folder that cannot be used is refused and the previous setting is kept.
 
-> The **bindings folder** is on the [Bindings tab](UI-Bindings-Tab), under *Binding Management*.
+> The **bindings folder** is on the [BindForge tab](UI-Bindings-Tab), on the bar above its sub-tabs.
 
 ### Import Old Journals
 
@@ -167,6 +167,10 @@ something is talking too much, or not enough.
 | &nbsp;&nbsp;↳ **Announce arrival** | A line when you arrive |
 | &nbsp;&nbsp;↳ **Announce remaining jumps** | Jumps left on the route |
 | &nbsp;&nbsp;&nbsp;&nbsp;↳ **Announce fuel star availability** | Whether the destination has a scoopable star — spoken as part of the remaining-jumps line |
+
+A **Wolf-Rayet** star ahead on your route always gets a spoken caution (it is very hot), and an
+extremely rare object — an exotic star, a rogue planet or a nebula — gets a mention. Both follow the
+star class in the waypoint announcement, and neither depends on the fuel toggle.
 
 Most of these can also be flipped by voice (*"turn off radar announcements"*, *"all
 announcements off"*), so the page re-reads them whenever you open the tab.

@@ -26,7 +26,7 @@ informé de tout ce qui manque — mais autant le faire d'emblée :
 |------|-------|
 | Le pointer vers un modèle de langage | [Services → Services IA](UI-Settings-Tab) |
 | Vérifier le dossier du journal | [Onglet Commandant](UI-Commander-Tab) |
-| Laisser BindForge se configurer et donner à Vega les touches nécessaires | [Onglet Commandes](UI-Bindings-Tab) |
+| Laisser BindForge se configurer et donner à Vega les touches nécessaires | [Onglet BindForge](UI-Bindings-Tab) |
 | Calibrer l'audio | [Onglet Vega](UI-Vega-Tab) → **CALIBRER L'AUDIO** |
 
 ---

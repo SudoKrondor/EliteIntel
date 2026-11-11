@@ -43,10 +43,17 @@ A partir de ahí, Elite Intel inicia LM Studio cuando inicias sus servicios y lo
 cierras la aplicación, así que el modelo solo usa la memoria de tu tarjeta gráfica mientras Elite Intel está
 en marcha. Para quitarlo, pulsa **Desinstalar LM Studio**: muestra lo que va a borrar antes de borrar nada.
 
-**El botón solo aparece con una NVIDIA RTX 3090 (24 GB) o superior.** El juego ocupa 8,5 GB de memoria de
-vídeo o más y el modelo unos 6 GB, y el navegador, OBS y Windows también usan algo, así que una tarjeta más
-pequeña no aguanta ambos con fiabilidad. Las tarjetas AMD aún no se detectan: si tienes una, sigue la
-[guía de AMD](AMD-RX-7800XT-LLM-Setup).
+**El botón solo aparece cuando tus tarjetas gráficas pueden con el juego y el modelo a la vez.** El juego
+ocupa 8,5 GB de memoria de vídeo o más y el modelo unos 6 GB, y el navegador, OBS y Windows también usan
+algo, así que una tarjeta más pequeña no aguanta ambos con fiabilidad. El botón aparece con:
+
+- **Una tarjeta NVIDIA de 24 GB**, de la serie RTX 30 o posterior: una RTX 3090 o superior.
+- **Dos o más tarjetas NVIDIA con unos 20 GB entre todas**, cada una de la serie RTX 30 o posterior y con
+  al menos 8 GB; por ejemplo, una RTX 5070 de 12 GB con una RTX 3070 Ti de 8 GB.
+- **Tarjetas AMD con la misma memoria, como beta.** El diálogo de instalación te avisa de que AMD está en
+  beta. Si no te funciona, la [guía de AMD](AMD-RX-7800XT-LLM-Setup) lo configura a mano.
+
+Las tarjetas NVIDIA y AMD nunca se suman entre sí.
 
 ¿Ya tienes LM Studio? Entonces el botón dice **Configurar LM Studio**. Añade el modelo y rellena los campos, y
 por lo demás deja tu LM Studio exactamente como está: Elite Intel nunca inicia, detiene ni quita un LM Studio
@@ -125,7 +132,8 @@ Cómo conseguir una clave de cada proveedor: [Configurar un LLM en la nube](clou
 ## ¿Cuál debería usar?
 
 **Ejecuta LM Studio en local si:**
-- tu PC de juego tiene una NVIDIA RTX 3090 24 GB o superior: Elite Intel lo configura por ti
+- tu PC de juego tiene 24 GB de memoria de vídeo en una tarjeta (una RTX 3090 o superior), o unos 20 GB
+  entre dos o más: Elite Intel lo configura por ti
 - o tienes un segundo PC en tu red con 12 GB de memoria de vídeo y potencia de la clase RTX 3080
 - quieres que todo se quede en tu propio hardware
 

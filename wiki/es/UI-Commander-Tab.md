@@ -24,7 +24,7 @@ vacío se usa la ubicación estándar de tu plataforma. Así sabe Elite Intel qu
 si está mal, la app queda prácticamente ciega y lo dice al arrancar. Una carpeta inservible se rechaza y se
 mantiene el ajuste anterior.
 
-> La **carpeta de bindings** está en la [pestaña Bindings](UI-Bindings-Tab), en *Gestión de bindings*.
+> La **carpeta de bindings** está en la [pestaña BindForge](UI-Bindings-Tab), en la barra sobre sus subpestañas.
 
 ### Importar diarios antiguos
 
@@ -167,6 +167,10 @@ cuando algo habla demasiado, o demasiado poco.
 | &nbsp;&nbsp;↳ **Anunciar la llegada** | Una frase al llegar |
 | &nbsp;&nbsp;↳ **Anunciar los saltos restantes** | Saltos que quedan en la ruta |
 | &nbsp;&nbsp;&nbsp;&nbsp;↳ **Anunciar disponibilidad de estrella de combustible** | Si el destino tiene una estrella recolectable — se dice dentro de la frase de saltos restantes |
+
+Una estrella **Wolf-Rayet** por delante en tu ruta siempre recibe un aviso hablado (es muy caliente), y
+un objeto extremadamente raro (una estrella exótica, un planeta errante o una nebulosa) se menciona. Ambos
+siguen a la clase de estrella en el anuncio del waypoint y no dependen del interruptor de combustible.
 
 La mayoría también se puede cambiar por voz (*«desactiva los anuncios de radar»*, *«desactiva
 todos los anuncios»*), por eso la página los vuelve a leer cada vez que abres la pestaña.

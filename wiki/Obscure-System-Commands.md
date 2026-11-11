@@ -68,8 +68,13 @@ coordinates. She does not plot to a system you name aloud — see
   guardian tech broker."* *"Find nearest Vista Genomics."* *"Find nearest interstellar factor."*
   Vega plots the route and leaves a reminder naming the station; ask *"what was the reminder?"*
   when you arrive.
-- **Brain trees**: *"Find brain trees for [material] within 500 light years."* Finds a Guardian
-  brain-tree site that yields that raw material.
+- **Raw materials**: *"Where can I find tellurium?"* Vega sends you to the nearest Guardian brain-tree
+  site that yields it within 500 light years, because brain trees yield the most. With none in range,
+  she picks a planet or moon instead: the richest in that material within two jumps, otherwise the
+  nearest one that has it. Name a range to keep it close — *"where can I farm iron within 50 light
+  years?"* Ask for *brain trees* by name and she suggests only brain trees, and tells you where the
+  nearest one is if none is in range. Manufactured and encoded materials are not found on planets:
+  she names the material trader to visit instead.
 - **Mining sites**: *"Where can I mine osmium within 200 light years?"* Works for tritium too.
 - **Buying and selling**: *"Where can I buy bromellite within 150 light years?"* — add *nearest*
   or *best price*; it works for ship modules as well. *"Where can I sell gold?"*

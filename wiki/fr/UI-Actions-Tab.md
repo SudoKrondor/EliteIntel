@@ -167,10 +167,10 @@ Conseils :
 
 - **Les phrases peuvent être séparées par des virgules** aussi bien que par des retours à la ligne.
 - **Les délais dépendent de votre PC.** Si la carte n'est pas prête quand l'étape suivante arrive,
-  augmentez les délais — ou poussez **Cadence des saisies clavier** de l'[onglet Commandes](UI-Bindings-Tab)
+  augmentez les délais — ou poussez **Cadence des saisies clavier** de l'[onglet BindForge](UI-Bindings-Tab)
   vers Lent.
 - **Chaque étape de raccourci exige une assignation clavier** dans le jeu. Si une commande n'est
-  pas assignée, l'[onglet Commandes](UI-Bindings-Tab) l'affiche sous *Commandes manquantes*.
+  pas assignée, l'[onglet BindForge](UI-Bindings-Tab) l'affiche comme *Vega a besoin d'une touche*.
 - Vega ouvre et lit la carte galactique de la même façon pour ses propres commandes de route ; une
   commande qui part d'une carte **fraîchement ouverte** est donc le modèle fiable — ne partez pas
   d'une carte déjà ouverte.

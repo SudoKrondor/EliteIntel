@@ -14,8 +14,8 @@ página construye dos desde cero.
 - **Debe haber un modelo de lenguaje en marcha.** Genera la clave de acción y empareja tus frases.
   Arranca antes los servicios en la [pestaña Vega](UI-Vega-Tab).
 - **Cada control que uses necesita un binding de teclado.** Elite Intel pulsa teclas; un control
-  asignado solo a tu HOTAS no lo puede pulsar una macro. La [pestaña Bindings](UI-Bindings-Tab)
-  muestra lo que falta, y **Autoasignar bindings faltantes** lo arregla de una vez.
+  asignado solo a tu HOTAS no lo puede pulsar una macro. La [pestaña BindForge](UI-Bindings-Tab)
+  muestra lo que falta, y **Autoasignar bindings requeridos por VEGA** lo arregla de una vez.
 
 ---
 
@@ -139,7 +139,7 @@ las letras llegan a los controles de la nave como pulsaciones.
 
 - **Los retrasos suelen ser la solución.** Si un paso parece saltarse, el juego no estaba listo.
   Alarga el retraso anterior o mueve **Ritmo de entrada de teclas** en la
-  [pestaña Bindings](UI-Bindings-Tab) hacia Lento — añade una pausa tras cada pulsación enviada.
+  [pestaña BindForge](UI-Bindings-Tab) hacia Lento — añade una pausa tras cada pulsación enviada.
 - **Varias frases, significado claro.** No hace falta decir la frase al pie de la letra; Vega
   empareja por significado. Cuanto más se distingan tus frases de otros comandos, con más fiabilidad
   se elegirá el tuyo.
@@ -167,7 +167,7 @@ Los mensajes de validación al guardar aparecen en inglés.
 | *At least one step is required* / *… is required* / *durationMs must be positive* | A un paso le falta binding, texto, tecla o duración |
 | La macro se ejecuta pero algo se salta | Añade o alarga un Retraso antes de ese paso, o ralentiza el ritmo de entrada |
 | Vega responde con otra cosa | Haz tus frases más distintivas, o ejecútalo escrito: `@Vega <frase>` |
-| Un paso de binding no hace nada | Ese control no tiene binding de teclado — ver la [pestaña Bindings](UI-Bindings-Tab) |
+| Un paso de binding no hace nada | Ese control no tiene binding de teclado — ver la [pestaña BindForge](UI-Bindings-Tab) |
 
 ----
 Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈
