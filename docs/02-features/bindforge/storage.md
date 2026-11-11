@@ -567,6 +567,14 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **One warning for the whole set.** It names every file that differs, and each one that looks reset; the three
       choices act on all of them, and the merge's rows are grouped by file. Taking a reset file into the working copy
       - overwriting it, or a merge row answered with the game's side - asks *"Are you sure?"* first.
+      **The warning is a grid since 2026-11-10 (Alan):** one row for each binds file, installation and file to move,
+      with three columns - the file, what was found, what happens to it (*Your choice*, *Yours put back*, *Left as it
+      is*, *Moved to Leftover User Files*). A reset row is in warning colour, a missing, unparseable or unreadable
+      device file in danger colour; the grid scrolls past eight rows. Each kind of row's explanation - a missing
+      `DeviceMappings.xml`, an unparseable file, a plain file with or without lines its twin lacks - is said once below
+      the grid, only when such a row is there, followed by the advice and the APPLY lines as before. *Until then each
+      file was a sentence in one wrapped block, the long ones repeated on every row, and the dialog cut it off.* The
+      message when only unreadable installations are found (`bindings.check.unreadableOnly`) stays text.
     - **Closing the warning is Not now** (Esc, or the close glyph): nothing is written, and it is not shown again in
       that session. The check at APPLY still runs (principle 5).
 

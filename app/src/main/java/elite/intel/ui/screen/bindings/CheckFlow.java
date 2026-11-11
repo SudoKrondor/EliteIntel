@@ -315,7 +315,7 @@ final class CheckFlow {
         CheckWarningDialog.Offer offer = onlyLeftovers(found) ? CheckWarningDialog.Offer.TIDY_UP
                 : found.anyRows() || checked.anySide() ? CheckWarningDialog.Offer.EVERY_CHOICE
                 : CheckWarningDialog.Offer.PUT_MINE_BACK;
-        switch (CheckWarningDialog.show(parent, warningText(found, atApply), offer)) {
+        switch (CheckWarningDialog.show(parent, warning(found, atApply), offer)) {
             case KEEP_MINE -> write(found, checked.with(everyRow(found, Side.WORKING_COPY)),
                     DeviceCheck.Answer.PUT_MINE_BACK, false, then);
             case TAKE_THE_GAMES -> {
@@ -554,36 +554,82 @@ final class CheckFlow {
     }
 
     /**
-     * The warning: every file and installation that differs, each one that looks reset, any newer version left as it is
-     * - and, at APPLY, how many rows the edits change and that closing cancels the APPLY (Storage S8b). A newer version
-     * that can be read was asked on its own before it.
+     * The warning: a row for every file and installation that differs and every file to move, each one that looks reset
+     * in warning colour; below the grid, each kind of row's explanation once, then any newer version left as it is -
+     * and, at APPLY, how many rows the edits change and that closing cancels the APPLY (Storage S8b). A newer version
+     * that can be read was asked on its own before it. A grid since 2026-11-10 (Alan): one sentence per file, the long
+     * ones repeated on every row, ran off the dialog.
      */
-    static String warningText(BindingsCheck.Found found, boolean atApply) {
+    static CheckWarningDialog.Warning warning(BindingsCheck.Found found, boolean atApply) {
         Differences differences = found.differences();
-        List<String> lines = new ArrayList<>();
-        differences.files().forEach(file -> lines.add(fileLine(file)));
-        String installations = installationLines(found);
-        if (!installations.isEmpty()) lines.add(installations);
-        lines.addAll(leftoverLines(found));
+        List<CheckWarningDialog.Row> rows = new ArrayList<>();
+        differences.files().forEach(file -> rows.add(fileRow(file)));
+        found.devices().differing().forEach(judged -> rows.add(installationRow(judged)));
+        rows.addAll(leftoverRows(found));
         // WHY: with only files to move there is nothing to keep - only to tidy up (Storage S13b, S13d).
-        String text = getText(onlyLeftovers(found) ? "bindings.check.leftover.intro" : "bindings.check.intro",
-                String.join("\n", lines));
-        if (differences.anyReset() || found.devices().anyReset()) text += "\n\n" + getText("bindings.check.resetAdvice");
+        boolean tidyUp = onlyLeftovers(found);
+        List<String> after = new ArrayList<>(notes(found));
+        after.add(getText(tidyUp ? "bindings.check.leftover.tidyUp" : "bindings.check.choose"));
+        if (differences.anyReset() || found.devices().anyReset()) after.add(getText("bindings.check.resetAdvice"));
         if (!differences.leftOut().isEmpty()) {
-            text += "\n\n" + getText("bindings.check.newer.leftOut", String.join(", ", differences.leftOut()));
+            after.add(getText("bindings.check.newer.leftOut", String.join(", ", differences.leftOut())));
         }
-        if (found.edited() > 0) text += "\n\n" + getText("bindings.check.edited", found.edited());
-        if (atApply) text += "\n\n" + getText("bindings.check.atApply");
-        return text;
+        if (found.edited() > 0) after.add(getText("bindings.check.edited", found.edited()));
+        if (atApply) after.add(getText("bindings.check.atApply"));
+        return new CheckWarningDialog.Warning(getText(tidyUp ? "bindings.check.leftover.intro" : "bindings.check.intro"),
+                rows, String.join("\n\n", after));
     }
 
-    private static String fileLine(FileDifference file) {
-        String line = switch (file.presence()) {
-            case LIVE_ONLY -> getText("bindings.check.file.liveOnly", file.file());
-            case WORKING_COPY_ONLY -> getText("bindings.check.file.workingCopyOnly", file.file());
-            case BOTH -> getText("bindings.check.file.differs", file.file(), file.items().size());
+    private static CheckWarningDialog.Row fileRow(FileDifference file) {
+        String found = switch (file.presence()) {
+            case LIVE_ONLY -> getText("bindings.check.found.liveOnly");
+            case WORKING_COPY_ONLY -> getText("bindings.check.found.workingCopyOnly");
+            case BOTH -> getText("bindings.check.found.differs", file.items().size());
         };
-        return "- " + line + (file.reset() ? getText("bindings.check.file.reset") : "");
+        if (file.reset()) found = getText("bindings.check.found.reset", found);
+        return new CheckWarningDialog.Row(file.file(), found, getText("bindings.check.fate.choice"),
+                file.reset() ? CheckWarningDialog.Tone.WARNING : CheckWarningDialog.Tone.NORMAL);
+    }
+
+    /** An installation that does not match: a reset in warning colour, a file gone or unreadable in danger colour. */
+    private static CheckWarningDialog.Row installationRow(DeviceCheck.Judged judged) {
+        String name = getText("bindings.firstTimeStartup.place.installation", judged.row().storefront(),
+                judged.row().rootPath());
+        String choice = getText("bindings.check.fate.choice");
+        String putBack = getText("bindings.check.fate.putBack");
+        return switch (judged.state()) {
+            case DIFFERS -> new CheckWarningDialog.Row(name, getText("bindings.check.found.install.differs"), choice,
+                    CheckWarningDialog.Tone.NORMAL);
+            case RESET_FACTORY -> new CheckWarningDialog.Row(name,
+                    getText("bindings.check.found.install.resetFactory"), choice, CheckWarningDialog.Tone.WARNING);
+            case RESET_MISSING -> new CheckWarningDialog.Row(name,
+                    getText("bindings.check.found.install.resetMissing"), putBack, CheckWarningDialog.Tone.DANGER);
+            case UNPARSEABLE -> new CheckWarningDialog.Row(name,
+                    getText("bindings.check.found.install.unparseable", judged.problem()), putBack,
+                    CheckWarningDialog.Tone.DANGER);
+            case UNREADABLE -> new CheckWarningDialog.Row(name,
+                    getText("bindings.check.found.install.unreadable", judged.problem()),
+                    getText("bindings.check.fate.leftAlone"), CheckWarningDialog.Tone.DANGER);
+            case MATCHES -> throw new IllegalArgumentException("an installation that matches has no row");
+        };
+    }
+
+    /**
+     * What each kind of row means, said once below the grid and only when such a row is there: a missing
+     * {@code DeviceMappings.xml}, an unparseable device file, a plain file with lines its twin lacks, a plain file
+     * without.
+     */
+    static List<String> notes(BindingsCheck.Found found) {
+        List<String> notes = new ArrayList<>();
+        List<DeviceCheck.State> states = found.devices().differing().stream().map(DeviceCheck.Judged::state).toList();
+        if (states.contains(DeviceCheck.State.RESET_MISSING)) notes.add(getText("bindings.check.note.resetMissing"));
+        if (states.contains(DeviceCheck.State.UNPARSEABLE)) notes.add(getText("bindings.check.note.unparseable"));
+        Set<String> withRows = found.plainRows().stream().map(PlainBinds.Rows::plain).collect(Collectors.toSet());
+        if (!withRows.isEmpty()) notes.add(getText("bindings.check.note.plainRows"));
+        if (found.leftovers().plain().keySet().stream().anyMatch(name -> !withRows.contains(name))) {
+            notes.add(getText("bindings.check.note.plain"));
+        }
+        return notes;
     }
 
     /**
@@ -595,21 +641,24 @@ final class CheckFlow {
     }
 
     /**
-     * One line for each file to move to Leftover User Files, in name order (Storage S13d): a plain binds file says it is
-     * judged first, any other only that it goes.
+     * One row for each file to move to Leftover User Files, in name order (Storage S13d): a plain binds file with lines
+     * its twin lacks is the user's choice first, then moved; any other is only moved.
      */
-    static List<String> leftoverLines(BindingsCheck.Found found) {
+    static List<CheckWarningDialog.Row> leftoverRows(BindingsCheck.Found found) {
         Map<String, PlainBinds.Rows> withRows = new HashMap<>();
         found.plainRows().forEach(rows -> withRows.put(rows.plain(), rows));
+        String moved = getText("bindings.check.fate.moved");
         return found.leftovers().files().stream()
                 .map(name -> {
                     PlainBinds.Rows rows = withRows.get(name);
                     if (rows != null) {
-                        return "- " + getText("bindings.check.file.plainRows", name, rows.rows().items().size(),
-                                rows.twin());
+                        return new CheckWarningDialog.Row(name, getText("bindings.check.found.plainRows",
+                                rows.rows().items().size(), rows.twin()),
+                                getText("bindings.check.fate.choiceThenMoved"), CheckWarningDialog.Tone.NORMAL);
                     }
-                    return "- " + getText(found.leftovers().plain().containsKey(name)
-                            ? "bindings.check.file.plain" : "bindings.check.file.leftover", name);
+                    return new CheckWarningDialog.Row(name, getText(found.leftovers().plain().containsKey(name)
+                            ? "bindings.check.found.plain" : "bindings.check.found.leftover"), moved,
+                            CheckWarningDialog.Tone.NORMAL);
                 })
                 .toList();
     }

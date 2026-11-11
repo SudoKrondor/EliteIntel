@@ -19,6 +19,7 @@ import elite.intel.bindforge.storage.WriteReport;
 import elite.intel.bindforge.storage.WriteReport.Place;
 import elite.intel.bindforge.storage.Written;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
+import elite.intel.ui.screen.bindings.CheckWarningDialog.Tone;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -62,18 +63,26 @@ class CheckFlowTest {
         assertEquals(Map.of(yaw.id(), Side.LIVE), kept);
     }
 
-    /** At the first click: each file a line, a reset named, and the advice for it - nothing about APPLY. */
+    /**
+     * At the first click: each file a row, a reset named and in warning colour, and the advice for it below the grid -
+     * nothing about APPLY (the grid, 2026-11-10).
+     */
     @Test
     void theWarningAtTheFirstClickNamesEachFileAndAReset() {
         FileDifference custom = file(true, slot("YawLeftButton", "Key_A", "Key_Q"));
         FileDifference spare = new FileDifference(SPARE, Presence.LIVE_ONLY, false,
                 List.of(new LineItem(SPARE, "#file", Kind.FILE, null, null, null, null, "Spare 4.2")));
 
-        String text = CheckFlow.warningText(found(differences(custom, spare), 0), false);
+        CheckWarningDialog.Warning warning = CheckFlow.warning(found(differences(custom, spare), 0), false);
 
-        String files = "- " + getText("bindings.check.file.differs", CUSTOM, 1) + getText("bindings.check.file.reset")
-                + "\n- " + getText("bindings.check.file.liveOnly", SPARE);
-        assertEquals(getText("bindings.check.intro", files) + "\n\n" + getText("bindings.check.resetAdvice"), text);
+        assertEquals(getText("bindings.check.intro"), warning.intro());
+        assertEquals(List.of(
+                row(CUSTOM, getText("bindings.check.found.reset", getText("bindings.check.found.differs", 1)),
+                        "bindings.check.fate.choice", Tone.WARNING),
+                row(SPARE, getText("bindings.check.found.liveOnly"), "bindings.check.fate.choice", Tone.NORMAL)),
+                warning.rows());
+        assertEquals(getText("bindings.check.choose") + "\n\n" + getText("bindings.check.resetAdvice"),
+                warning.after());
     }
 
     /**
@@ -86,17 +95,20 @@ class CheckFlowTest {
                 slot("RollLeftButton", "Key_E", "Key_R"));
         Differences differences = new Differences(List.of(custom), List.of(), List.of(NEWER));
 
-        String text = CheckFlow.warningText(found(differences, 2), true);
+        CheckWarningDialog.Warning warning = CheckFlow.warning(found(differences, 2), true);
 
-        assertEquals(getText("bindings.check.intro", "- " + getText("bindings.check.file.differs", CUSTOM, 2))
+        assertEquals(List.of(row(CUSTOM, getText("bindings.check.found.differs", 2), "bindings.check.fate.choice",
+                Tone.NORMAL)), warning.rows());
+        assertEquals(getText("bindings.check.choose")
                 + "\n\n" + getText("bindings.check.newer.leftOut", NEWER)
                 + "\n\n" + getText("bindings.check.edited", 2)
-                + "\n\n" + getText("bindings.check.atApply"), text);
+                + "\n\n" + getText("bindings.check.atApply"), warning.after());
     }
 
     /**
-     * The device files at the first click (Storage S9a): each installation that does not match is a line after the
-     * files, a reset brings the advice, and one that matches says nothing.
+     * The device files at the first click (Storage S9a): each installation that does not match is a row after the
+     * files, in danger colour when its file is gone or unreadable; a missing file's note and the reset advice are said
+     * below; one that matches has no row.
      */
     @Test
     void theWarningNamesEachInstallationThatDiffers() {
@@ -107,14 +119,17 @@ class CheckFlowTest {
         BindingsCheck.Found found = new BindingsCheck.Found(new ConfigurationFiles(Map.of(), null, Map.of()),
                 Map.of(), differences(), 0, devices, Leftovers.Found.NONE, List.of());
 
-        String text = CheckFlow.warningText(found, false);
+        CheckWarningDialog.Warning warning = CheckFlow.warning(found, false);
 
-        String installations = "- " + getText("bindings.check.install.resetMissing",
-                getText("bindings.firstTimeStartup.place.installation", "EPIC", "Epic"))
-                + "\n- " + getText("bindings.check.install.unreadable",
-                getText("bindings.firstTimeStartup.place.installation", "FRONTIER", "Frontier"), "locked");
-        assertEquals(getText("bindings.check.intro", installations) + "\n\n" + getText("bindings.check.resetAdvice"),
-                text);
+        assertEquals(List.of(
+                row(getText("bindings.firstTimeStartup.place.installation", "EPIC", "Epic"),
+                        getText("bindings.check.found.install.resetMissing"), "bindings.check.fate.putBack",
+                        Tone.DANGER),
+                row(getText("bindings.firstTimeStartup.place.installation", "FRONTIER", "Frontier"),
+                        getText("bindings.check.found.install.unreadable", "locked"), "bindings.check.fate.leftAlone",
+                        Tone.DANGER)), warning.rows());
+        assertEquals(getText("bindings.check.note.resetMissing") + "\n\n" + getText("bindings.check.choose")
+                + "\n\n" + getText("bindings.check.resetAdvice"), warning.after());
     }
 
     /**
@@ -167,33 +182,41 @@ class CheckFlowTest {
     // ---- what does not belong in the bindings folder (Storage S13b, S13d)
 
     /**
-     * Only files to move: the warning that offers Tidy up - its own intro, a line each in name order, a plain binds file
-     * saying it is judged first - and at APPLY, that closing cancels it.
+     * Only files to move: the warning that offers Tidy up - its own intro, a row each in name order, a plain binds
+     * file's note said once below - and at APPLY, that closing cancels it.
      */
     @Test
     void aWarningHoldingOnlyFilesToMoveSaysTheyAreTidiedUp() {
         BindingsCheck.Found found = withLeftovers(differences());
 
-        String text = CheckFlow.warningText(found, true);
+        CheckWarningDialog.Warning warning = CheckFlow.warning(found, true);
 
         assertTrue(CheckFlow.onlyLeftovers(found));
-        assertEquals(getText("bindings.check.leftover.intro",
-                "- " + getText("bindings.check.file.leftover", "Broken.binds")
-                        + "\n- " + getText("bindings.check.file.plain", "Spare.binds"))
-                + "\n\n" + getText("bindings.check.atApply"), text);
+        assertEquals(getText("bindings.check.leftover.intro"), warning.intro());
+        assertEquals(List.of(
+                row("Broken.binds", getText("bindings.check.found.leftover"), "bindings.check.fate.moved", Tone.NORMAL),
+                row("Spare.binds", getText("bindings.check.found.plain"), "bindings.check.fate.moved", Tone.NORMAL)),
+                warning.rows());
+        assertEquals(getText("bindings.check.note.plain") + "\n\n" + getText("bindings.check.leftover.tidyUp")
+                + "\n\n" + getText("bindings.check.atApply"), warning.after());
     }
 
-    /** With a row too, the usual intro and choices; the files to move are lines after the files. */
+    /** With a row too, the usual intro and choices; the files to move are rows after the files. */
     @Test
-    void filesToMoveAreLinesInTheUsualWarningWhenAFileDiffersToo() {
+    void filesToMoveAreRowsInTheUsualWarningWhenAFileDiffersToo() {
         BindingsCheck.Found found = withLeftovers(differences(file(false, slot("YawLeftButton", "Key_A", "Key_Q"))));
 
-        String text = CheckFlow.warningText(found, false);
+        CheckWarningDialog.Warning warning = CheckFlow.warning(found, false);
 
         assertFalse(CheckFlow.onlyLeftovers(found));
-        assertEquals(getText("bindings.check.intro", "- " + getText("bindings.check.file.differs", CUSTOM, 1)
-                + "\n- " + getText("bindings.check.file.leftover", "Broken.binds")
-                + "\n- " + getText("bindings.check.file.plain", "Spare.binds")), text);
+        assertEquals(getText("bindings.check.intro"), warning.intro());
+        assertEquals(List.of(
+                row(CUSTOM, getText("bindings.check.found.differs", 1), "bindings.check.fate.choice", Tone.NORMAL),
+                row("Broken.binds", getText("bindings.check.found.leftover"), "bindings.check.fate.moved", Tone.NORMAL),
+                row("Spare.binds", getText("bindings.check.found.plain"), "bindings.check.fate.moved", Tone.NORMAL)),
+                warning.rows());
+        assertEquals(getText("bindings.check.note.plain") + "\n\n" + getText("bindings.check.choose"),
+                warning.after());
     }
 
     /** A stray file alone is something to ask about: the check offers Tidy up, never only names it (Storage S13d). */
@@ -249,8 +272,9 @@ class CheckFlowTest {
     }
 
     /**
-     * A plain file holding lines its twin lacks (Storage S13e): its own warning line, naming how many and the twin; its
-     * rows are the warning's, after the binds files', so the warning offers every choice, not Tidy up.
+     * A plain file holding lines its twin lacks (Storage S13e): its own warning row, naming how many and the twin, and
+     * its note below - not the plain note, which is for a plain file with no lines to choose; its line items are the
+     * warning's, after the binds files', so the warning offers every choice, not Tidy up.
      */
     @Test
     void aPlainFileWithRowsHasItsOwnLineAndRows() {
@@ -262,8 +286,9 @@ class CheckFlowTest {
                 differences(), 0, new DeviceCheck.Found(List.of()),
                 new Leftovers.Found(Map.of("Custom.binds", new byte[]{1}), List.of()), List.of(rows));
 
-        assertEquals(List.of("- " + getText("bindings.check.file.plainRows", "Custom.binds", 1, CUSTOM)),
-                CheckFlow.leftoverLines(found));
+        assertEquals(List.of(row("Custom.binds", getText("bindings.check.found.plainRows", 1, CUSTOM),
+                "bindings.check.fate.choiceThenMoved", Tone.NORMAL)), CheckFlow.leftoverRows(found));
+        assertEquals(List.of(getText("bindings.check.note.plainRows")), CheckFlow.notes(found));
         assertEquals(List.of(row), found.items());
         assertTrue(found.anyRows());
         assertFalse(CheckFlow.onlyLeftovers(found), "rows to answer - every choice, not Tidy up");
@@ -336,6 +361,11 @@ class CheckFlowTest {
         InstallationRow row = new InstallationRow(id, storefront, folder, false, false);
         return new DeviceCheck.Judged(row, state,
                 state == DeviceCheck.State.UNREADABLE ? null : new DeviceFiles(null, Map.of()), problem);
+    }
+
+    /** A grid row, its fate given by bundle key. */
+    private static CheckWarningDialog.Row row(String file, String found, String fateKey, Tone tone) {
+        return new CheckWarningDialog.Row(file, found, getText(fateKey), tone);
     }
 
     private static LineItem slot(String element, String mine, String theirs) {
