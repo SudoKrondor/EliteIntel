@@ -42,6 +42,16 @@ reusing the same generic pan/zoom/navigation action set. Galaxy Map and System C
 Facility Placement are both largely isolated (Galaxy Map only conflicts with Playlist; SCFP
 conflicts with nothing in this section at all).
 
+**System Colonisation Facility Placement is a screen of its own, across sections too** (Krondor,
+2026-11-10). It opens from the ship only (`TriggerColonisationModule`, Ship > Miscellaneous), and
+the HUD then switches over to it completely. The ship hangs where it was and the game turns every
+ship control off while the commander picks the facility type and moves its blueprint over the
+terrain. So no placement control can co-fire with a ship, SRV, on-foot or map control, and a
+layout that puts `PlaceSettlement` on the ship's primary fire trigger is deliberate.
+BindForge treats the whole group as a modal screen, like FSS and DSS
+(`BindingConflictRules.MODAL_SCREEN_GROUPS`). Before that, `PlaceSettlement` and
+`RotateSettlement*` fell through to the ship context and were reported against ship controls.
+
 **Ship Controls** — the biggest surprise here: almost the entire "active flight" cluster (Mouse
 Controls, Flight Rotation, Flight Thrust, Alternate Flight Controls, Flight Throttle, Flight
 Miscellaneous, Targeting, Weapons, Cooling, Miscellaneous, Mode Switches) behaves as **one shared

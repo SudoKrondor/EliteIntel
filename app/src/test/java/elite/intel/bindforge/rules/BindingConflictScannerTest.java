@@ -448,12 +448,39 @@ class BindingConflictScannerTest {
 
     @Test
     void constructionPanelNeverConflictsWithShipAction() {
-        // The construction/colonisation panel is a separate UI panel, mutually exclusive with flight.
+        // Facility placement takes the HUD over and switches every ship control off.
         List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
                 "ChangeConstructionOption", Set.of("Key_J"),
                 "Hyperspace", Set.of("Key_J")));
 
         assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void placingAFacilityOnThePrimaryFireTriggerIsNoConflict() {
+        // Reported: PlaceSettlement sits under GENERAL and spells no vehicle, so it was read as a ship
+        // control and reported against the trigger it is meant to share.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "PlaceSettlement", Set.of("Joy_1"),
+                "PrimaryFire", Set.of("Joy_1"),
+                "BuggyPrimaryFireButton", Set.of("Joy_1"),
+                "HumanoidPrimaryFireButton", Set.of("Joy_1")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
+    }
+
+    @Test
+    void rotatingAFacilityNeverConflictsWithShipSrvOnFootOrMapControls() {
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "RotateSettlementLeft", Set.of("Key_Q"),
+                "RotateSettlementRight", Set.of("Key_E"),
+                "RollLeftButton", Set.of("Key_Q"),
+                "RollRightButton", Set.of("Key_E"),
+                "SteerLeftButton", Set.of("Key_Q"),
+                "HumanoidStrafeLeftButton", Set.of("Key_Q"),
+                "CamYawLeft", Set.of("Key_Q")));
+
+        assertTrue(conflicts.isEmpty(), conflicts.toString());
     }
 
     @Test

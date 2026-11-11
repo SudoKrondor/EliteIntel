@@ -163,14 +163,15 @@ public class BindingConflictRules {
      * chord; a modifier shadow is {@link #isSafeShadow}.
      * <p>
      * Safe cases:
-     * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
-     * only one is active at a time. In particular an Interface Mode or construction-panel action never
+     * - Different input contexts (ship / buggy / humanoid / UI) - mutually exclusive,
+     * only one is active at a time. In particular an Interface Mode action never
      * collides with a vehicle control (e.g. {@code CycleNextSubsystem} vs {@code UI_Right}): the panel
      * that has focus is reading that key. And a control the commander thinks of as one thing but Elite
      * binds per vehicle - the cargo scoop, the fire groups, the triggers, the panels, the maps, the
      * lamps, night vision - may sit on one key in all of them. Commanders lay it out that way on
      * purpose, and only one vehicle is ever occupied.
-     * - Either action belongs to a sub-state overlay (camera, FSS, Galnet, radial wheels) - these
+     * - Either action belongs to a sub-state overlay (camera, FSS, DSS, colonisation facility placement,
+     * Galnet, radial wheels) - these
      * modes are only active inside a specific overlay and cannot fire alongside regular actions.
      */
     public static boolean isSafeOverlap(String a, String b) {
@@ -355,7 +356,6 @@ public class BindingConflictRules {
      *   <li>{@code ui} - the Interface Mode controls ({@link #INTERFACE_MODE_ACTIONS}); the panel that
      *       has focus is reading those keys, so a vehicle binding on the same key does not also fire,
      *       with the three exceptions checked ahead of this in {@link #isSafeOverlap};</li>
-     *   <li>{@code construction} - the colonisation/construction panel, a separate UI panel;</li>
      *   <li>{@code buggy} - SRV controls;</li>
      *   <li>{@code humanoid} - on-foot controls;</li>
      *   <li>{@code ship} - everything else (cockpit flight).</li>
@@ -375,7 +375,6 @@ public class BindingConflictRules {
         // to contextFromName() and come back as "ship" - which under-reported them against ship controls
         // and cleared them outright against SRV and on-foot ones.
         if (isInterfaceModeAction(action) || isUiNavigationAction(action)) return "ui";
-        if (action.contains("Construction")) return "construction";
         return switch (BindingDisplayNames.lookup(action).section()) {
             case SRV -> "buggy";
             case ON_FOOT -> "humanoid";
@@ -411,33 +410,44 @@ public class BindingConflictRules {
                 // is read only while the wheel is up, never against Crouch, Sprint or Walk.
                 || action.startsWith("HumanoidEmote")
                 || action.startsWith("Vanity")
-                || action.startsWith("MovePlacement") || action.startsWith("Placement")
                 || action.startsWith("GalnetAudio")
                 || action.startsWith("MultiCrew") || action.startsWith("Store")
-                || isScannerScreenControl(action);
+                || isModalScreenControl(action);
     }
 
     /**
-     * The groups the game lists the two scanner screens under. The Detailed Surface Scanner is a screen of its own -
-     * while it is up, nothing else fires, not even from a HOTAS - so its controls do not clash with a ship one in play.
-     * The game's rebind check still complains about it against Weapons and Mode Switches: {@link GameConflictMatrix}
-     * reports those, ahead of this.
+     * The groups the game lists its full-screen modes under: the two scanner screens and colonisation facility
+     * placement. Each is a screen of its own - while it is up, nothing else fires, not even from a HOTAS - so its
+     * controls do not clash with a ship, SRV, on-foot or map one.
+     * <p>
+     * The Detailed Surface Scanner draws a complaint from the game's rebind check against Weapons and Mode Switches
+     * all the same: {@link GameConflictMatrix} reports those, ahead of this.
+     * <p>
+     * Facility placement is entered from the ship only, and it takes the whole HUD over: the ship hangs where it was
+     * and every ship control is off while the commander picks the facility and moves its blueprint over the terrain.
+     * So {@code PlaceSettlement} on the ship's primary fire trigger is the layout working, not a conflict. Before this
+     * group was listed, {@code PlaceSettlement} and the {@code RotateSettlement*} controls fell through
+     * {@link #contextOf}'s name fallback (they sit under GENERAL and spell neither {@code Cam} nor a vehicle) and came
+     * back as {@code ship}, so each was reported against whatever ship control shared its key.
      */
-    private static final Set<String> SCANNER_SCREEN_GROUPS = Set.of(
-            "Full Spectrum System Scanner", "Detailed Surface Scanner");
+    private static final Set<String> MODAL_SCREEN_GROUPS = Set.of(
+            "Full Spectrum System Scanner", "Detailed Surface Scanner", "System Colonisation Facility Placement");
 
     /**
-     * A control that works only inside the FSS or the Detailed Surface Scanner, by the group the game's own controls
+     * A control that works only inside one of the {@link #MODAL_SCREEN_GROUPS}, by the group the game's own controls
      * screen lists it under ({@link BindingDisplayNames}).
      * <p>
      * WHY the group and not the {@code ExplorationFSS} / {@code ExplorationSAA} prefixes: {@code ExplorationFSSEnter}
      * carries the FSS prefix but sits under Mode Switches - it is pressed in normal flight to open the scanner, so it
      * clashes with a ship control on its key ({@code DeployHardpointToggle}, confirmed in the game: FP-3). The group
-     * also covers the scanner's third-person camera controls, which drop the prefix ({@code SAAThirdPerson*}).
+     * also covers the scanner's third-person camera controls, which drop the prefix ({@code SAAThirdPerson*}), and the
+     * placement controls, which share no prefix at all ({@code PlaceSettlement}, {@code ChangeConstructionOption},
+     * {@code MovePlacementCam*}). The ship control that opens placement, {@code TriggerColonisationModule}, sits under
+     * the ship's Miscellaneous group and stays a ship control, as it should.
      */
-    private static boolean isScannerScreenControl(String action) {
+    private static boolean isModalScreenControl(String action) {
         String group = BindingDisplayNames.lookup(action).group();
         // WHY: a control the table has not met has no group, and Set.of(...).contains(null) throws.
-        return group != null && SCANNER_SCREEN_GROUPS.contains(group);
+        return group != null && MODAL_SCREEN_GROUPS.contains(group);
     }
 }
