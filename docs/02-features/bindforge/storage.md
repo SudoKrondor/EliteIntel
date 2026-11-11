@@ -190,6 +190,25 @@ inert actions, `Opening.readOnly` on `DeviceEditorDialog`, and `BindForgeReadOnl
    runs. A session flag stops it from running again in that session. *Until 2026-10-23 a backup was taken here too;
    the startup backup ([rule 12](#backups)) replaced it.*
 
+   **After the bindings folder changes, the check runs again at the next click on the BindForge tab** (Alan,
+   2026-11-11). Until then a binding changed in the game after the first click was not seen until the next APPLY or
+   the next Elite-Intel start: Alan changed one in the game's controls with BindForge already opened, and nothing
+   asked. Now, when `BindingsMonitor` - which already watches the bindings folder for the assistant's keys - sees it
+   change after the check last ran, the session flag is cleared, and the next click on the BindForge tab runs the
+   check as the first click does. **No dialog opens while the user is on another tab, or while they stay on
+   BindForge** (principle 5): the check waits for the click. BindForge still does not watch the files itself, and
+   the check at APPLY is unchanged.
+
+   *To confirm at the slice's sources (Storage S17):*
+   - which changes count - the monitor reacts only to names ending `.binds`, so a change to `StartPreset.4.start`
+     alone, or to an installation's device files, clears nothing;
+   - BindForge's own writes change the folder too (APPLY, RESTORE, the check's write), and would send the next
+     click through a check that finds nothing;
+   - after **Not now**, whether the next click asks again or only a further change does;
+   - a user who is on the BindForge tab when the game saves, and does not leave it;
+   - edits not applied put the first click's check off to the next click, and read only turns it off - presumably
+     the same here.
+
 ## Editing and applying
 
 6. Alias Designer, Bind Editor and Preset Editor hold the user's changes on screen, as edits not applied. They never

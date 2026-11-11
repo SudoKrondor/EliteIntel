@@ -486,6 +486,9 @@ Two consequences worth building for:
 **BindForge does not watch the files.** The check runs at three moments — when Elite-Intel starts, the first time the
 BindForge tab is opened in a session, and at APPLY ([storage.md](storage.md) rules 5, 7, 14–15) — and the one at
 APPLY catches anything that changed while BindForge was open, before anything is written (2026-10-23, Alan).
+**Since 2026-11-11 (Alan) a fourth:** the next click on the BindForge tab after the bindings folder changed, so a
+binding changed in the game while Elite-Intel runs is asked about without an APPLY or a restart
+([storage.md](storage.md#opening-bindforge) rule 5; Storage S17, not built yet).
 *Until 2026-10-23 `DeviceFilesMonitor` polled every installation's device files every two seconds to refresh the
 Alias Designer screen.*
 
