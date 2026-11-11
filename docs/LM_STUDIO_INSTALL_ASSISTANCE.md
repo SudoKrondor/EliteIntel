@@ -133,6 +133,14 @@ to fit as the download, a result or the log appear. It has no scrolling body.
 `wget`). The dialog tells the commander that LM Studio is third-party software, and names its install folder
 and size before anything is downloaded.
 
+**LM Studio's console windows (Windows).** The script and `lms daemon up` start LM Studio's own `node.exe` helpers,
+and each opens a console window: several flash up and two stay open (a Windows tester, 2026-11-10, in IntelliJ and
+in the installed app alike). Our own launches are hidden, but that does not reach programs LM Studio starts.
+`LmStudioWindowHider` therefore hides every visible window whose program lives in the LM Studio home, or whose title
+names a path there (Windows Terminal hosts the console under its own program). It runs while the script or any `lms`
+command runs and for 20 s after, and logs each window it hides. A hidden window's program keeps running. This is on
+trial: if it does not hold up, the fallback is running the model on our own llama.cpp rather than LM Studio.
+
 **Why the CLI loads the model, not REST:** the REST load has no GPU-offload setting, and `--gpu max` is what
 the guides have always used. REST does the download, because only REST reports progress.
 

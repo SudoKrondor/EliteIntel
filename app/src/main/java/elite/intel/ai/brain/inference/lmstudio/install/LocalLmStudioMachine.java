@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -40,10 +41,32 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     private static final Duration SERVER_STARTUP = Duration.ofSeconds(60);
 
     private final ProcessRunner runner;
+    private final Consumer<String> log;
     private final LmStudioServer server = new LmStudioServer();
 
     LocalLmStudioMachine(Consumer<String> log) {
         this.runner = new ProcessRunner(log);
+        this.log = log;
+    }
+
+    /**
+     * Runs an {@code lms} command, hiding the console windows LM Studio opens meanwhile ({@link LmStudioWindowHider}).
+     */
+    private void runLms(Path lms, Duration timeout, String... arguments) throws InstallException {
+        List<String> command = new ArrayList<>();
+        command.add(lms.toString());
+        command.addAll(List.of(arguments));
+        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(homeOf(lms), log)) {
+            runner.run(command, timeout);
+        }
+    }
+
+    /**
+     * The LM Studio home an {@code lms} belongs to: it lives in {@code <home>/bin}.
+     */
+    private static Path homeOf(Path lms) {
+        Path bin = lms.toAbsolutePath().getParent();
+        return bin.getParent() == null ? bin : bin.getParent();
     }
 
     @Override
@@ -59,7 +82,7 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     public void runInstallScript() throws InstallException {
         boolean windows = OsDetector.getOs() == OsDetector.OS.WINDOWS;
         Path script = download(windows ? WINDOWS_SCRIPT : LINUX_SCRIPT, windows ? ".ps1" : ".sh");
-        try {
+        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(LmStudioHome.locate().dir(), log)) {
             runner.run(windows
                     ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString())
                     : List.of("bash", script.toString()), SCRIPT);
@@ -74,18 +97,17 @@ final class LocalLmStudioMachine implements LmStudioMachine {
 
     @Override
     public void daemonUp(Path lms) throws InstallException {
-        runner.run(List.of(lms.toString(), "daemon", "up"), COMMAND);
+        runLms(lms, COMMAND, "daemon", "up");
     }
 
     @Override
     public void daemonDown(Path lms) throws InstallException {
-        runner.run(List.of(lms.toString(), "daemon", "down"), COMMAND);
+        runLms(lms, COMMAND, "daemon", "down");
     }
 
     @Override
     public void startServer(Path lms) throws InstallException {
-        runner.run(List.of(lms.toString(), "server", "start", "--port", String.valueOf(LmStudioDefaults.PORT),
-                "--bind", "127.0.0.1"), COMMAND);
+        runLms(lms, COMMAND, "server", "start", "--port", String.valueOf(LmStudioDefaults.PORT), "--bind", "127.0.0.1");
         Instant deadline = Instant.now().plus(SERVER_STARTUP);
         while (!server.isAnswering()) {
             if (runner.isCancelled()) throw new InstallException("Cancelled");
@@ -103,7 +125,7 @@ final class LocalLmStudioMachine implements LmStudioMachine {
 
     @Override
     public void stopServer(Path lms) throws InstallException {
-        runner.run(List.of(lms.toString(), "server", "stop"), COMMAND);
+        runLms(lms, COMMAND, "server", "stop");
     }
 
     @Override
@@ -137,18 +159,17 @@ final class LocalLmStudioMachine implements LmStudioMachine {
      */
     @Override
     public void load(Path lms, String model) throws InstallException {
-        runner.run(List.of(lms.toString(), "load", model, "--context-length", String.valueOf(CONTEXT_LENGTH),
-                "--gpu", "max", "--yes"), LOAD);
+        runLms(lms, LOAD, "load", model, "--context-length", String.valueOf(CONTEXT_LENGTH), "--gpu", "max", "--yes");
     }
 
     @Override
     public void unload(Path lms, String model) throws InstallException {
-        runner.run(List.of(lms.toString(), "unload", model), COMMAND);
+        runLms(lms, COMMAND, "unload", model);
     }
 
     @Override
     public void unloadAll(Path lms) throws InstallException {
-        runner.run(List.of(lms.toString(), "unload", "--all"), COMMAND);
+        runLms(lms, COMMAND, "unload", "--all");
     }
 
     @Override
