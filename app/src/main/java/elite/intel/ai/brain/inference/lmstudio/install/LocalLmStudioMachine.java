@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.inference.lmstudio.install;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioServer.DownloadStart;
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioServer.DownloadStatus;
@@ -16,8 +18,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -34,6 +38,12 @@ final class LocalLmStudioMachine implements LmStudioMachine {
      * Windows for V1.1: a smaller window makes the model hallucinate, a larger one makes each turn too slow.
      */
     static final int CONTEXT_LENGTH = 8192;
+
+    private static final String LLMSTER = "llmster.exe";
+    /**
+     * Where the llmster the app starts on Windows writes its output, in the LM Studio home.
+     */
+    static final String LLMSTER_LOG = "elite-intel-llmster.log";
 
     private static final Duration SCRIPT = Duration.ofMinutes(30);
     private static final Duration COMMAND = Duration.ofMinutes(2);
@@ -95,14 +105,127 @@ final class LocalLmStudioMachine implements LmStudioMachine {
         }
     }
 
+    /**
+     * Starts LM Studio's daemon. On Windows the app starts {@code llmster.exe} itself rather than through
+     * {@code lms daemon up}. WHY: llmster started by {@code lms} has no console, so every console program it starts
+     * - LM Studio's own {@code node.exe} helpers - opens a console window of its own: several flash up and two stay
+     * open, which looks like a virus to a commander. Started by us it has our hidden console, its helpers share it,
+     * and no window opens (a Windows tester ran llmster directly and saw none, 2026-11-11).
+     */
     @Override
     public void daemonUp(Path lms) throws InstallException {
-        runLms(lms, COMMAND, "daemon", "up");
+        if (!isWindows()) {
+            runLms(lms, COMMAND, "daemon", "up");
+            return;
+        }
+        if (daemonPid(lms).isPresent()) {
+            log.accept("llmster is already running");
+            return;
+        }
+        Optional<Path> llmster = new LmStudioHome(homeOf(lms)).installedPrograms().stream()
+                .filter(program -> program.getFileName().toString().equalsIgnoreCase(LLMSTER))
+                .findFirst();
+        if (llmster.isEmpty()) {
+            log.accept("LM Studio names no " + LLMSTER + ", so lms starts it");
+            runLms(lms, COMMAND, "daemon", "up");
+            return;
+        }
+        startLlmster(lms, llmster.get());
     }
 
+    private void startLlmster(Path lms, Path llmster) throws InstallException {
+        Path output = homeOf(lms).resolve(LLMSTER_LOG);
+        ProcessBuilder builder = new ProcessBuilder(llmster.toString())
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.to(output.toFile()))
+                .directory(Path.of(System.getProperty("user.home")).toFile());
+        builder.environment().put("LMS_NO_MODIFY_PATH", "1");
+        log.accept("> " + llmster + " (its output goes to " + output + ")");
+        Process process;
+        try (LmStudioWindowHider.Watch ignored = LmStudioWindowHider.watch(homeOf(lms), log)) {
+            try {
+                process = builder.start();
+            } catch (IOException e) {
+                throw new InstallException("Could not start " + llmster + ": " + e.getMessage(), e);
+            }
+            Instant deadline = Instant.now().plus(COMMAND);
+            while (true) {
+                OptionalLong pid = daemonPid(lms);
+                if (pid.isPresent()) {
+                    log.accept("llmster started (PID: " + pid.getAsLong() + ").");
+                    return;
+                }
+                if (!process.isAlive()) {
+                    throw new InstallException(llmster + " stopped with exit code " + process.exitValue()
+                            + " before it was running (its output is in " + output + ")");
+                }
+                if (Instant.now().isAfter(deadline)) {
+                    process.destroy();
+                    throw new InstallException(llmster + " was not running within " + COMMAND.toMinutes() + " min");
+                }
+                pause(Duration.ofSeconds(1));
+            }
+        }
+    }
+
+    /**
+     * Stops LM Studio's daemon. On Windows an llmster {@code lms daemon down} leaves running - one the app started
+     * itself may not count as LM Studio's daemon to {@code lms} - is stopped with everything it started.
+     */
     @Override
     public void daemonDown(Path lms) throws InstallException {
-        runLms(lms, COMMAND, "daemon", "down");
+        if (!isWindows()) {
+            runLms(lms, COMMAND, "daemon", "down");
+            return;
+        }
+        InstallException refused = null;
+        try {
+            runLms(lms, COMMAND, "daemon", "down");
+        } catch (InstallException e) {
+            refused = e;
+        }
+        OptionalLong pid = daemonPid(lms);
+        if (pid.isEmpty()) return;
+        Optional<ProcessHandle> llmster = ProcessHandle.of(pid.getAsLong());
+        if (llmster.isEmpty()) return;
+        log.accept("lms daemon down left llmster (PID: " + pid.getAsLong() + ") running, so it is stopped directly");
+        llmster.get().descendants().forEach(ProcessHandle::destroy);
+        llmster.get().destroy();
+        try {
+            llmster.get().onExit().get(30, TimeUnit.SECONDS);
+        } catch (Exception notStopped) {
+            if (notStopped instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw refused != null ? refused : new InstallException("llmster (PID: " + pid.getAsLong() + ") did not stop");
+        }
+    }
+
+    /**
+     * The PID of the running llmster, from {@code lms daemon status --json}; empty when none runs.
+     */
+    private OptionalLong daemonPid(Path lms) throws InstallException {
+        List<String> output = runner.run(List.of(lms.toString(), "daemon", "status", "--json"), COMMAND);
+        return runningPid(String.join("\n", output));
+    }
+
+    /**
+     * Reads {@code lms daemon status --json}: {@code {"status": "running", "pid": 12345, ...}} or
+     * {@code {"status": "not-running"}}. Anything else counts as not running.
+     */
+    static OptionalLong runningPid(String output) {
+        int start = output.indexOf('{');
+        int end = output.lastIndexOf('}');
+        if (start < 0 || end < start) return OptionalLong.empty();
+        try {
+            JsonObject status = JsonParser.parseString(output.substring(start, end + 1)).getAsJsonObject();
+            if (!status.has("status") || !"running".equals(status.get("status").getAsString())) return OptionalLong.empty();
+            return status.has("pid") ? OptionalLong.of(status.get("pid").getAsLong()) : OptionalLong.empty();
+        } catch (RuntimeException unreadable) {
+            return OptionalLong.empty();
+        }
+    }
+
+    private static boolean isWindows() {
+        return OsDetector.getOs() == OsDetector.OS.WINDOWS;
     }
 
     @Override
