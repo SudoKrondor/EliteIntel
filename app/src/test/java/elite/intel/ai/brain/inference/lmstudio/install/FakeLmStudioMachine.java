@@ -43,6 +43,10 @@ final class FakeLmStudioMachine implements LmStudioMachine {
     int listingAsks;
     boolean cancelled;
     DownloadStart downloadStart = new DownloadStart.Started("job_1");
+    /**
+     * What every start after the first returns; null returns {@link #downloadStart} again.
+     */
+    DownloadStart downloadStartsAfterFirst;
     Deque<DownloadStatus> statuses = new ArrayDeque<>(List.of(
             new DownloadStatus(DownloadState.COMPLETED, 6_000, 6_000, 0, Optional.empty())));
     Deque<OptionalLong> gpuReadings = new ArrayDeque<>(List.of(OptionalLong.of(2_000), OptionalLong.of(8_500)));
@@ -118,8 +122,9 @@ final class FakeLmStudioMachine implements LmStudioMachine {
 
     @Override
     public DownloadStart startDownload(String model) {
+        boolean first = !calls.contains("download");
         calls.add("download");
-        return downloadStart;
+        return first || downloadStartsAfterFirst == null ? downloadStart : downloadStartsAfterFirst;
     }
 
     @Override

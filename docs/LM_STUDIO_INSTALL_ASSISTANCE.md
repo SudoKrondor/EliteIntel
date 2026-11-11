@@ -105,9 +105,9 @@ LM Studio is one the app cannot drive.
 
 A modal dialog, `LmStudioInstallDialog`, opened by the button. Each step has a status badge: waiting, running,
 done, already done, failed or stopped. The download also gets a progress bar. Everything the steps print goes to
-a collapsible details log, and the same lines, each step and how the run ended go to `logs/lm-studio.log`, so they
+a details log that is always shown, and the same lines, each step and how the run ended go to `logs/lm-studio.log`, so they
 are in a support bundle even after a restart (see [Support bundle](#support-bundle)). The dialog grows
-to fit as the download, a result or the log appear. It has no scrolling body.
+to fit as the download or a result appears. It has no scrolling body.
 
 | # | Step | What happens | Progress shown |
 |---|---|---|---|
@@ -137,7 +137,14 @@ and size before anything is downloaded.
 the guides have always used. REST does the download, because only REST reports progress.
 
 **A failed step** stops the install. The dialog names the step and shows its log, and the install record keeps
-what was done, so the button then says **Continue setup**.
+what was done, so the button then says **Continue setup** - in the dialog that is still open too, not only when it
+is next opened. A fresh install that failed or was stopped after recording its install switches the same dialog to
+**Continue setup** (its button, its intro, and no folder choice), because pressing **Install** again would forget the
+record and run the script over the LM Studio already there (a Windows tester's retry did, 2026-11-10).
+
+**A download LM Studio reports `failed`** is started once more before the step fails, and the log says so. LM Studio
+gives no reason: on a Windows tester's PC the first download after each of two fresh installs failed about a minute
+in, and the next one went through (2026-11-10).
 
 **Every step can run again.** A step whose work is already done is skipped: **Continue setup** skips the space
 check, skips the script when LM Studio is already installed in the home (as above, not `lms` alone), skips the start when the server answers, and skips the

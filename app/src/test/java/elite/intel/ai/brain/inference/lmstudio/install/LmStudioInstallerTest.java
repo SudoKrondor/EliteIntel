@@ -363,12 +363,36 @@ class LmStudioInstallerTest {
     }
 
     @Test
-    void aFailedDownloadFailsTheDownloadStep() {
+    void aDownloadThatFailsEveryAttemptFailsTheDownloadStep() {
         machine.statuses = new ArrayDeque<>(List.of(status(DownloadState.FAILED, 1_000)));
 
         InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
 
         assertEquals(InstallStep.DOWNLOAD, ((InstallOutcome.Failed) outcome).step());
+        assertEquals(LmStudioInstaller.DOWNLOAD_ATTEMPTS, machine.calls.stream().filter("download"::equals).count());
+    }
+
+    @Test
+    void aDownloadThatFailsOnceIsStartedAgainAndTheInstallGoesOn() {
+        // The Windows tester's first download after each fresh install failed a minute in; the next one went through.
+        machine.statuses = new ArrayDeque<>(List.of(status(DownloadState.FAILED, 1_000),
+                status(DownloadState.DOWNLOADING, 3_000), status(DownloadState.COMPLETED, 6_000)));
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertInstanceOf(InstallOutcome.Completed.class, outcome);
+        assertEquals(2, machine.calls.stream().filter("download"::equals).count());
+        assertTrue(progress.lines.stream().anyMatch(line -> line.endsWith("Starting it again.")), progress.lines.toString());
+    }
+
+    @Test
+    void aRetriedDownloadLmStudioCallsDoneAlreadyGoesOnToTheLoad() {
+        machine.statuses = new ArrayDeque<>(List.of(status(DownloadState.FAILED, 1_000)));
+        machine.downloadStartsAfterFirst = new DownloadStart.AlreadyDownloaded();
+
+        InstallOutcome outcome = installer(0).install(InstallFolder.inside(chosen));
+
+        assertInstanceOf(InstallOutcome.Completed.class, outcome);
     }
 
     @Test

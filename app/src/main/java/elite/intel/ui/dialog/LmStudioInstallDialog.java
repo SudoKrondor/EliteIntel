@@ -35,7 +35,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_GAP;
  * (docs/LM_STUDIO_INSTALL_ASSISTANCE.md, "The install").
  * <p>
  * The commander sees what will happen, where LM Studio will go when it is a fresh install, and presses the button.
- * Each step then shows its state, the download shows its bytes, speed and time left, and a details log shows
+ * Each step then shows its state, the download shows its bytes, speed and time left, and the details log shows
  * everything the steps printed - the installer writes the same lines to the LM Studio log, so a support bundle carries
  * them, also after a restart. Closing or
  * cancelling while it runs asks first, then stops it; what was done is kept. Use {@link #open} as the entry point.
@@ -47,7 +47,11 @@ public final class LmStudioInstallDialog extends JDialog {
     private static final double BYTES_PER_GB = 1024.0 * 1024 * 1024;
     private static final double BYTES_PER_MB = 1024.0 * 1024;
 
-    private final LmStudioSetupOffer offer;
+    /**
+     * What the button runs. A fresh install that stops after recording its install turns into
+     * {@link LmStudioSetupOffer#CONTINUE_SETUP} (see {@link #continueAfterFreshInstall}).
+     */
+    private LmStudioSetupOffer offer;
     /**
      * Whether the PC passed the GPU check on an AMD card: the dialog then says that is a beta.
      */
@@ -56,13 +60,13 @@ public final class LmStudioInstallDialog extends JDialog {
     private final Map<InstallStep, StatusBadge> badges = new EnumMap<>(InstallStep.class);
 
     private InstallFolder folder = InstallFolder.lmStudioDefault();
+    private JComponent folderSection;
+    private HudBanner intro;
     private JTextField folderField;
     private JLabel spaceLabel;
     private JButton changeFolderButton;
     private HudStatCell downloadCell;
     private JTextArea logArea;
-    private JScrollPane logScroll;
-    private JButton detailsButton;
     private JPanel resultHolder;
     private JButton startButton;
     private JButton closeButton;
@@ -87,7 +91,7 @@ public final class LmStudioInstallDialog extends JDialog {
     }
 
     /**
-     * Sizes the dialog to what it shows now: it grows as the download, a result or the details log appear.
+     * Sizes the dialog to what it shows now: it grows as the download or a result appears.
      * <p>
      * WHY packed until the size holds: a wrapping banner measures its height against the width it was last laid out
      * at, and a new one, never laid out, measures as one unwrapped line. Each pass lays the banners out at the width
@@ -149,7 +153,7 @@ public final class LmStudioInstallDialog extends JDialog {
         JPanel page = AppTheme.transparentPanel(null);
         page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
 
-        HudBanner intro = HudBanner.multiline(getText(introKey()), StatusBadge.State.INFO);
+        intro = HudBanner.multiline(getText(introKey()), StatusBadge.State.INFO);
         intro.setAlignmentX(Component.LEFT_ALIGNMENT);
         page.add(intro);
         page.add(Box.createVerticalStrut(HUD_GAP));
@@ -162,7 +166,8 @@ public final class LmStudioInstallDialog extends JDialog {
         }
 
         if (offer == LmStudioSetupOffer.INSTALL) {
-            page.add(buildFolderSection());
+            folderSection = buildFolderSection();
+            page.add(folderSection);
             page.add(Box.createVerticalStrut(HUD_GAP));
         }
         page.add(buildStepsSection());
@@ -253,28 +258,16 @@ public final class LmStudioInstallDialog extends JDialog {
         return section;
     }
 
+    /**
+     * The details log, always shown. WHY not behind a Show button: watching the steps print what they do is what
+     * tells the commander a long install is working, and what it is doing to their PC.
+     */
     private JComponent buildDetails() {
         logArea = AppTheme.makeTextArea(10, 60);
         logArea.setEditable(false);
-        logScroll = AppTheme.hudScrollPane(logArea);
-        logScroll.setVisible(false);
-        detailsButton = AppTheme.makeButtonSubtle(getText("lmStudioInstall.details.show"));
-        detailsButton.addActionListener(e -> toggleDetails());
-        JPanel buttonRow = AppTheme.transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        buttonRow.add(detailsButton);
-
-        JPanel details = AppTheme.transparentPanel(new BorderLayout(0, HUD_GAP));
-        details.add(buttonRow, BorderLayout.NORTH);
-        details.add(logScroll, BorderLayout.CENTER);
-        details.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return details;
-    }
-
-    private void toggleDetails() {
-        boolean show = !logScroll.isVisible();
-        logScroll.setVisible(show);
-        detailsButton.setText(getText(show ? "lmStudioInstall.details.hide" : "lmStudioInstall.details.show"));
-        refit();
+        JScrollPane logScroll = AppTheme.hudScrollPane(logArea);
+        logScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return logScroll;
     }
 
     // ---------------------------------------------------------------- the folder
@@ -318,17 +311,27 @@ public final class LmStudioInstallDialog extends JDialog {
         installer = new LmStudioInstaller(new ToTheDialog(), saver);
         LmStudioInstaller started = installer;
 
-        new SwingWorker<InstallOutcome, Void>() {
+        LmStudioSetupOffer offered = offer;
+        new SwingWorker<Ended, Void>() {
             @Override
-            protected InstallOutcome doInBackground() {
-                return switch (offer) {
+            protected Ended doInBackground() {
+                InstallOutcome outcome = runOffer();
+                // WHY read here: the record is in the database, which stays off the event thread.
+                boolean recorded = offered == LmStudioSetupOffer.INSTALL
+                        && !(outcome instanceof InstallOutcome.Completed)
+                        && LmStudioSetupOffer.ownedInstall().isPresent();
+                return new Ended(outcome, recorded);
+            }
+
+            private InstallOutcome runOffer() {
+                return switch (offered) {
                     case INSTALL -> started.install(folder);
                     case SET_UP_EXISTING -> started.setUpExisting(LmStudioHome.locate());
                     case CONTINUE_SETUP -> LmStudioSetupOffer.ownedInstall()
                             .map(started::continueSetup)
                             .orElseGet(() -> new InstallOutcome.Failed(InstallStep.CHECK,
                                     "The install this would continue is no longer on this PC"));
-                    case NONE, UNINSTALL -> throw new IllegalStateException("No install for " + offer);
+                    case NONE, UNINSTALL -> throw new IllegalStateException("No install for " + offered);
                 };
             }
 
@@ -336,7 +339,9 @@ public final class LmStudioInstallDialog extends JDialog {
             protected void done() {
                 running = false;
                 try {
-                    showOutcome(get());
+                    Ended ended = get();
+                    if (ended.recorded()) continueAfterFreshInstall();
+                    showOutcome(ended.outcome());
                 } catch (ExecutionException e) {
                     log.error("LM Studio install ended unexpectedly", e.getCause());
                     showOutcome(new InstallOutcome.Failed(currentStep == null ? InstallStep.CHECK : currentStep,
@@ -348,6 +353,33 @@ public final class LmStudioInstallDialog extends JDialog {
                 if (closeWhenStopped) dispose();
             }
         }.execute();
+    }
+
+    /**
+     * How a run ended, and whether a fresh install that did not complete left its install recorded.
+     */
+    private record Ended(InstallOutcome outcome, boolean recorded) {
+    }
+
+    /**
+     * Makes the button continue the install the last run recorded rather than start a fresh one. WHY: the fresh
+     * install forgets that record and runs LM Studio's install script again - a Windows tester's retry after a failed
+     * download re-downloaded LM Studio for two minutes, over the one already running (2026-11-10). The result banner
+     * already says pressing the button again picks up from there. The folder is fixed from here on: the install is in
+     * it.
+     */
+    private void continueAfterFreshInstall() {
+        offer = LmStudioSetupOffer.CONTINUE_SETUP;
+        startButton.setText(getText(captionKey(offer)));
+        Container page = intro.getParent();
+        int at = page.getComponentZOrder(intro);
+        page.remove(intro);
+        intro = HudBanner.multiline(getText(introKey()), StatusBadge.State.INFO);
+        intro.setAlignmentX(Component.LEFT_ALIGNMENT);
+        page.add(intro, at);
+        if (folderSection != null) folderSection.setVisible(false);
+        changeFolderButton = null;
+        refit();
     }
 
     private void showOutcome(InstallOutcome outcome) {

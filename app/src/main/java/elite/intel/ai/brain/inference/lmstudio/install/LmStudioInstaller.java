@@ -37,6 +37,12 @@ public final class LmStudioInstaller {
      * in 21 s (2026-11-10).
      */
     static final int TEST_ATTEMPTS = 4;
+    /**
+     * How many times a download LM Studio reports failed is started. WHY two: on a Windows tester's PC the first
+     * download after a fresh install failed a minute in, with no reason given, on both fresh installs, and the next
+     * attempt went through each time (2026-11-10).
+     */
+    static final int DOWNLOAD_ATTEMPTS = 2;
 
     /**
      * Writes the Address and Model the install ends with. The AI Services panel's own save, so the brain restarts as
@@ -288,18 +294,32 @@ public final class LmStudioInstaller {
         current = InstallStep.DOWNLOAD;
         throwIfCancelled();
         DownloadStart start = machine.startDownload(MODEL);
-        if (start instanceof DownloadStart.Started(String jobId)) {
-            begin(InstallStep.DOWNLOAD);
-            awaitDownload(jobId, lms, owned);
-            awaitListed();
-            finish(InstallStep.DOWNLOAD);
-        } else {
+        if (!(start instanceof DownloadStart.Started(String firstJob))) {
             skip(InstallStep.DOWNLOAD, MODEL + " is already downloaded");
+            return;
         }
+        begin(InstallStep.DOWNLOAD);
+        String jobId = firstJob;
+        for (int attempt = 1; ; attempt++) {
+            DownloadStatus end = awaitDownload(jobId, lms, owned);
+            if (end.state() == LmStudioServer.DownloadState.COMPLETED) break;
+            InstallException failed = downloadFailed(end);
+            if (attempt >= DOWNLOAD_ATTEMPTS) throw failed;
+            progress.log(failed.getMessage() + ". Starting it again.");
+            throwIfCancelled();
+            if (!(machine.startDownload(MODEL) instanceof DownloadStart.Started(String nextJob))) break;
+            jobId = nextJob;
+        }
+        awaitListed();
+        finish(InstallStep.DOWNLOAD);
     }
 
+    /**
+     * Follows one download job until it completes or LM Studio reports it failed, and returns that last status.
+     * WHY a failure is returned, not thrown: {@link #download} starts a failed download once more.
+     */
     // WHY one loop of ~40 lines: polling, the stall clock and the cancel all act on the same status, once a second.
-    private void awaitDownload(String jobId, Path lms, boolean owned) throws InstallException {
+    private DownloadStatus awaitDownload(String jobId, Path lms, boolean owned) throws InstallException {
         long lastBytes = -1;
         Instant lastMoved = Instant.now();
         while (true) {
@@ -313,10 +333,9 @@ public final class LmStudioInstaller {
             DownloadStatus status = machine.downloadStatus(jobId);
             progress.download(status.downloadedBytes(), status.totalBytes(), status.bytesPerSecond());
             switch (status.state()) {
-                case COMPLETED -> {
-                    return;
+                case COMPLETED, FAILED -> {
+                    return status;
                 }
-                case FAILED -> throw downloadFailed(status);
                 case PAUSED -> throw new InstallException("The download of " + MODEL + " was paused");
                 case DOWNLOADING -> {
                 }
