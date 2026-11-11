@@ -59,6 +59,9 @@ public class BindingProfilePanel extends JPanel {
      */
     private static final int KEY_INPUT_PACING_STEP_MS = 10;
 
+    /** Room above the hint and pacing row, and between it and the search, so neither crowds the grid. */
+    private static final int BOTTOM_GAP = 8;
+
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
@@ -160,13 +163,15 @@ public class BindingProfilePanel extends JPanel {
         setBorder(hudSubtabContentBorder());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        JPanel header = transparentPanel(new BorderLayout(0, 2));
-        header.add(compactProfilePanel(), BorderLayout.NORTH);
-        header.add(hintAndPacingRow(), BorderLayout.CENTER);
-        add(header, BorderLayout.NORTH);
-
+        add(compactProfilePanel(), BorderLayout.NORTH);
         add(modeArea(), BorderLayout.CENTER);
-        add(footer(), BorderLayout.SOUTH);
+
+        // WHY at the foot: the hint and the pacing are VEGA's, not the binds file's, so they sit with the other
+        // controls under the grid and the tab row comes straight after the file's name (Alan, 2026-11-10).
+        JPanel bottom = transparentPanel(new BorderLayout(0, BOTTOM_GAP));
+        bottom.add(hintAndPacingRow(), BorderLayout.NORTH);
+        bottom.add(footer(), BorderLayout.SOUTH);
+        add(bottom, BorderLayout.SOUTH);
     }
 
     /**
@@ -350,7 +355,7 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * The row under the profile: what VEGA presses with, and how fast - the pacing governs exactly what the hint
+     * The row above the search: what VEGA presses with, and how fast - the pacing governs exactly what the hint
      * describes.
      * <p>
      * Pacing of the keystrokes this app sends to the game. The slider sets the floor of the pause held after each
@@ -360,7 +365,7 @@ public class BindingProfilePanel extends JPanel {
      */
     private JPanel hintAndPacingRow() {
         JPanel row = transparentPanel(new GridBagLayout());
-        row.setBorder(new EmptyBorder(0, 6, 2, 6));
+        row.setBorder(new EmptyBorder(BOTTOM_GAP, 6, 0, 6));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
