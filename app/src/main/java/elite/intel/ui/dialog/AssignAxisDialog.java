@@ -10,6 +10,7 @@ import elite.intel.bindforge.model.BindingInput;
 import elite.intel.bindforge.model.ThrottleRanges;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.events.DeviceAxisEvent;
+import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.model.GameAxis;
 import elite.intel.eventbus.DeviceBus;
@@ -82,6 +83,8 @@ public class AssignAxisDialog extends JDialog {
     private final Map<Integer, CaptureControllers.Controller> live = new HashMap<>();
     private final Map<String, JLabel> cells = new HashMap<>();
     private final Map<String, JComponent> tabOfDevice = new HashMap<>();
+    /** Shown when the dialog opened with no controller at all; hidden once one connects. */
+    private JComponent noControllersBanner;
     private final JLabel current = new JLabel();
     private final JLabel willHold = new JLabel(" ");
     private final JPanel alsoOn = transparentPanel(new BorderLayout());
@@ -131,7 +134,9 @@ public class AssignAxisDialog extends JDialog {
      * @return what to write, or empty when the commander left with nothing changed
      */
     public Optional<Choice> showDialog() {
-        boolean listening = !live.isEmpty() && changeable();
+        // WHY with no controller live: one may connect while the dialog is open - the Device Service starting late, or
+        // a stick plugged in (Alan, 2026-11-10).
+        boolean listening = changeable();
         if (listening) DeviceBus.register(this);
         try {
             setVisible(true);
@@ -159,6 +164,33 @@ public class AssignAxisDialog extends JDialog {
         });
     }
 
+    /**
+     * A controller connected while the dialog is open (Alan, 2026-11-10): opened while the services were starting, the
+     * dialog listed every controller as unplugged and none ever came to life. Its tab becomes live - or is added.
+     */
+    @Subscribe
+    public void onConnected(DeviceConnectedEvent event) {
+        SwingUtilities.invokeLater(() -> connect(CaptureControllers.connected(event.device(), labels)));
+    }
+
+    private void connect(CaptureControllers.Controller controller) {
+        if (!usable(controller)) {
+            if (sourceTabs.indexOfTab(controller.tabTitle()) < 0) addGreyedTab(controller);
+            return;
+        }
+        live.values().removeIf(c -> c.name() != null && c.name().equalsIgnoreCase(controller.name()));
+        JComponent old = tabOfDevice.get(controller.name().toLowerCase(Locale.ROOT));
+        JComponent tab = controllerTab(controller);
+        int index = old == null ? -1 : sourceTabs.indexOfComponent(old);
+        if (index < 0) {
+            sourceTabs.addTab(controller.tabTitle(), tab);
+        } else {
+            sourceTabs.setComponentAt(index, tab);
+        }
+        if (noControllersBanner != null) noControllersBanner.setVisible(false);
+        refresh();
+    }
+
     // ------------------------------------------------------------------ layout
 
     private void buildUi() {
@@ -182,7 +214,8 @@ public class AssignAxisDialog extends JDialog {
         }
         stack.add(sources(), gbc);
         if (controllers.isEmpty()) {
-            stack.add(HudBanner.multiline(getText("bindings.assign.noControllers"), StatusBadge.State.INFO), gbc);
+            noControllersBanner = HudBanner.multiline(getText("bindings.assign.noControllers"), StatusBadge.State.INFO);
+            stack.add(noControllersBanner, gbc);
         }
         stack.add(options(), gbc);
         content.add(stack, BorderLayout.CENTER);
@@ -266,26 +299,43 @@ public class AssignAxisDialog extends JDialog {
     private JComponent sources() {
         sourceTabs = AppTheme.makeSectionTabs();
         for (CaptureControllers.Controller controller : controllers) {
-            if (!controller.named() || controller.gamepad() || controller.axes().isEmpty()) {
-                sourceTabs.addTab(controller.tabTitle(), transparentPanel(new BorderLayout()));
-                int index = sourceTabs.getTabCount() - 1;
-                sourceTabs.setEnabledAt(index, false);
-                sourceTabs.setToolTipTextAt(index, getText(!controller.named()
-                        ? "bindings.assign.controller.unnamed" : "bindings.axis.controller.gamepad"));
-                continue;
+            if (usable(controller)) {
+                sourceTabs.addTab(controller.tabTitle(), controllerTab(controller));
+            } else {
+                addGreyedTab(controller);
             }
-            if (controller.connected()) live.put(controller.liveId(), controller);
-            JPanel tab = transparentPanel(new BorderLayout(0, 6));
-            tab.setBorder(BorderFactory.createEmptyBorder(6, 6, 3, 6));
-            tab.add(HudBanner.multiline(getText(controller.connected()
-                            ? "bindings.axis.controller.hint" : "bindings.axis.controller.notConnected"),
-                    StatusBadge.State.INFO), BorderLayout.NORTH);
-            tab.add(axisGrid(controller), BorderLayout.CENTER);
-            tabOfDevice.put(controller.name().toLowerCase(Locale.ROOT), tab);
-            sourceTabs.addTab(controller.tabTitle(), tab);
         }
         axis.input().ifPresent(this::bringForward);
         return sourceTabs;
+    }
+
+    /** Whether a controller's axes can be picked here: named, not a gamepad, with axes. */
+    private static boolean usable(CaptureControllers.Controller controller) {
+        return controller.named() && !controller.gamepad() && !controller.axes().isEmpty();
+    }
+
+    private void addGreyedTab(CaptureControllers.Controller controller) {
+        sourceTabs.addTab(controller.tabTitle(), transparentPanel(new BorderLayout()));
+        int index = sourceTabs.getTabCount() - 1;
+        sourceTabs.setEnabledAt(index, false);
+        sourceTabs.setToolTipTextAt(index, getText(!controller.named()
+                ? "bindings.assign.controller.unnamed" : "bindings.axis.controller.gamepad"));
+    }
+
+    /** One usable controller's tab - live, with where its axes rest, when it is connected. */
+    private JComponent controllerTab(CaptureControllers.Controller controller) {
+        if (controller.connected()) {
+            live.put(controller.liveId(), controller);
+            CaptureControllers.restAxes(capture, controller);
+        }
+        JPanel tab = transparentPanel(new BorderLayout(0, 6));
+        tab.setBorder(BorderFactory.createEmptyBorder(6, 6, 3, 6));
+        tab.add(HudBanner.multiline(getText(controller.connected()
+                        ? "bindings.axis.controller.hint" : "bindings.axis.controller.notConnected"),
+                StatusBadge.State.INFO), BorderLayout.NORTH);
+        tab.add(axisGrid(controller), BorderLayout.CENTER);
+        tabOfDevice.put(controller.name().toLowerCase(Locale.ROOT), tab);
+        return tab;
     }
 
     private JComponent axisGrid(CaptureControllers.Controller controller) {

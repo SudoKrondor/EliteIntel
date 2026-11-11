@@ -94,7 +94,8 @@ public class DeviceService {
 
     // Open joystick handles - keyed by SDL JoystickID. Accessed only from pollThread.
     private final Map<Integer, Long> openHandles = new LinkedHashMap<>();
-    private final Map<Integer, short[]> prevAxes = new HashMap<>();
+    /** Each axis's latest value. Concurrent: {@link #axisValue} reads it off the polling thread. */
+    private final Map<Integer, short[]> prevAxes = new ConcurrentHashMap<>();
     private final Map<Integer, boolean[]> prevButtons = new HashMap<>();
     private final Map<Integer, int[]> prevHats = new HashMap<>();
     private final Map<Integer, int[]> vidPidByDevice = new HashMap<>(); // [vendor, product]
@@ -134,6 +135,20 @@ public class DeviceService {
      */
     public List<Device> getConnectedDevices() {
         return Collections.unmodifiableList(new ArrayList<>(connectedDevices));
+    }
+
+    /**
+     * Where one of a connected controller's axes is now, normalized as {@link DeviceAxisEvent} reports it - for capture,
+     * which must know where an axis rests before it moves (BindForge E2, 2026-11-10). It may lag the latest poll.
+     *
+     * @return empty when the controller is not connected or has no such axis
+     */
+    public Optional<Float> axisValue(int deviceId, int axisIndex) {
+        short[] axes = prevAxes.get(deviceId);
+        if (axes == null || axisIndex < 0 || axisIndex >= axes.length) return Optional.empty();
+        // WHY no lock: a short is read whole, and the map's put publishes the values read at connect. A later poll's
+        // write may not be seen yet, which costs nothing here: a resting axis is where it was.
+        return Optional.of(Math.max(-1f, axes[axisIndex] * AXIS_SCALE));
     }
 
     /**

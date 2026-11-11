@@ -25,6 +25,20 @@ class CaptureControllersTest {
         assertArrayEquals(new int[]{0, 0}, CaptureControllers.counts(List.of("Joy_RZAxis", "Neg_Joy_YAxis", "Key_A")));
     }
 
+    /** E2: an unplugged controller offers the axes its labels or bindings mention, whole or by direction. */
+    @Test
+    void anUnpluggedControllerOffersTheAxesItsNamesMention() {
+        assertEquals(List.of(GameAxis.Y, GameAxis.RZ),
+                CaptureControllers.axesOffered(List.of("Joy_RZAxis", "Neg_Joy_YAxis", "pos_joy_yaxis", "Joy_3")));
+    }
+
+    /** With none mentioned, all eight the game names, as an axis row offers. */
+    @Test
+    void anUnpluggedControllerMentioningNoAxisOffersAllEight() {
+        assertEquals(List.of(GameAxis.values()), CaptureControllers.axesOffered(List.of("Joy_1", "Joy_POV1Up")));
+        assertEquals(List.of(), CaptureControllers.axesNamed(List.of("Joy_1", "Key_A")));
+    }
+
     private static final List<GameAxis> GAMEPAD_AXES =
             List.of(GameAxis.X, GameAxis.Y, GameAxis.Z, GameAxis.RX, GameAxis.RY, GameAxis.RZ);
 

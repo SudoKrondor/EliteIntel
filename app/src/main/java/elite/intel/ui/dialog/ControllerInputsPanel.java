@@ -14,16 +14,21 @@ import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * One controller's page in the Assign Control dialog: its BUTTONS, HATS and AXES, each input named the way the
- * Device Editor names it. Clicking a button or hat picks it, for anyone working from the list rather than the
- * hardware; pressing it on the controller does the same through the dialog. The AXES page only shows: an axis
- * cell stands for both of its directions, so a click could not say which one to pick, and moving the axis does.
+ * One controller's page in the Assign Control dialog: its BUTTONS, HATS and AXIS DIRECTIONS, each input named the
+ * way the Device Editor names it. Clicking a cell picks it, for anyone working from the list rather than the hardware;
+ * pressing it - or pushing the axis - on the controller does the same through the dialog.
+ * <p>
+ * <strong>AXIS DIRECTIONS has a − and a + cell for every axis</strong> (E2, Alan, 2026-11-10, as the spec has it):
+ * {@code Neg_} and {@code Pos_} on a button slot, each picked, coloured and clashing on its own, so a direction can be
+ * picked with the controller unplugged. <strong>A GamePad's page only shows</strong>, one cell per axis: its stick
+ * tokens are not measured (E7), and its triggers are captured by pulling them.
  * <p>
  * <strong>Colours:</strong> an input the control holds right now, in either slot, sits on blue - the one in the
  * slot being edited also outlined in orange. Otherwise green is free and red is held by another control. An input
@@ -35,6 +40,8 @@ import static elite.intel.ui.theme.HudPalette.*;
 final class ControllerInputsPanel extends JPanel {
 
     private static final int COLUMNS = 4;
+    private static final String NEGATIVE = "Neg_";
+    private static final String POSITIVE = "Pos_";
     private static final int CELL_HEIGHT = 26;
     private static final int VISIBLE_ROWS = 8;
     /**
@@ -81,12 +88,14 @@ final class ControllerInputsPanel extends JPanel {
 
         List<String> buttons = buttonTokens(controller);
         List<String> hats = hatTokens(controller);
-        List<String> axes = controller.axes().stream().map(GameAxis::token).toList();
+        List<String> axes = axisTokens(controller);
 
         pages = AppTheme.makeCompactTabs();
         pages.addTab(getText("bindings.assign.page.buttons"), page(buttons, labels, onPick));
         pages.addTab(getText("bindings.assign.page.hats"), page(hats, labels, onPick));
-        pages.addTab(getText("bindings.assign.page.axes"), page(axes, labels, null));
+        // WHY no pick on a GamePad: a click would write a stick token nobody has measured (E7).
+        pages.addTab(getText(controller.gamepad() ? "bindings.assign.page.axes" : "bindings.assign.page.axisDirections"),
+                page(axes, labels, controller.gamepad() ? null : onPick));
         if (hats.isEmpty()) {
             pages.setEnabledAt(1, false);
             pages.setToolTipTextAt(1, getText("bindings.assign.page.hats.none"));
@@ -112,6 +121,37 @@ final class ControllerInputsPanel extends JPanel {
             else hats.addAll(DeviceEditorInputs.hatTokens(h));
         }
         return List.copyOf(hats);
+    }
+
+    /**
+     * The AXIS DIRECTIONS page's cells: for each axis its {@code Neg_} then its {@code Pos_} token - or, on a GamePad,
+     * the axis itself, for show only.
+     */
+    static List<String> axisTokens(CaptureControllers.Controller controller) {
+        List<String> tokens = new ArrayList<>();
+        for (GameAxis axis : controller.axes()) {
+            if (controller.gamepad()) {
+                tokens.add(axis.token());
+            } else {
+                tokens.add(NEGATIVE + axis.token());
+                tokens.add(POSITIVE + axis.token());
+            }
+        }
+        return List.copyOf(tokens);
+    }
+
+    /**
+     * What a cell says: the device's label for the input - a direction's own, if one is saved - or, for a direction,
+     * its axis's label or token with − or + after it.
+     */
+    static String cellText(String token, Function<String, Optional<String>> label) {
+        Optional<String> own = label.apply(token);
+        if (own.isPresent()) return own.get();
+        if (token.startsWith(NEGATIVE) || token.startsWith(POSITIVE)) {
+            String axis = token.substring(NEGATIVE.length());
+            return label.apply(axis).orElse(axis) + (token.startsWith(NEGATIVE) ? " \u2212" : " +");
+        }
+        return token;
     }
 
     /**
@@ -150,10 +190,10 @@ final class ControllerInputsPanel extends JPanel {
         this.own = Set.copyOf(own);
         used.clear();
         refresh();
-        String displayToken = displayToken(activeToken);
+        String displayToken = displayToken(activeToken, controller.gamepad());
         JLabel cell = displayToken == null ? null : cells.get(displayToken);
         if (bringForward && cell != null) {
-            pages.setSelectedIndex(isHat(displayToken) ? 1 : isAxis(displayToken) ? 2 : 0);
+            pages.setSelectedIndex(isHat(displayToken) ? 1 : isAxisCell(displayToken) ? 2 : 0);
             Runnable group = showGroup.get(displayToken);
             if (group != null) group.run();
             cell.scrollRectToVisible(new Rectangle(cell.getSize()));
@@ -182,8 +222,8 @@ final class ControllerInputsPanel extends JPanel {
         JPanel grid = new JPanel(new GridLayout(0, COLUMNS, 4, 4));
         grid.setOpaque(false);
         for (String token : tokens) {
-            String label = labels.label(controller.name(), token).orElse(null);
-            JLabel cell = new JLabel(label == null ? token : label, SwingConstants.CENTER);
+            JLabel cell = new JLabel(cellText(token, input -> labels.label(controller.name(), input)),
+                    SwingConstants.CENTER);
             cell.setOpaque(true);
             cell.setFont(cell.getFont().deriveFont(Font.PLAIN, 11f));
             cell.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
@@ -223,12 +263,18 @@ final class ControllerInputsPanel extends JPanel {
         return token.startsWith("Joy_") && token.endsWith("Axis");
     }
 
+    /** Whether a cell is on the AXIS DIRECTIONS page: a direction, or a GamePad's axis. */
+    private static boolean isAxisCell(String token) {
+        return isAxis(token) || isAxis(token.startsWith(NEGATIVE) || token.startsWith(POSITIVE) ? token.substring(4) : "");
+    }
+
     /**
-     * Maps a binding token back to the cell this panel shows for it: an axis cell stands for both its directions
-     * and a GamePad trigger token for the axis SDL reports it as.
+     * Maps a binding token back to the cell this panel shows for it: a direction is its own cell (E2). On a GamePad,
+     * whose page shows one cell per axis, a direction shows on its axis's cell and a trigger token on the axis SDL
+     * reports it as.
      */
-    static String displayToken(String token) {
-        if (token == null) return null;
+    static String displayToken(String token, boolean gamepad) {
+        if (token == null || !gamepad) return token;
         if (token.startsWith("Pos_Joy_") || token.startsWith("Neg_Joy_")) {
             return token.substring(4);
         }
@@ -240,6 +286,7 @@ final class ControllerInputsPanel extends JPanel {
      * axis cell stands for both of its directions, and a gamepad's trigger cell for its trigger token.
      */
     static List<String> bindingTokens(String cellToken, boolean gamepad) {
+        // WHY a direction falls through: it is not a whole axis, so it stands for itself.
         if (!isAxis(cellToken)) return List.of(cellToken);
         if (gamepad) {
             Optional<String> trigger = Arrays.stream(GameAxis.values())
@@ -252,9 +299,9 @@ final class ControllerInputsPanel extends JPanel {
     }
 
     private void refresh() {
-        String activeCell = displayToken(activeToken);
+        String activeCell = displayToken(activeToken, controller.gamepad());
         Set<String> assignedCells = new HashSet<>();
-        assigned.forEach(assignedToken -> assignedCells.add(displayToken(assignedToken)));
+        assigned.forEach(assignedToken -> assignedCells.add(displayToken(assignedToken, controller.gamepad())));
         for (Map.Entry<String, JLabel> entry : cells.entrySet()) {
             String token = entry.getKey();
             JLabel cell = entry.getValue();

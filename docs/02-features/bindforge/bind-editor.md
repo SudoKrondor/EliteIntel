@@ -649,6 +649,13 @@ game has four different rows called *Move Forward*, which is why CONTROL carries
 tag is what the file, a support bundle and another player's `.binds` all say. Today the dialog's
 **SELECTED BINDING** row shows only the tag, so the first thing a user reads is `CamTranslateZHold`.
 
+**A controller that connects while the dialog is open comes to life in it** (Alan, 2026-11-10, found on real
+hardware). The Device Service starts after the voice models load, so a dialog opened during startup listed every
+controller as unplugged, and pressing or pushing did nothing until the dialog was reopened. Both capture dialogs - a
+button row's and an axis row's - now listen for a controller connecting, whether or not one was live when they
+opened: its tab becomes live (its axes' rest read then), or is added, and the slots being edited are kept. The same
+covers a stick plugged in mid-dialog. Checked on hardware the same day, the dialog opened before the services were up.
+
 #### Nothing is kept until SAVE
 
 The user presses the input, reads whatever the dialog says about it — in use, reserved, the game-menu
@@ -696,21 +703,34 @@ and real files use it: `DualVirpilDawnTreader.4.1.binds` puts `Neg_Joy_YAxis` on
 slot and `Neg_Joy_RYAxis` on Toggle HUD. The AXIS DIRECTIONS page offers a *+* and a *−* for every axis the
 device reports.
 
-**Built differently, checked 2026-11-03 -
-undecided.** Capturing a direction by moving the axis works and is tested (`ControllerCapture.axis`, Andrea's `847987878`, 2026-10-25, with the rest rule below from Storage S4R). The page is not what this section describes: the controller tab has an AXES page with
-**one cell per axis, for show only**
-(`ControllerInputsPanel`), so there is no *+* or
-*−* to click, and a user without the hardware attached cannot pick a direction. Either build the two cells or amend this section; [E2](../../05-build-plan/bind-editor-editing.md#slices)
-holds the question.
+**Built — 2026-11-10 (Alan, E2): the + and − cells, as above, beside capture by movement.** Until then the page had
+one cell per axis, for show only, so a user without the hardware attached could not pick a direction; capturing one by
+moving the axis was built and tested (`ControllerCapture.axis`, Andrea's `847987878`, 2026-10-25, with the rest rule
+below from Storage S4R) and is unchanged. Alan chose the cells, keeping movement-only capture as the way back if they
+are regretted. Settled with the sources:
+
+- **Each direction is its own cell** (`ControllerInputsPanel.axisTokens`): − then + for every axis, clicked like a
+  button, coloured on its own (free, held by another control, this control's) and checked for a clash on its own. The
+  cell names its axis's label - the user's own, else the token - with − or + after it, or a label saved for the
+  direction itself. The page is titled **Axis directions**.
+- **An unplugged controller offers the axes its saved labels or its bindings mention**, whole or by direction, and all
+  eight the game names when they mention none, as an axis row does (`CaptureControllers.axesOffered`). Which axes it has
+  is not known while it is unplugged.
+- **A GamePad's page stays one cell per axis, for show only**: its stick tokens are not measured
+  ([A gamepad is not a joystick](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)), and its
+  triggers are captured by pulling them.
+- **The run on real hardware is shared with E3's axis dialog, E4 and E5**, not a condition of E2.
 
 **An axis is captured by how far it moves from where it rests, not from centre** (Alan, 2026-10-27, from Krondor's
 storage review; Storage S4R). Measured from centre, a throttle, slider or toe brake resting at one end was captured as
-soon as it jittered. Where an axis rests is the first value reported after capture begins, the same rule as the
-Device Editor's lights ([alias-designer.md](alias-designer.md)). **Accepted (Alan, 2026-10-28, from the S4b review):**
-an axis already pushed when capture begins - held forward, or a fast flick that arrives as one coarse step - takes that
-position as its rest, so the push is missed and the return is captured as the other direction. The user sees the
-binding and can capture it again; reading each axis's rest from the device when capture opens is for when testing
-shows it in practice. A GamePad's sticks are not captured at all
+soon as it jittered. **Where an axis rests is read from the device when the dialog opens** (Alan, 2026-11-10,
+found on real hardware: pulling a spring-loaded stick's RZ up picked positive, and letting it spring back to centre
+picked negative). A still stick reports nothing, so the first value capture saw was already part-way through the
+push, and the return to centre was measured from there as a push the other way. The dialog now gives capture each
+connected controller's axis positions (`CaptureControllers.restAxes`, from `DeviceService.axisValue`). A controller
+plugged in while the dialog is open still takes its first reported value as the rest. *Until 2026-11-10 the first
+value reported was the rest, accepted 2026-10-28 (S4b review) as a cost to take only if testing showed it.* An axis
+held off centre when the dialog opens still takes that position as its rest. A GamePad's sticks are not captured at all
 ([alias-designer.md, *A gamepad is not a joystick*](alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)).
 
 **Hats.** A hat is written `Joy_POV1Up`, `Joy_POV1Down`, `Joy_POV1Left`, `Joy_POV1Right`, and a diagonal sets two

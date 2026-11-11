@@ -48,7 +48,8 @@ public final class CaptureControllers {
      * @param name    the controller's {@code .binds} name, or {@code null} when it has none yet
      * @param liveId  the Device Service's id while it is connected, else {@code -1}
      * @param product what the controller calls itself, for a tab with no name
-     * @param axes    the game axis behind each SDL axis index; empty for a controller that is not connected
+     * @param axes    the game axis behind each SDL axis index; for a controller that is not connected, the axes its
+     *                saved names or bindings mention, else all eight ({@link #axesOffered}, E2)
      * @param gamepad whether the controller is a gamepad, whose inputs are bound under the game's GamePad tokens
      */
     public record Controller(String name, int liveId, String product, int buttonCount, int hatCount,
@@ -102,8 +103,8 @@ public final class CaptureControllers {
             tokens.addAll(used.getOrDefault(name, Set.of()));
             int[] counts = counts(tokens);
             // Nothing saved and nothing bound: no input to offer, so no tab.
-            if (counts[0] == 0 && counts[1] == 0) continue;
-            absent.add(new Controller(name, -1, name, counts[0], counts[1], List.of(), false));
+            if (counts[0] == 0 && counts[1] == 0 && axesNamed(tokens).isEmpty()) continue;
+            absent.add(new Controller(name, -1, name, counts[0], counts[1], axesOffered(tokens), false));
         }
         controllers.addAll(absent);
         return List.copyOf(controllers);
@@ -147,20 +148,45 @@ public final class CaptureControllers {
     private static List<Controller> connected(EditedDeviceLabels labels) {
         DeviceService service = DeviceService.getInstance();
         if (!service.isAvailable()) return List.of();
-        FrontierStockDevices stock = FrontierStockDevices.getInstance();
         List<Controller> controllers = new ArrayList<>();
         for (Device device : service.getConnectedDevices()) {
-            Optional<DeviceIdentity> identity = DeviceIdentities.of(device);
-            String name = identity.map(id -> nameOf(id, labels, stock)).orElse(null);
-            DeviceDescription description = service.description(device.id()).orElse(DeviceDescription.axesUnknown(0));
-            boolean gamepad = GamepadSupport.isGamepad(device);
-            List<GameAxis> axes = axesFor(gamepad, device.axisCount(), description);
-            controllers.add(new Controller(name, device.id(), device.name(), device.buttonCount(),
-                    description.hatCount(), axes, gamepad));
+            controllers.add(connected(device, labels));
         }
         controllers.sort(Comparator.comparing((Controller c) -> !c.named())
                 .thenComparing(Controller::tabTitle, String.CASE_INSENSITIVE_ORDER));
         return List.copyOf(controllers);
+    }
+
+    /**
+     * One controller as a capture dialog shows it, for a device that connected while the dialog was open - plugged in,
+     * or found when the Device Service started after the dialog opened (Alan, 2026-11-10: a dialog opened while the
+     * services were starting never saw the controllers). The same rules as {@link #connected()}.
+     *
+     * @param labels the edits, as the dialog read them when it opened
+     */
+    public static Controller connected(Device device, EditedDeviceLabels labels) {
+        DeviceService service = DeviceService.getInstance();
+        String name = DeviceIdentities.of(device)
+                .map(id -> nameOf(id, labels, FrontierStockDevices.getInstance()))
+                .orElse(null);
+        DeviceDescription description = service.description(device.id()).orElse(DeviceDescription.axesUnknown(0));
+        boolean gamepad = GamepadSupport.isGamepad(device);
+        return new Controller(name, device.id(), device.name(), device.buttonCount(), description.hatCount(),
+                axesFor(gamepad, device.axisCount(), description), gamepad);
+    }
+
+    /**
+     * Tells {@code capture} where each of a connected controller's axes rests now, read from the Device Service - so a
+     * still stick, which reports nothing until it moves, is not measured from part-way through its first push (Alan,
+     * 2026-11-10). Nothing for a controller that is not connected.
+     */
+    public static void restAxes(ControllerCapture capture, Controller controller) {
+        if (!controller.connected() || !controller.named()) return;
+        DeviceService service = DeviceService.getInstance();
+        for (int sdlIndex = 0; sdlIndex < controller.axes().size(); sdlIndex++) {
+            GameAxis axis = controller.axes().get(sdlIndex);
+            service.axisValue(controller.liveId(), sdlIndex).ifPresent(value -> capture.rest(controller.name(), axis, value));
+        }
     }
 
     static List<GameAxis> axesFor(boolean gamepad, int axisCount, DeviceDescription description) {
@@ -196,6 +222,29 @@ public final class CaptureControllers {
             if (hat.matches()) hats = Math.max(hats, Integer.parseInt(hat.group(1)));
         }
         return new int[]{buttons, hats};
+    }
+
+    /**
+     * The axes an unplugged controller's AXIS DIRECTIONS page offers (E2, Alan, 2026-11-10): the ones its saved names
+     * or its bindings mention - an axis label, or a direction bound - or, when they mention none, all eight the game
+     * names, as an axis row offers ({@link #forAxes}). Which axes it really has is not known while it is unplugged.
+     * Pure.
+     */
+    static List<GameAxis> axesOffered(Collection<String> tokens) {
+        List<GameAxis> named = axesNamed(tokens);
+        return named.isEmpty() ? List.of(GameAxis.values()) : named;
+    }
+
+    /** The axes these tokens mention, whole or by direction, in the game's order. Pure. */
+    static List<GameAxis> axesNamed(Collection<String> tokens) {
+        Set<String> wanted = new HashSet<>();
+        for (String token : tokens) {
+            String lower = token.toLowerCase(Locale.ROOT);
+            wanted.add(lower.startsWith("pos_") || lower.startsWith("neg_") ? lower.substring(4) : lower);
+        }
+        return Arrays.stream(GameAxis.values())
+                .filter(axis -> wanted.contains(axis.token().toLowerCase(Locale.ROOT)))
+                .toList();
     }
 
     /**

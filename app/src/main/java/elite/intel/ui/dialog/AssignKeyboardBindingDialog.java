@@ -13,6 +13,7 @@ import elite.intel.bindforge.rules.ReservedKeyChords;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.devices.events.DeviceAxisEvent;
 import elite.intel.devices.events.DeviceButtonEvent;
+import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.events.DeviceHatEvent;
 import elite.intel.eventbus.DeviceBus;
@@ -295,6 +296,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
      */
     private JTabbedPane sourceTabs;
     private final Map<ControllerInputsPanel, JComponent> tabOf = new HashMap<>();
+    /** Shown when the dialog opened with no controller at all; hidden once one connects. */
+    private JComponent noControllersBanner;
     private JComponent keyboardTab;
     private MouseInputsPanel mousePanel;
     private JComponent mouseTab;
@@ -362,8 +365,9 @@ public class AssignKeyboardBindingDialog extends JDialog {
     /** @return the slots to write, each once - empty when the commander left with nothing changed */
     public List<AssignSelection> showDialog() {
         installModifierTracker();
-        // WHY not while read only: a pressed input would only be turned away (Storage S14b).
-        boolean listening = !livePanels.isEmpty() && !viewOnly;
+        // WHY not while read only: a pressed input would only be turned away (Storage S14b). WHY with no controller
+        // live: one may connect while the dialog is open - the Device Service starting late, or a stick plugged in.
+        boolean listening = !viewOnly;
         if (listening) DeviceBus.register(this);
         try {
             setVisible(true);
@@ -416,6 +420,37 @@ public class AssignKeyboardBindingDialog extends JDialog {
             ControllerInputsPanel panel = livePanels.get(event.deviceId());
             if (panel != null) capture.release(panel.deviceName());
         });
+    }
+
+    /**
+     * A controller connected while the dialog is open (Alan, 2026-11-10): opened while the services were starting, the
+     * dialog listed every controller as unplugged and none ever came to life. Its tab becomes live - or is added - and
+     * the slots being edited are left as they are.
+     */
+    @Subscribe
+    public void onConnected(DeviceConnectedEvent event) {
+        SwingUtilities.invokeLater(() -> connect(CaptureControllers.connected(event.device(), labels)));
+    }
+
+    private void connect(CaptureControllers.Controller controller) {
+        if (!controller.named()) {
+            if (sourceTabs.indexOfTab(controller.tabTitle()) < 0) addUnnamedTab(controller);
+            return;
+        }
+        ControllerInputsPanel old = panels.stream()
+                .filter(panel -> panel.deviceName().equalsIgnoreCase(controller.name()))
+                .findFirst().orElse(null);
+        JComponent tab = controllerTab(controller);
+        if (old == null) {
+            sourceTabs.addTab(controller.tabTitle(), tab);
+        } else {
+            int index = sourceTabs.indexOfComponent(tabOf.remove(old));
+            panels.remove(old);
+            livePanels.values().removeIf(panel -> panel == old);
+            sourceTabs.setComponentAt(index, tab);
+        }
+        if (noControllersBanner != null) noControllersBanner.setVisible(false);
+        refresh(false);
     }
 
     /**
@@ -478,7 +513,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
         // read as wired to the two cards, and the game puts any device in either slot.
         wide(content, gbc, sources(), new Insets(10, 6, 3, 6));
         if (controllers.isEmpty()) {
-            wide(content, gbc, HudBanner.multiline(getText("bindings.assign.noControllers"), StatusBadge.State.INFO), null);
+            noControllersBanner = HudBanner.multiline(getText("bindings.assign.noControllers"), StatusBadge.State.INFO);
+            wide(content, gbc, noControllersBanner, null);
         }
         if (viewOnly) {
             wide(content, gbc, HudBanner.multiline(getText("bindings.readOnly.viewOnly"), StatusBadge.State.STANDBY), null);
@@ -651,31 +687,44 @@ public class AssignKeyboardBindingDialog extends JDialog {
         mouseTab = mouseSource();
         sourceTabs.addTab(getText("bindings.assign.tab.mouse"), mouseTab);
         for (CaptureControllers.Controller controller : controllers) {
-            if (!controller.named()) {
-                sourceTabs.addTab(controller.tabTitle(), transparentPanel(new BorderLayout()));
-                int index = sourceTabs.getTabCount() - 1;
-                sourceTabs.setEnabledAt(index, false);
-                sourceTabs.setToolTipTextAt(index, getText("bindings.assign.controller.unnamed"));
-                continue;
+            if (controller.named()) {
+                sourceTabs.addTab(controller.tabTitle(), controllerTab(controller));
+            } else {
+                addUnnamedTab(controller);
             }
-            ControllerInputsPanel panel = new ControllerInputsPanel(controller, labels,
-                    token -> holderOf(edits.get(active), new BindingInput(controller.name(), token), List.of()).isPresent(),
-                    token -> pickControl(new ControllerCapture.Captured(new BindingInput(controller.name(), token), List.of())));
-            panels.add(panel);
-            if (controller.connected()) livePanels.put(controller.liveId(), panel);
-            JPanel tab = transparentPanel(new BorderLayout(0, 6));
-            tab.setBorder(BorderFactory.createEmptyBorder(6, 6, 3, 6));
-            JPanel north = transparentPanel(new BorderLayout(0, 6));
-            north.add(HudBanner.multiline(getText(controller.connected()
-                    ? "bindings.assign.controller.hint"
-                    : "bindings.assign.controller.notConnected"), StatusBadge.State.INFO), BorderLayout.CENTER);
-            north.add(withKeysRow(), BorderLayout.SOUTH);
-            tab.add(north, BorderLayout.NORTH);
-            tab.add(panel, BorderLayout.CENTER);
-            tabOf.put(panel, tab);
-            sourceTabs.addTab(controller.tabTitle(), tab);
         }
         return sourceTabs;
+    }
+
+    /** A greyed tab for a controller with no name: nothing can be written under it. */
+    private void addUnnamedTab(CaptureControllers.Controller controller) {
+        sourceTabs.addTab(controller.tabTitle(), transparentPanel(new BorderLayout()));
+        int index = sourceTabs.getTabCount() - 1;
+        sourceTabs.setEnabledAt(index, false);
+        sourceTabs.setToolTipTextAt(index, getText("bindings.assign.controller.unnamed"));
+    }
+
+    /** One named controller's tab, its panel registered - live, with where its axes rest, when it is connected. */
+    private JComponent controllerTab(CaptureControllers.Controller controller) {
+        ControllerInputsPanel panel = new ControllerInputsPanel(controller, labels,
+                token -> holderOf(edits.get(active), new BindingInput(controller.name(), token), List.of()).isPresent(),
+                token -> pickControl(new ControllerCapture.Captured(new BindingInput(controller.name(), token), List.of())));
+        panels.add(panel);
+        if (controller.connected()) {
+            livePanels.put(controller.liveId(), panel);
+            CaptureControllers.restAxes(capture, controller);
+        }
+        JPanel tab = transparentPanel(new BorderLayout(0, 6));
+        tab.setBorder(BorderFactory.createEmptyBorder(6, 6, 3, 6));
+        JPanel north = transparentPanel(new BorderLayout(0, 6));
+        north.add(HudBanner.multiline(getText(controller.connected()
+                ? "bindings.assign.controller.hint"
+                : "bindings.assign.controller.notConnected"), StatusBadge.State.INFO), BorderLayout.CENTER);
+        north.add(withKeysRow(), BorderLayout.SOUTH);
+        tab.add(north, BorderLayout.NORTH);
+        tab.add(panel, BorderLayout.CENTER);
+        tabOf.put(panel, tab);
+        return tab;
     }
 
     /**

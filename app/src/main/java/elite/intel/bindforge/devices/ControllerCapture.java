@@ -133,9 +133,9 @@ public final class ControllerCapture {
 
     /**
      * <strong>Measured from where the axis rests, not from centre</strong> (Krondor's review, 2026-10-27): a throttle,
-     * slider or toe brake parked at one end would otherwise be captured the moment it jitters. Where it rests is the
-     * first value reported after capture began - {@link DeviceEditorLights}' rule (Alan, 2026-10-10): an axis is
-     * reported only when it moves, in raw steps, so the first report arrives within a hair of where it sat.
+     * slider or toe brake parked at one end would otherwise be captured the moment it jitters. Where it rests is read
+     * from the device when capture begins ({@link #rest}); for an axis with none given, the first value reported after
+     * capture began.
      *
      * @param axis the game's axis slot behind the SDL axis
      * @param value the current normalized value
@@ -156,6 +156,17 @@ public final class ControllerCapture {
         forget(positive);
         if (direction == 0) return Optional.empty();
         return Optional.of(press(direction < 0 ? negative : positive));
+    }
+
+    /**
+     * Where an axis rests, read from the device when capture begins (Alan, 2026-11-10). A still stick reports nothing,
+     * so without this the first value seen - already part-way through a push - is taken as the rest, and the spring
+     * taking the stick back to centre is captured as a push the other way. With none given, the first value seen is
+     * the rest, as before.
+     */
+    public void rest(String device, GameAxis axis, float value) {
+        Objects.requireNonNull(axis, "axis");
+        rests.put(device + "#" + axis.token(), value);
     }
 
     /**
