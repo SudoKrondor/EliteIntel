@@ -133,6 +133,22 @@ to fit as the download or a result appears. It has no scrolling body.
 `wget`). The dialog tells the commander that LM Studio is third-party software, and names its install folder
 and size before anything is downloaded.
 
+**LM Studio's console windows (Windows).** The script and `lms daemon up` start LM Studio's own `node.exe` helpers,
+and each opens a console window: several flash up and two stay open (a Windows tester, 2026-11-10, in IntelliJ and
+in the installed app alike). Our own launches are hidden, but that does not reach programs LM Studio starts.
+`LmStudioWindowHider` therefore hides every visible window whose program lives in the LM Studio home, or whose title
+names a path there (Windows Terminal hosts the console under its own program). It runs while the script or any `lms`
+command runs and for 20 s after, and logs each window it hides. A hidden window's program keeps running. This is on
+trial: if it does not hold up, the fallback is running the model on our own llama.cpp rather than LM Studio.
+
+The root of it is that llmster started by `lms daemon up` has no console, so each console program it starts gets a
+window. **On Windows the app therefore starts `llmster.exe` itself** (the one LM Studio's install record names), with
+our hidden console, which its helpers share - a Windows tester ran llmster directly and no window opened
+(2026-11-11). Its output goes to `elite-intel-llmster.log` in the LM Studio home. It is ready once
+`lms daemon status --json` says `running`. Stopping still asks `lms daemon down` first, and stops that PID and what
+it started if llmster is still running after that. Without a recorded `llmster.exe` the app falls back to
+`lms daemon up`. The window hider stays as the backstop, for the install script above all.
+
 **Why the CLI loads the model, not REST:** the REST load has no GPU-offload setting, and `--gpu max` is what
 the guides have always used. REST does the download, because only REST reports progress.
 
