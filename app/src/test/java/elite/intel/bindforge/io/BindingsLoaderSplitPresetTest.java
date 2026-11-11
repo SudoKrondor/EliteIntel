@@ -7,11 +7,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,6 +124,22 @@ class BindingsLoaderSplitPresetTest {
         binds("VKB.4.2.binds");
 
         assertEquals("VKB.4.2.binds", loader(Optional.of("vkb")).bindsFileToRead(bindingsDir).getName());
+    }
+
+    /**
+     * The warning at Elite-Intel start follows the choice: with another file chosen than General's, General is the
+     * section whose keys the assistant cannot see (review of S13f, 2026-11-11).
+     */
+    @Test
+    void withAFileChosenGeneralsLineIsTheSectionNotRead() throws IOException {
+        startPreset("Custom\r\nVKB\r\nVKB\r\nVKB");
+        binds("Custom.4.2.binds");
+        binds("VKB.4.2.binds");
+        BindingsLoader loader = loader(Optional.of("VKB"));
+
+        File read = loader.bindsFileToRead(bindingsDir);
+
+        assertEquals(Map.of(BindingSection.GENERAL, "Custom"), loader.sectionsNotIn(bindingsDir, read));
     }
 
     @Test

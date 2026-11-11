@@ -514,6 +514,11 @@ already told and `KeyBindCheck` does not say it at the next start either. That w
 is (Alan, 2026-11-11, D3 (a)); speaking from the watch loop would be a slice of its own. *Corrects the S18R brief's
 first reading, that the call held up a spoken alert.*
 
+**The log says what actually failed (Alan, 2026-11-11, Storage S13fR D3).** When the monitor cannot work out which
+binds file to read, the log says so - *"Could not work out which binds file to read"* - and names no file; when a file
+cannot be parsed, it names the file it was reading. Until then both were logged as a failed parse of the file read
+before, so a support bundle pointed at a file that was fine. The spoken warning is the same for both.
+
 ### BindForge must not publish `BindingsUpdatedEvent`
 
 **Verified 2026-09-06 — and the conclusion is the opposite of what this section first assumed.**

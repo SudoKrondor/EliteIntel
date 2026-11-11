@@ -318,7 +318,9 @@ public class BindingsMonitor {
         try {
             toRead = bindingsLoader.bindsFileToRead();
         } catch (Exception e) {
-            reportUpdateFailed(e);
+            // WHY its own sentence: nothing was parsed, so naming a file would point a support bundle at the previous
+            // one, which is fine (Alan, 2026-11-11, Storage S13fR D3).
+            reportUpdateFailed("Could not work out which binds file to read", e);
             return;
         }
         parseAndUpdateBindings(toRead);
@@ -340,13 +342,16 @@ public class BindingsMonitor {
             UiBus.publish(new BindingsUpdatedEvent());
             log.info("Key bindings updated from: {}", currentBindsFile.getName());
         } catch (Exception e) {
-            reportUpdateFailed(e);
+            reportUpdateFailed("Failed to parse key bindings from: " + toRead.getName(), e);
         }
     }
 
-    private void reportUpdateFailed(Exception e) {
-        log.error("Failed to parse key bindings from: {}",
-                currentBindsFile != null ? currentBindsFile.getName() : "null", e);
+    /**
+     * Logs what failed - in {@code what}, worded by the caller so the log says what actually went wrong - and tells the
+     * user the bindings could not be updated. The spoken warning is the same whatever failed.
+     */
+    private void reportUpdateFailed(String what, Exception e) {
+        log.error(what, e);
         GameEventBus.publish(
                 new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
     }

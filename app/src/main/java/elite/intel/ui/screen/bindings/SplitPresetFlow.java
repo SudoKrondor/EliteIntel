@@ -63,11 +63,20 @@ public final class SplitPresetFlow {
             if (folder == null) return null;
             List<SplitChoice> choices = new BindingsLoader().splitChoices(folder);
             if (choices.isEmpty() || !ASKED_THIS_RUN.compareAndSet(false, true)) return null;
-            boolean canSetAll = !ReadOnlyMode.stored().active() && WorkingCopy.stored().exists()
-                    && !Edits.stored().hasEdits();
+            boolean canSetAll = canSetAll(ReadOnlyMode.stored().active(), WorkingCopy.stored().exists(),
+                    Edits.stored().hasEdits());
             log.info("The preset file's lines name different binds files: {}; asking which to read", choices);
             return () -> ask(choices, canSetAll);
         });
+    }
+
+    /**
+     * Whether the second question - should the game use only this file - is offered: not while read only, not before
+     * first-time startup has made a working copy (nothing to write through), and not while edits not applied are on
+     * the bar (APPLY would write them too). Otherwise only which file is asked.
+     */
+    static boolean canSetAll(boolean readOnly, boolean workingCopyExists, boolean hasEdits) {
+        return !readOnly && workingCopyExists && !hasEdits;
     }
 
     private void ask(List<SplitChoice> choices, boolean canSetAll) {

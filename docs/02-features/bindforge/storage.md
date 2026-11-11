@@ -380,6 +380,17 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     - **Until the user answers, the warning at Elite-Intel start stays** (`KeyBindCheck`), its line for sections on
       another preset now also saying to open the BindForge tab to choose.
 
+    **Settled from the S13f / S18R / S17 review (Alan, 2026-11-11, Storage S13fR):**
+    - **A choice made while the game saves gets no guard.** The review found that a choice landing within a second of
+      a save from the game's controls could be overwritten by the watcher's read of the old file. The game saves only
+      when the user presses Apply in its controls, and one person cannot answer Elite-Intel's dialog at the same
+      moment - principle 13, so `BindingsMonitor.reread` still reads on the dialog's thread. *Approved as a fix first
+      (D1), then dropped.*
+    - **A preset file that cannot be read keeps its message.** The review proposed asking nothing, rather than saying
+      *"Your binds files could not be read"* at each click, when `StartPreset.4.start` cannot be read. No way was shown
+      for the game's own file to be unreadable in normal play, and the check already speaks about one that is; it stays
+      as built. *Approved as a fix first (D2), then dropped.*
+
     Built in Storage S13f: `BindingsLoader.splitChoices` and the chosen file read first; `SplitPresetChoice`;
     `BindingsMonitor.reread`; `ui.screen.bindings.SplitPresetFlow`, `SplitPresetDialog`, `ApplyBar.applyAsked`, and
     `FirstTimeStartupFlow`'s next question at the click.
