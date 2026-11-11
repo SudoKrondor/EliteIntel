@@ -7,6 +7,7 @@ import elite.intel.bindforge.rules.BindingConflictRules;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyBindCheck;
 import elite.intel.bindforge.rules.ReservedKeyChords;
+import elite.intel.db.dao.BindingConflictDao;
 import elite.intel.db.managers.BindingConflictManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -82,6 +83,14 @@ public class BindingsMonitor {
      * a commander sitting in the controls menu rebinding.
      */
     private String parsedFileFingerprint;
+    /**
+     * How many quiet seconds a reload is tried again in when the file to read could not be worked out. The game's
+     * save is over well inside one; the rest is margin, and the limit keeps a folder that is genuinely broken from
+     * writing a warning every second for the whole session.
+     */
+    private static final int RELOAD_RETRIES = 5;
+    /** Whether the last reload could not work out which file to read. Monitor thread only. */
+    private boolean reloadOwed;
 
     /**
      * The Elite controls a built-in command presses - {@link Bindings.GameCommand#isDrivenByApp()}.
@@ -203,12 +212,21 @@ public class BindingsMonitor {
             // Initial parse of bindings
             parseAndUpdateBindings();
 
+            // How many more quiet seconds a reload that could not find its file is tried again in; 0 when none is owed.
+            int retriesLeft = 0;
             while (running) {
                 WatchKey key = watchService.poll(1, TimeUnit.SECONDS);
                 if (key == null) {
                     if (Thread.currentThread().isInterrupted() || !running) {
                         log.info("Shutting down BindingsMonitor due to interruption or stop signal");
                         return;
+                    }
+                    if (retriesLeft > 0) {
+                        retriesLeft = reloadAfterChange(null) ? 0 : retriesLeft - 1;
+                        if (retriesLeft == 0 && reloadOwed) {
+                            log.error("Gave up working out which binds file to read after a change; the bindings in "
+                                    + "use are the last ones read, until the bindings folder changes again");
+                        }
                     }
                     continue;
                 }
@@ -218,20 +236,7 @@ public class BindingsMonitor {
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
                         if (changed.toString().endsWith(".binds")) {
-                            File activeFile = bindingsLoader.bindsFileToRead();
-                            boolean activeFileWasModified = activeFile.getName().equals(changed.toString());
-                            boolean activeFileChanged = !activeFile.equals(currentBindsFile);
-                            if (activeFileWasModified || activeFileChanged) {
-                                currentBindsFile = activeFile;
-                                Thread.sleep(300); // wait for the game to finish writing
-                                if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
-                                    log.debug("Ignoring repeat change event for unchanged file: {}",
-                                            activeFile.getName());
-                                } else {
-                                    parseAndUpdateBindings();
-                                    log.info("Reloaded bindings from: {}", currentBindsFile.getName());
-                                }
-                            }
+                            retriesLeft = reloadAfterChange(changed.toString()) ? 0 : RELOAD_RETRIES;
                         }
                     }
                 }
@@ -253,6 +258,46 @@ public class BindingsMonitor {
         } catch (Exception e) {
             log.error("Unexpected error in BindingsMonitor", e);
         }
+    }
+
+    /**
+     * Reads the binds file again after the bindings folder changed, if the file to read is the one that changed, is
+     * another file than before, or - on a retry - differs from what was last parsed.
+     * <p>
+     * WHY the wait comes first, and a file that cannot be found is no reason to stop: the game saves
+     * {@code StartPreset.4.start} by emptying it and writing it again, so a read at the moment of the change finds no
+     * preset and {@link BindingsLoader#bindsFileToRead()} throws. That exception used to end the monitor thread, and
+     * the assistant then pressed the keys of the old file until Elite-Intel was restarted (seen 2026-11-11, on a save
+     * from the game's controls screen). Now the change is tried again while the folder stays quiet.
+     *
+     * @param changed the name of the {@code .binds} that changed, or {@code null} on a retry
+     * @return {@code false} when the file to read could not be worked out, so the caller tries again
+     */
+    private boolean reloadAfterChange(String changed) throws InterruptedException {
+        Thread.sleep(300); // wait for the game to finish writing
+        File activeFile;
+        try {
+            activeFile = bindingsLoader.bindsFileToRead();
+        } catch (IOException e) {
+            log.warn("Could not work out which binds file to read after a change in the bindings folder; "
+                    + "trying again: {}", e.getMessage());
+            reloadOwed = true;
+            return false;
+        }
+        reloadOwed = false;
+        boolean activeFileWasModified = changed == null || activeFile.getName().equals(changed);
+        boolean activeFileChanged = !activeFile.equals(currentBindsFile);
+        if (!activeFileWasModified && !activeFileChanged) {
+            return true;
+        }
+        currentBindsFile = activeFile;
+        if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
+            log.debug("Ignoring repeat change event for unchanged file: {}", activeFile.getName());
+        } else {
+            parseAndUpdateBindings();
+            log.info("Reloaded bindings from: {}", currentBindsFile.getName());
+        }
+        return true;
     }
 
     private void parseAndUpdateBindings() {
@@ -338,16 +383,6 @@ public class BindingsMonitor {
     }
 
     /**
-     * Returns the file currently being monitored, falling back to a fresh
-     * {@link BindingsLoader#bindsFileToRead()} lookup if monitoring hasn't started or hasn't
-     * found one yet. Shared by anything that needs "the active game binds file" outside the
-     * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
-     */
-    public File resolveActiveBindsFile() throws IOException {
-        return currentBindsFile != null ? currentBindsFile : bindingsLoader.bindsFileToRead();
-    }
-
-    /**
      * The sections of the game's controls on another preset than the file parsed - see
      * {@link BindingsLoader#sectionsNotIn}. Empty when nothing has been parsed, which
      * {@code SetupCheck} already speaks about.
@@ -422,7 +457,7 @@ public class BindingsMonitor {
         // Diff against persisted state
         Set<String> persistedKeys = new HashSet<>(
                 conflictManager.getConflicts().stream()
-                        .map(r -> r.getConflictKey())
+                        .map(BindingConflictDao.ConflictRecord::getConflictKey)
                         .toList());
 
         for (Map.Entry<String, BindingConflictScanner.Conflict> entry : currentConflictDescriptions.entrySet()) {

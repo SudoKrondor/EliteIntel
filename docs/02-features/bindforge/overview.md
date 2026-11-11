@@ -493,6 +493,14 @@ Alias Designer screen.*
 reloads the user's key bindings when `.binds` changes — see
 [BindForge must not publish `BindingsUpdatedEvent`](#bindforge-must-not-publish-bindingsupdatedevent).
 
+**A save from the game no longer stops it (Alan, 2026-11-11).** The game saves `StartPreset.4.start` by emptying it
+and writing it again, and the monitor read it at the moment of the change, before its 300 ms wait: no preset, an
+`IOException`, and the monitor thread ended - the assistant pressed the old file's keys and the Bind Editor got no
+refresh until Elite-Intel restarted (Alan's log, 2026-11-11 08:15:23). Now it waits first, and a change whose file
+cannot be worked out is tried again once a second, five times, while the folder stays quiet; after that it is logged
+as an error and waits for the next change. It still reacts only to `.binds` names, and BindForge's check still does
+not watch the files.
+
 ### BindForge must not publish `BindingsUpdatedEvent`
 
 **Verified 2026-09-06 — and the conclusion is the opposite of what this section first assumed.**
