@@ -278,6 +278,11 @@ failures reported per place, tests in the matching package, migrations `12010`�
 *Newest first. Two or three lines each: what was decided and where it is recorded, what was found, what the next
 slice needs.*
 
+- **2026-11-11 — S19 reviewed with E10.** **Decided (Alan):** no guards added to `runAgainNow` (D3): a press cannot
+  land inside the first-click check, which takes milliseconds behind a blocking dialog, and read only begins only at
+  start while the button is greyed. Read only stays as built. S19's confirmation text gets a test with and without
+  edits in [E10R](bind-editor-editing.md#slices), with the Toggles follow-up.
+
 - **2026-11-11 — S19 done: Run first-time startup again stays, and runs at once.** **Decided (Alan):** RA dropped - the button is kept for every user, and once confirmed runs first-time startup straight away instead of at the next click on the BindForge tab the user was already on; Q1-Q5 as recommended, recorded in file-manager.md *Game Install Locations* (*Settled 2026-11-11*) and storage.md *First-time startup*. **Found:** first-time startup's write already drops edits not applied (`Edits.written`), so only the confirmation needed to say so. **Not run in the app:** the button with and without an edit on the bar, and abandoning the list then clicking the tab again. **Next:** no Storage slice is planned; E10 (the Toggles tab) is the building left for V1.2, in [bind-editor-editing.md](bind-editor-editing.md#slices); S19 can be reviewed with the next code-integrity review.
 
 - **2026-11-11 — S13fR done: the review's follow-up.** **Decided (Alan, at the sources):** D1 and D2 dropped after being approved - a dialog answer cannot land during a game save, since the game saves only on Apply in its controls, and no way was shown for `StartPreset.4.start` to be unreadable in normal play (principle 13); recorded in storage.md *Settled from the S13f / S18R / S17 review*. D3 built: the monitor's log says what failed, recorded in overview.md *External change detection*. Tests for `sectionsNotIn` with a chosen file and `SplitPresetFlow.canSetAll`. **Next:** RA (*Before V1.2 ships*: hide or remove Run first-time startup again).
