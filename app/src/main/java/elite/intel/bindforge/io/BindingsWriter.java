@@ -212,8 +212,12 @@ public class BindingsWriter {
      * automatic calls it. An empty value is a real one - it is the game's default choice - so it is written, never
      * removed.
      * <p>
-     * Refuses a setting the file does not hold ({@code BINDING_NOT_FOUND}), and one it repeats or holds in any other
-     * shape ({@code UNSUPPORTED_XML}): which of two copies the game reads is not known, so neither is guessed at.
+     * <strong>A setting the file holds more than once is one setting</strong> (bind-editor.md, <em>Toggles</em>, Q4
+     * settled 2026-11-11): the value is written into every copy, adding or removing none, so the copies never differ
+     * afterwards. Every binds file the game saves holds {@code MouseGUI} twice (storage.md rule 14).
+     * <p>
+     * Refuses a setting the file does not hold ({@code BINDING_NOT_FOUND}), and one with any copy in another shape than
+     * {@code <Name Value="..." />} ({@code UNSUPPORTED_XML}). {@code NO_CHANGE} only when every copy already holds it.
      *
      * @param value what to write; characters that would need escaping in an attribute are refused ({@code UNKNOWN_KEY})
      */
@@ -223,18 +227,32 @@ public class BindingsWriter {
         }
         EncodedXml encodedXml = decode(binds);
         String xml = encodedXml.xml();
-        if (openingTagStarts(xml, setting, 0, xml.length()).isEmpty()) {
+        List<Integer> starts = openingTagStarts(xml, setting, 0, xml.length());
+        if (starts.isEmpty()) {
             return EditedBinds.unchanged(BindingSaveResult.BINDING_NOT_FOUND, binds);
         }
-        TextRange tag = singleSelfClosingTag(xml, setting, new TextRange(0, xml.length()), Set.of("Value"));
-        TextRange current = tag == null ? null : valueRange(xml, tag);
-        if (current == null) {
-            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+        List<TextRange> values = new ArrayList<>();
+        for (int start : starts) {
+            int tagEnd = findStartTagEnd(xml, start);
+            if (tagEnd < 0 || !isSelfClosingStartTag(xml, start, tagEnd)
+                    || !Set.of("Value").equals(attributeNames(xml.substring(start, tagEnd + 1)))) {
+                return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+            }
+            TextRange current = valueRange(xml, new TextRange(start, tagEnd + 1));
+            if (current == null) {
+                return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+            }
+            values.add(current);
         }
-        if (value.equals(xml.substring(current.start(), current.end()))) {
+        if (values.stream().allMatch(range -> value.equals(xml.substring(range.start(), range.end())))) {
             return EditedBinds.unchanged(BindingSaveResult.NO_CHANGE, binds);
         }
-        return EditedBinds.saved(encode(new EncodedXml(replaceRange(xml, current, value), encodedXml.hasUtf8Bom())));
+        String updatedXml = xml;
+        // WHY last first: replacing a later copy leaves the offsets of the earlier ones where they were.
+        for (TextRange current : values.reversed()) {
+            updatedXml = replaceRange(updatedXml, current, value);
+        }
+        return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
     }
 
     /**

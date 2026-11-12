@@ -53,12 +53,38 @@ class BindsValuesTest {
     }
 
     @Test
-    void aRepeatedElementIsNotEditable() throws IOException {
-        BindsValues values = read("<HeadlookSensitivity Value=\"1.0\" /><HeadlookSensitivity Value=\"2.0\" />"
-                + axis("YawAxisAlternate", "A", "Joy_XAxis", "0", "0") + axis("YawAxisAlternate", "A", "Joy_YAxis", "0", "0"));
+    void aRepeatedAxisIsNotEditable() throws IOException {
+        BindsValues values = read(axis("YawAxisAlternate", "A", "Joy_XAxis", "0", "0")
+                + axis("YawAxisAlternate", "A", "Joy_YAxis", "0", "0"));
 
-        assertFalse(values.settings().get("HeadlookSensitivity").editable());
         assertFalse(values.axes().get("YawAxisAlternate").editable());
+    }
+
+    /**
+     * Every binds file the game saves holds {@code MouseGUI} twice; it is one setting, shown by its first copy, and the
+     * writer writes every copy (bind-editor.md, <em>Toggles</em>, Q4 settled 2026-11-11).
+     */
+    @Test
+    void aRepeatedPlainSettingIsOneEditableSettingShownByItsFirstCopy() throws IOException {
+        BindsValues values = read("<MouseGUI Value=\"1\" /><EnableMenuGroups Value=\"0\" /><MouseGUI Value=\"0\" />");
+
+        assertTrue(values.settings().get("MouseGUI").editable());
+        assertEquals("1", values.settings().get("MouseGUI").value());
+    }
+
+    @Test
+    void aRepeatedSettingWithOneCopyInAnotherShapeIsNotEditable() throws IOException {
+        BindsValues values = read("<MouseGUI Value=\"1\" /><MouseGUI Value=\"1\" Extra=\"2\" />");
+
+        assertFalse(values.settings().get("MouseGUI").editable());
+    }
+
+    @Test
+    void theGameSavedReferenceFileHoldsMouseGuiTwiceAndItIsEditable() throws IOException {
+        BindsValues values = BindsValues.of(Files.readAllBytes(
+                Path.of("../docs/02-features/bindforge/reference-data/Custom.4.2.binds")));
+
+        assertTrue(values.settings().get("MouseGUI").editable());
     }
 
     @Test

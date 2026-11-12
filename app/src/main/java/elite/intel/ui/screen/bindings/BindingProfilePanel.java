@@ -73,6 +73,7 @@ public class BindingProfilePanel extends JPanel {
     private JTextField bindingSearchField;
     private final GameModePanel gameMode;
     private final SettingsModePanel settingsMode;
+    private final TogglesModePanel togglesMode;
     private JTabbedPane modeTabs;
     /**
      * Where the Anomalies tab sits in {@link #modeTabs}, after the section tabs.
@@ -81,6 +82,7 @@ public class BindingProfilePanel extends JPanel {
     private static final String CARD_SECTIONS = "sections";
     private static final String CARD_ANOMALIES = "anomalies";
     private static final String CARD_SETTINGS = "settings";
+    private static final String CARD_TOGGLES = "toggles";
 
     /** The binds file shown, by file name - {@code null} when none could be read. */
     private volatile String loadedFile;
@@ -107,6 +109,7 @@ public class BindingProfilePanel extends JPanel {
             if (modeTabs != null) modeTabs.setTitleAt(anomaliesTab, getText("bindings.mode.anomalies", count));
         });
         settingsMode = new SettingsModePanel(runner);
+        togglesMode = new TogglesModePanel(runner);
         buildUi();
         // WHY: what the grid shows also comes from outside the binds file - which controls custom commands tap - and
         // nothing announces a change to it. Coming back to this tab is when the commander looks, so that is when it
@@ -139,13 +142,14 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * BindForge went read only, or stopped being: Game Mode, Anomalies and Settings follow (Storage S14b).
+     * BindForge went read only, or stopped being: Game Mode, Anomalies, Settings and Toggles follow (Storage S14b).
      */
     @Subscribe
     public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
         SwingUtilities.invokeLater(() -> {
             gameMode.readOnlyChanged();
             settingsMode.readOnlyChanged();
+            togglesMode.readOnlyChanged();
         });
     }
 
@@ -175,7 +179,8 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * The one tab row - the sections, then Anomalies and Dead Zones &amp; Sensitivity - over what the chosen tab shows.
+     * The one tab row - the sections, then Anomalies, Dead Zones &amp; Sensitivity and Toggles - over what the chosen tab
+     * shows.
      * <p>
      * WHY the tabs are empty and a card panel holds the views: a component sits on one tab only, and all five section
      * tabs show the same tables, narrowed.
@@ -186,15 +191,20 @@ public class BindingProfilePanel extends JPanel {
         anomaliesTab = modeTabs.getTabCount();
         modeTabs.addTab(getText("bindings.mode.anomalies", 0), transparentPanel(null));
         modeTabs.addTab(getText("bindings.mode.settings"), transparentPanel(null));
+        int togglesTab = modeTabs.getTabCount();
+        modeTabs.addTab(getText("bindings.mode.toggles"), transparentPanel(null));
 
         CardLayout cards = new CardLayout();
         JPanel views = transparentPanel(cards);
         views.add(gameMode, CARD_SECTIONS);
         views.add(gameMode.anomaliesView(), CARD_ANOMALIES);
         views.add(settingsMode, CARD_SETTINGS);
+        views.add(togglesMode, CARD_TOGGLES);
         modeTabs.addChangeListener(e -> {
             int tab = modeTabs.getSelectedIndex();
-            cards.show(views, sectionTabChosen() ? CARD_SECTIONS : tab == anomaliesTab ? CARD_ANOMALIES : CARD_SETTINGS);
+            cards.show(views, sectionTabChosen() ? CARD_SECTIONS
+                    : tab == anomaliesTab ? CARD_ANOMALIES
+                    : tab == togglesTab ? CARD_TOGGLES : CARD_SETTINGS);
         });
 
         JPanel area = transparentPanel(new BorderLayout());
@@ -330,6 +340,7 @@ public class BindingProfilePanel extends JPanel {
         loadedFile = read.file();
         gameMode.show(new GameModePanel.Shown(read.file(), read.content(), read.slots(), read.layout(), read.labels(), read.values()));
         settingsMode.show(read.file(), read.values());
+        togglesMode.show(read.file(), read.values());
     }
 
     /**
@@ -441,6 +452,7 @@ public class BindingProfilePanel extends JPanel {
     private void searchModes() {
         gameMode.search(bindingSearchField.getText());
         settingsMode.search(bindingSearchField.getText());
+        togglesMode.search(bindingSearchField.getText());
     }
 
     /**

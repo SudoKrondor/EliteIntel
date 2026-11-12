@@ -401,6 +401,16 @@ press APPLY with an edit on the bar and click away and back: the check runs and 
 BindForge wrote them. Covers the watch loop's event, which has no unit test.
 → [storage.md — Opening BindForge](../02-features/bindforge/storage.md#opening-bindforge)
 
+**34. Are the Toggles tab's names the game's?** *Added 2026-11-11, E10 — Alan can run this.* The Toggles tab names
+each yes/no setting as the game's options screen does, read off screenshots. One was matched by elimination:
+`HeadlookResetOnToggle` is taken to be *Centre When Headlook Inactive* (Ship > Headlook Mode). Turn that option over in
+the game, press Apply, and say whether `HeadlookResetOnToggle` is what changed in the binds file. Three show on no
+options screen and sit under *Other* by their XML names: `MotionHeadlook`, `yawRotateHeadlook` and
+`EnableRumbleTrigger`. If you find where the game shows any of them, send its section, group and name, and it goes into
+`ed_control_names.properties`. Then press a few toggles on the tab, press APPLY, and say whether the game shows the
+same values, Show Mouse Widget included.
+→ [bind-editor.md — Toggles](../02-features/bindforge/bind-editor.md#toggles--settled-2026-11-11-alan)
+
 ## Core Platform
 
 **8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.

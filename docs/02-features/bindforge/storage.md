@@ -952,9 +952,11 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       copies that differ included; *the merge never writes a file whose copies differ* is about the rows a merge
       splices (principle 13). *Found while building (2026-11-11):* a merge with every row of a file answered in-game
       takes the game's file whole, as it always has, so it is that overwrite too.
-    - **The Bind Editor's write of a setting is left alone.** `BindingsWriter.assignSetting` refuses a repeated setting
-      and `BindsValues` reads it as not editable, so the Bind Editor never writes `MouseGUI` today; writing every copy
-      there is [E10](../../05-build-plan/bind-editor-editing.md#slices)'s.
+    - **The Bind Editor's write of a setting was left alone here, and E10 made it write every copy** (Alan,
+      2026-11-11, Toggles Q4). `BindingsWriter.assignSetting` writes the value into every copy of a setting, adding
+      or removing none, and `BindsValues` reads a repeated plain setting as one editable setting shown by its
+      **first** copy - the copy a merge keeps. See
+      [bind-editor.md, *Toggles*](bind-editor.md#toggles--settled-2026-11-11-alan).
 
     Built in Storage S18: `BindsElements.Copy`, `Top.copies` / `values` / `sameValue` / `repeated` / `copiesDiffer`;
     `BindingsComparison`'s `elementSplices` (every copy), `copiesMadeEqual` and `describe(Top)`.

@@ -49,15 +49,57 @@ class BindingsWriterSettingAndKeptAxisTest {
     }
 
     @Test
-    void refusesAMissingARepeatedAndAnUnsafeSetting() {
+    void refusesAMissingAnOddlyShapedAndAnUnsafeSetting() {
         byte[] missing = bytes("<Root><Other Value=\"1\" /></Root>");
-        byte[] repeated = bytes("<Root><HeadlookSensitivity Value=\"1\" /><HeadlookSensitivity Value=\"2\" /></Root>");
         byte[] extra = bytes("<Root><MouseSensitivity Value=\"1\" Extra=\"2\" /></Root>");
+        byte[] oneCopyOdd = bytes("<Root><MouseGUI Value=\"1\" /><MouseGUI Value=\"1\" Extra=\"2\" /></Root>");
 
         assertEquals(BindingSaveResult.BINDING_NOT_FOUND, writer.assignSetting(missing, "MouseSensitivity", "2").result());
-        assertEquals(BindingSaveResult.UNSUPPORTED_XML, writer.assignSetting(repeated, "HeadlookSensitivity", "3").result());
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, writer.assignSetting(extra, "MouseSensitivity", "2").result());
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, writer.assignSetting(oneCopyOdd, "MouseGUI", "0").result());
         assertEquals(BindingSaveResult.UNKNOWN_KEY, writer.assignSetting(extra, "MouseSensitivity", "\"><x").result());
+    }
+
+    /**
+     * Every binds file the game saves holds {@code MouseGUI} twice; a change writes both, adding or removing none
+     * (bind-editor.md, <em>Toggles</em>, Q4 settled 2026-11-11).
+     */
+    @Test
+    void aRepeatedSettingHasEveryCopyWrittenAndNoneAddedOrRemoved() {
+        String file = "<Root>\r\n\t<MouseGUI Value=\"0\" />\r\n\t<EnableMenuGroups Value=\"0\" />\r\n"
+                + "\t<MouseGUI Value=\"0\" />\r\n</Root>";
+
+        EditedBinds edited = writer.assignSetting(bytes(file), "MouseGUI", "1");
+
+        assertEquals(BindingSaveResult.SAVED, edited.result());
+        assertEquals(file.replace("<MouseGUI Value=\"0\" />", "<MouseGUI Value=\"1\" />"), text(edited));
+    }
+
+    @Test
+    void copiesThatDifferAreBothWrittenAndCopiesThatAgreeAreNoChange() {
+        String differ = "<Root><MouseGUI Value=\"1\" /><EnableMenuGroups Value=\"0\" /><MouseGUI Value=\"0\" /></Root>";
+
+        EditedBinds edited = writer.assignSetting(bytes(differ), "MouseGUI", "1");
+
+        assertEquals(BindingSaveResult.SAVED, edited.result());
+        assertEquals(differ.replace("<MouseGUI Value=\"0\" />", "<MouseGUI Value=\"1\" />"), text(edited));
+        assertEquals(BindingSaveResult.NO_CHANGE, writer.assignSetting(edited.content(), "MouseGUI", "1").result());
+    }
+
+    @Test
+    void aFileHoldingOneCopyKeepsOne() {
+        String file = "<Root><MouseGUI Value=\"1\" /></Root>";
+
+        EditedBinds edited = writer.assignSetting(bytes(file), "MouseGUI", "0");
+
+        assertEquals("<Root><MouseGUI Value=\"0\" /></Root>", text(edited));
+    }
+
+    @Test
+    void aValueTheGameWouldNotWriteIsReplaced() {
+        EditedBinds edited = writer.assignSetting(bytes("<Root><MouseGUI Value=\"yes\" /></Root>"), "MouseGUI", "1");
+
+        assertEquals("<Root><MouseGUI Value=\"1\" /></Root>", text(edited));
     }
 
     @Test

@@ -1301,10 +1301,12 @@ toggle.** Alan, 2026-11-11: *"maybe we need another tab in the bind editor secti
 **It amends E6's rejection of the booleans** (Krondor, 2026-11-10): they come back, on a tab of their own. The
 dropdowns, and settings rows inline in the Game Mode grid, stay rejected for V1.2.
 
-**What it lists.** Every settings entry in the file whose value is `0` or `1` and whose name is in the
-[booleans list](reference-data/settings-choice-fields.md#booleans--checkbox-no-vocabulary-to-capture) - but `Hold`,
-`Inverted` and `ToggleOn`, which are parts of a binding and belong to the bind dialogs. A setting the file does not
-hold has no row. In Alan's `DualVirpilDawnTreader.4.2.binds` that is 35, counted 2026-11-11 - Show Mouse Widget
+**What it lists.** Every settings entry in the file whose name is in the
+[booleans list](reference-data/settings-choice-fields.md#booleans--checkbox-no-vocabulary-to-capture), **whatever its
+value** - but `Hold`, `Inverted` and `ToggleOn`, which are parts of a binding and belong to the bind dialogs. A setting
+the file does not hold has no row. *Corrected 2026-11-11 (Alan, E10 Q3): this said "whose value is `0` or `1`", which
+would have hidden a setting with any other value and left no way to fix it here.* In Alan's
+`DualVirpilDawnTreader.4.2.binds` that is 35, counted 2026-11-11 - Show Mouse Widget
 (`MouseGUI`, below) and these 34:
 
 | Kind | Settings |
@@ -1334,18 +1336,35 @@ binds file the game has saved holds two
 ([storage.md rule 14, *Settled 2026-11-11*](storage.md#when-a-live-copy-differs)). The editor never leaves the copies
 different.
 
-**A value that is neither `0` nor `1` is shown as it is written and left untouched** unless the user changes it - the
-rule for [an unrecognised value](#where-an-unrecognised-value-shows--and-what-it-settles).
+**A value that is neither `0` nor `1` reads as OFF and is left in the file until the button is pressed** (Alan,
+2026-11-11, E10 Q5): pressing it writes `1`, as any other row's press writes `1` or `0`. It carries no warning and is
+not greyed. Alan: *"just because someone changes it by hand doesnt mean the value will stick ... the button in
+BindForge would be available and over write the users junk values."* Only `1` is on. *This replaces "shown as it is
+written", which followed the rule for [an unrecognised value](#where-an-unrecognised-value-shows--and-what-it-settles):
+a yes/no has nothing to show beside ON and OFF.*
 
-*To confirm at the slice's sources (E10):*
-- the control the [HUD canon](ui-component-map.md) gives a yes/no, and the tab's label in all nine bundles;
-- the groups' headings and order, read from how `SettingsModePanel` groups its rows;
-- each row's name - whether the in-game control names already loaded cover every one of these;
-- how a 0/1 is written - `BindingsWriter` writes a setting's number today;
-- a setting written in a form the editor cannot change, which the number rows say to change in the game;
-- Show Mouse Widget's toggle for a file whose copies of `MouseGUI` differ
-  ([testing item 31](../../00-overview/testing-required.md#bindforge)), and whether a file holding one copy keeps
-  one.
+### Settled at E10's sources (Alan, 2026-11-11)
+
+- **Q1 - the control: a `HudToggleButton` reading ON or OFF** on every row, as the game's own options screen reads
+  them; the button the axis dialog already uses for Normal / Inverted. The tab is **Toggles**, in all nine bundles
+  (`bindings.mode.toggles`).
+- **Q2 - names and groups.** Each row is the game's name under the game's section and group, read off Alan's 4.2
+  options screens and added to `ed_control_names.properties`, so the tab groups as Dead Zones & Sensitivity does. The
+  relative-mouse settings are *Relative Mouse X-Axis* / *Y-Axis* in each mode's own group; the SRV's are *Relative
+  Mouse X-Axis Steer*, *X-Axis Roll* and *Y-Axis Pitch*; On Foot gains the group *On Foot Miscellaneous*.
+  `HeadlookResetOnToggle` = *Centre When Headlook Inactive* was matched by elimination. `MotionHeadlook`,
+  `yawRotateHeadlook` and `EnableRumbleTrigger` show on no options screen and stay under *Other* by their XML names
+  ([testing item 34](../../00-overview/testing-required.md#bindforge)).
+- **Q3 - every setting on the list has a row, whatever its value** (*What it lists*, above).
+- **Q4 - a setting the file holds more than once is one setting and can be changed, on any tab.** A change writes
+  the new value into every copy, adding or removing none - the rule the merge follows since Storage S18
+  ([storage.md rule 14](storage.md#when-a-live-copy-differs)). The row shows the **first** copy, the one a merge keeps;
+  a press writes every copy, so a file whose copies differ is made to agree. A file holding one copy keeps one. Only
+  `MouseGUI` repeats in any file measured, so this changes nothing on Dead Zones & Sensitivity today; Alan chose the
+  general rule over naming `MouseGUI`, so a second repeated setting needs no new code.
+- **Q5 - a value the game would not write** (above).
+- **A setting in a form the editor cannot change** - an attribute besides `Value`, in any copy - is greyed, saying on
+  hover *Change it in the game*, as the number rows are.
 
 ## Mouse Inputs Are Chosen, Not Captured
 

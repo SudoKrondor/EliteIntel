@@ -31,6 +31,7 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | Required-by-Vega filter | `GameModePanel`'s `vegaOnlyCheck`, a footer checkbox beside *Show conflicts only* and *Show unassigned*. It keeps the rows whose AI ACCESS state is not `NOT_USED`, and combines with the conflicts filter and search |
 | Clear column | `ui.dialog.ClearKeyboardBindingDialog` — keyboard slots only, as V1.1 shipped it |
 | MOUSE tab (E4) | `ui.dialog.MouseInputsPanel` — the pad (`tokenForAwtButton`: AWT's 2 and 3 swap) and the two wheel cells; picks go through the dialog's `pickMouse`, checked by `BindingConflictScanner.holderOf` like a controller input |
+| The Toggles tab (E10) | `ui.screen.bindings.TogglesModePanel` (a `HudToggleButton` reading ON/OFF per row, grouped as `SettingsModePanel` groups); `bindforge.model.SettingToggles` (the 42 settings, only `1` on); the names in `bindings/ed_control_names.properties`. A setting held more than once is written in every copy by `BindingsWriter.assignSetting` and read as one by `BindsValues` |
 | SHIFT, CTRL, ALT on a controller input (E5) | `bindforge.devices.ControllerKeyboardModifiers` (left key on a tick, a side already held is kept); the dialog's `withKeys`, `onWithKey`, `rekeySwapped` (a swapped input keeps its Hold); the three-modifier cap refused on the card (`bindings.assign.tooManyModifiers`). No writer change: `assignSlot` already takes keyboard modifiers on any slot |
 
 ## Settled — and where it is recorded
@@ -72,8 +73,10 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 
 ## Boundaries
 
-- **No change to `bindforge.io` or existing `bindforge.rules`
-  classes.** The writer is used exactly as F4 merged it. A new class only V1.2 calls may go in `bindforge.rules` (README).
+- **`bindforge.io` and `bindforge.rules` are changed here like any other V1.2 code** (CLAUDE.md, *Branching Model*:
+  Krondor repealed the V1.1-only rule on 2026-10-20). *Corrected 2026-11-11 (E10): this said "no change to
+  `bindforge.io`", the F4-era rule, which no longer holds; E10 changed `BindingsWriter.assignSetting` and
+  `BindsValues`.*
 - **`KeyBindingsParser` never widens.** Writing a controller binding never makes it executable.
 - **The keyboard path and its refusals stay as they are**, for the auto-fixer and for the keyboard tab.
 
@@ -91,9 +94,24 @@ grid.** The grid, search, conflict colouring and the keyboard capture dialog shi
 | E8 | **A controller's button or hat is picked when it is let go** (Krondor, 2026-11-10, from D6's Q2(b)): a release picks the input pressed last with every other input held, when something was pressed since the last pick. Axis directions and triggers still pick as they move; keyboard, MOUSE and clicks unchanged. [Spec](../02-features/bindforge/bind-editor.md#modifiers-hold-inverted-deadzone) | **done 2026-11-10**, checked on real hardware the same day |
 | E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **part built, the rest blocked** on A18 and testing item 27 (updated 2026-11-03): buttons, D-pad and triggers capture today, unmeasured |
 | E9 | ~~**Show Mouse Widget on the Dead Zones & Sensitivity tab**~~ **folded into E10 the same day** (Alan, 2026-11-11): the toggle sits on the Toggles tab. *As planned:* ([spec](../02-features/bindforge/bind-editor.md#settings--settled-2026-09-19)). One boolean, `MouseGUI`, as a yes/no toggle - amending E6's rejection for this setting only. Changing it writes every copy of `MouseGUI` in the file (the game writes two; [storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)); an edit not applied; greyed while read only. **After [Storage S18](storage.md#slices)**, which settles how a repeated element is read and written. **To settle at the sources:** the HUD canon's control for a yes/no; where on the tab; the label; a file whose copies differ, or with none; strings in all nine bundles | **folded into E10** |
-| E10 | **The Toggles tab** (Alan, 2026-11-11; [spec](../02-features/bindforge/bind-editor.md#toggles--settled-2026-11-11-alan)). A fourth mode tab after Dead Zones & Sensitivity: every yes/no setting the binds file holds - 35 in Alan's file, Show Mouse Widget (`MouseGUI`) among them - each a toggle, grouped as that tab groups its rows. **Changing Show Mouse Widget writes every copy of `MouseGUI`** (the game writes two; [storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)), so this slice comes **after [Storage S18](storage.md#slices)** (done 2026-11-11: the check reads and merges such a file; `BindingsWriter.assignSetting` still refuses a repeated setting, so writing every copy is this slice's). It amends E6's rejection of the booleans; dropdowns and inline rows stay rejected. A change is an edit not applied; greyed while read only; Search reaches it; a value neither `0` nor `1` shown as written and left alone. **To settle at the sources:** the HUD canon's control for a yes/no and the tab's label in nine bundles; the groups' headings and order; each row's name; how a 0/1 is written (`BindingsWriter` writes a number today); a setting the editor cannot change; Show Mouse Widget for a file whose copies differ, or with one copy | planned |
+| E10 | **The Toggles tab** (Alan, 2026-11-11; [spec](../02-features/bindforge/bind-editor.md#toggles--settled-2026-11-11-alan)). A fourth mode tab after Dead Zones & Sensitivity: every yes/no setting the binds file holds - 35 in Alan's file, Show Mouse Widget (`MouseGUI`) among them - each a toggle, grouped as that tab groups its rows. **Changing Show Mouse Widget writes every copy of `MouseGUI`** (the game writes two; [storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)), so this slice comes **after [Storage S18](storage.md#slices)** (done 2026-11-11: the check reads and merges such a file; `BindingsWriter.assignSetting` still refuses a repeated setting, so writing every copy is this slice's). It amends E6's rejection of the booleans; dropdowns and inline rows stay rejected. A change is an edit not applied; greyed while read only; Search reaches it; a value neither `0` nor `1` shown as written and left alone. **To settle at the sources:** the HUD canon's control for a yes/no and the tab's label in nine bundles; the groups' headings and order; each row's name; how a 0/1 is written (`BindingsWriter` writes a number today); a setting the editor cannot change; Show Mouse Widget for a file whose copies differ, or with one copy | **done 2026-11-11**, settled at its sources Q1-Q5 ([spec](../02-features/bindforge/bind-editor.md#settled-at-e10s-sources-alan-2026-11-11)); names to confirm in the game ([testing item 34](../00-overview/testing-required.md#bindforge)) |
 
 ## Hand-off notes — newest first
+
+**2026-11-11, E10 done: the Toggles tab (Alan).** Settled at the sources one question at a time, recorded in
+[bind-editor.md, *Settled at E10's sources*](../02-features/bindforge/bind-editor.md#settled-at-e10s-sources-alan-2026-11-11):
+Q1 an ON/OFF `HudToggleButton`; Q2 the game's names and groups, read off Alan's options screenshots into
+`ed_control_names.properties`; Q3 every listed setting has a row whatever its value (the spec's "0 or 1" corrected);
+Q4 any setting held more than once can be changed on any tab, every copy written, none added or removed - the general
+rule, not `MouseGUI` by name ([storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)
+updated); Q5 a value the game would not write reads OFF, carries no warning, and is overwritten when pressed. **Found:**
+`MouseGUI` is still the only repeated setting in any file measured, so Dead Zones & Sensitivity behaves as before;
+`BindsValues`' old note that "old files repeat `HeadlookSensitivity`" had no file behind it and is gone. The game's
+action catalog and consolidated table name none of the relative-mouse toggles - the screenshots did.
+`HeadlookResetOnToggle` was matched by elimination, and `MotionHeadlook`, `yawRotateHeadlook` and `EnableRumbleTrigger`
+show on no screen; [testing item 34](../00-overview/testing-required.md#bindforge) asks. The Boundaries line on
+`bindforge.io` was the F4-era rule and is corrected. **Next:** no slice here is open - E7 waits on A18 and testing item
+27. A code-integrity review of E10 runs in its own session.
 
 **2026-11-10, D6, E2, E8 and HC done, and two capture-dialog faults fixed (Krondor).** Each slice's decisions are in
 the Bind Editor spec: [Conflicts (the kind)](../02-features/bindforge/bind-editor.md#conflicts-the-kind) (D6),

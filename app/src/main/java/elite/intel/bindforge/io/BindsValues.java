@@ -22,8 +22,8 @@ import java.util.*;
  * <p>
  * <strong>Real files are messier than the game's own output</strong> (bind-editor.md, <em>Real files are messier than any
  * specification</em>), so anything {@link BindingsWriter} would refuse reads as not editable rather than failing the
- * whole file: factory schemes hold {@code <Deadzone Value="DefaultPlatformDeadzone" />}, and old files repeat
- * elements such as {@code HeadlookSensitivity}.
+ * whole file: factory schemes hold {@code <Deadzone Value="DefaultPlatformDeadzone" />}. A repeated axis element is
+ * not editable; a repeated plain setting is - every file the game saves holds {@code MouseGUI} twice.
  */
 public record BindsValues(Map<String, Axis> axes, Map<String, Setting> settings) {
 
@@ -54,9 +54,10 @@ public record BindsValues(Map<String, Axis> axes, Map<String, Setting> settings)
 
     /**
      * One bare setting. {@code value} is exactly what the file holds, an empty value being the field's default choice
-     * rather than a missing one.
+     * rather than a missing one. A setting the file holds more than once is one setting; {@code value} is its first
+     * copy's, and a change writes every copy.
      *
-     * @param editable whether the writer can write this element - false when the file repeats it
+     * @param editable whether the writer can write this element - false when any copy is in another shape
      */
     public record Setting(String id, String value, boolean editable) {
     }
@@ -87,10 +88,19 @@ public record BindsValues(Map<String, Axis> axes, Map<String, Setting> settings)
                 axes.putIfAbsent(id, axis(id, children, once));
             } else if (children.isEmpty() && element.hasAttribute("Value")) {
                 settings.putIfAbsent(id, new Setting(id, element.getAttribute("Value"),
-                        once && element.getAttributes().getLength() == 1));
+                        named(elements, id).stream().allMatch(BindsValues::plainSetting)));
             }
         }
         return new BindsValues(Map.copyOf(axes), Map.copyOf(settings));
+    }
+
+    /**
+     * {@code <Name Value="..." />} and nothing else - what {@link BindingsWriter#assignSetting} writes. WHY every copy is
+     * asked: the writer writes them all (Toggles, Q4 settled 2026-11-11), so one copy in another shape refuses the lot.
+     */
+    private static boolean plainSetting(Element element) {
+        return childElements(element).isEmpty() && element.hasAttribute("Value")
+                && element.getAttributes().getLength() == 1;
     }
 
     private static Axis axis(String id, List<Element> children, boolean once) {
