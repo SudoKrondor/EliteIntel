@@ -342,7 +342,9 @@ public abstract class SherpaOnnxTTS implements MouthInterface {
                 if (!sentences.isEmpty() && SpeechEmotes.isEmoteOnly(sentence)) {
                     sentences.set(sentences.size() - 1, sentences.getLast() + " " + sentence);
                 } else {
-                    sentences.add(sentence);
+                    // A paragraph-long sentence is queued clause by clause, so its start plays while the rest
+                    // renders.
+                    sentences.addAll(ClauseChunker.chunk(sentence));
                 }
             }
             if (sentences.isEmpty()) {
