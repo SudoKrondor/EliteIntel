@@ -60,10 +60,28 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     private final ProcessRunner runner;
     private final Consumer<String> log;
     private final LmStudioServer server = new LmStudioServer();
+    /** Asked after a load the command gave up on - the server's {@code isLoaded} but in a test. */
+    private final LoadedCheck loadedCheck;
+
+    /** Whether the server has a model loaded; throws when the server does not answer. */
+    @FunctionalInterface
+    interface LoadedCheck {
+        boolean isLoaded(String model) throws InstallException;
+    }
 
     LocalLmStudioMachine(Consumer<String> log) {
         this.runner = new ProcessRunner(log);
         this.log = log;
+        this.loadedCheck = server::isLoaded;
+    }
+
+    /**
+     * @param loadedCheck what a load the command gave up on asks - a stand-in for the server in a test
+     */
+    LocalLmStudioMachine(Consumer<String> log, LoadedCheck loadedCheck) {
+        this.runner = new ProcessRunner(log);
+        this.log = log;
+        this.loadedCheck = loadedCheck;
     }
 
     /**
@@ -307,7 +325,7 @@ final class LocalLmStudioMachine implements LmStudioMachine {
 
     private boolean loadedAfterAll(String model) {
         try {
-            return server.isLoaded(model);
+            return loadedCheck.isLoaded(model);
         } catch (InstallException notAnswering) {
             return false;
         }

@@ -218,6 +218,10 @@ public class BindingsWriter {
      * <p>
      * Refuses a setting the file does not hold ({@code BINDING_NOT_FOUND}), and one with any copy in another shape than
      * {@code <Name Value="..." />} ({@code UNSUPPORTED_XML}). {@code NO_CHANGE} only when every copy already holds it.
+     * <p>
+     * A copy is a direct child of the root, as {@link BindsValues} reads it: an element of the same name nested deeper,
+     * or one inside a comment, is not the setting and is left as it is. WHY: the reader decides a row is editable from
+     * those copies alone, and a writer that counted more would refuse a row shown as editable, or rewrite a comment.
      *
      * @param value what to write; characters that would need escaping in an attribute are refused ({@code UNKNOWN_KEY})
      */
@@ -227,7 +231,10 @@ public class BindingsWriter {
         }
         EncodedXml encodedXml = decode(binds);
         String xml = encodedXml.xml();
-        List<Integer> starts = openingTagStarts(xml, setting, 0, xml.length());
+        List<Integer> starts = topLevelStarts(xml, setting);
+        if (starts == null) {
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+        }
         if (starts.isEmpty()) {
             return EditedBinds.unchanged(BindingSaveResult.BINDING_NOT_FOUND, binds);
         }
@@ -603,6 +610,55 @@ public class BindingsWriter {
             searchFrom = matcher.end();
         }
         return starts;
+    }
+
+    /**
+     * Where each element named {@code tagName} starts that is a direct child of the root element - comments, CDATA,
+     * processing instructions and declarations skipped. {@code null} when the text is not well enough formed to tell:
+     * a comment, section or tag that never closes, or an end tag with no start.
+     */
+    private List<Integer> topLevelStarts(String xml, String tagName) {
+        List<Integer> starts = new ArrayList<>();
+        int depth = 0;
+        int at = xml.indexOf('<');
+        while (at >= 0) {
+            int next;
+            if (xml.startsWith("<!--", at)) {
+                next = endOf(xml, "-->", at + 4);
+            } else if (xml.startsWith("<![CDATA[", at)) {
+                next = endOf(xml, "]]>", at + 9);
+            } else if (xml.startsWith("<?", at)) {
+                next = endOf(xml, "?>", at + 2);
+            } else if (xml.startsWith("<!", at)) {
+                next = endOf(xml, ">", at + 2);
+            } else if (xml.startsWith("</", at)) {
+                if (--depth < 0) return null;
+                next = endOf(xml, ">", at + 2);
+            } else {
+                int tagEnd = findStartTagEnd(xml, at);
+                if (tagEnd < 0) return null;
+                if (depth == 1 && namedAt(xml, at, tagName)) starts.add(at);
+                if (!isSelfClosingStartTag(xml, at, tagEnd)) depth++;
+                next = tagEnd + 1;
+            }
+            if (next < 0) return null;
+            at = xml.indexOf('<', next);
+        }
+        return starts;
+    }
+
+    // Just past the first terminator at or after from; -1 when there is none.
+    private static int endOf(String xml, String terminator, int from) {
+        int found = xml.indexOf(terminator, from);
+        return found < 0 ? -1 : found + terminator.length();
+    }
+
+    // Whether the start tag at tagStart is named exactly tagName.
+    private static boolean namedAt(String xml, int tagStart, String tagName) {
+        int after = tagStart + 1 + tagName.length();
+        if (!xml.startsWith(tagName, tagStart + 1) || after >= xml.length()) return false;
+        char c = xml.charAt(after);
+        return Character.isWhitespace(c) || c == '>' || c == '/';
     }
 
     private Pattern closingTagPattern(String tagName) {

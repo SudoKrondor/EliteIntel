@@ -46,6 +46,30 @@ class ClarificationCoordinatorTest {
         assertTrue(coordinator.peek().isEmpty());
     }
 
+    @Test
+    void aClarificationGivenBackCanBeClaimedAgainUntilItExpires() {
+        coordinator.open("set_speed", "amount", "increase speed", "By how much?");
+        PendingClarification claimed = coordinator.claim().orElseThrow();
+
+        coordinator.giveBack(claimed);
+
+        assertEquals(claimed, coordinator.claim().orElseThrow());
+        coordinator.giveBack(claimed);
+        clock.advance(Duration.ofSeconds(31));
+        assertTrue(coordinator.claim().isEmpty(), "a give-back keeps the original expiry");
+    }
+
+    @Test
+    void aGiveBackNeverReplacesAClarificationOpenedSince() {
+        coordinator.open("set_speed", "amount", "increase speed", "By how much?");
+        PendingClarification old = coordinator.claim().orElseThrow();
+        coordinator.open("target_subsystem", "subsystem", "target the", "Which subsystem?");
+
+        coordinator.giveBack(old);
+
+        assertEquals("target_subsystem", coordinator.claim().orElseThrow().actionId());
+    }
+
     private static final class MutableClock extends Clock {
         private Instant now;
 

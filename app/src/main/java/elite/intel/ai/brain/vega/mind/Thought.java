@@ -5,6 +5,7 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
+import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.VegaMemoryPolicy;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
@@ -78,9 +79,10 @@ public abstract class Thought {
      */
     private boolean firstToolStarted;
 
-    /** Creates a thought from its immutable turn signals and the shared service context. */
+    /** Set when the model never answered this thought; its lane then drops the queued thoughts that need the model. */
     private volatile boolean endedWithoutAnAnswer;
 
+    /** Creates a thought from its immutable turn signals and the shared service context. */
     protected Thought(ThoughtContext context, ThoughtDependencies dependencies) {
         this.context = context;
         this.dependencies = dependencies;
@@ -191,6 +193,17 @@ public abstract class Thought {
         return endedWithoutAnAnswer;
     }
 
+    /**
+     * This thought was dropped from its lane's queue and never ran: a clarification it claimed at submit goes back,
+     * so the commander's repeat of the answer - the dropping turn told them to try again - still resumes the action.
+     * WHY: the claim happens at submit, before the queue, and a dropped answer otherwise took VEGA's question with it.
+     */
+    final void dropped() {
+        if (context.pendingClarification() != null) {
+            dependencies.clarificationCoordinator().giveBack(context.pendingClarification());
+        }
+    }
+
     /** Records that the model never answered this thought, so its lane drops the queued thoughts that need it. */
     protected final void markEndedWithoutAnAnswer() {
         endedWithoutAnAnswer = true;
@@ -266,7 +279,7 @@ public abstract class Thought {
                     describeResult(result) + " | " + (System.currentTimeMillis() - startedMillis) + " ms");
             return result;
         } catch (RuntimeException llmFailure) {
-            if (!isStopped() && isTimeout(llmFailure)) {
+            if (!isStopped() && LlmGateway.isTimeout(llmFailure)) {
                 // WHY a result, not null: the provider never answered, which is "the service did not answer" -
                 // not a failure of this turn's own code. A Windows tester's local model, still slow from its first
                 // load, ran past the deadline and the commander heard "I can't do that right now" (2026-11-10).
@@ -283,13 +296,6 @@ public abstract class Thought {
         } finally {
             inFlight = null;
         }
-    }
-
-    private static boolean isTimeout(Throwable failure) {
-        for (Throwable current = failure; current != null; current = current.getCause()) {
-            if (current instanceof TimeoutException) return true;
-        }
-        return false;
     }
 
     /**

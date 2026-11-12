@@ -380,6 +380,49 @@ class ThoughtDispatcherTest {
     }
 
     @Test
+    void aDroppedAnswerGivesItsClarificationBackForTheRepeat() throws InterruptedException {
+        // VEGA asked a question while a turn was already queued; that turn timed out, and the commander's answer,
+        // queued behind it, was dropped. The answer had claimed the question at submit - without the give-back, the
+        // repeat the commander was told to make would arrive with no question to answer.
+        CompletableFuture<LlmResult> firstAnswer = new CompletableFuture<>();
+        List<LlmRequest> requests = new CopyOnWriteArrayList<>();
+        LlmGateway slow = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                requests.add(request);
+                return firstAnswer;
+            }
+
+            @Override
+            public CompletableFuture<String> completePlainText(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ClarificationCoordinator clarification = new ClarificationCoordinator();
+        ThoughtDependencies dependencies = new ThoughtDependencies(
+                slow, new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new VegaState(),
+                invocation -> false, new ConfirmationCoordinator(), clarification,
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(),
+                new ReflexResolver(() -> List.<ReflexResolver.CommandPhrase>of()));
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("check check");
+        waitUntil(() -> requests.size() == 1);
+        clarification.open("set_speed", "amount", "increase speed", "By how much?");
+        dispatcher.submitCommanderInput("fifty percent");
+        assertTrue(clarification.peek().isEmpty(), "the answer claimed the question at submit");
+        firstAnswer.complete(new LlmResult(LlmResult.Status.SERVICE_UNAVAILABLE, List.of()));
+        dispatcher.stop();
+
+        assertEquals(1, requests.size(), "the answer was dropped, not sent");
+        assertEquals("set_speed", clarification.peek().orElseThrow().actionId(),
+                "the dropped answer gave the question back");
+    }
+
+    @Test
     void aTurnTheAiAnsweredBadlyDoesNotDropTheQueue() throws InterruptedException {
         // An unusable answer is not a dead model: the next turn may well get a good one.
         CompletableFuture<LlmResult> firstAnswer = new CompletableFuture<>();

@@ -143,7 +143,7 @@ public final class VegaLlmGateway implements LlmGateway {
             if (result.isCancelled()) {
                 task.cancel(true);
                 VegaDiagnostics.debug(trace, "llm", "request cancelled; physical call interrupted");
-            } else if (isTimeout(failure)) {
+            } else if (LlmGateway.isTimeout(failure)) {
                 task.cancel(true);
                 VegaDiagnostics.debug(trace, "llm", "logical deadline "
                         + logicalDeadline.toMillis() + " ms exceeded; physical call interrupted");
@@ -156,17 +156,6 @@ public final class VegaLlmGateway implements LlmGateway {
             result.completeExceptionally(rejected);
         }
         return result;
-    }
-
-    private static boolean isTimeout(Throwable failure) {
-        Throwable current = failure;
-        while (current != null) {
-            if (current instanceof TimeoutException) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
     }
 
     /**

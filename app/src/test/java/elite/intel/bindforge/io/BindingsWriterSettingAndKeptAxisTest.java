@@ -86,6 +86,37 @@ class BindingsWriterSettingAndKeptAxisTest {
         assertEquals(BindingSaveResult.NO_CHANGE, writer.assignSetting(edited.content(), "MouseGUI", "1").result());
     }
 
+    /**
+     * The writer counts the copies {@link BindsValues} reads - the root's direct children - so a commented-out copy
+     * is left as it is, and a same-named element nested deeper neither refuses the write nor is written.
+     */
+    @Test
+    void onlyTheRootsOwnChildrenAreCopies() {
+        String file = "<Root>\n\t<!-- <MouseGUI Value=\"0\" /> -->\n\t<MouseGUI Value=\"0\" />\n"
+                + "\t<Axis><Binding Device=\"{NoDevice}\" Key=\"\" /><MouseGUI>kept</MouseGUI></Axis>\n</Root>";
+
+        EditedBinds edited = writer.assignSetting(bytes(file), "MouseGUI", "1");
+
+        assertEquals(BindingSaveResult.SAVED, edited.result());
+        assertEquals(file.replace("\t<MouseGUI Value=\"0\" />", "\t<MouseGUI Value=\"1\" />"), text(edited));
+    }
+
+    @Test
+    void aSettingOnlyInACommentIsNotFound() {
+        byte[] file = bytes("<Root><!-- <MouseGUI Value=\"0\" /> --><Other Value=\"1\" /></Root>");
+
+        assertEquals(BindingSaveResult.BINDING_NOT_FOUND, writer.assignSetting(file, "MouseGUI", "1").result());
+    }
+
+    @Test
+    void aFileWhoseStructureCannotBeToldIsRefused() {
+        byte[] unclosedComment = bytes("<Root><MouseGUI Value=\"0\" /><!-- never closed </Root>");
+        byte[] strayEndTag = bytes("<Root></Root></Root><MouseGUI Value=\"0\" />");
+
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, writer.assignSetting(unclosedComment, "MouseGUI", "1").result());
+        assertEquals(BindingSaveResult.UNSUPPORTED_XML, writer.assignSetting(strayEndTag, "MouseGUI", "1").result());
+    }
+
     @Test
     void aFileHoldingOneCopyKeepsOne() {
         String file = "<Root><MouseGUI Value=\"1\" /></Root>";

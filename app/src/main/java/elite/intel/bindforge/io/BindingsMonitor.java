@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -69,6 +70,8 @@ public class BindingsMonitor {
      * writing a warning every second for the whole session.
      */
     private static final int RELOAD_RETRIES = 5;
+    /** How long the game is given to finish writing before a change is read. */
+    private static final Duration SETTLE = Duration.ofMillis(300);
     private static volatile BindingsMonitor instance;
     private final KeyBindingsParser parser;
     private final BindingsLoader bindingsLoader = new BindingsLoader();
@@ -213,8 +216,8 @@ public class BindingsMonitor {
             // Initial parse of bindings
             parseAndUpdateBindings();
 
-            // How many more quiet seconds a reload that could not find its file is tried again in; 0 when none is owed.
-            int retriesLeft = 0;
+            BindsReloadRetry reloads = new BindsReloadRetry(bindingsLoader::bindsFileToRead, this::reloadIfChanged,
+                    RELOAD_RETRIES, SETTLE);
             while (running) {
                 WatchKey key = watchService.poll(1, TimeUnit.SECONDS);
                 if (key == null) {
@@ -222,16 +225,10 @@ public class BindingsMonitor {
                         log.info("Shutting down BindingsMonitor due to interruption or stop signal");
                         return;
                     }
-                    if (retriesLeft > 0) {
-                        if (reloadAfterChange(null)) {
-                            retriesLeft = 0;
-                            // As after a batch of folder events below: the file just read is the one a save from the
-                            // game's controls screen wrote, so its conflicts are taken in now, not at the next change.
-                            checkForConflictsAndPersist();
-                        } else if (--retriesLeft == 0) {
-                            log.error("Gave up working out which binds file to read after a change; the bindings in "
-                                    + "use are the last ones read, until the bindings folder changes again");
-                        }
+                    if (reloads.quietSecond()) {
+                        // As after a batch of folder events below: the file just read is the one a save from the
+                        // game's controls screen wrote, so its conflicts are taken in now, not at the next change.
+                        checkForConflictsAndPersist();
                     }
                     continue;
                 }
@@ -242,7 +239,7 @@ public class BindingsMonitor {
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
                         if (changed.toString().endsWith(".binds")) {
-                            retriesLeft = reloadAfterChange(changed.toString()) ? 0 : RELOAD_RETRIES;
+                            reloads.changed(changed.toString());
                         }
                     }
                 }
@@ -271,32 +268,15 @@ public class BindingsMonitor {
     }
 
     /**
-     * Reads the binds file again after the bindings folder changed, if the file to read is the one that changed, is
-     * another file than before, or - on a retry - differs from what was last parsed.
-     * <p>
-     * WHY the wait comes first, and a file that cannot be found is no reason to stop: the game saves
-     * {@code StartPreset.4.start} by emptying it and writing it again, so a read at the moment of the change finds no
-     * preset and {@link BindingsLoader#bindsFileToRead()} throws. That exception used to end the monitor thread, and
-     * the assistant then pressed the keys of the old file until Elite-Intel was restarted (seen 2026-11-11, on a save
-     * from the game's controls screen). Now the change is tried again while the folder stays quiet.
-     *
-     * @param changed the name of the {@code .binds} that changed, or {@code null} on a retry
-     * @return {@code false} when the file to read could not be worked out, so the caller tries again
+     * Reads {@code activeFile} again after the bindings folder changed, if it is the one that changed, is another file
+     * than before, or - on a retry ({@code changed} null) - differs from what was last parsed. The lookup, its wait
+     * and its retries are {@link BindsReloadRetry}'s.
      */
-    private boolean reloadAfterChange(String changed) throws InterruptedException {
-        Thread.sleep(300); // wait for the game to finish writing
-        File activeFile;
-        try {
-            activeFile = bindingsLoader.bindsFileToRead();
-        } catch (IOException e) {
-            log.warn("Could not work out which binds file to read after a change in the bindings folder; "
-                    + "trying again: {}", e.getMessage());
-            return false;
-        }
+    private void reloadIfChanged(File activeFile, String changed) {
         boolean activeFileWasModified = changed == null || activeFile.getName().equals(changed);
         boolean activeFileChanged = !activeFile.equals(currentBindsFile);
         if (!activeFileWasModified && !activeFileChanged) {
-            return true;
+            return;
         }
         currentBindsFile = activeFile;
         if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
@@ -305,7 +285,6 @@ public class BindingsMonitor {
             parseAndUpdateBindings(activeFile);
             log.info("Reloaded bindings from: {}", currentBindsFile.getName());
         }
-        return true;
     }
 
     /**
@@ -328,7 +307,7 @@ public class BindingsMonitor {
 
     /**
      * Reads {@code toRead}, the file already worked out. WHY a file passed in rather than looked up again: after a
-     * change, {@link #reloadAfterChange} has just looked it up, and a second lookup could land while the game is
+     * change, {@link BindsReloadRetry} has just looked it up, and a second lookup could land while the game is
      * rewriting {@code StartPreset.4.start} - failing with no retry, which is what the retry exists to avoid.
      */
     private void parseAndUpdateBindings(File toRead) {

@@ -33,7 +33,7 @@ final class LmStudioServer {
      * A first request can wait on the model being paged back in, so the test is given longer than a status call. A
      * test that runs out of it is tried again by the installer ({@link NoAnswerInTimeException}).
      */
-    static final Duration TEST_REQUEST = Duration.ofMinutes(2);
+    private static final Duration TEST_REQUEST = Duration.ofMinutes(2);
     /**
      * WHY not {@link #QUICK}: a freshly installed llmster can hold the download request well past 5 s while it finishes
      * getting ready - a Windows tester's timed out at 5 s right after the server came up (2026-11-10). One long wait,
