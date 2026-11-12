@@ -269,16 +269,21 @@ public class GameInstallLocationsPanel extends JPanel {
             log.error("Run First-Time Startup Again pressed before the BindForge tab wired it");
             return;
         }
-        String text = getText("bindings.installLocations.runAgain.confirm.text");
-        if (Edits.stored().hasEdits()) {
-            text += "\n\n" + getText("bindings.installLocations.runAgain.confirm.edits");
-        }
         boolean confirmed = HudConfirmDialog.confirm(this,
                 getText("bindings.installLocations.runAgain.confirm.title"),
-                text,
+                runAgainText(Edits.stored().hasEdits()),
                 getText("bindings.installLocations.runAgain.confirm.do"),
                 getText("button.cancel"));
         if (confirmed) runAgain.run();
+    }
+
+    /**
+     * Run First-Time Startup Again's confirmation: that it runs now and, when there are edits not applied, that its
+     * write throws them away (Storage S19, Q1).
+     */
+    static String runAgainText(boolean hasEdits) {
+        String text = getText("bindings.installLocations.runAgain.confirm.text");
+        return hasEdits ? text + "\n\n" + getText("bindings.installLocations.runAgain.confirm.edits") : text;
     }
 
     /**

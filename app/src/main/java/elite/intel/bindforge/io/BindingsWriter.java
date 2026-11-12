@@ -232,13 +232,10 @@ public class BindingsWriter {
             return EditedBinds.unchanged(BindingSaveResult.BINDING_NOT_FOUND, binds);
         }
         List<TextRange> values = new ArrayList<>();
+        TextRange wholeFile = new TextRange(0, xml.length());
         for (int start : starts) {
-            int tagEnd = findStartTagEnd(xml, start);
-            if (tagEnd < 0 || !isSelfClosingStartTag(xml, start, tagEnd)
-                    || !Set.of("Value").equals(attributeNames(xml.substring(start, tagEnd + 1)))) {
-                return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
-            }
-            TextRange current = valueRange(xml, new TextRange(start, tagEnd + 1));
+            TextRange tag = selfClosingTagAt(xml, start, wholeFile, Set.of("Value"));
+            TextRange current = tag == null ? null : valueRange(xml, tag);
             if (current == null) {
                 return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
             }
@@ -816,10 +813,11 @@ public class BindingsWriter {
 
     private TextRange singleSelfClosingTag(String xml, String tagName, TextRange within, Set<String> attributes) {
         List<Integer> starts = openingTagStarts(xml, tagName, within.start(), within.end());
-        if (starts.size() != 1) {
-            return null;
-        }
-        int start = starts.getFirst();
+        return starts.size() == 1 ? selfClosingTagAt(xml, starts.getFirst(), within, attributes) : null;
+    }
+
+    // The self-closing start tag at start, ending inside within and holding exactly these attributes; null otherwise.
+    private TextRange selfClosingTagAt(String xml, int start, TextRange within, Set<String> attributes) {
         int tagEnd = findStartTagEnd(xml, start);
         if (tagEnd < 0 || tagEnd >= within.end() || !isSelfClosingStartTag(xml, start, tagEnd)
                 || !attributes.equals(attributeNames(xml.substring(start, tagEnd + 1)))) {

@@ -1,26 +1,14 @@
 package elite.intel.ui.screen.bindings;
 
-import elite.intel.bindforge.io.BindingSaveResult;
-import elite.intel.bindforge.io.BindingsWriter;
 import elite.intel.bindforge.io.BindsValues;
-import elite.intel.bindforge.model.BindingDisplayNames;
-import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.model.SettingNumbers;
-import elite.intel.bindforge.storage.BindsEdits;
-import elite.intel.bindforge.storage.Edits;
 import elite.intel.bindforge.storage.ReadOnlyMode;
-import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudSlider;
-import elite.intel.ui.widget.StatusBadge;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -38,24 +26,13 @@ import static elite.intel.ui.theme.HudPalette.*;
  * value outside the range pins the thumb to the end and is left as it is until someone moves it.
  * <p>
  * Letting go of a slider, Enter, or leaving the field keeps a change as an edit not applied; Esc puts the number back.
- * Nothing here writes a file (storage.md rule 6).
+ * Nothing here writes a file (storage.md rule 6); the list, the search and the edit are {@link SettingRowsPanel}'s.
  */
-class SettingsModePanel extends JPanel {
+class SettingsModePanel extends SettingRowsPanel<SettingsModePanel.Row> {
 
     private static final int NAME_WIDTH = 340;
     private static final int FIELD_COLUMNS = 10;
     private static final Dimension SLIDER_SIZE = new Dimension(300, HUD_SLIDER_HEIGHT);
-
-    private final BindingsWriter writer = new BindingsWriter();
-    private final GameModePanel.EditRunner editRunner;
-    /** Whether BindForge is read only, an installation missing (Storage S14b). Asked on the EDT. */
-    private final BooleanSupplier readOnly;
-    private final JPanel list = transparentPanel(null);
-    private final Map<String, Row> rows = new LinkedHashMap<>();
-
-    private String file;
-    private Map<String, BindsValues.Setting> settings = Map.of();
-    private String query = "";
 
     SettingsModePanel(GameModePanel.EditRunner editRunner) {
         this(editRunner, () -> ReadOnlyMode.stored().activeIfKnown());
@@ -65,118 +42,24 @@ class SettingsModePanel extends JPanel {
      * @param readOnly whether BindForge is read only - the shared {@link ReadOnlyMode} but in a test
      */
     SettingsModePanel(GameModePanel.EditRunner editRunner, BooleanSupplier readOnly) {
-        this.editRunner = editRunner;
-        this.readOnly = readOnly;
-        setOpaque(false);
-        setLayout(new BorderLayout(0, 4));
-        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
-        list.setBorder(new EmptyBorder(2, 6, 2, 6));
-        add(HudBanner.multiline(getText("bindings.settings.hint"), StatusBadge.State.INFO), BorderLayout.NORTH);
-        JPanel top = transparentPanel(new BorderLayout());
-        top.add(list, BorderLayout.NORTH);
-        JScrollPane scroll = hudApplicationScrollPane(top);
-        scroll.getVerticalScrollBar().setUnitIncrement(HUD_FIELD_HEIGHT);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setBorder(hudDataPlaneBorder());
-        add(scroll, BorderLayout.CENTER);
+        this(editRunner, readOnly, THROUGH_EDITS);
     }
 
     /**
-     * Shows what the shell's read found. On the EDT.
-     * <p>
-     * WHY it does not always rebuild: a read also follows an edit anywhere else in BindForge, and a rebuild would take
-     * the number out from under someone typing it.
+     * @param write how a change is kept - through the edits but in a test
      */
-    void show(String file, BindsValues values) {
-        boolean sameRows = Objects.equals(this.file, file) && settings.keySet().equals(values.settings().keySet());
-        this.file = file;
-        settings = values.settings();
-        if (!sameRows) {
-            rebuild();
-            return;
-        }
-        rows.values().forEach(row -> row.showValue(settings.get(row.id)));
+    SettingsModePanel(GameModePanel.EditRunner editRunner, BooleanSupplier readOnly, SettingWrite write) {
+        super(editRunner, readOnly, write, SettingNumbers.SETTINGS,
+                "bindings.settings.hint", "bindings.settings.none", "bindings.mode.settings");
+    }
+
+    @Override
+    protected Row newRow(String id, String name) {
+        return new Row(id, name);
     }
 
     /**
-     * BindForge went read only, or stopped being (Storage S14b): every number and slider follows. On the EDT.
-     */
-    void readOnlyChanged() {
-        rows.values().forEach(row -> row.showValue(settings.get(row.id)));
-    }
-
-    /**
-     * Whether this setting's number may change: one the writer knows, while BindForge is not read only (S14b).
-     */
-    private boolean changeable(BindsValues.Setting setting) {
-        return setting.editable() && !readOnly.getAsBoolean();
-    }
-
-    /**
-     * Narrows the rows to {@code query}, as the shell's search field is typed in. On the EDT.
-     */
-    void search(String query) {
-        this.query = query;
-        rebuild();
-    }
-
-    private void rebuild() {
-        rows.clear();
-        list.removeAll();
-        List<String> ids = shownIds();
-        if (ids.isEmpty()) {
-            list.add(hudReadoutLabel(getText("bindings.settings.none")));
-        }
-        BindingSection section = null;
-        String group = null;
-        for (String id : ids) {
-            BindingDisplayNames.ControlName control = BindingDisplayNames.lookup(id);
-            if (control.section() != section) {
-                section = control.section();
-                group = null;
-                JLabel heading = hudGroupLabel(getText(section.getLabelKey()).toUpperCase());
-                heading.setBorder(new EmptyBorder(10, 0, 6, 0));
-                list.add(leftAligned(heading));
-            }
-            if (!Objects.equals(control.group(), group)) {
-                group = control.group();
-                if (group != null) {
-                    JLabel heading = hudReadoutValue(group, HUD_COLOR_ROLE_PRIMARY_ACTION);
-                    heading.setBorder(new EmptyBorder(6, 0, 2, 0));
-                    list.add(leftAligned(heading));
-                }
-            }
-            Row row = new Row(id, control.name());
-            row.showValue(settings.get(id));
-            rows.put(id, row);
-            list.add(row.panel);
-        }
-        list.revalidate();
-        list.repaint();
-    }
-
-    private static JComponent leftAligned(JComponent component) {
-        JPanel line = transparentPanel(new BorderLayout());
-        line.setAlignmentX(Component.LEFT_ALIGNMENT);
-        line.add(component, BorderLayout.WEST);
-        line.setMaximumSize(new Dimension(Integer.MAX_VALUE, line.getPreferredSize().height));
-        return line;
-    }
-
-    private List<String> shownIds() {
-        if (file == null) return List.of();
-        String typed = query.trim().toLowerCase();
-        Set<String> present = settings.keySet();
-        return SettingNumbers.SETTINGS.stream()
-                .filter(present::contains)
-                .filter(id -> typed.isEmpty() || BindingDisplayNames.searchText(id,
-                        getText(BindingDisplayNames.lookup(id).section().getLabelKey())).contains(typed))
-                .sorted(Comparator.comparingInt(id -> BindingDisplayNames.lookup(id).order()))
-                .toList();
-    }
-
-    /**
-     * Keeps a typed number as an edit, or says why it cannot be. Off the EDT through the shell's runner.
+     * Keeps a typed number as an edit, or says why it cannot be.
      */
     private void commit(Row row) {
         BindsValues.Setting setting = settings.get(row.id);
@@ -195,30 +78,14 @@ class SettingsModePanel extends JPanel {
         if (SettingNumbers.judge(row.id, setting.value()).value() instanceof Float held && held.equals(verdict.value())) {
             return;
         }
-        if (editRunner.running()) return;
-        String target = file;
-        String written = SettingNumbers.written(verdict.value());
-        AtomicReference<BindingSaveResult> result = new AtomicReference<>();
-        editRunner.run(getText("bindings.mode.settings"),
-                () -> Edits.stored().change(current -> {
-                    BindsEdits.Changed changed = BindsEdits.change(current, target,
-                            List.of(binds -> writer.assignSetting(binds, row.id, written)));
-                    result.set(changed.result());
-                    return changed.files();
-                }),
-                () -> {
-                    BindingSaveResult saved = result.get();
-                    if (saved != BindingSaveResult.SAVED && saved != BindingSaveResult.NO_CHANGE) {
-                        row.problem.setText(getText("bindings.settings.notEditable"));
-                    }
-                }, () -> {
-                });
+        submit(row, SettingNumbers.written(verdict.value()),
+                () -> row.problem.setText(getText("bindings.settings.notEditable")));
     }
 
     /**
      * One setting: its name, its slider when its range is known, its number and what to say about that number.
      */
-    private final class Row {
+    final class Row implements SettingRowsPanel.SettingRow {
         final String id;
         final JPanel panel = transparentPanel(new GridBagLayout());
         final JTextField field = makeTextField();
@@ -284,7 +151,18 @@ class SettingsModePanel extends JPanel {
             });
         }
 
-        void showValue(BindsValues.Setting setting) {
+        @Override
+        public String id() {
+            return id;
+        }
+
+        @Override
+        public JComponent panel() {
+            return panel;
+        }
+
+        @Override
+        public void showValue(BindsValues.Setting setting) {
             field.setEnabled(changeable(setting));
             field.setToolTipText(changeable(setting) ? null : getText(setting.editable()
                     ? "bindings.readOnly.tooltip" : "bindings.settings.notEditable"));

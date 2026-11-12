@@ -141,8 +141,8 @@ public final class FirstTimeStartupFlow {
 
     /**
      * The check when the working copy reads (Storage S8a); otherwise the step that says so and offers the newest
-     * backup - or, with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3 review). A working copy that is missing while first-time startup is
-     * complete counts as one that cannot be read.
+     * backup - or, with no backup at all, first-time startup again from the live files (Alan, 2026-10-25, from the S3
+     * review). A working copy that is missing while first-time startup is complete counts as one that cannot be read.
      */
     private Runnable workingCopyCheck(FirstTimeStartup startup) {
         try {

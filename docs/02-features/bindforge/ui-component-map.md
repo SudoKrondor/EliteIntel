@@ -107,7 +107,7 @@ canon's.
 | Right-click Expand All / Collapse All | **GAP 3** |
 | The ASSISTANT column | a column and a renderer ✓ |
 | Conflict colour on the **slot cell** | a `BindingSlotCellRenderer` change ✓ — the scan's `Conflict` already carries the chord the cell matches on |
-| Settings rows inline — toggles, choices | `HudBooleanCellEditor`, `HudComboCellEditor` ✓ |
+| Settings rows inline — toggles, choices | `HudBooleanCellEditor`, `HudComboCellEditor` ✓ — *rejected for V1.2 (Krondor, 2026-11-10, E6); the toggles are on [Toggles mode](#toggles-mode)* |
 | Settings rows inline — free numbers | **GAP 2** |
 | Conflict hover callout | `BindingConflictPopup` ✓ |
 
@@ -126,13 +126,25 @@ canon's.
 | Element | Built from |
 |---|---|
 | All ~93 entries, grouped as the game groups them | the Game Mode grid's rows ✓ — and **GAP 1** if its groups collapse too |
-| Toggle, choice, numeric choice | `HudBooleanCellEditor`, `HudComboCellEditor` ✓ — the three *numeric choices* are a dropdown wearing numbers |
+| Toggle, choice, numeric choice | ~~`HudBooleanCellEditor`, `HudComboCellEditor`~~ — *the toggles moved to [Toggles mode](#toggles-mode) (2026-11-11, E10); the choices were rejected for V1.2 (Krondor, 2026-11-10, E6)* |
 | Free numbers | `HudSlider` beside a text field, on a scale of thousandths (`SettingNumbers.Range`) ✓ |
 
 **Free numbers are floats**, and both range controls in the kit are integer-only: `HudSlider(min, max, step,
 value)` and `HudStepper` take and return `int`. A settings value such as a deadzone can be carried on an
 integer scale (0–100 standing for 0.00–1.00), so the controls can serve — but neither is a cell editor, and
 that part is missing.
+
+### Toggles mode
+
+*Added 2026-11-11 (E10R, from the E10 / S19 review's D2); settled at E10's sources, Q1 (bind-editor.md,
+[Toggles](bind-editor.md#toggles--settled-2026-11-11-alan)).*
+
+| Element | Built from |
+|---|---|
+| Every yes/no setting the file holds, grouped as Settings mode groups its rows | the same list as Settings mode ✓ — `SettingRowsPanel`, which both tabs extend |
+| A setting's yes/no | `HudToggleButton` ✓ reading **ON** or **OFF**, as the game's options screen does; it fills with the accent colour when on, as the axis dialog's Normal / Inverted does |
+| Greyed while read only, or in a form the editor cannot change | the button disabled, the reason as its tooltip ✓ |
+| Why a change could not be kept | a `hudReadoutValue` in the warning colour beside the button ✓ — text colour, never a pill |
 
 ### Capture Dialog
 

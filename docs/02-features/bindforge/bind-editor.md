@@ -1245,6 +1245,11 @@ curves.** The booleans and dropdowns described below, and inline rows in Game Mo
 *any number greater than 0.0* for mouse sensitivity and *any number between 0.0 and
 1.0* for a mouse deadzone. A value past the game's stops is accepted, and the row names the range. `HeadlookMotionSensitivity` has no measured range and keeps the number alone.
 
+**A number kept while another edit runs is put back** (E10R, 2026-11-11, Alan approving the sources): the field shows
+what the file holds again, as a Toggles button does, and a change that failed puts it back the same way. Until then the
+typed number stayed in the field with no edit kept. The two tabs now share one list and one way of sending an edit
+(`SettingRowsPanel`), so they cannot drift apart.
+
 **The booleans have a tab of their own since 2026-11-11 (Alan): [Toggles](#toggles--settled-2026-11-11-alan).** This
 tab stays the number rows. *Earlier that day Show Mouse Widget (`MouseGUI`) was put here as this tab's one boolean
 (E9); Alan moved it to Toggles when that tab was specified.*

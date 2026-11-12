@@ -1,37 +1,60 @@
 package elite.intel.ui.screen.bindings;
 
+import elite.intel.bindforge.io.BindingSaveResult;
 import elite.intel.bindforge.io.BindsValues;
 import elite.intel.ui.widget.HudToggleButton;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * A toggle shows the file's value and keeps no edit until it is pressed (bind-editor.md, <em>Toggles</em>).
+ * A toggle shows the file's value and keeps no edit until it is pressed (bind-editor.md, <em>Toggles</em>); a press
+ * writes {@code 1} or {@code 0}, and a press that cannot be kept puts the button back (E10R, D4).
  */
 class TogglesModePanelTest {
 
     private final List<String> edits = new ArrayList<>();
+    private final List<String> written = new ArrayList<>();
     private final AtomicBoolean readOnly = new AtomicBoolean(false);
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    /** What the write answers; a failure instead when {@link #failure} is set. */
+    private BindingSaveResult answer = BindingSaveResult.SAVED;
+    private IOException failure;
+    /**
+     * Runs the change at once, then what follows it on the EDT - or, when the change throws, what follows a failure.
+     */
     private final TogglesModePanel panel = new TogglesModePanel(new GameModePanel.EditRunner() {
         @Override
         public boolean running() {
-            return false;
+            return running.get();
         }
 
         @Override
         public void run(String title, GameModePanel.Change change, Runnable onEdt, Runnable afterFailure) {
             edits.add(title);
+            try {
+                change.run();
+            } catch (IOException e) {
+                afterFailure.run();
+                return;
+            }
+            onEdt.run();
         }
-    }, readOnly::get);
+    }, readOnly::get, (file, setting, value) -> {
+        if (failure != null) throw failure;
+        written.add(setting + "=" + value);
+        return answer;
+    });
 
     @Test
     void oneIsOnAndZeroIsOffAndShowingKeepsNoEdit() {
@@ -100,6 +123,56 @@ class TogglesModePanelTest {
     }
 
     @Test
+    void onWritesOneAndOffWritesZero() {
+        show(Map.of("MouseGUI", "0"));
+        buttons().getFirst().doClick();
+
+        show(Map.of("MouseGUI", "1"));
+        buttons().getFirst().doClick();
+
+        assertEquals(List.of("MouseGUI=1", "MouseGUI=0"), written);
+    }
+
+    @Test
+    void aRefusedWritePutsTheButtonBackAndSaysWhy() {
+        answer = BindingSaveResult.UNSUPPORTED_XML;
+        show(Map.of("MouseGUI", "0"));
+
+        buttons().getFirst().doClick();
+
+        HudToggleButton button = buttons().getFirst();
+        assertFalse(button.isSelected());
+        assertEquals(getText("bindings.toggles.off").toUpperCase(), button.getText());
+        assertTrue(labelTexts().contains(getText("bindings.settings.notEditable")));
+    }
+
+    @Test
+    void aChangeThatFailsPutsTheButtonBack() {
+        failure = new IOException("the edits could not be read");
+        show(Map.of("MouseGUI", "1"));
+
+        buttons().getFirst().doClick();
+
+        HudToggleButton button = buttons().getFirst();
+        assertTrue(button.isSelected());
+        assertEquals(getText("bindings.toggles.on").toUpperCase(), button.getText());
+    }
+
+    @Test
+    void aPressWhileAnEditRunsPutsTheButtonBackAndKeepsNoEdit() {
+        running.set(true);
+        show(Map.of("MouseGUI", "0"));
+
+        buttons().getFirst().doClick();
+
+        HudToggleButton button = buttons().getFirst();
+        assertFalse(button.isSelected());
+        assertEquals(getText("bindings.toggles.off").toUpperCase(), button.getText());
+        assertTrue(edits.isEmpty());
+        assertTrue(written.isEmpty());
+    }
+
+    @Test
     void searchNarrowsTheRows() {
         show(Map.of("MouseGUI", "1", "EnableMenuGroups", "0"));
 
@@ -116,6 +189,10 @@ class TogglesModePanelTest {
 
     private List<HudToggleButton> buttons() {
         return all(panel, HudToggleButton.class);
+    }
+
+    private List<String> labelTexts() {
+        return all(panel, JLabel.class).stream().map(JLabel::getText).toList();
     }
 
     private static <T> List<T> all(Container parent, Class<T> type) {
