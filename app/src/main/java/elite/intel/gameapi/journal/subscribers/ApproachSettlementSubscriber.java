@@ -7,7 +7,6 @@ import elite.intel.gameapi.journal.events.ApproachSettlementEvent;
 import elite.intel.gameapi.journal.events.FileheaderEvent;
 import elite.intel.session.PlayerSession;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -115,10 +114,10 @@ public class ApproachSettlementSubscriber {
                 localisedOrSymbol(event.getStationGovernmentLocalised(), event.getStationGovernment()));
         appendFact(sb, "event.approach.settlement.faction", faction);
 
-        List<String> stationServices = event.getStationServices();
-        if (stationServices != null && !stationServices.isEmpty()) {
-            sb.append(localizedEvent("event.approach.settlement.services")).append(" ");
-            sb.append(String.join(", ", stationServices)).append(".");
+        String services = SettlementServices.describe(event.getStationServices());
+        if (!services.isEmpty()) {
+            if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != ' ') sb.append(' ');
+            sb.append(services);
         }
         return sb.toString();
     }

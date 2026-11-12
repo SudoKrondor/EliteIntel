@@ -88,7 +88,8 @@ public class SupertonicTTS extends SherpaOnnxTTS {
 
     /**
      * Split only on sentence-ending punctuation. Keeping comma clauses together lets Supertonic control the
-     * comma pause through its own prosody instead of adding a queue boundary and gap.
+     * comma pause through its own prosody instead of adding a queue boundary and gap. Only a sentence too long
+     * to wait for is cut at its clauses, by the pipeline ({@code ClauseChunker}).
      */
     @Override
     protected String sentenceBoundary() {
