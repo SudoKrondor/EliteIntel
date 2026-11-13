@@ -151,6 +151,38 @@ class MicDiagnosticsReportTest {
         assertTrue(report.contains("Mouse:      button 5, readable"));
     }
 
+    /**
+     * A support bundle from a commander on mouse push-to-talk alone said "nothing can open the microphone"
+     * while the log showed every press opening it.
+     */
+    @Test
+    void aReadableMouseButtonWithNoControllerMappedRaisesNoAlarm() {
+        String report = MicDiagnosticsReport.render(
+                snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
+                ONE_DEVICE, new VoiceGate(true, null, -1, 1, true, false), List.of());
+
+        assertTrue(report.contains("Mouse:      button 2, readable"));
+        assertFalse(report.contains("***"));
+    }
+
+    @Test
+    void aMissingControllerWithAReadableMouseButtonSaysTheMouseStillWorks() {
+        String report = MicDiagnosticsReport.render(
+                snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
+                ONE_DEVICE, new VoiceGate(true, "Missing HOTAS", 7, 1, true, false), List.of());
+
+        assertTrue(report.contains("*** that controller is not connected - only the mouse button can open the microphone ***"));
+    }
+
+    @Test
+    void noControllerAndNoReadableMouseButtonIsTheAlarm() {
+        String report = MicDiagnosticsReport.render(
+                snapshot(capture("Chosen Mic", "Chosen Mic", true), 4000, 900.0, 120),
+                ONE_DEVICE, new VoiceGate(true, null, -1, -1, false, false), List.of());
+
+        assertTrue(report.contains("*** no controller or readable mouse button is mapped, so nothing can open the microphone ***"));
+    }
+
     @Test
     void neverCarriesAudio() {
         String report = MicDiagnosticsReport.render(

@@ -214,10 +214,18 @@ public final class MicDiagnosticsReport {
                 .append(controller == null || controller.isBlank() ? "(none mapped)" : controller).append('\n');
         text.append("  Button:     ").append(gate.buttonIndex()).append('\n');
         appendMouseButton(text, gate);
-        boolean present = controller != null && !controller.isBlank()
+        // Either trigger opens the microphone, so the alarm is for having neither, not for lacking a controller:
+        // a commander whose push-to-talk is a mouse button maps no controller at all.
+        boolean controllerMapped = controller != null && !controller.isBlank();
+        boolean controllerPresent = controllerMapped
                 && connectedControllers.stream().anyMatch(device -> controller.equals(device.name()));
-        if (!present) {
-            text.append("  *** that controller is not connected, so nothing can open the microphone ***\n");
+        boolean mouseOpensIt = gate.mouseButton() >= 0 && gate.mouseReadable();
+        if (controllerMapped && !controllerPresent) {
+            text.append(mouseOpensIt
+                    ? "  *** that controller is not connected - only the mouse button can open the microphone ***\n"
+                    : "  *** that controller is not connected, so nothing can open the microphone ***\n");
+        } else if (!controllerMapped && !mouseOpensIt) {
+            text.append("  *** no controller or readable mouse button is mapped, so nothing can open the microphone ***\n");
         }
         text.append("  Controllers connected now (").append(connectedControllers.size()).append("):\n");
         if (connectedControllers.isEmpty()) {
