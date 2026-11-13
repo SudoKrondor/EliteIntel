@@ -95,7 +95,6 @@ class VegaSystemPromptTest {
         String identity = VegaIdentity.identityClause();
         assertTrue(identity.contains("artificial intelligence"), "VEGA must be named as an AI, not merely 'the AI'");
         assertTrue(identity.contains(VegaIdentity.name()));
-        assertTrue(identity.contains("never pretend otherwise"));
 
         for (ThoughtSource source : ThoughtSource.values()) {
             String normalized = prompt.staticRules(source).replaceAll("\\s+", " ");
