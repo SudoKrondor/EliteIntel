@@ -16,7 +16,7 @@ class ShipPersonalityTest {
 
     /**
      * WHY: {@link VegaIdentity} opens the prompt with "You are Vega ... never pretend otherwise". A clause saying
-     * "You are Seven of Nine" names a second speaker in the next breath, so a personality voices a character instead.
+     * "You are" followed by a character names a second speaker in the next breath, so a personality voices a character instead.
      */
     @ParameterizedTest
     @EnumSource(ShipPersonality.class)
