@@ -86,29 +86,54 @@ One install has one anonymous Firebase uid (see [Authentication](#authentication
 |---|---|---|
 | `appVersion` | `1.2.0012` | |
 | `os` | `windows` / `linux` | |
-| `lastActive` | `2026-11-13` | date only, server-checked |
+| `updatedAt` | server timestamp | the rules require it to equal `request.time` |
 
-Written at most once a day. **No commander name, FID, rank, or anything about the game.**
+Written at most once a day. **No commander name, FID, rank, or anything about the game.** Rules cannot turn
+`request.time` into a date string, so the time is stored as a server timestamp and the nightly job reduces it
+to a date. The stats page never shows a time of day.
 
 ### `reports/{uid}`: the install's massacre sets
 
-One document holds **all** of the install's pairs as a map, keyed by `hash(providerSystem|providerFaction|targetSystem)`:
-
 | Field | Note |
 |---|---|
-| `providerSystem`, `providerSystemAddress` | |
-| `providerStation` | optional |
-| `providerFaction` | one entry per faction, so the stack depth can be worked out |
-| `targetSystem`, `targetSystemAddress`, `targetFaction` | |
-| `res` | `{standard, low, high, hazardous}` as the reporter saw them |
-| `lastSeen` | date only |
-| `updatedAt` | server timestamp, which the nightly job queries on |
+| `pairs` | **one string**: every pair the install knows, compactly encoded (JSON lines or similar) |
+| `updatedAt` | server timestamp, equal to `request.time`, which the nightly job queries on |
+
+Each encoded pair carries:
+
+| Item | Note |
+|---|---|
+| provider system and SystemAddress | |
+| provider station | optional |
+| provider faction | one entry per faction, so the stack depth can be worked out |
+| target system, SystemAddress, target faction | |
+| resource sites | standard, low, high, hazardous, as the reporter saw them |
+| last seen | date only |
+
+**Why one string and not a map:** security rules cannot loop, so they cannot check the entries of a map whose
+keys are not known in advance. They **can** check a string's length. One string field, with a length limit
+in the rules, puts a hard limit on the size of each install's document. The nightly job parses it and drops
+every entry that does not match the schema. **The three layers each have one job:**
+
+- rules limit volume
+- the job checks the format
+- each app checks whether the pair is true
+
+One document per pair would let rules check every field, but at one write per pair a large journal import
+would use up the day's quota on its own.
+
+**The length limit has to be set from real data:** how many distinct pairs the journals of Alan and his son
+produce, times the bytes per encoded pair, with room to spare. A pair is about 150 bytes, so 200,000
+characters holds about 1,300 pairs. If that is not enough, the payload is split over a few numbered fields.
 
 **Never uploaded:** MissionID, reward, kill count, exact timestamps. They do nothing for the next commander,
 and together they could fingerprint one.
 
-**A whole journal import is one write.** A Firestore document holds up to 1 MiB, which is thousands of pairs.
-Writes per day stay at no more than the number of active installs, whatever the import size.
+**A whole journal import is one write.** Writes per day stay at no more than the number of active installs,
+whatever the import size.
+
+**Withdrawing:** turning sharing off deletes `reports/{uid}`. A delete cannot be rate-limited, but delete and
+create again gains an abuser nothing that a new uid does not already give them.
 
 **Only pairs the reporter can back up are reported:** the target must have resource sites in the reporter's
 own `hunting_ground`. That is the same join `findPairs` already makes, so INARA's "resource site that isn't
@@ -218,14 +243,33 @@ verification does the job that constant overwriting does for EDDN.
 
 What we use:
 
-- **Firebase Anonymous Auth over REST** (Identity Toolkit `signUp`). Each install gets a uid. The refresh
-  token is kept next to the install ID. There is no official client Java SDK. The Admin SDK is privileged and
-  is **never shipped**.
+- **Firebase Anonymous Auth over REST**:
+  - `POST identitytoolkit.googleapis.com/v1/accounts:signUp?key=…` with `{"returnSecureToken":true}`
+  - refresh with `POST securetoken.googleapis.com/v1/token?key=…`
+  - an ID token lasts 1 hour, and an unused refresh token does not expire
+  - the app keeps the refresh token next to the install ID. Losing it means a new uid and an orphaned
+    document, which the nightly job can clean up.
+  - there is no official client Java SDK. The Admin SDK is privileged and is **never shipped**.
+- **Minting uids is limited to 100 anonymous sign-ups per hour per IP** (HTTP 429). That is plenty for a
+  shared or carrier-grade NAT address, and it is what makes "junk stays in its author's document" hold up.
+- **The worst abuse is filling storage, not faking data.** One IP, minting 100 uids an hour with a
+  200 KB payload each, adds about 20 MB an hour, so 1 GiB in about two days. On Spark, a full database refuses
+  writes and never bills. The nightly job watches how many new uids appear and how fast storage grows, and
+  can delete everything those uids wrote. The kill switch stops honest clients writing in the meantime.
+- **Do not upgrade to Identity Platform.** It would add automatic cleanup of anonymous accounts, but it
+  would also cap a Spark project at 3,000 daily active users. Orphaned anonymous accounts are harmless. If they
+  are ever worth removing, the nightly job can delete them with the Admin SDK.
 - **Security rules:**
-  - a uid writes only `installs/{uid}` and `reports/{uid}`
-  - a fixed set of fields, with string length and map size limits
-  - server timestamps
+  - a uid writes only `installs/{uid}` and `reports/{uid}` (document ID `== request.auth.uid`)
+  - an exact field set (`keys().hasOnly(...)`), with string length limits
+  - `updatedAt == request.time`
+  - on update, `request.time >= resource.data.updatedAt + duration.value(24, 'h')`, so at most one write a
+    day. A create has no earlier document to compare against, so the first write is always allowed. The app
+    waits a full 24 hours after its last successful write before trying again.
   - no reads at all
+- **Writes go through** `documents:commit`, with a `setToServerValue: REQUEST_TIME` field transform for
+  `updatedAt`. When a quota is exhausted the write gets HTTP 429, and the app gives up until the next day.
+  Quotas reset around midnight Pacific time.
 - **Junk stays in its author's document.** The nightly job can drop or block a uid in one step.
 - **The kill switch:** `config.json`, e.g. `{"reportPairs": true, "heartbeat": true, "minReportIntervalHours": 24}`,
   turns uploads down without a release if a quota runs short or someone abuses the endpoint.
@@ -302,19 +346,23 @@ alerts only notify. Move only when the stats show the app has outgrown Spark.
       target's in `hunting_ground`. Confirm 20 ly has room to spare.
 - [ ] **Check the Anarchy rule** against the same contracts: look up each target faction's government in the
       dump. If all of them are Anarchy, it can become a hard check.
+- [ ] **Count the distinct pairs** in the same journals, and the encoded size of each, to set the length
+      limit on `reports/{uid}.pairs`.
 - [ ] **Build the verification index** from the dump, on the NAS.
 - [ ] Throwaway scripts for these stay out of the repo.
 
 ## Firebase setup (next session)
 
 - [ ] Create the project on **Spark**.
-- [ ] Create Firestore in Native mode. **The location is permanent**, so pick it deliberately.
-- [ ] Enable Anonymous sign-in. Check: whether anonymous users count toward the 50K monthly active user
-      (MAU) figure, the per-IP limit on anonymous sign-ups, and automatic cleanup of inactive anonymous
-      accounts (may need the Identity Platform upgrade).
+- [ ] Create the `(default)` Firestore database in Native mode, multi-region **`nam5`**. Location does not
+      affect the free quota, and a multi-region has higher availability. **The location is permanent.**
+- [ ] Enable Anonymous sign-in. **Do not** upgrade to Identity Platform (see [Authentication](#authentication)).
 - [ ] Restrict the web API key to the Identity Toolkit and Firestore APIs.
 - [ ] Write and test the security rules (emulator).
-- [ ] Create the service account for the nightly job and add it to the repo's secrets.
+- [ ] Create the service account for the nightly job and add it to the repo's secrets. Give it **Cloud
+      Datastore User**, not Viewer, because the job deletes junk documents. Its reads count against Spark's
+      50K/day. `reports` is a top-level collection, so the `updatedAt` query needs only the automatic
+      single-field index.
 - [ ] Set up the Action that writes to `gh-pages` (the site already serves `data/exomastery.json` from there).
 
 ## What changes in the app (outline, V1.2)
