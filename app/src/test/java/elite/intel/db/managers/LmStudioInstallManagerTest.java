@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,5 +76,19 @@ class LmStudioInstallManagerTest {
         installs.forget();
 
         assertTrue(installs.find().isEmpty());
+    }
+
+    @Test
+    void aReclaimedInstallIsRecordedAsGivenInPlaceOfAnyRecord() {
+        installs.recordStarted(Path.of("/home/cmdr/.lmstudio"), false);
+        UUID installId = UUID.randomUUID();
+        Instant now = Instant.parse("2026-11-12T21:14:40Z");
+
+        LmStudioInstallManager.Install reclaimed =
+                installs.recordReclaimed(installId, Path.of("/mnt/games/LMStudio"), true, true, now);
+
+        assertEquals(new LmStudioInstallManager.Install(installId, Path.of("/mnt/games/LMStudio"), true, true, now),
+                reclaimed);
+        assertEquals(reclaimed, installs.find().orElseThrow());
     }
 }

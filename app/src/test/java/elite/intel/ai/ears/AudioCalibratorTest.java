@@ -17,7 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AudioCalibratorTest {
 
-    private static final double GATE_BELOW_SPEECH_DB = 12.0;
+    private static final double GATE_BELOW_SPEECH_DB = 18.0;
+    private static final double MAX_GATE_TOWARD_SPEECH_DB = 12.0;
     private static final double MIN_GATE_ABOVE_NOISE_DB = 6.0;
 
     /**
@@ -47,12 +48,12 @@ class AudioCalibratorTest {
 
         @ParameterizedTest(name = "floor={0} speech={1}")
         @CsvSource(textBlock = USABLE_ROOMS)
-        @DisplayName("gate never rises above the speech anchor nor falls below the noise bound")
+        @DisplayName("gate never crowds speech nor falls below the noise bound")
         void gateHonoursBothBounds(double floor, double speech) {
             double gate = AudioCalibrator.gateOpenLevel(floor, speech);
 
-            assertTrue(db(speech) - db(gate) >= GATE_BELOW_SPEECH_DB - 1e-9,
-                    "gate must sit at least " + GATE_BELOW_SPEECH_DB + " dB under speech");
+            assertTrue(db(speech) - db(gate) >= MAX_GATE_TOWARD_SPEECH_DB - 1e-9,
+                    "gate must sit at least " + MAX_GATE_TOWARD_SPEECH_DB + " dB under speech");
             assertTrue(db(gate) - db(floor) >= MIN_GATE_ABOVE_NOISE_DB - 1e-9,
                     "gate must clear the noise floor by at least " + MIN_GATE_ABOVE_NOISE_DB + " dB");
         }
@@ -72,7 +73,7 @@ class AudioCalibratorTest {
         @DisplayName("in a noisy room the noise bound takes over")
         void noiseBoundGovernsInANoisyRoom() {
             double floor = 800;
-            double speech = 4000; // only 14 dB of separation: speech - 12 dB would sit under floor + 6 dB
+            double speech = 4000; // only 14 dB of separation: speech - 18 dB would sit under floor + 6 dB
             double gate = AudioCalibrator.gateOpenLevel(floor, speech);
 
             assertEquals(MIN_GATE_ABOVE_NOISE_DB, db(gate) - db(floor), 1e-9);
@@ -126,7 +127,7 @@ class AudioCalibratorTest {
             assertTrue(AudioCalibrator.separationDb(floor, speech) > 47.0);
 
             double gate = AudioCalibrator.gateOpenLevel(floor, speech);
-            assertEquals(406.3, gate, 0.5, "gate should land 12 dB under speech");
+            assertEquals(203.6, gate, 0.5, "gate should land 18 dB under speech");
             assertTrue(gate < 127.2 * 4, "gate must not be dragged up by any absolute constant");
             assertTrue(AudioCalibrator.gateClearsNoiseFloor(floor, gate),
                     "a low gate from a quiet room must not trip the startup warning");

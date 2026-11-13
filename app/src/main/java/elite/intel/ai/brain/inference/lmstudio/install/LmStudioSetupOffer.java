@@ -6,6 +6,7 @@ import elite.intel.db.managers.LmStudioInstallManager;
 import elite.intel.session.SystemSession;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -82,10 +83,19 @@ public enum LmStudioSetupOffer {
      * The install the app made on this PC, if its folder still holds that install's {@link InstallMarker}. A record
      * without a matching marker - restored from another PC, or left after the folder was deleted by hand - is
      * ignored here rather than forgotten: a drive that is only unplugged today must still be uninstallable tomorrow.
+     * A marker in LM Studio's home with no record to match it is the app's install all the same, and is recorded
+     * again ({@link InstallReclaim}).
      */
     public static Optional<LmStudioInstallManager.Install> ownedInstall() {
-        return LmStudioInstallManager.getInstance().find()
-                .filter(install -> InstallMarker.matches(install.homeDir(), install.installId()));
+        return ownedInstall(LmStudioInstallManager.getInstance(), Path.of(System.getProperty("user.home")));
+    }
+
+    static Optional<LmStudioInstallManager.Install> ownedInstall(LmStudioInstallManager installs, Path userHome) {
+        Optional<LmStudioInstallManager.Install> recorded = installs.find();
+        if (recorded.filter(install -> InstallMarker.matches(install.homeDir(), install.installId())).isPresent()) {
+            return recorded;
+        }
+        return InstallReclaim.reclaim(installs, recorded, userHome);
     }
 
     static LmStudioSetupOffer forOwnedInstall(LmStudioInstallManager.Install owned) {

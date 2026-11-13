@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.actions.handlers.queries;
 
+import elite.intel.db.dao.ExoMasteryDao.Body;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.util.json.GsonFactory;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,7 +62,7 @@ class AnalyzeBioScansStarSystemQueryTest {
     void anUnmappedSampledBodyIsNotOutstandingWork() {
         // The live case: 2 a was sampled 3 times but never surface-mapped, so no signal count was ever emitted.
         String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(
-                List.of(), List.of(), List.of(new AnalyzeBioScansStarSystemQuery.UnmappedPlanet("2 a", 3)));
+                List.of(), List.of(), List.of(), List.of(new AnalyzeBioScansStarSystemQuery.UnmappedPlanet("2 a", 3)));
 
         assertTrue(conclusion.startsWith("Nothing left to scan in this system"), conclusion);
         assertTrue(conclusion.contains("2 a (3 sampled) was never surface-mapped"), conclusion);
@@ -70,7 +72,7 @@ class AnalyzeBioScansStarSystemQueryTest {
     @DisplayName("outstanding scans lead the conclusion")
     void outstandingScansLeadTheConclusion() {
         String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(
-                List.of(), List.of(new AnalyzeBioScansStarSystemQuery.PlanetsToScan("B 4", 2)), List.of());
+                List.of(), List.of(new AnalyzeBioScansStarSystemQuery.PlanetsToScan("B 4", 2)), List.of(), List.of());
 
         assertTrue(conclusion.endsWith("Still to scan: B 4 (2)."), conclusion);
     }
@@ -86,7 +88,7 @@ class AnalyzeBioScansStarSystemQueryTest {
                 List.of("6 a"),
                 List.of(new AnalyzeBioScansStarSystemQuery.PlanetsToScan("6 b", 7),
                         new AnalyzeBioScansStarSystemQuery.PlanetsToScan("6 c", 7)),
-                List.of());
+                List.of(), List.of());
 
         assertEquals("3 bodies carry bio signals; fully surveyed: 6 a. Still to scan: 6 b (7), 6 c (7).", conclusion);
     }
@@ -94,9 +96,39 @@ class AnalyzeBioScansStarSystemQueryTest {
     @Test
     @DisplayName("a fully surveyed system says so with no caveat")
     void aFullySurveyedSystemHasNoCaveat() {
-        String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(List.of(), List.of(), List.of());
+        String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(List.of(), List.of(), List.of(), List.of());
 
         assertEquals("Nothing left to scan in this system: every detected bio signal has been sampled.", conclusion);
+    }
+
+    /**
+     * Pegasi Sector HC-U b3-8 (bundle 2026-11-12): routed in by Exo-Mastery, no FSS pass, A 6 sampled out. The query
+     * answered "only A 6 carries bio signals, all done", and the commander wrote off five unsampled bodies on the
+     * strength of it.
+     */
+    @Test
+    @DisplayName("bodies the catalogue lists open, never scanned here, are outstanding work")
+    void catalogueBodiesWithoutAScanOfOurOwnAreOutstanding() {
+        String conclusion = AnalyzeBioScansStarSystemQuery.conclusion(
+                List.of("A 6"), List.of(), List.of("A 7", "A 9", "B 1", "B 3", "B 4"), List.of());
+
+        assertEquals("6 bodies carry bio signals; fully surveyed: A 6. The Exo-Mastery catalogue lists organics "
+                + "still to sample on A 7, A 9, B 1, B 3, B 4, not scanned here yet.", conclusion);
+    }
+
+    @Test
+    @DisplayName("our own scan of a body outranks the catalogue's entry for it")
+    void ourScanOutranksTheCatalogue() {
+        List<Body> open = List.of(body(6, "A 6"), body(7, "A 7"), body(9, "A 9"));
+
+        List<Body> listed = AnalyzeBioScansStarSystemQuery.cataloguedWithoutVerdict(open, Set.of(6L, 9L));
+
+        assertEquals(List.of(7L), listed.stream().map(Body::bodyId).toList());
+    }
+
+    private static Body body(long bodyId, String shortName) {
+        return new Body(1234L, bodyId, "Pegasi Sector HC-U b3-8", "Pegasi Sector HC-U b3-8 " + shortName,
+                "Icy body", 20_000_000L, false);
     }
 
     /**

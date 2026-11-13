@@ -5,8 +5,8 @@ import elite.intel.io.AtomicFiles;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -36,12 +36,21 @@ public final class InstallMarker {
      * path here holds none.
      */
     public static boolean matches(Path homeDir, UUID installId) {
+        return read(homeDir).filter(installId::equals).isPresent();
+    }
+
+    /**
+     * The install id the marker in {@code homeDir} holds. A folder that is missing, unreadable or not a path here,
+     * or a marker that holds no id, holds none.
+     */
+    public static Optional<UUID> read(Path homeDir) {
         try {
             Path marker = homeDir.resolve(FILE);
-            return Files.isRegularFile(marker)
-                    && Files.readString(marker, StandardCharsets.UTF_8).strip().equals(installId.toString());
-        } catch (IOException | InvalidPathException unreadable) {
-            return false;
+            if (!Files.isRegularFile(marker)) return Optional.empty();
+            return Optional.of(UUID.fromString(Files.readString(marker, StandardCharsets.UTF_8).strip()));
+        } catch (IOException | IllegalArgumentException unreadable) {
+            // WHY IllegalArgumentException: it covers InvalidPathException and a marker that is not a UUID.
+            return Optional.empty();
         }
     }
 }

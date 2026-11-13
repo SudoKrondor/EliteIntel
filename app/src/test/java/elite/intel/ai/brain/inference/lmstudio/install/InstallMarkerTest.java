@@ -6,8 +6,10 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,5 +43,21 @@ class InstallMarkerTest {
         Files.writeString(home.resolve(InstallMarker.FILE), installId + "\r\n");
 
         assertTrue(InstallMarker.matches(home, installId));
+    }
+
+    @Test
+    void readGivesTheIdAMarkerHolds(@TempDir Path home) throws IOException {
+        UUID installId = UUID.randomUUID();
+        InstallMarker.write(home, installId);
+
+        assertEquals(Optional.of(installId), InstallMarker.read(home));
+    }
+
+    @Test
+    void aMarkerThatHoldsNoIdReadsAsNone(@TempDir Path home) throws IOException {
+        Files.writeString(home.resolve(InstallMarker.FILE), "not an id");
+
+        assertTrue(InstallMarker.read(home).isEmpty());
+        assertTrue(InstallMarker.read(home.resolve("gone")).isEmpty(), "a folder that does not exist");
     }
 }

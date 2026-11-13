@@ -1,9 +1,11 @@
 package elite.intel.ai.brain.inference.lmstudio.install;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient.ModelListing;
 import elite.intel.db.managers.LmStudioInstallManager;
 import elite.intel.i18n.Language;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
+import elite.intel.util.OsDetector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +16,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
@@ -106,20 +109,106 @@ class LmStudioSetupOfferTest {
             installs.forget();
         }
 
-        @Test
-        void aRecordWhoseFolderHoldsItsMarkerIsTheAppsInstall(@TempDir Path home) throws IOException {
-            LmStudioInstallManager.Install recorded = installs.recordStarted(home, false);
-            InstallMarker.write(home, recorded.installId());
+        // WHY a home of the test's own: ownedInstall() reads the real one, and a developer's PC may hold a marker.
+        @TempDir
+        Path userHome;
 
-            assertEquals(Optional.of(recorded), LmStudioSetupOffer.ownedInstall());
+        private Path defaultHome() {
+            return userHome.resolve(LmStudioHome.DEFAULT_DIR);
+        }
+
+        private Optional<LmStudioInstallManager.Install> owned() {
+            return LmStudioSetupOffer.ownedInstall(installs, userHome);
         }
 
         @Test
-        void aRecordWhoseFolderHasNoMarkerIsNotTheAppsInstall(@TempDir Path home) {
-            installs.recordStarted(home, false);
+        void aRecordWhoseFolderHoldsItsMarkerIsTheAppsInstall() throws IOException {
+            Path home = Files.createDirectories(defaultHome());
+            LmStudioInstallManager.Install recorded = installs.recordStarted(home, false);
+            InstallMarker.write(home, recorded.installId());
 
-            assertTrue(LmStudioSetupOffer.ownedInstall().isEmpty(), "same path, someone else's LM Studio");
+            assertEquals(Optional.of(recorded), owned());
+        }
+
+        @Test
+        void aRecordWhoseFolderHasNoMarkerIsNotTheAppsInstall(@TempDir Path elsewhere) {
+            installs.recordStarted(elsewhere, false);
+
+            assertTrue(owned().isEmpty(), "same path, someone else's LM Studio");
             assertTrue(installs.find().isPresent(), "ignored, not forgotten: the drive may only be unplugged");
+        }
+
+        @Test
+        void noRecordAndNoMarkerIsNoInstallOfTheApps() throws IOException {
+            installedLmStudio(Files.createDirectories(defaultHome()));
+
+            assertTrue(owned().isEmpty(), "an LM Studio the commander set up themselves");
+            assertTrue(installs.find().isEmpty(), "nothing recorded for it");
+        }
+
+        @Test
+        void aMarkerWithNoRecordIsRecordedAgainAndOffersTheUninstall() throws IOException {
+            Path home = Files.createDirectories(defaultHome());
+            installedLmStudio(home);
+            UUID installId = UUID.randomUUID();
+            InstallMarker.write(home, installId);
+
+            LmStudioInstallManager.Install reclaimed = owned().orElseThrow();
+
+            assertEquals(installId, reclaimed.installId(), "the id the marker holds, so the marker still proves it");
+            assertEquals(home, reclaimed.homeDir());
+            assertFalse(reclaimed.pointerWritten(), "the usual home needs no pointer of the app's");
+            assertEquals(LmStudioSetupOffer.UNINSTALL, LmStudioSetupOffer.forOwnedInstall(reclaimed));
+            assertEquals(Optional.of(reclaimed), installs.find(), "recorded, so the services run it again");
+        }
+
+        @Test
+        void aMarkerWithNoRecordAndNoLmStudioLeftIsContinued() throws IOException {
+            Path home = Files.createDirectories(defaultHome());
+            InstallMarker.write(home, UUID.randomUUID());
+
+            assertEquals(LmStudioSetupOffer.CONTINUE_SETUP, LmStudioSetupOffer.forOwnedInstall(owned().orElseThrow()));
+        }
+
+        @Test
+        void aHomeTheAppPointedLmStudioAtKeepsItsPointerForTheUninstall(@TempDir Path drive) throws IOException {
+            LmStudioHome.writePointer(userHome, drive);
+            InstallMarker.write(drive, UUID.randomUUID());
+
+            LmStudioInstallManager.Install reclaimed = owned().orElseThrow();
+
+            assertEquals(drive, reclaimed.homeDir());
+            assertTrue(reclaimed.pointerWritten());
+        }
+
+        @Test
+        void aRecordOfAnEarlierInstallInTheSameHomeIsReplaced() throws IOException {
+            Path home = Files.createDirectories(defaultHome());
+            installs.recordStarted(home, false);
+            UUID current = UUID.randomUUID();
+            InstallMarker.write(home, current);
+
+            assertEquals(current, owned().orElseThrow().installId());
+            assertEquals(current, installs.find().orElseThrow().installId());
+        }
+
+        @Test
+        void aRecordForAnotherFolderIsNotReplacedByAMarkerHere(@TempDir Path unplugged) throws IOException {
+            LmStudioInstallManager.Install recorded = installs.recordStarted(unplugged, false);
+            InstallMarker.write(Files.createDirectories(defaultHome()), UUID.randomUUID());
+
+            assertTrue(owned().isEmpty());
+            assertEquals(Optional.of(recorded), installs.find(), "one record at most, and its drive may come back");
+        }
+
+        private static void installedLmStudio(Path home) throws IOException {
+            String lms = OsDetector.getOs() == OsDetector.OS.WINDOWS ? "lms.exe" : "lms";
+            Files.createFile(Files.createDirectories(home.resolve("bin")).resolve(lms));
+            Path llmster = Files.createFile(Files.createDirectories(home.resolve("llmster")).resolve("llmster"));
+            Path internal = Files.createDirectories(home.resolve(".internal"));
+            JsonObject record = new JsonObject();
+            record.addProperty("path", llmster.toString());
+            Files.writeString(internal.resolve("llmster-install-location.json"), record.toString());
         }
     }
 

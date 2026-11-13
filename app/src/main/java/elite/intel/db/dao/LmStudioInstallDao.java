@@ -30,11 +30,12 @@ public interface LmStudioInstallDao {
      */
     @SqlUpdate("""
             INSERT INTO lm_studio_install (id, install_id, home_dir, pointer_written, setup_complete, installed_at)
-            VALUES (1, :installId, :homeDir, :pointerWritten, 0, :installedAt)
+            VALUES (1, :installId, :homeDir, :pointerWritten, :setupComplete, :installedAt)
             """)
     void insert(@Bind("installId") String installId,
                 @Bind("homeDir") String homeDir,
                 @Bind("pointerWritten") boolean pointerWritten,
+                @Bind("setupComplete") boolean setupComplete,
                 @Bind("installedAt") String installedAt);
 
     /**

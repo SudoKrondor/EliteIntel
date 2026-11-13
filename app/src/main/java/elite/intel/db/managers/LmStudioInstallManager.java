@@ -77,8 +77,26 @@ public class LmStudioInstallManager {
         }
         Install install = new Install(UUID.randomUUID(), homeDir, pointerWritten, false, Instant.now());
         Database.withDao(LmStudioInstallDao.class, dao -> {
-            dao.insert(install.installId().toString(), homeDir.toString(), pointerWritten,
+            dao.insert(install.installId().toString(), homeDir.toString(), pointerWritten, false,
                     install.installedAt().toString());
+            return Void.TYPE;
+        });
+        return install;
+    }
+
+    /**
+     * Records again an install whose record was lost while its marker stayed, in place of any record there is. The
+     * install keeps the id its marker holds, so the marker goes on proving it.
+     *
+     * @param installedAt when it is recorded again: the first record's time went with it
+     */
+    public synchronized Install recordReclaimed(UUID installId, Path homeDir, boolean pointerWritten,
+                                                boolean setupComplete, Instant installedAt) {
+        Install install = new Install(installId, homeDir, pointerWritten, setupComplete, installedAt);
+        Database.withDao(LmStudioInstallDao.class, dao -> {
+            dao.delete();
+            dao.insert(installId.toString(), homeDir.toString(), pointerWritten, setupComplete,
+                    installedAt.toString());
             return Void.TYPE;
         });
         return install;

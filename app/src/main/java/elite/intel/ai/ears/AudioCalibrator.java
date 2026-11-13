@@ -44,18 +44,23 @@ public class AudioCalibrator {
     private static final double NOISE_PERCENTILE = 0.75;
     // The gate is anchored a fixed number of decibels BELOW average speech. Speech is the only
     // stable reference here: the commander's quieter syllables sit some way under the average, and
-    // 12 dB clears them without reaching down toward breath and key clicks. Anchoring to a midpoint
-    // between floor and speech instead makes the gate a hostage to the noise floor - it lands ~6 dB
-    // under speech in a noisy room (dropping half of all speech frames) and 20+ dB under speech in a
-    // treated one (opening on anything).
-    private static final double GATE_BELOW_SPEECH_DB = 12.0;
+    // 18 dB clears them at a normal speaking voice. 12 dB made commanders raise their voice to open
+    // it, because the counting the calibration hears is louder than how they talk in the cockpit.
+    // Anchoring to a midpoint between floor and speech instead makes the gate a hostage to the noise
+    // floor - it lands ~6 dB under speech in a noisy room (dropping half of all speech frames) and
+    // 20+ dB under speech in a treated one (opening on anything).
+    private static final double GATE_BELOW_SPEECH_DB = 18.0;
     // ...but never closer to the ambient floor than this, which is what keeps the top quartile of
-    // room noise from crossing the gate and false-triggering. Binds only in a noisy room.
+    // room noise from crossing the gate and false-triggering. Binds only in a noisy room, where it
+    // lifts the gate back toward speech.
     private static final double MIN_GATE_ABOVE_NOISE_DB = 6.0;
-    // A room is usable when both bounds above can be honoured at once. Derived, never tuned apart
-    // from them: if speech does not clear noise by their sum, the two bounds cross and the gate has
-    // nowhere legal to sit.
-    private static final double MIN_SPEECH_TO_NOISE_DB = GATE_BELOW_SPEECH_DB + MIN_GATE_ABOVE_NOISE_DB;
+    // The nearest the gate may come to average speech before it starts cutting ordinary syllables.
+    // Where the noise bound lifts the gate off its anchor, it may rise this far and no further.
+    private static final double MAX_GATE_TOWARD_SPEECH_DB = 12.0;
+    // A room is usable when the gate can sit clear of the noise without crowding speech. Derived,
+    // never tuned apart from the two bounds: if speech does not clear noise by their sum, the gate
+    // has nowhere legal to sit.
+    private static final double MIN_SPEECH_TO_NOISE_DB = MAX_GATE_TOWARD_SPEECH_DB + MIN_GATE_ABOVE_NOISE_DB;
     // Absolute lower bound applied ONLY to a degenerate measurement (muted mic, or speech that never
     // rose above ambient), where the noise bound alone can leave the gate down in mic self-noise.
     // Never applied to a valid calibration: an absolute amplitude says nothing about whether a gate
@@ -207,9 +212,10 @@ public class AudioCalibrator {
      * <p>
      * Both bounds are ratios, so the gate tracks the room instead of a hardcoded amplitude. In a
      * quiet room the speech anchor governs and the gate sits far above the floor; in a noisy one the
-     * floor bound takes over. When {@link #separationDb} is at least {@link #MIN_SPEECH_TO_NOISE_DB}
-     * the two cannot conflict. Below that the caller warns, and the floor bound wins - the safer
-     * failure, since a gate in the noise false-triggers continuously.
+     * floor bound takes over, lifting the gate toward speech. When {@link #separationDb} is at least
+     * {@link #MIN_SPEECH_TO_NOISE_DB} the gate stays at least {@link #MAX_GATE_TOWARD_SPEECH_DB} under
+     * speech. Below that the caller warns, and the floor bound wins - the safer failure, since a gate
+     * in the noise false-triggers continuously.
      * <p>
      * The noise bound therefore also carries a failed speech measurement, where {@code avgSpeechRMS}
      * arrives as zero: the gate still lands {@link #MIN_GATE_ABOVE_NOISE_DB} clear of the ambient

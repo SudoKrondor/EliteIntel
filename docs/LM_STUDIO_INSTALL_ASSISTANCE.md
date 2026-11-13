@@ -203,6 +203,19 @@ alongside the existing forgetting of the old computer's journal and bindings fol
 **Starting a fresh install over a stale record:** a record whose marker no longer matches is replaced, since
 there is one record at most.
 
+**A marker whose record was lost is the app's install all the same** (`InstallReclaim`). A database swapped in from
+outside the app (a data folder copied by hand from before the install) drops the record while LM Studio's home
+still holds the marker. The app then took its own install for the commander's, so it neither stopped the model
+with the services nor offered Uninstall (a support bundle, 2026-11-12). So when LM Studio's home holds a marker and
+there is no record, or the record names that same home with another id, the install is recorded again:
+- **`install_id`:** the id the marker holds.
+- **`pointer_written`:** true only when the home is not `~/.lmstudio`, because the app writes the pointer only to
+  install somewhere else.
+- **`setup_complete`:** whether LM Studio is installed there, so the button offers **Uninstall** or **Continue
+  setup**.
+
+A record naming another folder is left alone. Its drive may only be unplugged.
+
 ---
 
 ## Starting and stopping
