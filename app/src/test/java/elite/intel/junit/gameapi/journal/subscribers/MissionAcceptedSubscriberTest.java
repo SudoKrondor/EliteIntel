@@ -63,6 +63,27 @@ class MissionAcceptedSubscriberTest {
         assertNotNull(PlayerSession.getInstance().getMission(201L));
     }
 
+    /**
+     * Mission_Massacre_Conflict_* contains Mission_Massacre, so a war massacre used to be filed as a pirate one
+     * and its kill bar waited for bounties a conflict zone never pays.
+     */
+    @Test
+    void aWarMassacreIsNotFiledAsAPirateOne() {
+        subscriber.onMissionAcceptedEvent(event(300L, "Mission_Massacre_Conflict_CivilWar", "Kill Fire Lotus Coalition ships",
+                "Gallant Investment Brokers", "Exphiay", "Fire Lotus Coalition", 4_769_216L));
+        subscriber.onMissionAcceptedEvent(event(301L, "Mission_Massacre_Conflict_War", "Kill Other Side ships",
+                "Gallant Investment Brokers", "Exphiay", "Other Side", 1_000_000L));
+
+        assertEquals(MissionType.MISSION_MASSACRE_CONFLICT, missionManager.getMission(300L).getMissionType());
+        assertEquals(MissionType.MISSION_MASSACRE_CONFLICT, missionManager.getMission(301L).getMissionType());
+        assertEquals(MissionType.MISSION_PIRATE_MASSACRE, saveAndRead(302L, "Mission_Massacre"));
+    }
+
+    private MissionType saveAndRead(long id, String name) {
+        subscriber.onMissionAcceptedEvent(event(id, name, "Kill pirates", "EmpireFaction", "Deciat", "SpacePirates", 1L));
+        return missionManager.getMission(id).getMissionType();
+    }
+
     @Test
     void unknownMissionNameIsSavedWithUnknownType() {
         subscriber.onMissionAcceptedEvent(event(102L, "Mission_Bizarre_Unknown_Type", "Do something weird", "SomeFaction", null, null, 1_000L));

@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum MissionType {
     // Fighting
+    // WHY this sits ABOVE MISSION_PIRATE_MASSACRE: MissionDto matches a journal name by containment, first constant
+    // wins, and Mission_Massacre_Conflict_War / _CivilWar both contain Mission_Massacre. Declared below it, a war
+    // massacre is filed as a pirate one and its kill bar waits for bounties a conflict zone never pays.
+    MISSION_MASSACRE_CONFLICT("Mission_Massacre_Conflict", "massacre, war, civil war, conflict zone, combat bonds, kill, combat, faction"),
     MISSION_PIRATE_MASSACRE("Mission_Massacre", "pirates, massacre, pirate, bounty, hunt, kill, combat, criminals, faction, wing"),
     MISSION_PIRATE_MASSACRE_WING("Mission_MassacreWing", "pirates, massacre, pirate, wing, group, squad, multiplayer, bounty, hunt, combat"),
     MISSION_ASSASSINATE_PLANETARY_EXPANSION("Mission_Assassinate_Planetary_Expansion", "assassinate, kill, expansion, contract, clandestine, planetary, target, stealth, hit, covert"),

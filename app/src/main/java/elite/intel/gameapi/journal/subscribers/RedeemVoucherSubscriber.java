@@ -23,9 +23,15 @@ public class RedeemVoucherSubscriber {
 
     @Subscribe
     public void onRedeemVoucherEvent(RedeemVoucherEvent event) {
-        // Combat bonds are their own ledger with no mission to reconcile against: paid means gone.
+        // Bonds are a war massacre's only record of its kills, so with any massacre open they are kept and flagged,
+        // as bounties are. Any massacre rather than only a war one, because a war contract accepted before
+        // MISSION_MASSACRE_CONFLICT existed is on file as a pirate one. With none, paid means gone.
         if (event.isCombatBond()) {
-            combatBonds.cashedIn();
+            if (missionManager.getMissions(missionManager.getMassacreMissionTypes()).isEmpty()) {
+                combatBonds.clear();
+            } else {
+                combatBonds.markAllCashedIn();
+            }
             return;
         }
         Map<Long, MissionDto> missions = missionManager.getMissions(

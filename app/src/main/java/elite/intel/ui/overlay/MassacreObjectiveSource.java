@@ -1,9 +1,11 @@
 package elite.intel.ui.overlay;
 
+import elite.intel.db.managers.CombatBondManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ShipRouteManager;
-import elite.intel.gameapi.journal.events.dto.BountyDto;
+import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.MassacreKill;
 import elite.intel.gameapi.missions.MassacreProgress;
 import elite.intel.session.PlayerSession;
 
@@ -11,7 +13,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 /**
- * Projects the pirate-massacre mission stack into a HUD objective with a real
+ * Projects the massacre mission stack - pirate or war - into a HUD objective with a real
  * progress bar.
  * <p>
  * Shares {@link MassacreProgress} with the voice query, so the bar and the
@@ -67,40 +69,44 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
     private static final int MIN_PROVIDER_LABEL = 14;
 
     private final MissionManager missionManager;
-    private final PlayerSession playerSession;
+    private final Supplier<List<MassacreKill>> kills;
     private final Supplier<String> routeDestination;
 
     public MassacreObjectiveSource() {
-        this(MissionManager.getInstance(), PlayerSession.getInstance(),
+        this(MissionManager.getInstance(),
+                () -> MassacreKill.of(PlayerSession.getInstance().getBounties(), CombatBondManager.getInstance().kills()),
                 () -> ShipRouteManager.getInstance().getDestination());
     }
 
     /**
      * Seam for tests.
+     *
+     * @param kills every kill the journal paid for, bounties and combat bonds alike
      */
-    MassacreObjectiveSource(MissionManager missionManager, PlayerSession playerSession,
+    MassacreObjectiveSource(MissionManager missionManager, Supplier<List<MassacreKill>> kills,
                             Supplier<String> routeDestination) {
         this.missionManager = missionManager;
-        this.playerSession = playerSession;
+        this.kills = kills;
         this.routeDestination = routeDestination;
     }
 
     @Override
     public Optional<HudObjective> currentObjective() {
-        Map<Long, MissionDto> missions = missionManager.getMissions(missionManager.getPirateMissionTypes());
+        Map<Long, MissionDto> missions = missionManager.getMassacreStack();
         if (missions == null || missions.isEmpty()) return Optional.empty();
         if (standsDownFor(routeDestination.get(), missions.values())) return Optional.empty();
 
-        Set<BountyDto> bounties = playerSession.getBounties();
-        MassacreProgress progress = MassacreProgress.compute(
-                missions.values(), bounties == null ? Set.of() : bounties);
+        MassacreProgress progress = MassacreProgress.fromKills(missions.values(), kills.get());
         if (!progress.hasMissions() || progress.killsRequired() <= 0) return Optional.empty();
 
-        // Kills are inferred from bounty vouchers, which over-count: a voucher is paid for a kill
-        // someone else finished off, and the journal never says who landed the final blow. So the
-        // bar is an estimate that can only run high, and it says so - until MissionRedirected
-        // confirms the contract, which is the one count the game gives us and is exact.
+        // Kills are inferred from what each one paid - a bounty voucher or a combat bond - and that
+        // over-counts: a payment is made for a kill someone else finished off, and the journal never
+        // says who landed the final blow. So the bar is an estimate that can only run high, and it
+        // says so - until MissionRedirected confirms the contract, which is the one count the game
+        // gives us and is exact.
         boolean confirmed = progress.killsRemaining() == 0;
+        boolean war = missions.values().stream()
+                .anyMatch(mission -> mission != null && mission.getMissionType() == MissionType.MISSION_MASSACRE_CONFLICT);
 
         int stacked = missions.size();
         long reward = missions.values().stream()
@@ -109,9 +115,7 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
                 .sum();
 
         List<HudRow> rows = new ArrayList<>();
-        rows.add(HudRow.progress(HudText.get(confirmed
-                        ? "overlay.card.row.pirates"
-                        : "overlay.card.row.piratesEstimated"),
+        rows.add(HudRow.progress(HudText.get(barLabel(war, confirmed)),
                 (int) progress.killsDone(), (int) progress.killsRequired(),
                 confirmed ? HudRow.State.GOOD : HudRow.State.NORMAL));
 
@@ -134,6 +138,14 @@ public class MassacreObjectiveSource implements HudObjectiveSource {
                 progress.targetFaction() == null ? null : progress.targetFaction().toUpperCase(),
                 rows,
                 HudObjective.PRIORITY_SPECIALISED));
+    }
+
+    /**
+     * What the bar is counting. A war contract's targets are a faction's warships, not pirates.
+     */
+    private static String barLabel(boolean war, boolean confirmed) {
+        if (war) return confirmed ? "overlay.card.row.kills" : "overlay.card.row.killsEstimated";
+        return confirmed ? "overlay.card.row.pirates" : "overlay.card.row.piratesEstimated";
     }
 
     /**

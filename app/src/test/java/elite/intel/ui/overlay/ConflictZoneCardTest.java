@@ -39,7 +39,7 @@ class ConflictZoneCardTest {
 
     @BeforeEach
     void clean() {
-        bonds.cashedIn();
+        bonds.clear();
         conflictZone.cashedIn();
     }
 
@@ -107,7 +107,7 @@ class ConflictZoneCardTest {
         bond(1, 27_238, "Sirius Corporation");
 
         conflictZone.cashedIn();
-        bonds.cashedIn();
+        bonds.clear();
 
         assertTrue(cardHere().isEmpty(), "handing the bonds over is the commander saying they are done");
     }
