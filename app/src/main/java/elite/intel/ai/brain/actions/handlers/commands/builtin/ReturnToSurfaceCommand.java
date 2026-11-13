@@ -3,10 +3,13 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
+import elite.intel.session.StatusFlags;
+import elite.intel.session.ui.UINavigator;
 import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
@@ -20,6 +23,7 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 @RegisterCommand
 public final class ReturnToSurfaceCommand implements IntelCommand {
     public static final String ID = "return_to_surface";
+    private final UINavigator navigator = new UINavigator();
 
     @Override
     public String llmDescription() {
@@ -36,13 +40,35 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInSrv() || status.isOnFoot();
+        return !status.isInMainShip();
     }
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        if (status.isInSrv()) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_RECALL_DISMISS_SHIP.getGameBinding())));
+        if (!status.isOnFoot()) {
+            //GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_RECALL_DISMISS_SHIP.getGameBinding())));
+
+            GameControllerBus.publish(GameInputSequenceEvent.of(
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
+                    // Ensure the cursor is at the top before navigating
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    // Recall the ship
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding()),
+                    // return to default state
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding())
+            ));
+            navigator.assumeDefaultState(StatusFlags.GuiFocus.CENTRAL_PANEL);
         } else if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingHold(BINDING_ON_FOOT_WHEEL.getGameBinding(), 500),
