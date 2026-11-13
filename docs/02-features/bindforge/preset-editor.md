@@ -21,7 +21,14 @@ General, Ship, SRV and On Foot are four separate values in one file, so in the
 P4; built as `ui.screen.bindings.PresetEditorPanel`, between the Bind Editor and Binding Management). *Earlier that day
 Krondor had placed it as a section inside Binding Management, for the room; Alan's ruling replaced it, since which binds
 file the game loads is the other half of editing one, and the mockup draws it as a tab.* It is greyed with the other
-editors while CREATE is pending, and its dropdowns are locked while BindForge is read only.
+editors while CREATE is pending, and its dropdowns are locked while BindForge is read only. *Since 2026-11-12 (Alan) it
+is the third tab, between the Bind Editor and Bind File Management (Binding Management renamed), after Alias Designer
+and the Bind Editor ([file-manager.md](file-manager.md#structure)).*
+
+**The intro warns about four different files** (Alan, 2026-11-12): a second paragraph says VEGA reads the keys it
+presses from one binds file only, so when the four sections use different files VEGA can press the wrong keys in the
+game, and that all four are best set to the same file. It says nothing of which file VEGA reads: since S13f it asks
+when the lines differ ([storage brief, S13f](../../05-build-plan/storage.md#slices)).
 
 **Built 2026-11-10 (P4):** the dropdowns offer `Apply.offered(files)`, the very list APPLY checks against, so a line
 chosen here is one APPLY accepts. Each is marked the player's or *(factory)*. **A line naming nothing the list offers -

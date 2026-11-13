@@ -92,12 +92,13 @@ public class BindingsTabPanel extends JPanel {
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
+        // WHY this order - Alias Designer, Bind Editor, Preset Editor, Bind File Management (Alan, 2026-11-12).
+        tabs.addTab(getText("bindings.tab.aliasDesigner"), aliasDesignerPanel);
         tabs.addTab(getText("bindings.tab.bindingProfile"), bindingProfilePanel);
         // WHY a tab of its own, beside the Bind Editor: which binds file the game loads is the other half of editing
         // one (Alan, 2026-11-10, P4).
         tabs.addTab(getText("bindings.tab.presetEditor"), presetEditorPanel);
         tabs.addTab(getText("bindings.tab.bindingManagement"), bindingManagementPanel);
-        tabs.addTab(getText("bindings.tab.aliasDesigner"), aliasDesignerPanel);
         // WHY: a retarget keeps bindings by button number, so on another model some land on other buttons - the
         // notice after it offers the bindings for review (A12).
         aliasDesignerPanel.setReviewBindings(() -> tabs.setSelectedComponent(bindingProfilePanel));
