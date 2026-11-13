@@ -10,9 +10,11 @@ backup is a date-stamped zip of the live copies, of one of four kinds, and there
 
 ## Structure
 
-**On screen this tab is Binding Management, and stays so** (Krondor, 2026-11-10): the rename to File Manager is not
-coming, though the other BindForge labels changed that day. These docs keep "File Manager" as the name of the section
-they describe.
+**On screen this tab is Bind File Management, the last of BindForge's tabs** (Alan, 2026-11-12): the tabs run Alias
+Designer, Bind Editor, Preset Editor, Bind File Management, in all nine bundles, with CREATE's no-factory message that
+names it. Nothing inside the tabs changed. *From 2026-11-10 (Krondor) until then it was Binding Management, the third
+tab.* The rename to File Manager is not coming. These docs keep "File Manager" as the name of the section they
+describe.
 
 Two sub-tabs: **Game Install Locations** and **Player Backups**. *Edit History, a third, was folded into Player
 Backups on 2026-10-22.* ~~**The [Preset Editor](preset-editor.md#layout) is to be a section here** (Krondor, 2026-11-10).~~
