@@ -1,6 +1,7 @@
 {
   "format": 1,
   "indexDate": "2026-03-02",
+  "contributors": 2,
   "sets": [
     {
       "provider": {
@@ -425,8 +426,8 @@
       },
       "distanceLy": 6.93,
       "stackDepth": 8,
-      "reporters": 1,
-      "lastSeen": "2026-05-25",
+      "reporters": 2,
+      "lastSeen": "2026-11-08",
       "resourceSites": {
         "standard": 4,
         "low": 5,
