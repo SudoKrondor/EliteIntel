@@ -28,8 +28,8 @@
   --hud-blue:          #6EA7FFBF;
   --hud-blue-solid:    #6EA7FF;
   --hud-cyan:          #5CE1EE;
-  --hud-green:         #4FC56B;
-  --hud-red:           #D94F4F;
+  --hud-green:         #7CE8A8;
+  --hud-red:           #E8602C;
 
   --header-h:         56px;
   --sidebar-w:        270px;
@@ -342,8 +342,8 @@ body {
 
 .error {
   color: var(--hud-red);
-  background: rgba(217, 79, 79, 0.08);
-  border: 1px solid rgba(217, 79, 79, 0.3);
+  background: rgba(232, 96, 44, 0.08);
+  border: 1px solid rgba(232, 96, 44, 0.3);
   border-radius: 4px;
   padding: 1rem;
 }
@@ -553,7 +553,7 @@ body {
 }
 .copy-btn.copied {
   color: var(--hud-green);
-  border-color: rgba(79, 197, 107, 0.4);
+  border-color: rgba(124, 232, 168, 0.4);
 }
 
 /* ══════════════════════════════════════════
