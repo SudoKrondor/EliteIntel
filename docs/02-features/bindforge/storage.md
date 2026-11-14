@@ -44,6 +44,10 @@ to be removed before V1.2 shipped, and first-time startup waited for the next cl
    BindForge ever wrote anything (2026-10-23, Alan) — then create the working copy — every `.binds`, the
    `StartPreset.N.start`, **one** `DeviceMappings.xml` and **one** of each `.buttonMap`, reconciled — and mark
    first-time startup complete.
+
+   **The report that first-time startup is complete can be quieted** (Alan, 2026-11-13; to be built in Storage S21):
+   it gets a *don't show this again* box, as APPLY's dialogs do (rule 13). A report naming anything that did not land
+   - *"Updated 1 of 2 installations"* - always shows.
 4. From then on, **the working copy is the source of truth.**
 
 **Settled with Storage S2b's sources (Alan, 2026-10-25):**
@@ -368,7 +372,8 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
       the lines still differ.
     - **Nothing is stored, and there is no *do not ask again*.** A box that still asks when the lines change would be a
       promise the app cannot keep. The file chosen is what the assistant reads for that run, while a line still names
-      it; otherwise the lines are taken General first, as above.
+      it; otherwise the lines are taken General first, as above. *Confirmed 2026-11-13 (Alan): the two questions stay
+      two dialogs, and stay out of the "don't show this again" boxes of rule 13 (Storage S21).*
     - **Offered:** each BindName the lines name that resolves to a file - its true binds file, else its factory one -
       with the sections naming it; names differing only in case are one. With fewer than two, nothing is asked.
     - **Yes** sets all four lines to it, as the Preset Editor's SET ALL TO SAME does (`PresetEdits.change`), and applies
@@ -548,6 +553,14 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
 13. Don't edit bindings in BindForge and in the game at once. BindForge is not responsible for problems or data loss
     caused by doing so. **APPLY's confirmation always says so** (2026-10-23, Alan): *"Close the game's controls
     screen before applying. Changes made in BindForge and in the game at the same time can be lost."*
+
+    **Amended 2026-11-13 (Alan; to be built in Storage S21): the user can quiet it.** APPLY's confirmation and its
+    report (*"Applied. Your files were backed up first…"*) each get a *don't show this again* box; once ticked, that
+    dialog is not shown until the warnings are reset. Alan: repeated notices tire every user, and being able to turn
+    them off is worth more than always saying it. **A failure always shows**, ticked or not - a report where anything
+    did not land, *"updated 1 of 2"* included (principle 9). **Reset warnings**, a button in a section below the
+    push-to-talk settings on Services' tab renamed *Push To Talk and Other Settings*, clears every tick. The split
+    preset's two questions (S13f) never get the box: they ask, they do not tell, and they stay two dialogs.
 14. **The check:** every live copy, in every installation, is compared with the working copy **by their values, never
     by date**. Any difference means the live copy changed since BindForge last wrote it — an edit in the game, or a
     game update adding new bind slots or other new parts. The user is warned and chooses one of three:
