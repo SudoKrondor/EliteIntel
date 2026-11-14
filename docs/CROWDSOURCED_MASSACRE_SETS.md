@@ -40,10 +40,17 @@ Facts that shape the design (from years of play, not from code):
 - **Sets last for years.** Providers do not vanish with the background simulation. Conflict zones churn
   weekly, massacre pairs do not. **Pairs never expire.**
 - **Z is always close to A:** 20 ly at the most, usually one jump with no star in between. This is a hard
-  check.
-- **The pirate faction is an Anarchy, as far as anyone has seen.** This is experience, not confirmed, so it
-  is a soft check that only lowers a pair's rank. A lawful faction's ship can be wanted and can turn pirate,
-  so a ship's status proves nothing about its faction.
+  check. **Measured:** the 33 pairs in Alan's journals are 1.3 to 9.9 ly apart, so 20 ly leaves twice the room.
+- **The pirate faction is an Anarchy.** **Measured:** all 33 target factions are Anarchies in the dump, and
+  all 33 are still present in their target system years later. This is a hard check. It filters less than it
+  sounds: 94,000 of the 120,000 populated systems have an Anarchy faction somewhere. What it rules out is
+  naming the *wrong* faction in Z. A lawful faction's ship can be wanted and can turn pirate, so a ship's
+  status proves nothing about its faction.
+- **Pairs last. Provider factions move.** Every provider *system* is still populated, but provider factions
+  come and go: of the factions that issued Alan's contracts, many have left their system since (for example,
+  Col 285 Sector RO-Q d5-54 had 4 provider factions in 2023 and 1 in the dump). So "the reported provider
+  faction is still in A" is a **soft** check that only lowers the stack depth shown, never a reason to drop a
+  pair.
 - **A blacklist is a matter of taste:** too easy, too hard, pledged to a different power. It says nothing
   about whether the data is right. **Blacklists stay local and are never uploaded.**
 - **Large uploads are legitimate.** Importing years of journal backups produces a big ledger in one go, so
@@ -60,10 +67,12 @@ App ──(anonymous write, at most once a day, silent fail)──▶ Firestore
                           reads what changed, merges, writes the published files
                                                                ▼
    elite-intel.org/data/massacre-sets.json     ◀── app fetches once a day (ETag)
-   elite-intel.org/data/massacre-index.json.gz ◀── app fetches when it changes (rarely)
    elite-intel.org/data/config.json            ◀── app fetches with the sets (kill switch)
-   elite-intel.org/<unlisted>/stats.json       ◀── the unlisted stats page reads it
+   elite-intel.org/ops-aec9172a/stats.json     ◀── the unlisted stats page reads it
 ```
+
+The verification index (built from the Spansh dump) is used only by the nightly job. It is never published
+or downloaded by the app.
 
 Why the app reads static files instead of querying Firestore:
 
@@ -96,7 +105,7 @@ to a date. The stats page never shows a time of day.
 
 | Field | Note |
 |---|---|
-| `pairs` | **one string**: every pair the install knows, compactly encoded (JSON lines or similar) |
+| `pairs` | **one string**: every pair the install knows, in payload format 1 (below) |
 | `updatedAt` | server timestamp, equal to `request.time`, which the nightly job queries on |
 
 Each encoded pair carries:
@@ -110,6 +119,23 @@ Each encoded pair carries:
 | resource sites | standard, low, high, hazardous, as the reporter saw them |
 | last seen | date only |
 
+**Payload format 1** (`format: 1`). The reference is `PairsPayload` in the nightly repo, and the app's
+encoder must match it. It is a JSON array with one object per provider faction and target:
+
+```json
+[{"ps":"Bean","st":"Bruce Dock","pf":"Earls of Bean","ts":"Bellite","tf":"Bellite Raiders","r":[0,1,2,0],"d":"2026-11-13"}]
+```
+
+| Key | Meaning |
+|---|---|
+| `ps`, `pf`, `ts`, `tf` | required: provider system and faction, target system and pirate faction. 1-64 characters each, no control characters, and the two systems must differ |
+| `st` | optional: the provider station |
+| `r` | optional: the resource sites seen in the target as 4 integers 0-30 (standard, low, high, hazardous) |
+| `d` | optional: last seen, as `YYYY-MM-DD` |
+
+The job drops a malformed entry on its own and keeps the rest. Alan's 103 entries come to 13,278 characters
+with stations and dates (the 7.3 KB measured earlier left them out), still a fifth of the 64,000 limit.
+
 **Why one string and not a map:** security rules cannot loop, so they cannot check the entries of a map whose
 keys are not known in advance. They **can** check a string's length. One string field, with a length limit
 in the rules, puts a hard limit on the size of each install's document. The nightly job parses it and drops
@@ -122,9 +148,10 @@ every entry that does not match the schema. **The three layers each have one job
 One document per pair would let rules check every field, but at one write per pair a large journal import
 would use up the day's quota on its own.
 
-**The length limit has to be set from real data:** how many distinct pairs the journals of Alan and his son
-produce, times the bytes per encoded pair, with room to spare. A pair is about 150 bytes, so 200,000
-characters holds about 1,300 pairs. If that is not enough, the payload is split over a few numbered fields.
+**The length limit, measured:** Alan's journals (3,777 files, 2019–2026, 1,086 pirate massacre contracts)
+come to **33 pairs, 103 provider-faction entries and 7.3 KB** encoded without coordinates. Seven years of
+heavy massacre play fits in under 10 KB. **A limit of 64,000 characters** leaves about eight times the room,
+and it also limits storage abuse to about 6.4 MB an hour per IP.
 
 **Never uploaded:** MissionID, reward, kill count, exact timestamps. They do nothing for the next commander,
 and together they could fingerprint one.
@@ -168,46 +195,59 @@ The commander's own blacklist (forget) applies to crowd-sourced sets the same wa
 
 ---
 
-## Verification: in each app, against data the forger does not control
+## Verification: against data the forger does not control
 
 The app is open source. **A report cannot be made unforgeable**: journal files are not signed, and any
-check the app runs, a forger can copy or skip. So the design does not try to stop bad writes. It makes
-honest readers ignore them.
+check the app runs, a forger can copy or skip. So the design does not try to stop bad writes. It filters
+them out after they arrive, in two places that a forger does not control (decided 2026-11-13):
 
-**Checks on the reading side only protect the reader.** Someone who edits the code so every check passes
-fools only their own app. Every honest app still runs the real checks on the pairs it downloads.
+1. **The nightly job** checks every pair against the verification index. The index and the job are ours, so
+   a pair the job publishes has passed checks nobody can switch off.
+2. **Each app** checks only what the index cannot: resource sites, and systems colonised after the dump.
+   Checks on the reading side only protect the reader. Someone who edits the code so every check passes fools
+   only their own app.
 
 ### The verification index
 
-A one-time pass over the commander's full Spansh dump (2026, 524 GiB, every signal included) produces a
-small hosted index. **It runs on the NAS, reading one line at a time. The dump is never pulled over the
-network.**
+A one-time pass over the commander's full Spansh dump (2026-03-02, 524 GiB, every signal Spansh had) produces
+the index. **It runs on a local copy, reading one line at a time. The dump is never parsed over the network.**
 
 For every populated system (both A and Z are populated, since Z has a pirate faction):
 
 - name, SystemAddress, coordinates
 - factions, and each faction's government
-- resource site counts by grade
 
-The Bubble should come to a few MB gzipped. It is published as `massacre-index.json.gz` and fetched only when
-it changes. It is rebuilt only from a newer dump, which is rarely needed because the data it checks hardly
-changes.
+**Measured (2026-11-13, dump of 2026-03-02):** 181.7M systems, 119,625 populated. The compact index is
+26.8 MB, or **5.9 MB gzipped**. The full pass takes 13.5 minutes once the dump is on local NVMe (it reads at
+about 700 MB/s). All 51 systems in Alan's pairs are in it.
+
+**The dump has no resource sites.** Spansh records body signals (SAA: human, biological, ring hotspots), but
+not FSS signals, and resource sites are FSS signals. So "Z has resource sites" comes only from the app's own
+`hunting_ground` (the journal and EDDN `fsssignaldiscovered`) and from the reporter's counts.
+
+The index lives with the nightly job and is never published. It is rebuilt only from a newer dump, which is
+rarely needed because the data it checks hardly changes. **Open:** which repository holds the job and the
+index, and whether Spansh's terms allow a derived file to sit in a public one.
 
 ### The checks
 
-| Check | Kind | Source |
+| Check | Kind | Done by |
 |---|---|---|
-| A and Z exist | hard | index, or the app's own data |
-| The provider faction is in A, the target faction is in Z | hard | index, or the EDDN faction ledger |
-| Z is within 20 ly of A | hard | coordinates from the index or the app's own data, **never from the report** |
-| Z has resource sites | hard | index, or `hunting_ground` |
-| The target faction is an Anarchy | soft (rank only) | index, or the EDDN faction ledger |
+| A and Z exist | hard | **job**, against the index |
+| The target faction is in Z, and is an Anarchy | hard | **job**, against the index |
+| Z is within 20 ly of A | hard | **job**, with the index's coordinates, **never the report's** |
+| The reported provider factions are still in A | soft (lowers the stack depth shown) | **job**, against the index |
+| Z has resource sites | hard | **app**, against `hunting_ground` (the dump has no resource sites) |
+| Pairs with a system missing from the index | the same hard checks | **app**, against its own data |
 
-"The app's own data" means the commander's journal (every FSDJump records the system and its coordinates),
+A pair that fails a hard check in the job is dropped. A pair with a system the index does not know (colonised
+after the dump, most likely) is published marked **`unindexed`**, and only the app can check it.
+
+"Its own data" means the commander's journal (every FSDJump records the system and its coordinates),
 `hunting_ground` (journal plus EDDN `fsssignaldiscovered`, with coordinates), and **a new EDDN faction
 ledger**. EDDN `FSDJump` messages carry each system's factions and their governments. The listener receives
-them already and keeps only the war and power data. Keeping the factions too covers systems colonised after
-the dump.
+them already and keeps only the war and power data. The ledger is needed only for `unindexed` pairs, so it
+can come after the first release.
 
 The one claim nothing can confirm is that A's factions actually offer massacre contracts against Z. To fake
 it, a forger has to name real factions in real systems within 20 ly of a real resource site. The worst
@@ -215,9 +255,9 @@ outcome is one commander's trip to a genuine resource site, followed by a blackl
 
 ### No timer
 
-- A pair that passes the checks is **shown**.
-- A pair that cannot be checked yet is **kept but hidden**. Storage is not a constraint, so nothing is decided
-  by a deadline.
+- A pair that passes the job's checks, and whose target the app knows to have resource sites, is **shown**.
+- A pair the app cannot check yet (no resource sites on file for Z, or `unindexed` and not covered by its own
+  data) is **kept but hidden**. Storage is not a constraint, so nothing is decided by a deadline.
 - When the commander's own data later covers the system, because they jump there or EDDN reports it, the pair
   appears.
 
@@ -253,7 +293,7 @@ What we use:
 - **Minting uids is limited to 100 anonymous sign-ups per hour per IP** (HTTP 429). That is plenty for a
   shared or carrier-grade NAT address, and it is what makes "junk stays in its author's document" hold up.
 - **The worst abuse is filling storage, not faking data.** One IP, minting 100 uids an hour with a
-  200 KB payload each, adds about 20 MB an hour, so 1 GiB in about two days. On Spark, a full database refuses
+  64 KB payload each, adds about 6.4 MB an hour, so 1 GiB in about a week. On Spark, a full database refuses
   writes and never bills. The nightly job watches how many new uids appear and how fast storage grows, and
   can delete everything those uids wrote. The kill switch stops honest clients writing in the meantime.
 - **Do not upgrade to Identity Platform.** It would add automatic cleanup of anonymous accounts, but it
@@ -303,15 +343,23 @@ has).
 
 ## The nightly job
 
-A scheduled GitHub Action holding a Firebase service account in the repo's secrets:
+**Built 2026-11-13** in the private repo `SudoKrondor/elite-intel-nightly` (Java 21, Gradle; its README
+covers running and maintaining it). It runs at 04:17 UTC, and on demand from **Run workflow**:
 
-1. Reads `reports` documents whose `updatedAt` is later than its last run, and merges them into the
-   previous `massacre-sets.json` (read back from `gh-pages`). A full rebuild from every document, done
-   occasionally, removes blocked uids.
-2. Drops any pair that fails a hard check against the index.
-3. Reads `installs` and builds `stats.json`. Up to about 40K installs a full read fits the free read quota.
-   Beyond that, it switches to `count()` aggregations.
-4. Commits the files to `gh-pages`.
+1. Reads **every** `installs` and `reports` document. That is one read per install plus one per sharing
+   install: a full read fits Spark's 50K/day up to about 40,000 installs, needs no state between runs, and
+   handles withdrawn reports and blocked uids (`config/blocked-uids.txt`) on its own. Switch to reading only
+   what changed (by `updatedAt`) when the stats approach that.
+2. Decodes each `pairs` string, dropping malformed entries one by one, merges all reporters per provider and
+   target system, and checks each set against the index (see [The checks](#the-checks)).
+3. Builds the stats row for the night and appends it to the existing `stats.json`.
+4. Writes `data/massacre-sets.json` and `ops-aec9172a/stats.json` (the unlisted stats folder) into a checkout
+   of `gh-pages`, and commits only if something changed. The sets are sorted, so an unchanged result is
+   byte-identical.
+
+Dry run (`--fixtures fixtures/sample`) on one commander's 103 real entries plus a forged and a malformed
+one: 33 of 33 real sets published, all indexed. The forged Shinrarta Dezhra → Sol pair was dropped for
+distance, the made-up target faction was filtered out, and the malformed entry was skipped.
 
 **Optional tidying:** drop pairs that still cannot be checked against the index after about 6 months. That
 is housekeeping, not a judgement about trust.
@@ -341,40 +389,112 @@ alerts only notify. Move only when the stats show the app has outgrown Spark.
 
 ## Before building
 
-- [ ] **Measure the distance rule** against the journals of Alan and his son: every provider-to-target
-      distance from their massacre contracts, using the provider coordinates in `massacre_mission` and the
-      target's in `hunting_ground`. Confirm 20 ly has room to spare.
-- [ ] **Check the Anarchy rule** against the same contracts: look up each target faction's government in the
-      dump. If all of them are Anarchy, it can become a hard check.
-- [ ] **Count the distinct pairs** in the same journals, and the encoded size of each, to set the length
-      limit on `reports/{uid}.pairs`.
-- [ ] **Build the verification index** from the dump, on the NAS.
-- [ ] Throwaway scripts for these stay out of the repo.
+- [x] **Distance rule** (2026-11-13): 33 pairs, 1.3 to 9.9 ly. 20 ly stays.
+- [x] **Anarchy rule**: 33 of 33 target factions are Anarchies and still in Z. It is now a hard check.
+- [x] **Report size**: 33 pairs, 103 entries, 7.3 KB. The limit is 64,000 characters.
+- [x] **Index pass**: 119,625 populated systems, 5.9 MB gzipped, no resource sites in the dump. The extract is
+      kept in `~/data/ed/massacre-analysis/`. It still has to be cut into the job's input format.
+- [ ] Only one commander's journals were in the archive (one FID). A second commander's data would widen the
+      sample.
+- Throwaway scripts stay out of the repo.
 
 ## Firebase setup (next session)
 
-- [ ] Create the project on **Spark**.
-- [ ] Create the `(default)` Firestore database in Native mode, multi-region **`nam5`**. Location does not
-      affect the free quota, and a multi-region has higher availability. **The location is permanent.**
-- [ ] Enable Anonymous sign-in. **Do not** upgrade to Identity Platform (see [Authentication](#authentication)).
-- [ ] Restrict the web API key to the Identity Toolkit and Firestore APIs.
-- [ ] Write and test the security rules (emulator).
-- [ ] Create the service account for the nightly job and add it to the repo's secrets. Give it **Cloud
-      Datastore User**, not Viewer, because the job deletes junk documents. Its reads count against Spark's
-      50K/day. `reports` is a top-level collection, so the `updatedAt` query needs only the automatic
-      single-field index.
+Done 2026-11-13, project `elite-intel-firebase`:
+
+- [x] Project on **Spark**.
+- [x] `(default)` Firestore database, Standard edition, multi-region **`nam5`**, created in production mode.
+- [x] Anonymous sign-in enabled. **Auto clean-up left off**: it deletes accounts 30 days after creation,
+      which would give every install a new uid each month. No Identity Platform upgrade.
+- [x] A Web app registered (that is what creates the API key). The key is restricted to **Identity Toolkit
+      API, Token Service API, Cloud Firestore API**, with no application restriction (a desktop app cannot
+      have one).
+- [x] Security rules published, and **13 of 13 live tests pass**: wrong uid, extra field, client timestamp,
+      bad OS, second write the same day, payload over 64,000 characters, wrong `format` type, any read,
+      unsigned write, and deleting `installs` are refused. Valid creates and deleting `reports` are allowed.
+      The update limit is **20 hours**, not 24, so a commander who starts the game a little earlier each
+      evening is not refused. The rules should also be committed to the repo, e.g. as `firestore.rules`.
+- [x] Service account `nightly-publisher` with **Cloud Datastore User** (it must delete junk). It has **no
+      key**. Its reads count against Spark's 50K/day. `reports` is a top-level collection, so the
+      `updatedAt` query needs only the automatic single-field index.
+- [x] The job lives in the **private** repo `SudoKrondor/elite-intel-nightly`, together with the
+      verification index. Nothing derived from the Spansh dump is published except the checked pairs.
+- [x] **Workload Identity Federation**: pool `github`, OIDC provider `elite-intel-nightly` (issuer
+      `https://token.actions.githubusercontent.com`), condition
+      `assertion.repository == 'SudoKrondor/elite-intel-nightly'`. `nightly-publisher` is connected to
+      `attribute.repository/SudoKrondor/elite-intel-nightly`. Provider name:
+      `projects/102163744490/locations/global/workloadIdentityPools/github/providers/elite-intel-nightly`.
+- [x] **Pushing to the site**: the organization has deploy keys switched off, so the job uses a **GitHub
+      App**, `elite-intel-nightly-publisher` (App ID 5752566). It is installed on `EliteIntel` only, with
+      Contents read and write. The `gh-pages` ruleset `web-site-main-protection` lets this app (and no deploy
+      key) bypass its pull-request rule. `master`, `V1.2` and `V1.1-Release` have their own rulesets without
+      that exception, so the app cannot push to them. Repo variable `PUBLISHER_APP_ID`, secret
+      `PUBLISHER_APP_PRIVATE_KEY`. Each run gets a one-hour token.
+- [x] Write the job and its workflow (17 unit tests, a dry run on real data).
+- [x] First manual run, 2026-11-14: every step passed (Google sign-in, Firestore read, app token, push).
+      The bot committed `20b617c` to `gh-pages`, and `https://www.elite-intel.org/data/massacre-sets.json`
+      is live with an empty `sets` list. There are no stats until the first ping arrives.
 - [ ] Set up the Action that writes to `gh-pages` (the site already serves `data/exomastery.json` from there).
 
-## What changes in the app (outline, V1.2)
+## The app (V1.2)
 
-- A **shared table of crowd-sourced pairs** (new `12XXX` migration), separate from `massacre_mission`, with
-  each pair's verification state. `findPairs` merges the commander's own pairs with the verified
-  crowd-sourced ones.
-- An **EDDN faction ledger** (system → factions, governments), filled silently from `FSDJump` like the other
-  EDDN ledgers.
-- The **verification index**, stored locally and replaced when the hosted one changes.
-- An **uploader** (stats ping, and the reports document when sharing is on) and a **daily fetch** (sets, index,
-  config), both non-blocking and failing silently.
-- A **sharing setting**, off by default, plus the VEGA hint when a search comes up empty.
-- **Speech** that marks crowd-sourced sets as reported by others, and localized strings for it.
-- **Privacy notes** on the site and in the release notes.
+**Built 2026-11-14** on branch `V1.2-crowdsourced-massacre-sets`:
+
+- **Migration `12023`** (shared): `global_settings.shareMassacreSets` (off), `community_sync` (one row: the
+  uid, the refresh token encrypted with `Cypher`, and when the ping, report and download last succeeded),
+  `crowd_massacre_set` (the downloaded sets, replaced wholesale).
+- **`elite.intel.community`**:
+  - `FirebaseClient`: sign-up, refresh and the three writes over REST
+  - `CommunityIdentity`: a new anonymous account when there is no usable refresh token
+  - `PairsPayload`: format 1, with entries the job would refuse left out, and the most recently seen kept if
+    a ledger ever outgrows 64,000 characters
+  - `PublishedFiles`: the sets, with ETag, and `config.json`, where a missing file means everything is on
+  - `CommunitySync`: hourly checks, the first two minutes after launch, plus an immediate pass when sharing
+    is toggled. Every step fails silently and is retried at the next check.
+- **The report covers every commander on the install** (`CommunityManager.shareable` reads the open
+  commander's file and each other `cmdr_*.db` through `Database.inCommanderFile`), so a journal import's
+  commanders are shared too. A target the commander forgot is still shared: forgetting is taste.
+- **The download happens whether or not the commander shares.** The pair search uses the sets only while they
+  share (`HuntingGroundManager`), where the commander's own pair wins a tie and replaces a report of the same
+  two systems. Without sharing, the sets only let `find_pirate_massacre_missions` add the sharing hint when
+  the commander's own record is empty and others reported sets in range.
+- **A downloaded set is offered only when** this commander's `hunting_ground` knows the target has resource
+  sites (not forgotten), and at least one reported provider faction is still in the provider system. Sets the
+  job marked `unindexed` are not stored yet.
+- **Speech:** `handler.pirate.pairReportedByOthers` and `handler.pirate.shareHint`, in all 9 languages.
+- **UI:** Commander → **Massacre Sets**:
+  - an on/off button with a status line beside it, like the Exo-Mastery page
+  - **Your sets:** sets you share (distinct provider and target pairs across every commander file) and when
+    they were last shared
+  - **From other commanders:** sets downloaded; usable here (the ones that pass this install's resource-site
+    check, so the ones VEGA can offer); when they were last updated; and commanders contributing
+  - "Commanders contributing" is the `contributors` count the nightly job publishes: the installs behind at
+    least one published set. It is stored by migration `12024`.
+  - refreshed after every sync pass (`CommunitySyncedEvent`)
+  - the intro also discloses the stats ping
+- **Install ID:** it lives in `database.db`, so Backup/Restore carries it. A token the restoring computer
+  cannot decrypt makes a new account, so a restore onto a second PC shows up as a new install.
+- **Tests:** 24 new (the encoder, the REST client and published files against WireMock, a full sync pass
+  over the in-memory database, and the merge into the pair search). The full suite of 5,707 passes.
+
+**On `gh-pages-1.2` (2026-11-14):**
+- The privacy policy, in all six site languages (`wiki/**/Privacy.md`, rebuilt with `node build.js`), now
+  covers the stats ping, opt-in massacre sets, Firebase, and how to delete data. It corrects the old
+  "nothing leaves the machine offline" and "no data is stored externally".
+- The unlisted stats page is `ops-aec9172a/index.html`:
+  - hand-written outside `wiki/`, so the build neither rebuilds nor deletes it, and it is not in the sitemap
+  - `noindex`, and deliberately not in `robots.txt`
+  - it reads `stats.json` from the same folder, which the nightly job writes on `gh-pages`, and shows a "no
+    pings yet" note until then
+
+**Not built yet:**
+- the EDDN faction ledger, for `unindexed` sets
+- `data/config.json` on the site (until then, everything counts as on)
+
+**Round trip:**
+1. Import a second commander's journals.
+2. Turn sharing on. This uploads at once and covers every commander file.
+3. Run the nightly workflow.
+4. Restore a database from before the import. That means a new uid and an empty download state.
+5. Start the app, turn sharing on, and ask for massacre missions near the imported commander's systems.
+   Their targets must also be in this database's `hunting_ground` to be offered.

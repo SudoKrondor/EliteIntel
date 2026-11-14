@@ -20,6 +20,8 @@ import java.util.List;
  * @param missionsCompleted contracts from this pairing the commander has actually finished, which is
  *                          what separates a pairing that works from one that was only ever tried
  * @param distanceLy        to the provider system, which is where the commander flies first
+ * @param reporters         0 for a pair from the commander's own record. Otherwise how many other installs
+ *                          reported it, and the commander has not confirmed it themselves, so VEGA says so
  */
 public record MassacrePair(String providerSystem,
                            List<String> providerFactions,
@@ -28,9 +30,14 @@ public record MassacrePair(String providerSystem,
                            String targetFaction,
                            ResourceSiteProfile sites,
                            int missionsCompleted,
-                           double distanceLy) {
+                           double distanceLy,
+                           int reporters) {
 
     public int stackDepth() {
         return providerFactions.size();
+    }
+
+    public boolean reportedByOthers() {
+        return reporters > 0;
     }
 }

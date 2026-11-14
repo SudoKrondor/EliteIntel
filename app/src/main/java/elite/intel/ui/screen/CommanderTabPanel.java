@@ -157,6 +157,7 @@ public class CommanderTabPanel extends JPanel {
     private ToggleTreePanel shipSettingsPanel;
     private ToggleTreePanel announcementsPanel;
     private ExoMasteryTabPanel exoMasteryPanel;
+    private MassacreSetsTabPanel massacreSetsPanel;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /**
@@ -305,6 +306,8 @@ public class CommanderTabPanel extends JPanel {
         tabs.addTab(getText("player.tab.announcements"), HudScrollingPage.scrollPane(buildAnnouncementsPanel()));
         exoMasteryPanel = new ExoMasteryTabPanel();
         tabs.addTab(getText("player.tab.exoMastery"), HudScrollingPage.scrollPane(exoMasteryPanel));
+        massacreSetsPanel = new MassacreSetsTabPanel();
+        tabs.addTab(getText("player.tab.massacreSets"), HudScrollingPage.scrollPane(massacreSetsPanel));
         // Like the fleet grid, a table that grows with the window: no scrolling page around it.
         tabs.addTab(getText("player.tab.bookmarks"), new LocationBookmarksTabPanel());
 
@@ -402,6 +405,7 @@ public class CommanderTabPanel extends JPanel {
         shipSettingsPanel.refresh();
         announcementsPanel.refresh();
         exoMasteryPanel.initData();
+        massacreSetsPanel.initData();
 
         String commanderName = playerSession.getInGameName();
         List<ShipDao.Ship> ships = (commanderName != null && !commanderName.isBlank())

@@ -1,5 +1,6 @@
 package elite.intel.db.managers;
 
+import elite.intel.db.dao.CrowdMassacreSetDao;
 import elite.intel.db.dao.HuntingGroundDao;
 import elite.intel.db.dao.HuntingGroundScanDao;
 import elite.intel.db.dao.LocationDao.Coordinates;
@@ -12,7 +13,11 @@ import elite.intel.gameapi.missions.ResourceSiteProfile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * What the commander has learned about where to hunt pirates, from their own flying.
@@ -23,7 +28,9 @@ import java.util.List;
  * A contract against a system that has never shown resource sites is not a pair, and is left on
  * file unpaired until the commander flies there and finds out either way.
  * <p>
- * Nothing here calls a network. It replaced a crowd-sourced pairing service that went quiet.
+ * Nothing here calls a network. It replaced a crowd-sourced pairing service that went quiet. While the commander
+ * shares their own sets, the searches also offer what other commanders reported (see {@code CommunitySync}), which
+ * this install downloaded beforehand.
  */
 public class HuntingGroundManager {
 
@@ -70,9 +77,42 @@ public class HuntingGroundManager {
         return pairs(from, targetSystem, Double.MAX_VALUE);
     }
 
+    /**
+     * Whether other commanders reported sets within {@code rangeLy} that this commander could use if they shared:
+     * what VEGA mentions when a search of the commander's own record comes up empty with sharing off.
+     */
+    public boolean othersReportedNear(Coordinates from, int rangeLy) {
+        if (from == null) return false;
+        return !crowdPairs(from, null, squared(rangeLy)).isEmpty();
+    }
+
+    /**
+     * The commander's own pairs, and while they share, the sets other commanders reported, deepest stack first.
+     * <p>
+     * WHY the commander's own pair wins a tie, and replaces a reported one for the same two systems: they have
+     * flown it, and the report is someone else's word.
+     */
     private List<MassacrePair> pairs(Coordinates from, String targetSystem, double maxDistanceSq) {
         if (from == null) return List.of();
+        List<MassacrePair> own = ownPairs(from, targetSystem, maxDistanceSq);
+        if (!GlobalSettingsManager.getInstance().getShareMassacreSets()) return own;
 
+        Set<String> known = new HashSet<>();
+        own.forEach(p -> known.add(pairKey(p)));
+        List<MassacrePair> all = new ArrayList<>(own);
+        crowdPairs(from, targetSystem, maxDistanceSq).stream()
+                .filter(p -> !known.contains(pairKey(p)))
+                .forEach(all::add);
+        return all.stream()
+                .sorted(Comparator.comparingInt(MassacrePair::stackDepth).reversed()
+                        .thenComparing(MassacrePair::reportedByOthers)
+                        .thenComparing(Comparator.comparingInt(MassacrePair::missionsCompleted).reversed())
+                        .thenComparingDouble(MassacrePair::distanceLy))
+                .limit(MAX_RESULTS)
+                .toList();
+    }
+
+    private List<MassacrePair> ownPairs(Coordinates from, String targetSystem, double maxDistanceSq) {
         List<MassacreMissionDao.Pair> rows = Database.withDao(MassacreMissionDao.class, dao ->
                 dao.findPairs(from.x(), from.y(), from.z(), maxDistanceSq, targetSystem, MAX_RESULTS));
 
@@ -86,10 +126,36 @@ public class HuntingGroundManager {
                     row.targetFaction(),
                     new ResourceSiteProfile(row.standard(), row.low(), row.high(), row.hazardous()),
                     row.missionsCompleted(),
-                    Math.sqrt(row.distanceSq())
+                    Math.sqrt(row.distanceSq()),
+                    0
             ));
         }
         return pairs;
+    }
+
+    private List<MassacrePair> crowdPairs(Coordinates from, String targetSystem, double maxDistanceSq) {
+        List<CrowdMassacreSetDao.Pair> rows = Database.withDao(CrowdMassacreSetDao.class, dao ->
+                dao.findPairs(from.x(), from.y(), from.z(), maxDistanceSq, targetSystem, MAX_RESULTS));
+
+        List<MassacrePair> pairs = new ArrayList<>();
+        for (CrowdMassacreSetDao.Pair row : rows) {
+            pairs.add(new MassacrePair(
+                    row.providerSystem(),
+                    split(row.providerFactions()),
+                    split(row.stations()),
+                    row.targetSystem(),
+                    row.targetFaction(),
+                    new ResourceSiteProfile(row.standard(), row.low(), row.high(), row.hazardous()),
+                    0,
+                    Math.sqrt(row.distanceSq()),
+                    row.reporters()
+            ));
+        }
+        return pairs;
+    }
+
+    private static String pairKey(MassacrePair pair) {
+        return (pair.providerSystem() + "|" + pair.targetSystem()).toLowerCase(Locale.ROOT);
     }
 
     /**

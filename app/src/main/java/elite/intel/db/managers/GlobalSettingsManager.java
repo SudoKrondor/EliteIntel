@@ -1,7 +1,9 @@
 package elite.intel.db.managers;
 
+import elite.intel.community.MassacreSetSharingChangedEvent;
 import elite.intel.db.dao.GlobalSettingsDao;
 import elite.intel.db.util.Database;
+import elite.intel.eventbus.GameEventBus;
 
 public class GlobalSettingsManager {
     private static volatile GlobalSettingsManager instance;
@@ -240,5 +242,23 @@ public class GlobalSettingsManager {
 
     public boolean getAiBountyKillGloat() {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAiBountyKillGloat());
+    }
+
+    /**
+     * Turns sharing of massacre sets on or off, and tells the community sync so it uploads or withdraws the
+     * report straight away.
+     */
+    public void setShareMassacreSets(boolean share) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setShareMassacreSets(share);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+        GameEventBus.publish(new MassacreSetSharingChangedEvent(share));
+    }
+
+    public boolean getShareMassacreSets() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isShareMassacreSets());
     }
 }

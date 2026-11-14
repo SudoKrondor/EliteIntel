@@ -382,6 +382,26 @@ public class Database {
     }
 
     /**
+     * The commanders with a file of their own beside the shared one, other than the commander whose file is open
+     * and the {@value #PENDING_COMMANDER} file: the commanders {@link #inCommanderFile} can be asked about.
+     * <p>
+     * WHY empty under test: there the commander files are named in-memory databases, and there is no folder to
+     * list.
+     */
+    public static List<String> otherCommandersOnDisk() throws IOException {
+        if (System.getProperty(COMMANDER_URL_PROPERTY) != null) return List.of();
+        String open = currentCommander();
+        try (var files = Files.list(AppPaths.getDatabasePath().getParent())) {
+            return files.map(f -> f.getFileName().toString())
+                    .filter(name -> name.startsWith("cmdr_") && name.endsWith(".db"))
+                    .map(name -> name.substring("cmdr_".length(), name.length() - ".db".length()))
+                    .filter(fid -> isUsableFid(fid) && !PENDING_COMMANDER.equals(fid) && !fid.equals(open))
+                    .sorted()
+                    .toList();
+        }
+    }
+
+    /**
      * An FID becomes part of a file name, so anything but the letters and digits Frontier uses is refused rather
      * than trusted.
      */

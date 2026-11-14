@@ -33,7 +33,8 @@ public interface GlobalSettingsDao {
                                                                 announceFuelAvailable,
                                                                 announceArrival,
                                                                 aiRespondsToPirateScan,
-                                                                aiBountyKillGloat)
+                                                                aiBountyKillGloat,
+                                                                shareMassacreSets)
                     VALUES (1, :autoSpeedUpForFtl,
                                 :autoLightsForFtl,
                                 :autoNightVisionOff,
@@ -50,7 +51,8 @@ public interface GlobalSettingsDao {
                                 :announceFuelAvailable,
                                 :announceArrival,
                                 :aiRespondsToPirateScan,
-                                :aiBountyKillGloat)
+                                :aiBountyKillGloat,
+                                :shareMassacreSets)
             """)
     void save(@BindBean GlobalSettings settings);
 
@@ -76,6 +78,7 @@ public interface GlobalSettingsDao {
             entity.setAnnounceArrival(rs.getBoolean("announceArrival"));
             entity.setAiRespondsToPirateScan(rs.getBoolean("aiRespondsToPirateScan"));
             entity.setAiBountyKillGloat(rs.getBoolean("aiBountyKillGloat"));
+            entity.setShareMassacreSets(rs.getBoolean("shareMassacreSets"));
             return entity;
         }
     }
@@ -99,6 +102,7 @@ public interface GlobalSettingsDao {
         boolean announceArrival;
         boolean aiRespondsToPirateScan;
         boolean aiBountyKillGloat;
+        boolean shareMassacreSets;
 
         public boolean isAutoSpeedUpForFtl() {
             return autoSpeedUpForFtl;
@@ -234,6 +238,14 @@ public interface GlobalSettingsDao {
 
         public void setAiBountyKillGloat(boolean aiBountyKillGloat) {
             this.aiBountyKillGloat = aiBountyKillGloat;
+        }
+
+        public boolean isShareMassacreSets() {
+            return shareMassacreSets;
+        }
+
+        public void setShareMassacreSets(boolean shareMassacreSets) {
+            this.shareMassacreSets = shareMassacreSets;
         }
     }
 }

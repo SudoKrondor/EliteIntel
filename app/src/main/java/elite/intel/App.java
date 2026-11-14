@@ -14,6 +14,7 @@ import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;
+import elite.intel.community.CommunitySync;
 import elite.intel.gameapi.eddn.EddnListener;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
@@ -104,6 +105,10 @@ public class App {
         // Listen to the EDDN relay for where the resource sites and the wars are. Subscribe-only,
         // silent, one daemon thread: the app is whole without it and just learns more slowly.
         EddnListener.getInstance().start();
+
+        // The daily stats ping, and the massacre sets traded with other installs while the commander shares.
+        // Background and silent: the app is whole without it.
+        CommunitySync.getInstance().start();
 
         // Event subscribers
         SubscriberRegistration.registerSubscribers();
