@@ -6,7 +6,10 @@ EliteIntel verfolgt Piraten-Massaker-Missionen, einschließlich Kill-Zählungen,
 
 Um Piraten-Massaker-Missionen effizient abzuschließen:
 
-1. **Finde einen Hotspot**: Nutze [INARA](https://inara.cz), um ein System mit einem Gefährlichen Ressourcenabbaugebiet (Haz RES) zu finden, in dem mehrere Fraktionen Missionen gegen dieselbe Piratenfraktion anbieten. Akzeptiere mehrere Missionen gegen dieselbe Fraktion. EliteIntel verfolgt die Zielfraktion, die Kill-Anzahl und die Auszahlungsdetails.
+1. **Finde ein Set**: Frage ``finde piraten massaker missionen`` (siehe *Massaker-Sets finden* unten) oder suche eines auf
+   [INARA](https://inara.cz): ein System, in dem mehrere Fraktionen Missionen gegen dieselbe Piratenfraktion anbieten,
+   neben einem System mit einem Ressourcenabbaugebiet (RES). Nimm so viele Missionen gegen diese Fraktion an wie
+   möglich. EliteIntel verfolgt die Zielfraktion, die Kill-Anzahl und die Auszahlungsdetails.
 2. **Missionsstatus abfragen**: Nachdem du Missionen angenommen hast, stelle EliteIntel Fragen wie ``Wie viele Kills sind noch übrig für Piratenmissionen?`` oder ``Was ist die Auszahlung des Piraten-Massakers?`` EliteIntel gibt die Gesamtzahl der benötigten Kills, potenzielle Credits und eine fraktionsweise Aufschlüsselung zurück. Gib an, dass die Anfrage piratenbezogen ist, um Verwechslungen mit anderen Missionstypen zu vermeiden.
 
 ## Piraten im Haz RES bekämpfen
@@ -24,27 +27,89 @@ Um Piraten-Massaker-Missionen effizient abzuschließen:
 
 _**Löse alle Kopfgelder ein, bevor du deine privaten Massaker-Missionen aufnimmst**_  ein bestätigter Kill ist ein Kopfgeldgutschein gegen die Fraktion
 
-- **Missions-Stacking**: Das Annehmen mehrerer Missionen gegen dieselbe Fraktion erhöht die Credit-Effizienz. Nutze INARA, um Systeme mit mehreren qualifizierten Missionsanbietern zu identifizieren.
+- **Missions-Stacking**: Das Annehmen mehrerer Missionen gegen dieselbe Fraktion erhöht die Credit-Effizienz. Frage
+  EliteIntel nach dem tiefsten Stapel in der Nähe (siehe *Massaker-Sets finden* unten).
 - **Natürlichsprachliche Abfragen**: Natürliche Sprache wird akzeptiert. ``Wie viele Piraten sind noch zu töten?`` und ``Piraten-Missionspunktzahl?`` sind beide gültig. Gib an, dass die Anfrage piratenbezogen ist, um Verwechslungen mit anderen aktiven Missionen zu vermeiden.
 - **Persönlichkeitswechsel**: Wechsle je nach Bedarf zwischen Persönlichkeitsmodi, um deinen aktuellen Spielstil zu unterstützen.
 
 
 ---
 
-# Piraten-Massaker-Missionen finden
-## Experimentelle Funktion
+# Massaker-Sets finden
 
-Derzeit bleibt die manuelle Suche in INARA nach Piraten-Missions-Stacking die effektivste Methode zur Kopfgeldjagd. Die App verfügt jedoch über eine experimentelle Funktion basierend auf IN**T**RA-Daten (nicht IN**A**RA). Dies ist eine weniger effiziente, aber immersivere Methode zur Kopfgeldjagd, die jedoch von der Datenverfügbarkeit in IN**T**RA und der Betriebsbereitschaft ihrer Website abhängt.
+Ein **Massaker-Set** besteht aus einem Missionsgeber und einem Jagdgebiet: Fraktionen in einem System bieten
+Piraten-Massaker-Missionen gegen eine Piratenfraktion in einem nahen System an, und dieses System hat ein
+Ressourcenabbaugebiet (RES), in dem gejagt wird. Je mehr Fraktionen im Missionsgeber-System Aufträge vergeben, desto
+tiefer der Stapel: Ihre Missionen laufen nebeneinander, sodass dieselben Abschüsse mehrfach bezahlt werden.
 
-Um diese Funktion zu nutzen, besteige dein Kopfgeldjäger-Schiff und frage ``Finde uns einige Jagdgebiete (innerhalb von X Lichtjahren)``  das Schiff wird versuchen, eine Verbindung zu IN**T**RA herzustellen und die Paare aus Zielsystem / Missionsanbieter-System abzurufen. Erfolg oder Misserfolg hängt davon ab, ob die IN**T**RA-API Daten zurückgibt und wie viele andere Kopfgeldjäger EDMC mit dem IN**T**RA-Plugin verwenden.
+## Wie EliteIntel Sets lernt
 
-Wenn und falls diese Daten an dich zurückgegeben werden, teilt dir der Schiffscomputer mit, dass er X Jagdgebiete gefunden hat. Frage ``plane eine Route zum Jagdgebiet zur Aufklärung``. Elite Intel plant die Route zum nächstgelegenen Jagdgebiet auf der Liste. Du musst dorthin fliegen und die Anwesenheit des Ressourcenstandorts bestätigen. Wenn es einen gibt und die Spawn-Rate deinen Vorstellungen entspricht, bestätige oder lehne dieses System als potenzielles Jagdgebiet per Sprachbefehl ab.
+EliteIntel lernt Sets aus deinen eigenen Flügen. Keine Website und kein Konto sind nötig.
 
-Elite Intel kann es automatisch als Jagdgebiet bestätigen, wenn es beim Eintritt oder beim Scan des Navigationssignals RES-Standorte im Journal erkennt. Es gibt Fälle, in denen dies nicht geschieht, weil das Spiel keine RES-Standort-Einträge ins Journal schreibt. Dann ist eine manuelle Bestätigung erforderlich.
+- **Missionen, die du annimmst.** Wenn du eine Piraten-Massaker-Mission annimmst, merkt sich EliteIntel das
+  Missionsgeber-System, die Station, die Fraktion und das Ziel.
+- **Ressourcenabbaugebiete, die du siehst.** Wenn du in einem System ankommst, listet das Spiel seine Signalquellen
+  auf, Ressourcenabbaugebiete eingeschlossen. EliteIntel erfährt außerdem von den Ressourcenabbaugebieten, die die
+  Spiele anderer Kommandanten an EDDN melden, das öffentliche Datennetz von Elite Dangerous. So kennt es auch Systeme,
+  in denen du nie warst.
 
-Sobald du mit dem Jagdgebiet zufrieden bist, frage ``navigiere zum Piraten-Massaker-Missionsanbieter-System`` oder etwas Ähnliches. Die App plant eine Route zum Missionsanbieter-System. Fliege dorthin, lande in den Ports und nehme Missionen gegen Piraten für dieselbe Fraktion und denselben Standort des Jagdgebiet-Systems an. Wenn du deine erste Massaker-Mission aufnimmst, wird dieses Systempaar als Jagdgebiet / Missionsanbieter bestätigt. Die App teilt dir mit, ob es andere Systeme gibt, die sie kennt, die Missionen gegen dieselbe Fraktion im Zielsystem haben  vorausgesetzt natürlich, IN**T**RA verfügt über diese Daten.
+Ein Set braucht beide Hälften. Eine Mission gegen ein System ohne bekanntes Ressourcenabbaugebiet bleibt gespeichert,
+wird aber erst angeboten, wenn dort ein Ressourcenabbaugebiet gesehen wurde.
 
-Wenn du deine Missionen gestapelt hast, frage ``plane Route zur aktiven Mission`` und schieße auf Piraten wie gewohnt. Wenn du die Missionen abgeschlossen hast, bringt dich dieselbe Anfrage ``plane Route zur aktiven Mission`` zu dem Ort, an dem sich das Ziel befindet  diesmal der Port, an dem du den Auftrag angenommen hast.
+**Fang mit deiner Geschichte an.** Deine alten Journale enthalten Jahre davon. Nutze **Alte Journale importieren** im
+[Reiter Kommandant](UI-Commander-Tab.html) oder sage ``journale nach jagdgebieten durchsuchen``.
+
+## Nach einem Set fragen
+
+| Sage | Was passiert |
+|---|---|
+| ``finde piraten massaker missionen innerhalb von 50 lichtjahren`` | Vega nennt das beste Set in Reichweite: das Missionsgeber-System und wie viele Fraktionen dort Aufträge vergeben, die Piratenfraktion und das Zielsystem, seine Ressourcenabbaugebiete und welche Stationen du anfliegen sollst. Tiefere Stapel zuerst, dann nähere. Ohne Reichweite sucht es 100 Lichtjahre weit. |
+| ``navigiere zum piraten missionsgeber`` | Plant eine Route zu einem Missionsgeber: zuerst zu einem für die Missionen, die du schon hast, dann zu einem für das Jagdgebiet, in dem du bist, dann zum besten Set in der Nähe. Eine Erinnerung nennt das Zielsystem. |
+| ``navigiere zum piraten missionsziel`` | Plant eine Route zum Jagdgebiet der Missionen, die du hast. |
+| ``jagdgebiet finden`` | Das nächste Ressourcenabbaugebiet, das sich allein für Kopfgelder lohnt, ohne Missionen. |
+| ``dieses jagdgebiet vergessen`` | In einem Jagdgebiet gesagt, das dir nicht gefällt (zu leicht, zu schwer, zu weit vom Stern, die falsche Macht). Vega fragt zuerst und bietet es danach nie wieder an, auch kein Set, das dich dorthin schickt. |
+
+## Sets mit anderen Kommandanten teilen
+
+Das Teilen ist aus, bis du es auf der Seite **Massaker-Sets** im [Reiter Kommandant](UI-Commander-Tab.html) einschaltest.
+
+Es gilt in beide Richtungen: **Solange du teilst, bekommst du auch die Sets, die andere Kommandanten geteilt haben.**
+Je mehr Kommandanten teilen, desto mehr Sets gibt es für alle.
+
+**Was geteilt wird:** für jedes Set die Namen von Sternsystemen, Fraktionen und Stationen, wie viele
+Ressourcenabbaugebiete jeder Stufe das Ziel hat, und der Tag, an dem das Set zuletzt gesehen wurde. Jeder Kommandant
+auf deinem Computer zählt mit, auch importierte.
+
+**Was nie geteilt wird:** dein Kommandantenname, deine Missionen, Belohnungen oder sonst etwas, das verrät, wer du
+bist. Siehe die [Datenschutzrichtlinie](Privacy.html).
+
+Was mit den Sets passiert:
+
+1. Deine Sets werden hochgeladen, wenn du das Teilen einschaltest, und danach höchstens einmal am Tag, wenn du neue
+   gelernt hast.
+2. Jede Nacht werden die Sets aller Kommandanten mit Galaxiedaten abgeglichen. Die Systeme müssen existieren, das Ziel
+   darf höchstens 20 Lichtjahre vom Missionsgeber entfernt sein, und die Piratenfraktion muss wirklich im Zielsystem
+   sein und eine Anarchie sein. Sets, die durchfallen, werden verworfen. Der Rest wird veröffentlicht, ohne zu sagen,
+   wer ihn geschickt hat.
+3. Einmal am Tag lädt EliteIntel die veröffentlichten Sets herunter. Wenn du nach einem Set fragst, werden sie neben
+   deinen eigenen angeboten.
+
+**Ein geteiltes Set wird nur angeboten, wenn deine eigenen Daten ein Ressourcenabbaugebiet in seinem Ziel zeigen**,
+aus deinen Besuchen oder von EDDN. Das ist das Einzige, was Galaxiedaten nicht prüfen können. Taucht ein geteiltes Set
+nicht auf, flieg zu seinem Zielsystem oder warte, bis EDDN es meldet.
+
+**Vega sagt dir, wenn ein Set von anderen Kommandanten stammt.** Betrachte es als Hinweis, den du prüfst, nicht als
+etwas, das du selbst geflogen bist. Gefällt es dir nicht, funktioniert ``dieses jagdgebiet vergessen`` genauso wie bei
+deinen eigenen Sets.
+
+**Deine eigenen Daten gehen vor.** Wenn du ein Set selbst kennst, wird deine Version verwendet, und bei gleich tiefen
+Sets werden deine vor gemeldeten angeboten.
+
+Wenn du nicht teilst und EliteIntel kein Set in der Nähe kennt, sagt dir Vega, wenn andere Kommandanten in der Gegend
+welche gemeldet haben.
+
+Schaltest du das Teilen aus, werden deine Sets aus den geteilten Daten entfernt, und EliteIntel nutzt die der anderen
+nicht mehr.
 
 ----
 Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

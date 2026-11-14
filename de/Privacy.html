@@ -98,10 +98,10 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>EliteIntel Datenschutzrichtlinie</h1>
 <p>Diese Richtlinie erläutert, welche Daten verarbeitet werden, wie sie verwendet werden und welche Wahlmöglichkeiten bestehen.</p>
-<p><em>Zuletzt aktualisiert: 5. November 2026</em></p>
+<p><em>Zuletzt aktualisiert: 14. November 2026</em></p>
 <h2>Überblick</h2>
 <p>EliteIntel ist eine Open-Source-Anwendung, die auf <a href="https://github.com/stone-alex/EliteIntel">GitHub</a> verfügbar ist. Sie verwendet Sprache-zu-Text (STT), Text-zu-Sprache (TTS) und große Sprachmodelle (LLM), um Spieldaten zu verarbeiten.</p>
-<p>Die App kann vollständig offline betrieben werden, indem lokale STT (NVIDIA Parakeet), ein lokales LLM (LM Studio) und lokale TTS (Supertonic) verwendet werden. In dieser Konfiguration verlässt kein Datum das Gerät. Bei Nutzung von Cloud-Diensten werden Daten wie unten beschrieben übertragen.</p>
+<p>Die App kann vollständig offline betrieben werden, indem lokale STT (NVIDIA Parakeet), ein lokales LLM (LM Studio) und lokale TTS (Supertonic) verwendet werden. In dieser Konfiguration verlässt außer der unten beschriebenen täglichen Installationszählung nichts das Gerät. Bei Nutzung von Cloud-Diensten werden Daten wie unten beschrieben übertragen.</p>
 <h2>Welche Daten werden verarbeitet?</h2>
 <p>Es werden keine personenbezogenen Daten erfasst, darunter Namen, Adressen oder Standortdaten. Folgende Datentypen werden verarbeitet:</p>
 <ul>
@@ -110,6 +110,10 @@
 <li><p><strong>Textdaten (TTS)</strong>: Bei Verwendung von Google TTS wird der Antworttext an Google gesendet. Bei Verwendung von Supertonic TTS verlässt kein Datum das Gerät.</p>
 </li>
 <li><p><strong>Spieldaten (LLM)</strong>: Relevante Spieldaten (Missionsdetails, Marktdaten, Scanergebnisse usw.) werden an das konfigurierte LLM gesendet. Der Commander-Name wird nie übertragen. Die KI spricht dich mit deinem konfigurierten Titel, Anrede oder Spitznamen an.</p>
+</li>
+<li><p><strong>Installationsstatistik</strong>: Einmal am Tag sendet die App ihre Versionsnummer und ihr Betriebssystem (Windows oder Linux) an Google Firebase, unter einer zufälligen anonymen Kennung, die für diese Installation erzeugt wurde. Sonst wird nichts gesendet: kein Commander-Name, keine Spieldaten, keine Einstellungen. Sie dient nur dazu, zu zählen, wie viele Installationen aktiv sind und mit welcher Version und welchem Betriebssystem.</p>
+</li>
+<li><p><strong>Massaker-Sets (nur mit Zustimmung)</strong>: Nur solange das Teilen eingeschaltet ist (Tab Kommandant, Seite Massaker-Sets, standardmäßig aus), sendet die App die Piraten-Massaker-Sets, die sie aus den Journalen gelernt hat: Namen von Sternsystemen, Fraktionen und Stationen, die Zahl der Ressourcenabbaugebiete und den Tag, an dem ein Set zuletzt gesehen wurde. Kein Commander-Name, keine Missions-ID, keine Belohnung und nichts anderes, das einen Spieler erkennbar macht, wird gesendet. Die Sets aller Installationen werden geprüft und unter <a href="https://www.elite-intel.org/data/massacre-sets.json">elite-intel.org/data/massacre-sets.json</a> veröffentlicht, ohne anzugeben, wer sie gemeldet hat.</p>
 </li>
 </ul>
 <h2>Wie werden diese Daten verwendet?</h2>
@@ -127,15 +131,17 @@
 </li>
 <li><p><strong>xAI / OpenAI / Anthropic (LLM)</strong>: Auszüge aus Spieldaten werden an das jeweilige konfigurierte Cloud-LLM gesendet. Unterliegen den jeweiligen Datenschutzrichtlinien.</p>
 </li>
-<li><p><strong>Nirgendwo sonst</strong>: Es werden keine Daten extern gespeichert, verkauft oder an Dritte weitergegeben. Der vollständige Quellcode ist unter <a href="https://github.com/stone-alex/EliteIntel">github.com/stone-alex/EliteIntel</a> verfügbar.</p>
+<li><p><strong>Google Firebase (Installationsstatistik und Massaker-Sets)</strong>: Gespeichert in Google Cloud Firestore unter der anonymen Installationskennung. Jede Installation kann nur ihre eigenen Einträge schreiben, und über die App kann nichts zurückgelesen werden. Ein nächtlicher Job der EliteIntel-Betreuer liest sie, um die zusammengefassten Zahlen und die geprüften Sets zu veröffentlichen. Wie bei jeder Internetanfrage sieht Google die IP-Adresse der Verbindung; dafür gilt die <a href="https://policies.google.com/privacy">Datenschutzrichtlinie von Google</a>. EliteIntel speichert sie nicht.</p>
+</li>
+<li><p><strong>Nirgendwo sonst</strong>: Es werden keine Daten verkauft oder an Dritte weitergegeben. Der vollständige Quellcode ist unter <a href="https://github.com/stone-alex/EliteIntel">github.com/stone-alex/EliteIntel</a> verfügbar.</p>
 </li>
 </ul>
 <h2>Rechte und Auswahlmöglichkeiten</h2>
 <ul>
 <li><strong>Code einsehen</strong>: Der vollständige Quellcode ist auf GitHub verfügbar.</li>
-<li><strong>Vollständig offline gehen</strong>: Parakeet, LM Studio und Supertonic verwenden. In dieser Konfiguration werden keine Daten übertragen.</li>
+<li><strong>Vollständig offline gehen</strong>: Parakeet, LM Studio und Supertonic verwenden. Außer der täglichen Installationszählung werden in dieser Konfiguration keine Daten übertragen.</li>
 <li><strong>Anbieter konfigurieren</strong>: Wähle, welches Cloud-LLM verwendet werden soll, falls überhaupt. API-Schlüssel werden in der lokalen Datenbank verwaltet.</li>
-<li><strong>Daten löschen</strong>: Es werden keine Daten extern gespeichert. Für Daten, die bei Google, xAI, OpenAI oder Anthropic gespeichert sind, bitte die jeweiligen Richtlinien beachten.</li>
+<li><strong>Daten löschen</strong>: Wenn du das Teilen der Massaker-Sets ausschaltest, werden die Sets dieser Installation aus Firebase gelöscht. Die Installationsstatistik enthält keine personenbezogenen Daten. Für Daten, die bei Google, xAI, OpenAI oder Anthropic gespeichert sind, bitte die jeweiligen Richtlinien beachten.</li>
 </ul>
 <h2>Sicherheit</h2>
 <p>API-Schlüssel werden verschlüsselt in einer lokalen Datenbank gespeichert und nur in Anfrage-Headern übertragen. Die App hält die Nutzungsbedingungen von Elite Dangerous ein. Sie liest keinen Spielspeicher aus und verwendet keine Overlays. Der Open-Source-Quellcode ermöglicht eine Überprüfung durch die Community.</p>

@@ -98,10 +98,10 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Politique de confidentialité d&#39;EliteIntel</h1>
 <p>Cette politique explique quelles données sont traitées, comment elles sont utilisées, et quels choix sont disponibles.</p>
-<p><em>Dernière mise à jour : 5 novembre 2026</em></p>
+<p><em>Dernière mise à jour : 14 novembre 2026</em></p>
 <h2>Vue d&#39;ensemble</h2>
 <p>EliteIntel est une application open source disponible sur <a href="https://github.com/stone-alex/EliteIntel">GitHub</a>. Elle utilise la reconnaissance vocale (STT), la synthèse vocale (TTS) et des grands modèles de langage (LLM) pour traiter les données du jeu.</p>
-<p>L&#39;application peut fonctionner entièrement hors ligne en utilisant un STT local (NVIDIA Parakeet), un LLM local (LM Studio) et un TTS local (Supertonic TTS). Aucune donnée ne quitte la machine dans cette configuration. Lorsque des services cloud sont utilisés, les données sont transmises comme décrit ci-dessous.</p>
+<p>L&#39;application peut fonctionner entièrement hors ligne en utilisant un STT local (NVIDIA Parakeet), un LLM local (LM Studio) et un TTS local (Supertonic TTS). Dans cette configuration, rien ne quitte la machine à part le décompte quotidien des installations décrit ci-dessous. Lorsque des services cloud sont utilisés, les données sont transmises comme décrit ci-dessous.</p>
 <h2>Quelles données sont traitées ?</h2>
 <p>Aucune information personnelle n&#39;est collectée, y compris les noms, adresses ou données de localisation. Les types de données suivants sont traités :</p>
 <ul>
@@ -110,6 +110,10 @@
 <li><p><strong>Données textuelles (TTS)</strong> : Lors de l&#39;utilisation de Google TTS, le texte de la réponse est envoyé à Google. Lors de l&#39;utilisation de Supertonic TTS, aucune donnée ne quitte la machine.</p>
 </li>
 <li><p><strong>Données de jeu (LLM)</strong> : Les données de jeu pertinentes (détails des missions, données de marché, résultats de scan, etc.) sont envoyées au LLM configuré. Le nom du Commander n&#39;est jamais transmis. L&#39;IA vous désigne par le titre, le grade honorifique ou le surnom que vous avez configuré.</p>
+</li>
+<li><p><strong>Statistiques d&#39;installation</strong> : Une fois par jour, l&#39;application envoie son numéro de version et son système d&#39;exploitation (Windows ou Linux) à Google Firebase, sous un identifiant anonyme aléatoire créé pour cette installation. Rien d&#39;autre n&#39;est envoyé : ni nom de Commander, ni données de jeu, ni réglages. Cela sert uniquement à compter combien d&#39;installations sont actives, et avec quelle version et quel système d&#39;exploitation.</p>
+</li>
+<li><p><strong>Ensembles de massacre (sur consentement)</strong> : Uniquement lorsque le partage est activé (onglet Commandant, page Ensembles de massacre, désactivé par défaut), l&#39;application envoie les ensembles de missions de massacre de pirates qu&#39;elle a appris des journaux : noms des systèmes stellaires, des factions et des stations, nombre de sites d&#39;extraction de ressources, et le jour où un ensemble a été vu pour la dernière fois. Aucun nom de Commander, identifiant de mission, récompense ni rien d&#39;autre permettant d&#39;identifier un joueur n&#39;est envoyé. Les ensembles de toutes les installations sont vérifiés et publiés sur <a href="https://www.elite-intel.org/data/massacre-sets.json">elite-intel.org/data/massacre-sets.json</a>, sans indiquer qui les a signalés.</p>
 </li>
 </ul>
 <h2>Comment ces données sont-elles utilisées ?</h2>
@@ -127,15 +131,17 @@
 </li>
 <li><p><strong>xAI / OpenAI / Anthropic (LLM)</strong> : Les extraits de données de jeu sont envoyés au LLM cloud configuré. Régis par leurs politiques de confidentialité respectives.</p>
 </li>
-<li><p><strong>Nulle part ailleurs</strong> : Aucune donnée n&#39;est stockée en externe, vendue ou partagée avec des tiers. Le code source complet est disponible sur <a href="https://github.com/stone-alex/EliteIntel">github.com/stone-alex/EliteIntel</a>.</p>
+<li><p><strong>Google Firebase (statistiques d&#39;installation et ensembles de massacre)</strong> : Stockés dans Google Cloud Firestore sous l&#39;identifiant anonyme de l&#39;installation. Chaque installation ne peut écrire que ses propres enregistrements, et rien ne peut être relu par l&#39;application. Une tâche nocturne gérée par les mainteneurs d&#39;EliteIntel les lit pour publier les décomptes combinés et les ensembles vérifiés. Comme pour toute requête internet, Google voit l&#39;adresse IP de connexion, régie par la <a href="https://policies.google.com/privacy">Politique de confidentialité de Google</a>. EliteIntel ne la conserve pas.</p>
+</li>
+<li><p><strong>Nulle part ailleurs</strong> : Aucune donnée n&#39;est vendue ou partagée avec des tiers. Le code source complet est disponible sur <a href="https://github.com/stone-alex/EliteIntel">github.com/stone-alex/EliteIntel</a>.</p>
 </li>
 </ul>
 <h2>Droits et choix</h2>
 <ul>
 <li><strong>Inspecter le code</strong> : Le code source complet est disponible sur GitHub.</li>
-<li><strong>Passer entièrement hors ligne</strong> : Utilisez Parakeet, LM Studio et Supertonic TTS. Aucune donnée n&#39;est transmise dans cette configuration.</li>
+<li><strong>Passer entièrement hors ligne</strong> : Utilisez Parakeet, LM Studio et Supertonic TTS. À part le décompte quotidien des installations, aucune donnée n&#39;est transmise dans cette configuration.</li>
 <li><strong>Configurer les fournisseurs</strong> : Sélectionnez le LLM cloud à utiliser, le cas échéant. Les clés API sont gérées dans la base de données locale.</li>
-<li><strong>Supprimer vos données</strong> : Aucune donnée n&#39;est stockée en externe. Pour les données détenues par Google, xAI, OpenAI ou Anthropic, référez-vous à leurs politiques respectives.</li>
+<li><strong>Supprimer vos données</strong> : Désactiver le partage des ensembles de massacre supprime de Firebase les ensembles de cette installation. Les statistiques d&#39;installation ne contiennent aucune donnée personnelle. Pour les données détenues par Google, xAI, OpenAI ou Anthropic, référez-vous à leurs politiques respectives.</li>
 </ul>
 <h2>Sécurité</h2>
 <p>Les clés API sont stockées de manière chiffrée dans une base de données locale et transmises uniquement dans les en-têtes de requête. L&#39;application respecte les Conditions d&#39;utilisation d&#39;Elite Dangerous. Elle ne lit pas la mémoire du jeu et n&#39;utilise pas d&#39;overlays. Le code source ouvert permet la révision par la communauté.</p>

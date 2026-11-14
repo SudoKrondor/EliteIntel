@@ -6,7 +6,10 @@ EliteIntel rastrea las Misiones de Masacre de Piratas, incluyendo el recuento de
 
 Para completar eficientemente las Misiones de Masacre de Piratas:
 
-1. **Encuentra un Punto Caliente**: Usa [INARA](https://inara.cz) para encontrar un sistema con un Sitio de Extracción de Recursos Peligroso (Haz RES) donde múltiples facciones ofrezcan misiones contra la misma facción pirata. Acepta múltiples misiones contra la misma facción. EliteIntel rastrea la facción objetivo, el recuento de bajas y los detalles de pago.
+1. **Encuentra un conjunto**: Pide ``buscar misiones de masacre de piratas`` (ver *Encontrar conjuntos de masacre* más
+   abajo) o busca uno en [INARA](https://inara.cz): un sistema donde varias facciones ofrecen misiones contra la misma
+   facción pirata, junto a un sistema con un Sitio de Extracción de Recursos (RES). Acepta tantas misiones contra esa
+   facción como puedas. EliteIntel rastrea la facción objetivo, el recuento de bajas y los detalles de pago.
 2. **Consulta el Estado de las Misiones**: Después de aceptar misiones, hazle preguntas a EliteIntel como ``¿Cuántas bajas quedan en las misiones de piratas?`` o ``¿Cuál es el pago de la masacre de piratas?`` EliteIntel devuelve el total de bajas requeridas, los créditos potenciales y un desglose por facción. Especifica que la consulta es sobre piratas para evitar confusión con otros tipos de misiones.
 
 ## Combatir Piratas en el Haz RES
@@ -24,27 +27,85 @@ Para completar eficientemente las Misiones de Masacre de Piratas:
 
 _**Canjea todas las recompensas antes de tomar tus misiones de masacre privadas**_  una baja confirmada es un vale de recompensa contra la facción
 
-- **Apilamiento de Misiones**: Aceptar múltiples misiones contra la misma facción aumenta la eficiencia en créditos. Usa INARA para identificar sistemas con múltiples proveedores de misiones calificados.
+- **Apilamiento de Misiones**: Aceptar múltiples misiones contra la misma facción aumenta la eficiencia en créditos.
+  Pide a EliteIntel la pila más profunda cercana (ver *Encontrar conjuntos de masacre* más abajo).
 - **Consultas en Lenguaje Natural**: Se acepta el habla natural. ``¿Cuántos piratas quedan por matar?`` y ``¿Puntuación de misión de piratas?`` son ambas válidas. Especifica que la consulta es sobre piratas para evitar confusión con otras misiones activas.
 - **Cambio de Personalidad**: Cambia entre modos de personalidad según sea necesario para adaptarte a tu estilo de juego actual.
 
 
 ---
 
-# Encontrar misiones de masacre de piratas
-## Función Experimental
+# Encontrar conjuntos de masacre
 
-Por el momento, la búsqueda manual en INARA para el apilamiento de misiones de piratas sigue siendo la forma más efectiva de cazar recompensas. Sin embargo, la aplicación tiene una función experimental basada en datos de IN**T**RA (no IN**A**RA). Esta es una forma menos eficiente pero más inmersiva de jugar a la caza de recompensas, aunque depende de la disponibilidad de datos en IN**T**RA y de que su sitio esté operativo.
+Un **conjunto de masacre** es un proveedor de misiones y una zona de caza: facciones de un sistema ofrecen misiones de
+masacre de piratas contra una facción pirata de un sistema cercano, y ese sistema tiene un Sitio de Extracción de
+Recursos (RES) donde cazar. Cuantas más facciones ofrecen misiones en el sistema proveedor, más profunda es la pila: sus
+misiones corren en paralelo, así que las mismas bajas se pagan varias veces.
 
-Para usar esta función, aborda tu nave cazarrecompensas y pregunta ``Encuéntranos algunos campos de caza (dentro de X años luz)``  la nave intentará establecer conexión con IN**T**RA y obtener los pares de sistema objetivo / sistema proveedor de misiones. El éxito o fracaso depende de que la API de IN**T**RA devuelva los datos y del número de otros cazarrecompensas que ejecuten EDMC con el plugin de IN**T**RA.
+## Cómo aprende EliteIntel los conjuntos
 
-Si y cuando esos datos te sean devueltos, el ordenador de la nave te dirá que encontró X campos de caza. Pregunta ``traza una ruta al campo de caza para reconocimiento``. Elite Intel trazará la ruta al campo de caza más cercano de la lista. Debes volar allí y confirmar la presencia del Sitio de Recursos. Si hay uno y la tasa de aparición es de tu agrado, confirma o rechaza este sistema como campo de caza potencial con un comando de voz.
+EliteIntel aprende conjuntos de tus propios vuelos. No hace falta ningún sitio web ni cuenta.
 
-Elite Intel puede confirmarlo automáticamente como campo de caza si detecta los sitios RES en el diario al entrar o al escanear la baliza de navegación. Hay casos en que esto no ocurre porque no hay registros de sitios RES guardados por el juego en el diario. Se requiere confirmación manual.
+- **Misiones que aceptas.** Al aceptar una misión de masacre de piratas, EliteIntel registra el sistema proveedor, la
+  estación, la facción y el objetivo.
+- **Sitios de recursos que ves.** Al llegar a un sistema, el juego enumera sus fuentes de señal, Sitios de Extracción
+  de Recursos incluidos. EliteIntel también se entera de los sitios de recursos que los juegos de otros comandantes
+  informan a EDDN, la red pública de datos de Elite Dangerous, así que conoce sistemas que nunca has visitado.
 
-Una vez satisfecho con el campo de caza, pregunta ``navega al sistema proveedor de misiones de masacre de piratas`` o algo similar. La aplicación trazará una ruta al sistema proveedor de misiones. Vuela hasta allí, aterriza en los puertos y recoge misiones contra piratas para la misma facción y ubicación del sistema de campo de caza. Cuando recojas tu primera misión de masacre, este par de sistemas quedará confirmado como campo de caza / proveedor de misiones. La aplicación te informará si hay otros sistemas que conoce con misiones contra la misma facción en el sistema objetivo  si, por supuesto, IN**T**RA tiene esos datos.
+Un conjunto necesita las dos mitades. Una misión contra un sistema sin sitio de recursos conocido se guarda, pero no se
+ofrece hasta que se vea un sitio de recursos allí.
 
-Cuando tengas tus misiones apiladas, pregunta ``traza ruta a misión activa`` y dispara a los piratas como de costumbre. Cuando hayas terminado las misiones, la misma solicitud ``traza ruta a misión activa`` te llevará a donde está el objetivo, esta vez el puerto donde recogiste la misión.
+**Empieza con tu historial.** Tus diarios antiguos guardan años de esto. Usa **Importar diarios antiguos** en la
+[pestaña Comandante](UI-Commander-Tab.html), o di ``analizar diarios en busca de zonas de caza``.
+
+## Pedir un conjunto
+
+| Di | Qué ocurre |
+|---|---|
+| ``buscar misiones de masacre de piratas en 50 años luz`` | Vega nombra el mejor conjunto al alcance: el sistema proveedor y cuántas facciones ofrecen misiones allí, la facción pirata y el sistema objetivo, sus sitios de recursos y qué estaciones visitar. Primero las pilas más profundas, luego las más cercanas. Sin alcance, busca a 100 años luz. |
+| ``navegar al proveedor de misión pirata`` | Traza una ruta a un proveedor: primero a uno de las misiones que ya llevas, luego a uno de la zona de caza en la que estás, luego al mejor conjunto cercano. Un recordatorio nombra el sistema objetivo. |
+| ``navegar al objetivo de misión pirata`` | Traza una ruta a la zona de caza de las misiones que llevas. |
+| ``buscar zona de caza`` | El Sitio de Extracción de Recursos más cercano que vale la pena solo por las recompensas, sin misiones. |
+| ``olvida esta zona de caza`` | Dicho en una zona de caza que no te gusta (demasiado fácil, demasiado difícil, demasiado lejos de la estrella, el poder equivocado). Vega pregunta primero y después no vuelve a ofrecerla, ni ningún conjunto que te envíe allí. |
+
+## Compartir conjuntos con otros comandantes
+
+Compartir está desactivado hasta que lo activas en la página **Conjuntos de masacre** de la
+[pestaña Comandante](UI-Commander-Tab.html).
+
+Funciona en ambos sentidos: **mientras compartes, también recibes los conjuntos que otros comandantes han compartido.**
+Cuantos más comandantes compartan, más conjuntos habrá para todos.
+
+**Qué se comparte:** para cada conjunto, los nombres de sistemas estelares, facciones y estaciones, cuántos sitios de
+recursos de cada grado tiene el objetivo y el día en que se vio el conjunto por última vez. Cuenta cada comandante de
+tu ordenador, incluidos los que importaste.
+
+**Qué nunca se comparte:** tu nombre de comandante, tus misiones, recompensas ni nada que diga quién eres. Consulta la
+[Política de privacidad](Privacy.html).
+
+Qué pasa con los conjuntos:
+
+1. Tus conjuntos se suben al activar el uso compartido y, después, como mucho una vez al día, cuando has aprendido
+   otros nuevos.
+2. Cada noche se comprueban los conjuntos de todos los comandantes con datos de la galaxia. Los sistemas deben existir,
+   el objetivo debe estar a 20 años luz o menos del proveedor, y la facción pirata debe estar de verdad en el sistema
+   objetivo y ser una Anarquía. Los conjuntos que fallan se descartan. El resto se publica, sin decir quién los envió.
+3. Una vez al día EliteIntel descarga los conjuntos publicados. Cuando pides un conjunto, se ofrecen junto a los tuyos.
+
+**Un conjunto compartido solo se ofrece cuando tus propios datos muestran un sitio de recursos en su objetivo**, de tus
+visitas o de EDDN. Es lo único que los datos de la galaxia no pueden comprobar. Si un conjunto compartido no aparece,
+vuela a su sistema objetivo o espera a que EDDN lo informe.
+
+**Vega te avisa cuando un conjunto viene de otros comandantes.** Tómalo como una pista que comprobar, no como algo que
+hayas volado tú. Si no te convence, ``olvida esta zona de caza`` funciona igual que con tus propios conjuntos.
+
+**Tu propio registro va primero.** Cuando conoces un conjunto tú mismo, se usa tu versión, y entre conjuntos de la
+misma profundidad, los tuyos se ofrecen antes que los informados.
+
+Si no compartes y EliteIntel no conoce ningún conjunto cercano, Vega te avisa cuando otros comandantes han informado de
+alguno en la zona.
+
+Desactivar el uso compartido quita tus conjuntos de los datos compartidos, y EliteIntel deja de usar los de los demás.
 
 ----
 Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

@@ -98,10 +98,10 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>EliteIntel Privacy Policy</h1>
 <p>This policy explains what data is handled, how it is used, and what choices are available.</p>
-<p><em>Last Updated: November 5, 2026</em></p>
+<p><em>Last Updated: November 14, 2026</em></p>
 <h2>Overview</h2>
 <p>EliteIntel is an open-source application available on <a href="https://github.com/stone-alex/EliteIntel">GitHub</a>. It uses speech-to-text (STT), text-to-speech (TTS), and large language models (LLM) to process game data.</p>
-<p>The app can run completely offline using local STT (NVIDIA Parakeet), local LLM (LM Studio), and local TTS (Supertonic). No data leaves the machine in this configuration. When cloud services are used, data is transmitted as described below.</p>
+<p>The app can run completely offline using local STT (NVIDIA Parakeet), local LLM (LM Studio), and local TTS (Supertonic). In this configuration nothing leaves the machine except the daily install count described below. When cloud services are used, data is transmitted as described below.</p>
 <h2>What Data Is Handled?</h2>
 <p>No personal information is collected, including names, addresses, or location data. The following data types are handled:</p>
 <ul>
@@ -110,6 +110,10 @@
 <li><p><strong>Text Data (TTS)</strong>: When using Google TTS, response text is sent to Google. When using Supertonic TTS, no data leaves the machine.</p>
 </li>
 <li><p><strong>Game Data (LLM)</strong>: Relevant game data (mission details, market data, scan results, etc.) is sent to the configured LLM. The Commander name is never transmitted. The AI addresses you by your configured title, honorific, or nickname.</p>
+</li>
+<li><p><strong>Install Statistics</strong>: Once a day the app sends its version number and operating system (Windows or Linux) to Google Firebase, under a random anonymous ID created for this install. Nothing else is sent: no commander name, no game data, no settings. It is used only to count how many installs are active, and on which version and operating system.</p>
+</li>
+<li><p><strong>Massacre Sets (opt-in)</strong>: Only while sharing is turned on (Commander tab, Massacre Sets page, off by default), the app sends the pirate massacre sets it has learned from the journals: star system, faction and station names, resource site counts, and the day a set was last seen. No commander name, mission ID, reward or anything else that identifies a player is sent. Sets from all installs are checked and published at <a href="https://www.elite-intel.org/data/massacre-sets.json">elite-intel.org/data/massacre-sets.json</a>, without saying who reported them.</p>
 </li>
 </ul>
 <h2>How Is This Data Used?</h2>
@@ -127,15 +131,17 @@
 </li>
 <li><p><strong>xAI / OpenAI / Anthropic (LLM)</strong>: Game data excerpts are sent to whichever cloud LLM is configured. Governed by their respective privacy policies.</p>
 </li>
-<li><p><strong>Nowhere else</strong>: No data is stored externally, sold, or shared with third parties. The full source code is available at <a href="https://github.com/stone-alex/EliteIntel">github.com/stone-alex/EliteIntel</a>.</p>
+<li><p><strong>Google Firebase (install statistics and massacre sets)</strong>: Stored in Google Cloud Firestore under the anonymous install ID. Each install can write only its own records, and nothing can be read back through the app. A nightly job run by the EliteIntel maintainers reads them to publish the combined counts and the checked sets. As with any internet request, Google sees the connecting IP address, governed by <a href="https://policies.google.com/privacy">Google&#39;s Privacy Policy</a>. EliteIntel does not store it.</p>
+</li>
+<li><p><strong>Nowhere else</strong>: No data is sold or shared with third parties. The full source code is available at <a href="https://github.com/stone-alex/EliteIntel">github.com/stone-alex/EliteIntel</a>.</p>
 </li>
 </ul>
 <h2>Rights and Choices</h2>
 <ul>
 <li><strong>Inspect the Code</strong>: The full source code is available on GitHub.</li>
-<li><strong>Go Fully Offline</strong>: Use Parakeet, LM Studio, and Supertonic. No data is transmitted in this configuration.</li>
+<li><strong>Go Fully Offline</strong>: Use Parakeet, LM Studio, and Supertonic. Apart from the daily install count, no data is transmitted in this configuration.</li>
 <li><strong>Configure Providers</strong>: Select which cloud LLM to use, if any. API keys are managed in the local database.</li>
-<li><strong>Delete Your Data</strong>: No data is stored externally. For data held by Google, xAI, OpenAI, or Anthropic, refer to their respective policies.</li>
+<li><strong>Delete Your Data</strong>: Turning off massacre set sharing deletes this install&#39;s sets from Firebase. Install statistics hold no personal data. For data held by Google, xAI, OpenAI, or Anthropic, refer to their respective policies.</li>
 </ul>
 <h2>Security</h2>
 <p>API keys are stored encrypted in a local database and transmitted only in request headers. The app complies with Elite Dangerous Terms of Service. It does not read game memory or use overlays. The open-source codebase allows community review.</p>

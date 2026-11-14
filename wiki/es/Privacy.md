@@ -2,13 +2,13 @@
 
 Esta política explica qué datos se manejan, cómo se utilizan y qué opciones están disponibles.
 
-*Última actualización: 5 de noviembre de 2026*
+*Última actualización: 14 de noviembre de 2026*
 
 ## Resumen
 
 EliteIntel es una aplicación de código abierto disponible en [GitHub](https://github.com/stone-alex/EliteIntel). Utiliza reconocimiento de voz (STT), síntesis de voz (TTS) y modelos de lenguaje a gran escala (LLM) para procesar datos del juego.
 
-La app puede ejecutarse completamente sin conexión usando STT local (NVIDIA Parakeet), LLM local (LM Studio) y TTS local (Supertonic TTS). En esta configuración, ningún dato abandona la máquina. Cuando se utilizan servicios en la nube, los datos se transmiten tal como se describe a continuación.
+La app puede ejecutarse completamente sin conexión usando STT local (NVIDIA Parakeet), LLM local (LM Studio) y TTS local (Supertonic TTS). En esta configuración nada sale de la máquina salvo el recuento diario de instalaciones que se describe más abajo. Cuando se utilizan servicios en la nube, los datos se transmiten tal como se describe a continuación.
 
 ## ¿Qué datos se manejan?
 
@@ -19,6 +19,10 @@ No se recopila información personal, incluyendo nombres, direcciones o datos de
 - **Datos de texto (TTS)**: Al usar Google TTS, el texto de respuesta se envía a Google. Al usar Supertonic TTS, ningún dato abandona la máquina.
 
 - **Datos del juego (LLM)**: Los datos relevantes del juego (detalles de misiones, datos de mercado, resultados de escaneos, etc.) se envían al LLM configurado. El nombre del Comandante nunca se transmite. La IA te dirige por el título, tratamiento o apodo que hayas configurado.
+
+- **Estadísticas de instalación**: Una vez al día la app envía su número de versión y su sistema operativo (Windows o Linux) a Google Firebase, con un identificador anónimo aleatorio creado para esta instalación. No se envía nada más: ni nombre de Comandante, ni datos del juego, ni ajustes. Solo sirve para contar cuántas instalaciones están activas, y con qué versión y sistema operativo.
+
+- **Conjuntos de masacre (con tu consentimiento)**: Solo mientras el uso compartido está activado (pestaña Comandante, página Conjuntos de masacre, desactivado por defecto), la app envía los conjuntos de misiones de masacre de piratas que ha aprendido de los diarios: nombres de sistemas estelares, facciones y estaciones, el número de zonas de extracción de recursos y el día en que se vio un conjunto por última vez. No se envía ningún nombre de Comandante, ID de misión, recompensa ni nada que identifique a un jugador. Los conjuntos de todas las instalaciones se comprueban y se publican en [elite-intel.org/data/massacre-sets.json](https://www.elite-intel.org/data/massacre-sets.json), sin indicar quién los informó.
 
 ## ¿Cómo se usan estos datos?
 
@@ -34,14 +38,16 @@ No se recopila información personal, incluyendo nombres, direcciones o datos de
 
 - **xAI / OpenAI / Anthropic (LLM)**: Los extractos de datos del juego se envían al LLM en la nube que esté configurado. Están regidos por sus respectivas políticas de privacidad.
 
-- **A ningún otro lugar**: Ningún dato se almacena externamente, se vende ni se comparte con terceros. El código fuente completo está disponible en [github.com/stone-alex/EliteIntel](https://github.com/stone-alex/EliteIntel).
+- **Google Firebase (estadísticas de instalación y conjuntos de masacre)**: Se guardan en Google Cloud Firestore con el identificador anónimo de la instalación. Cada instalación solo puede escribir sus propios registros, y nada puede leerse de vuelta a través de la app. Una tarea nocturna de los mantenedores de EliteIntel los lee para publicar los recuentos combinados y los conjuntos comprobados. Como en cualquier petición por internet, Google ve la dirección IP de la conexión, regida por la [Política de privacidad de Google](https://policies.google.com/privacy). EliteIntel no la guarda.
+
+- **A ningún otro lugar**: Ningún dato se vende ni se comparte con terceros. El código fuente completo está disponible en [github.com/stone-alex/EliteIntel](https://github.com/stone-alex/EliteIntel).
 
 ## Derechos y opciones
 
 - **Inspeccionar el código**: El código fuente completo está disponible en GitHub.
-- **Modo completamente sin conexión**: Usa Parakeet, LM Studio y Supertonic TTS. En esta configuración no se transmite ningún dato.
+- **Modo completamente sin conexión**: Usa Parakeet, LM Studio y Supertonic. Salvo el recuento diario de instalaciones, en esta configuración no se transmite ningún dato.
 - **Configurar proveedores**: Selecciona qué LLM en la nube usar, si lo hay. Las claves API se gestionan en la base de datos local.
-- **Eliminar tus datos**: No se almacenan datos externamente. Para los datos en poder de Google, xAI, OpenAI o Anthropic, consulta sus respectivas políticas.
+- **Eliminar tus datos**: Desactivar el uso compartido de conjuntos de masacre borra de Firebase los conjuntos de esta instalación. Las estadísticas de instalación no contienen datos personales. Para los datos en poder de Google, xAI, OpenAI o Anthropic, consulta sus respectivas políticas.
 
 ## Seguridad
 

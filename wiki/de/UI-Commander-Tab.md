@@ -2,12 +2,12 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Kommandant"> Wer du bist, mit
 welcher Stimme jeder Rumpf deiner Flotte spricht, was dein Schiff automatisch für dich erledigt,
-was Vega dir ungefragt mitteilt, der Exo-Meisterschaft-Katalog und die Orte, die du dir gemerkt hast.
+was Vega dir ungefragt mitteilt, der Exo-Meisterschaft-Katalog, die Massaker-Sets, die du mit anderen Kommandanten teilst, und die Orte, die du dir gemerkt hast.
 
 ![Reiter Kommandant](images/ui-tab-commander.png)
 
-Oben sitzt der Streifen **Kommandantenprofil**; darunter liegen fünf Unterreiter:
-**Flottenverwaltung**, **Globale Schiffseinstellungen**, **Ansagen**, **Exo-Meisterschaft** und
+Oben sitzt der Streifen **Kommandantenprofil**; darunter liegen sechs Unterreiter:
+**Flottenverwaltung**, **Globale Schiffseinstellungen**, **Ansagen**, **Exo-Meisterschaft**, **Massaker-Sets** und
 **Lesezeichen**.
 
 ---
@@ -204,6 +204,36 @@ für ein ganzes System *„markiere dieses System als abgeerntet“*.
 **Exo-Meisterschaft deaktivieren** entfernt den Katalog nach Rückfrage von deinem Rechner.
 Bereits abgeerntete Planeten bleiben gespeichert, damit ein späteres Aktivieren dich nicht wieder
 dorthin schickt.
+
+---
+
+## Massaker-Sets
+
+![Massaker-Sets](images/ui-tab-commander-massacre-sets.png)
+
+Teile die Piraten-Massaker-Sets, die Elite Intel gelernt hat, mit anderen Kommandanten und nutze ihre. Wie Sets
+gelernt, geprüft und angeboten werden, steht unter
+[Verfolgung von Piraten-Massaker-Missionen](Pirate-Massacre-Mission-Tracking.html).
+
+Drücke **Massaker-Sets teilen**, um zu beginnen. Der Status neben der Schaltfläche zeigt, ob das Teilen an ist, und
+**Teilen beenden** zieht deine Sets zurück und beendet die Nutzung der Sets anderer.
+
+**Ihre Sets**
+
+- **Sets, die Sie teilen**: die Paare aus Missionsgeber und Ziel, die Elite Intel kennt, über alle Kommandanten auf
+  diesem Computer.
+- **Zuletzt geteilt**: wann deine Sets zuletzt hochgeladen wurden.
+
+**Von anderen Kommandanten**
+
+- **Sets anderer Kommandanten**: wie viele Sets der letzte Download enthielt.
+- **Hier nutzbar**: für wie viele davon deine eigenen Daten ein Ressourcenabbaugebiet zeigen. Das sind die, die Vega
+  dir anbieten kann. Die anderen werden nutzbar, sobald in ihrem Zielsystem ein Ressourcenabbaugebiet gesehen wird.
+- **Zuletzt aktualisiert**: wann die Sets zuletzt heruntergeladen wurden. Das geschieht einmal am Tag.
+- **Beitragende Kommandanten**: von wie vielen Kommandanten die veröffentlichten Sets stammen.
+
+Unabhängig von dieser Seite meldet Elite Intel einmal am Tag seine Version und sein Betriebssystem und sonst nichts,
+damit wir wissen, wie viele es nutzen. Siehe die [Datenschutzrichtlinie](Privacy.html).
 
 ---
 

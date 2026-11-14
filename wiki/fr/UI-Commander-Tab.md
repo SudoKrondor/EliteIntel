@@ -2,12 +2,12 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, avec
 quelle voix parle chaque coque de votre flotte, ce que votre vaisseau fait automatiquement pour
-vous, ce que Vega vous dit sans qu'on le lui demande, le catalogue Exo-Maîtrise et les lieux que vous avez enregistrés.
+vous, ce que Vega vous dit sans qu'on le lui demande, le catalogue Exo-Maîtrise, les ensembles de massacre que vous partagez avec d'autres commandants et les lieux que vous avez enregistrés.
 
 ![Onglet Commandant](images/ui-tab-commander.png)
 
-La bande **Profil commandant** est en haut ; en dessous se trouvent cinq sous-onglets :
-**Gestion de la flotte**, **Réglages globaux du vaisseau**, **Annonces**, **Exo-Maîtrise** et **Signets**.
+La bande **Profil commandant** est en haut ; en dessous se trouvent six sous-onglets :
+**Gestion de la flotte**, **Réglages globaux du vaisseau**, **Annonces**, **Exo-Maîtrise**, **Ensembles de massacre** et **Signets**.
 
 ---
 
@@ -201,6 +201,38 @@ système, *« marque ce système comme récolté »*.
 
 **Désactiver Exo-Maîtrise** supprime le catalogue de votre ordinateur, après confirmation. Les
 planètes déjà prélevées restent enregistrées, donc le réactiver plus tard ne vous y renverra pas.
+
+---
+
+## Ensembles de massacre
+
+![Ensembles de massacre](images/ui-tab-commander-massacre-sets.png)
+
+Partagez avec d'autres commandants les ensembles de massacre de pirates qu'Elite Intel a appris, et utilisez les leurs.
+La façon dont les ensembles sont appris, vérifiés et proposés est expliquée dans
+[Suivi des Missions de Massacre de Pirates](Pirate-Massacre-Mission-Tracking.html).
+
+Appuyez sur **Partager les ensembles de massacre** pour commencer. L'état à côté du bouton indique si le partage est
+activé, et **Arrêter le partage** retire vos ensembles et cesse d'utiliser ceux des autres.
+
+**Vos ensembles**
+
+- **Ensembles partagés** : les paires fournisseur et cible qu'Elite Intel connaît, pour tous les commandants de cet
+  ordinateur.
+- **Dernier partage** : quand vos ensembles ont été envoyés pour la dernière fois.
+
+**D'autres commandants**
+
+- **Ensembles d'autres commandants** : combien d'ensembles contenait le dernier téléchargement.
+- **Utilisables ici** : pour combien d'entre eux vos propres données montrent un site de ressources. Ce sont ceux que
+  Vega peut vous proposer. Les autres deviennent utilisables dès qu'un site de ressources est aperçu dans leur système
+  cible.
+- **Dernière mise à jour** : quand les ensembles ont été téléchargés pour la dernière fois. Cela se fait une fois par
+  jour.
+- **Commandants contributeurs** : de combien de commandants proviennent les ensembles publiés.
+
+Indépendamment de cette page, une fois par jour Elite Intel signale sa version et son système d'exploitation, et rien
+d'autre, pour que nous sachions combien de personnes l'utilisent. Voir la [Politique de confidentialité](Privacy.html).
 
 ---
 

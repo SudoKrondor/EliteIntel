@@ -2,12 +2,13 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Commander"> Who you are, which
 voice each hull in your fleet speaks with, what your ship does for you automatically, what Vega
-tells you about without being asked, the Exo-Mastery catalogue, and the places you have bookmarked.
+tells you about without being asked, the Exo-Mastery catalogue, the massacre sets you share with other
+commanders, and the places you have bookmarked.
 
 ![Commander tab](images/ui-tab-commander.png)
 
-The **Commander Profile** strip sits at the top; below it are five sub-tabs: **Fleet
-Management**, **Global Ship Settings**, **Announcements**, **Exo-Mastery** and **Bookmarks**.
+The **Commander Profile** strip sits at the top; below it are six sub-tabs: **Fleet
+Management**, **Global Ship Settings**, **Announcements**, **Exo-Mastery**, **Massacre Sets** and **Bookmarks**.
 
 ---
 
@@ -197,6 +198,35 @@ can be written off by voice — *"we have already sampled this body"*, or for a 
 
 **Disable Exo-Mastery** removes the catalogue from your computer, after asking. Planets you have
 already sampled stay recorded, so enabling it again later will not send you back to them.
+
+---
+
+## Massacre Sets
+
+![Massacre Sets](images/ui-tab-commander-massacre-sets.png)
+
+Share the pirate massacre sets Elite Intel has learned with other commanders, and use theirs. How sets are
+learned, checked and offered is explained on
+[Pirate Massacre Mission Tracking](Pirate-Massacre-Mission-Tracking.html).
+
+Press **Share Massacre Sets** to start. The status next to the button says whether sharing is on, and
+**Stop Sharing** withdraws your sets and stops using everyone else's.
+
+**Your sets**
+
+- **Sets you share**: the provider and target pairs Elite Intel knows, across every commander on this computer.
+- **Last shared**: when your sets were last uploaded.
+
+**From other commanders**
+
+- **Sets from other commanders**: how many sets the last download held.
+- **Usable here**: how many of those your own data shows a resource site for. These are the ones Vega can offer
+  you. The others become usable once a resource site is seen in their target system.
+- **Last updated**: when the sets were last downloaded. That happens once a day.
+- **Commanders contributing**: how many commanders the published sets came from.
+
+Separately from this page, once a day Elite Intel reports its version and operating system, and nothing else,
+so we know how many people use it. See the [Privacy Policy](Privacy.html).
 
 ---
 

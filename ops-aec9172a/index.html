@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Unlisted, not secret: kept out of search results here, and deliberately NOT named in robots.txt,
+         which anyone can read. Written by hand, outside wiki/, so build.js neither rebuilds nor deletes it. -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>EliteIntel Install Stats</title>
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+        h1 { color: var(--hud-text-strong); font-weight: 700; letter-spacing: .04em; margin: 0 0 4px; }
+        h2 { color: var(--hud-teal-solid); font-weight: 600; font-size: 1.1rem; letter-spacing: .08em;
+             text-transform: uppercase; margin: 32px 0 8px; border-bottom: 1px solid var(--hud-line); }
+        .asof { color: var(--hud-text-dim); font-family: 'Share Tech Mono', monospace; }
+        .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+        .tile { background: var(--hud-bg-panel); border: 1px solid var(--hud-line); padding: 12px 14px; }
+        .tile .label { color: var(--hud-text-dim); font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+        .tile .value { color: var(--hud-text-strong); font-family: 'Share Tech Mono', monospace; font-size: 1.9rem; line-height: 1.2; }
+        .tile.primary .value { color: var(--hud-cyan); }
+        .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+        table { width: 100%; border-collapse: collapse; font-family: 'Share Tech Mono', monospace; font-size: .95rem; }
+        th { color: var(--hud-text-dim); font-family: 'Rajdhani', sans-serif; font-weight: 600; text-align: left;
+             letter-spacing: .06em; text-transform: uppercase; font-size: .8rem; }
+        th, td { padding: 4px 8px; border-bottom: 1px solid var(--hud-line); }
+        td.num, th.num { text-align: right; }
+        .bar { height: 6px; background: var(--hud-teal-deep); margin-top: 2px; }
+        .chart { background: var(--hud-bg-panel); border: 1px solid var(--hud-line); padding: 8px; }
+        .chart svg { width: 100%; height: auto; display: block; }
+        .legend { display: flex; gap: 18px; color: var(--hud-text); font-size: .9rem; margin-top: 6px; }
+        .legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px;
+                               vertical-align: middle; background: var(--c); }
+        .empty { background: var(--hud-bg-panel); border: 1px solid var(--hud-line); padding: 16px; margin-top: 16px; }
+        .scroll { overflow-x: auto; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Install Stats</h1>
+    <div class="asof" id="asof">Loading…</div>
+    <div id="content"></div>
+</main>
+<script>
+(function () {
+    'use strict';
+
+    // Written nightly by elite-intel-nightly (StatsBuilder): {format, latest, days: [{date, installs, active1,
+    // active7, active30, gone, os: {...}, versions: {...}}]}. Active means pinged within 1, 7 or 30 days. OS and
+    // version counts are installs active within 30 days.
+    const content = document.getElementById('content');
+    const asof = document.getElementById('asof');
+    const fmt = n => Number(n).toLocaleString();
+
+    fetch('stats.json', { cache: 'no-cache' })
+        .then(r => {
+            if (r.status === 404) return null;
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(stats => stats && stats.latest ? render(stats) : empty())
+        .catch(e => { asof.textContent = 'Could not load stats.json: ' + e.message; });
+
+    function empty() {
+        asof.textContent = '';
+        content.innerHTML = '<div class="empty">No pings yet. The first ones arrive with V1.2, and the nightly job '
+            + 'writes the first row the night after.</div>';
+    }
+
+    function render(stats) {
+        const l = stats.latest;
+        asof.textContent = 'As of ' + l.date + ' (UTC), updated nightly';
+        content.innerHTML = tiles(l)
+            + '<h2>Active installs over time</h2>' + chart(stats.days)
+            + '<div class="cols"><div><h2>Operating system</h2>' + breakdown(l.os, l.active30) + '</div>'
+            + '<div><h2>Version</h2>' + breakdown(l.versions, l.active30) + '</div></div>'
+            + '<h2>History</h2>' + history(stats.days);
+    }
+
+    function tiles(l) {
+        const tile = (label, value, cls) =>
+            '<div class="tile ' + (cls || '') + '"><div class="label">' + label + '</div><div class="value">' + fmt(value) + '</div></div>';
+        return '<div class="tiles">'
+            + tile('Active today', l.active1, 'primary')
+            + tile('Active this week', l.active7)
+            + tile('Active this month', l.active30)
+            + tile('Gone (30+ days)', l.gone)
+            + tile('Installs ever seen', l.installs)
+            + '</div>';
+    }
+
+    function breakdown(counts, total) {
+        const rows = Object.entries(counts || {}).sort((a, b) => b[1] - a[1]);
+        if (!rows.length) return '<div class="asof">Nothing active this month.</div>';
+        return '<table><tr><th>Name</th><th class="num">Active (30 days)</th><th class="num">Share</th></tr>'
+            + rows.map(([name, n]) => {
+                const share = total ? n / total : 0;
+                return '<tr><td>' + escape(name) + '<div class="bar" style="width:' + (share * 100).toFixed(1) + '%"></div></td>'
+                    + '<td class="num">' + fmt(n) + '</td><td class="num">' + Math.round(share * 100) + '%</td></tr>';
+            }).join('')
+            + '</table>';
+    }
+
+    function chart(days) {
+        if (days.length < 2) return '<div class="empty">The chart starts once there are two nights of data.</div>';
+        const W = 900, H = 260, L = 48, R = 12, T = 12, B = 28;
+        const series = [
+            { key: 'active30', label: 'Active this month', color: '#33D7E8' },
+            { key: 'active7', label: 'Active this week', color: '#6EA7FF' },
+            { key: 'active1', label: 'Active today', color: '#4FC56B' },
+        ];
+        const max = Math.max(1, ...days.map(d => d.active30));
+        const x = i => L + i * (W - L - R) / (days.length - 1);
+        const y = v => T + (H - T - B) * (1 - v / max);
+        let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Active installs per night">';
+        for (const f of [0, .5, 1]) {
+            const v = Math.round(max * f);
+            svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#24313A"/>'
+                + '<text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" fill="#7F909B" font-size="12" text-anchor="end">' + fmt(v) + '</text>';
+        }
+        svg += '<text x="' + L + '" y="' + (H - 6) + '" fill="#7F909B" font-size="12">' + days[0].date + '</text>'
+            + '<text x="' + (W - R) + '" y="' + (H - 6) + '" fill="#7F909B" font-size="12" text-anchor="end">' + days[days.length - 1].date + '</text>';
+        for (const s of series) {
+            const points = days.map((d, i) => x(i).toFixed(1) + ',' + y(d[s.key]).toFixed(1)).join(' ');
+            svg += '<polyline fill="none" stroke="' + s.color + '" stroke-width="2" points="' + points + '"/>';
+        }
+        svg += '</svg>';
+        const legend = '<div class="legend">' + series.map(s => '<span style="--c:' + s.color + '">' + s.label + '</span>').join('') + '</div>';
+        return '<div class="chart">' + svg + legend + '</div>';
+    }
+
+    function history(days) {
+        const rows = days.slice().reverse().slice(0, 60);
+        return '<div class="scroll"><table><tr><th>Date</th><th class="num">Today</th><th class="num">Week</th>'
+            + '<th class="num">Month</th><th class="num">Gone</th><th class="num">Ever</th><th>Windows / Linux</th></tr>'
+            + rows.map(d => '<tr><td>' + d.date + '</td><td class="num">' + fmt(d.active1) + '</td><td class="num">'
+                + fmt(d.active7) + '</td><td class="num">' + fmt(d.active30) + '</td><td class="num">' + fmt(d.gone)
+                + '</td><td class="num">' + fmt(d.installs) + '</td><td>' + fmt((d.os || {}).windows || 0) + ' / '
+                + fmt((d.os || {}).linux || 0) + '</td></tr>').join('')
+            + '</table></div>';
+    }
+
+    function escape(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+})();
+</script>
+</body>
+</html>

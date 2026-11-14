@@ -2,12 +2,12 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Comandante"> Quién eres, con qué
 voz habla cada casco de tu flota, qué hace tu nave por ti automáticamente, qué te cuenta Vega sin
-que se lo pidas, el catálogo de Exo-Maestría y los lugares que has guardado.
+que se lo pidas, el catálogo de Exo-Maestría, los conjuntos de masacre que compartes con otros comandantes y los lugares que has guardado.
 
 ![Pestaña Comandante](images/ui-tab-commander.png)
 
-Arriba está la franja **Perfil del comandante**; debajo hay cinco subpestañas: **Gestión de
-flota**, **Ajustes globales de nave**, **Anuncios**, **Exo-Maestría** y **Marcadores**.
+Arriba está la franja **Perfil del comandante**; debajo hay seis subpestañas: **Gestión de
+flota**, **Ajustes globales de nave**, **Anuncios**, **Exo-Maestría**, **Conjuntos de masacre** y **Marcadores**.
 
 ---
 
@@ -196,6 +196,36 @@ se puede dar por hecho por voz — *«ya hemos muestreado este cuerpo»*, o para
 **Desactivar Exo-Maestría** elimina el catálogo de tu ordenador, tras preguntar. Los planetas que
 ya muestreaste quedan registrados, así que reactivarlo más adelante no te enviará de vuelta a
 ellos.
+
+---
+
+## Conjuntos de masacre
+
+![Conjuntos de masacre](images/ui-tab-commander-massacre-sets.png)
+
+Comparte con otros comandantes los conjuntos de masacre de piratas que Elite Intel ha aprendido, y usa los suyos. Cómo
+se aprenden, comprueban y ofrecen los conjuntos se explica en
+[Seguimiento de Misiones de Masacre de Piratas](Pirate-Massacre-Mission-Tracking.html).
+
+Pulsa **Compartir conjuntos de masacre** para empezar. El estado junto al botón indica si el uso compartido está
+activado, y **Dejar de compartir** retira tus conjuntos y deja de usar los de los demás.
+
+**Sus conjuntos**
+
+- **Conjuntos que comparte**: los pares de proveedor y objetivo que conoce Elite Intel, entre todos los comandantes de
+  este ordenador.
+- **Compartido por última vez**: cuándo se subieron tus conjuntos por última vez.
+
+**De otros comandantes**
+
+- **Conjuntos de otros comandantes**: cuántos conjuntos traía la última descarga.
+- **Utilizables aquí**: para cuántos de ellos tus propios datos muestran un sitio de recursos. Son los que Vega puede
+  ofrecerte. Los demás pasan a ser utilizables en cuanto se ve un sitio de recursos en su sistema objetivo.
+- **Última actualización**: cuándo se descargaron los conjuntos por última vez. Ocurre una vez al día.
+- **Comandantes que contribuyen**: de cuántos comandantes proceden los conjuntos publicados.
+
+Aparte de esta página, una vez al día Elite Intel informa de su versión y su sistema operativo, y nada más, para saber
+cuántas personas lo usan. Consulta la [Política de privacidad](Privacy.html).
 
 ---
 

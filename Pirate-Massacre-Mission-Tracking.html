@@ -102,9 +102,10 @@ monitors kills and payouts throughout the session.</p>
 <h2>Getting Started</h2>
 <p>To efficiently complete Pirate Massacre Missions:</p>
 <ol>
-<li><strong>Find a Hotspot</strong>: Use <a href="https://inara.cz">INARA</a> to find a system with a Hazardous Resource Extraction Site (Haz 
-RES) where multiple factions offer missions against the same pirate faction. Accept multiple missions against the 
-same faction. EliteIntel tracks the target faction, kill counts, and payout details.</li>
+<li><strong>Find a Set</strong>: Ask <code>Find pirate massacre missions</code> (see <em>Finding Massacre Sets</em> below), or look one up on
+<a href="https://inara.cz">INARA</a>: a system where several factions offer missions against the same pirate faction, next to
+a system with a Resource Extraction Site (RES). Accept as many missions against that faction as you can. EliteIntel
+tracks the target faction, kill counts, and payout details.</li>
 <li><strong>Query Mission Status</strong>: After accepting missions, ask EliteIntel questions such as <code>How many kills left on  pirate missions?</code> or <code>What is the pirate massacre payout?</code> EliteIntel returns the total kills required, potential 
 credits, and a per-faction breakdown. Specify that the query is pirate-related to avoid confusion with other 
 mission types.</li>
@@ -128,38 +129,86 @@ per-faction breakdown.</li>
 <p><em><strong>redeem all bounties before picking up your private massacre missions</strong></em> a confirmed kill is a bounty voucher 
 against the faction</p>
 <ul>
-<li><strong>Mission Stacking</strong>: Accepting multiple missions against the same faction increases credit efficiency. Use INARA 
-to identify systems with multiple qualifying mission providers.</li>
+<li><strong>Mission Stacking</strong>: Accepting multiple missions against the same faction increases credit efficiency. Ask
+EliteIntel for the deepest stack nearby (see <em>Finding Massacre Sets</em> below).</li>
 <li><strong>Natural Language Queries</strong>: Natural speech is accepted. <code>How many pirates left to kill?</code> and <code>Pirate mission  score?</code> are both valid. Specify that the query is pirate-related to avoid confusion with other active missions.</li>
 <li><strong>Personality Toggle</strong>: Switch between personality modes as needed to match your current playstyle.</li>
 </ul>
 <hr>
-<h1>Find pirate massacre missions</h1>
-<h2>Experimental feature</h2>
-<p>At the moment manual search in INARA for pirate mission stacking remains the most effective way of bounty hunting. 
-However, the app has an experimental feature based on IN<strong>T</strong>RA data (not IN<strong>A</strong>RA). This is a less efficient but 
-more immersive way to play bounty hunting, though it depends on the data availability in IN<strong>T</strong>RA and their site 
-being up and operational. </p>
-<p>To use this feature, board our bounty-hunter ship and ask <code>Find us some hunting grounds (within X light years)</code> the 
-ship will attempt to a connection to IN<strong>T</strong>RA and fetch the pairs of target system / mission provider system. The 
-success or failure depends on IN<strong>T</strong>RA API returning the data and the number of other bounty hunters running EDMC with
-IN<strong>T</strong>RA plugin.</p>
-<p>If and When that data is returned to you, the ship computer will tell you it found X number of hunting grounds. Ask 
-<code>plot a route to hunting ground for reconnaissance</code>. Elite Intell will plot the route for the nearest hunting 
-ground in the list. You have to fly there and confirm the presence of the Resource Site. If there is one, and the 
-spawn rate is to your liking, confirm or reject this system as a potential hunting ground with a voice command.</p>
-<p>Elite Intel may automatically confirm it as a hunting ground if it detects the RES sites in the journal on entry, or 
-on nav beacon scan. There are cases when this does not happen because there are no records of RES sites dumped by 
-the game in to the journal. Manual confirmation is required.</p>
-<p>Once you are satisfied with the hunting ground, ask <code>navigate to pirate massacre mission provider system</code> or 
-something close to that. The app will plot a route to the mission provider system. Fly there, land at ports, and pick 
-up missions against pirates for the same faction and location of the hunting ground system. When you pick up your 
-first massacre mission, this star system pair will be confirmed as hunting ground / mission provider. The app will 
-tell you if there are other systems that it knows about that have missions against the same faction in the target 
-system. This is, of course, if the IN<strong>T</strong>RA has that data. </p>
-<p>When you got your missions stacked ask <code>plot route to active mission</code> and pew-pew pirates as usual. When you are 
-done with the missions same request <code>plot route to active mission</code> will take you to where the objective is, this 
-time the port where you picked up the assignment. </p>
+<h1>Finding Massacre Sets</h1>
+<p>A <strong>massacre set</strong> is a mission provider and a hunting ground: factions in one system issue pirate massacre
+missions against a pirate faction in a nearby system, and that system has a Resource Extraction Site (RES) to do the
+killing in. The more factions issue in the provider system, the deeper the stack: their missions run side by side,
+so the same kills pay out several times.</p>
+<h2>How EliteIntel Learns Sets</h2>
+<p>EliteIntel learns sets from your own flying. No website or account is involved.</p>
+<ul>
+<li><strong>Missions you accept.</strong> When you accept a pirate massacre mission, EliteIntel records the provider system, the
+station, the faction and the target.</li>
+<li><strong>Resource sites you see.</strong> When you arrive in a system, the game lists its signal sources, Resource Extraction
+Sites included. EliteIntel also hears about the resource sites other commanders&#39; games report to EDDN, the public
+Elite Dangerous data network, so it knows about systems you have never visited.</li>
+</ul>
+<p>A set needs both halves. A mission against a system with no known resource site is kept on file, but it is not
+offered until a resource site has been seen there.</p>
+<p><strong>Start with your history.</strong> Your old journals hold years of this. Use <strong>Import Old Journals</strong> on the
+<a href="UI-Commander-Tab.html">Commander tab</a>, or say <code>Scan journals for hunting grounds</code>.</p>
+<h2>Asking for a Set</h2>
+<table>
+<thead>
+<tr>
+<th>Say</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Find pirate massacre missions within 50 light years</code></td>
+<td>Vega names the best set in range: the provider system and how many factions issue there, the pirate faction and the target system, its resource sites, and which stations to visit. Deeper stacks come first, then nearer ones. Without a range, it looks 100 light years out.</td>
+</tr>
+<tr>
+<td><code>Navigate to pirate mission provider</code></td>
+<td>Plots a route to a provider: first one for the missions you already carry, then one for the hunting ground you are in, then the best set nearby. A reminder names the target system.</td>
+</tr>
+<tr>
+<td><code>Navigate to pirate mission target</code></td>
+<td>Plots a route to the hunting ground of the missions you carry.</td>
+</tr>
+<tr>
+<td><code>Find a bounty hunting ground</code></td>
+<td>The nearest Resource Extraction Site worth hunting for the bounties alone, with no missions involved.</td>
+</tr>
+<tr>
+<td><code>Forget this hunting ground</code></td>
+<td>Said in a hunting ground you do not like (too easy, too hard, too far from the star, the wrong power). Vega asks first, then never offers it again, nor any set that sends you there.</td>
+</tr>
+</tbody></table>
+<h2>Sharing Sets with Other Commanders</h2>
+<p>Sharing is off until you turn it on, on the <strong>Massacre Sets</strong> page of the <a href="UI-Commander-Tab.html">Commander tab</a>.</p>
+<p>It works both ways: <strong>while you share, you also get the sets other commanders have shared.</strong> The more commanders
+share, the more sets there are for everyone.</p>
+<p><strong>What is shared:</strong> for each set, the star system, faction and station names, how many resource sites of each grade
+the target has, and the day the set was last seen. Every commander on your computer counts, including ones you
+imported.</p>
+<p><strong>What is never shared:</strong> your commander name, your missions, rewards, or anything else that says who you are. See
+the <a href="Privacy.html">Privacy Policy</a>.</p>
+<p>What happens to the sets:</p>
+<ol>
+<li>Your sets are uploaded when you turn sharing on, and after that at most once a day, when you have learned new ones.</li>
+<li>Every night the sets from all commanders are checked against galaxy data. The systems must exist, the target
+must be within 20 light years of the provider, and the pirate faction must really be in the target system and be
+an Anarchy. Sets that fail are dropped. The rest are published, without saying who sent them.</li>
+<li>Once a day EliteIntel downloads the published sets. When you ask for a set, they are offered alongside your own.</li>
+</ol>
+<p><strong>A shared set is offered only when your own data shows a resource site in its target</strong>, from your visits or from
+EDDN. That is the one thing galaxy data cannot check. If a shared set does not show up, fly to its target system, or
+wait for EDDN to report it.</p>
+<p><strong>Vega tells you when a set comes from other commanders.</strong> Treat it as a lead to check, not something you have flown
+yourself. If it is not to your liking, <code>Forget this hunting ground</code> works the same as for your own sets.</p>
+<p><strong>Your own record comes first.</strong> When you know a set yourself, your version is used, and between sets of the same
+depth, yours are offered before reported ones.</p>
+<p>If you do not share and EliteIntel knows no set nearby, Vega tells you when other commanders have reported some in
+the area.</p>
+<p>Turning sharing off removes your sets from the shared data, and EliteIntel stops using everyone else&#39;s.</p>
 <hr>
 <p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

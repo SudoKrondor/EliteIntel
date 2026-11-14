@@ -23,6 +23,7 @@ Last checked against the app on `V1.2` at `7af4046c5` (2026-11-10).
 
 | File | Page | What to capture |
 |------|------|-----------------|
+| `ui-tab-commander-massacre-sets.png` | `UI-Commander-Tab` | **Commander → Massacre Sets** with sharing **on**, after a sync, so both sections show numbers (Sets you share, Last shared, Sets from other commanders, Usable here, Last updated, Commanders contributing). |
 | `ui-bindings-preset-editor.png` | `UI-Bindings-Tab` | **BindForge → Preset Editor**: the four dropdowns (General, Ship, SRV, On-Foot) and **Set all to same**. Best with the four sections on different files so the "do not all load the same binds file" note shows. |
 
 ## Retake: BindForge (blocking: these contradict the page text)
