@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "latest": {
+    "date": "2026-11-14",
+    "installs": 1,
+    "active1": 1,
+    "active7": 1,
+    "active30": 1,
+    "gone": 0,
+    "os": {
+      "linux": 1
+    },
+    "versions": {
+      "v-1.2.0000-dev": 1
+    }
+  },
+  "days": [
+    {
+      "date": "2026-11-14",
+      "installs": 1,
+      "active1": 1,
+      "active7": 1,
+      "active30": 1,
+      "gone": 0,
+      "os": {
+        "linux": 1
+      },
+      "versions": {
+        "v-1.2.0000-dev": 1
+      }
+    }
+  ]
+}

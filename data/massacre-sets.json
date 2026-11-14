@@ -1,5 +1,1152 @@
 {
   "format": 1,
   "indexDate": "2026-03-02",
-  "sets": []
+  "sets": [
+    {
+      "provider": {
+        "system": "Baminyi",
+        "systemAddress": 7269097612681,
+        "coords": [
+          91.906,
+          -110.344,
+          -75.125
+        ],
+        "factions": [
+          "Baminyi Bridge Group",
+          "Baminyi Defence Force",
+          "Baminyi Republic Party",
+          "New Baminyi Law Party",
+          "United Imperial Loyalists"
+        ],
+        "stations": [
+          "Glass Survey",
+          "Medupe Prospect"
+        ]
+      },
+      "target": {
+        "system": "Xue Davokje",
+        "systemAddress": 3107643658946,
+        "coords": [
+          88.25,
+          -102.156,
+          -70.781
+        ],
+        "factions": [
+          "Xue Davokje Blue Cartel"
+        ]
+      },
+      "distanceLy": 9.96,
+      "stackDepth": 5,
+      "reporters": 1,
+      "lastSeen": "2026-10-19",
+      "resourceSites": {
+        "standard": 3,
+        "low": 1,
+        "high": 2,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "BD-21 3153",
+        "systemAddress": 908620534482,
+        "coords": [
+          89.969,
+          56.844,
+          -1.0
+        ],
+        "factions": [
+          "BD-21 3153 Crimson Transport Inc",
+          "BD-21 3153 League",
+          "BD-21 3153 Partners",
+          "League of BD-21 3153 League",
+          "Social b3 Hydrae Partnership",
+          "United BD-21 3153 Revolutionary Party"
+        ],
+        "stations": [
+          "Torricelli Station"
+        ]
+      },
+      "target": {
+        "system": "LTT 3981",
+        "systemAddress": 560266758507,
+        "coords": [
+          96.625,
+          62.688,
+          0.375
+        ],
+        "factions": [
+          "Gang of LTT 3981"
+        ]
+      },
+      "distanceLy": 8.96,
+      "stackDepth": 6,
+      "reporters": 1,
+      "lastSeen": "2021-08-19",
+      "resourceSites": {
+        "standard": 1,
+        "low": 1,
+        "high": 2,
+        "hazardous": 0
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "BD-21 3154",
+        "systemAddress": 2832832991954,
+        "coords": [
+          95.094,
+          60.0,
+          -0.937
+        ],
+        "factions": [
+          "BD-21 3154 Dominion",
+          "BD-21 3154 Energy Solutions",
+          "Co-operative of BD-21 3154",
+          "Coalition of Caill",
+          "LTT 3981 Purple Legal Limited"
+        ],
+        "stations": [
+          "Howard Hub"
+        ]
+      },
+      "target": {
+        "system": "Iapori",
+        "systemAddress": 2871320126889,
+        "coords": [
+          99.906,
+          62.719,
+          0.063
+        ],
+        "factions": [
+          "Iapori Partnership"
+        ]
+      },
+      "distanceLy": 5.62,
+      "stackDepth": 5,
+      "reporters": 1,
+      "lastSeen": "2021-05-27",
+      "resourceSites": {
+        "standard": 7,
+        "low": 4,
+        "high": 5,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "BD-21 3154",
+        "systemAddress": 2832832991954,
+        "coords": [
+          95.094,
+          60.0,
+          -0.937
+        ],
+        "factions": [],
+        "stations": [
+          "Howard Hub"
+        ]
+      },
+      "target": {
+        "system": "LTT 3981",
+        "systemAddress": 560266758507,
+        "coords": [
+          96.625,
+          62.688,
+          0.375
+        ],
+        "factions": [
+          "Gang of LTT 3981"
+        ]
+      },
+      "distanceLy": 3.36,
+      "stackDepth": 0,
+      "reporters": 1,
+      "lastSeen": "2021-05-02",
+      "resourceSites": {
+        "standard": 1,
+        "low": 1,
+        "high": 2,
+        "hazardous": 0
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Bean",
+        "systemAddress": 3932008977090,
+        "coords": [
+          -83.687,
+          -41.812,
+          -100.344
+        ],
+        "factions": [
+          "Bean Organisation",
+          "Bellite Independents",
+          "Earls of Bean",
+          "Partnership of Bean"
+        ],
+        "stations": [
+          "Bruce Dock",
+          "Rocklynne Dock"
+        ]
+      },
+      "target": {
+        "system": "Bellite",
+        "systemAddress": 3657131070146,
+        "coords": [
+          -79.719,
+          -35.531,
+          -95.937
+        ],
+        "factions": [
+          "Bellite Raiders"
+        ]
+      },
+      "distanceLy": 8.64,
+      "stackDepth": 4,
+      "reporters": 1,
+      "lastSeen": "2024-05-11",
+      "resourceSites": {
+        "standard": 4,
+        "low": 4,
+        "high": 5,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Bosnjani",
+        "systemAddress": 11667413149097,
+        "coords": [
+          104.75,
+          67.594,
+          -0.594
+        ],
+        "factions": [
+          "Bosnjani Blue Travel Solutions",
+          "Bosnjani Blue Vision Ltd",
+          "Bosnjani Nationals",
+          "HIP 53206 Silver Vision Inc",
+          "Independent Pilot's Guild",
+          "United Bosnjani Liberals"
+        ],
+        "stations": [
+          "Ramelli Colony"
+        ]
+      },
+      "target": {
+        "system": "Iapori",
+        "systemAddress": 2871320126889,
+        "coords": [
+          99.906,
+          62.719,
+          0.063
+        ],
+        "factions": [
+          "Iapori Partnership"
+        ]
+      },
+      "distanceLy": 6.9,
+      "stackDepth": 6,
+      "reporters": 1,
+      "lastSeen": "2021-05-26",
+      "resourceSites": {
+        "standard": 7,
+        "low": 4,
+        "high": 5,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Cadubii",
+        "systemAddress": 672027846033,
+        "coords": [
+          85.438,
+          -105.219,
+          -64.0
+        ],
+        "factions": [
+          "6th Interstellar Corps",
+          "Cadubii Partners",
+          "Republic Party of Cadubii",
+          "Traditional Cadubii Conservatives"
+        ],
+        "stations": [
+          "Abe Gateway"
+        ]
+      },
+      "target": {
+        "system": "Xue Davokje",
+        "systemAddress": 3107643658946,
+        "coords": [
+          88.25,
+          -102.156,
+          -70.781
+        ],
+        "factions": [
+          "Xue Davokje Blue Cartel"
+        ]
+      },
+      "distanceLy": 7.95,
+      "stackDepth": 4,
+      "reporters": 1,
+      "lastSeen": "2026-10-19",
+      "resourceSites": {
+        "standard": 3,
+        "low": 1,
+        "high": 2,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Col 285 Sector RO-Q d5-54",
+        "systemAddress": 1865920055667,
+        "coords": [
+          32.813,
+          158.813,
+          85.813
+        ],
+        "factions": [
+          "HIP 67086 Legal Co"
+        ],
+        "stations": [
+          "Chilton Settlement"
+        ]
+      },
+      "target": {
+        "system": "Igbonii",
+        "systemAddress": 3932210467554,
+        "coords": [
+          35.125,
+          155.719,
+          87.188
+        ],
+        "factions": [
+          "Igbonii Jet Family"
+        ]
+      },
+      "distanceLy": 4.1,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2024-03-30",
+      "resourceSites": {
+        "standard": 1,
+        "low": 3,
+        "high": 3,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Crucis Sector OI-T b3-5",
+        "systemAddress": 11666876016065,
+        "coords": [
+          73.438,
+          -15.406,
+          66.656
+        ],
+        "factions": [
+          "13th Legion",
+          "Independent Pilots Consortium"
+        ],
+        "stations": [
+          "Eagles Rest"
+        ]
+      },
+      "target": {
+        "system": "Odomazotz",
+        "systemAddress": 5306666980066,
+        "coords": [
+          72.438,
+          -9.531,
+          67.344
+        ],
+        "factions": [
+          "Odomazotz Silver Brotherhood"
+        ]
+      },
+      "distanceLy": 6.0,
+      "stackDepth": 2,
+      "reporters": 1,
+      "lastSeen": "2026-08-14",
+      "resourceSites": {
+        "standard": 1,
+        "low": 4,
+        "high": 2,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Duamta",
+        "systemAddress": 4339804408171,
+        "coords": [
+          2.188,
+          6.625,
+          -7.0
+        ],
+        "factions": [
+          "Aegis Core",
+          "Bureau of Duamta Conservatives",
+          "Defence Force of Duamta",
+          "Duamta Gold Creative Corp.",
+          "Duamta Jet Power Commodities",
+          "Independents of Duamta",
+          "Mars Congressional Republic Navy",
+          "The Order of The Smiling Moose"
+        ],
+        "stations": [
+          "Polyakov Station",
+          "Wang City"
+        ]
+      },
+      "target": {
+        "system": "Luyten's Star",
+        "systemAddress": 7268024264097,
+        "coords": [
+          6.563,
+          2.344,
+          -10.25
+        ],
+        "factions": [
+          "Pirates of Luyten's Star"
+        ]
+      },
+      "distanceLy": 6.93,
+      "stackDepth": 8,
+      "reporters": 1,
+      "lastSeen": "2026-05-25",
+      "resourceSites": {
+        "standard": 4,
+        "low": 5,
+        "high": 1,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "GCRV 1568",
+        "systemAddress": 2862335641955,
+        "coords": [
+          -33.906,
+          -63.0,
+          -82.875
+        ],
+        "factions": [
+          "GCRV 1568 Law Party",
+          "Independents of GCRV 1568"
+        ],
+        "stations": [
+          "Cernan Dock"
+        ]
+      },
+      "target": {
+        "system": "LP 410-81",
+        "systemAddress": 2869440685449,
+        "coords": [
+          -33.125,
+          -63.844,
+          -78.937
+        ],
+        "factions": [
+          "LP 410-81 Dragons"
+        ]
+      },
+      "distanceLy": 4.1,
+      "stackDepth": 2,
+      "reporters": 1,
+      "lastSeen": "2020-08-23",
+      "resourceSites": {
+        "standard": 0,
+        "low": 1,
+        "high": 3,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "GCRV 1568",
+        "systemAddress": 2862335641955,
+        "coords": [
+          -33.906,
+          -63.0,
+          -82.875
+        ],
+        "factions": [
+          "Aseveljet",
+          "Independents of GCRV 1568"
+        ],
+        "stations": [
+          "Cernan Dock"
+        ]
+      },
+      "target": {
+        "system": "Pikum",
+        "systemAddress": 5068463941001,
+        "coords": [
+          -39.0,
+          -63.125,
+          -75.031
+        ],
+        "factions": [
+          "Pikum Family"
+        ]
+      },
+      "distanceLy": 9.35,
+      "stackDepth": 2,
+      "reporters": 1,
+      "lastSeen": "2020-08-30",
+      "resourceSites": {
+        "standard": 2,
+        "low": 4,
+        "high": 2,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "HIP 8830",
+        "systemAddress": 1458241966794,
+        "coords": [
+          8.406,
+          -123.687,
+          -34.25
+        ],
+        "factions": [
+          "BR Imperial Force",
+          "HIP 8830 Citizens of Tradition",
+          "HIP 8830 Crimson Energy Ltd",
+          "HIP 8830 Purple Public & Co",
+          "Traditional HIP 8830 Conservatives"
+        ],
+        "stations": [
+          "Gould Ring"
+        ]
+      },
+      "target": {
+        "system": "HIP 9141",
+        "systemAddress": 2209500596579,
+        "coords": [
+          11.344,
+          -127.875,
+          -36.281
+        ],
+        "factions": [
+          "Crew of HIP 9141"
+        ]
+      },
+      "distanceLy": 5.5,
+      "stackDepth": 5,
+      "reporters": 1,
+      "lastSeen": "2019-09-08",
+      "resourceSites": {
+        "standard": 1,
+        "low": 1,
+        "high": 2,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Hyades Sector NR-V b2-1",
+        "systemAddress": 2871051167057,
+        "coords": [
+          81.781,
+          -93.875,
+          -210.469
+        ],
+        "factions": [
+          "Double Dragon Wing",
+          "HIP 23421 Worker's Party"
+        ],
+        "stations": [
+          "Lipstadt Oasis"
+        ]
+      },
+      "target": {
+        "system": "Hyades Sector NR-V b2-2",
+        "systemAddress": 5070074422609,
+        "coords": [
+          83.5,
+          -91.656,
+          -206.594
+        ],
+        "factions": [
+          "HIP 23421 Drug Empire"
+        ]
+      },
+      "distanceLy": 4.78,
+      "stackDepth": 2,
+      "reporters": 1,
+      "lastSeen": "2026-07-25",
+      "resourceSites": {
+        "standard": 0,
+        "low": 5,
+        "high": 2,
+        "hazardous": 3
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Jastreb Sector GH-M a7-0",
+        "systemAddress": 5364950911816,
+        "coords": [
+          -17.531,
+          -26.281,
+          -6.375
+        ],
+        "factions": [
+          "League of Seediansi"
+        ],
+        "stations": [
+          "Pinto Vision"
+        ]
+      },
+      "target": {
+        "system": "LHS 1050",
+        "systemAddress": 24859941741985,
+        "coords": [
+          -23.625,
+          -28.281,
+          -8.531
+        ],
+        "factions": [
+          "Clan of LHS 1050"
+        ]
+      },
+      "distanceLy": 6.77,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2026-08-08",
+      "resourceSites": {
+        "standard": 1,
+        "low": 0,
+        "high": 2,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Kwekwaxawe",
+        "systemAddress": 5070343382441,
+        "coords": [
+          100.5,
+          63.844,
+          -0.281
+        ],
+        "factions": [
+          "Hesa Holdings",
+          "LTT 3981 Purple Legal Limited",
+          "Regulatory State of Kwekwaxawe"
+        ],
+        "stations": [
+          "Laplace Hangar"
+        ]
+      },
+      "target": {
+        "system": "Iapori",
+        "systemAddress": 2871320126889,
+        "coords": [
+          99.906,
+          62.719,
+          0.063
+        ],
+        "factions": [
+          "Iapori Partnership"
+        ]
+      },
+      "distanceLy": 1.32,
+      "stackDepth": 3,
+      "reporters": 1,
+      "lastSeen": "2021-05-22",
+      "resourceSites": {
+        "standard": 7,
+        "low": 4,
+        "high": 5,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "LHS 1163",
+        "systemAddress": 633608311506,
+        "coords": [
+          2.375,
+          -46.187,
+          0.688
+        ],
+        "factions": [
+          "Azimuth Biotech"
+        ],
+        "stations": [
+          "Serling Lab"
+        ]
+      },
+      "target": {
+        "system": "LFT 1",
+        "systemAddress": 4207021101778,
+        "coords": [
+          0.656,
+          -42.344,
+          9.469
+        ],
+        "factions": [
+          "LFT 1 Purple Cartel"
+        ]
+      },
+      "distanceLy": 9.74,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2023-04-29",
+      "resourceSites": {
+        "standard": 1,
+        "low": 2,
+        "high": 2,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "LHS 1163",
+        "systemAddress": 633608311506,
+        "coords": [
+          2.375,
+          -46.187,
+          0.688
+        ],
+        "factions": [
+          "Azimuth Biotech"
+        ],
+        "stations": [
+          "Serling Lab"
+        ]
+      },
+      "target": {
+        "system": "LHS 1197",
+        "systemAddress": 13865093899689,
+        "coords": [
+          2.563,
+          -42.812,
+          -1.625
+        ],
+        "factions": [
+          "LHS 1197 Gold Family"
+        ]
+      },
+      "distanceLy": 4.1,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2023-05-03",
+      "resourceSites": {
+        "standard": 2,
+        "low": 0,
+        "high": 4,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "LP 908-11",
+        "systemAddress": 7268561200561,
+        "coords": [
+          42.844,
+          25.344,
+          16.938
+        ],
+        "factions": [
+          "Affiliates of Rhea-Sol Entrepreneurial Society",
+          "Allied LP 908-11 First",
+          "LHS 317 Future",
+          "LHS 317 Travel Exchange",
+          "LP 908-11 Independents",
+          "LP 908-11 Network",
+          "New LP 908-11 Regulatory State"
+        ],
+        "stations": [
+          "So-yeon City"
+        ]
+      },
+      "target": {
+        "system": "LHS 317",
+        "systemAddress": 5069537945009,
+        "coords": [
+          44.656,
+          27.031,
+          15.031
+        ],
+        "factions": [
+          "Clan of LHS 317"
+        ]
+      },
+      "distanceLy": 3.13,
+      "stackDepth": 7,
+      "reporters": 1,
+      "lastSeen": "2022-03-13",
+      "resourceSites": {
+        "standard": 7,
+        "low": 0,
+        "high": 3,
+        "hazardous": 3
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "LTT 3981",
+        "systemAddress": 560266758507,
+        "coords": [
+          96.625,
+          62.688,
+          0.375
+        ],
+        "factions": [
+          "Bureau of LTT 3981 First",
+          "LTT 3981 Purple Legal Limited",
+          "People's LTT 3981 Free"
+        ],
+        "stations": [
+          "McAuley Hangar"
+        ]
+      },
+      "target": {
+        "system": "Iapori",
+        "systemAddress": 2871320126889,
+        "coords": [
+          99.906,
+          62.719,
+          0.063
+        ],
+        "factions": [
+          "Iapori Partnership"
+        ]
+      },
+      "distanceLy": 3.3,
+      "stackDepth": 3,
+      "reporters": 1,
+      "lastSeen": "2021-05-22",
+      "resourceSites": {
+        "standard": 7,
+        "low": 4,
+        "high": 5,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Lu Hsiensei",
+        "systemAddress": 7268023870873,
+        "coords": [
+          7.125,
+          -121.75,
+          -34.594
+        ],
+        "factions": [
+          "BFNF Solutions",
+          "Lu Hsiensei Domain",
+          "Lu Hsiensei Exchange"
+        ],
+        "stations": [
+          "Israel Base"
+        ]
+      },
+      "target": {
+        "system": "HIP 9141",
+        "systemAddress": 2209500596579,
+        "coords": [
+          11.344,
+          -127.875,
+          -36.281
+        ],
+        "factions": [
+          "Crew of HIP 9141"
+        ]
+      },
+      "distanceLy": 7.63,
+      "stackDepth": 3,
+      "reporters": 1,
+      "lastSeen": "2019-09-01",
+      "resourceSites": {
+        "standard": 1,
+        "low": 1,
+        "high": 2,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Metzili",
+        "systemAddress": 2007997846218,
+        "coords": [
+          -7.656,
+          -46.812,
+          -56.656
+        ],
+        "factions": [
+          "Brazilian Armada X",
+          "East India Company",
+          "Metzili Autocracy",
+          "Metzili Crimson Electronics Org",
+          "Metzili Empire League",
+          "Metzili Inc",
+          "Social Metzili Future"
+        ],
+        "stations": [
+          "Shaw Station"
+        ]
+      },
+      "target": {
+        "system": "BZ Ceti",
+        "systemAddress": 1458242032330,
+        "coords": [
+          -10.344,
+          -53.937,
+          -57.594
+        ],
+        "factions": [
+          "BZ Ceti Council"
+        ]
+      },
+      "distanceLy": 7.67,
+      "stackDepth": 7,
+      "reporters": 1,
+      "lastSeen": "2025-04-10",
+      "resourceSites": {
+        "standard": 1,
+        "low": 5,
+        "high": 1,
+        "hazardous": 3
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Niu Lang O",
+        "systemAddress": 6681056449234,
+        "coords": [
+          78.5,
+          -93.031,
+          -24.375
+        ],
+        "factions": [
+          "Royal Elite of the Grand Duke"
+        ],
+        "stations": [
+          "Hirasawa Station"
+        ]
+      },
+      "target": {
+        "system": "HIP 17298",
+        "systemAddress": 663329163627,
+        "coords": [
+          78.844,
+          -102.594,
+          -23.562
+        ],
+        "factions": [
+          "Raiders of HIP 17298"
+        ]
+      },
+      "distanceLy": 9.6,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2026-08-19",
+      "resourceSites": {
+        "standard": 2,
+        "low": 1,
+        "high": 1,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Shinrarta Dezhra",
+        "systemAddress": 3932277478106,
+        "coords": [
+          55.719,
+          17.594,
+          27.156
+        ],
+        "factions": [
+          "The Dark Wheel"
+        ],
+        "stations": [
+          "Jameson Memorial"
+        ]
+      },
+      "target": {
+        "system": "Nuenets",
+        "systemAddress": 3240309557611,
+        "coords": [
+          48.0,
+          17.656,
+          28.313
+        ],
+        "factions": [
+          "Nuenets Blue Crew"
+        ]
+      },
+      "distanceLy": 7.81,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2024-11-04",
+      "resourceSites": {
+        "standard": 0,
+        "low": 1,
+        "high": 1,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Skogulumari",
+        "systemAddress": 5031789073122,
+        "coords": [
+          70.031,
+          -10.0,
+          67.219
+        ],
+        "factions": [
+          "Odomazotz Citizens of Tradition",
+          "Palatine Imperium",
+          "People's Skogulumari Independents",
+          "Skogulumari Central Network",
+          "Skogulumari Services"
+        ],
+        "stations": [
+          "Nicholson Dock",
+          "Palmer Dock"
+        ]
+      },
+      "target": {
+        "system": "Odomazotz",
+        "systemAddress": 5306666980066,
+        "coords": [
+          72.438,
+          -9.531,
+          67.344
+        ],
+        "factions": [
+          "Odomazotz Silver Brotherhood"
+        ]
+      },
+      "distanceLy": 2.46,
+      "stackDepth": 5,
+      "reporters": 1,
+      "lastSeen": "2026-08-15",
+      "resourceSites": {
+        "standard": 1,
+        "low": 4,
+        "high": 2,
+        "hazardous": 2
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Sol",
+        "systemAddress": 10477373803,
+        "coords": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "factions": [
+          "Sol Nationalists"
+        ],
+        "stations": [
+          "Abraham Lincoln"
+        ]
+      },
+      "target": {
+        "system": "Alpha Centauri",
+        "systemAddress": 1178708478315,
+        "coords": [
+          3.031,
+          -0.094,
+          3.156
+        ],
+        "factions": [
+          "Alpha Centauri Gold Brotherhood"
+        ]
+      },
+      "distanceLy": 4.38,
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2026-08-09",
+      "resourceSites": {
+        "standard": 0,
+        "low": 1,
+        "high": 1,
+        "hazardous": 0
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "Zi Guo Wu",
+        "systemAddress": 3932143063778,
+        "coords": [
+          5.313,
+          -218.062,
+          61.063
+        ],
+        "factions": [
+          "HIP 117668 Life Corp.",
+          "Justice Party of Zi Guo Wu",
+          "Social Zi Guo Wu for Equality",
+          "Zi Guo Wu Jet Legal PLC"
+        ],
+        "stations": [
+          "Christy Dock"
+        ]
+      },
+      "target": {
+        "system": "Dhan",
+        "systemAddress": 670953776577,
+        "coords": [
+          0.875,
+          -219.469,
+          60.813
+        ],
+        "factions": [
+          "Dhan Silver Boys"
+        ]
+      },
+      "distanceLy": 4.66,
+      "stackDepth": 4,
+      "reporters": 1,
+      "lastSeen": "2025-04-20",
+      "resourceSites": {
+        "standard": 2,
+        "low": 0,
+        "high": 1,
+        "hazardous": 1
+      },
+      "indexed": true
+    }
+  ]
 }
