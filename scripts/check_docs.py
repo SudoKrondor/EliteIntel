@@ -60,6 +60,7 @@ SKIP_BARE_COMMANDER = SKIP_TERMINOLOGY + (
     'docs/ED_HUD_REFERENCE.md',             # the HudCommanderBlock widget
     'docs/SELF_DIAGNOSTIC.md',              # Krondor's, describing his own spoken feature
     'docs/LM_STUDIO_INSTALL_ASSISTANCE.md',  # Krondor's, describing his own feature (Alan, 2026-11-09)
+    'docs/CROWDSOURCED_MASSACRE_SETS.md',   # Krondor's, describing his own feature (Alan, 2026-11-13)
     'docs/00-overview/input-environment.md',  # defines the terms
     'CLAUDE.md',                            # defines the terms, and quotes the code vocabulary
 )
