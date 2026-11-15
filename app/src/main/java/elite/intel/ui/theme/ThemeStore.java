@@ -26,6 +26,9 @@ public final class ThemeStore {
     public static final String HIGH_CONTRAST_ID = BUILT_IN_PREFIX + "high-contrast";
     /** The built-in orange theme: a nod to the game's own HUD colours, the app's look before V1.2. */
     public static final String CLOCKWORK_ORANGE_ID = BUILT_IN_PREFIX + "clockwork-orange";
+    public static final String HACKERS_GREEN = BUILT_IN_PREFIX + "hackers-green";
+    public static final String COFFEE = BUILT_IN_PREFIX + "coffee";
+    public static final String PURPLE_RAIN = BUILT_IN_PREFIX + "purple-rain";
     private static final String BUILT_IN_FOLDER = "/themes/";
     private static final String FILE_SUFFIX = ".json";
 

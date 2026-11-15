@@ -6,9 +6,8 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AppDataPasswordDialog;
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.event.SystemShutDownEvent;
+import elite.intel.ui.event.RelaunchRequestedEvent;
 import elite.intel.util.AppPaths;
-import elite.intel.util.AppRelauncher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -164,12 +163,16 @@ public final class AppDataActions {
         }
     }
 
+    /**
+     * The restore is already waiting for the next start, so Go back on BindForge's leave question only puts the
+     * restart off: the restore still happens whenever the app is next started.
+     */
     private static void restart(Component parent) {
-        if (AppRelauncher.relaunch()) {
-            UiBus.publish(new SystemShutDownEvent());
-            return;
-        }
-        info(parent, "settings.appData.restore.title", getText("settings.appData.restore.restartByHand"));
+        // WHY HudConfirmDialog directly rather than info(): the failure runs on the EDT, where info()'s invokeAndWait
+        // would throw.
+        UiBus.publish(new RelaunchRequestedEvent(() -> HudConfirmDialog.info(parent,
+                getText("settings.appData.restore.title"), getText("settings.appData.restore.restartByHand"),
+                getText("button.ok"))));
     }
 
     private static void discardQuietly(AppDataRestore.Staged staged) {

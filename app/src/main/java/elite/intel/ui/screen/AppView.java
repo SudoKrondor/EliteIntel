@@ -16,6 +16,7 @@ import elite.intel.ui.theme.HudLookAndFeel;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudWindowButtons;
 import elite.intel.ui.widget.TopStatusBar;
+import elite.intel.util.AppRelauncher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -334,6 +335,18 @@ public class AppView extends JFrame implements AppViewInterface {
     @Subscribe
     public void onGameClockDisagreement(GameClockDisagreementEvent event) {
         SwingUtilities.invokeLater(() -> GameClockWarning.show(this, event));
+    }
+
+    @Subscribe
+    public void onRelaunchRequested(RelaunchRequestedEvent event) {
+        SwingUtilities.invokeLater(() -> bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> {
+            if (!AppRelauncher.relaunch()) {
+                event.relaunchFailed().run();
+                return;
+            }
+            setVisible(false);
+            System.exit(0);
+        }));
     }
 
     @Subscribe

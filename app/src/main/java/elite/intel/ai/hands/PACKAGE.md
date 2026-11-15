@@ -149,6 +149,7 @@ Uses `XTestFakeKeyEvent` (libXtst) to inject key events directly into the X inpu
 - `typeChar(c)`: queries
   `XGetKeyboardMapping` to determine if Shift is needed for the character's level (level 0 = plain, level 1 = Shift), then injects accordingly. Falls back to Robot for AltGr or other multi-level chars.
 - Gracefully degrades on Wayland (where `XOpenDisplay` returns null).
+- `InputPermissionPrimer` taps a lone Control key over this connection once per process, when `HandsService` starts, so KWin's or Mutter's "control input devices" dialog (an Xwayland built with libei) opens while the commander is at the app and not over the game at the first command. KWin forgets the grant on exit, so this runs every launch. It takes Left Control, or Right Control if the binds bind Left Control bare, or nothing if both are. Not F13: xkb maps that keycode to `XF86Tools`, which GNOME binds to opening Settings.
 
 ### `FrontierBindingKeyResolver`
 
@@ -219,6 +220,7 @@ The authoritative registry of Elite Dangerous action names that EliteIntel comma
 | `NativeKeyInput` | Platform key injection interface |
 | `WindowsNativeKeyInput` | `SendInput` (scan codes) via JNA |
 | `LinuxX11NativeKeyInput` | `XTestFakeKeyEvent` (keysyms) via JNA |
+| `InputPermissionPrimer` | One Control tap at service start, so the desktop asks for input permission before the game session |
 | `KeyBindingExecutor` | Translates Frontier key names → `KeyProcessor` codes; drives execution |
 | `FrontierBindingKeyResolver` | Handles named-char and literal-Unicode Frontier key names |
 | `Bindings.GameCommand` | Enum of all game action names EliteIntel may invoke |
