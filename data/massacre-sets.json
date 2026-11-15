@@ -1,53 +1,8 @@
 {
   "format": 1,
   "indexDate": "2026-03-02",
-  "contributors": 2,
+  "contributors": 4,
   "sets": [
-    {
-      "provider": {
-        "system": "Baminyi",
-        "systemAddress": 7269097612681,
-        "coords": [
-          91.906,
-          -110.344,
-          -75.125
-        ],
-        "factions": [
-          "Baminyi Bridge Group",
-          "Baminyi Defence Force",
-          "Baminyi Republic Party",
-          "New Baminyi Law Party",
-          "United Imperial Loyalists"
-        ],
-        "stations": [
-          "Glass Survey",
-          "Medupe Prospect"
-        ]
-      },
-      "target": {
-        "system": "Xue Davokje",
-        "systemAddress": 3107643658946,
-        "coords": [
-          88.25,
-          -102.156,
-          -70.781
-        ],
-        "factions": [
-          "Xue Davokje Blue Cartel"
-        ]
-      },
-      "distanceLy": 9.96,
-      "stackDepth": 5,
-      "reporters": 1,
-      "lastSeen": "2026-10-19",
-      "resourceSites": {
-        "standard": 3,
-        "low": 1,
-        "high": 2,
-        "hazardous": 2
-      },
-      "indexed": true
-    },
     {
       "provider": {
         "system": "BD-21 3153",
@@ -275,9 +230,7 @@
         ],
         "factions": [
           "6th Interstellar Corps",
-          "Cadubii Partners",
-          "Republic Party of Cadubii",
-          "Traditional Cadubii Conservatives"
+          "Republic Party of Cadubii"
         ],
         "stations": [
           "Abe Gateway"
@@ -296,9 +249,9 @@
         ]
       },
       "distanceLy": 7.95,
-      "stackDepth": 4,
+      "stackDepth": 2,
       "reporters": 1,
-      "lastSeen": "2026-10-19",
+      "lastSeen": "2026-08-22",
       "resourceSites": {
         "standard": 3,
         "low": 1,
@@ -349,47 +302,6 @@
     },
     {
       "provider": {
-        "system": "Crucis Sector OI-T b3-5",
-        "systemAddress": 11666876016065,
-        "coords": [
-          73.438,
-          -15.406,
-          66.656
-        ],
-        "factions": [
-          "13th Legion",
-          "Independent Pilots Consortium"
-        ],
-        "stations": [
-          "Eagles Rest"
-        ]
-      },
-      "target": {
-        "system": "Odomazotz",
-        "systemAddress": 5306666980066,
-        "coords": [
-          72.438,
-          -9.531,
-          67.344
-        ],
-        "factions": [
-          "Odomazotz Silver Brotherhood"
-        ]
-      },
-      "distanceLy": 6.0,
-      "stackDepth": 2,
-      "reporters": 1,
-      "lastSeen": "2026-08-14",
-      "resourceSites": {
-        "standard": 1,
-        "low": 4,
-        "high": 2,
-        "hazardous": 2
-      },
-      "indexed": true
-    },
-    {
-      "provider": {
         "system": "Duamta",
         "systemAddress": 4339804408171,
         "coords": [
@@ -426,7 +338,7 @@
       },
       "distanceLy": 6.93,
       "stackDepth": 8,
-      "reporters": 2,
+      "reporters": 4,
       "lastSeen": "2026-11-08",
       "resourceSites": {
         "standard": 4,
@@ -600,46 +512,6 @@
         "low": 5,
         "high": 2,
         "hazardous": 3
-      },
-      "indexed": true
-    },
-    {
-      "provider": {
-        "system": "Jastreb Sector GH-M a7-0",
-        "systemAddress": 5364950911816,
-        "coords": [
-          -17.531,
-          -26.281,
-          -6.375
-        ],
-        "factions": [
-          "League of Seediansi"
-        ],
-        "stations": [
-          "Pinto Vision"
-        ]
-      },
-      "target": {
-        "system": "LHS 1050",
-        "systemAddress": 24859941741985,
-        "coords": [
-          -23.625,
-          -28.281,
-          -8.531
-        ],
-        "factions": [
-          "Clan of LHS 1050"
-        ]
-      },
-      "distanceLy": 6.77,
-      "stackDepth": 1,
-      "reporters": 1,
-      "lastSeen": "2026-08-08",
-      "resourceSites": {
-        "standard": 1,
-        "low": 0,
-        "high": 2,
-        "hazardous": 2
       },
       "indexed": true
     },
@@ -943,46 +815,6 @@
     },
     {
       "provider": {
-        "system": "Niu Lang O",
-        "systemAddress": 6681056449234,
-        "coords": [
-          78.5,
-          -93.031,
-          -24.375
-        ],
-        "factions": [
-          "Royal Elite of the Grand Duke"
-        ],
-        "stations": [
-          "Hirasawa Station"
-        ]
-      },
-      "target": {
-        "system": "HIP 17298",
-        "systemAddress": 663329163627,
-        "coords": [
-          78.844,
-          -102.594,
-          -23.562
-        ],
-        "factions": [
-          "Raiders of HIP 17298"
-        ]
-      },
-      "distanceLy": 9.6,
-      "stackDepth": 1,
-      "reporters": 1,
-      "lastSeen": "2026-08-19",
-      "resourceSites": {
-        "standard": 2,
-        "low": 1,
-        "high": 1,
-        "hazardous": 1
-      },
-      "indexed": true
-    },
-    {
-      "provider": {
         "system": "Shinrarta Dezhra",
         "systemAddress": 3932277478106,
         "coords": [
@@ -1018,91 +850,6 @@
         "low": 1,
         "high": 1,
         "hazardous": 1
-      },
-      "indexed": true
-    },
-    {
-      "provider": {
-        "system": "Skogulumari",
-        "systemAddress": 5031789073122,
-        "coords": [
-          70.031,
-          -10.0,
-          67.219
-        ],
-        "factions": [
-          "Odomazotz Citizens of Tradition",
-          "Palatine Imperium",
-          "People's Skogulumari Independents",
-          "Skogulumari Central Network",
-          "Skogulumari Services"
-        ],
-        "stations": [
-          "Nicholson Dock",
-          "Palmer Dock"
-        ]
-      },
-      "target": {
-        "system": "Odomazotz",
-        "systemAddress": 5306666980066,
-        "coords": [
-          72.438,
-          -9.531,
-          67.344
-        ],
-        "factions": [
-          "Odomazotz Silver Brotherhood"
-        ]
-      },
-      "distanceLy": 2.46,
-      "stackDepth": 5,
-      "reporters": 1,
-      "lastSeen": "2026-08-15",
-      "resourceSites": {
-        "standard": 1,
-        "low": 4,
-        "high": 2,
-        "hazardous": 2
-      },
-      "indexed": true
-    },
-    {
-      "provider": {
-        "system": "Sol",
-        "systemAddress": 10477373803,
-        "coords": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "factions": [
-          "Sol Nationalists"
-        ],
-        "stations": [
-          "Abraham Lincoln"
-        ]
-      },
-      "target": {
-        "system": "Alpha Centauri",
-        "systemAddress": 1178708478315,
-        "coords": [
-          3.031,
-          -0.094,
-          3.156
-        ],
-        "factions": [
-          "Alpha Centauri Gold Brotherhood"
-        ]
-      },
-      "distanceLy": 4.38,
-      "stackDepth": 1,
-      "reporters": 1,
-      "lastSeen": "2026-08-09",
-      "resourceSites": {
-        "standard": 0,
-        "low": 1,
-        "high": 1,
-        "hazardous": 0
       },
       "indexed": true
     },
