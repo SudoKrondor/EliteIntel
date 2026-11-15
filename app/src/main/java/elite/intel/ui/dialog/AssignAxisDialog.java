@@ -88,6 +88,8 @@ public class AssignAxisDialog extends JDialog {
     private final JLabel current = new JLabel();
     private final JLabel willHold = new JLabel(" ");
     private final JPanel alsoOn = transparentPanel(new BorderLayout());
+    /** What {@link #alsoOn} shows now, so a refresh that leaves it the same does not rebuild it. */
+    private List<String> alsoOnShown;
     private final JButton undoButton = makeButtonSubtle(getText("bindings.assign.undo"));
     private final JButton clearButton = makeButtonSubtle(getText("bindings.assign.capture.clear"));
     private final HudToggleButton invertButton = new HudToggleButton("");
@@ -377,7 +379,9 @@ public class AssignAxisDialog extends JDialog {
         addOption(options, gbc, getText("bindings.axis.direction"), invertButton, false);
 
         deadzoneSlider.setValueFormatter(AssignAxisDialog::deadzoneText);
-        deadzoneSlider.addChangeListener(e -> refresh());
+        // WHY not refresh(): it re-lays out the whole dialog, and a drag fires on every tick - the binding card above
+        // the slider jumped with each one (Krondor, 2026-11-15). The dead zone changes nothing but SAVE.
+        deadzoneSlider.addChangeListener(e -> showSaveState());
         gbc.gridy = 1;
         addOption(options, gbc, getText("bindings.axis.deadzone"), deadzoneSlider, true);
 
@@ -484,7 +488,7 @@ public class AssignAxisDialog extends JDialog {
                     ? BorderFactory.createLineBorder(HUD_COLOR_ROLE_PRIMARY_ACTION, 2)
                     : BorderFactory.createLineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER));
         }
-        saveButton.setEnabled(changeable() && changed());
+        showSaveState();
         if (viewOnly) {
             for (JComponent off : List.of(clearButton, invertButton, deadzoneSlider, rangeButton, saveButton)) {
                 off.setToolTipText(getText("bindings.readOnly.tooltip"));
@@ -496,6 +500,10 @@ public class AssignAxisDialog extends JDialog {
             fitToScreen();
             setLocation(at);
         }
+    }
+
+    private void showSaveState() {
+        saveButton.setEnabled(changeable() && changed());
     }
 
     /**
@@ -517,8 +525,11 @@ public class AssignAxisDialog extends JDialog {
     }
 
     private void showAlsoOn() {
-        alsoOn.removeAll();
         List<String> others = picked == null ? List.of() : holders.apply(picked);
+        // WHY only on a change: a rebuilt wrapping banner has no width at first, and the card jumps while it settles.
+        if (others.equals(alsoOnShown)) return;
+        alsoOnShown = others;
+        alsoOn.removeAll();
         if (!others.isEmpty()) {
             alsoOn.add(HudBanner.multiline(getText("bindings.axis.alsoOn", String.join(", ", others)),
                     StatusBadge.State.INFO), BorderLayout.CENTER);
