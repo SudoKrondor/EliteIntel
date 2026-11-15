@@ -68,6 +68,28 @@ class ThemeFileTest {
         assertEquals(ThemeRole.FRAME_BORDER.defaultColor(), theme.color(ThemeRole.FRAME_BORDER));
     }
 
+    /** A theme made before the accent fill existed keeps its own accent there, not the Default's cyan. */
+    @Test
+    void anAccentFillTheFileLeavesOutShowsItsAccent() throws ThemeFileException {
+        ColorTheme theme = ThemeFile.parse("""
+                { "format": 1, "name": "Orange", "colors": { "primaryAction": "#FF6600" } }
+                """);
+
+        assertEquals(new Color(0xFF6600), theme.color(ThemeRole.ACCENT_FILL));
+    }
+
+    @Test
+    void anAccentFillEqualToItsAccentIsNotWrittenButAnyOtherIs() throws ThemeFileException {
+        Color orange = new Color(0xFF6600);
+        ColorTheme following = new ColorTheme("Orange", "", Map.of(
+                ThemeRole.PRIMARY_ACTION, orange, ThemeRole.ACCENT_FILL, orange));
+        ColorTheme cyanFill = new ColorTheme("Orange, cyan selections", "", Map.of(
+                ThemeRole.PRIMARY_ACTION, orange, ThemeRole.ACCENT_FILL, ThemeRole.ACCENT_FILL.defaultColor()));
+
+        assertFalse(ThemeFile.format(following).contains("accentFill"));
+        assertEquals(ThemeRole.ACCENT_FILL.defaultColor(), ThemeFile.parse(ThemeFile.format(cyanFill)).color(ThemeRole.ACCENT_FILL));
+    }
+
     @Test
     void aNewerFormatIsRefused() {
         ThemeFileException refused = assertThrows(ThemeFileException.class,

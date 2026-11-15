@@ -78,7 +78,10 @@ View-as switch and the contrast warnings come in slice 5.
   contradiction (2026-11-14). `ThemePreviewProcessTest` fails if a part the preview stops drawing has no name. Pointing at the
   preview itself, and at a contrast warning, still dims.
 * **Colors** is every distinct color in the theme as a `HudColorSwatch`, with the number of parts using it as its
-  tooltip. Clicking one changes that color everywhere it is used. No swatch carries a name like "Text Field Frame
+  tooltip, in two groups: **Backgrounds** and **Text and lines** (`ThemeRole.Kind`). A color both kinds show is a
+  swatch in each group. Clicking one changes that color everywhere a role of its kind uses it, so changing text never
+  changes a background. One swatch for both moved the application background along with selected text in Default,
+  and a grey a commander gave a background and some text moved both, which surprised the user (2026-11-14). No swatch carries a name like "Text Field Frame
   Color": the preview is how the commander finds a color. The one exception is a part the preview cannot draw
   (above), which has no picture to find it by.
 * **Revert** discards unsaved edits. **Save** writes the theme without making it the one in use (added in the
@@ -106,8 +109,8 @@ from commanders after V1.2 ships.
 Several roles share a color. The accent cyan, for example, paints about 12 of them. When the commander picks a new
 color for a part, the dialog asks:
 
-* **Every part with this color** (the default): every role whose current color equals the clicked role's color
-  takes the new color.
+* **Every part with this color** (the default): every role of the same kind (background, or text and lines) whose
+  current color equals the clicked role's color takes the new color.
 * **Only this part**: just the clicked role changes.
 
 The grouping is by current color, not by a fixed base color in the file, so it follows whatever the commander
@@ -162,7 +165,7 @@ of four levels per channel) and text anti-aliasing off. It does not depend on th
 language and screen. A click reads the code under it, and on an anti-aliased edge takes the code most pixels
 within 2 px carry. In the spike, 98.7% of the pixels mapped exactly.
 
-**38 of the 48 roles can be clicked in the preview.** The other 10 are edited from the swatches only. (Three more,
+**39 of the 49 roles can be clicked in the preview.** The other 10 are edited from the swatches only. (Three more,
 `radioTransmissionLogText`, `streamOverlayBackground` and `warningPanelBackground`, were painted by nothing at all
 and were deleted on 2026-11-14.)
 
@@ -205,8 +208,9 @@ read:
 purple accent (4.4:1) was "fixed" to black, which read 1.8:1 on the dark purple selected tabs (Purple Rain,
 2026-11-14). Two causes, both fixed: selected text was checked against the accent only, though it also sits on the
 two selected-tab fills and the pressed button (`ThemeContrast.PAIRS`); and the fix was allowed to flip. Some
-combinations cannot be fixed fully: white text on the accent and the accent as text on a near-black background
-cannot both reach 4.5:1 (21:1 is the whole range, 4.5 x 4.5 = 20.25). **Fix all** applies the same rules in passes
+combinations cannot be fixed fully, where one role is both text and the fill under other text (21:1 is the whole
+range, 4.5 x 4.5 = 20.25). The accent was the worst case until the accent fill became a role of its own: Purple
+Rain now fixes fully, the fill darkening under white text while the accent text keeps its contrast. **Fix all** applies the same rules in passes
 and stops when a pass changes nothing. A fixed color is opaque. Warnings never stop a save: the commander's eyes and screen are theirs. Default and High
 contrast have none.
 
@@ -216,12 +220,14 @@ contrast have none.
 
 ### The role table
 
-`ThemeRole` (built in slice 2) holds one entry for each `HudPalette` color role a theme can set, 48 of the 49:
+`ThemeRole` (built in slice 2) holds one entry for each `HudPalette` color role a theme can set, 49 of the 50:
 
 * a stable **wire name** for the JSON (`primaryAction`, `success`, `fieldBackground`...), which never changes
   when the Java constant is renamed;
 * its default color, as `0xAARRGGBB`. This is the only place an app-window color literal is written: the old
   `HUD_COLOR_<HEX>` raw constants are gone;
+* its **kind**: `BACKGROUND` (a fill other parts sit on) or `FOREGROUND` (text, lines, frames and marks). The
+  editor groups swatches and "every part with this color" by it;
 * for text roles, the background role it is drawn on, for the contrast warnings. That is added in slice 5, with
   the warnings.
 
@@ -230,6 +236,13 @@ Each `HudPalette` role is `ActiveTheme.color(ThemeRole.X)` and stays `public sta
 `HUD_COLOR_ROLE_DISABLED` at half alpha. `HUD_COLOR_ROLE_SELECTION_BACKGROUND` became a role of its own
 (`selectionBackground`, the frame blue at half alpha by default). So did the commander's chat lane
 (`userInputLogText`, `commanderMarker`): it used to alias success, and now starts at the same color.
+
+**The accent fill** (`accentFill`, added 2026-11-14) is the accent where it fills an area under selected text: the
+selected segment, selected rows and items in tables, lists and combos, selected text in fields, pressed subtle
+buttons and steppers, selected toggles, held keys. `primaryAction` keeps the accent as text, lines, frames and marks.
+They were one role, so a commander changing the accent text changed every selection with it. A theme that leaves
+`accentFill` out shows its own `primaryAction` there, not the Default's cyan (`ThemeRole.follows`), so themes made
+before the split look as they did. An `accentFill` equal to the theme's accent is not written.
 
 `ED_HUD_REFERENCE.md`'s rules still hold: widgets name roles, and no widget hard-codes a color.
 

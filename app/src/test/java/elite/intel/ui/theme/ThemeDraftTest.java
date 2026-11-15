@@ -15,7 +15,7 @@ class ThemeDraftTest {
     @Test
     void changingEveryPartChangesEveryRoleShowingThatColor() {
         ThemeDraft draft = new ThemeDraft(ColorTheme.DEFAULT);
-        List<ThemeRole> sharingAccent = draft.rolesColored(draft.color(ThemeRole.PRIMARY_ACTION));
+        List<ThemeRole> sharingAccent = draft.rolesLike(ThemeRole.PRIMARY_ACTION);
 
         draft.changeEveryRoleColoredLike(ThemeRole.PRIMARY_ACTION, PICKED);
 
@@ -80,8 +80,9 @@ class ThemeDraftTest {
 
     /**
      * Purple Rain, as a commander made it: white selected text on a light purple accent (4.4:1), and dark purple
-     * selected tabs. White on the accent and the accent on the near-black background cannot both reach 4.5:1, so the
-     * fix balances them. It must never turn the text black, which once left the selected tabs unreadable.
+     * selected tabs. While the accent was one role, white on it and it on the near-black background could not both
+     * reach 4.5:1. The accent fill is its own role now, so the fill darkens and the accent text keeps its contrast.
+     * It must never turn the text black, which once left the selected tabs unreadable.
      */
     @Test
     void aFixNeverMakesTheSelectedTabsHarderToRead() {
@@ -94,25 +95,65 @@ class ThemeDraftTest {
                 ThemeRole.SECTION_TAB_ACTIVE_BACKGROUND, darkPurpleFill,
                 ThemeRole.PRIMARY_BUTTON_PRESSED_BACKGROUND, darkPurpleFill)));
 
-        ThemeDraft.Fix fix = draft.makeReadable(ThemeRole.SELECTED_TEXT, ThemeRole.PRIMARY_ACTION);
+        ThemeDraft.Fix fix = draft.makeReadable(ThemeRole.SELECTED_TEXT, ThemeRole.ACCENT_FILL);
 
-        assertEquals(ThemeDraft.Fix.IMPROVED, fix);
+        assertEquals(ThemeDraft.Fix.FIXED, fix);
         assertEquals(Color.WHITE, draft.color(ThemeRole.SELECTED_TEXT));
         for (ThemeRole tab : List.of(ThemeRole.MAIN_TAB_ACTIVE_BACKGROUND, ThemeRole.SECTION_TAB_ACTIVE_BACKGROUND)) {
             double ratio = ThemeContrast.ratio(draft.current(), new ThemeContrast.Pair(ThemeRole.SELECTED_TEXT, tab));
             assertTrue(ratio > 10, tab + " is only " + ratio);
         }
         double accentPair = ThemeContrast.ratio(draft.current(),
-                new ThemeContrast.Pair(ThemeRole.SELECTED_TEXT, ThemeRole.PRIMARY_ACTION));
-        assertTrue(accentPair > 4.4, "the accent pair got better: " + accentPair);
+                new ThemeContrast.Pair(ThemeRole.SELECTED_TEXT, ThemeRole.ACCENT_FILL));
+        assertTrue(accentPair >= 4.5, "the accent fill pair reads: " + accentPair);
+        assertEquals(new Color(0x9A57DE), draft.color(ThemeRole.PRIMARY_ACTION), "the accent text is left alone");
     }
 
     @Test
     void everyRoleIsListedUnderTheColorItShows() {
         ThemeDraft draft = new ThemeDraft(ColorTheme.DEFAULT);
 
-        int listed = draft.colorsInUse().values().stream().mapToInt(List::size).sum();
+        int listed = draft.colorsInUse().stream().mapToInt(group -> group.roles().size()).sum();
 
         assertEquals(ThemeRole.values().length, listed);
+    }
+
+    /** Default draws selected text in the application background's colour: changing one must not change the other. */
+    @Test
+    void changingEveryPartLeavesTheOtherKindAlone() {
+        ThemeDraft draft = new ThemeDraft(ColorTheme.DEFAULT);
+        Color background = draft.color(ThemeRole.APPLICATION_BACKGROUND);
+        assertEquals(background, draft.color(ThemeRole.SELECTED_TEXT), "Default shares this colour across kinds");
+
+        draft.changeEveryRoleColoredLike(ThemeRole.SELECTED_TEXT, PICKED);
+
+        assertEquals(background, draft.color(ThemeRole.APPLICATION_BACKGROUND));
+        assertEquals(PICKED.getRGB() & 0xFFFFFF, draft.color(ThemeRole.SELECTED_TEXT).getRGB() & 0xFFFFFF);
+    }
+
+    @Test
+    void aColorBothKindsShowIsTwoSwatches() {
+        ThemeDraft draft = new ThemeDraft(ColorTheme.DEFAULT);
+        Color shared = draft.color(ThemeRole.APPLICATION_BACKGROUND);
+
+        List<ThemeDraft.ColorGroup> groups = draft.colorsInUse().stream()
+                .filter(group -> group.color().equals(shared)).toList();
+
+        assertEquals(2, groups.size());
+        for (ThemeDraft.ColorGroup group : groups) {
+            for (ThemeRole role : group.roles()) assertEquals(group.kind(), role.kind(), role.name());
+        }
+    }
+
+    /** The accent as text and the accent as a fill are separate: a new text accent leaves selections as they were. */
+    @Test
+    void theAccentTextAndTheAccentFillChangeApart() {
+        ThemeDraft draft = new ThemeDraft(ColorTheme.DEFAULT);
+        Color fill = draft.color(ThemeRole.ACCENT_FILL);
+
+        draft.changeEveryRoleColoredLike(ThemeRole.PRIMARY_ACTION, PICKED);
+
+        assertEquals(fill, draft.color(ThemeRole.ACCENT_FILL));
+        assertEquals(PICKED.getRGB() & 0xFFFFFF, draft.color(ThemeRole.SHIP_NAME_TEXT).getRGB() & 0xFFFFFF);
     }
 }

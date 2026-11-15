@@ -35,7 +35,7 @@ public class HudButton extends JButton {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Prevent applyDarkPalette from overriding the state-driven foreground colour.
         putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
-        // Invert text to dark on the bright HUD_COLOR_ROLE_PRIMARY_ACTION pressed fill for secondary buttons.
+        // Invert text to dark on the bright HUD_COLOR_ROLE_ACCENT_FILL pressed fill for secondary buttons.
         if (!primary) {
             getModel().addChangeListener(e -> setForeground(getModel().isPressed() ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION));
         }
@@ -112,7 +112,7 @@ public class HudButton extends JButton {
     }
 
     private void paintSecondary(Graphics2D g2, int w, int h, ButtonModel model) {
-        Color fill = model.isPressed() ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION
+        Color fill = model.isPressed() ? HudPalette.HUD_COLOR_ROLE_ACCENT_FILL
                    : model.isRollover() ? HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND
                    : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND;
         Color border = HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;

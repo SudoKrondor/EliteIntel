@@ -132,15 +132,15 @@ public final class HudLookAndFeel {
         UIManager.put("EditorPane.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         UIManager.put("Table.background", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
         UIManager.put("Table.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("Table.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("Table.selectionBackground", HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
         UIManager.put("Table.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
         // A JList dresses like a table: the light look-and-feel would otherwise paint it white with a blue
         // selection (the voice tuning list, the journal import sources).
         UIManager.put("List.background", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
         UIManager.put("List.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("List.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("List.selectionBackground", HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
         UIManager.put("List.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-        UIManager.put("List.selectionInactiveBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("List.selectionInactiveBackground", HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
         UIManager.put("List.selectionInactiveForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
         UIManager.put("ComboBox.background",              HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
         UIManager.put("ComboBox.foreground",              HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
@@ -154,7 +154,7 @@ public final class HudLookAndFeel {
         UIManager.put("ComboBox.buttonSeparatorWidth",     0);
         // Editable combo editor calls selectAll() on setSelectedItem; override FlatLaf's
         // cold-blue theme default so selection follows the warm HUD palette.
-        UIManager.put("ComboBox.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        UIManager.put("ComboBox.selectionBackground", HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
         UIManager.put("ComboBox.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
 
         // Tooltips: a flat HUD-dark chip with a warm 1px rail instead of the pale LAF default, so every

@@ -792,7 +792,7 @@ final class DeviceEditorDialog extends JDialog {
         boxes.forEach((token, box) -> {
             Color[] resting = restingColours.get(token);
             boolean on = lit.contains(token);
-            box.setBackground(on ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : resting[0]);
+            box.setBackground(on ? HudPalette.HUD_COLOR_ROLE_ACCENT_FILL : resting[0]);
             box.setForeground(on ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : resting[1]);
         });
     }

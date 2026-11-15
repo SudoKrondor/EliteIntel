@@ -14,7 +14,7 @@ import java.util.Set;
  * A theme being edited in the Color Themes tab: the saved theme, and the colours changed since.
  * <p>
  * Several roles share a colour - the accent paints about a dozen - so a change can reach one role or every role
- * that shows the same colour right now ({@link #changeEveryRoleColoredLike}). The grouping is by the current
+ * of its kind that shows the same colour right now ({@link #changeEveryRoleColoredLike}). The grouping is by the current
  * colour, not by a fixed base colour, so it follows whatever the commander has already split apart.
  * <p>
  * A picked colour keeps the alpha of the colour it replaces: the colour picker has no alpha, and a role drawn
@@ -170,25 +170,38 @@ public final class ThemeDraft {
         return new ColorTheme(saved.name(), saved.author(), trial);
     }
 
-    /** Gives every role that shows the same colour as {@code role} right now the new colour, each keeping its alpha. */
+    /**
+     * Gives every role of the same {@link ThemeRole.Kind kind} that shows the same colour as {@code role} right now the
+     * new colour, each keeping its alpha. WHY the kind: a text colour that also happened to be a background's moved
+     * the background with it, which the user did not expect (2026-11-14).
+     */
     public void changeEveryRoleColoredLike(ThemeRole role, Color picked) {
-        for (ThemeRole sharing : rolesColored(colors.get(role))) changeRole(sharing, picked);
+        for (ThemeRole sharing : rolesLike(role)) changeRole(sharing, picked);
     }
 
-    /** Each colour the draft uses, with the roles that show it, in role order. */
-    public Map<Color, List<ThemeRole>> colorsInUse() {
-        Map<Color, List<ThemeRole>> inUse = new LinkedHashMap<>();
+    /** One swatch: a colour, the kind of role it paints, and the roles of that kind that show it, in role order. */
+    public record ColorGroup(Color color, ThemeRole.Kind kind, List<ThemeRole> roles) {
+    }
+
+    /** Each colour the draft uses for each kind of role, in role order. A colour used by both kinds is two groups. */
+    public List<ColorGroup> colorsInUse() {
+        Map<ThemeRole.Kind, Map<Color, List<ThemeRole>>> byKind = new EnumMap<>(ThemeRole.Kind.class);
         for (ThemeRole role : ThemeRole.values()) {
-            inUse.computeIfAbsent(colors.get(role), color -> new ArrayList<>()).add(role);
+            byKind.computeIfAbsent(role.kind(), kind -> new LinkedHashMap<>())
+                    .computeIfAbsent(colors.get(role), color -> new ArrayList<>()).add(role);
         }
-        return inUse;
+        List<ColorGroup> groups = new ArrayList<>();
+        byKind.forEach((kind, byColor) -> byColor.forEach((color, roles) ->
+                groups.add(new ColorGroup(color, kind, List.copyOf(roles)))));
+        return groups;
     }
 
-    /** The roles that show {@code color}. */
-    public List<ThemeRole> rolesColored(Color color) {
+    /** The roles of the same kind as {@code role} that show its colour, itself included. */
+    public List<ThemeRole> rolesLike(ThemeRole role) {
+        Color color = colors.get(role);
         List<ThemeRole> roles = new ArrayList<>();
-        for (ThemeRole role : ThemeRole.values()) {
-            if (colors.get(role).equals(color)) roles.add(role);
+        for (ThemeRole other : ThemeRole.values()) {
+            if (other.kind() == role.kind() && colors.get(other).equals(color)) roles.add(other);
         }
         return roles;
     }

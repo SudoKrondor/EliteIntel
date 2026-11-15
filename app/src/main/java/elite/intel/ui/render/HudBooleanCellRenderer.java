@@ -32,10 +32,10 @@ public class HudBooleanCellRenderer extends JComponent implements TableCellRende
         filled = Boolean.TRUE.equals(value);
 
         if (isSelected) {
-            bgColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
-            // Marker must remain legible on the HUD_COLOR_ROLE_PRIMARY_ACTION background; HUD_COLOR_ROLE_SELECTED_TEXT provides the contrast.
+            bgColor = HudPalette.HUD_COLOR_ROLE_ACCENT_FILL;
+            // Marker must remain legible on the HUD_COLOR_ROLE_ACCENT_FILL background; HUD_COLOR_ROLE_SELECTED_TEXT provides the contrast.
             markerColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
-            tickColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
+            tickColor = HudPalette.HUD_COLOR_ROLE_ACCENT_FILL;
         } else {
             Object hoveredObj = table.getClientProperty(HudTable.HOVER_ROW_PROPERTY);
             boolean hovered = hoveredObj instanceof Integer h && h == row;

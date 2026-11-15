@@ -73,7 +73,7 @@ public final class ColorThemesTabPanel extends JPanel {
     private final DefaultListModel<Entry> listModel = new DefaultListModel<>();
     private final JList<Entry> list = new JList<>(listModel);
     private final ThemePreviewPane preview;
-    private final JPanel swatches = transparentPanel(new GridLayout(0, SWATCH_COLUMNS, GAP / 2, GAP / 2));
+    private final JPanel swatches = transparentPanel(new BorderLayout(0, GAP));
     private final JPanel contrastWarnings = transparentPanel(new GridLayout(0, 1, 0, GAP / 2));
     private final JLabel status = new JLabel();
 
@@ -223,12 +223,12 @@ public final class ColorThemesTabPanel extends JPanel {
 
     // -- Editing ---------------------------------------------------------------
 
-    /** A click on the preview: the part's colour, for that part only or every part showing the same colour. */
+    /** A click on the preview: the part's colour, for that part only or every part of its kind showing the same colour. */
     private void changeRole(ThemeRole role) {
         if (!editable()) return;
         Color picked = HudColorChooserDialog.choose(this, getText("themes.change.title"), draft.color(role));
         if (picked == null) return;
-        int sharing = draft.rolesColored(draft.color(role)).size();
+        int sharing = draft.rolesLike(role).size();
         if (sharing > 1) {
             HudConfirmDialog.Result scope = HudConfirmDialog.show(this, getText("themes.change.title"),
                     getText("themes.change.message", sharing), getText("themes.change.every"),
@@ -242,7 +242,7 @@ public final class ColorThemesTabPanel extends JPanel {
         refresh();
     }
 
-    /** A click on a swatch: that colour, everywhere it is used. */
+    /** A click on a swatch: that colour, everywhere a role of the swatch's kind uses it. */
     private void changeColor(List<ThemeRole> roles) {
         if (!editable()) return;
         ThemeRole first = roles.getFirst();
@@ -440,11 +440,28 @@ public final class ColorThemesTabPanel extends JPanel {
         list.repaint();
     }
 
+    /**
+     * The swatches, backgrounds apart from text and lines: a colour both kinds show is a swatch under each, so changing
+     * text never changes a background (user feedback, 2026-11-14).
+     */
     private void rebuildSwatches() {
         swatches.removeAll();
-        draft.colorsInUse().forEach((color, roles) -> swatches.add(swatch(color, roles)));
+        List<ThemeDraft.ColorGroup> groups = draft.colorsInUse();
+        swatches.add(swatchGroup(groups, ThemeRole.Kind.BACKGROUND, "themes.colors.backgrounds"), BorderLayout.NORTH);
+        swatches.add(swatchGroup(groups, ThemeRole.Kind.FOREGROUND, "themes.colors.foregrounds"), BorderLayout.CENTER);
         swatches.revalidate();
         swatches.repaint();
+    }
+
+    private JComponent swatchGroup(List<ThemeDraft.ColorGroup> groups, ThemeRole.Kind kind, String titleKey) {
+        JPanel grid = transparentPanel(new GridLayout(0, SWATCH_COLUMNS, GAP / 2, GAP / 2));
+        for (ThemeDraft.ColorGroup group : groups) {
+            if (group.kind() == kind) grid.add(swatch(group.color(), group.roles()));
+        }
+        JPanel section = transparentPanel(new BorderLayout(0, GAP / 2));
+        section.add(hint(getText(titleKey), 0), BorderLayout.NORTH);
+        section.add(grid, BorderLayout.CENTER);
+        return section;
     }
 
     private HudColorSwatch swatch(Color color, List<ThemeRole> roles) {

@@ -53,7 +53,7 @@ The ED canon (the Odyssey radar: friendly=green, neutral=blue, alerted=yellow, h
 
 The green, blue and red are tuned for colour-blind commanders (light mint, mid periwinkle, vermilion): they stay apart by lightness as well as hue under simulated deuteranopia, protanopia and tritanopia, and each reads at 5:1 or better. Retune them only as a set and re-check all three (`HudPalette` says why).
 
-- `HUD_COLOR_ROLE_PRIMARY_ACTION` (cyan) — the accent: active/selected/actionable · `HUD_COLOR_ROLE_VALUE_TEXT` (light) — a value at rest: field and combo text, table cells, read-only readouts · `HUD_COLOR_ROLE_SUCCESS` (green) — positive/OK/profit ·
+- `HUD_COLOR_ROLE_PRIMARY_ACTION` (cyan) — the accent: active/selected/actionable, as text, lines and marks · `HUD_COLOR_ROLE_ACCENT_FILL` — the accent where it fills an area under `HUD_COLOR_ROLE_SELECTED_TEXT` (selections, the selected segment, pressed subtle buttons; a theme that leaves it unset shows its accent) · `HUD_COLOR_ROLE_VALUE_TEXT` (light) — a value at rest: field and combo text, table cells, read-only readouts · `HUD_COLOR_ROLE_SUCCESS` (green) — positive/OK/profit ·
   `HUD_COLOR_ROLE_WARNING` (blue) — attention/expected waiting · `HUD_COLOR_ROLE_DANGER` (red) — danger/ failure/hostile · `HUD_COLOR_ROLE_INFORMATION` (cyan, the accent's value) — neutral informational · `HUD_COLOR_ROLE_DISABLED`/`HUD_COLOR_ROLE_SECONDARY_TEXT` — inactive · `HUD_COLOR_ROLE_READOUT_LABEL` — the dimmed label in key→value readout and telemetry blocks (`HudTelemetryBlock`, §7); a step quieter than `HUD_COLOR_ROLE_SECONDARY_TEXT` — do NOT confuse it with disabled · `HUD_COLOR_ROLE_CREDITS_TEXT` — the CMDR credit balance (`HudCommanderBlock`, §7).
 - Backings: `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` (the row plate) · `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` (hover state) ·
   `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` (the table body background and gaps, darker than the plate) · `HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND` (the modal body, between `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` and the plate, §10.1) · `HUD_COLOR_ROLE_MODAL_SCRIM` (the veil under a modal, §10.1).
@@ -132,7 +132,7 @@ References: Station Services (shortcuts), Ship Functions (toggles).
 
 -
 **Rest:** `HUD_COLOR_ROLE_PRIMARY_ACTION` text on `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND`, outlined `HUD_COLOR_ROLE_CONTROL_DECORATION`.
-- **Pressed:** inverted `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`, only while held.
+- **Pressed:** inverted `HUD_COLOR_ROLE_ACCENT_FILL`+`HUD_COLOR_ROLE_SELECTED_TEXT`, only while held.
 - **Hover:** `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND`.
   **Disabled:** `HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND` + `HUD_COLOR_ROLE_DISABLED` + a `HUD_COLOR_ROLE_SECONDARY_BORDER` outline.
 
@@ -143,7 +143,7 @@ TEXT** (what will happen: `SLEEP`/`WAKE UP`/`STOP SERVICES`). The source of trut
 button).** When ON/OFF/RETRACTED has to be shown, use a value text in the right-hand column, NOT a tick or a pill slider.
 
 **The discrete numeric
-stepper `◄ value ►`** (`HudStepper`). Horizontal FILLED triangles at the LEFT and RIGHT edges of a filled `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate with NO frame, with the value centred. The arrow zones are separated from the value by vertical `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gaps. Arrow states: at rest `HUD_COLOR_ROLE_PRIMARY_ACTION`; on hover a light accent wash over the zone; on press a full `HUD_COLOR_ROLE_PRIMARY_ACTION` fill with the arrow inverted to `HUD_COLOR_ROLE_SELECTED_TEXT` (like a pressed subtle button, §4); at the end of the range the arrow dims to `HUD_COLOR_ROLE_DISABLED`. The value is centred text with NO free input (as in the game). NOT a native `JSpinner` with vertical ▲▼. The arrows are the `paintHudArrowLeft`/`paintHudArrowRight` primitives (§13). Anchor: `HudStepper(min, max, step, initial)`,
+stepper `◄ value ►`** (`HudStepper`). Horizontal FILLED triangles at the LEFT and RIGHT edges of a filled `HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND` plate with NO frame, with the value centred. The arrow zones are separated from the value by vertical `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` gaps. Arrow states: at rest `HUD_COLOR_ROLE_PRIMARY_ACTION`; on hover a light accent wash over the zone; on press a full `HUD_COLOR_ROLE_ACCENT_FILL` fill with the arrow inverted to `HUD_COLOR_ROLE_SELECTED_TEXT` (like a pressed subtle button, §4); at the end of the range the arrow dims to `HUD_COLOR_ROLE_DISABLED`. The value is centred text with NO free input (as in the game). NOT a native `JSpinner` with vertical ▲▼. The arrows are the `paintHudArrowLeft`/`paintHudArrowRight` primitives (§13). Anchor: `HudStepper(min, max, step, initial)`,
 `getValue()`/`setValue(int)`; in layout, a fixed width (`fill=NONE`/`weightx=0`).
 
 **The `HudSlider`
@@ -223,7 +223,7 @@ The checkbox is NOT a LAF tick but our own `[marker] TEXT`, painted straight on 
 -
 **Disabled:** the same marker in `HUD_COLOR_ROLE_DISABLED`, still filled and ticked if the setting is on; the text is `HUD_COLOR_ROLE_DISABLED`.
 
-Only the marker, text and info "i" are clickable, however wide the layout stretches the control: nothing shows that the empty remainder of a cell belongs to it, so a click there must not flip a setting. In a table's selector column (§6) a selected row inverts the marker: a `HUD_COLOR_ROLE_SELECTED_TEXT` fill with a `HUD_COLOR_ROLE_PRIMARY_ACTION` tick.
+Only the marker, text and info "i" are clickable, however wide the layout stretches the control: nothing shows that the empty remainder of a cell belongs to it, so a click there must not flip a setting. In a table's selector column (§6) a selected row inverts the marker: a `HUD_COLOR_ROLE_SELECTED_TEXT` fill with a `HUD_COLOR_ROLE_ACCENT_FILL` tick.
 
 **The info "i" (optional)** follows the text: `[marker] TEXT i`. The tint: OFF
 `HUD_COLOR_ROLE_CONTROL_DECORATION`; ON or hover over the zone `HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled `HUD_COLOR_ROLE_DISABLED`. A click opens the help and does NOT toggle. With no help the zone is not drawn.
@@ -240,9 +240,9 @@ The look of the field (§5.1) with a ▼ cell, the segments of the table filter 
 **Collapsed** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` background, `HUD_COLOR_ROLE_VALUE_TEXT` text (placeholder and muted text are `HUD_COLOR_ROLE_SECONDARY_TEXT`), and the field frame with its corner marks (`hudComboBorder()`). The ▼ is flat (`HUD_COLOR_ROLE_PRIMARY_ACTION`; disabled
 `HUD_COLOR_ROLE_DISABLED`) in a `HUD_COLOR_ROLE_APPLICATION_BACKGROUND` cell behind a 1 px `HUD_COLOR_ROLE_SECONDARY_BORDER` line, which `HudComboBoxUI` draws. FlatLaf's own grey editor↔▼ separator is a bug, suppressed globally with `ComboBox.buttonSeparatorWidth=0`.
 - **The list (
-  popup)** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` backing; `HUD_COLOR_ROLE_VALUE_TEXT` items; the selected one `HUD_COLOR_ROLE_PRIMARY_ACTION`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a `HUD_COLOR_ROLE_FRAME_BORDER` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
+  popup)** — a `HUD_COLOR_ROLE_FIELD_BACKGROUND` backing; `HUD_COLOR_ROLE_VALUE_TEXT` items; the selected one `HUD_COLOR_ROLE_ACCENT_FILL`+`HUD_COLOR_ROLE_SELECTED_TEXT`; a `HUD_COLOR_ROLE_FRAME_BORDER` border. The insets are `HUD_COMBO_ITEM_INSET_V/H` and the font `HUD_FONT_FIELD_VALUE`. The list is rendered by the factory's internal renderer, NOT an external `setRenderer`.
 - **A combo is an INPUT
-  field**: on a selected table row it keeps its plate and is not repainted `HUD_COLOR_ROLE_PRIMARY_ACTION`.
+  field**: on a selected table row it keeps its plate and is not repainted `HUD_COLOR_ROLE_ACCENT_FILL`.
 - **Text selection** is the accent: `ComboBox.selectionBackground=HUD_COLOR_ROLE_PRIMARY_ACTION`,
   `selectionForeground=HUD_COLOR_ROLE_SELECTED_TEXT` (globally).
 -

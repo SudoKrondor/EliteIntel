@@ -526,7 +526,7 @@ public class AppTheme {
         tc.setForeground(HUD_COLOR_ROLE_VALUE_TEXT);
         tc.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED); // section 0.6: disabled text dims to the warm muted tone
         tc.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
-        tc.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        tc.setSelectionColor(HUD_COLOR_ROLE_ACCENT_FILL);
         tc.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
         // Preserve the wider info border so the palette does not clobber the reserved info-"i" zone.
         tc.setBorder(tc instanceof HudTextField htf && htf.hasInfoZone()
@@ -609,7 +609,7 @@ public class AppTheme {
         editor.setForeground(HUD_COLOR_ROLE_VALUE_TEXT);
         editor.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED);
         editor.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
-        editor.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        editor.setSelectionColor(HUD_COLOR_ROLE_ACCENT_FILL);
         editor.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
         // Horizontal inset only: the fixed field height centres the text.
         editor.setBorder(new EmptyBorder(0, HUD_COMBO_ITEM_INSET_H, 0, HUD_COMBO_ITEM_INSET_H));

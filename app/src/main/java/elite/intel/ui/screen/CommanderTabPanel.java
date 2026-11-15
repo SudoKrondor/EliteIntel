@@ -889,7 +889,7 @@ public class CommanderTabPanel extends JPanel {
 
         /** Applies the cell appearance for the current selection state and returns the ready panel. */
         JPanel apply(boolean isSelected) {
-            panel.setBackground(isSelected ? HUD_COLOR_ROLE_PRIMARY_ACTION : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            panel.setBackground(isSelected ? HUD_COLOR_ROLE_ACCENT_FILL : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             panel.setOpaque(true);
             gear.setIcon(gearIcon(isSelected));
             return panel;

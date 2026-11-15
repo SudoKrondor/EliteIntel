@@ -119,7 +119,7 @@ public class HudComboBox<E> extends JComboBox<E> {
      * HUD dropdown cell renderer.
      *
      * <ul>
-     *   <li>Selected: {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION} background, {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
+     *   <li>Selected: {@link HudPalette#HUD_COLOR_ROLE_ACCENT_FILL} background, {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
      *   <li>Non-selected: the list's own background (see {@link HudComboBoxUI});
      *       {@link HudPalette#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}.</li>
      *   <li>Font: {@link HudPalette#HUD_FONT_FIELD_VALUE}.</li>
@@ -154,7 +154,7 @@ public class HudComboBox<E> extends JComboBox<E> {
             label.setText(text);
 
             if (isSelected) {
-                label.setBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
                 label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else {
                 label.setBackground(list.getBackground());
