@@ -392,8 +392,8 @@ public final class ApplyBar extends JPanel {
      * @param text the whole report, as {@link #reportText} and whatever followed it made it
      */
     static CheckFlow.Report report(Written written, String text) {
-        boolean plain = written.report().complete() && text.equals(successLine(written));
-        return plain ? new CheckFlow.Report(text, QuietableNotice.BINDFORGE_APPLY_REPORT) : CheckFlow.Report.shown(text);
+        return CheckFlow.Report.quietableIfPlain(text, successLine(written), written.report().complete(),
+                QuietableNotice.BINDFORGE_APPLY_REPORT);
     }
 
     /**

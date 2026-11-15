@@ -581,7 +581,7 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       pressed. It sits in a *Warnings* section below the push-to-talk settings.
 
     Built in Storage S21 as `QuietedNoticesManager` (migration `12025__quieted_notices.sql`), `ui.dialog.QuietableNotice`,
-    `HudConfirmDialog.confirmQuietable` / `infoQuietable`, `CheckFlow.Report`, `ApplyBar.report`,
+    `HudConfirmDialog.confirmQuietable` / `infoQuietable`, `CheckFlow.Report` (`quietableIfPlain`), `FlowSteps.tell`, `ApplyBar.report`,
     `FirstTimeStartupFlow.writtenReport`, and the Warnings section in `ui.screen.services.InputServicesPanel`.
 14. **The check:** every live copy, in every installation, is compared with the working copy **by their values, never
     by date**. Any difference means the live copy changed since BindForge last wrote it — an edit in the game, or a

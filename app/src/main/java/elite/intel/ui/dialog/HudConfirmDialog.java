@@ -4,6 +4,8 @@ import elite.intel.db.managers.QuietedNoticesManager;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,6 +26,8 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * footer's middle, for a notice the user has read before (Storage S21).
  */
 public final class HudConfirmDialog extends JDialog {
+
+    private static final Logger log = LogManager.getLogger(HudConfirmDialog.class);
 
     /** Which button closed the dialog. */
     public enum Result { PRIMARY, EXTRA, DISMISS }
@@ -126,8 +130,33 @@ public final class HudConfirmDialog extends JDialog {
      */
     private static JCheckBox quietBox(QuietableNotice notice) {
         JCheckBox box = AppTheme.makeCheckBox(getText("dialog.dontShowAgain"), false);
-        box.addActionListener(e -> QuietedNoticesManager.getInstance().setQuieted(notice.key(), box.isSelected()));
+        box.addActionListener(e -> {
+            try {
+                QuietedNoticesManager.getInstance().setQuieted(notice.key(), box.isSelected());
+            } catch (RuntimeException ex) {
+                // WHY: the box must not claim a tick that was not kept. It goes back to what is stored, and the
+                // dialog's buttons still work.
+                log.error("Could not store the \"Don't show this again\" box for {}", notice.key(), ex);
+                box.setSelected(!box.isSelected());
+            }
+        });
         return box;
+    }
+
+    /**
+     * Whether the user quieted {@code notice}. A notice whose tick cannot be read counts as not quieted.
+     * <p>
+     * WHY: the callers run their next step after the dialog - APPLY's {@code finished}, a flow's {@code then} - so a
+     * read that threw here would leave the APPLY bar or first-time startup marked busy for the rest of the run. Shown
+     * is the safe side: the user sees one dialog more.
+     */
+    private static boolean quieted(QuietableNotice notice) {
+        try {
+            return QuietedNoticesManager.getInstance().isQuieted(notice.key());
+        } catch (RuntimeException e) {
+            log.error("Could not read whether {} is quieted, showing it", notice.key(), e);
+            return false;
+        }
     }
 
     private void finish(Result r) {
@@ -195,7 +224,7 @@ public final class HudConfirmDialog extends JDialog {
      */
     public static boolean confirmQuietable(Component parent, QuietableNotice notice, String title, String message,
                                            String primaryLabel, String dismissLabel) {
-        if (QuietedNoticesManager.getInstance().isQuieted(notice.key())) return true;
+        if (quieted(notice)) return true;
         return show(parent, title, message, primaryLabel, null, dismissLabel, true, notice) == Result.PRIMARY;
     }
 
@@ -206,7 +235,7 @@ public final class HudConfirmDialog extends JDialog {
      */
     public static void infoQuietable(Component parent, QuietableNotice notice, String title, String message,
                                      String buttonLabel) {
-        if (QuietedNoticesManager.getInstance().isQuieted(notice.key())) return;
+        if (quieted(notice)) return;
         show(parent, title, message, buttonLabel, null, null, true, notice);
     }
 }

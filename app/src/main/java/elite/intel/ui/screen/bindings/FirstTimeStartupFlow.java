@@ -287,11 +287,8 @@ public final class FirstTimeStartupFlow {
      * storage.md rule 3).
      */
     static CheckFlow.Report writtenReport(Written written, int moved) {
-        String text = writtenText(written, moved);
-        boolean plain = written.report().complete() && text.equals(successLine(written));
-        return plain
-                ? new CheckFlow.Report(text, QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT)
-                : CheckFlow.Report.shown(text);
+        return CheckFlow.Report.quietableIfPlain(writtenText(written, moved), successLine(written),
+                written.report().complete(), QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT);
     }
 
     /**
@@ -358,15 +355,8 @@ public final class FirstTimeStartupFlow {
         FlowSteps.tell(parent, getText("bindings.firstTimeStartup.title"), message, this::finish);
     }
 
-    /** The write's report: shown, unless it can be quieted and the user has. */
     private void tell(CheckFlow.Report report) {
-        if (report.quietable() == null) {
-            tell(report.text());
-            return;
-        }
-        HudConfirmDialog.infoQuietable(parent, report.quietable(), getText("bindings.firstTimeStartup.title"),
-                report.text(), getText("button.close"));
-        finish();
+        FlowSteps.tell(parent, getText("bindings.firstTimeStartup.title"), report, this::finish);
     }
 
     private void finish() {

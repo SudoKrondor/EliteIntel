@@ -112,6 +112,22 @@ final class CheckFlow {
         static Report shown(String text) {
             return new Report(text, null);
         }
+
+        /**
+         * A write's report, quietable by {@code notice} only when every place took everything and {@code text} is its
+         * success line and nothing more.
+         * <p>
+         * WHY the whole text is compared rather than a list of conditions: any line appended to the success line - a
+         * failure, a file moved, a newer version, a moved device, or a kind of news a later slice adds - makes the
+         * report always show, with no list to keep in step.
+         *
+         * @param text        the whole report
+         * @param successLine its first line, as the flow words it
+         * @param complete    {@link elite.intel.bindforge.storage.WriteReport#complete()}
+         */
+        static Report quietableIfPlain(String text, String successLine, boolean complete, QuietableNotice notice) {
+            return complete && text.equals(successLine) ? new Report(text, notice) : shown(text);
+        }
     }
 
     /** The first click's write: the check's own, with no edits on screen. */
@@ -546,15 +562,8 @@ final class CheckFlow {
         FlowSteps.tell(parent, writing.title(), message, then);
     }
 
-    /** A write's report: shown, unless it can be quieted and the user has. */
     private void tell(Report report, Runnable then) {
-        if (report.quietable() == null) {
-            tell(report.text(), then);
-            return;
-        }
-        HudConfirmDialog.infoQuietable(parent, report.quietable(), writing.title(), report.text(),
-                getText("button.close"));
-        then.run();
+        FlowSteps.tell(parent, writing.title(), report, then);
     }
 
     /**
