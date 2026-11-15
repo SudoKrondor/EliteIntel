@@ -109,7 +109,7 @@ public class AppView extends JFrame implements AppViewInterface {
      * it draws the window frame itself, which it only does for an undecorated frame.
      */
     private void installWindowChrome() {
-        if (!FlatLaf.isUseNativeWindowDecorations()) {
+        if (!usesNativeDecorations()) {
             setUndecorated(true);
             getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
         }
@@ -120,6 +120,16 @@ public class AppView extends JFrame implements AppViewInterface {
         rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICONIFFY, false);
         rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_MAXIMIZE, false);
         rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_CLOSE, false);
+    }
+
+    /**
+     * Whether Windows draws the window, through FlatLaf's native decorations (Windows 10 and later). WHY not
+     * {@code FlatLaf.isUseNativeWindowDecorations()} alone: that only reads the {@code TitlePane.useWindowDecorations}
+     * setting, which is true on Linux too, so on Linux the window kept the window manager's title bar and frame and
+     * FlatLaf never took over moving, resizing or double-click (found on KDE, 2026-11-15).
+     */
+    private static boolean usesNativeDecorations() {
+        return FlatLaf.supportsNativeWindowDecorations() && FlatLaf.isUseNativeWindowDecorations();
     }
 
     /**
@@ -140,7 +150,7 @@ public class AppView extends JFrame implements AppViewInterface {
                 frame, frame, frame, frame, HudPalette.HUD_COLOR_ROLE_DIALOG_FRAME_BORDER);
         Border shellInset = new EmptyBorder(inset, inset, inset, inset);
         int titleBarHeight = inset + HudPalette.HUD_TOP_BAR_HEIGHT;
-        if (FlatLaf.isUseNativeWindowDecorations()) {
+        if (usesNativeDecorations()) {
             shellRoot.setBorder(BorderFactory.createCompoundBorder(frameBorder, shellInset));
             titleBarHeight += frame;
         } else {
