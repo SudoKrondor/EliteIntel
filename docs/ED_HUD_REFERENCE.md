@@ -534,6 +534,25 @@ References: the ED top nav plus the station info panel. The canon is `TopStatusB
 header (`TopStatusBar`).** On the left, the application name in caps (`HUD_COLOR_ROLE_PRIMARY_TEXT`, bold) plus the version (`HUD_COLOR_ROLE_SECONDARY_TEXT`). On the right, "label→value" pairs: the label (`CMDR`/`SHIP`) in `HUD_COLOR_ROLE_SECONDARY_TEXT` caps with no colon; the value in
 `HUD_COLOR_ROLE_PRIMARY_TEXT` caps, bold. NOT cyan or `HUD_COLOR_ROLE_PRIMARY_ACTION`: a name is a value, not a status.
 
+**The header is the main window's title bar.** The OS title bar breaks §0.1/§10 here as it does on a dialog, so the
+main window has none; the header stands in for it. *Decided 2026-11-14 (Alan; Krondor: the main window matches the
+dialogs).*
+- **How:** FlatLaf's full-window-content mode (`FlatClientProperties.FULL_WINDOW_CONTENT`, FlatLaf's own title-bar
+  buttons hidden), NOT `setUndecorated` as the dialogs do. The window stays a system window, so dragging the header
+  moves it, double-clicking the header maximizes it, and edge resizing keeps working. Snapping by dragging to a
+  screen edge, Win+arrow and Win+Z keep working; the Snap Layouts grid that pops up on hovering the system maximize
+  button does not, because ours is not the system's button. *Accepted 2026-11-14 (Alan).* Where FlatLaf cannot use
+  the native decorations (Linux), it draws the frame itself, and our frame replaces FlatLaf's window border there.
+- **The frame:** the dialogs' frame (§10.1) — `HUD_COLOR_ROLE_DIALOG_FRAME_BORDER` at `HUD_BORDER_THICKNESS_ACCENT` —
+  except when maximized.
+- **The window buttons** (`HudWindowButtons`) sit at the right end, after CMDR and SHIP: minimize
+  (`paintHudMinimizeGlyph`), maximize/restore (`paintHudMaximizeGlyph` / `paintHudRestoreGlyph`, following the window's
+  state whoever changed it) and close (`paintHudCloseGlyph`). Glyph only, like the dialog close ×: at rest
+  `HUD_COLOR_ROLE_CONTROL_DECORATION`; hover `HUD_COLOR_ROLE_PRIMARY_ACTION`, or `HUD_COLOR_ROLE_DANGER` for close. NOT
+  Windows-style hover fills. Close runs the window's one close path, the same as Alt+F4.
+- **"New version available."** sits after the version on the left, in `HUD_COLOR_ROLE_PRIMARY_ACTION` (a status), once
+  an update is out. It used to be the window title, which no longer shows.
+
 **The navbar
 rails:** the upper one (header↔tabs) is `HUD_COLOR_ROLE_CONTROL_DECORATION` and thinner; the lower one (navbar↔body) is
 `HUD_COLOR_ROLE_PRIMARY_ACTION` and thicker. Do NOT use `HUD_COLOR_ROLE_SECONDARY_BORDER`.
@@ -544,7 +563,7 @@ inversion**: a `HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND` fill plus `HUD_COLOR_
 **Inactive
 ones:** `HUD_COLOR_ROLE_SECONDARY_TEXT` text with a `HUD_COLOR_ROLE_CONTROL_DECORATION` icon. Disabled is `HUD_COLOR_ROLE_DISABLED`.
 
-**→ Anchors:** `TopStatusBar`, `HudTabbedPaneUi`.
+**→ Anchors:** `TopStatusBar`, `HudWindowButtons`, `HudTabbedPaneUi`.
 
 ---
 
@@ -573,7 +592,7 @@ A component that carries its own background or foreground marks itself with an o
 - An affordance icon in a cell is `HUD_ICON_TABLE`, tinted by the row (`HUD_COLOR_ROLE_CONTROL_DECORATION` at rest, `HUD_COLOR_ROLE_SELECTED_TEXT` when selected).
 - A combo (§5.3) is `HudComboBox`: flat ▼, field or table-cell surface; it does NOT invert with the row selection. No `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
 - Primitives needed in more than one place live in `HudGlyphs`: ▼ `paintHudArrowDown`; ▲ `paintHudArrowUp`; ◄ `paintHudArrowLeft`; ► `paintHudArrowRight`;
-  "i" `paintHudInfoGlyph`; × `paintHudCloseGlyph`; the checkbox marker `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`; ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; the caret `paintHudTextCaret`; tinting `tintIcon`; alpha dimming `dimIcon`. Glyphs are primitives, NOT `drawString`/Unicode and NOT rasters.
+  "i" `paintHudInfoGlyph`; × `paintHudCloseGlyph`; the window buttons `paintHudMinimizeGlyph` / `paintHudMaximizeGlyph` / `paintHudRestoreGlyph`; the checkbox marker `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`; ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; the caret `paintHudTextCaret`; tinting `tintIcon`; alpha dimming `dimIcon`. Glyphs are primitives, NOT `drawString`/Unicode and NOT rasters.
 - The info "i" lives INSIDE the control (§5.2/§5.1) through `setInfoAction`. Blue links are an anti-pattern.
 - Tooltips (`setToolTipText`) are styled GLOBALLY through the `UIManager` `ToolTip.*` keys in `AppView.installDarkDefaults`
   (a dark `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` plus a `HUD_COLOR_ROLE_CONTROL_DECORATION` rail at `HUD_BORDER_THICKNESS`,
