@@ -35,6 +35,21 @@ class CarrierFuelConfidenceTest {
         assertFalse(carrier.isFuelLevelMeasured(), "the leg's planned burn is not a reading");
     }
 
+    /**
+     * A jump off any plotted route has no leg to charge, but it still burned tritium. Leaving the level
+     * "measured" made the pre-jump reading - 1000 tons for a full depot - read as the depot's level after it.
+     */
+    @Test
+    void aJumpWeCannotChargeLeavesTheLevelStale() {
+        CarrierDataDto carrier = new CarrierDataDto();
+        carrier.setMeasuredFuelLevel(1000);
+
+        carrier.markFuelLevelStale();
+
+        assertEquals(1000, carrier.getFuelLevel(), "the last reading is kept for the next one to correct");
+        assertFalse(carrier.isFuelLevelMeasured());
+    }
+
     @Test
     void afreshReadingRestoresConfidence() {
         CarrierDataDto carrier = new CarrierDataDto();

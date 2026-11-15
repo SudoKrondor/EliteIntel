@@ -57,8 +57,8 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
                 - marketBalance: credits available for market purchases. A negative value is money already
                   committed to pending purchases, not debt.
                 - fuelSupply: current tritium in the supply depot, in tons
-                - fuelSupplyMeasured: true when the game itself last reported fuelSupply, false when it is
-                  our own running total since that reading and so an estimate
+                - fuelSupplyMeasured: true when the game itself last reported fuelSupply, false when the
+                  carrier has jumped since that reading
                 - fuelSupplyReserve: tritium held in reserve, in tons
                 - totalFuelAvailable: fuelSupply and fuelSupplyReserve combined
                 - maxRangeOnCurrentSupply: range in light years on fuelSupply alone
@@ -73,8 +73,11 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
                 - If a value is zero or missing, state that clearly.
                 - When reporting fundedOperation, always mention the calculation is approximate, based on
                   31 million credits per week.
-                - When fuelSupplyMeasured is false, say the tritium figure is approximate. It is a running
-                  total since the last reading, so quoting it flatly would claim knowledge we do not have.
+                - When fuelSupplyMeasured is false, do not quote fuelSupply as the current level. Say it is
+                  out of date because the carrier has jumped since the last reading, and that opening
+                  carrier management shows the exact figure.
+                - Always say "about" with fuelSupplyReserve and totalFuelAvailable. The reserve is tracked
+                  from cargo movements and can drift from what the hold really holds.
                 """;
         return process(
                 new AiDataStruct(
