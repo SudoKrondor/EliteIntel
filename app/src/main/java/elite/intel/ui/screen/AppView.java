@@ -1,5 +1,7 @@
 package elite.intel.ui.screen;
 
+import com.formdev.flatlaf.FlatClientProperties;
+import com.formdev.flatlaf.FlatLaf;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
@@ -12,12 +14,14 @@ import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudLookAndFeel;
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudWindowButtons;
 import elite.intel.ui.widget.TopStatusBar;
 import elite.intel.util.AppRelauncher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -56,6 +60,10 @@ public class AppView extends JFrame implements AppViewInterface {
     private AiTabController aiTabController;
     private TopStatusBar topStatusBar;
     private volatile ServicesStateEvent.State servicesState = ServicesStateEvent.State.STOPPED;
+    /** An update is out; touched on the event thread only. */
+    private boolean updateAvailable;
+    /** The content pane, which carries the shell inset (and the frame, with native decorations); set by buildUi. */
+    private JPanel shellRoot;
 
     /**
      * @param monoFont the app's monospace font, as {@link HudLookAndFeel#install()} loaded it; the look and feel
@@ -67,13 +75,12 @@ public class AppView extends JFrame implements AppViewInterface {
         UiBus.register(this);
 
         AppTheme.applyAppIcon(this);
+        installWindowChrome();
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                // WHY: closing with BindForge's edits not applied asks first; Go back cancels the close (storage.md
-                // rule 9, Storage S7).
-                bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> System.exit(0));
+                requestClose();
             }
         });
         setMinimumSize(MINIMUM_SIZE);
@@ -81,6 +88,79 @@ public class AppView extends JFrame implements AppViewInterface {
 
         buildUi();
         initData();
+        // WHY after buildUi: applyFrame dresses the content pane buildUi makes.
+        addWindowStateListener(e -> applyFrame());
+    }
+
+    /**
+     * The one close path, for the header's close button and for every close request from outside (Alt+F4, the
+     * taskbar). WHY: closing with BindForge's edits not applied asks first; Go back cancels the close (storage.md
+     * rule 9, Storage S7).
+     */
+    private void requestClose() {
+        bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> System.exit(0));
+    }
+
+    /**
+     * Takes away the operating system's title bar and lets the app header ({@link TopStatusBar}) be the title bar,
+     * with our own window buttons in it (ED_HUD_REFERENCE §11.1). WHY FlatLaf's full-window-content mode rather than
+     * {@code setUndecorated} as the dialogs do: the window stays a real system window underneath, so dragging the
+     * header, double-clicking it, edge resizing and Windows Snap all keep working. FlatLaf's own title-bar buttons are
+     * hidden; the header's {@link HudWindowButtons} replace them. Where FlatLaf cannot use the native decorations (Linux),
+     * it draws the window frame itself, which it only does for an undecorated frame.
+     */
+    private void installWindowChrome() {
+        if (!usesNativeDecorations()) {
+            setUndecorated(true);
+            getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+        }
+        JRootPane rootPane = getRootPane();
+        rootPane.putClientProperty(FlatClientProperties.FULL_WINDOW_CONTENT, true);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICON, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_TITLE, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICONIFFY, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_MAXIMIZE, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_CLOSE, false);
+    }
+
+    /**
+     * Whether Windows draws the window, through FlatLaf's native decorations (Windows 10 and later). WHY not
+     * {@code FlatLaf.isUseNativeWindowDecorations()} alone: that only reads the {@code TitlePane.useWindowDecorations}
+     * setting, which is true on Linux too, so on Linux the window kept the window manager's title bar and frame and
+     * FlatLaf never took over moving, resizing or double-click (found on KDE, 2026-11-15).
+     */
+    private static boolean usesNativeDecorations() {
+        return FlatLaf.supportsNativeWindowDecorations() && FlatLaf.isUseNativeWindowDecorations();
+    }
+
+    /**
+     * Draws the dialogs' window frame round the main window (§10.1), except when maximized, where a frame would only
+     * sit against the screen edge; and tells FlatLaf how tall the title bar is - the frame, the shell inset and the
+     * header - so that a drag or double-click anywhere on the header acts on the window.
+     * <p>
+     * Where FlatLaf draws the frame itself (Linux), our frame takes the place of FlatLaf's own window border on the
+     * root pane rather than sitting inside it, so the window has one frame, not two (review, 2026-11-14). FlatLaf's
+     * title bar then starts inside that border, so the frame is not part of its height. Edge resizing does not depend
+     * on the border: FlatLaf's resizer handles it on its own.
+     */
+    private void applyFrame() {
+        boolean maximized = (getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH;
+        int frame = maximized ? 0 : HudPalette.HUD_BORDER_THICKNESS_ACCENT;
+        int inset = HudPalette.SHELL_GAP / 2;
+        Border frameBorder = BorderFactory.createMatteBorder(
+                frame, frame, frame, frame, HudPalette.HUD_COLOR_ROLE_DIALOG_FRAME_BORDER);
+        Border shellInset = new EmptyBorder(inset, inset, inset, inset);
+        int titleBarHeight = inset + HudPalette.HUD_TOP_BAR_HEIGHT;
+        if (usesNativeDecorations()) {
+            shellRoot.setBorder(BorderFactory.createCompoundBorder(frameBorder, shellInset));
+            titleBarHeight += frame;
+        } else {
+            getRootPane().setBorder(frameBorder);
+            shellRoot.setBorder(shellInset);
+        }
+        getRootPane().putClientProperty(FlatClientProperties.TITLE_BAR_HEIGHT, titleBarHeight);
+        getRootPane().revalidate();
+        getRootPane().repaint();
     }
 
     /**
@@ -97,17 +177,16 @@ public class AppView extends JFrame implements AppViewInterface {
     }
 
     private void buildUi() {
-        setTitle(getText("app.title", systemSession.readVersionFromResources()));
+        // WHY the flag: the title shows on the taskbar and in Alt+Tab, and a language change rebuilds through here.
+        setTitle(updateAvailable
+                ? getText("app.updateAvailable.title")
+                : getText("app.title", systemSession.readVersionFromResources()));
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBorder(new EmptyBorder(
-                HudPalette.SHELL_GAP / 2,
-                HudPalette.SHELL_GAP / 2,
-                HudPalette.SHELL_GAP / 2,
-                HudPalette.SHELL_GAP / 2
-        ));
+        shellRoot = root;
         root.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setContentPane(root);
+        applyFrame();
 
         JTabbedPane tabs = AppTheme.makeMainNavTabs();
         tabs.setModel(new LeavingBindForge(tabs));
@@ -144,8 +223,11 @@ public class AppView extends JFrame implements AppViewInterface {
 
         topStatusBar = new TopStatusBar(
                 getText("app.name"),
-                systemSession.readVersionFromResources()
+                systemSession.readVersionFromResources(),
+                this,
+                this::requestClose
         );
+        if (updateAvailable) topStatusBar.showUpdateAvailable();
         root.add(buildTopShell(topStatusBar), BorderLayout.NORTH);
         root.add(tabs, BorderLayout.CENTER);
         AppTheme.applyDarkPalette(getContentPane());
@@ -242,7 +324,12 @@ public class AppView extends JFrame implements AppViewInterface {
 
     @Subscribe
     public void onUpdateAvailableEvent(UpdateAvailableEvent event) {
-        SwingUtilities.invokeLater(() -> setTitle(getText("app.updateAvailable.title")));
+        SwingUtilities.invokeLater(() -> {
+            // WHY the flag: the event comes once, and a language change rebuilds the header.
+            updateAvailable = true;
+            setTitle(getText("app.updateAvailable.title"));
+            topStatusBar.showUpdateAvailable();
+        });
     }
 
     @Subscribe

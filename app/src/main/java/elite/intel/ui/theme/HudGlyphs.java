@@ -258,6 +258,75 @@ public final class HudGlyphs {
     }
 
     /**
+     * Draws the window "minimize" glyph within (x, y, w, h): one horizontal bar across the lower part of the box,
+     * at the close glyph's padding and stroke so the three window buttons read as a set.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour
+     */
+    public static void paintHudMinimizeGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 8f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        int barY = y + h - pad;
+        g2.setColor(color);
+        g2.drawLine(x + pad, barY, x + w - pad, barY);
+        g2.setStroke(oldStroke);
+    }
+
+    /**
+     * Draws the window "maximize" glyph within (x, y, w, h): one square outline, at the close glyph's padding.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour
+     */
+    public static void paintHudMaximizeGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Stroke oldStroke = g2.getStroke();
+        g2.setStroke(new BasicStroke(Math.max(1.5f, w / 10f), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        g2.setColor(color);
+        g2.drawRect(x + pad, y + pad, w - 2 * pad, h - 2 * pad);
+        g2.setStroke(oldStroke);
+    }
+
+    /**
+     * Draws the window "restore" glyph within (x, y, w, h): two overlapping square outlines, the back one up and to
+     * the right, showing only its two edges that are not behind the front one.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour
+     */
+    public static void paintHudRestoreGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Stroke oldStroke = g2.getStroke();
+        g2.setStroke(new BasicStroke(Math.max(1.5f, w / 10f), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        // WHY min: the squares stay square in a box that is not.
+        int side = Math.min(w, h) - 2 * pad;
+        int offset = Math.max(2, side / 4);
+        int front = side - offset;
+        int fx = x + pad, fy = y + pad + offset;
+        int bx = fx + offset, by = y + pad;
+        g2.setColor(color);
+        g2.drawRect(fx, fy, front, front);
+        g2.drawLine(bx, by, bx + front, by);               // back square, top edge
+        g2.drawLine(bx + front, by, bx + front, by + front); // back square, right edge
+        g2.setStroke(oldStroke);
+    }
+
+    /**
      * Draws the flat "save to file" (download) glyph centred within (x, y, w, h): a downward arrow dropping into
      * an open tray. All geometry is proportional so it scales with the box; caller chooses colour by state.
      *
