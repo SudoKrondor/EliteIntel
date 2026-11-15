@@ -13,7 +13,7 @@ loadout or a reading of the signals in the system, using what the game journal r
 and EDDN. It never reads game memory and never injects into the game process.
 
 The whole pipeline can run offline on your own PC: Parakeet speech recognition, a local language model in LM Studio
-(which Elite Intel can install and set up for you on a capable GPU), and Supertonic 3 voices. Each ship in your fleet
+(which Elite Intel can install and set up for you on a capable GPU), and Supertonic-3 voices. Each ship in your fleet
 can have its own voice and personality. You can also mix in cloud services: Anthropic, OpenAI, xAI, Gemini or DeepSeek
 for the language model, and Google for speech.
 
