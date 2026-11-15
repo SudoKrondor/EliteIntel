@@ -36,7 +36,7 @@ final class AppDataArchive {
      * older ones (Alan, 2026-10-31). BindForge keeps its own backups of it. An older zip that carries the folder still
      * restores - {@link #isBackupEntry} skips it.
      */
-    static final List<String> FOLDERS = List.of("custom-commands", "playerbackups");
+    static final List<String> FOLDERS = List.of("custom-commands", "playerbackups", "themes");
 
     /**
      * A restore unpacks here while it is checked and unlocked.

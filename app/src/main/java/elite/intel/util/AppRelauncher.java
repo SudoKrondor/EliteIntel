@@ -35,6 +35,14 @@ public final class AppRelauncher {
     }
 
     /**
+     * Whether {@link #relaunch()} can restart the app: false when there is no launcher, as in a run from the IDE. A
+     * screen should not offer "Restart now" when this is false, because the button could not do it.
+     */
+    public static boolean canRelaunch() {
+        return installLauncher().isPresent();
+    }
+
+    /**
      * Starts the launcher, telling the new process to wait for this one.
      *
      * @return false when there is no launcher to start - a run from the IDE - or it would not start; the commander

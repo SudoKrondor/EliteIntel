@@ -31,7 +31,10 @@ import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
+import elite.intel.util.AppPaths;
 import elite.intel.util.StringUtls;
+import elite.intel.ui.screen.colorthemes.ColorThemesTabPanel;
+import org.apache.logging.log4j.LogManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -41,6 +44,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -310,6 +314,7 @@ public class CommanderTabPanel extends JPanel {
         tabs.addTab(getText("player.tab.massacreSets"), HudScrollingPage.scrollPane(massacreSetsPanel));
         // Like the fleet grid, a table that grows with the window: no scrolling page around it.
         tabs.addTab(getText("player.tab.bookmarks"), new LocationBookmarksTabPanel());
+        colorThemesTab().ifPresent(tab -> tabs.addTab(getText("player.tab.colorThemes"), tab));
 
         JPanel tabsHolder = transparentPanel(new BorderLayout());
         tabsHolder.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
@@ -918,6 +923,19 @@ public class CommanderTabPanel extends JPanel {
             // Defer the click so editCellAt completes before the popup opens and editing stops.
             SwingUtilities.invokeLater(cell.gear::doClick);
             return panel;
+        }
+    }
+
+    /**
+     * The Color Themes tab, or none when the themes folder cannot be made: the rest of the Commander screen must not
+     * depend on it.
+     */
+    private static Optional<JComponent> colorThemesTab() {
+        try {
+            return Optional.of(new ColorThemesTabPanel(AppPaths.getThemesDir()));
+        } catch (IOException e) {
+            LogManager.getLogger(CommanderTabPanel.class).error("Could not open the colour themes folder", e);
+            return Optional.empty();
         }
     }
 }

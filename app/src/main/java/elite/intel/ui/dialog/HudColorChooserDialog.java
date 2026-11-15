@@ -30,6 +30,7 @@ public final class HudColorChooserDialog extends JDialog {
         setUndecorated(true);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dressTabStrip();
+        HexCodePaste.install(chooser);
 
         JButton ok = AppTheme.makeButton(getText("button.ok"));
         ok.addActionListener(e -> {

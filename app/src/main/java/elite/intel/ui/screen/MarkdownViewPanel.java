@@ -78,7 +78,7 @@ public class MarkdownViewPanel extends JPanel {
 
         applyTransparentSurface();
 
-        // applyDarkPalette (run later in AppView) re-paints the JEditorPane white and gives it a
+        // applyDarkPalette (run later in AppView) re-paints the JEditorPane opaque and gives it a
         // warm field border + a lighter HUD_COLOR_ROLE_PANEL_BACKGROUND viewport. Re-assert the transparent surface
         // once that pass has completed so the document reads flush on the HUD background.
         SwingUtilities.invokeLater(this::applyTransparentSurface);

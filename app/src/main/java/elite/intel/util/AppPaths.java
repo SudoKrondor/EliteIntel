@@ -77,6 +77,16 @@ public final class AppPaths {
     }
 
     /**
+     * Returns the folder of the commander's colour themes, one JSON file each ({@code ThemeFile}), creating it if
+     * needed. The built-in themes are in the jar, not here.
+     */
+    public static Path getThemesDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/themes");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    /**
      * Returns the directory for user-facing, on-demand player backups (bindings/preset
      * snapshots, and later other profile data), creating it if needed.
      */

@@ -736,6 +736,23 @@ public class SystemSession {
     }
 
     /**
+     * The id of the colour theme the app window is drawn with: empty for Default, as {@code ThemeStore} reads it.
+     * It is read once at startup, so a change takes effect on the next start.
+     */
+    public String getUiTheme() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getUiTheme());
+    }
+
+    public void setUiTheme(String themeId) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setUiTheme(themeId);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    /**
      * Whether the desktop HUD overlay was on screen when the app last ran, so it can come back up the
      * way the commander left it.
      * <p>

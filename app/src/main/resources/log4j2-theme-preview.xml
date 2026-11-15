@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The colour theme preview's own logging: it runs as a second process (ThemePreviewRenderer), and must never use
+     log4j2.xml. That configuration rolls the app's log file on every start and keeps three, so a preview drawn on
+     each colour pick would push the commander's real log history out within minutes. Errors go to stderr, which the
+     app reads and logs when a preview fails. stdout carries the picture only. -->
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="stderr" target="SYSTEM_ERR">
+            <PatternLayout pattern="%-5p %c{1} - %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="error">
+            <AppenderRef ref="stderr"/>
+        </Root>
+    </Loggers>
+</Configuration>

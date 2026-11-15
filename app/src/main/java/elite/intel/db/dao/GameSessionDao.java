@@ -31,7 +31,7 @@ public interface GameSessionDao {
                                                              noiseReductionEnabled, noiseReductionStrength,
                                                              overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
                                                              overlayDisplayMode, overlayVrPosition, overlayVisible,
-                                                             overlayColors, overlaySection, overlaySectionPoints
+                                                             overlayColors, overlaySection, overlaySectionPoints, uiTheme
                                                 )
                                   VALUES (1, :googleVoice,
                                                       :rmsThresholdHigh,
@@ -49,7 +49,7 @@ public interface GameSessionDao {
                                                       :noiseReductionEnabled, :noiseReductionStrength,
                                                       :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
                                                       :overlayDisplayMode, :overlayVrPosition, :overlayVisible,
-                                                      :overlayColors, :overlaySection, :overlaySectionPoints
+                                                      :overlayColors, :overlaySection, :overlaySectionPoints, :uiTheme
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -111,6 +111,7 @@ public interface GameSessionDao {
             session.setOverlayColors(rs.getString("overlayColors"));
             session.setOverlaySection(rs.getString("overlaySection"));
             session.setOverlaySectionPoints(rs.getString("overlaySectionPoints"));
+            session.setUiTheme(rs.getString("uiTheme"));
             return session;
         }
     }
@@ -198,6 +199,8 @@ public interface GameSessionDao {
          * The spot last left in each section - see {@link elite.intel.ui.overlay.HudScreenSection#parsePoints}.
          */
         private String overlaySectionPoints = "";
+        /** The active colour theme's id, as {@code ThemeStore} reads it. Empty is the Default theme. */
+        private String uiTheme = "";
 
 
         /**
@@ -546,6 +549,14 @@ public interface GameSessionDao {
 
         public void setOverlaySectionPoints(String overlaySectionPoints) {
             this.overlaySectionPoints = overlaySectionPoints == null ? "" : overlaySectionPoints;
+        }
+
+        public String getUiTheme() {
+            return uiTheme;
+        }
+
+        public void setUiTheme(String uiTheme) {
+            this.uiTheme = uiTheme == null ? "" : uiTheme;
         }
 
         public void setOverlayVrPosition(String overlayVrPosition) {

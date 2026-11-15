@@ -1,6 +1,5 @@
 package elite.intel;
 
-import com.formdev.flatlaf.FlatLightLaf;
 import elite.intel.ai.LlmProviderUpgrade;
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
@@ -18,10 +17,15 @@ import elite.intel.community.CommunitySync;
 import elite.intel.gameapi.eddn.EddnListener;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.AppController;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.screen.AppView;
-import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.ActiveTheme;
+import elite.intel.ui.theme.ColorTheme;
+import elite.intel.ui.theme.HudLookAndFeel;
+import elite.intel.ui.theme.ThemeStore;
+import elite.intel.util.AppPaths;
 import elite.intel.util.AppRelauncher;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.Cypher;
@@ -31,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import javax.swing.*;
+import java.io.IOException;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -68,6 +73,8 @@ public class App {
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();
+        // WHY here: the palette reads the theme once, when it first loads, and nothing has touched it yet.
+        installColorTheme();
         // BindForge's silent backup of every game input configuration file, on a thread of its own, before anything
         // else BindForge does (storage.md rule 12). It needs only the database, never the services.
         StartupBackup.getInstance().startInBackground();
@@ -118,21 +125,9 @@ public class App {
         GameEventBus.publish(new LoadSessionEvent());
 
         // init UI
-        System.setProperty("awt.useSystemAAFontSettings", "lcd");
-        System.setProperty("swing.aatext", "true");
-        FlatLightLaf.setup();
+        HudLookAndFeel.prepare();
         SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-                // FlatLaf paints hover/pressed over the renderer; neutralise it here.
-                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-                UIManager.put("TableHeader.hoverForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-                UIManager.put("TableHeader.pressedForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            AppView view = new AppView();
+            AppView view = new AppView(HudLookAndFeel.install());
             new AppController();
             view.getUiComponent().setVisible(true);
             reportRestore(view.getUiComponent(), restore);
@@ -155,5 +150,19 @@ public class App {
     private static String identify(Thread thread) {
         String name = thread.getName();
         return name == null || name.isBlank() ? thread.toString() : "thread " + name;
+    }
+
+    /**
+     * Installs the commander's colour theme for this run. A theme that cannot be loaded leaves the app on Default
+     * ({@link ThemeStore#loadOrDefault}): a theme file must never stop the app from starting.
+     */
+    private static void installColorTheme() {
+        try {
+            ThemeStore store = new ThemeStore(AppPaths.getThemesDir());
+            ActiveTheme.install(store.loadOrDefault(SystemSession.getInstance().getUiTheme()));
+        } catch (IOException e) {
+            log.error("Could not open the themes folder, using the Default colour theme", e);
+            ActiveTheme.install(ColorTheme.DEFAULT);
+        }
     }
 }

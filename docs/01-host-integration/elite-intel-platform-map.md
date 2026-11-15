@@ -492,8 +492,10 @@ same commit. How BindForge's screens map onto it, and what it lacks, is in the
 previously did not mention the canon at all.*
 
 The specs' rule "plugins use theme values and never hardcode colours" still applies as good practice, and
-`InputMonitorPalette` shows the established pattern for a feature-local palette. But live theme switching is
-not a capability to design against.
+`InputMonitorPalette` shows the established pattern for a feature-local palette: the feature's own names, each
+pointing at a `HudPalette` role and never at a literal colour, so the feature follows the commander's colour
+theme ([COLOR_THEMES.md](../COLOR_THEMES.md)). But live theme switching is not a capability to design against:
+a theme takes effect on restart.
 
 **This directly affects the mockups**, which were drawn in StellarCore's own visual language. See
 [PORTING-NOTES.md](../PORTING-NOTES.md).

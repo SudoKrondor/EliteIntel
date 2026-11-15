@@ -21,8 +21,7 @@ for the
 
 - Styling means replacing raw Swing with the HUD components of the `elite.intel.ui` package layers, not local layout work.
 - Colours, sizes, fonts, thicknesses and icon roles come ONLY from `HudPalette` by constant name; glyph primitives come from `HudGlyphs`. Hardcoding is forbidden.
-- The colour layer in `HudPalette`: raw colours are named `HUD_COLOR_<HEX>` and reference only a literal colour code; roles are named `HUD_COLOR_ROLE_<SEMANTIC_NAME>` and reference `HUD_COLOR_*`
-  directly, with no role→role chains.
+- The colour layer in `HudPalette`: roles are named `HUD_COLOR_ROLE_<SEMANTIC_NAME>`, and each takes its colour from the commander's colour theme (`ActiveTheme.color(ThemeRole.<NAME>)`), with no role→role chains. The shipped colours live only in `ThemeRole`, the one place a colour literal is written ([COLOR_THEMES.md](COLOR_THEMES.md)). A new role is a new `ThemeRole` entry, whose wire name never changes once shipped.
 - A pattern needed on more than one screen belongs in the HUD layer, not copied in place.
 
 **The theme layer (`elite.intel.ui.theme`) is the source of truth, split by role:**
@@ -51,6 +50,8 @@ for the
 ## 1. Colour coding
 
 The ED canon (the Odyssey radar: friendly=green, neutral=blue, alerted=yellow, hostile=red):
+
+The green, blue and red are tuned for colour-blind commanders (light mint, mid periwinkle, vermilion): they stay apart by lightness as well as hue under simulated deuteranopia, protanopia and tritanopia, and each reads at 5:1 or better. Retune them only as a set and re-check all three (`HudPalette` says why).
 
 - `HUD_COLOR_ROLE_PRIMARY_ACTION` (cyan) — the accent: active/selected/actionable · `HUD_COLOR_ROLE_VALUE_TEXT` (light) — a value at rest: field and combo text, table cells, read-only readouts · `HUD_COLOR_ROLE_SUCCESS` (green) — positive/OK/profit ·
   `HUD_COLOR_ROLE_WARNING` (blue) — attention/expected waiting · `HUD_COLOR_ROLE_DANGER` (red) — danger/ failure/hostile · `HUD_COLOR_ROLE_INFORMATION` (cyan, the accent's value) — neutral informational · `HUD_COLOR_ROLE_DISABLED`/`HUD_COLOR_ROLE_SECONDARY_TEXT` — inactive · `HUD_COLOR_ROLE_READOUT_LABEL` — the dimmed label in key→value readout and telemetry blocks (`HudTelemetryBlock`, §7); a step quieter than `HUD_COLOR_ROLE_SECONDARY_TEXT` — do NOT confuse it with disabled · `HUD_COLOR_ROLE_CREDITS_TEXT` — the CMDR credit balance (`HudCommanderBlock`, §7).
@@ -352,7 +353,7 @@ References: Quick Status, Community Goal tiers, market profit bars.
 - Rating rows (S/A/B/C/D/E/F) are a letter in a box plus a line to the right; a failure (`INSUFFICIENT`) is red.
 
 **A notification banner or a hint at the bottom of a panel is
-ONLY `HudBanner`.** A left accent rail plus text in the state colour (`StatusBadge.State`). A caution hint is `STANDBY` (blue) with a leading ⚠ glyph (the 3-argument constructor, `leadingWarnGlyph=true`). Hand-built warning strips (`JLabel` + a Unicode "⚠" + `HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND`)
+ONLY `HudBanner`.** A left accent rail plus text in the state colour (`StatusBadge.State`). A caution hint is `STANDBY` (blue) with a leading ⚠ glyph (the 3-argument constructor, `leadingWarnGlyph=true`). Hand-built warning strips (`JLabel` + a Unicode "⚠" + a background of their own)
 are an ANTI-PATTERN: both the bindings hint and the "changes take effect" note go through `HudBanner`.
 
 **A long hint in a narrow
@@ -410,6 +411,8 @@ side** use `HudTwoColumns(left, right)`: equal halves (`GridLayout 1×2`) plus a
 header** use `HudSection.setHeaderActions(JComponent...)`: one or more affordance icons (`HudGlyphButton`, §4) at the right edge of the title strip, opposite the title, left to right in argument order (the last one sits at the right inset), for actions over the section's content (for example save plus clear on a log panel). They go into a `GridLayout` strip with a `HUD_GAP_TIGHT` gap; the STRIP is pinned to the title row height (the header does not grow), while
 `GridLayout` stretches each icon to that height (the glyph centres rather than being clipped). The right inset is the shared
 `HEADER_H_INSET` (which carries the header border). The actions are uniform glyph buttons (equal cell widths). Do NOT lay out a button in place inside the section body. Reference: the AI tab, the "Diagnostics" header.
+
+**A one-line hint about a section** goes in its header with `HudSection.setHeaderNote(String)`, not in a row of the body: right after the title, in parentheses, in the title's colour, plain rather than bold and in its own case rather than capitals, so it reads as help and not as a second title. It takes no height from the body. Reference: the Color Themes tab's PREVIEW (*"(Click any part of the preview to change its color.)"*).
 
 ## 10. Dialogs
 
@@ -557,7 +560,7 @@ A component that carries its own background or foreground marks itself with an o
 ## 13. Checklist
 
 - Raster icons in `images/` are baked orange artwork: draw them through `tintIcon` with a palette role, never as loaded. The exception is the OS window and taskbar icon (`applyAppIcon`), the app's brand mark.
-- Colours, fonts, heights, icons and border thicknesses come ONLY from `HudPalette` by name. Hardcoding is forbidden. Raw colours are only `HUD_COLOR_<HEX>`; roles are only `HUD_COLOR_ROLE_<SEMANTIC_NAME>` as a direct alias of `HUD_COLOR_*`.
+- Colours, fonts, heights, icons and border thicknesses come ONLY from `HudPalette` by name. Hardcoding is forbidden. Roles are only `HUD_COLOR_ROLE_<SEMANTIC_NAME>`, each read from the active theme; colour literals live only in `ThemeRole`.
 - Font size comes ONLY from the `HUD_FONT_*` roles (§2); a hardcoded size is forbidden.
 - Icon size comes from a `HUD_ICON_*` role (§3); hardcoded pixels are forbidden.
 - Border thickness comes from a role (`HUD_BORDER_THICKNESS` / `HUD_BORDER_THICKNESS_ACCENT`); hardcoding is forbidden.
