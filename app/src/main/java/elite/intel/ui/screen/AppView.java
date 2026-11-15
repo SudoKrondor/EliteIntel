@@ -38,7 +38,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     private final SystemSession systemSession = SystemSession.getInstance();
     /** Big enough to show the Color Themes tab's editor whole, preview included. */
-    private static final Dimension DEFAULT_SIZE = new Dimension(1572, 1212);
+    private static final Dimension DEFAULT_SIZE = new Dimension(1720, 1080);
     private static final Dimension MINIMUM_SIZE = new Dimension(1280, 720);
 
     private Font monoFont;
