@@ -6,6 +6,7 @@ import elite.intel.bindforge.storage.WriteReport;
 import elite.intel.bindforge.storage.WriteReport.Kind;
 import elite.intel.bindforge.storage.WriteReport.Place;
 import elite.intel.bindforge.storage.Written;
+import elite.intel.ui.dialog.QuietableNotice;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -16,6 +17,7 @@ import java.util.regex.Pattern;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -98,6 +100,71 @@ class WriteReportTextTest {
         assertEquals(getText("bindings.applyBar.result", backup.zip().toString(), 1L, 2)
                 + FirstTimeStartupFlow.placeFailures(report), text);
         assertTrue(text.contains(getText("bindings.applyBar.result.differs", name("EPIC", EPIC))), text);
+    }
+
+    /** Storage S21: only the plain success line can be quieted (Alan, 2026-11-14; storage.md rule 13). */
+    @Test
+    void applysPlainSuccessCanBeQuieted() {
+        Written written = new Written(report(bindingsUpdated(), steamUpdated()), backup());
+
+        CheckFlow.Report report = ApplyBar.report(written, ApplyBar.reportText(written));
+
+        assertEquals(QuietableNotice.BINDFORGE_APPLY_REPORT, report.quietable());
+        assertEquals(ApplyBar.reportText(written), report.text());
+    }
+
+    /** "Updated 1 of 2" is a failure, and a failure always shows (principle 9). */
+    @Test
+    void applysReportWithAPlaceNotUpdatedAlwaysShows() {
+        Written written = new Written(report(bindingsUpdated(), steamUpdated(),
+                new Place(Kind.INSTALLATION, "EPIC", EPIC, List.of(), List.of(), List.of(), List.of("locked"))),
+                backup());
+
+        assertNull(ApplyBar.report(written, ApplyBar.reportText(written)).quietable());
+    }
+
+    /** News is not a failure, but it is still said: a newer version, a moved device, a file moved away. */
+    @Test
+    void applysReportWithAnythingMoreAlwaysShows() {
+        Written written = new Written(report(bindingsUpdated(), steamUpdated()), backup());
+
+        assertNull(ApplyBar.report(written, ApplyBar.reportText(written) + "\nanything more").quietable());
+    }
+
+    @Test
+    void firstTimeStartupsPlainSuccessCanBeQuieted() {
+        Written written = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
+
+        assertEquals(QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT,
+                FirstTimeStartupFlow.writtenReport(written, 0).quietable());
+    }
+
+    @Test
+    void firstTimeStartupsReportWithMovesOrTheFlagNotSetAlwaysShows() {
+        Written plain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
+        Written askedAgain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), true);
+
+        assertNull(FirstTimeStartupFlow.writtenReport(plain, 2).quietable(), "devices moved to a new ID");
+        assertNull(FirstTimeStartupFlow.writtenReport(askedAgain, 0).quietable(), "the flag could not be set");
+    }
+
+    @Test
+    void firstTimeStartupsReportWithAPlaceNotUpdatedAlwaysShows() {
+        Written written = new Written(report(bindingsUpdated(),
+                new Place(Kind.INSTALLATION, "EPIC", EPIC, List.of(), List.of(), List.of(), List.of(), true)),
+                backup(), false);
+
+        assertNull(FirstTimeStartupFlow.writtenReport(written, 0).quietable());
+    }
+
+    private static Place steamUpdated() {
+        return new Place(Kind.INSTALLATION, "STEAM", STEAM, List.of("LVWAP.buttonMap"), List.of(), List.of(),
+                List.of());
+    }
+
+    private static Backup backup() {
+        return new Backup(Path.of("BeforeChanges/2026-11-14_10-00-00.zip"), LocalDateTime.now(),
+                Backups.Kind.BEFORE_CHANGES, Backups.Before.APPLY, true, List.of());
     }
 
     private static Place bindingsUpdated() {
