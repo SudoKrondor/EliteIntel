@@ -353,7 +353,7 @@ public class AliasDesignerPanel extends JPanel {
         /** @param device whether the row is a device - the "service stopped" row has no gear */
         JPanel apply(boolean selected, boolean device) {
             panel.setBackground(selected
-                    ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION
+                    ? HudPalette.HUD_COLOR_ROLE_ACCENT_FILL
                     : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             panel.setOpaque(true);
             gear.setIcon(device ? gearIcon(selected) : null);

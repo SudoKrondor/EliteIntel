@@ -97,7 +97,7 @@ public final class HudTable {
         table.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);   // table body = window colour; darker than HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND tile -> gap reads as dark slot (section 2)
         table.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         table.setGridColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        table.setSelectionBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        table.setSelectionBackground(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
         table.setSelectionForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
         table.setShowGrid(false);
         table.setShowVerticalLines(false);
@@ -221,7 +221,7 @@ public final class HudTable {
         ) {
             JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             if (isSelected) {
-                label.setBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
                 label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else {
                 Object hoveredObj = table.getClientProperty(HOVER_ROW_PROPERTY);

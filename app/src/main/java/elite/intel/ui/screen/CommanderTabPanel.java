@@ -21,6 +21,7 @@ import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.dialog.JournalImportDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
@@ -159,6 +160,8 @@ public class CommanderTabPanel extends JPanel {
     private JCheckBox addressMeBox;
     private JTextField journalDirField;
     private ToggleTreePanel shipSettingsPanel;
+    /** Global Ship Settings' FSD toggle, kept so a declined warning can untick its box. */
+    private SettingToggle fsdToggle;
     private ToggleTreePanel announcementsPanel;
     private ExoMasteryTabPanel exoMasteryPanel;
     private MassacreSetsTabPanel massacreSetsPanel;
@@ -342,6 +345,7 @@ public class CommanderTabPanel extends JPanel {
      */
     private ToggleTreePanel buildShipSettingsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
+        fsdToggle = SettingToggle.of("automation.useFsdToggle", mgr::getUseFsdToggle, this::writeFsdToggle);
         shipSettingsPanel = new ToggleTreePanel(List.of(
                 SettingToggle.of("automation.autoSpeedUpForFtl", mgr::getAutoSpeedUpForFtl, mgr::setAutoSpeedUpForFtl),
                 SettingToggle.of("automation.autoLightsOffForFtl", mgr::getAutoLightsForFtl, mgr::setAutoLightsForFtl),
@@ -351,8 +355,25 @@ public class CommanderTabPanel extends JPanel {
                 SettingToggle.of("automation.autoCargoScoopRetractForFtl", mgr::getAutoCargoScoopRetractForFtl, mgr::setAutoCargoScoopRetractForFtl),
                 SettingToggle.of("automation.autoGearUpOnTakeOff", mgr::getAutoGearUpOnTakeOff, mgr::setAutoGearUpOnTakeOff),
                 SettingToggle.of("automation.autoLightsOffForSrvDeployment", mgr::getAutoLightsOffForSrvDeployment, mgr::setAutoLightsOffForSrvDeployment),
-                SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump)));
+                SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump),
+                fsdToggle));
         return shipSettingsPanel;
+    }
+
+    /**
+     * Turns the FSD toggle on only once the commander has read what it does: with it on the game, not the app, decides
+     * whether "supercruise" or "jump" ends in supercruise or hyperspace, which catches out anyone who has not met the
+     * game's Toggle Frame Shift Drive. Turning it off needs no warning. Declined, the box goes back to off.
+     */
+    private void writeFsdToggle(boolean on) {
+        GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
+        if (on && !HudConfirmDialog.confirm(this, getText("automation.useFsdToggle.warning.title"),
+                getText("automation.useFsdToggle.warning.message"),
+                getText("automation.useFsdToggle.warning.confirm"), getText("button.cancel"))) {
+            shipSettingsPanel.checkBox(fsdToggle).setSelected(false);
+            return;
+        }
+        mgr.setUseFsdToggle(on);
     }
 
     /**
@@ -868,7 +889,7 @@ public class CommanderTabPanel extends JPanel {
 
         /** Applies the cell appearance for the current selection state and returns the ready panel. */
         JPanel apply(boolean isSelected) {
-            panel.setBackground(isSelected ? HUD_COLOR_ROLE_PRIMARY_ACTION : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            panel.setBackground(isSelected ? HUD_COLOR_ROLE_ACCENT_FILL : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             panel.setOpaque(true);
             gear.setIcon(gearIcon(isSelected));
             return panel;

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.ai.hands.FsdControls;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.LocationManager;
@@ -20,7 +21,6 @@ import elite.intel.util.StringUtls;
 
 import java.util.List;
 
-import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_JUMP_TO_HYPERSPACE;
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TARGET_NEXT_ROUTE_SYSTEM;
 
 /**
@@ -81,7 +81,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
             return StringUtls.localizedResponse("handler.supercruise.cooldown");
         } else if (status.isInMainShip()) {
             PreFtlChecks.preJumpCheck(status, StringUtls.localizedResponse("handler.supercruise.preparingFtl"));
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_JUMP_TO_HYPERSPACE.getGameBinding())));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(FsdControls.hyperspace().getGameBinding())));
         } else {
             return StringUtls.localizedResponse("handler.supercruise.notInShip");
         }

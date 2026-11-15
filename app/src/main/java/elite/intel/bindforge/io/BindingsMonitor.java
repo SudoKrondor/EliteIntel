@@ -1,6 +1,7 @@
 package elite.intel.bindforge.io;
 
 import elite.intel.ai.hands.Bindings;
+import elite.intel.ai.hands.FsdControls;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.rules.BindingConflictRules;
@@ -127,9 +128,13 @@ public class BindingsMonitor {
      * the commander's custom commands press. A custom command's control is required from the moment it is
      * saved - the commander chose it, so it counts as missing, is filled by auto-assign, and its conflicts are
      * reported like a built-in one's.
+     * <p>
+     * Hyperspace and Toggle Frame Shift Drive are alternatives: the commander's FSD choice decides which one the
+     * built-in commands press, and the other is left out unless a custom command presses it.
      */
     public static Set<String> requiredControls() {
         Set<String> required = new LinkedHashSet<>(APP_DRIVEN_ACTIONS);
+        required.remove(FsdControls.unusedControl());
         required.addAll(customCommandControls);
         return Collections.unmodifiableSet(required);
     }

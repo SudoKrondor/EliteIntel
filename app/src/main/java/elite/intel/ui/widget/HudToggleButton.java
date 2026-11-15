@@ -29,7 +29,7 @@ public class HudToggleButton extends JToggleButton {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Prevent applyDarkPalette from overriding the state-driven foreground colour.
         putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
-        // Keep text readable against bright HUD_COLOR_ROLE_PRIMARY_ACTION fill when selected.
+        // Keep text readable against bright HUD_COLOR_ROLE_ACCENT_FILL fill when selected.
         addItemListener(e -> setForeground(isSelected() ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT));
         setForeground(isSelected() ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
     }
@@ -41,14 +41,14 @@ public class HudToggleButton extends JToggleButton {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             ButtonModel model = getModel();
             Color border = isSelected() ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_FRAME_BORDER;
-            Color fill = isSelected() ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+            Color fill = isSelected() ? HudPalette.HUD_COLOR_ROLE_ACCENT_FILL : HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
             if (!isEnabled()) {
                 border = HudPalette.HUD_COLOR_ROLE_DISABLED;
                 fill = HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND;
             } else if (model.isPressed()) {
                 fill = fill.darker();
             } else if (model.isRollover()) {
-                fill = isSelected() ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION.darker() : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
+                fill = isSelected() ? HudPalette.HUD_COLOR_ROLE_ACCENT_FILL.darker() : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
             }
             g2.setColor(fill);
             g2.fillRect(0, 0, getWidth() - 1, getHeight() - 1);

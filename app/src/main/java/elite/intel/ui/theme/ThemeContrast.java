@@ -128,7 +128,7 @@ public final class ThemeContrast {
 
     /**
      * WHY these backgrounds: where each role is painted, read from the widgets that use it. Selected text sits on four
-     * fills - the accent (selections, segments, pressed subtle buttons), the two selected-tab fills and the pressed
+     * fills - the accent fill (selections, segments, pressed subtle buttons), the two selected-tab fills and the pressed
      * button - and checking it on the accent alone once fixed it into black on dark tabs (2026-11-14).
      */
     private static List<Pair> pairs() {
@@ -142,7 +142,7 @@ public final class ThemeContrast {
         pairs.add(new Pair(ThemeRole.VALUE_TEXT, ThemeRole.FIELD_BACKGROUND));
         pairs.add(new Pair(ThemeRole.INPUT_FOCUS, ThemeRole.FIELD_BACKGROUND));
         pairs.add(new Pair(ThemeRole.BUTTON_TEXT, ThemeRole.PRIMARY_BUTTON_BACKGROUND));
-        for (ThemeRole fill : List.of(ThemeRole.PRIMARY_ACTION, ThemeRole.MAIN_TAB_ACTIVE_BACKGROUND,
+        for (ThemeRole fill : List.of(ThemeRole.ACCENT_FILL, ThemeRole.MAIN_TAB_ACTIVE_BACKGROUND,
                 ThemeRole.SECTION_TAB_ACTIVE_BACKGROUND, ThemeRole.PRIMARY_BUTTON_PRESSED_BACKGROUND)) {
             pairs.add(new Pair(ThemeRole.SELECTED_TEXT, fill));
         }

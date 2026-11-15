@@ -85,6 +85,9 @@ public class Bindings {
         BINDING_EXIT_SUPERCRUISE("Supercruise", DRIVEN),
         BINDING_JUMP_TO_HYPERSPACE("Hyperspace", DRIVEN),
         BINDING_ENTER_SUPERCRUISE("Supercruise", DRIVEN),
+        /// The game's "Toggle Frame Shift Drive": supercruise or hyperspace, whichever the FSD target calls for.
+        /// Pressed instead of the two above only while the commander has chosen it - see FsdControls.
+        BINDING_TOGGLE_FSD("HyperSuperCombination", DRIVEN),
 
 
         //TODO: convert to custom
