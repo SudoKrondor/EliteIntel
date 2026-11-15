@@ -10,6 +10,7 @@ import elite.intel.ui.screen.bindings.LeavePrompt;
 import elite.intel.ui.support.GameClockWarning;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudLookAndFeel;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.TopStatusBar;
 import org.slf4j.Logger;
@@ -17,21 +18,15 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import javax.swing.plaf.BorderUIResource;
-import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
-import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class AppView extends JFrame implements AppViewInterface {
 
     private static final Logger log = LoggerFactory.getLogger(AppView.class);
-    private static final String UI_FONT_FAMILY = Font.SANS_SERIF;
     private static final String ICON_AI = "/images/ai.png";
     private static final String ICON_PLAYER = "/images/commander.png";
     private static final String ICON_ACTIONS = "/images/actions.png";
@@ -42,6 +37,10 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final String CREDITS_ICON = "/images/release.png";
 
     private final SystemSession systemSession = SystemSession.getInstance();
+    /** Big enough to show the Color Themes tab's editor whole, preview included. */
+    private static final Dimension DEFAULT_SIZE = new Dimension(1572, 1212);
+    private static final Dimension MINIMUM_SIZE = new Dimension(1280, 720);
+
     private Font monoFont;
     private AiUiState uiState;
     private AiTabPanel aiTabPanel;
@@ -57,10 +56,13 @@ public class AppView extends JFrame implements AppViewInterface {
     private TopStatusBar topStatusBar;
     private volatile ServicesStateEvent.State servicesState = ServicesStateEvent.State.STOPPED;
 
-    public AppView() {
+    /**
+     * @param monoFont the app's monospace font, as {@link HudLookAndFeel#install()} loaded it; the look and feel
+     *                 must be installed before the window is built
+     */
+    public AppView(Font monoFont) {
         super("--");
-        monoFont = loadCustomFont();
-        installDarkDefaults();
+        this.monoFont = monoFont;
         UiBus.register(this);
 
         AppTheme.applyAppIcon(this);
@@ -73,12 +75,24 @@ public class AppView extends JFrame implements AppViewInterface {
                 bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> System.exit(0));
             }
         });
-        setMinimumSize(new Dimension(1280, 720));
-        setSize(new Dimension(1400, 980));
-        setLocationRelativeTo(null);
+        setMinimumSize(MINIMUM_SIZE);
+        placeOnScreen();
 
         buildUi();
         initData();
+    }
+
+    /**
+     * Opens at {@link #DEFAULT_SIZE}, centred - or maximized when the screen's usable area (the screen less its
+     * taskbars and panels) is smaller than that, as on a 1920x1080 screen. WHY the size is clamped as well:
+     * un-maximizing returns the window to its own size, which must then fit the screen rather than reach past it.
+     */
+    private void placeOnScreen() {
+        Rectangle usable = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        boolean fits = DEFAULT_SIZE.width <= usable.width && DEFAULT_SIZE.height <= usable.height;
+        setSize(Math.min(DEFAULT_SIZE.width, usable.width), Math.min(DEFAULT_SIZE.height, usable.height));
+        setLocationRelativeTo(null);
+        if (!fits) setExtendedState(getExtendedState() | MAXIMIZED_BOTH);
     }
 
     private void buildUi() {
@@ -241,110 +255,5 @@ public class AppView extends JFrame implements AppViewInterface {
             setVisible(false);
             System.exit(0);
         });
-    }
-
-    private Font loadCustomFont() {
-        Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_MONO_BASE);
-        // Use platform sans-serif for UI labels because the previous custom font did not cover Cyrillic glyphs reliably.
-        UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_UI_DEFAULT)));
-        try {
-            mono = Font.createFont(Font.TRUETYPE_FONT,
-                            Objects.requireNonNull(getClass().getResourceAsStream("/fonts/UbuntuSansMono-Regular.ttf")))
-                    .deriveFont(HudPalette.HUD_FONT_MONO_BASE);
-            GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(mono);
-            UIManager.put("monospaceFont", new FontUIResource(mono));
-            SwingUtilities.updateComponentTreeUI(this);
-        } catch (FontFormatException | IOException e) {
-            log.error("Failed to load custom font: {}", e.getMessage());
-        }
-        return mono;
-    }
-
-    private void installDarkDefaults() {
-        UIManager.put("Panel.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("OptionPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("TabbedPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("TabbedPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("TabbedPane.contentAreaColor", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        // The selected tab of a STOCK JTabbedPane - the ones inside components the JDK builds for us, such
-        // as JColorChooser. FlatLaf paints the selected tab in TabbedPane.focusColor, a pale blue, and
-        // leaves selectedForeground unset so the label falls back to the near-white foreground above:
-        // white on white, and the tab a commander is looking at is the one they cannot read. The app's
-        // own tabs never hit this - HudTabbedPane installs a UI that paints its tabs itself - which is
-        // why it stayed invisible until a colour picker put a stock tab strip on screen.
-        UIManager.put("TabbedPane.focusColor", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
-        UIManager.put("TabbedPane.hoverColor", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
-        UIManager.put("TabbedPane.selectedForeground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("TabbedPane.underlineColor", HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE);
-        UIManager.put("TabbedPane.disabledForeground", HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("TabbedPane.disabledUnderlineColor", HudPalette.HUD_COLOR_ROLE_DISABLED);
-        // Same story one control along: a TitledBorder built by the JDK - the "Preview" frame inside
-        // JColorChooser is the only one in the app - takes its title from TitledBorder.titleColor, which
-        // the light look-and-feel leaves black, on our dark background. The app draws its own titled
-        // frames with HudTitledCard and never builds one of these, so this only ever dresses a component we
-        // did not lay out ourselves.
-        UIManager.put("TitledBorder.titleColor", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("TitledBorder.border", new BorderUIResource(
-                new LineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS)));
-        UIManager.put("Label.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("CheckBox.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("RadioButton.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("Button.foreground", HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT);
-        UIManager.put("Button.background", HudPalette.HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND);
-        UIManager.put("Button.disabledText",       HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("Button.disabledForeground", HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("ScrollPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("Viewport.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("TextField.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("PasswordField.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("TextArea.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("EditorPane.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("TextField.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("PasswordField.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("TextArea.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("EditorPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("TextField.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("PasswordField.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("TextArea.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("EditorPane.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("Table.background", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
-        UIManager.put("Table.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("Table.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("Table.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-        // A JList dresses like a table: the light look-and-feel would otherwise paint it white with a blue
-        // selection (the voice tuning list, the journal import sources).
-        UIManager.put("List.background", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
-        UIManager.put("List.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("List.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("List.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-        UIManager.put("List.selectionInactiveBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("List.selectionInactiveForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-        UIManager.put("ComboBox.background",              HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("ComboBox.foreground",              HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("ComboBox.disabledBackground",       HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("ComboBox.disabledForeground",       HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("ComboBox.buttonDisabledBackground", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("ComboBox.maximumRowCount",          8);
-        // Width=0 suppresses the vertical separator between value and arrow button.
-        // FlatLaf re-installs buttonSeparatorColor from the theme after per-instance nulling,
-        // so zeroing the width is the only reliable suppression (update() skips it when width <= 0).
-        UIManager.put("ComboBox.buttonSeparatorWidth",     0);
-        // Editable combo editor calls selectAll() on setSelectedItem; override FlatLaf's
-        // cold-blue theme default so selection follows the warm HUD palette.
-        UIManager.put("ComboBox.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("ComboBox.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-
-        // Tooltips: a flat HUD-dark chip with a warm 1px rail instead of the pale LAF default, so every
-        // setToolTipText across the app matches the cockpit look (canon §13). The popup drop shadow is killed
-        // app-wide (tooltips, menus, combo popups) because the HUD is shadowless by design.
-        UIManager.put("ToolTip.background", HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
-        UIManager.put("ToolTip.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        // Explicit small tooltip font: without this the tooltip inherits the 18px UI defaultFont and reads oversized.
-        UIManager.put("ToolTip.font", new FontUIResource(
-                new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_TOOLTIP)));
-        UIManager.put("ToolTip.border", BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
-        UIManager.put("Popup.dropShadowPainted", Boolean.FALSE);
     }
 }

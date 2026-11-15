@@ -807,8 +807,8 @@ public class AppTheme {
         }
 
         if (c instanceof JEditorPane ep) {
-            ep.setBackground(Color.WHITE);
-            ep.setForeground(Color.BLACK);
+            ep.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            ep.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         }
 
         // TopStatusBar and HudBanner own all colours of their children - do not recurse into them
