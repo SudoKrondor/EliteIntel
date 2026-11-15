@@ -566,7 +566,9 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     **Settled with Storage S21's sources (Alan, 2026-11-14):**
     - **The ticks are app-wide, not BindForge's** - Reset warnings is not in BindForge, and other dialogs may join. A
       table of their own, `quieted_notices`, one row per notice ticked, keyed by the notice's name: a dialog joins with
-      a name and no migration. Which other dialogs should join is for Alan to find by testing; none does yet.
+      a name and no migration. Which other dialogs should join is for Alan to find by testing. **Joined 2026-11-14
+      (Alan): the Bind Editor's *"Saved."*** after an assignment (`BINDFORGE_ASSIGN_SAVED`) - that line only; *"No
+      changes."* and every refusal still show.
     - **Quieted, APPLY writes on the press**, with no dialog and no wait. **The Linux note goes with it**: it is part of
       the confirmation, says the same at every APPLY, and is not a failure - the box sits under it, so a user who ticks
       it has read it.

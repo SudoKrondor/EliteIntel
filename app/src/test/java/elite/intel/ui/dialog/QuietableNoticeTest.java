@@ -22,7 +22,8 @@ class QuietableNoticeTest {
         assertEquals(Map.of(
                 QuietableNotice.BINDFORGE_APPLY_CONFIRM, "bindforge.apply.confirm",
                 QuietableNotice.BINDFORGE_APPLY_REPORT, "bindforge.apply.report",
-                QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT, "bindforge.firstTimeStartup.report"), keys);
+                QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT, "bindforge.firstTimeStartup.report",
+                QuietableNotice.BINDFORGE_ASSIGN_SAVED, "bindforge.assign.saved"), keys);
     }
 
     @Test
