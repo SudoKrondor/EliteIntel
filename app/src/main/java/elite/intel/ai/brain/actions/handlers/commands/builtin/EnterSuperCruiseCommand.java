@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.commands.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.hands.FsdControls;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.GlobalSettingsManager;
@@ -75,14 +76,14 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                     GameControllerBus.publish(GameInputSequenceEvent.of(
                             GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding()),
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding()),
-                            GameInputStep.bindingTap(BINDING_JUMP_TO_HYPERSPACE.getGameBinding()),
+                            GameInputStep.bindingTap(FsdControls.hyperspace().getGameBinding()),
                             GameInputStep.delay(12_000),
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding())
                     ));
                 } else {
                     GameControllerBus.publish(GameInputSequenceEvent.of(
                             GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding()),
-                            GameInputStep.bindingTap(BINDING_JUMP_TO_HYPERSPACE.getGameBinding())
+                            GameInputStep.bindingTap(FsdControls.hyperspace().getGameBinding())
                     ));
                 }
             } else {
@@ -90,7 +91,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                 if (settingsManager.getAutoSpeedUpForFtl()) {
                     GameControllerBus.publish(GameInputSequenceEvent.of(
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding()),
-                            GameInputStep.bindingTap(BINDING_ENTER_SUPERCRUISE.getGameBinding()),
+                            GameInputStep.bindingTap(FsdControls.supercruise().getGameBinding()),
                             GameInputStep.delay(1_000),
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding()),
                             GameInputStep.delay(1_000),
@@ -103,7 +104,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding())
                     ));
                 } else {
-                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ENTER_SUPERCRUISE.getGameBinding())));
+                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(FsdControls.supercruise().getGameBinding())));
                 }
             }
         } else {

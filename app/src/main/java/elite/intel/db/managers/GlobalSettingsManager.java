@@ -261,4 +261,21 @@ public class GlobalSettingsManager {
     public boolean getShareMassacreSets() {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isShareMassacreSets());
     }
+
+    /**
+     * Whether the supercruise and hyperspace commands both press the game's Toggle Frame Shift Drive, leaving the
+     * game to pick which of the two happens, rather than each pressing its own control. See {@code FsdControls}.
+     */
+    public void setUseFsdToggle(boolean useFsdToggle) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setUseFsdToggle(useFsdToggle);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getUseFsdToggle() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isUseFsdToggle());
+    }
 }
