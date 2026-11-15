@@ -493,7 +493,7 @@ previously did not mention the canon at all.*
 
 The specs' rule "plugins use theme values and never hardcode colours" still applies as good practice, and
 `InputMonitorPalette` shows the established pattern for a feature-local palette: the feature's own names, each
-pointing at a `HudPalette` role and never at a literal colour, so the feature follows the commander's colour
+pointing at a `HudPalette` role and never at a literal colour, so the feature follows the user's colour
 theme ([COLOR_THEMES.md](../COLOR_THEMES.md)). But live theme switching is not a capability to design against:
 a theme takes effect on restart.
 
