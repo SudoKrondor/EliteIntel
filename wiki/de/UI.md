@@ -12,7 +12,7 @@ Dieser Abschnitt führt durch jeden Reiter, jedes Bedienelement und dessen tats�
 | Reiter | Wofür er da ist |
 |-----|----------------|
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | Die Kommandobrücke. Dienste starten und stoppen, die Konversation verfolgen, den Live-Status lesen, das HUD-Overlay im Spiel öffnen. |
-| <img src="images/commander.png" class="inline" height="20" alt="Kommandant"> **[Kommandant](UI-Commander-Tab)** | Wer du bist und wie sich deine Schiffe verhalten. Der Journal-Ordner, Stimmen und Persönlichkeiten der Flotte, Automatiken, gesprochene Ansagen, der Exo-Meisterschaft-Katalog und deine Lesezeichen. |
+| <img src="images/commander.png" class="inline" height="20" alt="Kommandant"> **[Kommandant](UI-Commander-Tab)** | Wer du bist und wie sich deine Schiffe verhalten. Der Journal-Ordner, Stimmen und Persönlichkeiten der Flotte, Automatiken, gesprochene Ansagen, der Exo-Meisterschaft-Katalog, deine Lesezeichen und deine Farbschemata. |
 | <img src="images/actions.png" class="inline" height="20" alt="Aktionen"> **[Aktionen](UI-Actions-Tab)** | Alles, was Elite Intel tun kann. Den Katalog der integrierten Befehle durchsuchen und eigene Makros bauen. |
 | <img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> **[BindForge](UI-Bindings-Tab)** | Bearbeite jede Steuerung von Elite Dangerous auf jedem Gerät, wähle, welche Belegungsdatei das Spiel lädt, benenne deine Controller und sichere alle deine Steuerungsdateien. |
 | <img src="images/services.png" class="inline" height="20" alt="Dienste"> **[Dienste](UI-Settings-Tab)** | Der Unterbau. Sprache, Sprachmodell, Sprachausgabe, Audio, Push-to-Talk und eine Sicherung deiner Einstellungen und Daten. |

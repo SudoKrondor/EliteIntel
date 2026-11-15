@@ -15,6 +15,7 @@ Installation: Instalación
 UI: Interfaz
 UI-Vega-Tab: Pestaña Vega
 UI-Commander-Tab: Pestaña Comandante
+UI-Color-Themes: Temas de color
 UI-Actions-Tab: Pestaña Acciones
 UI-Bindings-Tab: BindForge
 UI-Settings-Tab: Pestaña Servicios

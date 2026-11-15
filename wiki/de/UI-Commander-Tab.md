@@ -2,13 +2,13 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Kommandant"> Wer du bist, mit
 welcher Stimme jeder Rumpf deiner Flotte spricht, was dein Schiff automatisch für dich erledigt,
-was Vega dir ungefragt mitteilt, der Exo-Meisterschaft-Katalog, die Massaker-Sets, die du mit anderen Kommandanten teilst, und die Orte, die du dir gemerkt hast.
+was Vega dir ungefragt mitteilt, der Exo-Meisterschaft-Katalog, die Massaker-Sets, die du mit anderen Kommandanten teilst, die Orte, die du dir gemerkt hast, und die Farben, in denen die App gezeichnet wird.
 
 ![Reiter Kommandant](images/ui-tab-commander.png)
 
-Oben sitzt der Streifen **Kommandantenprofil**; darunter liegen sechs Unterreiter:
-**Flottenverwaltung**, **Globale Schiffseinstellungen**, **Ansagen**, **Exo-Meisterschaft**, **Massaker-Sets** und
-**Lesezeichen**.
+Oben sitzt der Streifen **Kommandantenprofil**; darunter liegen sieben Unterreiter:
+**Flottenverwaltung**, **Globale Schiffseinstellungen**, **Ansagen**, **Exo-Meisterschaft**, **Massaker-Sets**,
+**Lesezeichen** und **Farbschemata**.
 
 ---
 
@@ -264,6 +264,12 @@ Der Reiter zeigt dieselbe Liste in derselben Reihenfolge, mit **Anzeigename** un
 - **Exportieren** und **Löschen** gelten für die angehakten Zeilen.
 - **Importieren** fügt Lesezeichen aus einer exportierten Datei unten an deine Liste an. Es ersetzt die
   Liste nie, und jeder Eintrag wird vorher als *Neu*, *Duplikat* oder *Ungültig* markiert.
+
+<a id="color-themes"></a>
+
+## Farbschemata
+
+Die Farben, in denen das App-Fenster gezeichnet wird: drei eingebaute Schemata, deine eigenen und weitere zum Herunterladen. Siehe **[Farbschemata](UI-Color-Themes)**.
 
 ---
 

@@ -33,6 +33,8 @@ Elite Intel läuft vollständig auf deinem Rechner. Die gesamte Pipeline (Sprach
 
 Bevorzugst du ein hybrides Setup? Kombiniere frei nach Belieben: lokale Spracherkennung mit einem Cloud-Sprachmodell oder Cloud-Sprachsynthese mit lokaler Inferenz. Die Entscheidung liegt bei dir.
 
+Auch deine Farben. Die Standardfarben sind für farbenblinde Kommandanten abgestimmt, ein Schema mit hohem Kontrast ist eingebaut, und du kannst eigene [Farbschemata](UI-Color-Themes) erstellen, teilen und importieren.
+
 ---
 
 ## Spracherkennung, die wirklich funktioniert

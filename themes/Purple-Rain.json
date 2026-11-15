@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "name": "Purple Rain",
+  "author": "",
+  "colors": {
+    "applicationBackground": "#010001",
+    "panelBackground": "#0C040C",
+    "tableCellBackground": "#330066",
+    "fieldBackground": "#0C040C",
+    "logBackground": "#0C040C",
+    "shipNameText": "#AF36FF",
+    "buttonText": "#EBEBEB",
+    "secondaryText": "#AF36FF",
+    "creditsText": "#AF36FF",
+    "primaryAction": "#AC30FF",
+    "selectedText": "#FFFFFF",
+    "modalScrim": "#8CFFFFFF",
+    "secondaryPanelBackground": "#0C040C",
+    "dialogBodyBackground": "#0C040C",
+    "dialogHeaderBackground": "#0C040C",
+    "primaryButtonBackground": "#9900FF",
+    "primaryButtonHoverBackground": "#9900FF",
+    "primaryButtonPressedBackground": "#A66600CC",
+    "information": "#AC30FF",
+    "warning": "#AC30FF",
+    "informationMark": "#A66600CC",
+    "mainTabActiveBackground": "#BF6600CC",
+    "sectionTabActiveBackground": "#A66600CC",
+    "sectionTabActiveUnderline": "#A66600CC",
+    "sliderValueTrack": "#A66600CC"
+  }
+}

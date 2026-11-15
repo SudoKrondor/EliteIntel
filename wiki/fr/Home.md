@@ -33,6 +33,8 @@ Elite Intel fonctionne entièrement sur votre machine. L'ensemble du pipeline (r
 
 Vous préférez une configuration hybride ? Mélangez et combinez librement : reconnaissance vocale locale avec un modèle de langage cloud, ou synthèse vocale cloud avec une inférence locale. Le choix vous appartient.
 
+Vos couleurs aussi. Les couleurs par défaut sont réglées pour les commandants daltoniens, un thème à contraste élevé est intégré, et vous pouvez créer, partager et importer vos propres [thèmes de couleur](UI-Color-Themes).
+
 ---
 
 ## Une reconnaissance vocale qui fonctionne vraiment

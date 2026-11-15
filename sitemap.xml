@@ -197,6 +197,15 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Bindings-Tab.html"/>
   </url>
   <url>
+    <loc>https://www.elite-intel.org/UI-Color-Themes.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Color-Themes.html"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Color-Themes.html"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/UI-Color-Themes.html"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/UI-Color-Themes.html"/>
+    <xhtml:link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/UI-Color-Themes.html"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/UI-Color-Themes.html"/>
+  </url>
+  <url>
     <loc>https://www.elite-intel.org/UI-Commander-Tab.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.elite-intel.org/UI-Commander-Tab.html"/>
     <xhtml:link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/UI-Commander-Tab.html"/>

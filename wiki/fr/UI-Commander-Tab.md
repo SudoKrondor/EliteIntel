@@ -2,12 +2,12 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Commandant"> Qui vous êtes, avec
 quelle voix parle chaque coque de votre flotte, ce que votre vaisseau fait automatiquement pour
-vous, ce que Vega vous dit sans qu'on le lui demande, le catalogue Exo-Maîtrise, les ensembles de massacre que vous partagez avec d'autres commandants et les lieux que vous avez enregistrés.
+vous, ce que Vega vous dit sans qu'on le lui demande, le catalogue Exo-Maîtrise, les ensembles de massacre que vous partagez avec d'autres commandants, les lieux que vous avez enregistrés et les couleurs de l'application.
 
 ![Onglet Commandant](images/ui-tab-commander.png)
 
-La bande **Profil commandant** est en haut ; en dessous se trouvent six sous-onglets :
-**Gestion de la flotte**, **Réglages globaux du vaisseau**, **Annonces**, **Exo-Maîtrise**, **Ensembles de massacre** et **Signets**.
+La bande **Profil commandant** est en haut ; en dessous se trouvent sept sous-onglets :
+**Gestion de la flotte**, **Réglages globaux du vaisseau**, **Annonces**, **Exo-Maîtrise**, **Ensembles de massacre**, **Signets** et **Thèmes de couleur**.
 
 ---
 
@@ -263,6 +263,12 @@ L'onglet montre la même liste dans le même ordre, avec son **Nom affiché** et
 - **Exporter** et **Supprimer** agissent sur les lignes cochées.
 - **Importer** ajoute des signets d'un fichier exporté au bas de votre liste. La liste n'est jamais remplacée, et chaque
   entrée est marquée *Nouveau*, *Doublon* ou *Invalide* avant que vous ne validiez.
+
+<a id="color-themes"></a>
+
+## Thèmes de couleur
+
+Les couleurs dans lesquelles la fenêtre de l'application est dessinée : trois thèmes intégrés, les vôtres, et d'autres à télécharger. Voir **[Thèmes de couleur](UI-Color-Themes)**.
 
 ---
 

@@ -33,6 +33,8 @@ Elite Intel se ejecuta completamente en tu máquina. El pipeline completo (recon
 
 ¿Prefieres una configuración híbrida? Mezcla y combina libremente: reconocimiento de voz local con un modelo de lenguaje en la nube, o síntesis de voz en la nube con inferencia local. La elección es tuya.
 
+También tus colores. Los colores predeterminados están ajustados para comandantes con daltonismo, incluye un tema de alto contraste, y puedes crear, compartir e importar tus propios [temas de color](UI-Color-Themes).
+
 ---
 
 ## Reconocimiento de voz que realmente funciona

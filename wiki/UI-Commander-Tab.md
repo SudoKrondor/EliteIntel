@@ -3,12 +3,12 @@
 <img src="images/commander.png" class="inline" height="20" alt="Commander"> Who you are, which
 voice each hull in your fleet speaks with, what your ship does for you automatically, what Vega
 tells you about without being asked, the Exo-Mastery catalogue, the massacre sets you share with other
-commanders, and the places you have bookmarked.
+commanders, the places you have bookmarked, and the colors the app is drawn in.
 
 ![Commander tab](images/ui-tab-commander.png)
 
-The **Commander Profile** strip sits at the top; below it are six sub-tabs: **Fleet
-Management**, **Global Ship Settings**, **Announcements**, **Exo-Mastery**, **Massacre Sets** and **Bookmarks**.
+The **Commander Profile** strip sits at the top; below it are seven sub-tabs: **Fleet
+Management**, **Global Ship Settings**, **Announcements**, **Exo-Mastery**, **Massacre Sets**, **Bookmarks** and **Color Themes**.
 
 ---
 
@@ -257,6 +257,12 @@ The tab shows the same list in the same order, with its **Display Name** and **S
 - **Export** and **Delete** work on the rows you have ticked.
 - **Import** adds bookmarks from an exported file to the bottom of your list. It never replaces the
   list, and each entry is marked *New*, *Duplicate* or *Invalid* before you commit.
+
+<a id="color-themes"></a>
+
+## Color Themes
+
+The colors the app window is drawn in: three built-in themes, your own, and more to download. See **[Color Themes](UI-Color-Themes)**.
 
 ---
 

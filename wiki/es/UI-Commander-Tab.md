@@ -2,12 +2,12 @@
 
 <img src="images/commander.png" class="inline" height="20" alt="Comandante"> Quién eres, con qué
 voz habla cada casco de tu flota, qué hace tu nave por ti automáticamente, qué te cuenta Vega sin
-que se lo pidas, el catálogo de Exo-Maestría, los conjuntos de masacre que compartes con otros comandantes y los lugares que has guardado.
+que se lo pidas, el catálogo de Exo-Maestría, los conjuntos de masacre que compartes con otros comandantes los lugares que has guardado y los colores con los que se dibuja la app.
 
 ![Pestaña Comandante](images/ui-tab-commander.png)
 
-Arriba está la franja **Perfil del comandante**; debajo hay seis subpestañas: **Gestión de
-flota**, **Ajustes globales de nave**, **Anuncios**, **Exo-Maestría**, **Conjuntos de masacre** y **Marcadores**.
+Arriba está la franja **Perfil del comandante**; debajo hay siete subpestañas: **Gestión de
+flota**, **Ajustes globales de nave**, **Anuncios**, **Exo-Maestría**, **Conjuntos de masacre**, **Marcadores** y **Temas de color**.
 
 ---
 
@@ -256,6 +256,12 @@ La pestaña muestra la misma lista en el mismo orden, con su **Nombre visible** 
 - **Exportar** y **Eliminar** actúan sobre las filas marcadas.
 - **Importar** añade marcadores de un archivo exportado al final de tu lista. Nunca la sustituye, y cada entrada
   se marca como *Nuevo*, *Duplicado* o *No válido* antes de confirmar.
+
+<a id="color-themes"></a>
+
+## Temas de color
+
+Los colores con los que se dibuja la ventana de la app: tres temas integrados, los tuyos y más para descargar. Consulta **[Temas de color](UI-Color-Themes)**.
 
 ---
 

@@ -14,6 +14,7 @@ Installation: Встановлення
 UI: Інтерфейс
 UI-Vega-Tab: Вкладка «Вега»
 UI-Commander-Tab: Вкладка «Командир»
+UI-Color-Themes: Колірні теми
 UI-Actions-Tab: Вкладка «Дії»
 UI-Bindings-Tab: BindForge
 UI-Settings-Tab: Вкладка «Сервіси»

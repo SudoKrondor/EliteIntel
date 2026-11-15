@@ -12,7 +12,7 @@ Cette section passe en revue chaque onglet, chaque contrôle, et ce qu'il fait r
 | Onglet | À quoi il sert |
 |-----|----------------|
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | Le poste de pilotage. Démarrer et arrêter les services, suivre la conversation, lire l'état en direct, ouvrir l'overlay HUD en jeu. |
-| <img src="images/commander.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Le dossier du journal, voix et personnalités de la flotte, automatisations, annonces vocales, le catalogue Exo-Maîtrise et vos signets. |
+| <img src="images/commander.png" class="inline" height="20" alt="Commandant"> **[Commandant](UI-Commander-Tab)** | Qui vous êtes et comment se comportent vos vaisseaux. Le dossier du journal, voix et personnalités de la flotte, automatisations, annonces vocales, le catalogue Exo-Maîtrise, vos signets et vos thèmes de couleur. |
 | <img src="images/actions.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Tout ce qu'Elite Intel sait faire. Parcourir le catalogue des commandes intégrées et créer vos propres macros. |
 | <img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> **[BindForge](UI-Bindings-Tab)** | Modifiez toutes les commandes d'Elite Dangerous sur n'importe quel périphérique, choisissez quel fichier de raccourcis le jeu charge, nommez vos contrôleurs et sauvegardez tous vos fichiers de commandes. |
 | <img src="images/services.png" class="inline" height="20" alt="Services"> **[Services](UI-Settings-Tab)** | La tuyauterie. Langue, modèle de langage, moteur de voix, audio, push-to-talk et une sauvegarde de vos réglages et données. |

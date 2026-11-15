@@ -15,6 +15,7 @@ Installation: Installation
 UI: Interface
 UI-Vega-Tab: Onglet Vega
 UI-Commander-Tab: Onglet Commandant
+UI-Color-Themes: Thèmes de couleur
 UI-Actions-Tab: Onglet Actions
 UI-Bindings-Tab: BindForge
 UI-Settings-Tab: Onglet Services

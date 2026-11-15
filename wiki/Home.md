@@ -37,6 +37,8 @@ Elite Intel runs entirely on your machine. The full pipeline (speech recognition
 
 Prefer a hybrid setup? Mix and match freely: local speech recognition with a cloud language model, or cloud voice synthesis with local inference. The choice is yours.
 
+Your colors too. The default colors are tuned for color-blind commanders, a high-contrast theme is built in, and you can make, share and import your own [color themes](UI-Color-Themes).
+
 ---
 
 ## Speech Recognition That Actually Works

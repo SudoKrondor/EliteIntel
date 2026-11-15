@@ -110,6 +110,7 @@ function postprocessHtml(html, assetBase) {
     html = html.replace(BARE_HREF_RE, (_, slug) => `href="${slug}.html"`);
     if (assetBase) {
         html = html.replace(/src="images\//g, `src="${assetBase}images/`);
+        html = html.replace(/href="themes\//g, `href="${assetBase}themes/`);
     }
     return html;
 }
@@ -211,6 +212,7 @@ const DEFAULT_NAV = {
     UI:                                'User Interface',
     'UI-Vega-Tab':                     'Vega Tab',
     'UI-Commander-Tab':                'Commander Tab',
+    'UI-Color-Themes':                 'Color Themes',
     'UI-Actions-Tab':                  'Actions Tab',
     'UI-Bindings-Tab':                 'BindForge Tab',
     'UI-Settings-Tab':                 'Services Tab',
@@ -300,6 +302,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
             ${lnk('UI',                'microchip-ai.png')}
             ${lnk('UI-Vega-Tab',       'ai.png',          ' nav-sub')}
             ${lnk('UI-Commander-Tab',  'commander.png',   ' nav-sub')}
+            ${lnk('UI-Color-Themes',   'commander.png',   ' nav-sub')}
             ${lnk('UI-Actions-Tab',    'actions.png',     ' nav-sub')}
             ${lnk('UI-Bindings-Tab',   'keyboard.png',    ' nav-sub')}
             ${lnk('UI-Settings-Tab',   'services.png',    ' nav-sub')}

@@ -15,6 +15,7 @@ Installation: Installation
 UI: Benutzeroberfläche
 UI-Vega-Tab: Reiter Vega
 UI-Commander-Tab: Reiter Kommandant
+UI-Color-Themes: Farbschemata
 UI-Actions-Tab: Reiter Aktionen
 UI-Bindings-Tab: BindForge
 UI-Settings-Tab: Reiter Dienste

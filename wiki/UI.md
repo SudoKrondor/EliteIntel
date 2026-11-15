@@ -12,7 +12,7 @@ This section walks through every tab, every control, and what it actually does.
 | Tab | What it is for |
 |-----|----------------|
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | The flight deck. Start and stop services, watch the conversation, read live status, open the in-game HUD overlay. |
-| <img src="images/commander.png" class="inline" height="20" alt="Commander"> **[Commander](UI-Commander-Tab)** | Who you are and how your ships behave. The journal folder, fleet voices and personalities, automations, spoken announcements, the Exo-Mastery catalogue, and your location bookmarks. |
+| <img src="images/commander.png" class="inline" height="20" alt="Commander"> **[Commander](UI-Commander-Tab)** | Who you are and how your ships behave. The journal folder, fleet voices and personalities, automations, spoken announcements, the Exo-Mastery catalogue, your location bookmarks, and your color themes. |
 | <img src="images/actions.png" class="inline" height="20" alt="Actions"> **[Actions](UI-Actions-Tab)** | Everything Elite Intel can do. Browse the built-in command catalogue, and build your own macros. |
 | <img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> **[BindForge](UI-Bindings-Tab)** | Edit every Elite Dangerous control on any device, choose which binds file the game loads, name your controllers, and back up all your control files. |
 | <img src="images/services.png" class="inline" height="20" alt="Services"> **[Services](UI-Settings-Tab)** | The plumbing. Language, language model, speech engine, audio, push-to-talk, and a backup of your settings and data. |

@@ -12,7 +12,7 @@ Esta sección recorre cada pestaña, cada control y lo que realmente hace.
 | Pestaña | Para qué sirve |
 |-----|----------------|
 | <img src="images/ai.png" class="inline" height="20" alt="Vega"> **[Vega](UI-Vega-Tab)** | La cubierta de vuelo. Arrancar y detener servicios, seguir la conversación, leer el estado en vivo, abrir el overlay HUD del juego. |
-| <img src="images/commander.png" class="inline" height="20" alt="Comandante"> **[Comandante](UI-Commander-Tab)** | Quién eres y cómo se comportan tus naves. La carpeta del journal, voces y personalidades de la flota, automatizaciones, anuncios hablados, el catálogo de Exo-Maestría y tus marcadores. |
+| <img src="images/commander.png" class="inline" height="20" alt="Comandante"> **[Comandante](UI-Commander-Tab)** | Quién eres y cómo se comportan tus naves. La carpeta del journal, voces y personalidades de la flota, automatizaciones, anuncios hablados, el catálogo de Exo-Maestría, tus marcadores y tus temas de color. |
 | <img src="images/actions.png" class="inline" height="20" alt="Acciones"> **[Acciones](UI-Actions-Tab)** | Todo lo que Elite Intel puede hacer. Explora el catálogo de comandos integrados y crea tus propias macros. |
 | <img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> **[BindForge](UI-Bindings-Tab)** | Edita cualquier control de Elite Dangerous en cualquier dispositivo, elige qué archivo de bindings carga el juego, pon nombre a tus mandos y haz copias de todos tus archivos de controles. |
 | <img src="images/services.png" class="inline" height="20" alt="Servicios"> **[Servicios](UI-Settings-Tab)** | La fontanería. Idioma, modelo de lenguaje, motor de voz, audio, push-to-talk y una copia de tus ajustes y datos. |
