@@ -158,6 +158,7 @@ final class ThemePreviewPane extends JComponent {
     }
 
     private void paintNotShown(Graphics g, Dimension size) {
+        smoothText(g);
         g.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         FontMetrics metrics = g.getFontMetrics();
         g.drawString(notShown, Math.max(0, (size.width - metrics.stringWidth(notShown)) / 2), size.height / 2);
@@ -248,9 +249,20 @@ final class ThemePreviewPane extends JComponent {
 
     private void paintMessage(Graphics g) {
         if (message == null) return;
+        smoothText(g);
         g.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         FontMetrics metrics = g.getFontMetrics();
         g.drawString(message, HudPalette.HUD_GAP * 2, HudPalette.HUD_GAP * 2 + metrics.getAscent());
+    }
+
+    /**
+     * Text drawn straight onto the pane, as the app's widgets draw theirs: with the anti-aliasing
+     * {@code HudLookAndFeel} chose for this desktop. A bare {@code drawString} gets none and looks jagged.
+     */
+    private static void smoothText(Graphics g) {
+        Object hint = UIManager.get(RenderingHints.KEY_TEXT_ANTIALIASING);
+        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                hint != null ? hint : RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
     }
 
     private record Rendered(BufferedImage preview, RoleMap roleMap) {

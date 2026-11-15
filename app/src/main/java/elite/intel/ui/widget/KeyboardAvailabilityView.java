@@ -340,7 +340,7 @@ public class KeyboardAvailabilityView extends JPanel {
         for (Map.Entry<String, JLabel> entry : modifierCells.entrySet()) {
             boolean held = heldModifiers.contains(entry.getKey());
             boolean assigned = assignedModifiers.contains(entry.getKey());
-            entry.getValue().setBackground(held ? HUD_COLOR_ROLE_PRIMARY_ACTION
+            entry.getValue().setBackground(held ? HUD_COLOR_ROLE_ACCENT_FILL
                     : assigned ? HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             entry.getValue().setForeground(held ? HUD_COLOR_ROLE_APPLICATION_BACKGROUND
                     : assigned ? HUD_COLOR_ROLE_PRIMARY_TEXT : HUD_COLOR_ROLE_SECONDARY_TEXT);

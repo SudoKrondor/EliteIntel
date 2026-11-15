@@ -34,7 +34,8 @@ public interface GlobalSettingsDao {
                                                                 announceArrival,
                                                                 aiRespondsToPirateScan,
                                                                 aiBountyKillGloat,
-                                                                shareMassacreSets)
+                                                                shareMassacreSets,
+                                                                useFsdToggle)
                     VALUES (1, :autoSpeedUpForFtl,
                                 :autoLightsForFtl,
                                 :autoNightVisionOff,
@@ -52,7 +53,8 @@ public interface GlobalSettingsDao {
                                 :announceArrival,
                                 :aiRespondsToPirateScan,
                                 :aiBountyKillGloat,
-                                :shareMassacreSets)
+                                :shareMassacreSets,
+                                :useFsdToggle)
             """)
     void save(@BindBean GlobalSettings settings);
 
@@ -79,6 +81,7 @@ public interface GlobalSettingsDao {
             entity.setAiRespondsToPirateScan(rs.getBoolean("aiRespondsToPirateScan"));
             entity.setAiBountyKillGloat(rs.getBoolean("aiBountyKillGloat"));
             entity.setShareMassacreSets(rs.getBoolean("shareMassacreSets"));
+            entity.setUseFsdToggle(rs.getBoolean("useFsdToggle"));
             return entity;
         }
     }
@@ -103,6 +106,7 @@ public interface GlobalSettingsDao {
         boolean aiRespondsToPirateScan;
         boolean aiBountyKillGloat;
         boolean shareMassacreSets;
+        boolean useFsdToggle;
 
         public boolean isAutoSpeedUpForFtl() {
             return autoSpeedUpForFtl;
@@ -246,6 +250,14 @@ public interface GlobalSettingsDao {
 
         public void setShareMassacreSets(boolean shareMassacreSets) {
             this.shareMassacreSets = shareMassacreSets;
+        }
+
+        public boolean isUseFsdToggle() {
+            return useFsdToggle;
+        }
+
+        public void setUseFsdToggle(boolean useFsdToggle) {
+            this.useFsdToggle = useFsdToggle;
         }
     }
 }

@@ -120,7 +120,7 @@ public class HudSpinner extends JSpinner {
                 int w = getWidth();
                 int h = getHeight();
                 boolean pressed = isEnabled() && getModel().isPressed();
-                g2.setColor(pressed ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                g2.setColor(pressed ? HudPalette.HUD_COLOR_ROLE_ACCENT_FILL : HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
                 g2.fillRect(0, 0, w, h);
                 g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
                 g2.drawLine(0, 0, 0, h - 1);

@@ -40,7 +40,14 @@ public final class HudPalette {
      * CMDR credit-balance readout (e.g. commander block, §7).
      */
     public static final Color HUD_COLOR_ROLE_CREDITS_TEXT = ActiveTheme.color(ThemeRole.CREDITS_TEXT);
+    /** The accent as text, lines, frames and marks. Where the accent fills an area, that is {@link #HUD_COLOR_ROLE_ACCENT_FILL}. */
     public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = ActiveTheme.color(ThemeRole.PRIMARY_ACTION);
+    /**
+     * The accent as a fill under {@link #HUD_COLOR_ROLE_SELECTED_TEXT}: the selected segment, selected rows and items
+     * in tables, lists and combos, selected text in fields, pressed subtle buttons and steppers, selected toggles,
+     * held keys. A theme that leaves it unset shows the accent here ({@link ThemeRole#follows()}).
+     */
+    public static final Color HUD_COLOR_ROLE_ACCENT_FILL = ActiveTheme.color(ThemeRole.ACCENT_FILL);
     /**
      * A value at rest: field and combo text, table cells, read-only readouts. Neutral so the accent stays for what is active or selected.
      */

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A colour theme for the app window: a name, who made it, and the colours it changes.
@@ -12,6 +13,9 @@ import java.util.Objects;
  * A theme holds only the roles whose colour differs from the Default theme ({@link ThemeRole#defaultColor()}). An
  * entry equal to the default is dropped on the way in, so "left alone" and "set to the default by hand" are the same
  * theme, and a default retuned in a later release reaches every theme that never changed that role.
+ * <p>
+ * A role that {@link ThemeRole#follows() follows} another has that role's colour in this theme as its default, so it
+ * is kept only where it differs from that one.
  *
  * @param name      shown in the theme list; never blank
  * @param author    who made it, or empty
@@ -31,13 +35,21 @@ public record ColorTheme(String name, String author, Map<ThemeRole, Color> overr
 
     /** The colour this theme gives {@code role}: its own, or the default. */
     public Color color(ThemeRole role) {
-        return overrides.getOrDefault(role, role.defaultColor());
+        Color own = overrides.get(role);
+        if (own != null) return own;
+        return role.follows().map(this::color).orElse(role.defaultColor());
     }
 
     private static Map<ThemeRole, Color> withoutDefaults(Map<ThemeRole, Color> overrides) {
         Map<ThemeRole, Color> kept = new EnumMap<>(ThemeRole.class);
         overrides.forEach((role, color) -> {
-            if (!color.equals(role.defaultColor())) kept.put(role, color);
+            if (role.follows().isEmpty() && !color.equals(role.defaultColor())) kept.put(role, color);
+        });
+        overrides.forEach((role, color) -> {
+            Optional<ThemeRole> leader = role.follows();
+            if (leader.isEmpty()) return;
+            Color followed = kept.getOrDefault(leader.get(), leader.get().defaultColor());
+            if (!color.equals(followed)) kept.put(role, color);
         });
         return Collections.unmodifiableMap(kept);
     }
