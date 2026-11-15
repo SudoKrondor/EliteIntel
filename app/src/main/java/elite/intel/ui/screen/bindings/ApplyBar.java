@@ -7,6 +7,7 @@ import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.QuietableNotice;
 import elite.intel.ui.event.BindForgeEditsChangedEvent;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
@@ -244,8 +245,10 @@ public final class ApplyBar extends JPanel {
             question += "\n\n" + getText("bindings.applyBar.linuxNote");
         }
         String title = getText("bindings.applyBar.title");
-        if (!HudConfirmDialog.confirm(this, title, question, getText("bindings.applyBar.apply"),
-                getText("button.cancel"))) {
+        // WHY: quieted, APPLY writes on the press, the Linux note with it - the user ticked the box under it (Alan,
+        // 2026-11-14, Storage S21; storage.md rule 13).
+        if (!HudConfirmDialog.confirmQuietable(this, QuietableNotice.BINDFORGE_APPLY_CONFIRM, title, question,
+                getText("bindings.applyBar.apply"), getText("button.cancel"))) {
             finished.run();
             return;
         }
@@ -309,28 +312,29 @@ public final class ApplyBar extends JPanel {
         }
 
         @Override
-        public String write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers,
-                            DeviceCheck.Answer devices) throws IOException {
+        public CheckFlow.Report write(BindingsCheck.Found found, Map<String, BindingsComparison.Side> answers,
+                                      DeviceCheck.Answer devices) throws IOException {
             try {
-                StringBuilder report = new StringBuilder(reportText(applying.apply(found, answers, devices)));
+                Written written = applying.apply(found, answers, devices);
+                StringBuilder report = new StringBuilder(reportText(written));
                 report.append(CheckFlow.newerReport(found));
                 devices.moves().forEach((from, to) -> report.append('\n')
                         .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
-                return report.toString();
+                return report(written, report.toString());
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("APPLY wrote nothing: there was nothing to back up");
-                return getText(Backups.NothingToBackUpException.ADVICE_KEY);
+                return CheckFlow.Report.shown(getText(Backups.NothingToBackUpException.ADVICE_KEY));
             } catch (Edits.RefusedException e) {
                 // WHY: refused - another write running, or read only - nothing was written, and the edits are still on
                 // screen.
                 log.info("APPLY not run: {}", e.getMessage());
-                return getText(e.messageKey());
+                return CheckFlow.Report.shown(getText(e.messageKey()));
             } catch (PresetRefusedException e) {
                 // WHY: refused before anything was backed up or written - a line naming nothing real fails silently in
                 // the game (preset-editor.md, What APPLY checks and writes for the preset file). Checked again on the
                 // set written, since a merge can take the game's preset line.
                 log.warn("APPLY refused: {}", e.getMessage());
-                return presetRefusedText(e);
+                return CheckFlow.Report.shown(presetRefusedText(e));
             }
         }
 
@@ -370,10 +374,26 @@ public final class ApplyBar extends JPanel {
 
     /** <em>"Updated 2 of 3"</em>, the backup, and each place that did not take everything (storage.md rule 8). */
     static String reportText(Written written) {
+        return successLine(written) + FirstTimeStartupFlow.placeFailures(written.report())
+                + CheckFlow.keptReadOnly(written) + CheckFlow.leftoversReport(written);
+    }
+
+    /** The report's first line: the backup, and <em>"Installations updated: 2 of 3"</em>. */
+    private static String successLine(Written written) {
         WriteReport report = written.report();
         return getText("bindings.applyBar.result", written.backup().zip().toString(), report.installationsUpdated(),
-                report.installations().size()) + FirstTimeStartupFlow.placeFailures(report)
-                + CheckFlow.keptReadOnly(written) + CheckFlow.leftoversReport(written);
+                report.installations().size());
+    }
+
+    /**
+     * APPLY's report, quietable only when it says nothing but its success line with every place updated - a failure, a
+     * file moved, a newer version or a moved device always shows (Alan, 2026-11-14, Storage S21; storage.md rule 13).
+     *
+     * @param text the whole report, as {@link #reportText} and whatever followed it made it
+     */
+    static CheckFlow.Report report(Written written, String text) {
+        return CheckFlow.Report.quietableIfPlain(text, successLine(written), written.report().complete(),
+                QuietableNotice.BINDFORGE_APPLY_REPORT);
     }
 
     /**

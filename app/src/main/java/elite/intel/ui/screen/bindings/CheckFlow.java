@@ -16,6 +16,7 @@ import elite.intel.bindforge.storage.WriteReport;
 import elite.intel.bindforge.storage.Written;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.QuietableNotice;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,7 +93,7 @@ final class CheckFlow {
          *                                                 was written
          * @throws IOException                             if nothing was written, told with {@link #failed}
          */
-        String write(BindingsCheck.Found found, Map<String, Side> answers, DeviceCheck.Answer devices)
+        Report write(BindingsCheck.Found found, Map<String, Side> answers, DeviceCheck.Answer devices)
                 throws IOException;
 
         /** Nothing was written, for {@code reason}. */
@@ -100,6 +101,33 @@ final class CheckFlow {
 
         /** It stopped part way, for {@code reason} - a bug. */
         String stopped(String reason);
+    }
+
+    /**
+     * A write's report, and the notice that can quiet it - {@code null} for one that always shows. Only a report that
+     * says nothing but its plain success line carries a notice (Alan, 2026-11-14, Storage S21; storage.md rule 13).
+     */
+    record Report(String text, QuietableNotice quietable) {
+        /** A report that always shows. */
+        static Report shown(String text) {
+            return new Report(text, null);
+        }
+
+        /**
+         * A write's report, quietable by {@code notice} only when every place took everything and {@code text} is its
+         * success line and nothing more.
+         * <p>
+         * WHY the whole text is compared rather than a list of conditions: any line appended to the success line - a
+         * failure, a file moved, a newer version, a moved device, or a kind of news a later slice adds - makes the
+         * report always show, with no list to keep in step.
+         *
+         * @param text        the whole report
+         * @param successLine its first line, as the flow words it
+         * @param complete    {@link elite.intel.bindforge.storage.WriteReport#complete()}
+         */
+        static Report quietableIfPlain(String text, String successLine, boolean complete, QuietableNotice notice) {
+            return complete && text.equals(successLine) ? new Report(text, notice) : shown(text);
+        }
     }
 
     /** The first click's write: the check's own, with no edits on screen. */
@@ -110,7 +138,7 @@ final class CheckFlow {
         }
 
         @Override
-        public String write(BindingsCheck.Found found, Map<String, Side> answers, DeviceCheck.Answer devices)
+        public Report write(BindingsCheck.Found found, Map<String, Side> answers, DeviceCheck.Answer devices)
                 throws IOException {
             try {
                 StringBuilder report = new StringBuilder(reportText(BindingsCheck.stored().settle(found, answers,
@@ -118,13 +146,13 @@ final class CheckFlow {
                 report.append(newerReport(found));
                 devices.moves().forEach((from, to) -> report.append('\n')
                         .append(getText("bindings.aliasDesigner.firstSetup.summary.moves", from, to)));
-                return report.toString();
+                return Report.shown(report.toString());
             } catch (BindingsCheck.EditsNotAppliedException e) {
                 log.info("The check wrote nothing: {}", e.getMessage());
-                return getText("bindings.check.editsNotApplied");
+                return Report.shown(getText("bindings.check.editsNotApplied"));
             } catch (Edits.RefusedException e) {
                 log.info("The check wrote nothing: {}", e.getMessage());
-                return getText(e.messageKey());
+                return Report.shown(getText(e.messageKey()));
             }
         }
 
@@ -497,7 +525,7 @@ final class CheckFlow {
     private Runnable written(BindingsCheck.Found found, Map<String, Side> answers, DeviceCheck.Answer devices,
                              boolean merging, Runnable then) throws IOException {
         try {
-            String report = writing.write(found, answers, devices);
+            Report report = writing.write(found, answers, devices);
             return () -> tell(report, then);
         } catch (BindingsCheck.ChangedMeanwhileException e) {
             log.info("The check found the files changed while it was open");
@@ -532,6 +560,10 @@ final class CheckFlow {
 
     private void tell(String message, Runnable then) {
         FlowSteps.tell(parent, writing.title(), message, then);
+    }
+
+    private void tell(Report report, Runnable then) {
+        FlowSteps.tell(parent, writing.title(), report, then);
     }
 
     /**

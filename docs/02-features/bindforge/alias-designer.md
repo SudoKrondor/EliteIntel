@@ -801,6 +801,11 @@ Built as `bindforge.devices.IdentityQuestions` (who is asked, about what - pure)
   asks, so a write that fails cannot bring the dialog straight back.
 - **The automatic onboarding offer no longer opens over another dialog**, as the hot-plug offer already did - a refresh
   can land while the identity questions are showing.
+- **Neither offer opens while the working copy cannot be read** (Alan, 2026-11-14). With first-time startup complete
+  and the working copy missing or unreadable, the BindForge tab click offers RESTORE or first-time startup again, and
+  since Alias Designer became the first tab (2026-11-12) the automatic offer opened beside it, only to say the bindings
+  could not be read. Both offers are held, not spent: the write that makes the working copy refreshes the screen, and
+  that refresh offers them. **NAME** still says so when pressed - the user asked.
 
 ### Built — 2026-10-17 (Alan, A17)
 
@@ -915,7 +920,7 @@ subscription in `AliasDesignerController`. Alan approved these as the sources' d
 - **Plugging in or out reads the screen again while the user is looking**, so the row appears or turns `MISSING`
   straight away. While the screen is hidden it is marked stale and read again when next shown — nothing reads the
   disk for a plug nobody sees.
-- **The offer follows the automatic offer's rules:** only once activated, once the hardware is listed, while the
+- **The offer follows the automatic offer's rules:** only once activated and the working copy read (2026-11-14), once the hardware is listed, while the
   user is on the screen; never while catch-up is asking or a write is running. **It never opens over another dialog**
   — the Device Editor included — and waits for a later refresh instead.
 - **Several plugged in together are one dialog**; one unplugged before its offer stops waiting.

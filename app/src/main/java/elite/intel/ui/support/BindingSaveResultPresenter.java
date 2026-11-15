@@ -3,6 +3,7 @@ package elite.intel.ui.support;
 
 import elite.intel.bindforge.io.BindingSaveResult;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.QuietableNotice;
 
 import java.awt.*;
 
@@ -16,11 +17,26 @@ public class BindingSaveResultPresenter {
     }
 
     public void show(BindingSaveResult result) {
-        if (result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE) {
+        QuietableNotice notice = quietableFor(result);
+        if (notice != null) {
+            HudConfirmDialog.infoQuietable(parent, notice, getText("bindings.assign.dialogTitle"), messageFor(result),
+                    getText("button.close"));
+            return;
+        }
+        if (result == BindingSaveResult.NO_CHANGE) {
             showInfo(messageFor(result));
             return;
         }
         showError(messageFor(result));
+    }
+
+    /**
+     * The notice that quiets {@code result}'s dialog, or {@code null} when it always shows. Only <em>"Saved."</em> can
+     * be quieted (Alan, 2026-11-14): it tells the user what the table already shows. <em>"No changes."</em> says the
+     * assignment did nothing, and a refusal is a failure, which always shows (storage.md rule 13).
+     */
+    static QuietableNotice quietableFor(BindingSaveResult result) {
+        return result == BindingSaveResult.SAVED ? QuietableNotice.BINDFORGE_ASSIGN_SAVED : null;
     }
 
     private void showInfo(String message) {

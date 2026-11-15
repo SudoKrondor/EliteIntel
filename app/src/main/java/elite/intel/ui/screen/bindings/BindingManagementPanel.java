@@ -8,6 +8,7 @@ import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.db.managers.BindForgeSettingsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.event.BindForgeBackupsChangedEvent;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.*;
@@ -90,6 +91,16 @@ public class BindingManagementPanel extends JPanel {
         UiBus.register(this);
         // WHY after registering: read only may have been worked out before this screen existed.
         updateSelectionActionsEnabled();
+    }
+
+    /**
+     * A backup was taken, deleted or pruned anywhere - APPLY's before-changes backup, RESTORE's, the check's, the daily
+     * one: the list reads the backup folder again. Before, only this screen's own buttons refreshed it, so a backup
+     * taken elsewhere showed only after the next Backup Now (Alan, 2026-11-14). Heard on the thread that took it.
+     */
+    @Subscribe
+    public void onBackupsChanged(BindForgeBackupsChangedEvent event) {
+        SwingUtilities.invokeLater(this::refreshBackups);
     }
 
     /** RESTORE and Browse for Backup File are off while BindForge is read only (Storage S14a). */
@@ -274,11 +285,13 @@ public class BindingManagementPanel extends JPanel {
         }, failed, failed, FlowSteps.NOTHING);
     }
 
-    /** After Backup Now: the screen freed, {@code told} shown, the list read again. On the EDT. */
+    /**
+     * After Backup Now: the screen freed, {@code told} shown. The list reads itself again on the backup's event
+     * ({@link #onBackupsChanged}). On the EDT.
+     */
     private void backedUp(Runnable told) {
         setOperationBusy(false);
         told.run();
-        refreshBackups();
     }
 
     /** Deletes the selected user backup, after asking (file-manager.md, <em>Retention</em>). */
@@ -304,11 +317,13 @@ public class BindingManagementPanel extends JPanel {
         }, failed, failed, FlowSteps.NOTHING);
     }
 
-    /** After Delete: the screen freed, {@code told} shown, the list read again. On the EDT. */
+    /**
+     * After Delete: the screen freed, {@code told} shown. The list reads itself again on the delete's event
+     * ({@link #onBackupsChanged}). On the EDT.
+     */
     private void deleted(Runnable told) {
         setOperationBusy(false);
         told.run();
-        refreshBackups();
     }
 
     /** RESTORE: the whole selected backup goes back (storage.md rule 10). */
@@ -339,11 +354,7 @@ public class BindingManagementPanel extends JPanel {
 
     private void restore(Path zip, boolean browsed) {
         setOperationBusy(true);
-        restoreFlow.restore(zip, browsed, () -> {
-            setOperationBusy(false);
-            // WHY: RESTORE took a before-RESTORE backup, which belongs in the list.
-            refreshBackups();
-        });
+        restoreFlow.restore(zip, browsed, () -> setOperationBusy(false));
     }
 
     // ---- settings

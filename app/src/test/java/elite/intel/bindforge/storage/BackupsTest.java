@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -364,6 +365,35 @@ class BackupsTest {
         assertTrue(Files.exists(newer));
     }
 
+    /**
+     * Every change to the backups is announced, whoever made it, so Player Backups reads its list again - not only after
+     * its own buttons (Alan, 2026-11-14). Nothing is announced when nothing changed.
+     */
+    @Test
+    void everyBackupTakenDeletedOrPrunedIsAnnouncedAndNothingElse() throws IOException {
+        AtomicInteger announced = new AtomicInteger();
+        Backups backups = announcing("2026-10-24T18:30:00Z", sources(), announced);
+
+        Backup user = backups.backUpEverything(Backups.Kind.USER);
+        assertEquals(1, announced.get(), "a backup taken");
+        backups.backUpBeforeChange(Backups.Before.APPLY, sources());
+        backups.backUpBeforeChange(Backups.Before.RESTORE, sources());
+        assertEquals(3, announced.get(), "each before-changes backup");
+
+        backups.delete(user);
+        assertEquals(4, announced.get(), "a user backup deleted");
+
+        backups.prune(DEFAULT_RETENTION);
+        assertEquals(4, announced.get(), "retention that deleted nothing");
+        backups.prune(new Backups.Retention(30, 1));
+        assertEquals(5, announced.get(), "retention that deleted a before-changes backup");
+
+        BackupSources nothing = new BackupSources(temp.resolve("no bindings"), List.of());
+        assertThrows(Backups.NothingToBackUpException.class,
+                () -> announcing("2026-10-24T18:31:00Z", nothing, announced).backUpEverything(Backups.Kind.DAILY));
+        assertEquals(5, announced.get(), "a backup not taken");
+    }
+
     @Test
     void retentionBelowOneIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> new Backups.Retention(0, 100));
@@ -377,6 +407,13 @@ class BackupsTest {
             Files.createDirectories(root);
             return root;
         }, Clock.fixed(Instant.parse(instant), ZoneOffset.UTC));
+    }
+
+    private Backups announcing(String instant, BackupSources sources, AtomicInteger announced) {
+        return new Backups(() -> sources, () -> {
+            Files.createDirectories(root);
+            return root;
+        }, Clock.fixed(Instant.parse(instant), ZoneOffset.UTC), announced::incrementAndGet);
     }
 
     private BackupSources sources() {

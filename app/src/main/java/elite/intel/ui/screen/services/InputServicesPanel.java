@@ -5,6 +5,7 @@ import elite.intel.ai.ears.PushToTalkService;
 import elite.intel.bindforge.devicefiles.ButtonMapLabels;
 import elite.intel.bindforge.devices.CaptureControllers;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
+import elite.intel.db.managers.QuietedNoticesManager;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
@@ -14,6 +15,8 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
 import elite.intel.ui.event.RestartEarsEvent;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTwoColumns;
@@ -22,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.HierarchyEvent;
 import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -50,6 +54,7 @@ public class InputServicesPanel extends JPanel {
     private HudComboBox<Object> controllerCombo;
     private HudComboBox<String> buttonCombo;
     private HudComboBox<String> mouseButtonCombo;
+    private JButton resetWarningsButton;
 
     /**
      * SDL 0-based mouse button index behind each entry of {@link #mouseButtonCombo} after the placeholder:
@@ -92,6 +97,7 @@ public class InputServicesPanel extends JPanel {
 
         reconcileControllerSelection();
         selectMouseButton(session.getPushToTalkMouseButton());
+        refreshResetWarnings();
     }
 
     private void buildUi() {
@@ -151,10 +157,47 @@ public class InputServicesPanel extends JPanel {
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         content.add(section);
+        content.add(Box.createVerticalStrut(HudPalette.HUD_GAP));
+        content.add(warningsSection());
 
         add(content, BorderLayout.NORTH);
 
         setControlsEnabled(false);
+    }
+
+    /**
+     * Reset warnings: every notice the user ticked <em>"Don't show this again"</em> on shows again (Alan, 2026-11-14,
+     * Storage S21; storage.md rule 13). No dialog - the button greys at once, and it is greyed while nothing is quieted,
+     * read again each time the page is shown. App-wide, so it sits here rather than in BindForge.
+     */
+    private HudSection warningsSection() {
+        HudSection warnings = HudSection.flat(getText("settings.warnings.section"), new BorderLayout());
+        resetWarningsButton = AppTheme.makeButtonSubtle(getText("settings.warnings.reset"));
+        resetWarningsButton.addActionListener(e -> {
+            QuietedNoticesManager.getInstance().resetAll();
+            refreshResetWarnings();
+        });
+        JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        row.add(resetWarningsButton);
+        warnings.body().add(row, BorderLayout.CENTER);
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) refreshResetWarnings();
+        });
+        return warnings;
+    }
+
+    private void refreshResetWarnings() {
+        boolean any;
+        try {
+            any = QuietedNoticesManager.getInstance().anyQuieted();
+        } catch (RuntimeException e) {
+            // WHY: a settings page must still open with the database unreadable; the button then offers the reset.
+            log.warn("Could not read the quieted notices", e);
+            any = true;
+        }
+        resetWarningsButton.setEnabled(any);
+        resetWarningsButton.setToolTipText(getText(any ? "settings.warnings.reset.tooltip"
+                : "settings.warnings.reset.none"));
     }
 
     // -- UI handlers -----------------------------------------------------------

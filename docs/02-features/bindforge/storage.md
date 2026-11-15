@@ -45,9 +45,10 @@ to be removed before V1.2 shipped, and first-time startup waited for the next cl
    `StartPreset.N.start`, **one** `DeviceMappings.xml` and **one** of each `.buttonMap`, reconciled — and mark
    first-time startup complete.
 
-   **The report that first-time startup is complete can be quieted** (Alan, 2026-11-13; to be built in Storage S21):
-   it gets a *don't show this again* box, as APPLY's dialogs do (rule 13). A report naming anything that did not land
-   - *"Updated 1 of 2 installations"* - always shows.
+   **The report that first-time startup is complete can be quieted** (Alan, 2026-11-13; built in Storage S21,
+   2026-11-14): it gets a *don't show this again* box, as APPLY's dialogs do (rule 13). Only the plain success line is
+   quieted: a report saying anything more - *"Updated 1 of 2 installations"*, a device moved to a new ID, first-time
+   startup to be offered again - always shows.
 4. From then on, **the working copy is the source of truth.**
 
 **Settled with Storage S2b's sources (Alan, 2026-10-25):**
@@ -554,13 +555,36 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     caused by doing so. **APPLY's confirmation always says so** (2026-10-23, Alan): *"Close the game's controls
     screen before applying. Changes made in BindForge and in the game at the same time can be lost."*
 
-    **Amended 2026-11-13 (Alan; to be built in Storage S21): the user can quiet it.** APPLY's confirmation and its
+    **Amended 2026-11-13 (Alan; built in Storage S21, 2026-11-14): the user can quiet it.** APPLY's confirmation and its
     report (*"Applied. Your files were backed up first…"*) each get a *don't show this again* box; once ticked, that
     dialog is not shown until the warnings are reset. Alan: repeated notices tire every user, and being able to turn
     them off is worth more than always saying it. **A failure always shows**, ticked or not - a report where anything
     did not land, *"updated 1 of 2"* included (principle 9). **Reset warnings**, a button in a section below the
     push-to-talk settings on Services' tab renamed *Push To Talk and Other Settings*, clears every tick. The split
     preset's two questions (S13f) never get the box: they ask, they do not tell, and they stay two dialogs.
+
+    **Settled with Storage S21's sources (Alan, 2026-11-14):**
+    - **The ticks are app-wide, not BindForge's** - Reset warnings is not in BindForge, and other dialogs may join. A
+      table of their own, `quieted_notices`, one row per notice ticked, keyed by the notice's name: a dialog joins with
+      a name and no migration. Which other dialogs should join is for Alan to find by testing. **Joined 2026-11-14
+      (Alan): the Bind Editor's *"Saved."*** after an assignment (`BINDFORGE_ASSIGN_SAVED`) - that line only; *"No
+      changes."* and every refusal still show.
+    - **Quieted, APPLY writes on the press**, with no dialog and no wait. **The Linux note goes with it**: it is part of
+      the confirmation, says the same at every APPLY, and is not a failure - the box sits under it, so a user who ticks
+      it has read it.
+    - **A tick is stored the moment it is ticked, and an untick the moment it is unticked.** APPLY, CANCEL and Close
+      have no say in it.
+    - **Only the plain success line is quieted.** A report that says anything more shows, whether it is a failure
+      (*"updated 1 of 2"*, a file kept read-only, an installation that differs) or news (a file moved to Leftover User
+      Files, a newer version taken over, a device moved to a new ID).
+    - **The box reads *"Don't show this again"*** on every dialog that has it, in the footer's middle, between CANCEL
+      and APPLY.
+    - **Reset warnings asks nothing and says nothing**: it is greyed while nothing is quieted, and greys as soon as it is
+      pressed. It sits in a *Warnings* section below the push-to-talk settings.
+
+    Built in Storage S21 as `QuietedNoticesManager` (migration `12027__quieted_notices.sql`; renumbered from 12025 on 2026-11-14, when Color Themes took 12025 and the FSD toggle 12026 on `V1.2` - CLAUDE.md, *Database*: migration bands), `ui.dialog.QuietableNotice`,
+    `HudConfirmDialog.confirmQuietable` / `infoQuietable`, `CheckFlow.Report` (`quietableIfPlain`), `FlowSteps.tell`, `ApplyBar.report`,
+    `FirstTimeStartupFlow.writtenReport`, and the Warnings section in `ui.screen.services.InputServicesPanel`.
 14. **The check:** every live copy, in every installation, is compared with the working copy **by their values, never
     by date**. Any difference means the live copy changed since BindForge last wrote it — an edit in the game, or a
     game update adding new bind slots or other new parts. The user is warned and chooses one of three:

@@ -70,4 +70,14 @@ final class FlowSteps {
         HudConfirmDialog.info(parent, title, message, getText("button.close"));
         then.run();
     }
+
+    /** A write's report, then {@code then}: shown, unless it can be quieted and the user has (Storage S21). On the EDT. */
+    static void tell(Component parent, String title, CheckFlow.Report report, Runnable then) {
+        if (report.quietable() == null) {
+            HudConfirmDialog.info(parent, title, report.text(), getText("button.close"));
+        } else {
+            HudConfirmDialog.infoQuietable(parent, report.quietable(), title, report.text(), getText("button.close"));
+        }
+        then.run();
+    }
 }

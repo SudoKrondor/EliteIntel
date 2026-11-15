@@ -6,6 +6,7 @@ import elite.intel.bindforge.storage.*;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.QuietableNotice;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -211,28 +212,30 @@ public final class FirstTimeStartupFlow {
         }
         FirstSetupDialog.Choice chosen = choice.get();
         background("BindForge-FirstTimeStartupWrite", () -> {
-            String message;
+            CheckFlow.Report message;
             try {
-                message = writtenText(startup.write(chosen.files()), chosen.moved());
+                message = writtenReport(startup.write(chosen.files()), chosen.moved());
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("First-time startup wrote nothing: there was nothing to back up");
-                message = getText(Backups.NothingToBackUpException.ADVICE_KEY);
+                message = CheckFlow.Report.shown(getText(Backups.NothingToBackUpException.ADVICE_KEY));
             } catch (Edits.RefusedException e) {
                 log.info("First-time startup not run: {}", e.getMessage());
-                message = getText(e.messageKey());
+                message = CheckFlow.Report.shown(getText(e.messageKey()));
             } catch (IOException e) {
                 // WHY: the backup or the working copy's save failed, so nothing was written and the flag is unset. A
                 // flag that cannot be set after the write is not thrown: it is in the result (Krondor's review,
                 // 2026-10-27).
                 log.error("First-time startup stopped before writing the game files", e);
-                message = getText("bindings.firstTimeStartup.result.failed", StringUtls.messageOf(e));
+                message = CheckFlow.Report.shown(getText("bindings.firstTimeStartup.result.failed",
+                        StringUtls.messageOf(e)));
             } catch (RuntimeException e) {
                 // WHY: broad on purpose - a thread boundary. A bug can strike after the working copy was saved, with
                 // some live copies written, so nothing is promised either way: the log says what was written.
                 log.error("First-time startup stopped part way", e);
-                message = getText("bindings.firstTimeStartup.result.stopped", StringUtls.messageOf(e));
+                message = CheckFlow.Report.shown(getText("bindings.firstTimeStartup.result.stopped",
+                        StringUtls.messageOf(e)));
             }
-            String told = message;
+            CheckFlow.Report told = message;
             return () -> tell(told);
         });
     }
@@ -260,16 +263,32 @@ public final class FirstTimeStartupFlow {
      * The report, per place: <em>"updated 2 of 2"</em>, or which one failed and why (alias-designer.md, step 5) - and a
      * line saying first-time startup will be asked again when its flag could not be set, as RESTORE says it.
      */
-    static String writtenText(Written written, int moved) {
+    private static String writtenText(Written written, int moved) {
         WriteReport report = written.report();
-        StringBuilder text = new StringBuilder(getText("bindings.firstTimeStartup.result.written",
-                written.backup().zip().toString(), report.installationsUpdated(), report.installations().size()));
+        StringBuilder text = new StringBuilder(successLine(written));
         if (moved > 0) text.append('\n').append(getText("bindings.firstTimeStartup.result.moved", moved));
         text.append(placeFailures(report));
         if (written.setUpAskedAgain()) {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.setUpAgain"));
         }
         return text.toString();
+    }
+
+    /** The report's first line: the backup, kept forever, and <em>"Updated 2 of 2 installations"</em>. */
+    private static String successLine(Written written) {
+        WriteReport report = written.report();
+        return getText("bindings.firstTimeStartup.result.written", written.backup().zip().toString(),
+                report.installationsUpdated(), report.installations().size());
+    }
+
+    /**
+     * {@link #writtenText}, quietable only when it says nothing but its success line with every place updated - a
+     * failure, a device moved or first-time startup to be asked again always shows (Alan, 2026-11-14, Storage S21;
+     * storage.md rule 3).
+     */
+    static CheckFlow.Report writtenReport(Written written, int moved) {
+        return CheckFlow.Report.quietableIfPlain(writtenText(written, moved), successLine(written),
+                written.report().complete(), QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT);
     }
 
     /**
@@ -334,6 +353,10 @@ public final class FirstTimeStartupFlow {
 
     private void tell(String message) {
         FlowSteps.tell(parent, getText("bindings.firstTimeStartup.title"), message, this::finish);
+    }
+
+    private void tell(CheckFlow.Report report) {
+        FlowSteps.tell(parent, getText("bindings.firstTimeStartup.title"), report, this::finish);
     }
 
     private void finish() {
