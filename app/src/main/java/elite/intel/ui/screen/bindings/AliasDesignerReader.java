@@ -45,9 +45,12 @@ final class AliasDesignerReader {
      * @param listed    whether the Device Service had finished its first look at the hardware
      * @param identity  the identity questions (A12) - none before first-time startup or before the hardware is listed,
      *                  when every controller reads absent
+     * @param workingCopyRead whether the working copy was read. False before first-time startup, and after it when the
+     *                  working copy is missing or cannot be read - the BindForge tab click then offers RESTORE or
+     *                  first-time startup again, and onboarding's offer waits for it (Alan, 2026-11-14)
      */
     record Snapshot(List<MyDevice> myDevices, List<BuiltInDevice> builtIn, Boolean activated, Boolean running,
-                    boolean listed, IdentityQuestions.Reading identity) {
+                    boolean listed, IdentityQuestions.Reading identity, boolean workingCopyRead) {
     }
 
     /**
@@ -78,10 +81,12 @@ final class AliasDesignerReader {
         Boolean running = null;
         boolean listed = false;
         IdentityQuestions.Reading identity = IdentityQuestions.Reading.NONE;
+        boolean workingCopyRead = false;
         try {
             boolean complete = BindForgeActivationManager.getInstance().isFirstTimeStartupComplete();
             activated = complete;
             Sets sets = complete ? readSets() : Sets.NONE;
+            workingCopyRead = sets.edited() != null;
             Path bindings = PlayerSession.getInstance().getBindingsDir();
             Attached attached = readAttached();
             running = attached.running();
@@ -99,7 +104,7 @@ final class AliasDesignerReader {
             // the thread silently and leave the table showing whatever it showed before, with no clue why.
             log.warn("Could not refresh the Alias Designer", e);
         }
-        return new Snapshot(myDevices, builtIn, activated, running, listed, identity);
+        return new Snapshot(myDevices, builtIn, activated, running, listed, identity, workingCopyRead);
     }
 
     /** The edits and the working copy, or none when the working copy cannot be read - the tab click offers RESTORE. */

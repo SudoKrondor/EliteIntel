@@ -51,7 +51,7 @@ final class AliasDesignerController {
      * What the screen shows before its first refresh has finished.
      */
     private static final Snapshot NOTHING_YET = new Snapshot(List.of(), List.of(), false, false, false,
-            IdentityQuestions.Reading.NONE);
+            IdentityQuestions.Reading.NONE, false);
 
     private final AliasDesignerPanel view;
     private final AliasDesignerReader reader = new AliasDesignerReader();
@@ -233,8 +233,11 @@ final class AliasDesignerController {
                 // WHY: only once the hardware is listed, and only while the user is looking. Before the listing every
                 // controller reads absent, so nobody would need a name and the offer would be spent on nothing; a
                 // refresh the user did not start would put the dialog over another screen. Not over another dialog
-                // either - a refresh can land while the identity questions are showing.
-                if (!identityOffered && activated() && read.listed() && view.isShowing()
+                // either - a refresh can land while the identity questions are showing. Nor while the working copy
+                // cannot be read: the tab click is offering RESTORE or first-time startup again, and onboarding would
+                // only say it cannot read the bindings. The offer is held, not spent - the write that makes the
+                // working copy refreshes this screen, and that refresh offers it (Alan, 2026-11-14).
+                if (!identityOffered && activated() && read.workingCopyRead() && read.listed() && view.isShowing()
                         && !dialogOpen() && onboardingWanted.compareAndSet(true, false)) {
                     // WHY: the automatic offer asks about every attached controller, those plugged in meanwhile too -
                     // but a candidate an identity question still holds keeps waiting.
@@ -257,7 +260,7 @@ final class AliasDesignerController {
         return new Snapshot(read.myDevices(), read.builtIn(),
                 read.activated() != null ? read.activated() : shown.activated(),
                 read.running() != null ? read.running() : shown.running(),
-                read.listed(), read.identity());
+                read.listed(), read.identity(), read.workingCopyRead());
     }
 
     private boolean activated() {
@@ -422,13 +425,13 @@ final class AliasDesignerController {
 
     /**
      * Whether onboarding may be offered now for the controllers plugged in later (Alan, 2026-10-15, A7): as for the
-     * automatic offer, once first-time startup is complete, the hardware listed and the user on the screen - and not
-     * while a change is being made, nor over another dialog such as the Device Editor. Held back, the controllers keep
-     * waiting for a later refresh.
+     * automatic offer, once first-time startup is complete, the working copy read, the hardware listed and the user on
+     * the screen - and not while a change is being made, nor over another dialog such as the Device Editor. Held back,
+     * the controllers keep waiting for a later refresh.
      */
     private boolean hotPlugOfferMayOpen(Snapshot read) {
-        return hotPlug.anyWaitingBesides(read.identity().withheld()) && activated() && read.listed() && view.isShowing()
-                && !actionRunning && !dialogOpen();
+        return hotPlug.anyWaitingBesides(read.identity().withheld()) && activated() && read.workingCopyRead()
+                && read.listed() && view.isShowing() && !actionRunning && !dialogOpen();
     }
 
     /**
