@@ -323,16 +323,22 @@ public final class Backups {
      * @return the files deleted
      */
     public List<Path> prune(Retention retention) throws IOException {
-        List<Path> deleted = pruneLocked(retention);
-        if (!deleted.isEmpty()) changed.run();
+        List<Path> deleted = new ArrayList<>();
+        try {
+            pruneLocked(retention, deleted);
+        } finally {
+            // WHY in finally: a prune that deleted some zips and then failed on the next still changed the list, and
+            // Player Backups must not keep showing backups that are gone.
+            if (!deleted.isEmpty()) changed.run();
+        }
         return deleted;
     }
 
-    private List<Path> pruneLocked(Retention retention) throws IOException {
+    /** @param deleted filled with each file deleted, as it goes - so it holds them even when a later step throws */
+    private void pruneLocked(Retention retention, List<Path> deleted) throws IOException {
         synchronized (WRITING) {
             Path backupRoot = root.get();
             LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(retention.dailyDays());
-            List<Path> deleted = new ArrayList<>();
             int beforeChangesSeen = 0;
             for (Backup backup : list(backupRoot)) {
                 boolean doomed = switch (backup.kind()) {
@@ -356,7 +362,6 @@ public final class Backups {
                 log.info("Deleted {} backup(s) by retention (daily older than {} days, before-changes beyond the newest {}): {}",
                         deleted.size(), retention.dailyDays(), retention.beforeChangesKept(), deleted);
             }
-            return deleted;
         }
     }
 

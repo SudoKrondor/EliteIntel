@@ -285,11 +285,13 @@ public class BindingManagementPanel extends JPanel {
         }, failed, failed, FlowSteps.NOTHING);
     }
 
-    /** After Backup Now: the screen freed, {@code told} shown, the list read again. On the EDT. */
+    /**
+     * After Backup Now: the screen freed, {@code told} shown. The list reads itself again on the backup's event
+     * ({@link #onBackupsChanged}). On the EDT.
+     */
     private void backedUp(Runnable told) {
         setOperationBusy(false);
         told.run();
-        refreshBackups();
     }
 
     /** Deletes the selected user backup, after asking (file-manager.md, <em>Retention</em>). */
@@ -315,11 +317,13 @@ public class BindingManagementPanel extends JPanel {
         }, failed, failed, FlowSteps.NOTHING);
     }
 
-    /** After Delete: the screen freed, {@code told} shown, the list read again. On the EDT. */
+    /**
+     * After Delete: the screen freed, {@code told} shown. The list reads itself again on the delete's event
+     * ({@link #onBackupsChanged}). On the EDT.
+     */
     private void deleted(Runnable told) {
         setOperationBusy(false);
         told.run();
-        refreshBackups();
     }
 
     /** RESTORE: the whole selected backup goes back (storage.md rule 10). */
@@ -350,11 +354,7 @@ public class BindingManagementPanel extends JPanel {
 
     private void restore(Path zip, boolean browsed) {
         setOperationBusy(true);
-        restoreFlow.restore(zip, browsed, () -> {
-            setOperationBusy(false);
-            // WHY: RESTORE took a before-RESTORE backup, which belongs in the list.
-            refreshBackups();
-        });
+        restoreFlow.restore(zip, browsed, () -> setOperationBusy(false));
     }
 
     // ---- settings

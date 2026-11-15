@@ -237,13 +237,13 @@ final class AliasDesignerController {
                 // cannot be read: the tab click is offering RESTORE or first-time startup again, and onboarding would
                 // only say it cannot read the bindings. The offer is held, not spent - the write that makes the
                 // working copy refreshes this screen, and that refresh offers it (Alan, 2026-11-14).
-                if (!identityOffered && activated() && read.workingCopyRead() && read.listed() && view.isShowing()
-                        && !dialogOpen() && onboardingWanted.compareAndSet(true, false)) {
+                OfferConditions offers = offerConditions(read);
+                if (!identityOffered && offers.automaticMayOpen() && onboardingWanted.compareAndSet(true, false)) {
                     // WHY: the automatic offer asks about every attached controller, those plugged in meanwhile too -
                     // but a candidate an identity question still holds keeps waiting.
                     hotPlug.take(heldBack);
                     openOnboarding(null, false, heldBack);
-                } else if (!identityOffered && hotPlugOfferMayOpen(read)) {
+                } else if (!identityOffered && hotPlugOfferMayOpen(read, offers)) {
                     openOnboarding(hotPlug.take(heldBack), false, heldBack);
                 }
                 // WHY: something asked for a refresh while this one ran - the screen shown, an edit made, a controller
@@ -429,9 +429,44 @@ final class AliasDesignerController {
      * the screen - and not while a change is being made, nor over another dialog such as the Device Editor. Held back,
      * the controllers keep waiting for a later refresh.
      */
-    private boolean hotPlugOfferMayOpen(Snapshot read) {
-        return hotPlug.anyWaitingBesides(read.identity().withheld()) && activated() && read.workingCopyRead()
-                && read.listed() && view.isShowing() && !actionRunning && !dialogOpen();
+    private boolean hotPlugOfferMayOpen(Snapshot read, OfferConditions offers) {
+        return offers.hotPlugMayOpen(hotPlug.anyWaitingBesides(read.identity().withheld()), actionRunning);
+    }
+
+    /** The conditions both offers share, as this refresh finds them. On the EDT. */
+    private OfferConditions offerConditions(Snapshot read) {
+        return new OfferConditions(activated(), read.workingCopyRead(), read.listed(), view.isShowing(), dialogOpen());
+    }
+
+    /**
+     * What the automatic and hot-plug naming offers wait on, at one refresh - kept out of the refresh so each
+     * condition is tested on its own ({@code AliasDesignerControllerTest}).
+     *
+     * @param activated       first-time startup complete
+     * @param workingCopyRead the working copy was read - not while the tab click offers RESTORE or first-time startup
+     *                        again (Alan, 2026-11-14)
+     * @param listed          the Device Service has finished its first look at the hardware
+     * @param showing         the user is on the screen
+     * @param dialogOpen      a modal dialog of this window is showing - the identity questions or the Device Editor
+     */
+    record OfferConditions(boolean activated, boolean workingCopyRead, boolean listed, boolean showing,
+                           boolean dialogOpen) {
+
+        /** The automatic offer. */
+        boolean automaticMayOpen() {
+            return activated && workingCopyRead && listed && showing && !dialogOpen;
+        }
+
+        /**
+         * The hot-plug offer: the automatic offer's conditions, a controller waiting, and no change being made.
+         *
+         * @param anyWaiting    a controller plugged in later waits for its offer, besides those an identity question
+         *                      holds
+         * @param actionRunning a change is being made on this screen
+         */
+        boolean hotPlugMayOpen(boolean anyWaiting, boolean actionRunning) {
+            return anyWaiting && automaticMayOpen() && !actionRunning;
+        }
     }
 
     /**
