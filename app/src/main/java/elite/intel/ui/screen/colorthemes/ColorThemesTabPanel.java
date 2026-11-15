@@ -581,6 +581,9 @@ public final class ColorThemesTabPanel extends JPanel {
         if (!entry.builtIn()) return entry.theme().name();
         if (entry.id().equals(ThemeStore.HIGH_CONTRAST_ID)) return getText("themes.list.highContrast");
         if (entry.id().equals(ThemeStore.CLOCKWORK_ORANGE_ID)) return getText("themes.list.clockworkOrange");
+        if (entry.id().equals(ThemeStore.HACKERS_GREEN)) return getText("themes.list.hackersGreen");
+        if (entry.id().equals(ThemeStore.COFFEE)) return getText("themes.list.coffee");
+        if (entry.id().equals(ThemeStore.PURPLE_RAIN)) return getText("themes.list.purpleRain");
         return getText("themes.list.default");
     }
 
