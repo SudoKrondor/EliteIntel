@@ -41,9 +41,35 @@ class RoleMapTest {
     void anEdgePixelTakesTheRoleMostOfItsNeighboursCarry() {
         BufferedImage image = filled(ThemeRole.SUCCESS);
         image.setRGB(5, 5, 0x123457);
-        image.setRGB(6, 5, CODES.color(ThemeRole.WARNING).getRGB());
 
         assertEquals(Optional.of(ThemeRole.SUCCESS), new RoleMap(image).roleAt(5, 5));
+    }
+
+    /** A glyph stroke is a pixel wide: pointing at the background beside it still means the text. */
+    @Test
+    void onABackgroundThePointerReachesTheNearestPart() {
+        BufferedImage image = filled(ThemeRole.APPLICATION_BACKGROUND, 40);
+        paint(image, 20, 20, ThemeRole.PRIMARY_TEXT);
+        paint(image, 15, 20, ThemeRole.DANGER);
+
+        RoleMap map = new RoleMap(image);
+
+        assertEquals(Optional.of(ThemeRole.PRIMARY_TEXT), map.roleAt(18, 20, 4), "the nearer of two parts");
+        assertEquals(Optional.of(ThemeRole.APPLICATION_BACKGROUND), map.roleAt(5, 5, 4), "away from every part");
+    }
+
+    /** Text on a button: near the text the text wins, further into the padding the button's fill is reachable. */
+    @Test
+    void onAPartTheSmallestPartCloseByWins() {
+        BufferedImage image = filled(ThemeRole.APPLICATION_BACKGROUND, 40);
+        // WHY 10 x 3: a button's fill, kept under the 2.5% that would make it a surface
+        for (int y = 13; y < 16; y++) for (int x = 10; x < 20; x++) paint(image, x, y, ThemeRole.DANGER);
+        paint(image, 12, 14, ThemeRole.PRIMARY_TEXT);
+
+        RoleMap map = new RoleMap(image);
+
+        assertEquals(Optional.of(ThemeRole.PRIMARY_TEXT), map.roleAt(13, 14, 4));
+        assertEquals(Optional.of(ThemeRole.DANGER), map.roleAt(18, 14, 4));
     }
 
     @Test
@@ -86,6 +112,49 @@ class RoleMapTest {
         assertTrue(map.isSurface(ThemeRole.APPLICATION_BACKGROUND));
         assertFalse(map.isSurface(ThemeRole.DANGER));
         assertFalse(map.isSurface(ThemeRole.SUCCESS), "a role that paints nothing is no surface");
+    }
+
+    /** A swatch hides everything but its parts, backgrounds included, under a cover that stands off its colour. */
+    @Test
+    void isolatingRolesHidesEverythingElseOpaquely() {
+        BufferedImage image = filled(ThemeRole.APPLICATION_BACKGROUND, 40);
+        paint(image, 3, 3, ThemeRole.DANGER);
+        paint(image, 4, 4, ThemeRole.PRIMARY_TEXT);
+
+        BufferedImage layer = new RoleMap(image)
+                .isolate(java.util.List.of(ThemeRole.APPLICATION_BACKGROUND, ThemeRole.DANGER), Color.WHITE);
+
+        assertEquals(0, layer.getRGB(0, 0) >>> 24, "a background in the swatch is left clear");
+        assertEquals(0, layer.getRGB(3, 3) >>> 24, "a part in the swatch is left clear");
+        assertEquals(0xFF, layer.getRGB(4, 4) >>> 24, "the rest is hidden, not dimmed");
+    }
+
+    @Test
+    void theCoverIsDarkBehindALightColourAndLightBehindADarkOne() {
+        assertTrue(luminance(RoleMap.coverAgainst(Color.WHITE)) < 0.2);
+        assertTrue(luminance(RoleMap.coverAgainst(new Color(0x0A0F1E))) > 0.5);
+    }
+
+    @Test
+    void aRoleThePreviewNeverShowsPaintsNothing() {
+        RoleMap map = new RoleMap(filled(ThemeRole.DANGER));
+
+        assertTrue(map.paints(ThemeRole.DANGER));
+        assertFalse(map.paints(ThemeRole.SUCCESS));
+    }
+
+    private static double luminance(Color c) {
+        return (c.getRed() + c.getGreen() + c.getBlue()) / (3 * 255.0);
+    }
+
+    private static void paint(BufferedImage image, int x, int y, ThemeRole role) {
+        image.setRGB(x, y, CODES.color(role).getRGB());
+    }
+
+    private static BufferedImage filled(ThemeRole role, int size) {
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+        fill(image, CODES.color(role));
+        return image;
     }
 
     private static BufferedImage filled(ThemeRole role) {
