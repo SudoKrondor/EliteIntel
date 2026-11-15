@@ -454,7 +454,7 @@ public final class ColorThemesTabPanel extends JPanel {
         swatch.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                preview.highlight(roles);
+                preview.isolate(roles, color);
             }
 
             @Override

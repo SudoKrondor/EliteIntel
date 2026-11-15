@@ -22,13 +22,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
  * The theme preview: the app's own widgets drawn in the theme being edited, by a second process
  * ({@link ThemePreviewProcess}). A click on any part reports the colour role that painted it; pointing at a part
- * dims everything not painted in the same role.
+ * dims everything not painted in the same role, and pointing at a swatch hides everything not painted in its colour.
  * <p>
  * A render takes about a second and runs off the event thread. Changes made while one runs are folded into one more
  * render of the latest draft, so a burst of edits never queues a render per edit.
@@ -38,6 +39,12 @@ final class ThemePreviewPane extends JComponent {
     private static final Logger log = LogManager.getLogger(ThemePreviewPane.class);
 
     private static final Dimension PLACEHOLDER_SIZE = new Dimension(900, 660);
+    /**
+     * How far from the pointer, in screen pixels before scaling, a part still counts as pointed at
+     * ({@link RoleMap#roleAt(int, int, int)}). WHY 5: wide enough to land on a glyph from the gap beside it, narrow
+     * enough that the fill of a button stays reachable between its frame and its text.
+     */
+    private static final int POINTER_REACH = 5;
 
     private final Language language;
     private final Consumer<ThemeRole> onRolePicked;
@@ -49,6 +56,11 @@ final class ThemePreviewPane extends JComponent {
     private BufferedImage simulated;
     private ColorVisionSimulation simulation = ColorVisionSimulation.NORMAL;
     private BufferedImage highlight;
+    /**
+     * While a swatch whose roles the preview cannot show is pointed at, what the preview says instead - naming those
+     * parts, since there is nothing to point at - or null.
+     */
+    private String notShown;
     private ColorTheme wanted;
     private ColorTheme rendering;
     private ColorTheme rendered;
@@ -84,6 +96,25 @@ final class ThemePreviewPane extends JComponent {
         List<ThemeRole> parts = roleMap == null ? List.of()
                 : roles.stream().filter(role -> !roleMap.isSurface(role)).toList();
         highlight = parts.isEmpty() ? null : roleMap.spotlight(parts, HudPalette.HUD_COLOR_ROLE_MODAL_SCRIM);
+        notShown = null;
+        repaint();
+    }
+
+    /**
+     * Hides everything but the parts painted in one of {@code roles}, backgrounds included, for a swatch: the
+     * commander pointing at a colour asks what it paints, and a dimmed rest left thin parts hard to find. When the
+     * preview shows none of them, it names them instead ({@code themes.part.<wireName>}): the one place a part gets
+     * a name, because it is the one place the commander has no picture to find it by.
+     *
+     * @param color the colour those roles share, so the cover stands off it
+     */
+    void isolate(Collection<ThemeRole> roles, Color color) {
+        if (roleMap == null) return;
+        boolean shown = roles.stream().anyMatch(roleMap::paints);
+        notShown = shown ? null : getText("themes.preview.notShown", roles.stream()
+                .map(role -> getText("themes.part." + role.wireName()))
+                .collect(Collectors.joining(", ")));
+        highlight = shown ? roleMap.isolate(roles, color) : null;
         repaint();
     }
 
@@ -118,8 +149,18 @@ final class ThemePreviewPane extends JComponent {
             return;
         }
         Dimension size = getPreferredSize();
+        if (notShown != null) {
+            paintNotShown(g, size);
+            return;
+        }
         g.drawImage(shownImage(), 0, 0, size.width, size.height, null);
         if (highlight != null) g.drawImage(highlight, 0, 0, size.width, size.height, null);
+    }
+
+    private void paintNotShown(Graphics g, Dimension size) {
+        g.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        FontMetrics metrics = g.getFontMetrics();
+        g.drawString(notShown, Math.max(0, (size.width - metrics.stringWidth(notShown)) / 2), size.height / 2);
     }
 
     private BufferedImage shownImage() {
@@ -166,6 +207,7 @@ final class ThemePreviewPane extends JComponent {
         rendered = rendering;
         rendering = null;
         highlight = null;
+        notShown = null;
         revalidate();
         repaint();
         renderIfDue();
@@ -196,7 +238,8 @@ final class ThemePreviewPane extends JComponent {
 
     private Optional<ThemeRole> roleAt(MouseEvent e) {
         if (roleMap == null || image == null) return Optional.empty();
-        return roleMap.roleAt((int) (e.getX() * scale()), (int) (e.getY() * scale()));
+        return roleMap.roleAt((int) (e.getX() * scale()), (int) (e.getY() * scale()),
+                (int) Math.round(POINTER_REACH * scale()));
     }
 
     private double scale() {

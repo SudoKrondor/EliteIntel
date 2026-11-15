@@ -66,9 +66,21 @@ View-as switch and the contrast warnings come in slice 5.
   and dimmed every widget on it, so the whole view went dark, which the user found confusing (2026-11-14). Over a
   background only the hand cursor says it can be changed, and a swatch shared by a background and smaller parts
   spotlights only the parts.
+* **Pointing reaches** a part up to 5 px away (`RoleMap.roleAt` with a reach): on a background, the nearest part
+  within reach; on a part, the smallest part within half of it, so text on a button wins near the text and the
+  fill stays reachable in the padding. An exact-pixel lookup made text and thin frames nearly impossible to point
+  at, the gaps between strokes being background (user feedback, 2026-11-14).
+* **Pointing at a swatch isolates** its color instead of dimming the rest (`RoleMap.isolate`): everything it does
+  not paint is covered opaquely, near-black behind a light color and light grey behind a dark one, and here
+  backgrounds *are* shown, since the question is "what does this color paint?". A swatch the preview cannot show
+  at all names its parts in plain words instead ("Not in the preview: Credit balance, Ship name in the top bar",
+  `themes.part.<wireName>`). The tooltip counted a part the preview had no picture of, which read as a
+  contradiction (2026-11-14). `ThemePreviewProcessTest` fails if a part the preview stops drawing has no name. Pointing at the
+  preview itself, and at a contrast warning, still dims.
 * **Colors** is every distinct color in the theme as a `HudColorSwatch`, with the number of parts using it as its
   tooltip. Clicking one changes that color everywhere it is used. No swatch carries a name like "Text Field Frame
-  Color": the preview is how the commander finds a color.
+  Color": the preview is how the commander finds a color. The one exception is a part the preview cannot draw
+  (above), which has no picture to find it by.
 * **Revert** discards unsaved edits. **Save** writes the theme without making it the one in use (added in the
   build: a commander making a theme to share should not have to switch to it). **Apply** saves, makes it the one in
   use, and asks "Restart now / Later" - only when `AppRelauncher.canRelaunch()`. With no launcher to start (a run
