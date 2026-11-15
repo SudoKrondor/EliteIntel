@@ -219,6 +219,11 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
     }
 
     @Override
+    public boolean mayAskPermission() {
+        return available;
+    }
+
+    @Override
     public boolean handles(int keyCode) {
         return KEYSYM_MAP.containsKey(keyCode) || VK_KEYSYM_MAP.containsKey(keyCode)
                 || KeyProcessor.isNativeCharacterCode(keyCode);
