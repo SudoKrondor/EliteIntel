@@ -580,7 +580,7 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
     - **Reset warnings asks nothing and says nothing**: it is greyed while nothing is quieted, and greys as soon as it is
       pressed. It sits in a *Warnings* section below the push-to-talk settings.
 
-    Built in Storage S21 as `QuietedNoticesManager` (migration `12025__quieted_notices.sql`), `ui.dialog.QuietableNotice`,
+    Built in Storage S21 as `QuietedNoticesManager` (migration `12027__quieted_notices.sql`; renumbered from 12025 on 2026-11-14, when Color Themes took 12025 and the FSD toggle 12026 on `V1.2` - CLAUDE.md rule 14), `ui.dialog.QuietableNotice`,
     `HudConfirmDialog.confirmQuietable` / `infoQuietable`, `CheckFlow.Report` (`quietableIfPlain`), `FlowSteps.tell`, `ApplyBar.report`,
     `FirstTimeStartupFlow.writtenReport`, and the Warnings section in `ui.screen.services.InputServicesPanel`.
 14. **The check:** every live copy, in every installation, is compared with the working copy **by their values, never

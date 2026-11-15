@@ -5,7 +5,7 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 /**
- * The notices the user has chosen not to see again, from {@code 12025__quieted_notices.sql} (Alan, 2026-11-14, Storage
+ * The notices the user has chosen not to see again, from {@code 12027__quieted_notices.sql} (Alan, 2026-11-14, Storage
  * S21). Callers go through {@link elite.intel.db.managers.QuietedNoticesManager}.
  */
 public interface QuietedNoticesDao {

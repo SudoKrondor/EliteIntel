@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The notices the user chose not to see again (migration 12025; Alan, 2026-11-14, Storage S21): a tick and an untick
+ * The notices the user chose not to see again (migration 12027; Alan, 2026-11-14, Storage S21): a tick and an untick
  * are each stored as they happen, and Reset warnings clears every one.
  */
 class QuietedNoticesManagerTest {
