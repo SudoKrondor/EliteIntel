@@ -9,10 +9,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ThemeLibraryTest {
+
+    private static final List<String> BUILT_INS =
+            List.of("Default", "High contrast", "Clockwork Orange", "Coffee", "Hackers Green", "Purple Rain");
 
     @TempDir
     Path folder;
@@ -25,8 +29,9 @@ class ThemeLibraryTest {
 
         List<String> names = library.entries().stream().map(entry -> entry.theme().name()).toList();
 
-        assertEquals(List.of("Default", "High contrast", "Clockwork Orange", "alpha", "Zulu"), names);
-        assertTrue(library.entries().get(2).builtIn());
+        assertEquals(withBuiltIns("alpha", "Zulu"), names);
+        assertTrue(library.entries().get(BUILT_INS.size() - 1).builtIn());
+        assertFalse(library.entries().get(BUILT_INS.size()).builtIn());
     }
 
     @Test
@@ -68,7 +73,7 @@ class ThemeLibraryTest {
         library.create(theme("Good"));
         Files.writeString(folder.resolve("broken.json"), "not a theme");
 
-        assertEquals(List.of("Default", "High contrast", "Clockwork Orange", "Good"), library.entries().stream().map(entry -> entry.theme().name()).toList());
+        assertEquals(withBuiltIns("Good"), library.entries().stream().map(entry -> entry.theme().name()).toList());
     }
 
     @Test
@@ -78,6 +83,10 @@ class ThemeLibraryTest {
 
         assertThrows(IllegalArgumentException.class, () -> library.save(builtIn, theme("Hacked")));
         assertThrows(IllegalArgumentException.class, () -> library.delete(builtIn));
+    }
+
+    private static List<String> withBuiltIns(String... commanderThemes) {
+        return Stream.concat(BUILT_INS.stream(), Stream.of(commanderThemes)).toList();
     }
 
     private static ColorTheme theme(String name) {
