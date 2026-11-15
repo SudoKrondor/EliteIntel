@@ -2,6 +2,7 @@ package elite.intel.appdata;
 
 import elite.intel.ai.brain.inference.lmstudio.install.InstallMarker;
 import elite.intel.db.util.DatabaseMigrator;
+import elite.intel.io.FileTrees;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,14 +93,14 @@ public final class AppDataRestore {
      */
     public static Staged stage(Path zip, Path dataDir) throws IOException, RefusedException {
         Path staging = dataDir.resolve(AppDataArchive.STAGING_FOLDER);
-        AppDataBackup.deleteTree(staging);
+        FileTrees.delete(staging);
         Files.createDirectories(staging);
         try {
             unpack(zip, staging);
             checkIsRestorable(staging);
             return new Staged(dataDir, staging);
         } catch (IOException | RefusedException | RuntimeException e) {
-            AppDataBackup.deleteTree(staging);
+            FileTrees.delete(staging);
             throw e;
         }
     }
@@ -242,7 +243,7 @@ public final class AppDataRestore {
             Files.deleteIfExists(staging.resolve(AppDataArchive.SEALED_KEY));
 
             Path pending = dataDir.resolve(AppDataArchive.PENDING_FOLDER);
-            AppDataBackup.deleteTree(pending);
+            FileTrees.delete(pending);
             Files.move(staging, pending);
         }
 
@@ -250,7 +251,7 @@ public final class AppDataRestore {
          * Drops the staged backup; nothing live was touched.
          */
         public void discard() throws IOException {
-            AppDataBackup.deleteTree(staging);
+            FileTrees.delete(staging);
         }
     }
 

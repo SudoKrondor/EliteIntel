@@ -1,6 +1,7 @@
 package elite.intel.appdata;
 
 import elite.intel.io.AtomicFiles;
+import elite.intel.io.FileTrees;
 import org.jdbi.v3.core.Jdbi;
 
 import java.io.IOException;
@@ -10,7 +11,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -56,7 +56,7 @@ public final class AppDataBackup {
                 }
             });
         } finally {
-            deleteTree(snapshots);
+            FileTrees.delete(snapshots);
         }
     }
 
@@ -117,14 +117,5 @@ public final class AppDataBackup {
         zip.putNextEntry(new ZipEntry(name));
         zip.write(content);
         zip.closeEntry();
-    }
-
-    static void deleteTree(Path root) throws IOException {
-        if (!Files.exists(root)) return;
-        try (Stream<Path> walk = Files.walk(root)) {
-            for (Path path : walk.sorted(Comparator.reverseOrder()).toList()) {
-                Files.delete(path);
-            }
-        }
     }
 }

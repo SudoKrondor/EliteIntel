@@ -136,9 +136,11 @@ public class App {
 
     private static void reportRestore(JFrame window, PendingRestore.Outcome restore) {
         if (restore == PendingRestore.Outcome.NONE) return;
-        String message = restore == PendingRestore.Outcome.RESTORED
-                ? getText("settings.appData.restore.done")
-                : getText("settings.appData.restore.failed");
+        String message = getText(switch (restore) {
+            case RESTORED -> "settings.appData.restore.done";
+            case RETRYING -> "settings.appData.restore.retrying";
+            case FAILED, NONE -> "settings.appData.restore.failed";
+        });
         HudConfirmDialog.info(window, getText("settings.appData.restore.title"), message, getText("button.ok"));
     }
 

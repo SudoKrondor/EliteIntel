@@ -3,6 +3,7 @@ package elite.intel.bindforge.storage;
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.io.FileNames;
 import elite.intel.io.AtomicFiles;
+import elite.intel.io.FileTrees;
 import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +143,7 @@ public final class WorkingCopy {
     }
 
     private static void writeSet(Path folder, ConfigurationFiles files) throws IOException {
-        deleteTree(folder);
+        FileTrees.delete(folder);
         Path bindings = folder.resolve(Backups.BINDINGS);
         Path controlSchemes = folder.resolve(Backups.CONTROL_SCHEMES);
         Path buttonMaps = GameInstallation.deviceButtonMapsIn(controlSchemes);
@@ -176,15 +176,15 @@ public final class WorkingCopy {
         } else if (Files.exists(next)) {
             log.warn("A working copy write stopped before it was complete; the working copy is as it was before it");
         }
-        deleteTree(next);
-        deleteTree(previous);
+        FileTrees.delete(next);
+        FileTrees.delete(previous);
     }
 
     /** Moves {@code incoming} to {@code current}, putting what is there aside first. Nothing to do once it is in. */
     private static void swapIn(Path incoming, Path current, Path aside) throws IOException {
         if (!Files.exists(incoming)) return;
         if (Files.exists(current)) {
-            deleteTree(aside);
+            FileTrees.delete(aside);
             Files.createDirectories(aside.getParent());
             Files.move(current, aside);
         }
@@ -205,20 +205,9 @@ public final class WorkingCopy {
         return files;
     }
 
-    private static void deleteTree(Path folder) throws IOException {
-        if (!Files.exists(folder)) return;
-        List<Path> deepestFirst;
-        try (Stream<Path> walk = Files.walk(folder)) {
-            deepestFirst = walk.sorted(Comparator.reverseOrder()).toList();
-        }
-        for (Path path : deepestFirst) {
-            Files.delete(path);
-        }
-    }
-
     private static void deleteQuietly(Path folder) {
         try {
-            deleteTree(folder);
+            FileTrees.delete(folder);
         } catch (IOException e) {
             // WHY: the write has already failed and says so; the half-written folder is not marked complete, so the
             // next read or write throws it away.

@@ -4,7 +4,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.HudColorChooserDialog;
 import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.event.SystemShutDownEvent;
+import elite.intel.ui.event.RelaunchRequestedEvent;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.ColorTheme;
@@ -307,12 +307,8 @@ public final class ColorThemesTabPanel extends JPanel {
     }
 
     private void restart() {
-        if (AppRelauncher.relaunch()) {
-            UiBus.publish(new SystemShutDownEvent());
-            return;
-        }
-        HudConfirmDialog.info(this, getText("themes.apply.title"), getText("themes.apply.restartByHand"),
-                getText("button.ok"));
+        UiBus.publish(new RelaunchRequestedEvent(() -> HudConfirmDialog.info(this, getText("themes.apply.title"),
+                getText("themes.apply.restartByHand"), getText("button.ok"))));
     }
 
     // -- The list's actions ----------------------------------------------------

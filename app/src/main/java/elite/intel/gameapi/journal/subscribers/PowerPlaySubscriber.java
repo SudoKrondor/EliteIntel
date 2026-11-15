@@ -6,6 +6,8 @@ import elite.intel.gameapi.data.PowerPlayData;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.gameapi.journal.events.dto.RankAndProgressDto;
 import elite.intel.session.PlayerSession;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Keeps the power the commander is pledged to level with the journal.
@@ -25,6 +27,8 @@ import elite.intel.session.PlayerSession;
  */
 @SuppressWarnings("unused")
 public class PowerPlaySubscriber {
+
+    private static final Logger log = LogManager.getLogger(PowerPlaySubscriber.class);
 
     private final PlayerSession session = PlayerSession.getInstance();
 
@@ -75,9 +79,9 @@ public class PowerPlaySubscriber {
         if (RankAndProgressDto.NOT_PLEDGED.equals(power)) return RankAndProgressDto.NOT_PLEDGED;
         PowerDetails powerDetails = PowerPlayData.getPowerDetails(power);
         if (powerDetails != null) return powerDetails.allegiance();
-        System.out.println(
-                "Power [" + power + "] is not included in programming. Please notify developer with exact power name as shown in this line"
-        );
+        // WHY error: the elite.intel loggers run at ERROR, so a warning would never reach a support bundle - and a power
+        // the game names that the app does not know (a new one Frontier added) is a gap to fix in PowerPlayData.
+        log.error("Power [{}] is not in PowerPlayData; its allegiance is unknown until it is added", power);
         return "unknown";
     }
 

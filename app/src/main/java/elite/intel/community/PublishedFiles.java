@@ -112,23 +112,32 @@ final class PublishedFiles {
         } catch (RuntimeException e) {
             throw new IOException("Massacre sets file is not valid JSON: " + e.getMessage(), e);
         }
-        if (!root.has("format") || root.get("format").getAsInt() != SETS_FORMAT) {
+        if (!isFormat(root.get("format"))) {
             throw new IOException("Massacre sets format " + root.get("format") + " is not one this build reads");
         }
-        List<CrowdSet> sets = new ArrayList<>();
         try {
+            List<CrowdSet> sets = new ArrayList<>();
             for (JsonElement e : root.getAsJsonArray("sets")) {
                 JsonObject set = e.getAsJsonObject();
                 if (!set.has("indexed") || !set.get("indexed").getAsBoolean()) continue;
                 sets.add(crowdSet(set));
             }
+            JsonElement contributors = root.get("contributors");
+            return new SetsFile(sets, contributors == null || contributors.isJsonNull() ? null : contributors.getAsInt());
         } catch (RuntimeException e) {
             // WHY: the file is ours, written by the nightly job, so a set missing a field is a bug there. The whole
             // download is refused and yesterday's sets stay in place, rather than half a file replacing them.
             throw new IOException("Massacre sets file does not have the expected shape: " + e.getMessage(), e);
         }
-        Integer contributors = root.has("contributors") ? root.get("contributors").getAsInt() : null;
-        return new SetsFile(sets, contributors);
+    }
+
+    /**
+     * Whether {@code format} names the one format this build reads. Anything else - missing, a string, an object - is
+     * a format it does not, never a crash.
+     */
+    private static boolean isFormat(JsonElement format) {
+        return format != null && format.isJsonPrimitive() && format.getAsJsonPrimitive().isNumber()
+                && format.getAsInt() == SETS_FORMAT;
     }
 
     private static CrowdSet crowdSet(JsonObject set) {

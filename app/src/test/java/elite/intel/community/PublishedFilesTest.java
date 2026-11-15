@@ -63,6 +63,28 @@ class PublishedFilesTest {
         assertThrows(IOException.class, () -> PublishedFiles.parseSets("{\"format\":1,\"sets\":[{\"indexed\":true}]}"));
     }
 
+    /**
+     * A file of the wrong shape is refused as unreadable - never a runtime failure escaping the parse, which the sync
+     * would log as a fault in the app.
+     */
+    @Test
+    void aFormatOrContributorsOfTheWrongTypeIsRefusedNotThrown() {
+        for (String json : List.of(
+                "{\"format\":\"one\",\"sets\":[]}",
+                "{\"format\":{},\"sets\":[]}",
+                "{\"format\":null,\"sets\":[]}",
+                "{\"format\":1,\"sets\":[],\"contributors\":\"many\"}",
+                "{\"format\":1,\"sets\":[],\"contributors\":[]}",
+                "{\"format\":1}")) {
+            assertThrows(IOException.class, () -> PublishedFiles.parseSets(json), json);
+        }
+    }
+
+    @Test
+    void aNullContributorsCountIsNoCount() throws IOException {
+        assertNull(PublishedFiles.parseSets("{\"format\":1,\"sets\":[],\"contributors\":null}").contributors());
+    }
+
     @Test
     void anUnchangedFileIsNotDownloadedAgain() throws Exception {
         wm.stubFor(get("/data/massacre-sets.json").withHeader("If-None-Match", equalTo("\"abc\""))
