@@ -2,7 +2,9 @@ package elite.intel.bindforge.storage;
 
 import elite.intel.bindforge.install.GameInstallation;
 import elite.intel.bindforge.io.FileNames;
+import elite.intel.eventbus.UiBus;
 import elite.intel.io.AtomicFiles;
+import elite.intel.ui.event.BindForgeBackupsChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -184,16 +186,33 @@ public final class Backups {
     private final Sources sources;
     private final Root root;
     private final Clock clock;
+    private final Runnable changed;
 
-    /** Detection and the stored installations, the chosen backup folder, and the system clock. */
+    /**
+     * Detection and the stored installations, the chosen backup folder, the system clock, and
+     * {@link BindForgeBackupsChangedEvent} on every change.
+     */
     public static Backups stored() {
-        return new Backups(BackupSources::rescan, BackupDestination.stored()::resolve, Clock.systemDefaultZone());
+        return new Backups(BackupSources::rescan, BackupDestination.stored()::resolve, Clock.systemDefaultZone(),
+                () -> UiBus.publish(new BindForgeBackupsChangedEvent()));
     }
 
     Backups(Sources sources, Root root, Clock clock) {
+        this(sources, root, clock, () -> {
+        });
+    }
+
+    /**
+     * @param changed run after a backup is taken, deleted or pruned, outside the lock, on the calling thread.
+     *                WHY here and not at each caller: every backup goes through this class, so Player Backups hears
+     *                of APPLY's, RESTORE's, the check's and the daily one alike - and of any kind added later (Alan,
+     *                2026-11-14)
+     */
+    Backups(Sources sources, Root root, Clock clock, Runnable changed) {
         this.sources = sources;
         this.root = root;
         this.clock = clock;
+        this.changed = Objects.requireNonNull(changed, "changed");
     }
 
     /**
@@ -304,6 +323,12 @@ public final class Backups {
      * @return the files deleted
      */
     public List<Path> prune(Retention retention) throws IOException {
+        List<Path> deleted = pruneLocked(retention);
+        if (!deleted.isEmpty()) changed.run();
+        return deleted;
+    }
+
+    private List<Path> pruneLocked(Retention retention) throws IOException {
         synchronized (WRITING) {
             Path backupRoot = root.get();
             LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(retention.dailyDays());
@@ -349,12 +374,20 @@ public final class Backups {
             Files.delete(backup.zip());
         }
         log.info("Deleted user backup {}", backup.zip());
+        changed.run();
     }
 
     // ---- taking
 
     /** @param workingCopy the working copy to hold under {@value #WORKING_COPY} as well, or {@code null} */
     private Backup take(Kind kind, Before before, BackupSources from, ConfigurationFiles workingCopy)
+            throws IOException {
+        Backup backup = takeLocked(kind, before, from, workingCopy);
+        changed.run();
+        return backup;
+    }
+
+    private Backup takeLocked(Kind kind, Before before, BackupSources from, ConfigurationFiles workingCopy)
             throws IOException {
         synchronized (WRITING) {
             Path folder = root.get().resolve(kind.folder);

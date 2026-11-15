@@ -8,6 +8,7 @@ import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.db.managers.BindForgeSettingsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.event.BindForgeBackupsChangedEvent;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.*;
@@ -90,6 +91,16 @@ public class BindingManagementPanel extends JPanel {
         UiBus.register(this);
         // WHY after registering: read only may have been worked out before this screen existed.
         updateSelectionActionsEnabled();
+    }
+
+    /**
+     * A backup was taken, deleted or pruned anywhere - APPLY's before-changes backup, RESTORE's, the check's, the daily
+     * one: the list reads the backup folder again. Before, only this screen's own buttons refreshed it, so a backup
+     * taken elsewhere showed only after the next Backup Now (Alan, 2026-11-14). Heard on the thread that took it.
+     */
+    @Subscribe
+    public void onBackupsChanged(BindForgeBackupsChangedEvent event) {
+        SwingUtilities.invokeLater(this::refreshBackups);
     }
 
     /** RESTORE and Browse for Backup File are off while BindForge is read only (Storage S14a). */

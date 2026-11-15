@@ -115,6 +115,11 @@ list. On Linux, an installation whose own bindings folder is not the one Elite-I
 `StartPreset` under its own `Installations\<n>-<storefront>\Bindings\`. *Storage S1 built this as dated folders
 directly in the backup folder; S1b made it zips in the four kind folders.*
 
+**The list keeps itself current** (Alan, 2026-11-14). Every backup taken, deleted, or pruned by retention - whoever
+did it: APPLY, RESTORE, the check, first-time startup, the daily backup, Backup Now, Delete - is announced by
+`Backups` itself (`BindForgeBackupsChangedEvent`), and the list reads the backup folder again. Before, only Player
+Backups' own buttons refreshed it, so APPLY's before-changes backup showed only after the next Backup Now.
+
 **Built 2026-10-24 (Storage S1b; Alan approved):** the zip is built in memory — a full backup is a few megabytes at
 most — and written with `elite.intel.io.AtomicFiles`, the one write path, so its temporary file is
 `.<stamp>.zip.elite-intel-<id>.tmp` beside the target; retention's sweep removes one a crash left. Two backups of one
