@@ -75,6 +75,8 @@ public final class ColorThemesTabPanel extends JPanel {
     private final ThemePreviewPane preview;
     private final JPanel swatches = transparentPanel(new BorderLayout(0, GAP));
     private final JPanel contrastWarnings = transparentPanel(new GridLayout(0, 1, 0, GAP / 2));
+    /** WHY hidden when there are no warnings: a "hard to read" heading over an all-clear line contradicts it. */
+    private final JComponent contrastTitle = hint(getText("themes.contrast.title"), 0);
     private final JLabel status = new JLabel();
 
     private final JButton renameButton = makeButtonSubtle(getText("themes.button.rename"));
@@ -158,7 +160,7 @@ public final class ColorThemesTabPanel extends JPanel {
         JPanel content = transparentPanel(new BorderLayout(0, GAP * 2));
         content.add(swatches, BorderLayout.NORTH);
         JPanel contrast = transparentPanel(new BorderLayout(0, GAP));
-        contrast.add(hint(getText("themes.contrast.title"), 0), BorderLayout.NORTH);
+        contrast.add(contrastTitle, BorderLayout.NORTH);
         contrast.add(contrastWarnings, BorderLayout.CENTER);
         content.add(contrast, BorderLayout.CENTER);
         JPanel top = transparentPanel(new BorderLayout());
@@ -482,6 +484,7 @@ public final class ColorThemesTabPanel extends JPanel {
     private void rebuildContrastWarnings() {
         contrastWarnings.removeAll();
         List<ThemeContrast.Warning> warnings = ThemeContrast.check(draft.current());
+        contrastTitle.setVisible(!warnings.isEmpty());
         if (warnings.isEmpty()) contrastWarnings.add(hint(getText("themes.contrast.none"), COLORS_HINT_WRAP));
         if (warnings.size() > 1) contrastWarnings.add(action("themes.contrast.fixAll", this::fixAllContrast));
         for (ThemeContrast.Warning warning : warnings) contrastWarnings.add(contrastWarning(warning));
