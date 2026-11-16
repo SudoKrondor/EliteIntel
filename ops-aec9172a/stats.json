@@ -1,18 +1,18 @@
 {
   "format": 1,
   "latest": {
-    "date": "2026-11-15",
-    "installs": 13,
-    "active1": 10,
-    "active7": 13,
-    "active30": 13,
+    "date": "2026-11-16",
+    "installs": 15,
+    "active1": 6,
+    "active7": 15,
+    "active30": 15,
     "gone": 0,
     "os": {
-      "linux": 2,
-      "windows": 11
+      "linux": 3,
+      "windows": 12
     },
     "versions": {
-      "v-1.2.0000-dev": 13
+      "v-1.2.0000-dev": 15
     }
   },
   "days": [
@@ -44,6 +44,21 @@
       },
       "versions": {
         "v-1.2.0000-dev": 13
+      }
+    },
+    {
+      "date": "2026-11-16",
+      "installs": 15,
+      "active1": 6,
+      "active7": 15,
+      "active30": 15,
+      "gone": 0,
+      "os": {
+        "linux": 3,
+        "windows": 12
+      },
+      "versions": {
+        "v-1.2.0000-dev": 15
       }
     }
   ]
