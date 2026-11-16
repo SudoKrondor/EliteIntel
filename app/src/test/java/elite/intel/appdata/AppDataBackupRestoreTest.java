@@ -253,6 +253,60 @@ class AppDataBackupRestoreTest {
         assertFalse(Files.exists(newDir.resolve("escaped.txt")));
     }
 
+    /**
+     * A swap that fails part way - on Windows, a file the previous copy still holds - leaves this computer's data in
+     * place and the restore waiting, so the next start finishes it without the commander choosing the zip again.
+     */
+    @Test
+    void aSwapThatFailsIsKeptAndRetriedAtTheNextStart() throws Exception {
+        Files.createDirectories(newDir.resolve("custom-commands"));
+        Files.writeString(newDir.resolve("custom-commands/custom_commands.json"), "[\"mine\"]");
+        Path blocker = newDir.resolve("blocker");
+        Path blockedKey = blockedKeyFile(blocker);
+
+        assertEquals(PendingRestore.Outcome.RETRYING, PendingRestore.applyIfPresent(newDir, blockedKey));
+        assertEquals("[\"mine\"]", Files.readString(newDir.resolve("custom-commands/custom_commands.json")));
+        assertTrue(Files.isDirectory(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+        assertNoSafetyFolder(newDir);
+
+        Files.delete(blocker);
+        assertEquals(PendingRestore.Outcome.RESTORED, PendingRestore.applyIfPresent(newDir, blockedKey));
+        assertEquals("[\"launch\"]", Files.readString(newDir.resolve("custom-commands/custom_commands.json")));
+        assertArrayEquals(OLD_KEY, Files.readAllBytes(blockedKey));
+        assertFalse(Files.exists(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+    }
+
+    @Test
+    void aRestoreThatFailsEveryAllowedStartIsDiscarded() throws Exception {
+        Path blockedKey = blockedKeyFile(newDir.resolve("blocker"));
+
+        for (int attempt = 1; attempt < PendingRestore.MAX_ATTEMPTS; attempt++) {
+            assertEquals(PendingRestore.Outcome.RETRYING, PendingRestore.applyIfPresent(newDir, blockedKey));
+        }
+        assertEquals(PendingRestore.Outcome.FAILED, PendingRestore.applyIfPresent(newDir, blockedKey));
+        assertFalse(Files.exists(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+        assertNoSafetyFolder(newDir);
+    }
+
+    /**
+     * Stages a restore carrying its key, and returns a key path that cannot be written: its folder is a file. The
+     * key is the last part swapped in, so every earlier move has to be undone.
+     */
+    private Path blockedKeyFile(Path blocker) throws Exception {
+        AppDataBackup.write(oldDir, oldKey, zip, PASSWORD, "1.2.0-test");
+        AppDataRestore.Staged staged = AppDataRestore.stage(zip, newDir);
+        assertTrue(staged.unlock(PASSWORD));
+        staged.commit(newKey);
+        Files.writeString(blocker, "not a folder");
+        return blocker.resolve("secret.key");
+    }
+
+    private static void assertNoSafetyFolder(Path dataDir) throws IOException {
+        try (Stream<Path> entries = Files.list(dataDir)) {
+            assertTrue(entries.noneMatch(p -> p.getFileName().toString().startsWith(AppDataArchive.SAFETY_FOLDER_PREFIX)));
+        }
+    }
+
     @Test
     void aStartWithNothingWaitingChangesNothing() throws IOException {
         assertEquals(PendingRestore.Outcome.NONE, PendingRestore.applyIfPresent(newDir, newKey));

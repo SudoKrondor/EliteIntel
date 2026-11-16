@@ -59,6 +59,8 @@ public class HandsService implements ManagedService {
     private void run() {
         try {
             monitor.startMonitoring();
+            monitor.ensureBindingsLoaded();
+            InputPermissionPrimer.prime(KeyProcessor.getInstance(), monitor.getBindingSlots());
         } catch (IOException e) {
             log.info("HandsService interrupted, shutting down");
             Thread.currentThread().interrupt();

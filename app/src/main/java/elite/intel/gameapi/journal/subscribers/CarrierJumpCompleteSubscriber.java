@@ -56,7 +56,7 @@ public class CarrierJumpCompleteSubscriber {
             // and CarrierLocation is absent from older journals. Both events hand the same arrival to the
             // same owner, which charges it once and serialises the two threads - without that, whichever
             // wrote the carrier's system first left the other believing it had never moved, and the jump
-            // went uncharged, unannounced at its true fuel level and, off route, never voided the route.
+            // went uncharged and, off route, never voided the route.
             //
             // WHY the coordinates go in with it: CarrierJump carries the destination StarPos, which is
             // authoritative and free, where CarrierLocation has none and would resolve them over the
@@ -81,26 +81,28 @@ public class CarrierJumpCompleteSubscriber {
                 }
             }
 
-            // WHY through the arrival owner: the level quoted below must be the one this jump left behind,
-            // never the one the depot held before it.
+            // WHY through the arrival owner: the reserve quoted below must be the one this arrival left behind.
             CarrierDataDto postJumpCarrierData = CarrierArrival.settledFleetCarrierData();
             String remainingRoute = voyageReport(starSystem, fleetCarrierRouteManager);
 
-            // WHY the figure arrives pre-worded: whether the depot level is known or merely worked out is
-            // ours to decide, not the model's, and it must not quietly firm up an estimate into a fact.
+            // WHY no depot level: what the jump burned depends on its length and the carrier's laden mass,
+            // and the game reports the depot only when the commander opens carrier management. Any figure
+            // here would be the pre-jump reading, or our guess, spoken as fact - a carrier that left full
+            // was announced at exactly 1000 tons. The reserve is tritium in the hold, which we track from the
+            // cargo events - right most of the time, but not provably, so it goes out pre-hedged.
             // WHY the payload is worded rather than keyed: the model reads it as prose and will happily
             // read a field name back out loud - a commander was told his carrier held "1000 tons
             // fuelSupply". Every label here is therefore a phrase a human would say.
             String instructions = """
                         Notify user about new carrier location.
-                        Example: Carrier jump complete!. New location <system>, remaining fuel supply <tons>. Fuel in reserve <tons> tons.
-                        Quote the fuel supply exactly as given, keeping the word "approximately" when it is there.
+                        Example: Carrier jump complete!. New location <system>. Fuel in reserve about <tons> tons.
+                        Keep the word "about" on the reserve.
+                        Say nothing about the fuel depot's level. It is not known until carrier management is opened.
                         Never read a label out as written; say it the way a person would.
                     """;
             VegaRuntime.narrator().narrate(
                     "Carrier arrived in " + event.getStarSystem()
-                            + ". Fuel supply: " + CarrierFuelPhrase.of(postJumpCarrierData)
-                            + ". Fuel in reserve: " + postJumpCarrierData.getFuelReserve() + " tons."
+                            + ". Fuel in reserve: about " + postJumpCarrierData.getFuelReserve() + " tons."
                             + remainingRoute,
                             instructions
                     );

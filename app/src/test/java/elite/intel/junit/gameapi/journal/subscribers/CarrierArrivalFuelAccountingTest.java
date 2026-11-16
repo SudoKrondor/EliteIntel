@@ -25,8 +25,7 @@ import java.util.function.BooleanSupplier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The tritium a jump burned must be charged before the arrival is announced, whichever of the two arrival
@@ -52,6 +51,7 @@ class CarrierArrivalFuelAccountingTest {
 
     private static final String ORIGIN = "Praea Euq BS-M c7-0";
     private static final String FIRST_LEG = "Phylurn AZ-C b14-0";
+    private static final String OFF_ROUTE = "Wregoe XK-N b21-3";
     private static final int FULL_DEPOT = 1000;
     private static final int LEG_COST = 100;
 
@@ -134,6 +134,52 @@ class CarrierArrivalFuelAccountingTest {
 
         assertEquals(FULL_DEPOT - LEG_COST, session.getFleetCarrierData().getFuelLevel());
         assertEquals(List.of("Phyluwyg OA-Y c1-5"), remainingSystems());
+    }
+
+    /**
+     * A jump the commander scheduled himself, with no route plotted: there is no leg to charge, and what
+     * the jump burned depends on distance and laden mass, which we do not have. The pre-jump reading must
+     * stop counting as the depot's level - quoted flatly, a full depot came out as "1000 tons" after a jump.
+     */
+    @Test
+    void aJumpWithNoRouteLeavesTheLevelStale() throws InterruptedException {
+        route.clear();
+
+        carrierJumpSubscriber.onCarrierJumpCompleteEvent(carrierJump(OFF_ROUTE));
+        awaitTrue(() -> OFF_ROUTE.equals(session.getCurrentFleetCarrierSystem()));
+        Thread.sleep(300);
+
+        CarrierDataDto carrier = session.getFleetCarrierData();
+        assertFalse(carrier.isFuelLevelMeasured(), "a jump burned tritium we could not count");
+        assertEquals(FULL_DEPOT, carrier.getFuelLevel(), "the last reading is kept for the next one to correct");
+    }
+
+    /**
+     * An arrival somewhere the plotted route does not go is just as uncountable: none of its legs
+     * describes the jump that was made.
+     */
+    @Test
+    void anArrivalOffThePlottedRouteLeavesTheLevelStale() throws InterruptedException {
+        carrierJumpSubscriber.onCarrierJumpCompleteEvent(carrierJump(OFF_ROUTE));
+        awaitTrue(() -> OFF_ROUTE.equals(session.getCurrentFleetCarrierSystem()));
+        Thread.sleep(300);
+
+        CarrierDataDto carrier = session.getFleetCarrierData();
+        assertFalse(carrier.isFuelLevelMeasured());
+        assertEquals(FULL_DEPOT, carrier.getFuelLevel(), "no leg's estimate belongs to this jump");
+    }
+
+    /**
+     * The game writes an arrival event at every LoadGame. A carrier that has not moved has burned nothing,
+     * so a reading the game gave us must survive it.
+     */
+    @Test
+    void aPositionReportKeepsAMeasuredLevel() throws InterruptedException {
+        carrierLocationSubscriber.onCarrierLocationEvent(carrierLocation(ORIGIN));
+        Thread.sleep(300);
+
+        assertTrue(session.getFleetCarrierData().isFuelLevelMeasured());
+        assertEquals(FULL_DEPOT, session.getFleetCarrierData().getFuelLevel());
     }
 
     private List<String> remainingSystems() {

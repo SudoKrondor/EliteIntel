@@ -183,6 +183,9 @@ public class AppController {
             AudioCalibrator.calibrateRMS(format, inputMixerInfo);
             return true;
         } catch (Exception e) {
+            // WHY broad and returning false: the calibration runs vendor audio code, and whatever it throws, voice input
+            // restarts on the old thresholds. The on-screen line is for the commander; the log is for support.
+            log.error("Audio calibration failed", e);
             appendToLog(StringUtls.localizedSpeech("log.audioCalibrationFailed", String.valueOf(e.getMessage())));
             return false;
         }

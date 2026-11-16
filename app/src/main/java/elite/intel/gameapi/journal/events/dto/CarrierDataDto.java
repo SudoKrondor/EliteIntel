@@ -308,6 +308,17 @@ public class CarrierDataDto implements ToJsonConvertible {
         this.fuelSupplyMeasured = false;
     }
 
+    /**
+     * Marks the level stale after a jump we could not charge.
+     * <p>
+     * WHY not a number: what a jump burns depends on its length and the carrier's laden mass, and we have
+     * neither outside a plotted route. The figure stays as the last one we had, so the next reading or
+     * deposit corrects it, but it is no longer a measurement and must not be quoted as one.
+     */
+    public void markFuelLevelStale() {
+        this.fuelSupplyMeasured = false;
+    }
+
     public int getFuelLevel() {
         return fuelSupply;
     }

@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 /**
@@ -30,6 +32,15 @@ import java.util.function.Consumer;
  */
 final class LocalLmStudioMachine implements LmStudioMachine {
 
+    /**
+     * LM Studio's official install scripts, downloaded and run as they are served.
+     * <p>
+     * WHY not pinned to a checksum: this is the one place the app runs code from the network, and it does so on
+     * purpose. The scripts are LM Studio's own, served over HTTPS from their site, and they change with every LM
+     * Studio release. A pinned hash would break the install button each time LM Studio ships until we release
+     * again. Trusting lmstudio.ai here is the same trust as the commander installing LM Studio by hand. Do not copy
+     * this pattern for any other download.
+     */
     private static final URI WINDOWS_SCRIPT = URI.create("https://lmstudio.ai/install.ps1");
     private static final URI LINUX_SCRIPT = URI.create("https://lmstudio.ai/install.sh");
 
@@ -56,6 +67,13 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     private static final Duration LOAD_QUIET = Duration.ofMinutes(5);
     private static final Duration LOAD = Duration.ofMinutes(30);
     private static final Duration SERVER_STARTUP = Duration.ofSeconds(60);
+    /**
+     * How long the install script's download may take to connect, and in all. WHY: without them a stalled connection
+     * (a captive portal, a dropped Wi-Fi link) blocks the install step forever with nothing said. The script is a few
+     * kilobytes, so two minutes is a wide margin even on a slow link.
+     */
+    private static final Duration SCRIPT_CONNECT = Duration.ofSeconds(30);
+    private static final Duration SCRIPT_DOWNLOAD = Duration.ofMinutes(2);
 
     private final ProcessRunner runner;
     private final Consumer<String> log;
@@ -124,15 +142,13 @@ final class LocalLmStudioMachine implements LmStudioMachine {
         boolean windows = OsDetector.getOs() == OsDetector.OS.WINDOWS;
         Path script = download(windows ? WINDOWS_SCRIPT : LINUX_SCRIPT, windows ? ".ps1" : ".sh");
         try {
+            // WHY -ExecutionPolicy Bypass: Windows' default policy refuses any unsigned downloaded script, which
+            // would stop the install before it starts. Bypass applies to this one process only and changes no setting.
             runner.run(windows
                     ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString())
                     : List.of("bash", script.toString()), SCRIPT);
         } finally {
-            try {
-                Files.deleteIfExists(script);
-            } catch (IOException e) {
-                script.toFile().deleteOnExit();
-            }
+            deleteQuietly(script);
         }
     }
 
@@ -222,9 +238,15 @@ final class LocalLmStudioMachine implements LmStudioMachine {
         llmster.get().destroy();
         try {
             llmster.get().onExit().get(30, TimeUnit.SECONDS);
-        } catch (Exception notStopped) {
+        } catch (TimeoutException | ExecutionException | InterruptedException notStopped) {
             if (notStopped instanceof InterruptedException) Thread.currentThread().interrupt();
-            throw refused != null ? refused : new InstallException("llmster (PID: " + pid.getAsLong() + ") did not stop");
+            // WHY the cause kept either way: "did not stop" alone does not tell a support bundle whether llmster
+            // ignored the request, the wait was interrupted, or the wait itself failed.
+            if (refused == null) {
+                throw new InstallException("llmster (PID: " + pid.getAsLong() + ") did not stop: " + notStopped, notStopped);
+            }
+            refused.addSuppressed(notStopped);
+            throw refused;
         }
     }
 
@@ -357,22 +379,45 @@ final class LocalLmStudioMachine implements LmStudioMachine {
     }
 
     private static Path download(URI script, String extension) throws InstallException {
+        Path file;
         try {
-            Path file = Files.createTempFile("lmstudio-install", extension);
-            HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-            HttpResponse<Path> response = http.send(HttpRequest.newBuilder(script).GET().build(),
+            file = Files.createTempFile("lmstudio-install", extension);
+        } catch (IOException e) {
+            throw new InstallException("Could not make a file for LM Studio's installer: " + e.getMessage(), e);
+        }
+        boolean downloaded = false;
+        try {
+            HttpClient http = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .connectTimeout(SCRIPT_CONNECT)
+                    .build();
+            HttpResponse<Path> response = http.send(HttpRequest.newBuilder(script).timeout(SCRIPT_DOWNLOAD).GET().build(),
                     HttpResponse.BodyHandlers.ofFile(file));
             if (response.statusCode() != 200) {
-                Files.deleteIfExists(file);
                 throw new InstallException("Could not download LM Studio's installer from " + script
                         + ": HTTP " + response.statusCode());
             }
+            downloaded = true;
             return file;
         } catch (IOException e) {
             throw new InstallException("Could not download LM Studio's installer from " + script + ": " + e.getMessage(), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new InstallException("Interrupted while downloading LM Studio's installer", e);
+        } finally {
+            if (!downloaded) deleteQuietly(file);
+        }
+    }
+
+    /**
+     * Removes the downloaded script. WHY quietly: by then the download failed or the script has run, and either is
+     * already reported; a temp file left behind is only clutter, so it goes at exit instead.
+     */
+    private static void deleteQuietly(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            file.toFile().deleteOnExit();
         }
     }
 

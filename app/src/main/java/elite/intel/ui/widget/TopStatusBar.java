@@ -16,8 +16,10 @@ import java.util.Locale;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Minimal identity strip at the top of the main window.
- * Left: app name and version. Right: commander name and ship name.
+ * Minimal identity strip at the top of the main window, which also serves as its title bar (the window has no
+ * operating-system title bar; drag it to move the window, double-click it to maximize).
+ * Left: app name and version, then "New version available." once an update is out. Right: commander name and ship
+ * name, then the window's own minimize, maximize/restore and close buttons.
  * Operational statuses (Bindings, Commands, Keymap, STT, LLM, TTS) live in the AI tab QUICK STATUS panel.
  * Call {@link #dispose()} when discarding to unregister event subscriptions.
  */
@@ -25,14 +27,18 @@ public class TopStatusBar extends HudPanel {
 
     private JLabel cmdrValue;
     private JLabel shipValue;
+    private final JLabel updateNotice = new JLabel();
+    private final HudWindowButtons windowButtons;
 
     /**
      * Creates and registers the telemetry bar; reads initial state from application singletons.
      *
      * @param appName localized application name
      * @param version application version displayed as build metadata
+     * @param window  the window this bar is the title bar of, which its window buttons act on
+     * @param onClose the window's own close path, run by the close button
      */
-    public TopStatusBar(String appName, String version) {
+    public TopStatusBar(String appName, String version, Frame window, Runnable onClose) {
         super(new BorderLayout(0, 0), HudPalette.HUD_COLOR_ROLE_INFORMATION, Variant.FLAT);
         setPreferredSize(new Dimension(0, HudPalette.HUD_TOP_BAR_HEIGHT));
         setMinimumSize(new Dimension(0, HudPalette.HUD_TOP_BAR_HEIGHT));
@@ -41,15 +47,26 @@ public class TopStatusBar extends HudPanel {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER),
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)));
 
+        this.windowButtons = new HudWindowButtons(window, onClose);
         add(buildLeftGroup(appName, version), BorderLayout.WEST);
         add(buildRightGroup(), BorderLayout.EAST);
 
         UiBus.register(this);
     }
 
-    /** Unregisters all event subscriptions. Must be called when this component is discarded. */
+    /** Unregisters all event subscriptions, and the window buttons' listener on the window. Must be called when this component is discarded. */
     public void dispose() {
         UiBus.unregister(this);
+        windowButtons.dispose();
+    }
+
+    /**
+     * Shows "New version available." beside the version. WHY here: it used to be the window title, which no longer
+     * shows now the main window has no title bar.
+     */
+    public void showUpdateAvailable() {
+        updateNotice.setText(getText("app.updateAvailable.title"));
+        updateNotice.setVisible(true);
     }
 
     // -- Event handlers --------------------------------------------------------
@@ -66,8 +83,8 @@ public class TopStatusBar extends HudPanel {
 
     // -- Build -----------------------------------------------------------------
 
-    /** App name and version, left-aligned. */
-    private static JPanel buildLeftGroup(String appName, String version) {
+    /** App name and version, left-aligned, then the update notice (hidden until {@link #showUpdateAvailable()}). */
+    private JPanel buildLeftGroup(String appName, String version) {
         JPanel row = opaqueRow();
 
         String name = appName == null ? "" : appName.toUpperCase();
@@ -87,10 +104,19 @@ public class TopStatusBar extends HudPanel {
         verLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         row.add(verLabel);
 
+        row.add(Box.createHorizontalStrut(HudPalette.HUD_GAP * 2));
+
+        // A status, so it takes the accent colour (§11.1); no tooltip, so the header stays draggable over it.
+        updateNotice.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        updateNotice.setFont(updateNotice.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_APP_TITLE));
+        updateNotice.setAlignmentY(Component.CENTER_ALIGNMENT);
+        updateNotice.setVisible(false);
+        row.add(updateNotice);
+
         return row;
     }
 
-    /** Commander name and ship name, right-aligned. */
+    /** Commander name and ship name, then the window buttons, right-aligned. */
     private JPanel buildRightGroup() {
         JPanel row = opaqueRow();
 
@@ -107,6 +133,10 @@ public class TopStatusBar extends HudPanel {
         row.add(hgap());
         shipValue = valueLabel(initShipName(), HudPalette.HUD_COLOR_ROLE_SHIP_NAME_TEXT);
         row.add(shipValue);
+
+        row.add(Box.createHorizontalStrut(HudPalette.HUD_GAP * 4));
+        windowButtons.setAlignmentY(Component.CENTER_ALIGNMENT);
+        row.add(windowButtons);
 
         return row;
     }

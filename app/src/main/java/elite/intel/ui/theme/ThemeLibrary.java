@@ -50,6 +50,9 @@ public final class ThemeLibrary {
         entries.add(new Entry(ThemeStore.DEFAULT_ID, ColorTheme.DEFAULT, true));
         builtIn(ThemeStore.HIGH_CONTRAST_ID).ifPresent(entries::add);
         builtIn(ThemeStore.CLOCKWORK_ORANGE_ID).ifPresent(entries::add);
+        builtIn(ThemeStore.COFFEE).ifPresent(entries::add);
+        builtIn(ThemeStore.HACKERS_GREEN).ifPresent(entries::add);
+        builtIn(ThemeStore.PURPLE_RAIN).ifPresent(entries::add);
         List<Entry> own = new ArrayList<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(folder, "*" + FILE_SUFFIX)) {
             for (Path file : files) readEntry(file).ifPresent(own::add);

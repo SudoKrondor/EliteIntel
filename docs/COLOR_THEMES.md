@@ -30,7 +30,7 @@ everyone at once, so the rest is up to the commander's own eyes and screen.
 | Switching live | No. `HudPalette` stays `static final`, and filling it once at startup avoids a large refactor. |
 | Preview | Rendered by a short-lived second Java process from the real widgets, and clickable (see Preview). |
 | Preview refresh | After each color is picked, not while the picker is dragged. A delay of about a second is fine. |
-| Built-in themes | **Default** (the tuned palette), **High contrast** and **Clockwork Orange** (added later). All read-only, so editing one makes a copy first. |
+| Built-in themes | **Default** (the tuned palette), **High contrast**, **Clockwork Orange**, **Coffee**, **Hackers Green** and **Purple Rain** (added later). All read-only, so editing one makes a copy first. |
 | Scope | One choice for the user, the same whichever commander is loaded: it is the same eyes. |
 | Storage | Each theme is a JSON file, so it can be exported and shared. Only the active choice is in the database. |
 | Tab name | "Color Themes". The one other accessibility request (a context-aware FSD toggle) is a checkbox under Global Ship Settings, not part of this. |
