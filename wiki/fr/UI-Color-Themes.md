@@ -22,8 +22,39 @@ réglages.
 - **Contraste élevé**, pour une vue faible ou les reflets : fonds noirs, texte blanc, cadres plus clairs et tout
   texte à 7:1 ou mieux.
 - **Clockwork Orange** : orange comme le HUD du jeu, et comme l'application avant la V1.2.
+- **Coffee** : bruns chauds et crème.
+- **Hackers Green** : vert sur noir, comme un vieux terminal.
+- **Purple Rain** : violet sur presque noir.
+- **Red Alert** : rouge sur noir.
+
+Par défaut et Contraste élevé sont faits pour être faciles à lire. Les autres sont faits pour le style : ils ne
+sont pas réglés pour le daltonisme.
 
 Les thèmes intégrés ne peuvent pas être modifiés : votre première modification de l'un d'eux va dans une copie.
+
+### Contraste élevé
+
+![Thème Contraste élevé](images/theme-high-contrast.png)
+
+### Clockwork Orange
+
+![Thème Clockwork Orange](images/theme-clockwork-orange.png)
+
+### Coffee
+
+![Thème Coffee](images/theme-coffee.png)
+
+### Hackers Green
+
+![Thème Hackers Green](images/theme-hackers-green.png)
+
+### Purple Rain
+
+![Thème Purple Rain](images/theme-purple-rain.png)
+
+### Red Alert
+
+![Thème Red Alert](images/theme-red-alert.png)
 
 ---
 
@@ -63,37 +94,62 @@ Vous en avez créé un qui vous plaît ? Partagez-le sur [**Matrix**](https://ap
 
 ## Télécharger d'autres thèmes
 
-Quatre thèmes de plus à essayer. Téléchargez-en un, puis dans **Commandant → Thèmes de couleur** cliquez sur
-**Importer**, choisissez le fichier, puis **Appliquer**. Ils sont faits pour le style : contrairement au thème
-Par défaut, ils ne sont pas réglés pour le daltonisme.
+Huit thèmes de plus à essayer. Téléchargez-en un, puis dans **Commandant → Thèmes de couleur** cliquez sur
+**Importer**, choisissez le fichier, puis **Appliquer**. Ils sont faits pour le style : ils ne sont pas
+réglés pour le daltonisme. **Gazette**, **Salt Flat** et **Sunny** sont des
+thèmes clairs.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Télécharger les quatre (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Télécharger les huit (zip)</a>
 
 Décompressez-le d'abord : **Importer** prend un fichier de thème à la fois.
 
-### Coffee
+### Burgundy
 
-![Thème Coffee](images/theme-coffee.png)
+![Thème Burgundy](images/theme-burgundy.png)
 
-Bruns chauds et crème. <a href="themes/Coffee.json" download>⬇ Coffee.json</a>
+Texte vert pâle sur bordeaux profond, avec des cadres mauves. <a href="themes/Burgundy.json" download>⬇ Burgundy.json</a>
 
-### Hackers Green
+### Chocolate
 
-![Thème Hackers Green](images/theme-hackers-green.png)
+![Thème Chocolate](images/theme-chocolate.png)
 
-Vert sur noir, comme un vieux terminal. <a href="themes/Hackers-Green.json" download>⬇ Hackers-Green.json</a>
+Blanc doux et gris sur presque noir. <a href="themes/Chocolate.json" download>⬇ Chocolate.json</a>
 
-### Purple Rain
+### Deep Blue
 
-![Thème Purple Rain](images/theme-purple-rain.png)
+![Thème Deep Blue](images/theme-deep-blue.png)
 
-Violet sur presque noir. <a href="themes/Purple-Rain.json" download>⬇ Purple-Rain.json</a>
+Des bleus sur bleu nuit. <a href="themes/Deep-Blue.json" download>⬇ Deep-Blue.json</a>
 
-### Red Alert
+### Deep Green
 
-![Thème Red Alert](images/theme-red-alert.png)
+![Thème Deep Green](images/theme-deep-green.png)
 
-Rouge sur noir. <a href="themes/Red-Alert.json" download>⬇ Red-Alert.json</a>
+Des verts vifs sur noir. <a href="themes/Deep-Green.json" download>⬇ Deep-Green.json</a>
+
+### Gazette
+
+![Thème Gazette](images/theme-gazette.png)
+
+De l'encre noire sur papier blanc, comme un journal. <a href="themes/Gazette.json" download>⬇ Gazette.json</a>
+
+### Halloween
+
+![Thème Halloween](images/theme-halloween.png)
+
+Orange citrouille sur brun foncé. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Salt Flat
+
+![Thème Salt Flat](images/theme-salt-flat.png)
+
+Gris ardoise sur gris-bleu pâle. <a href="themes/Salt-Flat.json" download>⬇ Salt-Flat.json</a>
+
+### Sunny
+
+![Thème Sunny](images/theme-sunny.png)
+
+Noir et beige sur crème pâle. <a href="themes/Sunny.json" download>⬇ Sunny.json</a>
 
 ---
 

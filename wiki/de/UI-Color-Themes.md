@@ -22,8 +22,39 @@ Einstellungen.
 - **Hoher Kontrast**, für schwaches Sehen oder Blendung: schwarze Hintergründe, weißer Text, hellere Rahmen und
   jeder Text mit mindestens 7:1.
 - **Clockwork Orange**: orange wie das HUD des Spiels und wie die App vor V1.2.
+- **Coffee**: warme Brauntöne und Creme.
+- **Hackers Green**: Grün auf Schwarz, wie ein altes Terminal.
+- **Purple Rain**: Violett auf fast Schwarz.
+- **Red Alert**: Rot auf Schwarz.
+
+Standard und Hoher Kontrast sind auf gute Lesbarkeit gemacht. Die übrigen sind fürs Aussehen gemacht: Sie sind
+nicht für Farbenblindheit abgestimmt.
 
 Eingebaute Schemata lassen sich nicht ändern: deine erste Änderung an einem landet in einer Kopie.
+
+### Hoher Kontrast
+
+![Schema Hoher Kontrast](images/theme-high-contrast.png)
+
+### Clockwork Orange
+
+![Schema Clockwork Orange](images/theme-clockwork-orange.png)
+
+### Coffee
+
+![Schema Coffee](images/theme-coffee.png)
+
+### Hackers Green
+
+![Schema Hackers Green](images/theme-hackers-green.png)
+
+### Purple Rain
+
+![Schema Purple Rain](images/theme-purple-rain.png)
+
+### Red Alert
+
+![Schema Red Alert](images/theme-red-alert.png)
 
 ---
 
@@ -63,37 +94,62 @@ Eines gemacht, das dir gefällt? Teile es auf [**Matrix**](https://app.element.i
 
 ## Weitere Schemata herunterladen
 
-Vier weitere Schemata zum Ausprobieren. Lade eines herunter, klicke dann unter **Kommandant → Farbschemata** auf
-**Importieren**, wähle die Datei und klicke auf **Anwenden**. Sie sind fürs Aussehen gemacht: anders als das
-Standardschema sind sie nicht für Farbenblindheit abgestimmt.
+Acht weitere Schemata zum Ausprobieren. Lade eines herunter, klicke dann unter **Kommandant → Farbschemata** auf
+**Importieren**, wähle die Datei und klicke auf **Anwenden**. Sie sind fürs Aussehen gemacht: Sie sind nicht
+für Farbenblindheit abgestimmt. **Gazette**, **Salt Flat** und **Sunny** sind helle
+Schemata.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Alle vier herunterladen (ZIP)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Alle acht herunterladen (ZIP)</a>
 
 Entpacke sie zuerst: **Importieren** nimmt eine Schema-Datei auf einmal.
 
-### Coffee
+### Burgundy
 
-![Schema Coffee](images/theme-coffee.png)
+![Schema Burgundy](images/theme-burgundy.png)
 
-Warme Brauntöne und Creme. <a href="themes/Coffee.json" download>⬇ Coffee.json</a>
+Blassgrüner Text auf tiefem Burgunderrot, mit malvenfarbenen Rahmen. <a href="themes/Burgundy.json" download>⬇ Burgundy.json</a>
 
-### Hackers Green
+### Chocolate
 
-![Schema Hackers Green](images/theme-hackers-green.png)
+![Schema Chocolate](images/theme-chocolate.png)
 
-Grün auf Schwarz, wie ein altes Terminal. <a href="themes/Hackers-Green.json" download>⬇ Hackers-Green.json</a>
+Sanftes Weiß und Grau auf fast Schwarz. <a href="themes/Chocolate.json" download>⬇ Chocolate.json</a>
 
-### Purple Rain
+### Deep Blue
 
-![Schema Purple Rain](images/theme-purple-rain.png)
+![Schema Deep Blue](images/theme-deep-blue.png)
 
-Violett auf fast Schwarz. <a href="themes/Purple-Rain.json" download>⬇ Purple-Rain.json</a>
+Blautöne auf Mitternachtsblau. <a href="themes/Deep-Blue.json" download>⬇ Deep-Blue.json</a>
 
-### Red Alert
+### Deep Green
 
-![Schema Red Alert](images/theme-red-alert.png)
+![Schema Deep Green](images/theme-deep-green.png)
 
-Rot auf Schwarz. <a href="themes/Red-Alert.json" download>⬇ Red-Alert.json</a>
+Kräftige Grüntöne auf Schwarz. <a href="themes/Deep-Green.json" download>⬇ Deep-Green.json</a>
+
+### Gazette
+
+![Schema Gazette](images/theme-gazette.png)
+
+Schwarze Tinte auf weißem Papier, wie eine Zeitung. <a href="themes/Gazette.json" download>⬇ Gazette.json</a>
+
+### Halloween
+
+![Schema Halloween](images/theme-halloween.png)
+
+Kürbisorange auf Dunkelbraun. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Salt Flat
+
+![Schema Salt Flat](images/theme-salt-flat.png)
+
+Schiefergrau auf blassem Blaugrau. <a href="themes/Salt-Flat.json" download>⬇ Salt-Flat.json</a>
+
+### Sunny
+
+![Schema Sunny](images/theme-sunny.png)
+
+Schwarz und Beige auf blassem Creme. <a href="themes/Sunny.json" download>⬇ Sunny.json</a>
 
 ---
 

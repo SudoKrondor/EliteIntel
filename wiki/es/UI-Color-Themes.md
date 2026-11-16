@@ -20,8 +20,39 @@ El [overlay HUD](UI-HUD-Overlay) no forma parte de un tema. Tiene sus propios co
 - **Alto contraste**, para baja visión o reflejos: fondos negros, texto blanco, marcos más claros y todo el texto
   a 7:1 o más.
 - **Clockwork Orange**: naranja como el HUD del propio juego, y como la app antes de la V1.2.
+- **Coffee**: marrones cálidos y crema.
+- **Hackers Green**: verde sobre negro, como un terminal antiguo.
+- **Purple Rain**: violeta sobre casi negro.
+- **Red Alert**: rojo sobre negro.
+
+Predeterminado y Alto contraste están hechos para leerse con facilidad. Los demás están hechos por su aspecto:
+no están ajustados para el daltonismo.
 
 Los temas integrados no se pueden cambiar: tu primer cambio en uno va a una copia.
+
+### Alto contraste
+
+![Tema Alto contraste](images/theme-high-contrast.png)
+
+### Clockwork Orange
+
+![Tema Clockwork Orange](images/theme-clockwork-orange.png)
+
+### Coffee
+
+![Tema Coffee](images/theme-coffee.png)
+
+### Hackers Green
+
+![Tema Hackers Green](images/theme-hackers-green.png)
+
+### Purple Rain
+
+![Tema Purple Rain](images/theme-purple-rain.png)
+
+### Red Alert
+
+![Tema Red Alert](images/theme-red-alert.png)
 
 ---
 
@@ -61,37 +92,61 @@ los incluye.
 
 ## Descargar más temas
 
-Cuatro temas más para probar. Descarga uno y luego, en **Comandante → Temas de color**, haz clic en **Importar**,
-elige el archivo y pulsa **Aplicar**. Están hechos por su aspecto: a diferencia del tema Predeterminado, no están
-ajustados para el daltonismo.
+Ocho temas más para probar. Descarga uno y luego, en **Comandante → Temas de color**, haz clic en **Importar**,
+elige el archivo y pulsa **Aplicar**. Están hechos por su aspecto: no están ajustados
+para el daltonismo. **Gazette**, **Salt Flat** y **Sunny** son temas claros.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Descargar los cuatro (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Descargar los ocho (zip)</a>
 
 Descomprímelo primero: **Importar** acepta un archivo de tema cada vez.
 
-### Coffee
+### Burgundy
 
-![Tema Coffee](images/theme-coffee.png)
+![Tema Burgundy](images/theme-burgundy.png)
 
-Marrones cálidos y crema. <a href="themes/Coffee.json" download>⬇ Coffee.json</a>
+Texto verde pálido sobre burdeos oscuro, con marcos malva. <a href="themes/Burgundy.json" download>⬇ Burgundy.json</a>
 
-### Hackers Green
+### Chocolate
 
-![Tema Hackers Green](images/theme-hackers-green.png)
+![Tema Chocolate](images/theme-chocolate.png)
 
-Verde sobre negro, como un terminal antiguo. <a href="themes/Hackers-Green.json" download>⬇ Hackers-Green.json</a>
+Blanco suave y gris sobre casi negro. <a href="themes/Chocolate.json" download>⬇ Chocolate.json</a>
 
-### Purple Rain
+### Deep Blue
 
-![Tema Purple Rain](images/theme-purple-rain.png)
+![Tema Deep Blue](images/theme-deep-blue.png)
 
-Violeta sobre casi negro. <a href="themes/Purple-Rain.json" download>⬇ Purple-Rain.json</a>
+Azules sobre azul medianoche. <a href="themes/Deep-Blue.json" download>⬇ Deep-Blue.json</a>
 
-### Red Alert
+### Deep Green
 
-![Tema Red Alert](images/theme-red-alert.png)
+![Tema Deep Green](images/theme-deep-green.png)
 
-Rojo sobre negro. <a href="themes/Red-Alert.json" download>⬇ Red-Alert.json</a>
+Verdes vivos sobre negro. <a href="themes/Deep-Green.json" download>⬇ Deep-Green.json</a>
+
+### Gazette
+
+![Tema Gazette](images/theme-gazette.png)
+
+Tinta negra sobre papel blanco, como un periódico. <a href="themes/Gazette.json" download>⬇ Gazette.json</a>
+
+### Halloween
+
+![Tema Halloween](images/theme-halloween.png)
+
+Naranja calabaza sobre marrón oscuro. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Salt Flat
+
+![Tema Salt Flat](images/theme-salt-flat.png)
+
+Gris pizarra sobre gris azulado pálido. <a href="themes/Salt-Flat.json" download>⬇ Salt-Flat.json</a>
+
+### Sunny
+
+![Tema Sunny](images/theme-sunny.png)
+
+Negro y beige sobre crema pálido. <a href="themes/Sunny.json" download>⬇ Sunny.json</a>
 
 ---
 

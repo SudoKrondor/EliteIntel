@@ -21,8 +21,39 @@
 - **Високий контраст** — для слабкого зору чи відблисків: чорне тло, білий текст, яскравіші рамки й будь-який
   текст із контрастом 7:1 або вище.
 - **Clockwork Orange** — помаранчева, як HUD самої гри і як застосунок до V1.2.
+- **Coffee** — теплі коричневі й кремові тони.
+- **Hackers Green** — зелений на чорному, як старий термінал.
+- **Purple Rain** — фіолетовий на майже чорному.
+- **Red Alert** — червоний на чорному.
+
+Стандартна й «Високий контраст» зроблені так, щоб їх було легко читати. Решта зроблені заради вигляду: вони не
+підібрані для порушень кольорового зору.
 
 Вбудовані теми змінити не можна: перша зміна в такій темі потрапляє до її копії.
+
+### Високий контраст
+
+![Тема Високий контраст](images/theme-high-contrast.png)
+
+### Clockwork Orange
+
+![Тема Clockwork Orange](images/theme-clockwork-orange.png)
+
+### Coffee
+
+![Тема Coffee](images/theme-coffee.png)
+
+### Hackers Green
+
+![Тема Hackers Green](images/theme-hackers-green.png)
+
+### Purple Rain
+
+![Тема Purple Rain](images/theme-purple-rain.png)
+
+### Red Alert
+
+![Тема Red Alert](images/theme-red-alert.png)
 
 ---
 
@@ -62,37 +93,61 @@
 
 ## Завантажити ще теми
 
-Ще чотири теми на спробу. Завантажте одну, потім у **Командир → Колірні теми** натисніть **Імпорт**, оберіть
-файл і натисніть **Застосувати**. Ці теми зроблені заради вигляду: на відміну від стандартної, вони не підібрані
-для порушень кольорового зору.
+Ще вісім тем на спробу. Завантажте одну, потім у **Командир → Колірні теми** натисніть **Імпорт**, оберіть
+файл і натисніть **Застосувати**. Ці теми зроблені заради вигляду: вони не підібрані
+для порушень кольорового зору. **Gazette**, **Salt Flat** і **Sunny** — світлі теми.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Завантажити всі чотири (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Завантажити всі вісім (zip)</a>
 
 Спершу розпакуйте архів: **Імпорт** приймає один файл теми за раз.
 
-### Coffee
+### Burgundy
 
-![Тема Coffee](images/theme-coffee.png)
+![Тема Burgundy](images/theme-burgundy.png)
 
-Теплі коричневі й кремові тони. <a href="themes/Coffee.json" download>⬇ Coffee.json</a>
+Блідо-зелений текст на темно-бордовому, з бузковими рамками. <a href="themes/Burgundy.json" download>⬇ Burgundy.json</a>
 
-### Hackers Green
+### Chocolate
 
-![Тема Hackers Green](images/theme-hackers-green.png)
+![Тема Chocolate](images/theme-chocolate.png)
 
-Зелений на чорному, як старий термінал. <a href="themes/Hackers-Green.json" download>⬇ Hackers-Green.json</a>
+М'який білий і сірий на майже чорному. <a href="themes/Chocolate.json" download>⬇ Chocolate.json</a>
 
-### Purple Rain
+### Deep Blue
 
-![Тема Purple Rain](images/theme-purple-rain.png)
+![Тема Deep Blue](images/theme-deep-blue.png)
 
-Фіолетовий на майже чорному. <a href="themes/Purple-Rain.json" download>⬇ Purple-Rain.json</a>
+Відтінки синього на опівнічно-синьому. <a href="themes/Deep-Blue.json" download>⬇ Deep-Blue.json</a>
 
-### Red Alert
+### Deep Green
 
-![Тема Red Alert](images/theme-red-alert.png)
+![Тема Deep Green](images/theme-deep-green.png)
 
-Червоний на чорному. <a href="themes/Red-Alert.json" download>⬇ Red-Alert.json</a>
+Яскраві зелені на чорному. <a href="themes/Deep-Green.json" download>⬇ Deep-Green.json</a>
+
+### Gazette
+
+![Тема Gazette](images/theme-gazette.png)
+
+Чорне чорнило на білому папері, як газета. <a href="themes/Gazette.json" download>⬇ Gazette.json</a>
+
+### Halloween
+
+![Тема Halloween](images/theme-halloween.png)
+
+Гарбузово-помаранчевий на темно-коричневому. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Salt Flat
+
+![Тема Salt Flat](images/theme-salt-flat.png)
+
+Грифельно-сірий на блідому сіро-блакитному. <a href="themes/Salt-Flat.json" download>⬇ Salt-Flat.json</a>
+
+### Sunny
+
+![Тема Sunny](images/theme-sunny.png)
+
+Чорний і бежевий на блідо-кремовому. <a href="themes/Sunny.json" download>⬇ Sunny.json</a>
 
 ---
 

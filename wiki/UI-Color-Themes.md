@@ -19,8 +19,39 @@ The [HUD overlay](UI-HUD-Overlay) is not part of a theme. It has colors of its o
 - **High contrast**, for low vision or glare: black backgrounds, white text, brighter frames, and every text at
   7:1 or better.
 - **Clockwork Orange**: orange like the game's own HUD, and like the app before V1.2.
+- **Coffee**: warm browns and cream.
+- **Hackers Green**: green on black, like an old terminal.
+- **Purple Rain**: violet on near-black.
+- **Red Alert**: red on black.
+
+Default and High contrast are made to be easy to read. The others are made for looks: they are not tuned
+for color blindness.
 
 Built-in themes can't be changed: your first change to one goes into a copy.
+
+### High contrast
+
+![High contrast theme](images/theme-high-contrast.png)
+
+### Clockwork Orange
+
+![Clockwork Orange theme](images/theme-clockwork-orange.png)
+
+### Coffee
+
+![Coffee theme](images/theme-coffee.png)
+
+### Hackers Green
+
+![Hackers Green theme](images/theme-hackers-green.png)
+
+### Purple Rain
+
+![Purple Rain theme](images/theme-purple-rain.png)
+
+### Red Alert
+
+![Red Alert theme](images/theme-red-alert.png)
 
 ---
 
@@ -59,36 +90,60 @@ Made one you like? Share it on [**Matrix**](https://app.element.io/#/room/#krond
 
 ## Download more themes
 
-Four more themes to try. Download one, then on **Commander → Color Themes** click **Import**, choose the file,
-and **Apply**. These are made for looks: unlike the Default theme, they are not tuned for color blindness.
+Eight more themes to try. Download one, then on **Commander → Color Themes** click **Import**, choose the file,
+and **Apply**. These are made for looks: they are not tuned for color blindness. **Gazette**, **Salt Flat** and **Sunny** are light themes.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Download all four (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Download all eight (zip)</a>
 
 Unzip it first: **Import** takes one theme file at a time.
 
-### Coffee
+### Burgundy
 
-![Coffee theme](images/theme-coffee.png)
+![Burgundy theme](images/theme-burgundy.png)
 
-Warm browns and cream. <a href="themes/Coffee.json" download>⬇ Coffee.json</a>
+Pale green text on deep burgundy, with mauve frames. <a href="themes/Burgundy.json" download>⬇ Burgundy.json</a>
 
-### Hackers Green
+### Chocolate
 
-![Hackers Green theme](images/theme-hackers-green.png)
+![Chocolate theme](images/theme-chocolate.png)
 
-Green on black, like an old terminal. <a href="themes/Hackers-Green.json" download>⬇ Hackers-Green.json</a>
+Soft white and grey on near-black. <a href="themes/Chocolate.json" download>⬇ Chocolate.json</a>
 
-### Purple Rain
+### Deep Blue
 
-![Purple Rain theme](images/theme-purple-rain.png)
+![Deep Blue theme](images/theme-deep-blue.png)
 
-Violet on near-black. <a href="themes/Purple-Rain.json" download>⬇ Purple-Rain.json</a>
+Blues on midnight navy. <a href="themes/Deep-Blue.json" download>⬇ Deep-Blue.json</a>
 
-### Red Alert
+### Deep Green
 
-![Red Alert theme](images/theme-red-alert.png)
+![Deep Green theme](images/theme-deep-green.png)
 
-Red on black. <a href="themes/Red-Alert.json" download>⬇ Red-Alert.json</a>
+Bright greens on black. <a href="themes/Deep-Green.json" download>⬇ Deep-Green.json</a>
+
+### Gazette
+
+![Gazette theme](images/theme-gazette.png)
+
+Black ink on white paper, like a newspaper. <a href="themes/Gazette.json" download>⬇ Gazette.json</a>
+
+### Halloween
+
+![Halloween theme](images/theme-halloween.png)
+
+Pumpkin orange on dark brown. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Salt Flat
+
+![Salt Flat theme](images/theme-salt-flat.png)
+
+Slate grey on pale blue-grey. <a href="themes/Salt-Flat.json" download>⬇ Salt-Flat.json</a>
+
+### Sunny
+
+![Sunny theme](images/theme-sunny.png)
+
+Black and tan on pale cream. <a href="themes/Sunny.json" download>⬇ Sunny.json</a>
 
 ---
 

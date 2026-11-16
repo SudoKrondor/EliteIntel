@@ -26,10 +26,6 @@ Last checked against the app on `V1.2` at `7af4046c5` (2026-11-10).
 | `ui-tab-commander-massacre-sets.png` | `UI-Commander-Tab` | **Commander → Massacre Sets** with sharing **on**, after a sync, so both sections show numbers (Sets you share, Last shared, Sets from other commanders, Usable here, Last updated, Commanders contributing). |
 | `ui-bindings-preset-editor.png` | `UI-Bindings-Tab` | **BindForge → Preset Editor**: the four dropdowns (General, Ship, SRV, On-Foot) and **Set all to same**. Best with the four sections on different files so the "do not all load the same binds file" note shows. |
 | `ui-tab-commander-color-themes.png` | `UI-Color-Themes` | **Commander → Color Themes** with a theme of your own selected (not a built-in), the pointer over a status badge so the rest of the preview is dimmed, and at least one entry under **Hard to read**. |
-| `theme-coffee.png` | `UI-Color-Themes` | The whole window drawn in the downloadable **Coffee** theme (`themes/Coffee.json`), imported and applied after a restart. A busy tab with live data, the same tab for all four. |
-| `theme-hackers-green.png` | `UI-Color-Themes` | The whole window drawn in the downloadable **Hackers Green** theme (`themes/Hackers-Green.json`), imported and applied after a restart. A busy tab with live data, the same tab for all four. |
-| `theme-purple-rain.png` | `UI-Color-Themes` | The whole window drawn in the downloadable **Purple Rain** theme (`themes/Purple-Rain.json`), imported and applied after a restart. A busy tab with live data, the same tab for all four. |
-| `theme-red-alert.png` | `UI-Color-Themes` | The whole window drawn in the downloadable **Red Alert** theme (`themes/Red-Alert.json`), imported and applied after a restart. A busy tab with live data, the same tab for all four. |
 
 ## Retake: BindForge (blocking: these contradict the page text)
 
