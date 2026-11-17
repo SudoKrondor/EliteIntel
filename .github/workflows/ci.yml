@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-zip:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +99,7 @@ jobs:
   # a bare `make` on a Windows runner: the .exe and the DLLs beside it have to
   # come from the same sysroot.
   build-windows:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: build-zip
 
     steps:
@@ -153,7 +153,7 @@ jobs:
           if-no-files-found: error
 
   build-linux:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: build-zip
 
     steps:
@@ -205,7 +205,11 @@ jobs:
           if-no-files-found: error
 
   release:
-    runs-on: ubuntu-24.04
+    # A tag push only. WHY: the app checks GitHub's latest release to update itself, so a release made by a manual
+    # "Run workflow" (which used to name the release after the branch) would update every shipped install to
+    # unfinished work. A manual run builds and uploads the files as run artifacts, and publishes nothing.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-26.04
     needs: [ build-zip, build-windows, build-linux ]
 
     steps:

@@ -42,6 +42,7 @@ final class FakeLmStudioMachine implements LmStudioMachine {
     int listedAfter;
     int listingAsks;
     boolean cancelled;
+    boolean loadFails;
     DownloadStart downloadStart = new DownloadStart.Started("job_1");
     /**
      * What every start after the first returns; null returns {@link #downloadStart} again.
@@ -151,8 +152,9 @@ final class FakeLmStudioMachine implements LmStudioMachine {
     }
 
     @Override
-    public void load(Path lms, String model) {
+    public void load(Path lms, String model) throws InstallException {
         calls.add("load");
+        if (loadFails) throw new InstallException("load failed");
         loaded = true;
         loadedContext = LocalLmStudioMachine.CONTEXT_LENGTH;
     }

@@ -6,12 +6,14 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.LocalModelLoadEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.Consumer;
 
 /**
  * Runs the LM Studio the app installed, for as long as the app's services run (docs/LM_STUDIO_INSTALL_ASSISTANCE.md,
@@ -29,12 +31,19 @@ public final class LmStudioHost implements ManagedService {
     private final Path lms;
     private final LmStudioMachine machine;
     private final LmStudioExitStop exitStop;
+    /** Where the header's progress bar hears that a load began and ended. */
+    private final Consumer<LocalModelLoadEvent> loadStatus;
     private volatile boolean running;
 
     LmStudioHost(Path lms, LmStudioMachine machine, LmStudioExitStop exitStop) {
+        this(lms, machine, exitStop, UiBus::publish);
+    }
+
+    LmStudioHost(Path lms, LmStudioMachine machine, LmStudioExitStop exitStop, Consumer<LocalModelLoadEvent> loadStatus) {
         this.lms = lms;
         this.machine = machine;
         this.exitStop = exitStop;
+        this.loadStatus = loadStatus;
     }
 
     /**
@@ -50,7 +59,16 @@ public final class LmStudioHost implements ManagedService {
             appLog("LM Studio: the install in " + owned.get().homeDir() + " has no lms command, so it was not started.");
             return null;
         }
-        return new LmStudioHost(lms.get(), loggedMachine(), LmStudioExitStop.INSTANCE);
+        return new LmStudioHost(lms.get(), new LocalLmStudioMachine(LmStudioHost::onLmsLine), LmStudioExitStop.INSTANCE);
+    }
+
+    /**
+     * One line of {@code lms} output while the host runs: logged, and a load's percentage passed to the header's
+     * progress bar.
+     */
+    private static void onLmsLine(String line) {
+        log.info("lms: {}", line);
+        LoadProgressLine.percent(line).ifPresent(p -> UiBus.publish(LocalModelLoadEvent.progress(p)));
     }
 
     /**
@@ -117,7 +135,13 @@ public final class LmStudioHost implements ManagedService {
             // WHY: loaded, but LM Studio did not say with what window, so it cannot be trusted to be VEGA's.
             machine.unload(lms, MODEL);
         }
-        machine.load(lms, MODEL);
+        loadStatus.accept(LocalModelLoadEvent.progress(0));
+        try {
+            machine.load(lms, MODEL);
+        } finally {
+            // WHY finally: a load that failed or timed out must not leave the bar standing at its last percent.
+            loadStatus.accept(LocalModelLoadEvent.finished());
+        }
     }
 
     @Override

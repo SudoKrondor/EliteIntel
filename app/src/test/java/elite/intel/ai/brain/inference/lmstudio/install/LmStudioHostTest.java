@@ -2,6 +2,7 @@ package elite.intel.ai.brain.inference.lmstudio.install;
 
 import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
 import elite.intel.db.managers.LmStudioInstallManager.Install;
+import elite.intel.ui.event.LocalModelLoadEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,6 +34,45 @@ class LmStudioHostTest {
         host.start();
 
         assertEquals(List.of("daemon up", "server start", "load"), machine.calls);
+        host.stop();
+    }
+
+    @Test
+    void aLoadRaisesTheHeaderBarAndTakesItDownAfter() {
+        FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
+        List<LocalModelLoadEvent> status = new ArrayList<>();
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop, status::add);
+
+        host.start();
+
+        assertEquals(List.of(LocalModelLoadEvent.progress(0), LocalModelLoadEvent.finished()), status);
+        host.stop();
+    }
+
+    @Test
+    void aFailedLoadStillTakesTheHeaderBarDown() {
+        FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
+        machine.loadFails = true;
+        List<LocalModelLoadEvent> status = new ArrayList<>();
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop, status::add);
+
+        host.start();
+
+        assertEquals(LocalModelLoadEvent.finished(), status.getLast());
+        host.stop();
+    }
+
+    @Test
+    void noLoadNoHeaderBar() {
+        FakeLmStudioMachine machine = new FakeLmStudioMachine(home);
+        machine.serverAnswering = true;
+        machine.loaded = true;
+        List<LocalModelLoadEvent> status = new ArrayList<>();
+        LmStudioHost host = new LmStudioHost(home.resolve("bin/lms"), machine, exitStop, status::add);
+
+        host.start();
+
+        assertTrue(status.isEmpty());
         host.stop();
     }
 

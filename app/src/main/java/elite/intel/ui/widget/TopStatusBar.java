@@ -7,6 +7,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.ActiveShipChangedEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
+import elite.intel.ui.event.LocalModelLoadEvent;
 import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
@@ -18,8 +19,9 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 /**
  * Minimal identity strip at the top of the main window, which also serves as its title bar (the window has no
  * operating-system title bar; drag it to move the window, double-click it to maximize).
- * Left: app name and version, then "New version available." once an update is out. Right: commander name and ship
- * name, then the window's own minimize, maximize/restore and close buttons.
+ * Left: app name and version, then "New version available." once an update is out. Middle: a progress bar while the
+ * app's own LM Studio loads the model, hidden otherwise. Right: commander name and ship name, then the window's own
+ * minimize, maximize/restore and close buttons.
  * Operational statuses (Bindings, Commands, Keymap, STT, LLM, TTS) live in the AI tab QUICK STATUS panel.
  * Call {@link #dispose()} when discarding to unregister event subscriptions.
  */
@@ -28,6 +30,9 @@ public class TopStatusBar extends HudPanel {
     private JLabel cmdrValue;
     private JLabel shipValue;
     private final JLabel updateNotice = new JLabel();
+    private final JLabel modelLoadLabel = new JLabel();
+    private final LoadBar modelLoadBar = new LoadBar();
+    private JPanel modelLoadGroup;
     private final HudWindowButtons windowButtons;
 
     /**
@@ -49,6 +54,7 @@ public class TopStatusBar extends HudPanel {
 
         this.windowButtons = new HudWindowButtons(window, onClose);
         add(buildLeftGroup(appName, version), BorderLayout.WEST);
+        add(buildModelLoadGroup(), BorderLayout.CENTER);
         add(buildRightGroup(), BorderLayout.EAST);
 
         UiBus.register(this);
@@ -79,6 +85,19 @@ public class TopStatusBar extends HudPanel {
     @Subscribe
     public void onActiveShipChanged(ActiveShipChangedEvent event) {
         SwingUtilities.invokeLater(() -> shipValue.setText(resolvedOrDash(event.shipName())));
+    }
+
+    @Subscribe
+    public void onLocalModelLoad(LocalModelLoadEvent event) {
+        SwingUtilities.invokeLater(() -> showModelLoad(event));
+    }
+
+    private void showModelLoad(LocalModelLoadEvent event) {
+        if (event.loading()) {
+            modelLoadLabel.setText(getText("hud.localModelLoading", event.percent()).toUpperCase(Locale.ROOT));
+            modelLoadBar.setPercent(event.percent());
+        }
+        modelLoadGroup.setVisible(event.loading());
     }
 
     // -- Build -----------------------------------------------------------------
@@ -114,6 +133,28 @@ public class TopStatusBar extends HudPanel {
         row.add(updateNotice);
 
         return row;
+    }
+
+    /**
+     * The model-load label and bar, centred between the two groups and hidden until a load reports progress. No tooltip
+     * and no mouse listener, so the header stays draggable over it.
+     */
+    private JPanel buildModelLoadGroup() {
+        modelLoadLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        modelLoadLabel.setFont(modelLoadLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_APP_TITLE));
+        modelLoadLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
+        modelLoadBar.setAlignmentY(Component.CENTER_ALIGNMENT);
+
+        JPanel row = opaqueRow();
+        row.add(modelLoadLabel);
+        row.add(Box.createHorizontalStrut(HudPalette.HUD_GAP));
+        row.add(modelLoadBar);
+
+        modelLoadGroup = new JPanel(new GridBagLayout());
+        modelLoadGroup.setOpaque(false);
+        modelLoadGroup.add(row);
+        modelLoadGroup.setVisible(false);
+        return modelLoadGroup;
     }
 
     /** Commander name and ship name, then the window buttons, right-aligned. */
@@ -200,5 +241,36 @@ public class TopStatusBar extends HudPanel {
     protected void paintComponent(Graphics g) {
         g.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         g.fillRect(0, 0, getWidth(), getHeight());
+    }
+
+    /**
+     * A thin flat bar in the header's own colours. WHY not {@link JProgressBar}: its look-and-feel styling does not
+     * follow the HUD palette.
+     */
+    private static final class LoadBar extends JComponent {
+
+        private static final Dimension SIZE = new Dimension(160, 6);
+        private int percent;
+
+        LoadBar() {
+            setPreferredSize(SIZE);
+            setMinimumSize(SIZE);
+            setMaximumSize(SIZE);
+        }
+
+        void setPercent(int percent) {
+            this.percent = percent;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            int w = getWidth();
+            int h = getHeight();
+            g.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
+            g.fillRect(0, 0, w, h);
+            g.setColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+            g.fillRect(0, 0, w * percent / 100, h);
+        }
     }
 }
