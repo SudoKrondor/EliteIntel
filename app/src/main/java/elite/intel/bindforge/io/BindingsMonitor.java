@@ -12,7 +12,6 @@ import elite.intel.db.dao.BindingConflictDao;
 import elite.intel.db.managers.BindingConflictManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.BindingsFolderChangedEvent;
@@ -26,6 +25,7 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static elite.intel.util.StringUtls.humanizeBindingName;
 import static elite.intel.util.StringUtls.localizedSpeech;
@@ -96,6 +96,11 @@ public class BindingsMonitor {
      * a commander sitting in the controls menu rebinding.
      */
     private String parsedFileFingerprint;
+    /**
+     * The warning last spoken for a read that failed, until a read succeeds - so a cause is said once, not again by
+     * {@link #ensureBindingsLoaded()} racing the first parse, or by every {@link #reread()}.
+     */
+    private final AtomicReference<String> lastFailureSpoken = new AtomicReference<>();
 
     /**
      * The Elite controls a built-in command presses - {@link Bindings.GameCommand#isDrivenByApp()}.
@@ -212,7 +217,9 @@ public class BindingsMonitor {
     }
 
     private void monitorBindings() {
-        DataDirectoryValidator.validateAndWarn(bindingsDir, DataDirectoryValidator.DirectoryKind.BINDINGS);
+        // WHY no folder check here: SetupCheck says what is wrong with the folder at startup, and the folder field
+        // when it is changed. A check here spoke a second time, and one that looked for .binds called a fresh install
+        // on a stock preset - the right folder, read from the installation - a folder with no bindings files.
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             bindingsDir.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY,
                     StandardWatchEventKinds.ENTRY_CREATE);
@@ -304,7 +311,7 @@ public class BindingsMonitor {
         } catch (Exception e) {
             // WHY its own sentence: nothing was parsed, so naming a file would point a support bundle at the previous
             // one, which is fine (Alan, 2026-11-11, Storage S13fR D3).
-            reportUpdateFailed("Could not work out which binds file to read", e);
+            reportUpdateFailed("Could not work out which binds file to read", e, speechKeyFor(e));
             return;
         }
         parseAndUpdateBindings(toRead);
@@ -324,20 +331,41 @@ public class BindingsMonitor {
             GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
             UiBus.publish(new BindingsUpdatedEvent());
+            lastFailureSpoken.set(null);
             log.info("Key bindings updated from: {}", currentBindsFile.getName());
         } catch (Exception e) {
-            reportUpdateFailed("Failed to parse key bindings from: " + toRead.getName(), e);
+            reportUpdateFailed("Failed to parse key bindings from: " + toRead.getName(), e,
+                    Optional.of("speech.warning.bindingsUnreadable"));
         }
     }
 
     /**
-     * Logs what failed - in {@code what}, worded by the caller so the log says what actually went wrong - and tells the
-     * user the bindings could not be updated. The spoken warning is the same whatever failed.
+     * What to tell the commander when the file to read could not be worked out - empty when it is not this class's to
+     * say. WHY "check the folder" is never said here: by the time the monitor reads, the folder is the one the commander
+     * chose, and every cause below needs a fix in the game or in Game Install Locations, not a different folder.
      */
-    private void reportUpdateFailed(String what, Exception e) {
+    static Optional<String> speechKeyFor(Exception e) {
+        if (!(e instanceof BindsFileNotFoundException notFound)) {
+            return Optional.of("speech.warning.bindingsDirectoryInaccessible");
+        }
+        return switch (notFound.reason()) {
+            // WHY silent: a folder with no StartPreset is a folder problem, which SetupCheck and the folder field speak.
+            // It is also what a read sees while the game rewrites the file.
+            case NO_PRESET_FILE -> Optional.empty();
+            case NO_INSTALLATION -> Optional.of("speech.warning.bindingsStockPresetNoInstallation");
+            case PRESET_FILE_MISSING -> Optional.of("speech.warning.bindingsPresetFileMissing");
+        };
+    }
+
+    /**
+     * Logs what failed - in {@code what}, worded by the caller so the log says what actually went wrong - and speaks
+     * {@code speechKey}, the cause in the commander's words, unless it is the one already spoken since the last read
+     * that worked.
+     */
+    private void reportUpdateFailed(String what, Exception e, Optional<String> speechKey) {
         log.error(what, e);
-        GameEventBus.publish(
-                new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
+        speechKey.filter(key -> !key.equals(lastFailureSpoken.getAndSet(key)))
+                .ifPresent(key -> GameEventBus.publish(new AiVoxResponseEvent(localizedSpeech(key))));
     }
 
     /**

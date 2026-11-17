@@ -35,12 +35,12 @@ import java.util.stream.Stream;
  *       picked</b> - an install upgraded with a key whose format named no provider - is sent to the settings
  *       tab to pick one.</li>
  *   <li><b>No journal files</b> where the app is looking. Without them it knows nothing about the game.</li>
- *   <li><b>No bindings files</b> where the app is looking. Without them it cannot fly anything. This one
- *       splits in three: Elite's own folder holding only a {@code StartPreset} because the commander still runs
- *       a stock preset and has never saved custom controls (fix it in the game, not in the setting); the game's
- *       default folder not there yet, or holding no {@code StartPreset}, because the commander has not played
- *       the game far enough for it to write one (play the training, then save a binding - Alan, 2026-10-24); and
- *       any other folder, which is the wrong one (fix the setting).</li>
+ *   <li><b>No bindings folder</b> where the app is looking - no {@code StartPreset} file. Without it it cannot
+ *       fly anything. This one splits in two: the game's default folder not there yet, or holding no
+ *       {@code StartPreset}, because the commander has not played the game far enough for it to write one (play the
+ *       training, then save a binding - Alan, 2026-10-24); and any other folder, which is the wrong one (fix the
+ *       setting). A right folder with no {@code .binds} in it is not this check's: that is a stock preset, which
+ *       {@code BindingsMonitor} reads from the installation and speaks about only when it cannot.</li>
  * </ul>
  * <p>
  * Every line is published as a {@link VocalisationRequestEvent} straight to the TTS engine rather than routed
@@ -115,11 +115,8 @@ public class SetupCheck {
         }
 
         Path bindings = bindingsDir.get();
-        if (!hasBindingsFiles(bindings)) {
-            if (isEliteBindingsFolder(bindings)) {
-                warn("speech.setup.noSavedBindings", "Bindings folder " + bindings
-                        + " is Elite's own, but holds no .binds file: the commander is on a stock preset and has never saved custom controls.");
-            } else if (isDefaultBindingsFolder(bindings)) {
+        if (!isEliteBindingsFolder(bindings)) {
+            if (isDefaultBindingsFolder(bindings)) {
                 warn("speech.setup.noBindingsYet", "Bindings folder " + bindings
                         + " is the game's default, and is missing or holds no StartPreset: the game has not created the control input configuration files yet, so there is nothing to back up. The commander is told to complete the training and save a binding.");
             } else {
@@ -208,29 +205,12 @@ public class SetupCheck {
     }
 
     /**
-     * True when {@code dir} holds at least one {@code .binds} file. Asks {@link BindingsLoader}, which owns
-     * what counts as a bindings file, rather than re-deriving the rule and risking a warning that contradicts
-     * what the app then reads.
-     */
-    boolean hasBindingsFiles(Path dir) {
-        if (dir == null || !Files.isDirectory(dir)) {
-            return false;
-        }
-        try {
-            return !bindingsLoader.listAllBindsFiles(dir).isEmpty();
-        } catch (IOException unreadable) {
-            log.warn("Cannot read bindings directory {}: {}", dir, unreadable.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * True when {@code dir} is Elite's own bindings folder - it holds a {@code StartPreset.*.start} - even though
-     * no {@code .binds} file has been saved into it. Frontier's stock presets (Keyboard, ControlPad, ...) live in
-     * the game install, and the game writes a {@code .binds} here only once the commander edits and saves their
-     * controls, so this is the "folder is right, controls were never customised" case. It needs a different fix
-     * from the wrong-folder mistake, and telling such a commander to correct a folder that is already correct
-     * sends them to change the one setting that is not the problem.
+     * True when {@code dir} is Elite's own bindings folder - it holds a {@code StartPreset.*.start} - whether or not a
+     * {@code .binds} file has been saved into it. Frontier's stock presets (Keyboard, ControlPad, ...) live in the game
+     * install, and the game writes a {@code .binds} here only once the commander edits and saves their controls, so a
+     * folder with no {@code .binds} is still the right one: {@link BindingsLoader} reads a stock preset from the
+     * installation, and {@code BindingsMonitor} says so if it cannot. WHY not a {@code .binds} test: it told a commander
+     * on a fresh install to correct a folder that was already correct (Krondor, 2026-11-16).
      */
     boolean isEliteBindingsFolder(Path dir) {
         if (dir == null || !Files.isDirectory(dir)) {

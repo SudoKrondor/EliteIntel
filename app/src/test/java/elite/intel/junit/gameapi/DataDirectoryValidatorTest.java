@@ -27,11 +27,19 @@ class DataDirectoryValidatorTest {
         assertTrue(DataDirectoryValidator.validateAndWarn(dir, DirectoryKind.JOURNAL));
     }
 
+    /** A fresh install on a stock preset: the game's folder, with its preset file and no .binds at all. */
     @Test
-    void bindingsDirWithBindsFileIsValid(@TempDir Path dir) throws IOException {
-        Files.createFile(dir.resolve("Custom.4.0.binds"));
+    void bindingsDirWithAStartPresetIsValid(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("StartPreset.4.start"), "KeyboardMouseOnly\n");
 
         assertTrue(DataDirectoryValidator.validateAndWarn(dir, DirectoryKind.BINDINGS));
+    }
+
+    @Test
+    void bindingsDirWithOnlyBindsFilesIsNotTheGamesFolder(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Custom.4.0.binds"));
+
+        assertFalse(DataDirectoryValidator.validateAndWarn(dir, DirectoryKind.BINDINGS));
     }
 
     @Test

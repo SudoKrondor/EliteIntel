@@ -111,7 +111,32 @@ class BindingsLoaderStartPresetTest {
     void aFolderWithNoStartPresetReadsNothing() throws IOException {
         binds("Custom.4.2.binds");
 
-        assertThrows(IOException.class, () -> loader.bindsFileToRead(bindingsDir));
+        assertEquals(BindsFileNotFoundException.Reason.NO_PRESET_FILE, reasonFor(loader));
+    }
+
+    /**
+     * A fresh install on a stock preset with no installation known: the folder is right, the game's own file just
+     * cannot be reached - which is not "check the folder" (Krondor, 2026-11-16).
+     */
+    @Test
+    void aStockPresetWithNoInstallationSaysSo() throws IOException {
+        startPreset("KeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly\r\nKeyboardMouseOnly");
+
+        assertEquals(BindsFileNotFoundException.Reason.NO_INSTALLATION, reasonFor(loader));
+    }
+
+    /** With an installation to look in, a preset found nowhere is a file that is gone. */
+    @Test
+    void aPresetFoundNowhereWithAnInstallationIsAMissingFile() throws IOException {
+        startPreset("Mine\r\nMine\r\nMine\r\nMine");
+        factory(firstInstallation, "KeyboardMouseOnly.binds");
+
+        assertEquals(BindsFileNotFoundException.Reason.PRESET_FILE_MISSING,
+                reasonFor(withInstallations(firstInstallation)));
+    }
+
+    private BindsFileNotFoundException.Reason reasonFor(BindingsLoader withLoader) {
+        return assertThrows(BindsFileNotFoundException.class, () -> withLoader.bindsFileToRead(bindingsDir)).reason();
     }
 
     /** A plain file never counts as a preset's file; the preset's factory file is read instead (Storage S13c). */
