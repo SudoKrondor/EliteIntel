@@ -18,6 +18,7 @@ import elite.intel.session.Status;
 import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.ui.widget.*;
 
 import javax.swing.*;
@@ -463,7 +464,7 @@ public class BuiltInCommandsTabPanel extends JPanel {
     private void applyActionRows() {
         List<ActionRow> ordered = new ArrayList<>(
                 matching(visibleActionRows, searchField == null ? "" : searchField.getText()));
-        ordered.sort(Comparator.comparing(ActionRow::name, String.CASE_INSENSITIVE_ORDER));
+        ordered.sort(Comparator.comparing(ActionRow::name, MultiLingualTextProvider.collator()));
         updateAvailableActionsTitle(ordered.size());
         int rowCount = (ordered.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
         actionsModel.setRowCount(0);
@@ -517,8 +518,8 @@ public class BuiltInCommandsTabPanel extends JPanel {
                         candidate.id(),
                         nameById.getOrDefault(candidate.id(), candidate.id()),
                         candidate.localizedAliasGroup()))
-                .sorted((left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.name(), right.name()))
-                .toList();
+                .toList(); // unsorted: applyActionRows sorts what survives the search, in the app's language
+
     }
 
     /**

@@ -49,6 +49,10 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
         if (status.isInMainShip()) {
             toggleLights(Bindings.GameCommand.BINDING_SHIP_LIGHTS_TOGGLE.getGameBinding());
         }
+
+        if(status.isOnFoot()){
+            toggleLights(Bindings.GameCommand.BINDING_HUMANOID_FLASHLIGHT_BUTTON.getGameBinding());
+        }
         return null;
     }
 
