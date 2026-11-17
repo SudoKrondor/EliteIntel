@@ -40,6 +40,11 @@ to be removed before V1.2 shipped, and first-time startup waited for the next cl
 2. If the installations hold different versions of `DeviceMappings.xml` or the `.buttonMap`s, the user reconciles
    them: keep one over another, or merge. A merge with conflicting line items, such as two names for one button,
    needs a decision on each of those items.
+
+   **One dialog, and its buttons write** (Alan, 2026-11-16; Storage S22a and S22b): the reconcile shows what each
+   choice would lose before it is pressed, and nothing asks again after it - no "Create Your Working Copy"
+   confirmation, no Merge summary. Identical installations open the same dialog with nothing to choose and one
+   **Create working copy** button. The design is in [alias-designer.md, *One dialog*](alias-designer.md#one-dialog-no-confirmation-after-it--2026-11-16-alan).
 3. Once every decision is made: back up everything — **this backup is kept forever**, as the user's files before
    BindForge ever wrote anything (2026-10-23, Alan) — then create the working copy — every `.binds`, the
    `StartPreset.N.start`, **one** `DeviceMappings.xml` and **one** of each `.buttonMap`, reconciled — and mark
@@ -504,7 +509,9 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       BindForge" backup of files BindForge had already written.
     - **One confirmation.** When the backup's installations differ, the reconcile's summary is RESTORE's
       confirmation; otherwise RESTORE's own. Either names every installation it replaces, marks any not found, and
-      says that edits on screen are thrown away.
+      says that edits on screen are thrown away. *Amended 2026-11-16 (Alan): the reconcile has no summary now, so when
+      the backup's installations differ these words sit in the reconcile itself, under its table, and its buttons
+      restore ([alias-designer.md, *One dialog*](alias-designer.md#one-dialog-no-confirmation-after-it--2026-11-16-alan)).*
     - **The working copy is read at every click on the BindForge tab** once first-time startup is complete; one that
       cannot be read, or is missing, is said so with the newest backup offered - **Restore** or **Not now**. **With no
       backup at all, first-time startup is offered instead**, from the live files - **Set Up Again** or **Not now** -
@@ -702,7 +709,10 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       installation whose files can be taken, or opens the reconcile when several can, so the user picks - a missing or
       unparseable file is never a side (Storage S9R, 2026-10-31); *Merge* answers the binds
       rows, then opens the reconcile. The reconcile is first setup's (rule 2), with the working copy as one side. A
-      reset installation's files replacing the working copy ask *"Are you sure?"* first.
+      reset installation's files replacing the working copy ask *"Are you sure?"* first. **Amended 2026-11-16 (Alan):**
+      *Use the game's files* with one installation opens the reconcile too - the working copy and that installation
+      as its two sides - instead of its own "use one installation for every installation?" confirmation. The
+      *"Are you sure?"* for a reset installation stays: it is a safety check, not a summary.
     - **The result goes to every installation the check read**, after the backup. One it did not read - unreachable
       when it ran, back by the write - is left alone if it differs from the working copy (rule 1).
     - **Compared again before the write.** An installation whose device files changed while the dialogs were open

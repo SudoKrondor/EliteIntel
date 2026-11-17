@@ -372,7 +372,9 @@ installation" would remove a device entry that bindings use, its confirmation sa
 naming the binds files and the count — *"Epic has an entry Steam does not — LVWAP. 131 bindings in
 DualVirpilDawnTreader.4.2.binds use it. Overwriting removes it, and those bindings will stop working. Choose Merge to
 keep it."* An entry no bindings use is simply overwritten. Binds files and `StartPreset.4.start` are not part of this
-choice: binds files sit side by side in the one folder, and there is one preset file.
+choice: binds files sit side by side in the one folder, and there is one preset file. *Amended 2026-11-16 (Alan): the
+warning moves into the reconcile, beside each "Use … for All" button, worked out before anything is pressed - there is
+no confirmation after it ([One dialog](#one-dialog-no-confirmation-after-it--2026-11-16-alan)).*
 
 **How the reconciled files are made — settled with Storage S2b's sources (Alan, 2026-10-25):**
 
@@ -398,8 +400,9 @@ of them, since any can be made active later and the game checks them all at star
    ([storage.md](storage.md) rule 3's backup, kept forever).
 2. **The list** — every difference shown, conflicts sorted to the top, red where bindings use the device.
 3. **Two routes through:** **use one installation for all**, or **merge** and answer the conflicts (see above).
-4. **A summary before anything is written:** *"Your working copy will hold 6 devices and 5 button maps, and be
-   written to 2 installations."*
+4. ~~**A summary before anything is written:** *"Your working copy will hold 6 devices and 5 button maps, and be
+   written to 2 installations."*~~ *Removed 2026-11-16 (Alan): the reconcile is the one dialog and its buttons write -
+   [One dialog, no confirmation after it](#one-dialog-no-confirmation-after-it--2026-11-16-alan).*
 5. **The last button works like an APPLY** (2026-10-24, Alan): the working copy is created and written to every
    installation, and the report is per installation — *"updated 2 of 2"*, or which one failed and why. No separate
    APPLY is needed after first setup.
@@ -410,6 +413,71 @@ sensible outcome and is resolved without a question.
 
 *Until 2026-10-24 first setup also took a second, labelled backup of its own and kept an Edit History entry per
 installation; rule 3's one backup replaces both.*
+
+### One dialog, no confirmation after it — 2026-11-16 (Alan)
+
+*Replaces steps 3 and 4 of the flow above, and the "use one installation" confirmation in
+[Reconciliation](#reconciliation-is-per-device-element-never-per-file). From Krondor's note that "Then it is written
+to 2 installations" read, to a new user, as backups written to both installations. To be built in Storage S22a and
+S22b. Mock-up: [Reconcile_Dialog_Mockup.html](mockups/Reconcile_Dialog_Mockup.html) - its colours are placeholders.*
+
+**The reconcile is the one dialog, and its buttons write.** "Use … for All", Merge and Create working copy do the
+work at once - back up, then make the working copy and write it to every installation, in the order the write
+already takes - with no
+"Create Your Working Copy" confirmation and no Merge summary after them. The bindings moved to a kept name, which
+the Merge summary listed, go in the report that first-time startup is complete.
+
+**Three modes, one dialog:**
+
+| Mode | When | What it shows |
+|---|---|---|
+| **The installations differ** | first-time startup, the check, RESTORE | the warning title, the backup line, the table with installation buttons, the read gate, one "Use … for All" per side with what it loses, Merge |
+| **Nothing to choose** | first-time startup when every installation holds the same device files, or none can be read | the backup line, the table with the installations as plain text, **Create working copy** - no warning title and no read gate, since nothing can be lost |
+| **The check** | an installation no longer matches the working copy | as *the installations differ*, with **the working copy as one side** - the dialog the check already opens when several installations differ |
+
+**What it shows, top to bottom:**
+
+- **"THIS IS VERY IMPORTANT, PLEASE READ"**, large, as a title in the body - left out when nothing can be lost.
+- **"Everything is backed up before anything is written. This backup is kept forever."** First, centred, larger than
+  the body text, in the theme's success colour - said first because it is what makes the rest safe to touch.
+- **The reason**, in the user's words: each installation holds different device files; BindForge keeps one set, and
+  VEGA needs one set of controls to press the in-game inputs; merge if you have set the installations up
+  differently, otherwise use one installation's files for all of them.
+- **The table**, one row per device entry an installation holds:
+  - **Device (Windows)** - the name Windows gives the controller, matched to the entry by its hardware; a controller
+    not plugged in shows the entry's name and *(not connected)*. **The user has named nothing yet**: naming comes
+    after, once the working copy exists.
+  - **DeviceMappings.xml entry** and **Button map** - what that installation holds for the device, or *none*.
+  - **Installation** - where the row comes from. A device on **two or more rows** - two entries for one controller,
+    or one entry whose button maps disagree - gets **a button on each row, named for its installation**; pressing
+    one makes that row the winner and greys the others. A device on one row, or the same everywhere, needs no
+    choice, so its installation is plain text. *This replaces the Answer column, What was found, and the choice
+    buttons under the table.*
+- **"Once you make these decisions, BindForge will copy the device files and your current binds files to
+  BindForge's working copy folder, which is where you make changes before applying them to the live game input
+  configuration files."** Under the table. Each flow puts its own words here - RESTORE says what it replaces and
+  that edits on screen are lost, the check says where the result goes.
+- **"I have read and understood this information"** - until it is pressed, the "Use … for All" buttons are greyed.
+  Merge and Cancel are not gated.
+- **One "Use … for All" button per side, stacked, each with what it loses beside it** - *"You will lose the 131
+  binds that use LVWAP in the EPIC installation."* Worked out before anything is pressed, for every side, so the
+  warning that only the confirmation gave is on screen when the choice is made. Same weight as Merge: no quiet
+  buttons.
+- **Cancel** and **Merge** (or **Create working copy**) at the foot.
+
+**Themable, and the HUD canon holds** ([ui-component-map.md](ui-component-map.md)): every colour is a theme role -
+the warning title and the losses the warning colour, the backup line the success colour, a greyed row or button the
+disabled colour - and state is text colour, never a fill or a pill.
+
+**To settle at the sources:**
+
+- **The label merge.** A device whose button maps disagree is now two rows, and pressing one takes that
+  installation's labels whole. Whether **Compare N inputs** (the [label merge](#the-buttonmap-label-merge--2026-10-08-alan),
+  label by label) stays on such a row.
+- **A "Use … for All" that loses nothing** - what its line says.
+- **The check's and RESTORE's words** - the reason, the line under the table and the title, reworked as first-time
+  startup's were.
+- **Where the Windows name comes from** - live hardware (`DeviceService`, `bindforge.devices`), matched by VID/PID.
 
 ### Settled while building it — 2026-10-07 (Alan)
 

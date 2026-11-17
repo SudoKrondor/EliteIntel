@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconcile dialog mock-up</title>
+<!-- Storage S22 (Alan, 2026-11-16). A mock-up: colours are placeholders; the dialog uses the theme roles and the HUD canon. Devices, names and counts are made up. -->
+<style>
+body{margin:0;background:#05080b;font-family:Segoe UI,Arial,sans-serif;color:#e6e6e6;padding:30px 16px}
+.case{max-width:1000px;margin:0 auto 46px}
+.case h2{font-size:15px;font-weight:600;color:#9aa7b0;margin:0 0 4px;letter-spacing:.5px}
+.case p.why{font-size:12px;color:#8a969f;margin:0 0 10px}
+.hud{background:#0b0f14;border:2px solid #2a8f9a;font-size:13px;line-height:1.5}
+.hud .t{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #1d2a33;font-size:15px;font-weight:600;letter-spacing:.5px}
+.hud .b{padding:14px;display:flex;flex-direction:column;gap:9px}
+.imp{font-size:24px;font-weight:600;color:#e0a040;text-align:center;letter-spacing:1px;padding:6px 0}
+.ban{border-left:3px solid #55606a;background:#111a22;padding:8px 10px}
+.safe{font-size:17px;text-align:center;color:#5fc08a;padding:6px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:#9aa7b0;font-weight:400;border-bottom:1px solid #2a3640;padding:4px 6px}
+td{background:#151d26;padding:6px;border-bottom:2px solid #0b0f14;vertical-align:top}
+td.cont{color:#5f6b74}
+.dim{color:#8a969f}
+.hb{display:inline-block;border:1px solid #2a8f9a;background:#0b0f14;color:#e6e6e6;padding:8px 16px;font-size:13px;text-transform:uppercase;cursor:pointer;text-align:center;user-select:none}
+.hb:hover{background:#13262b}
+.hb.p{background:#1f6f78;border-color:#3fb3bf}
+.hb.off{border-color:#3a4650;color:#5f6b74;background:#10161c;cursor:not-allowed}
+.row{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:center}
+.warn{color:#e0a040}
+.warn.off{color:#6b5a3a}
+.gate{display:flex;flex-direction:column;gap:9px}
+.ackbox{position:absolute;opacity:0;pointer-events:none}
+.ack .a2{display:none}
+.ackbox:checked ~ div .ack{background:#0b0f14;border-color:#2a8f9a}
+.ackbox:checked ~ div .ack .a1{display:none}
+.ackbox:checked ~ div .ack .a2{display:inline}
+.ackbox:checked ~ .gate .hb.off{border-color:#2a8f9a;color:#e6e6e6;background:#0b0f14;cursor:pointer}
+.ackbox:checked ~ .gate .warn.off{color:#e0a040}
+.ib{display:inline-block;border:1px solid #e0a040;color:#e6e6e6;padding:3px 12px;font-size:12px;cursor:pointer;user-select:none}
+.ib input{position:absolute;opacity:0;pointer-events:none}
+.ib:hover{background:#13262b}
+.ib:has(input:checked){background:#1f6f78;border-color:#3fb3bf}
+.ib:has(input:checked)::before{content:"✓ "}
+tbody:has(input[name=a1]:checked) tr.pick:has(input[name=a1]:not(:checked)) td,
+tbody:has(input[name=a2]:checked) tr.pick:has(input[name=a2]:not(:checked)) td,
+tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) td{color:#4a555d}
+tbody:has(input[name=a1]:checked) tr.pick:has(input[name=a1]:not(:checked)) .ib,
+tbody:has(input[name=a2]:checked) tr.pick:has(input[name=a2]:not(:checked)) .ib,
+tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) .ib{border-color:#3a4650;color:#5f6b74}
+.f{display:flex;justify-content:space-between;padding:11px 14px;border-top:1px solid #1d2a33}
+.pending{color:#e0a040}
+.modes{max-width:1000px;margin:0 auto 18px;display:flex;gap:8px;flex-wrap:wrap}
+.mode{position:absolute;opacity:0;pointer-events:none}
+.modes label{border:1px solid #3a4650;color:#9aa7b0;padding:7px 14px;font-size:13px;cursor:pointer;user-select:none}
+.modes label:hover{background:#13262b}
+.case{display:none}
+#mA:checked ~ .modes label[for=mA],#mB:checked ~ .modes label[for=mB],#mC:checked ~ .modes label[for=mC]{border-color:#3fb3bf;background:#1f6f78;color:#e6e6e6}
+#mA:checked ~ .cA,#mB:checked ~ .cB,#mC:checked ~ .cC{display:block}
+</style>
+</head>
+<body>
+<input type="radio" name="mode" id="mA" class="mode" checked autocomplete="off">
+<input type="radio" name="mode" id="mB" class="mode" autocomplete="off">
+<input type="radio" name="mode" id="mC" class="mode" autocomplete="off">
+<div class="modes"><label for="mA">A. Installations differ</label><label for="mB">B. Every installation matches</label><label for="mC">C. The check</label></div>
+
+<div class="case cA">
+<h2>A. FIRST-TIME STARTUP, THE INSTALLATIONS DIFFER</h2>
+<p class="why">Replaces the old choice dialog and both "Create Your Working Copy" confirmations (Use one, and Merge's summary).</p>
+<div class="hud">
+<div class="t"><span>FIRST-TIME STARTUP</span><span>&times;</span></div>
+<div class="b">
+<div class="imp">THIS IS VERY IMPORTANT, PLEASE READ</div>
+<div class="safe">Everything is backed up before anything is written. This backup is kept forever.</div>
+<div class="ban">Each installation of the game holds different device files. BindForge does not manage multiple installations separately, and VEGA needs one set of controls to press the in-game inputs. Below are the devices and the installations that use them. If you have ever edited them by hand in either installation you can merge them; if not, you can use one installation to overwrite the device files in the other installations.</div>
+<table>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">DeviceMappings.xml entry</th><th style="width:28%">Button map</th><th>Installation</th></tr>
+<tr class="pick"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap</td><td><label class="ib"><input type="radio" name="a1" autocomplete="off">STEAM</label></td></tr>
+<tr class="pick"><td class="cont">VPC Stick WarBRD+ (right)</td><td>RightStick</td><td>RightStick.buttonMap</td><td><label class="ib"><input type="radio" name="a1" autocomplete="off">EPIC</label></td></tr>
+<tr class="pick"><td>VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap <span class="dim">(14 labels)</span></td><td><label class="ib"><input type="radio" name="a2" autocomplete="off">STEAM</label></td></tr>
+<tr class="pick"><td class="cont">VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap <span class="dim">(17 labels)</span></td><td><label class="ib"><input type="radio" name="a2" autocomplete="off">EPIC</label></td></tr>
+<tr><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>LVWAP.buttonMap</td><td>EPIC</td></tr>
+<tr><td>T-Rudder pedals</td><td>Pedals</td><td class="dim">none</td><td>STEAM</td></tr>
+<tr><td>Saitek X52 <span class="dim">(not connected)</span></td><td>X52</td><td>X52.buttonMap</td><td>STEAM, EPIC</td></tr>
+</table>
+<div class="ban">Once you make these decisions, BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files.</div>
+<input type="checkbox" id="ackA" class="ackbox" autocomplete="off">
+<div style="text-align:center;padding:8px 0"><label for="ackA" class="hb p ack"><span class="a1">I have read and understood this information</span><span class="a2">Read and understood</span></label></div>
+<div class="gate">
+<div class="row"><span class="hb off" role="button">Use STEAM for All</span><span class="warn off">You will lose the 131 binds that use LVWAP in the EPIC installation.</span></div>
+<div class="row"><span class="hb off" role="button">Use EPIC for All</span><span class="warn off">You will lose the 24 binds that use Pedals in the STEAM installation.</span></div>
+</div>
+</div>
+<div class="f"><span class="hb" role="button">Cancel</span><span class="hb p" role="button">Merge</span></div>
+</div>
+</div>
+
+<div class="case cB">
+<h2>B. FIRST-TIME STARTUP, EVERY INSTALLATION MATCHES</h2>
+<p class="why">Replaces "Create Your Working Copy" when there is nothing to choose. No warning title and no read gate: nothing can be lost (Alan, 2026-11-16).</p>
+<div class="hud">
+<div class="t"><span>FIRST-TIME STARTUP</span><span>&times;</span></div>
+<div class="b">
+<div class="safe">Everything is backed up before anything is written. This backup is kept forever.</div>
+<div class="ban">We found 2 installations, STEAM and EPIC, and they hold the same device files, so there is nothing to choose.</div>
+<table>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">DeviceMappings.xml entry</th><th style="width:28%">Button map</th><th>Installation</th></tr>
+<tr><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap</td><td>STEAM, EPIC</td></tr>
+<tr><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>LVWAP.buttonMap</td><td>STEAM, EPIC</td></tr>
+<tr><td>VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap</td><td>STEAM, EPIC</td></tr>
+<tr><td>T-Rudder pedals</td><td>Pedals</td><td class="dim">none</td><td>STEAM, EPIC</td></tr>
+</table>
+<div class="ban">BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files.</div>
+</div>
+<div class="f"><span class="hb" role="button">Cancel</span><span class="hb p" role="button">Create working copy</span></div>
+</div>
+</div>
+
+<div class="case cC">
+<h2>C. THE CHECK, ONE INSTALLATION NO LONGER MATCHES THE WORKING COPY</h2>
+<p class="why">Replaces the standalone "Use EPIC for every installation?" confirmation. The working copy is one side. <span class="pending">Wording not reworked yet: adapted from today's check text.</span></p>
+<div class="hud">
+<div class="t"><span>YOUR CONTROL FILES CHANGED</span><span>&times;</span></div>
+<div class="b">
+<div class="imp">THIS IS VERY IMPORTANT, PLEASE READ</div>
+<div class="safe">Everything is backed up before anything is written. This backup is kept forever.</div>
+<div class="ban">Your installations' device files no longer match BindForge's working copy. Use the working copy or one installation's files for all of them, or merge them.</div>
+<table>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">DeviceMappings.xml entry</th><th style="width:28%">Button map</th><th>Source</th></tr>
+<tr class="pick"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap</td><td><label class="ib"><input type="radio" name="c1" autocomplete="off">Working copy</label></td></tr>
+<tr class="pick"><td class="cont">VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap <span class="dim">(labels differ)</span></td><td><label class="ib"><input type="radio" name="c1" autocomplete="off">EPIC</label></td></tr>
+<tr><td>T-Rudder pedals</td><td>Pedals</td><td class="dim">none</td><td>Working copy</td></tr>
+<tr><td>VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap</td><td>Working copy, EPIC</td></tr>
+</table>
+<div class="ban">Once you make these decisions, the result is written to BindForge's working copy and to every installation the check read.</div>
+<input type="checkbox" id="ackC" class="ackbox" autocomplete="off">
+<div style="text-align:center;padding:8px 0"><label for="ackC" class="hb p ack"><span class="a1">I have read and understood this information</span><span class="a2">Read and understood</span></label></div>
+<div class="gate">
+<div class="row"><span class="hb off" role="button">Use working copy for All</span><span class="warn off">Puts your working copy back on EPIC. EPIC's new labels for the right stick are lost.</span></div>
+<div class="row"><span class="hb off" role="button">Use EPIC for All</span><span class="warn off">You will lose the 24 binds that use Pedals in the working copy.</span></div>
+</div>
+</div>
+<div class="f"><span class="hb" role="button">Cancel</span><span class="hb p" role="button">Merge</span></div>
+</div>
+</div>
+
+</body>
+</html>
