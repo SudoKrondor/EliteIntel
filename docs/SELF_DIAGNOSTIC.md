@@ -102,7 +102,8 @@ It is fed from `BaseAiClient.sendTransportRequest`, the single place every provi
 
 | Situation | How we know | Spoken |
 |---|---|---|
-| No `.binds` file | `SetupCheck.hasBindingsFiles` / `isEliteBindingsFolder` | Reuse `speech.setup.noBindings` / `noSavedBindings` |
+| No bindings folder (no `StartPreset`) | `SetupCheck.isEliteBindingsFolder` | Reuse `speech.setup.noBindings` / `noBindingsYet` |
+| No binds file to read | `BindsFileNotFoundException.reason()` | Reuse `speech.warning.bindingsStockPresetNoInstallation` / `bindingsPresetFileMissing` |
 | Blocking conflicts | The existing blocking-conflict detection (game menu key, UI_Select vs QuickComms, interface switch) | "Two of your key bindings clash in a way that stops my commands. Check the bindings tab." |
 
 Phase 2 could add a count of key commands with no binding. Leave it out until we know which ones count as "key".

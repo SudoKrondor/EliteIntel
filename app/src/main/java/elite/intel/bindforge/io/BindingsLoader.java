@@ -90,10 +90,15 @@ public class BindingsLoader {
      * reproducible from the directory alone - the active preset drives it - so anything that needs to name
      * that file must come through here rather than re-deriving it.
      *
-     * @throws IOException when no line resolves to a file - nothing is read - or the bindings folder cannot be listed
+     * @throws BindsFileNotFoundException when no line resolves to a file - nothing is read - with the reason
+     * @throws IOException                 when the bindings folder cannot be listed
      */
     public File bindsFileToRead(Path bindingsDir) throws IOException {
         List<String> presetNames = presetNamesInFileOrder(bindingsDir);
+        if (presetNames.isEmpty()) {
+            throw new BindsFileNotFoundException(BindsFileNotFoundException.Reason.NO_PRESET_FILE,
+                    "No StartPreset file naming a preset in " + bindingsDir);
+        }
         Resolver resolver = new Resolver(bindingsDir);
         // WHY first: the user chose this file for a split preset file (Storage S13f). Only while a line still names it -
         // a choice the lines no longer hold is no answer to the question, so General-first applies again.
@@ -114,8 +119,14 @@ public class BindingsLoader {
             }
             log.warn("No binds file for preset '{}' in the bindings folder or any reachable installation", presetName);
         }
-        throw new IOException("No preset in the StartPreset file in " + bindingsDir
-                + " has a binds file in the bindings folder or a reachable installation");
+        // WHY two reasons: with no installation known, a stock preset simply cannot be read from here - nothing is
+        // missing. With installations reachable, the preset's file is genuinely gone.
+        boolean noInstallation = resolver.controlSchemes().isEmpty();
+        throw new BindsFileNotFoundException(
+                noInstallation ? BindsFileNotFoundException.Reason.NO_INSTALLATION
+                        : BindsFileNotFoundException.Reason.PRESET_FILE_MISSING,
+                "No preset in the StartPreset file in " + bindingsDir + " has a binds file in the bindings folder"
+                        + (noInstallation ? ", and no installation is reachable" : " or a reachable installation"));
     }
 
     /**
@@ -161,8 +172,12 @@ public class BindingsLoader {
         Optional<Path> resolve(String presetName) throws IOException {
             Optional<Path> own = trueBindsFileOf(bindingsDir, presetName);
             if (own.isPresent()) return own;
+            return factoryBindsFileOf(controlSchemes(), presetName);
+        }
+
+        List<Path> controlSchemes() {
             if (controlSchemes == null) controlSchemes = factoryFolders.get();
-            return factoryBindsFileOf(controlSchemes, presetName);
+            return controlSchemes;
         }
     }
 
@@ -259,17 +274,6 @@ public class BindingsLoader {
     }
 
     /**
-     * Lists every file in {@code bindingsDir} whose name ends {@code .binds}, plain ones included - for
-     * {@code SetupCheck}, which asks only whether the folder holds any. Not how the file to read is chosen
-     * (Storage S13c removed the newest-file fallback that used it).
-     */
-    public List<Path> listAllBindsFiles(Path bindingsDir) throws IOException {
-        try (var stream = Files.list(bindingsDir)) {
-            return stream.filter(p -> p.toString().endsWith(".binds")).toList();
-        }
-    }
-
-    /**
      * Locates the {@code StartPreset.*.start} file (e.g. {@code StartPreset.4.start}) in {@code bindingsDir}, if present.
      * <p>
      * When the folder holds both {@code StartPreset.start} and a numbered one, which it returns depends on listing
@@ -278,13 +282,17 @@ public class BindingsLoader {
      */
     public Optional<Path> findStartPresetFile(Path bindingsDir) throws IOException {
         try (var stream = Files.list(bindingsDir)) {
-            return stream
-                    .filter(p -> {
-                        String name = p.getFileName().toString();
-                        return name.startsWith("StartPreset.") && name.endsWith(".start");
-                    })
-                    .findFirst();
+            return stream.filter(p -> isStartPresetFileName(nameOf(p))).findFirst();
         }
+    }
+
+    /**
+     * Whether {@code fileName} is the game's preset file, {@code StartPreset.start} or {@code StartPreset.<n>.start}.
+     * The game writes it the first time it runs, customised controls or not, so it - not a {@code .binds} - is what
+     * marks a folder as the game's bindings folder.
+     */
+    public static boolean isStartPresetFileName(String fileName) {
+        return fileName.startsWith("StartPreset.") && fileName.endsWith(".start");
     }
 
     public String getActivePresetName() {

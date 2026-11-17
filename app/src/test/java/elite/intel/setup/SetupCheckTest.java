@@ -150,33 +150,23 @@ class SetupCheckTest {
 
     // ── bindings ─────────────────────────────────────────────────────────────
 
-    @Test
-    void aFolderWithBindsIsAccepted(@TempDir Path dir) throws IOException {
-        Files.createFile(dir.resolve("Custom.4.0.binds"));
-
-        assertTrue(checkWith(false, dir, dir).hasBindingsFiles(dir));
-    }
-
-    @Test
-    void anEmptyFolderHasNoBindings(@TempDir Path dir) {
-        assertFalse(checkWith(false, dir, dir).hasBindingsFiles(dir));
-    }
-
-    @Test
-    void aMissingFolderHasNoBindings(@TempDir Path dir) {
-        assertFalse(checkWith(false, dir, dir).hasBindingsFiles(dir.resolve("nope")));
-        assertFalse(checkWith(false, dir, dir).hasBindingsFiles(null));
-    }
-
+    /**
+     * The game writes its preset file on its first run, customised controls or not, so a folder holding one is the
+     * game's - with no {@code .binds} in it at all, on a stock preset (Krondor, 2026-11-16).
+     */
     @Test
     void aStockPresetFolderIsRecognisedAsElitesOwn(@TempDir Path dir) throws IOException {
-        // Elite's folder, no .binds: the commander runs a stock preset and has never saved custom controls.
         Files.writeString(dir.resolve("StartPreset.4.start"), "ControlPad\n");
 
-        SetupCheck check = checkWith(false, dir, dir);
+        assertTrue(checkWith(false, dir, dir).isEliteBindingsFolder(dir));
+    }
 
-        assertFalse(check.hasBindingsFiles(dir));
-        assertTrue(check.isEliteBindingsFolder(dir));
+    /** A .binds alone does not make a folder the game's: the game always writes its preset file beside it. */
+    @Test
+    void aFolderOfBindsWithNoStartPresetIsNotElitesOwn(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Custom.4.0.binds"));
+
+        assertFalse(checkWith(false, dir, dir).isEliteBindingsFolder(dir));
     }
 
     @Test
@@ -205,17 +195,15 @@ class SetupCheckTest {
     }
 
     /**
-     * The bindings folder is right and the setting needs no touching, so the commander must not be told to go
-     * and change it - the fix for a never-customised stock preset is in the game.
+     * The bindings folder is right and the setting needs no touching, so the commander must not be told to go and
+     * change it: a stock preset is read from the installation, and the bindings monitor speaks if it cannot be.
      */
     @Test
-    void anUncustomisedStockPresetIsNotBlamedOnTheFolderSetting(@TempDir Path dir) throws IOException {
+    void anUncustomisedStockPresetSaysNothingAboutTheFolder(@TempDir Path dir) throws IOException {
         Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
         Files.writeString(dir.resolve("StartPreset.4.start"), "ControlPad\n");
 
-        List<String> spoken = capture(() -> checkWith(false, dir, dir).check());
-
-        assertEquals(List.of(text("speech.setup.noSavedBindings")), spoken);
+        assertTrue(capture(() -> checkWith(false, dir, dir).check()).isEmpty());
     }
 
     /**
@@ -256,6 +244,7 @@ class SetupCheckTest {
     @Test
     void aFullyConfiguredInstallSaysNothing(@TempDir Path dir) throws IOException {
         Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(dir.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(dir.resolve("Custom.4.0.binds"));
 
         assertTrue(capture(() -> checkWith(false, dir, dir).check()).isEmpty());
@@ -264,6 +253,7 @@ class SetupCheckTest {
     @Test
     void aConfiguredModelWithTheWrongJournalFolderOnlyMentionsTheJournals(
             @TempDir Path journals, @TempDir Path bindings) throws IOException {
+        Files.writeString(bindings.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(bindings.resolve("Custom.4.0.binds"));
 
         List<String> spoken = capture(() -> checkWith(false, journals, bindings).check());
@@ -289,6 +279,7 @@ class SetupCheckTest {
     @Test
     void aCloudSetupWithNoProviderIsToldToPickOne(@TempDir Path journals, @TempDir Path bindings) throws IOException {
         Files.createFile(journals.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(bindings.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(bindings.resolve("Custom.4.0.binds"));
 
         List<String> spoken = capture(() -> checkWith(false, true, journals, bindings).check());
@@ -304,6 +295,7 @@ class SetupCheckTest {
     void theFreshInstallWarningIsNotDoubledByTheProviderOne(@TempDir Path journals, @TempDir Path bindings)
             throws IOException {
         Files.createFile(journals.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(bindings.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(bindings.resolve("Custom.4.0.binds"));
 
         List<String> spoken = capture(() -> checkWith(true, true, journals, bindings).check());

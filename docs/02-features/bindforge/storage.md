@@ -358,7 +358,12 @@ Settled with Storage S2a's sources (Alan, 2026-10-24). Built as `bindforge.stora
     - **Two true files of one preset read the highest version in the name**, then name order. Only a hand rename makes
       two - the game upgrades a file in place, and every file has been `.4.2` since Odyssey - so it gets no guard of its
       own (principle 13; Q4).
-    - **`listAllBindsFiles` stays for `SetupCheck`**, which asks only whether the folder holds any `.binds` (Q5).
+    - ~~**`listAllBindsFiles` stays for `SetupCheck`**, which asks only whether the folder holds any `.binds` (Q5).~~
+      *Amended (Krondor, 2026-11-16):* removed. A `.binds` test told a user on a fresh install, on a stock preset
+      read from the installation, to fix a folder that was already right. The bindings folder is now known by its
+      `StartPreset.*.start` (`SetupCheck`, `DataDirectoryValidator`). A failed lookup throws
+      `BindsFileNotFoundException` with its reason (no preset file, no installation, preset file missing), and
+      `BindingsMonitor` speaks that cause once, never "check the bindings directory".
     - *Planned as its own slice (Alan, 2026-11-08):* when the four lines name different binds files, the user is asked
       which to use, and whether that file should be the only one the game uses - yes sets all four lines to
       it, no uses it and warns that functions may not work when the game's binds and the assistant's differ. See the
