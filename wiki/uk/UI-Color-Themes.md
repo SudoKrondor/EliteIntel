@@ -93,11 +93,11 @@
 
 ## Завантажити ще теми
 
-Ще вісім тем на спробу. Завантажте одну, потім у **Командир → Колірні теми** натисніть **Імпорт**, оберіть
+Ще дев'ять тем на спробу. Завантажте одну, потім у **Командир → Колірні теми** натисніть **Імпорт**, оберіть
 файл і натисніть **Застосувати**. Ці теми зроблені заради вигляду: вони не підібрані
 для порушень кольорового зору. **Gazette**, **Salt Flat** і **Sunny** — світлі теми.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Завантажити всі вісім (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Завантажити всі дев'ять (zip)</a>
 
 Спершу розпакуйте архів: **Імпорт** приймає один файл теми за раз.
 
@@ -136,6 +136,12 @@
 ![Тема Halloween](images/theme-halloween.png)
 
 Гарбузово-помаранчевий на темно-коричневому. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Manjaro
+
+![Тема Manjaro](images/theme-manjaro.png)
+
+Бірюзовий і ціан на темно-сланцевому, за мотивами робочого столу Manjaro KDE. <a href="themes/Manjaro.json" download>⬇ Manjaro.json</a>
 
 ### Salt Flat
 

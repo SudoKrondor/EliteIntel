@@ -94,12 +94,12 @@ Eines gemacht, das dir gefällt? Teile es auf [**Matrix**](https://app.element.i
 
 ## Weitere Schemata herunterladen
 
-Acht weitere Schemata zum Ausprobieren. Lade eines herunter, klicke dann unter **Kommandant → Farbschemata** auf
+Neun weitere Schemata zum Ausprobieren. Lade eines herunter, klicke dann unter **Kommandant → Farbschemata** auf
 **Importieren**, wähle die Datei und klicke auf **Anwenden**. Sie sind fürs Aussehen gemacht: Sie sind nicht
 für Farbenblindheit abgestimmt. **Gazette**, **Salt Flat** und **Sunny** sind helle
 Schemata.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Alle acht herunterladen (ZIP)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Alle neun herunterladen (ZIP)</a>
 
 Entpacke sie zuerst: **Importieren** nimmt eine Schema-Datei auf einmal.
 
@@ -138,6 +138,12 @@ Schwarze Tinte auf weißem Papier, wie eine Zeitung. <a href="themes/Gazette.jso
 ![Schema Halloween](images/theme-halloween.png)
 
 Kürbisorange auf Dunkelbraun. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Manjaro
+
+![Schema Manjaro](images/theme-manjaro.png)
+
+Petrol und Cyan auf dunklem Schiefer, nach dem Manjaro-KDE-Desktop. <a href="themes/Manjaro.json" download>⬇ Manjaro.json</a>
 
 ### Salt Flat
 
