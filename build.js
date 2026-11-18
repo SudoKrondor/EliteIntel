@@ -302,7 +302,7 @@ function buildSidebar(activePage, assetBase, nav, titleMap, localePages) {
             ${lnk('UI',                'microchip-ai.png')}
             ${lnk('UI-Vega-Tab',       'ai.png',          ' nav-sub')}
             ${lnk('UI-Commander-Tab',  'commander.png',   ' nav-sub')}
-            ${lnk('UI-Color-Themes',   'commander.png',   ' nav-sub')}
+            ${lnk('UI-Color-Themes',   'themes.png',      ' nav-sub')}
             ${lnk('UI-Actions-Tab',    'actions.png',     ' nav-sub')}
             ${lnk('UI-Bindings-Tab',   'keyboard.png',    ' nav-sub')}
             ${lnk('UI-Settings-Tab',   'services.png',    ' nav-sub')}

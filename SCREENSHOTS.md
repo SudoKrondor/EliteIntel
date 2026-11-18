@@ -4,66 +4,44 @@ Drop each file into `images/` with **exactly** the filename below, then re-run `
 Until a **New** file exists its page shows a broken-image placeholder. A **Retake** file already
 exists but shows an older interface. Replacing a file updates the pages in every language together.
 
-Last checked against the app on `V1.2` at `7af4046c5` (2026-11-10).
+Last checked against `images/` on 2026-11-17, after the 2026-11-17 retake pass.
 
 **General notes**
 
-- Capture the **window only**, not the desktop. PNG, roughly 1200px wide; the site scales them down.
+- Capture the **window only**, not the desktop. PNG; the 2026-11-17 set is 1720×1080, keep that size.
 - Use the V1.2 colour scheme, with **services running** and a game session loaded wherever the shot
   involves live data. Empty tables and `Standby` badges make the docs look broken.
 - Blank or crop any API key.
 - Save the shots with the app in **English**.
-- The main tab is now **BINDFORGE**, not BINDINGS, and its sub-tabs are **Bind Editor · Preset Editor ·
-  Binding Management · Alias Designer**. Every whole-window shot taken before 2026-11-10 shows the old
-  labels.
+- BindForge's sub-tabs are now **Alias Designer · Bind Editor · Preset Editor · Bind File Management**,
+  and the Bind Editor has a **Toggles** tab after Dead Zones & Sensitivity.
 
 ---
 
-## New
+## Missing (referenced by a page, no file in `images/`)
 
 | File | Page | What to capture |
 |------|------|-----------------|
 | `ui-tab-commander-massacre-sets.png` | `UI-Commander-Tab` | **Commander → Massacre Sets** with sharing **on**, after a sync, so both sections show numbers (Sets you share, Last shared, Sets from other commanders, Usable here, Last updated, Commanders contributing). |
 | `ui-bindings-preset-editor.png` | `UI-Bindings-Tab` | **BindForge → Preset Editor**: the four dropdowns (General, Ship, SRV, On-Foot) and **Set all to same**. Best with the four sections on different files so the "do not all load the same binds file" note shows. |
-| `ui-tab-commander-color-themes.png` | `UI-Color-Themes` | **Commander → Color Themes** with a theme of your own selected (not a built-in), the pointer over a status badge so the rest of the preview is dimmed, and at least one entry under **Hard to read**. |
+| `rocm-smi-without-game-running-example.png` | `AMD-RX-7800XT-LLM-Setup` | Pre-existing gap: `rocm-smi` output with the game not running. |
+| `rocm-smi-with-game-and-Elite-Intel-running-example.png` | `AMD-RX-7800XT-LLM-Setup` | Pre-existing gap: `rocm-smi` output with the game and Elite Intel running. |
 
-## Retake: BindForge (blocking: these contradict the page text)
-
-| File | Page | What to capture |
-|------|------|-----------------|
-| `ui-tab-bindings-profile.png` | `UI-Bindings-Tab` | **Bind Editor**, whole window: the bar on top with the **User Configuration Folder** beside Discard/Apply, the four sub-tabs, the one tab row (All … Anomalies, Dead Zones & Sensitivity), the **Action** column, and the three filters including **Show unassigned**. Ideally with the Apply bar lit and one *Vega can't use* row. |
-| `ui-bindings-assign.png` | `UI-Bindings-Tab` | **Assign control** open on a **controller tab**, so the new **Mouse** tab is visible in the tab row and **With Shift / With Ctrl / With Alt** show under the controller. One box ticked is ideal. |
-| `ui-bindings-install-locations.png` | `UI-Bindings-Tab` | **Binding Management → Game Install Locations**. The User Configuration Folder row has moved to the top bar, so Bindings File is now at the top. **Take it after RA lands**, so *Run First-Time Startup Again* is gone. |
-| `ui-bindings-anomalies.png` | `UI-Bindings-Tab` | **Anomalies** with a few conflicts, including at least one **controller button** conflict if you can arrange it, and a *Shares … with* hover. |
-| `ui-bindings-settings.png` | `UI-Bindings-Tab` | **Dead Zones & Sensitivity** (renamed from Settings), with a group of sliders. |
-| `ui-tab-bindings-management.png` | `UI-Bindings-Tab` | **Binding Management → Player Backups**, backups of different kinds in the Taken column. Old sub-tab row. |
-| `ui-bindings-alias-designer.png` | `UI-Bindings-Tab` | **Alias Designer → My Devices**. Old sub-tab row; same content as before. |
-
-## Retake: LM Studio button
+## Retake: not yet retaken
 
 | File | Page | What to capture |
 |------|------|-----------------|
-| `ui-tab-settings-ai.png` | `UI-Settings-Tab` | **Services → AI Services** with the **Install LM Studio** (or *Set up LM Studio*) button under the LMStudio Setup fields. Key blanked. |
-| `llm-setup.png` | `installing-local-llms` | The same LMStudio Setup / Cloud Setup strip, cropped as now, but with the LM Studio button showing. |
-
-## Retake: still outstanding from before
-
-| File | Page | What to capture |
-|------|------|-----------------|
+| `ui-bindings-assign.png` | `UI-Bindings-Tab` | Last changed 2026-11-05. **Assign control** open on a **controller tab**, so the new **Mouse** tab is visible in the tab row and **With Shift / With Ctrl / With Alt** show under the controller. One box ticked is ideal. |
+| `llm-setup.png` | `installing-local-llms` | Last changed 2026-11-04. The LMStudio Setup / Cloud Setup strip, cropped as now, with the **Install LM Studio** (or *Set up LM Studio*) button showing. |
 | `ui-overlay-ingame.png` | `UI-HUD-Overlay` | Still the V1.1 shot from August. **Use the full cockpit frame** (see below), with a plotted route card showing the **blue (neutron) and white (white dwarf) star dots**. |
 
-## Retake when convenient (only the BINDINGS label is wrong)
+## Retake: taken 2026-11-17 but not showing what the page needs
 
-These whole-window shots are otherwise current. Each shows **BINDINGS** in the main tab bar:
-
-`V1.2.png` (the home page hero) · `ui-tab-vega.png` · `ui-tab-commander.png` · `ui-tab-commander-bookmarks.png` ·
-`ui-tab-exo-mastery.png` · `ui-tab-actions-builtin.png` · `ui-tab-actions-custom.png` ·
-`ui-tab-settings-audio.png` · `ui-tab-settings-push-to-talk.png` · `ui-tab-stats.png` · `ui-jukebox.png`
-
-`V1.2.png` is the one that matters: it is the first image on the site.
-
-Dialog-only shots (`ui-bindings-axis.png`, `ui-bindings-device-editor.png`, `ui-voice-tuning.png`, the custom
-command editor, the ship settings popup) do not show the tab bar and need no retake.
+| File | Problem |
+|------|---------|
+| `ui-bindings-install-locations.png` | Still shows **Run First-Time Startup Again**. Retake once RA lands and that button is gone. |
+| `ui-bindings-anomalies.png` | Shows **No conflicts in this binds file**. The page describes conflicts; capture a file with a few, ideally one **controller button** conflict and a *Shares … with* hover. |
+| `ui-tab-bindings-profile.png` | Usable as is. Ideally with the Apply bar lit and one *Vega can't use* row. |
 
 ---
 
@@ -84,26 +62,18 @@ makes the shot legible, and it is what sells the feature.
 
 ---
 
-## Pre-existing gaps
-
-`AMD-RX-7800XT-LLM-Setup.md` references two images that are not in `images/`:
-
-- `rocm-smi-without-game-running-example.png`
-- `rocm-smi-with-game-and-Elite-Intel-running-example.png`
-
-They render as broken images on that page in every locale.
+## Stray and superseded files
 
 `images/ ui-bindings-anomalies.png` (with a **leading space** in the name) is a byte-identical stray
 copy of `ui-bindings-anomalies.png`. Nothing references it; delete it.
 
----
+No page references these. The first four were re-saved on 2026-11-17 as byte-identical copies or
+near-copies of the `ui-tab-*` shots, but that does not bring them back into use:
 
-## Superseded images
+`tab-actions.png` · `tab-player.png` · `tab-settings-ai-services.png` · `tab-settings-audio.png` ·
+`v1.0.png` · `v1.1.png` · `tab-ai-buttons.png` · `tab-action-build-in-commands.png` ·
+`tab-actions-custom-commands.png` · `tab-settings-push-to-talk.png` · `tab-stats.png` ·
+`popup-ship-properties.png` · `popup-custom-action.png` · `select_audio_device.png` ·
+`calibrate-audio.png` · `mic-monitor.png` · `keys-binding.png` · `controller.png`
 
-Check these against the localized pages before deleting them:
-
-`v1.0.png` · `tab-ai-buttons.png` · `tab-player.png` · `tab-actions.png` ·
-`tab-action-build-in-commands.png` · `tab-actions-custom-commands.png` ·
-`tab-settings-ai-services.png` · `tab-settings-audio.png` ·
-`tab-settings-push-to-talk.png` · `tab-stats.png` · `popup-ship-properties.png` ·
-`popup-custom-action.png` · `select_audio_device.png` · `calibrate-audio.png`
+Check them against the localized pages before deleting them.
