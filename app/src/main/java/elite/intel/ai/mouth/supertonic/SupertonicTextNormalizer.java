@@ -16,6 +16,8 @@ final class SupertonicTextNormalizer {
 
     // Long uppercase words are emphasis, not acronyms: "RIATTIVA" must stay one word.
     private static final Pattern UPPERCASE_ACRONYM = Pattern.compile("(?<![\\p{L}])([A-Z]{2,4})(?![\\p{L}])");
+    private static final Pattern SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION =
+            Pattern.compile("(?<![\\p{L}\\p{M}\\p{N}_])([A-Z])(?=[\\p{P}])");
     private static final String WORD_START = "(?<![\\p{L}\\p{M}\\p{N}_])";
     private static final String WORD_END = "(?![\\p{L}\\p{M}\\p{N}_])";
     private static final String ROMAN_II_TO_V = "III|IV|II|V";
@@ -92,16 +94,28 @@ final class SupertonicTextNormalizer {
             matcher.appendReplacement(result, Matcher.quoteReplacement(spokenLetters(matcher.group(1), language)));
         }
         matcher.appendTail(result);
+        String normalized = result.toString();
         if (language == Language.IT) {
-            Matcher classLetter = ITALIAN_CLASS_LETTER.matcher(result.toString());
+            Matcher classLetter = ITALIAN_CLASS_LETTER.matcher(normalized);
             StringBuffer withClassLetters = new StringBuffer();
             while (classLetter.find()) {
                 classLetter.appendReplacement(withClassLetters, Matcher.quoteReplacement(
                         letterName(classLetter.group(1).charAt(0), language)));
             }
             classLetter.appendTail(withClassLetters);
-            return withClassLetters.toString();
+            normalized = withClassLetters.toString();
         }
+        return singleUppercaseLettersBeforePunctuation(normalized, language);
+    }
+
+    private static String singleUppercaseLettersBeforePunctuation(String text, Language language) {
+        Matcher matcher = SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, Matcher.quoteReplacement(
+                    letterName(matcher.group(1).charAt(0), language)));
+        }
+        matcher.appendTail(result);
         return result.toString();
     }
 

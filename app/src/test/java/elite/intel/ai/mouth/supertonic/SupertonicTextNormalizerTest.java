@@ -209,6 +209,16 @@ class SupertonicTextNormalizerTest {
     }
 
     @Test
+    void spellsSingleUppercaseLettersBeforePunctuation() {
+        assertEquals("double you.", SupertonicTextNormalizer.normalize("W.", Language.EN));
+        assertEquals("Ready double you. now",
+                SupertonicTextNormalizer.normalize("Ready W. now", Language.EN));
+        assertEquals("ay, bee! see?", SupertonicTextNormalizer.normalize("A, B! C?", Language.EN));
+        assertEquals("ipsilon,", SupertonicTextNormalizer.normalize("Y,", Language.IT));
+        assertEquals("w.", SupertonicTextNormalizer.normalize("w.", Language.EN));
+    }
+
+    @Test
     void spellsItalianClassLettersWithItalianNames() {
         assertEquals("classe ipsilon",
                 SupertonicTextNormalizer.normalize("classe Y", Language.IT));
