@@ -26,7 +26,7 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return status.isInMainShip() || status.isInSrv() || status.isOnFoot();
     }
 
     @Override
