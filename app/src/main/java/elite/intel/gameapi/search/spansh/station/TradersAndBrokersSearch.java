@@ -13,28 +13,46 @@ import elite.intel.gameapi.search.spansh.station.traderandbroker.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.TimeUtils;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
 /**
- * Finds the nearest material trader or technology broker whose listing Spansh has seen RECENTLY.
+ * Finds the nearest material trader or technology broker, preferring listings Spansh has seen RECENTLY.
  *
  * <p>Traders and brokers come and go with the background simulation: a station that lost its broker
  * to a faction change stays in Spansh's data until another commander docks there and the listing is
  * refreshed. Asked for the nearest one, Spansh used to answer with whichever listing was closest no
- * matter how old, and the commander flew to a port that no longer had the service. So the search is
- * bounded to listings updated inside {@link #FRESHNESS_WINDOW} and the nearest of THOSE wins.
+ * matter how old, and the commander flew to a port that no longer had the service. So the search walks
+ * {@link #FRESHNESS_LADDER} from the freshest window outwards and the nearest hit of the first window
+ * that has one wins. A hit older than {@link #FRESH} is announced with a warning that grows with its age.
  */
 public class TradersAndBrokersSearch {
 
     /**
-     * Only listings updated this recently are candidates, in Spansh's relative-time vocabulary.
-     * Seven hours is inside the game's daily background-simulation tick, so a listing this fresh
-     * describes the station as it is now rather than as it was before the last redraw.
+     * The windows tried in turn, freshest first, in Spansh's relative-time vocabulary: each is asked only
+     * when the one before it found nothing reachable.
+     *
+     * <p>WHY a ladder and not one window: seven hours is inside the game's daily background-simulation
+     * tick, so a listing that fresh describes the station as it is now - but Spansh's station index can
+     * trail the game by about a day, and then no listing anywhere is that fresh (support bundle
+     * 2026-11-19: 0 hits within 250 ly at seven hours, 283 at seven days, the nearest under 20 ly). The
+     * last rung still bounds the age: a listing older than that is likelier to send the commander to a
+     * demolished or redrawn port than to a trader.
      */
-    static final String FRESHNESS_WINDOW = "now-7h";
+    static final List<String> FRESHNESS_LADDER = List.of("now-7h", "now-7d", "now-90d");
+
+    /** A listing younger than this is announced without a warning. */
+    static final Duration FRESH = Duration.ofHours(7);
+
+    /** Up to this age the trader is probably still there. */
+    static final Duration RECENT = Duration.ofDays(3);
+
+    /** Up to this age there is a fair chance it has moved; beyond it, it may well be gone. */
+    static final Duration OLD = Duration.ofDays(30);
 
     /**
      * Furthest from the arrival star a candidate may sit, in light seconds. Anything beyond is a
@@ -84,24 +102,24 @@ public class TradersAndBrokersSearch {
         // WHY: same pad rule the trade route and Interstellar Factors searches apply - a large ship is
         // only shown ports it can dock at, otherwise the route ends at an outpost it has to turn around
         // and leave, materials untraded.
-        TraderAndBrokerSearchCriteria criteria = buildCriteria(
-                galacticCoordinates.x(), galacticCoordinates.y(), galacticCoordinates.z(),
-                traderType, brokerType, distanceInLightYears, ShipManager.getInstance().requireLargePad()
-        );
-        List<TraderAndBrokerSearchDto.Result> results = SearchForMaterialBrokerOrTrader.findMaterialTrader(criteria);
-        TraderAndBrokerSearchDto.Result result = nearest(results, playerSession.currentStarSystem());
+        boolean requiresLargePad = ShipManager.getInstance().requireLargePad();
+        String currentSystem = playerSession.currentStarSystem();
+        TraderAndBrokerSearchDto.Result result = null;
+        for (String window : FRESHNESS_LADDER) {
+            TraderAndBrokerSearchCriteria criteria = buildCriteria(
+                    galacticCoordinates.x(), galacticCoordinates.y(), galacticCoordinates.z(),
+                    traderType, brokerType, distanceInLightYears, requiresLargePad, window
+            );
+            result = nearest(SearchForMaterialBrokerOrTrader.findMaterialTrader(criteria), currentSystem);
+            if (result != null) break;
+        }
 
         if (result == null) {
             GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.search.noMatch")));
             return null;
         }
 
-        GameEventBus.publish(
-                new AiVoxResponseEvent(localizedEvent("event.search.headTo",
-                        result.getSystemName(),
-                        result.getStationName(),
-                        TimeUtils.transformToYMDHtimeAgo(result.getUpdatedAt(), TimeUtils.LOCAL_DATE_TIME)))
-        );
+        GameEventBus.publish(new AiVoxResponseEvent(announcement(result, brokerType != null, Instant.now())));
         ReminderManager.getInstance().setReminder(
                 localizedEvent("event.search.reminder", result.getStationName()), result.getSystemName(),
                 result.getStationName(), contactOf(traderType, brokerType)
@@ -121,10 +139,11 @@ public class TradersAndBrokersSearch {
      * @param brokerType       the technology broker wanted, or null when this is a trader search
      * @param requiresLargePad when true only stations with a large pad are candidates; a small or
      *                         medium ship leaves the pad size unconstrained and sees outposts too
+     * @param freshnessWindow  the oldest listing accepted, one rung of {@link #FRESHNESS_LADDER}
      */
     static TraderAndBrokerSearchCriteria buildCriteria(
             double x, double y, double z, TraderType traderType, BrokerType brokerType,
-            int maxDistanceLy, boolean requiresLargePad) {
+            int maxDistanceLy, boolean requiresLargePad, String freshnessWindow) {
 
         TraderAndBrokerSearchCriteria.Distance distance = new TraderAndBrokerSearchCriteria.Distance();
         distance.setMin(0);
@@ -133,7 +152,7 @@ public class TradersAndBrokersSearch {
         TraderAndBrokerSearchCriteria.Filters filters = new TraderAndBrokerSearchCriteria.Filters();
         filters.setDistance(distance);
         filters.setDistanceToArrival(new TraderAndBrokerSearchCriteria.RangeFilter(0, MAX_ARRIVAL_LS));
-        filters.setUpdatedAt(TraderAndBrokerSearchCriteria.UpdatedAt.since(FRESHNESS_WINDOW));
+        filters.setUpdatedAt(TraderAndBrokerSearchCriteria.UpdatedAt.since(freshnessWindow));
         if (requiresLargePad) {
             filters.setLargePads(new TraderAndBrokerSearchCriteria.RangeFilter(1, PADS_MANY));
         }
@@ -165,10 +184,41 @@ public class TradersAndBrokersSearch {
     }
 
     /**
+     * What VEGA says about the hit: where to go, how old the listing is, and - once it is older than
+     * {@link #FRESH} - how likely the trader or broker is to have moved on since, so a commander who
+     * finds the contact gone at the end of the flight was told to expect it.
+     *
+     * @param broker true for a technology broker, false for a material trader
+     */
+    static String announcement(TraderAndBrokerSearchDto.Result result, boolean broker, Instant now) {
+        Duration age = TimeUtils.ageOfUtc(result.getUpdatedAt(), now);
+        String headTo = localizedEvent("event.search.headTo",
+                result.getSystemName(),
+                result.getStationName(),
+                age == null ? "?" : TimeUtils.timeAgo(age));
+        String warningKey = stalenessWarningKey(age);
+        if (warningKey == null) return headTo;
+        String contact = localizedEvent(broker ? "event.search.contact.broker" : "event.search.contact.trader");
+        return headTo + " " + localizedEvent(warningKey, contact);
+    }
+
+    /**
+     * The warning a listing this old earns, or null when it is fresh enough to need none. An age that
+     * could not be read is warned about too: nothing says it is recent.
+     */
+    static String stalenessWarningKey(Duration age) {
+        if (age == null) return "event.search.listingAge.unknown";
+        if (age.compareTo(FRESH) < 0) return null;
+        if (age.compareTo(RECENT) < 0) return "event.search.listingAge.recent";
+        if (age.compareTo(OLD) < 0) return "event.search.listingAge.old";
+        return "event.search.listingAge.stale";
+    }
+
+    /**
      * The nearest hit outside the commander's current system, or null when there is none.
      *
-     * <p>Every hit is already fresh - the request bounded {@code updated_at} - so nearest is the whole
-     * ranking. Re-sorted here rather than trusting the page order: measured live, a page asked for
+     * <p>Every hit is inside one freshness window - the request bounded {@code updated_at} - so nearest
+     * is the whole ranking. Re-sorted here rather than trusting the page order: measured live, a page asked for
      * with no sort comes back in no order at all.
      */
     static TraderAndBrokerSearchDto.Result nearest(List<TraderAndBrokerSearchDto.Result> results, String currentSystem) {
