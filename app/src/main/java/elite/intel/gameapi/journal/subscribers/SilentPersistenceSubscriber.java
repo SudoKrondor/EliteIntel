@@ -12,6 +12,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
 import elite.intel.session.Position;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -267,6 +268,14 @@ public class SilentPersistenceSubscriber {
         playerSession.setShipLoadout(loadout);
         playerSession.setCurrentShipName(shipName);
         log.debug("PreScan: saved ship {} ({})", shipName, event.getShipId());
+    }
+
+    /** Ships stored before the app started still reach the fleet - see {@link StoredShipsSubscriber}. */
+    @Subscribe
+    public void onStoredShips(StoredShipsEvent event) {
+        int added = StoredShips.addMissing(event,
+                SystemSession.getInstance().getTtsProvider().defaultVoiceName(), lastCommanderName);
+        log.debug("PreScan: added {} stored ships to the fleet", added);
     }
 
 }

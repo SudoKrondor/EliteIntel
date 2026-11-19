@@ -152,6 +152,7 @@ public class EventRegistry {
         registerEvent("PayBounties", PayBountiesEvent.class);
         registerEvent("ShipyardSell", ShipyardSellEvent.class);
         registerEvent("ShipyardTransfer", ShipyardTransferEvent.class);
+        registerEvent("StoredShips", StoredShipsEvent.class);
         registerEvent("CarrierBuy", CarrierBuyEvent.class);
         registerEvent("CarrierBankTransfer", CarrierBankTransferEvent.class);
     }
