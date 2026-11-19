@@ -195,26 +195,26 @@ public final class FirstTimeStartupFlow {
      */
     private void reconcile(FirstTimeStartup startup, FirstSetupReading reading, ConfigurationFiles identical,
                            Map<String, String> names) {
-        Optional<FirstSetupDialog.Choice> choice;
+        Optional<ReconcileWizard.Choice> choice;
         if (identical != null) {
             String summary = identicalSummary(reading, identical, names);
             choice = HudConfirmDialog.confirm(parent, getText("bindings.firstTimeStartup.summary.title"), summary,
                     getText("bindings.firstTimeStartup.summary.create"),
                     getText("button.cancel"))
-                    ? Optional.of(FirstSetupDialog.Choice.whole(identical))
+                    ? Optional.of(ReconcileWizard.Choice.whole(identical))
                     : Optional.empty();
         } else {
-            choice = new FirstSetupDialog(parent, reading, names).showDialog();
+            choice = new ReconcileWizard(parent, reading, names, ReconcileWizard.Mode.firstSetup(), null).showDialog();
         }
         if (choice.isEmpty()) {
             finish();
             return;
         }
-        FirstSetupDialog.Choice chosen = choice.get();
+        ReconcileWizard.Choice chosen = choice.get();
         background("BindForge-FirstTimeStartupWrite", () -> {
             CheckFlow.Report message;
             try {
-                message = writtenReport(startup.write(chosen.files()), chosen.moved());
+                message = writtenReport(startup.write(chosen.files()), chosen.moved(), chosen.unpluggedInUse());
             } catch (Backups.NothingToBackUpException e) {
                 log.warn("First-time startup wrote nothing: there was nothing to back up");
                 message = CheckFlow.Report.shown(getText(Backups.NothingToBackUpException.ADVICE_KEY));
@@ -241,7 +241,7 @@ public final class FirstTimeStartupFlow {
     }
 
     /**
-     * The summary when there is nothing to reconcile. Names every installation left out, as {@link FirstSetupDialog} does
+     * The summary when there is nothing to reconcile. Names every installation left out, as {@link ReconcileWizard} does
      * when there is: with a drive unplugged this is the last thing said before the working copy is made without it.
      */
     static String identicalSummary(FirstSetupReading reading, ConfigurationFiles identical, Map<String, String> names) {
@@ -263,11 +263,16 @@ public final class FirstTimeStartupFlow {
      * The report, per place: <em>"updated 2 of 2"</em>, or which one failed and why (alias-designer.md, step 5) - and a
      * line saying first-time startup will be asked again when its flag could not be set, as RESTORE says it.
      */
-    private static String writtenText(Written written, int moved) {
+    private static String writtenText(Written written, int moved, List<String> unplugged) {
         WriteReport report = written.report();
         StringBuilder text = new StringBuilder(successLine(written));
         if (moved > 0) text.append('\n').append(getText("bindings.firstTimeStartup.result.moved", moved));
         text.append(placeFailures(report));
+        // WHY: the game falls back to keyboard and mouse when a controller the bindings use is missing at launch -
+        // the "I lost all my binds" report - so it is said last, where it is read before the game is started.
+        if (!unplugged.isEmpty()) {
+            text.append("\n\n").append(getText("bindings.reconcile.done.beforePlay", String.join(", ", unplugged)));
+        }
         if (written.setUpAskedAgain()) {
             text.append('\n').append(getText("bindings.firstTimeStartup.result.setUpAgain"));
         }
@@ -286,8 +291,8 @@ public final class FirstTimeStartupFlow {
      * failure, a device moved or first-time startup to be asked again always shows (Alan, 2026-11-14, Storage S21;
      * storage.md rule 3).
      */
-    static CheckFlow.Report writtenReport(Written written, int moved) {
-        return CheckFlow.Report.quietableIfPlain(writtenText(written, moved), successLine(written),
+    static CheckFlow.Report writtenReport(Written written, int moved, List<String> unplugged) {
+        return CheckFlow.Report.quietableIfPlain(writtenText(written, moved, unplugged), successLine(written),
                 written.report().complete(), QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT);
     }
 

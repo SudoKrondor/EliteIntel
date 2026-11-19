@@ -315,7 +315,64 @@ class FirstSetupPlanTest {
         assertEquals(Kind.SHADOWED, rows.get("RVWAP").kind());
         Resolution resolution = plan.resolve(Map.of());
         assertEquals(List.of("RightStick"), names(resolution), "the shadowed name is not in the working copy");
-        assertTrue(resolution.moves().isEmpty(), "it was never the device, so it hands nothing over");
+        assertEquals(Map.of("RVWAP", "RightStick"), resolution.moves(),
+                "bindings still naming the dead entry would get the whole binds file rejected (Alan, 2026-11-17)");
+    }
+
+    @Test
+    void aDeadEntrysBindingsFollowTheEntryAboveItToTheNameThatBeatIt() {
+        FirstSetupPlan plan = plan(Set.of("OldStick"),
+                install(STEAM, ordered("RVWAP", RIGHT, "OldStick", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows().stream().filter(Row::isQuestion).toList());
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RightStick"));
+        assertEquals(Map.of("RVWAP", "RightStick", "OldStick", "RightStick"), resolution.moves());
+    }
+
+    /** RVWAP in Steam and RightStick in Epic are one stick: its labels combine, whichever alias is kept. */
+    @Test
+    void oneControllersAliasesShareOneLabelMerge() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("RVWAP", RIGHT), Map.of("RVWAP", Map.of("Joy_1", "Boost", "Joy_2", "Gear"))),
+                install(EPIC, Map.of("RightStick", RIGHT),
+                        Map.of("RightStick", Map.of("Joy_1", "Afterburner", "Joy_3", "Scoop"))));
+
+        Row name = only(plan.rows().stream().filter(row -> row.kind() == Kind.NAME_DIFFERS).toList());
+        Row labels = only(plan.rows().stream().filter(row -> row.kind() == Kind.LABELS_DIFFER).toList());
+        assertEquals("RVWAP / RightStick", labels.deviceName());
+        assertEquals(List.of("RVWAP", "RightStick"), plan.namesOfLabelDevice(labels.deviceName()));
+        assertEquals(Set.of(STEAM, EPIC), labels.presentIn());
+
+        Map<String, String> answers = new LinkedHashMap<>();
+        answers.put(name.id(), "RightStick");
+        answers.put(FirstSetupPlan.labelAnswerKey(labels.deviceName(), "Joy_1"), "Boost");
+        assertEquals(List.of(device("RightStick", RIGHT, Map.of("Joy_1", "Boost", "Joy_2", "Gear", "Joy_3", "Scoop"))),
+                devices(plan.resolve(answers)));
+    }
+
+    /** Two controllers under one alias: the one chosen keeps its own labels, never a mix (Alan, 2026-11-17). */
+    @Test
+    void oneAliasOnTwoControllersKeepsTheChosenControllersLabels() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("Yoke", LEFT), Map.of("Yoke", Map.of("Joy_1", "Boost"))),
+                install(EPIC, Map.of("Yoke", OLD_LEFT), Map.of("Yoke", Map.of("Joy_1", "Trigger"))));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.HARDWARE_DIFFERS, row.kind(), "no label question: the labels are of two controllers");
+        Resolution resolution = plan.resolve(Map.of(row.id(), optionHeldByEpic(row).key()));
+        assertEquals(List.of(device("Yoke", OLD_LEFT, Map.of("Joy_1", "Trigger"))), devices(resolution));
+        assertEquals(OLD_LEFT, FirstSetupPlan.hardwareOf(optionHeldByEpic(row)));
+    }
+
+    @Test
+    void aNameRowSaysWhichControllerItIsAbout() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        assertEquals(RIGHT, plan.hardwareOf(only(plan.rows())));
+        assertEquals(java.util.Optional.of(RIGHT), plan.hardwareOfDevice("RightStick"));
     }
 
     @Test

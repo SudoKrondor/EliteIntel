@@ -1,9 +1,11 @@
 # BindForge — Making Several Game Copies Match (reconcile redesign)
 
-**Status: proposal for Alan's review (Krondor, 2026-11-18).** Mockups:
-[`mockups/reconcile/`](mockups/reconcile/) (PNG), built from `mockups/reconcile/src/build.py` (`python3 -I build.py`
-re-renders them with headless Chrome). Nothing here changes *what* first setup or the check writes; it replaces *how
-the user is asked*. Where it does change a rule, the change is listed in [Decisions for Alan](#decisions-for-alan).
+**Status: approved by Alan and built, 2026-11-18 (Krondor; branch `V1.2-reconcile`).** Alan tests it and fixes what
+needs fixing. Mockups: [`mockups/reconcile/`](mockups/reconcile/) (PNG), built from `mockups/reconcile/src/build.py`
+(`python3 -I build.py` re-renders them with headless Chrome). It replaces *how the user is asked*, and, by Alan's
+answers below, three rules of *what is written* - see [Decisions](#decisions-alan-2026-11-18). It supersedes the S22a
+"one dialog" design on `origin/V1.2-BindForge` (alias-designer.md, *One dialog, no confirmation after it*), whose
+settled engine rules it keeps: a dead entry's bindings move, and one controller's aliases share one label merge.
 
 ## Why the current screen fails
 
@@ -78,6 +80,8 @@ when they are already thinking about their controllers.
   **Plugged in / Not plugged in** state. It updates on hot-plug (`DeviceService`); no refresh button.
 - **Press any button on a controller and its row lights up**, with *"← you just pressed a button on this one"*. This
   is how a player tells two sticks of the same model apart without knowing what a VID/PID is.
+- **A *Known to* column** names the copies that hold each controller (Alan, 2026-11-18, D3), and a *Names* column
+  its aliases, so a controller one copy alone knows is plain to see.
 - **Never blocks.** *Next* is always enabled; a controller sold years ago can stay unplugged.
 - Why this is a step of its own, not a note: the questions that follow show the plugged-in state on every
   controller, and question 2 (*which controller is "Yoke"*) is often answered by *"the one that's plugged in"*.
@@ -134,7 +138,7 @@ Order of questions: **NAME_DIFFERS** and **HARDWARE_DIFFERS** first (they decide
   buttons are named in only one copy, so nothing is lost."*
 - A store card is `labelAnswersFavouring`: that copy wins every **collision**, labels only another copy has are
   still taken. (This is the 2026-10-08 per-device rule. It is **not** the 2026-10-24 *use one installation for all*,
-  which dropped the other copy's labels. See [Decisions](#decisions-for-alan), D2.)
+  which dropped the other copy's labels. See [Decisions](#decisions-alan-2026-11-18), D2.)
 - The card is selected once the device's every input is answered, by whichever route; the button-by-button card
   shows the count while some are open.
 
@@ -185,138 +189,69 @@ returns with the answers the player had.
 This is `FirstSetupPlan.answersFavouring(installId)`, which already exists: it answers every question in that copy's
 favour and keeps entries only the other copies have. Decision D1.
 
-### 10 — Later: a copy changed outside BindForge ([`10-later-a-copy-changed.png`](mockups/reconcile/10-later-a-copy-changed.png))
+### 10 — Later: which setup is current ([`10-later-a-copy-changed.png`](mockups/reconcile/10-later-a-copy-changed.png))
 
-The check (storage.md rule 14, S9) reuses the same pieces, with **SAVED IN BINDFORGE** (the working copy; *"Your
-files, with the edits not applied"* at APPLY) as one side:
+The check (storage.md rule 14, S9) asks one thing (Alan, 2026-11-18, Q3): **which setup is current** - the one saved in
+BindForge, or the one a copy of the game now holds. Whichever is picked, after the write every copy and the shared binds
+files agree. No Plug in step: the player is mid-session.
 
-- *"Your Epic copy's controllers changed since BindForge last saved them. They were edited outside BindForge, by
-  hand or by another tool. Which do you want both copies to have?"*
-- **Put back what I had** / **Keep Epic's changes**, each card listing the effect; **Choose button by button…** (or,
-  for element differences, the question screens 03–04) when the player wants to mix.
-- **Check the result** → screen 07's layout, then the write.
-- A **reset by a game update** keeps its own warning and *"Are you sure?"* (rule 14, *A reset is named*); this
-  screen is for an ordinary edit.
+- The wizard opens on that question: one card per side - **What I saved in BindForge** (the working copy; at APPLY,
+  *"Your files, with the edits not applied"*) and **Like my Epic copy** for each copy that differs - each listing what it
+  decides. *Choose controller by controller...* goes to the questions for a player who wants to mix.
+- **Use the game's files** in the check's warning, with one copy differing, opens the wizard with that copy already
+  chosen, on the result. It no longer takes that copy's files whole (`confirmUseOne` is gone): an alias only the working
+  copy holds stays, so the shared binds files still find every device they name (D1).
+- **The saved setup** is *Put mine back*, as before. A **reset by a game update** keeps its *"Are you sure?"*.
 
 ## Edge cases
 
 | Case | What the player sees |
 |---|---|
-| No questions, only things BindForge settles | Welcome says *0 questions*; *Let's fix it* goes Plug in → **Check** (no Choose step; the stepper shows it ticked) |
+| No questions, only things BindForge settles | Welcome says *0 questions*; Plug in → **Check** |
 | Every copy identical | Today's flow: nothing to reconcile, nothing asked |
-| Three or more copies | Cards sit side by side up to 3; from 4, a vertical list of the same cards. The badge tells two copies from one store apart by drive: `STEAM (D:)` |
-| A copy with no `DeviceMappings.xml` | It has no side in any question, and is not offered in the shortcut (S2b rule). Welcome: *"Your Epic copy has no list of controllers yet; it gets the one you end up with."* |
-| A file that cannot be read | Stops first setup and is named, as today. That stays a plain error dialog outside the wizard; it is not a question |
-| Unknown controller (no product name) | *Unknown controller (3344:4130)*, with the "press a button" highlight as the way to find it |
-| Controller with no button names in either copy | No button-names question; Check shows *—* |
-| Answers clash on one VID/PID | Explained in place (screen 04); *Check the result* disabled until changed |
+| Three or more copies | Cards sit side by side up to 3; from 4, a vertical list of the same cards |
+| Two copies from one store | Cannot happen (Alan, 2026-11-18, Q4): a second Steam or Epic account uses the same installation |
+| A copy with no `DeviceMappings.xml` | It has no side in any question, and is not offered in the shortcut (S2b rule) |
+| A file that cannot be read | Stops first setup and is named, as today - a plain error dialog, not a question |
+| A controller not plugged in | Shown by its aliases: an aliased controller "exists" to the copies even unplugged, but the game cannot see it, and falls back to keyboard and mouse if the binds use it (Alan, 2026-11-18, Q2) |
+| Controller with no button names in any copy | No button-names question; Check shows *—* |
+| Answers clash on one VID/PID | Explained on the question; *Next* disabled until changed |
 
-## Decisions for Alan
+## Decisions (Alan, 2026-11-18)
 
-These change a settled rule or add a new one. Each needs a yes/no before building.
+- **D1. Aliases must agree everywhere, never merged.** A controller called FOO in Epic and BAR in Steam ends with one of
+  the two, in every copy and in the binds files. The reconcile exists to clean up players' own attempts at running two
+  copies. Built as: the name question (03) keeps one alias and moves the other's bindings to it; **a dead entry's
+  bindings move too** (to the alias the game uses on that controller, or the one that beat it); the shortcut and the
+  check's *use the game's files* answer every question one copy's way and keep controllers only another copy knows,
+  since dropping one the binds use would get the whole binds file rejected.
+- **D2. Labels are harmless to keep; aliases are not** (they go into the binds file as the device name). *Use Steam's
+  names* keeps names only Epic has. One controller under two aliases has **one** button-names question, its names
+  combined under whichever alias is kept. Two controllers under one alias never mix: the one chosen keeps its own.
+- **D3. Plug in stays**, with a column saying which copies know each controller.
+- **D4, D5. The colour legend and the "I have read and understood" gate go.**
+- **D6. Nothing is preselected.** The player decides every question.
+- **Q2.** An unplugged controller shows its aliases.
+- **Q3.** The later check asks only which setup is current (screen 10).
+- **Q4.** Two copies from one store cannot happen.
 
-- **D1. The shortcut keeps entries only other copies have.** Today *use one installation for all* (2026-10-24)
-  **overwrites**: it removes the other copies' own entries, with a warning when bindings use one. Proposed:
-  *Make everything like my Steam copy* = `answersFavouring` (Steam wins every question, nothing one-sided is
-  dropped). Why: the old warning (*"131 bindings … will stop working. Choose Merge to keep it."*) is a choice no
-  casual player can make well, and the requirement is that every copy ends up the same, which this meets without
-  losing anything. A player who really wants a controller gone removes it in Alias Designer afterwards.
-- **D2. "Use Steam's names" for one controller keeps names only Epic has** (the 2026-10-08 per-device rule), rather
-  than taking Steam's file whole (2026-10-24). Same reason as D1: labels are harmless to keep.
-- **D3. The Plug in step is new.** It is read-only and never blocks. Alternatively it could be a note on Welcome,
-  but the live state and the press-to-identify only help if the player sees them before the questions.
-- **D4. The DANGER/WARNING/SUCCESS colouring and its legend go.** Every option now says in words what it does.
-  Colour is kept for state only: plugged in (success), the not-plugged-in warning line (warning), a failure
-  (danger).
-- **D5. The "I HAVE READ AND UNDERSTOOD" gate goes.** Its two facts (backed up first; files go to the working
-  copy) become the footer line and the Done screen's backup line.
-- **D6. Nothing preselected, even where one option is clearly better** (e.g. the name 131 controls use vs. the one
-  12 use). Kept as principle 6 requires. A *Recommended* tag on such an option, without selecting it, is possible
-  (`.rec` exists in the mockup CSS) if Alan wants it.
+## Built (2026-11-18)
 
-## Implementation notes (for Claude)
-
-**The engine is unchanged.** `FirstSetupPlan` already produces exactly the rows this design shows:
-
-| `FirstSetupPlan.Kind` | Where it goes |
+| Piece | Class |
 |---|---|
-| `NAME_DIFFERS` | Question screen 03 |
-| `HARDWARE_DIFFERS` | Question screen 04 |
-| `LABELS_DIFFER` | Question screen 05 → 06 (`labelMerge(device)`, `labelAnswersFavouring`) |
-| `ONLY_IN_SOME` | Check: *Was only in X, added to Y* |
-| `IDENTICAL`, `BUILT_IN_LABELS` | Check: *Already the same* |
-| `SHADOWED` | Check, *Also tidied up* |
+| The wizard: Welcome, Plug in, questions, shortcut / "which is current", Check | `ui.screen.bindings.ReconcileWizard` (replaces `FirstSetupDialog`, removed) |
+| What to ask, in what order, the counts and the result's reasons - pure, tested | `ReconcileQuestions` (`ReconcileQuestionsTest`) |
+| Button by button | `LabelMergeDialog`, rebuilt: radio chips, inputs in words, *use all*, press to find |
+| Plugged-in state, Windows' names, presses | `LiveControllers` (`DeviceBus`, for the dialog's lifetime) |
+| Input codes in words | `InputNames` (`InputNamesTest`) |
+| Cards, chips, wrapped text | `ReconcileWidgets` |
+| Dead entries' moves; one label merge per controller; a name on two controllers keeps the chosen one's labels | `FirstSetupPlan` (`FirstSetupPlanTest`) |
 
-Answers stay the `Map<String, String>` that `unanswered` / `resolve` take; the wizard is a new view over them. The
-shortcut is `answersFavouring`; the write is today's `FirstTimeStartup` / `WritePath`; the later check passes the
-working copy as one installation-like side, as `FirstSetupDialog` already does.
-
-**UI (`ui.screen.bindings`):**
-
-- Replace `FirstSetupDialog`'s grid with a `ReconcileWizard` dialog: `CardLayout` of Welcome, PlugIn, one
-  `QuestionPanel` per question row, Check, Done. A `WizardStepper` header (four steps, painted). `FirstTimeStartupFlow`
-  opens it where it opens `FirstSetupDialog` now; the later check (S9) opens it with the working copy as a side and
-  without the Plug in step (D3 for the later check: open question 3).
-- `ChoiceCard`: a `JToggleButton` in a `ButtonGroup`, painted as the card (border, fill and radio from palette roles:
-  `frameBorder`, `tableCellBackground`; selected: `primaryAction` border, `accentFill`). Keyboard: arrows move between
-  cards, Space selects. **Enter does not select** (S10).
-- `LabelMergeDialog`: restyle rows as radio chips, human input names, the press-to-find highlight, *use all* links.
-  Logic unchanged.
-- Human input names: a small pure mapper `InputNames.spoken(code)` (`Joy_1` → *Button 1*, `Joy_POV2Up` → *Hat 2,
-  up*, `Joy_RZAxis` → *Rotary axis* / per-axis words). Check `bind-editor.md` and `CaptureControllers` for an existing
-  one first.
-- Live connection and button presses: subscribe to `DeviceService` for the dialog's lifetime only, on the EDT via the
-  UI bus; unsubscribe on close. Product names come from what the current *Device (Windows)* column uses.
-- Control counts: `BindsDeviceReferences` across every binds file, as the current severity uses.
-- Every colour is a `HudPalette` role (`ED_HUD_REFERENCE.md`); the mockup CSS names the role for each colour.
-- **Every string is new i18n** in all bundles (`project_i18n_bundles_complete`); watch the MessageFormat apostrophe
-  trap (*don't*, *Steam's*, *Let's* need `''`).
-
-**Tests:** a pure presenter (`ReconcileQuestions`: rows → ordered question models with their consequence lines and
-counts) is where the logic goes, and it gets unit tests: ordering, the *moved* counts per option, clash messages,
-the 0-questions path, 3+ copies, a copy with no `DeviceMappings.xml`. The Swing panels stay thin.
-
-## Copy deck (English source strings)
-
-| Key (suggested) | Text |
-|---|---|
-| `reconcile.title` | Make your game copies match |
-| `reconcile.safe` | Nothing changes until the last step. Everything is backed up first. |
-| `reconcile.welcome.headline` | Your {0,choice,2#two\|2<{0}} copies of Elite Dangerous don''t agree about your controllers |
-| `reconcile.welcome.body` | You have the game from {1}. They share one set of controls, but each copy keeps its own list of your controllers and button names. Right now the lists are different, so your controls may work in one copy and fall back to keyboard and mouse in another. |
-| `reconcile.welcome.counts` | {0} questions for you · {1} things BindForge sorts out by itself · {2} controllers already match |
-| `reconcile.welcome.after` | This takes about a minute. When it''s done, every copy will have exactly the same controllers, names and button names, and your controls will work the same whichever one you launch. |
-| `reconcile.plugin.headline` | Plug in the controllers you fly with |
-| `reconcile.plugin.body` | Elite only loads your controls when every controller they use is plugged in. If one is missing when the game starts, it quietly switches to keyboard and mouse, and it can look as if your bindings were lost. Plug yours in now. This list updates by itself. |
-| `reconcile.plugin.tip` | Tip: press any button on a controller and its row lights up, so you know which one it is. A controller you no longer own can stay unplugged; you can carry on without it. |
-| `reconcile.q.count` | Question {0} of {1} |
-| `reconcile.name.headline` | Your {0} has a different name in each copy |
-| `reconcile.name.sub` | Your controls find each controller by a short name. Pick the one to keep. |
-| `reconcile.name.uses` | {0} of your controls already use this name |
-| `reconcile.name.moves` | Your {0} controls that use "{1}" are moved to it |
-| `reconcile.name.note` | Nothing stops working either way. Your controls follow the name you pick. This only decides what the controller is called. |
-| `reconcile.hw.headline` | "{0}" means a different controller in each copy |
-| `reconcile.hw.sub` | {1} of your controls are set up on {0}. Which controller should they work on? |
-| `reconcile.hw.works` | Your {1} "{0}" controls work on this controller |
-| `reconcile.hw.unplugged` | It isn''t plugged in. Plug it in before you play, or the game falls back to keyboard and mouse. |
-| `reconcile.hw.note` | Not sure? It''s usually the one you still own and have plugged in. The other controller keeps working in the game, just without your "{0}" controls. BindForge offers it a name of its own the next time it is plugged in. |
-| `reconcile.labels.headline` | Some buttons on your {0} are named differently |
-| `reconcile.labels.sub` | Button names are what the game''s Controls screen shows, e.g. "Boost" instead of "Joy 1". |
-| `reconcile.labels.useStore` | Use {0}''s names |
-| `reconcile.labels.each` | Choose button by button |
-| `reconcile.labels.note` | Button names never change what a button does. Names only one copy has are kept either way. |
-| `reconcile.check.headline` | This is what {0,choice,2#both copies\|2<all {0} copies} will have |
-| `reconcile.check.write` | Make {0,choice,2#both copies\|2<all copies} match |
-| `reconcile.done.headline` | {0,choice,2#Both copies\|2<All copies} now match |
-| `reconcile.done.beforePlay` | Before you play: plug in {0}. If a controller your controls use is missing when the game starts, the game switches to keyboard and mouse. |
-| `reconcile.shortcut.link` | Make everything like my {0} copy… |
-
-## Open questions
-
-1. D1–D6 above.
-2. Does Alias Designer show the product name for an unplugged controller today (the old screen did: *Logitech X56
-   Stick (not connected)*), and from where? The design assumes it is always available.
-3. Should the later check (screen 10) also get the Plug in step? Proposed: no. The player is mid-session and already
-   knows their setup. The Check screen's plugged-in note covers it.
-4. Two copies from the **same** store (two Steam libraries): is the drive letter the right way to tell them apart,
-   or the folder name?
+- **Callers:** `FirstTimeStartupFlow` (Mode `firstSetup`), `RestoreFlow` (`restore`, its trailer on the Check step),
+  `CheckFlow` (`check`, opening on "which is current", or with the one differing copy already chosen).
+- **Done** is the existing report dialog, which now ends with *Before you play: plug in ...* when a controller the binds
+  use is unplugged; such a report always shows.
+- **Strings:** `bindings.reconcile.*` in all nine `gui` bundles (`_pt` seeded in English for its localizer), checked by
+  `ReconcileTextTest` (every string formats, both sides of each choice). The old grid's 34 strings are removed.
+- **Not built:** S22a's *Keep as* (keeping a controller that lost a shared name under a new name) - onboarding names it
+  the next time it is plugged in; and a pressed **axis** does not light a row, only buttons and hats.
