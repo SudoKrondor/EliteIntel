@@ -51,6 +51,6 @@ your custom commands in one file you can restore on the new machine.
 ```
 
 ----
-For issues, report on Matrix. Bug reports and pull requests are welcome.
+For issues, use **Report a bug** on the Vega tab: it sends your description straight to the team, no account needed. To chat with us, join the community on Matrix with a free account. The Element app is best, but any modern browser works for a quick chat. Bug reports and pull requests are welcome.
 
 Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈 (new to Matrix? read the [**Matrix How To**](Matrix-How-To))

@@ -30,9 +30,11 @@ En la cabecera de la sección hay cuatro botones:
 | Botón | Qué hace |
 |--------|--------------|
 | **Copiar** | Copia al portapapeles el texto seleccionado en el registro. |
-| **Guardar paquete de soporte** | Escribe un `.zip` con marca de tiempo para un informe de error: este registro, el registro de la aplicación, tu journal y los archivos de estado en vivo del juego, tus bindings, tus comandos personalizados, un resumen del hardware y un resumen de los *niveles* del micrófono (nunca audio). Lo que no se pudo recoger aparece listado dentro del paquete. **Esto es lo que adjuntas a un informe de error.** |
+| **Informar de un error** | Abre un formulario breve: describe qué salió mal (obligatorio) y, si quieres respuesta, deja un correo electrónico (opcional). **Enviar informe** manda tu descripción con un paquete de soporte directamente al equipo de Elite Intel - sin necesidad de cuenta de Matrix - y el registro muestra un número de informe que puedes mencionar si nos escribes después. El paquete contiene este registro, el registro de la aplicación, tu journal y los archivos de estado en vivo del juego, tus bindings, tus comandos personalizados, un resumen del hardware y un resumen de los *niveles* del micrófono (nunca audio). Nunca incluye claves de API ni contraseñas, y solo el equipo ve el informe. Si no se puede enviar, el paquete se conserva y el registro indica dónde, para que puedas publicarlo tú mismo en Matrix. **Guardar en un archivo** escribe el paquete en un `.zip` de tu elección sin enviar nada. |
 | **Volcar la memoria de Vega** | Escribe una instantánea JSON de la memoria de trabajo de Vega en la sesión actual. Solo funciona con los servicios en marcha. |
 | **Borrar** | Vacía el registro de diagnósticos. |
+
+![Ventana Informar de un error](images/bug-report-window.png)
 
 ---
 

@@ -29,9 +29,11 @@ Four buttons sit in the section header:
 | Button | What it does |
 |--------|--------------|
 | **Copy** | Copies the text you have selected in the log to the clipboard. |
-| **Save support bundle** | Writes a timestamped `.zip` for a bug report: this log, the application log, your journal and the game's live status files, your bindings, your custom commands, a hardware summary, and a summary of microphone *levels* (never audio). Anything it could not collect is listed inside the bundle. **This is what to attach to a bug report.** |
+| **Report a bug** | Opens a short form: describe what went wrong (required) and, if you want a reply, leave an email (optional). **Send Report** sends your description with a support bundle straight to the Elite Intel team - no Matrix account needed - and the log shows a report ID you can quote if you talk to us later. The bundle holds this log, the application log, your journal and the game's live status files, your bindings, your custom commands, a hardware summary, and a summary of microphone *levels* (never audio). API keys and passwords are never included, and only the team sees the report. If it cannot be sent, the bundle is kept and the log says where, so you can post it on Matrix yourself. **Save to File Instead** writes the bundle to a `.zip` of your choice without sending anything. |
 | **Dump Vega's memory** | Writes a JSON snapshot of Vega's working memory for the current session. Only works while services are running. |
 | **Clear** | Empties the diagnostics log. |
+
+![Report a bug window](images/bug-report-window.png)
 
 ---
 

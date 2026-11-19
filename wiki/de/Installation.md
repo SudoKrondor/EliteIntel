@@ -51,6 +51,6 @@ und deine eigenen Befehle in einer Datei ab, die du auf dem neuen Rechner wieder
 ```
 
 ----
-Bei Problemen bitte auf Matrix melden. Fehlermeldungen und Pull Requests sind willkommen.
+Bei Problemen nutze **Fehler melden** im Reiter Vega: Deine Beschreibung geht direkt an das Team, ganz ohne Konto. Zum Chatten mit uns komm mit einem kostenlosen Konto in die Community auf Matrix. Am besten mit der App Element, für einen kurzen Chat reicht aber jeder aktuelle Browser. Fehlermeldungen und Pull Requests sind willkommen.
 
 Community 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

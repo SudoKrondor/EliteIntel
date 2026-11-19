@@ -51,6 +51,6 @@ commandes personnalisées dans un seul fichier que vous pouvez restaurer sur le 
 ```
 
 ----
-Pour tout problème, signalez-le sur Matrix. Les rapports de bugs et les pull requests sont les bienvenus.
+Pour tout problème, utilisez **Signaler un bug** dans l'onglet Vega : votre description part directement à l'équipe, sans compte. Pour discuter avec nous, rejoignez la communauté sur Matrix avec un compte gratuit. L'application Element est le meilleur choix, mais n'importe quel navigateur récent suffit pour une discussion rapide. Les rapports de bugs et les pull requests sont les bienvenus.
 
 Communauté 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈

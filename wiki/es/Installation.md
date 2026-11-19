@@ -51,6 +51,6 @@ comandos personalizados en un archivo que puedes restaurar en el ordenador nuevo
 ```
 
 ----
-Para problemas, repórtalos en Matrix. Los informes de errores y los pull requests son bienvenidos.
+Para problemas, usa **Informar de un error** en la pestaña Vega: envía tu descripción directamente al equipo, sin necesidad de cuenta. Para charlar con nosotros, únete a la comunidad en Matrix con una cuenta gratuita. Lo mejor es la app Element, pero para una charla rápida sirve cualquier navegador moderno. Los informes de errores y los pull requests son bienvenidos.
 
 Comunidad 👉[**Matrix**](https://app.element.io/#/room/#krondor:matrix.org)👈
