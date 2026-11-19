@@ -82,6 +82,40 @@ public class ShipManager {
         return Database.withDao(ShipDao.class, dao -> dao.delete(shipId)) > 0;
     }
 
+    /**
+     * A ship the game lists as stored: its ShipID, the name the fleet shows and its make.
+     */
+    public record StoredShip(int shipId, String shipName, String shipMake) {
+    }
+
+    /**
+     * Adds every stored ship the fleet does not know yet, so the fleet heals from the game's own list instead of
+     * waiting for each ship to be flown. A ship already known is left exactly as it is: its row carries the
+     * commander's voice and personality, and a Loadout refreshes the rest when the ship is flown. Its cargo
+     * capacity is unknown until then and stored as 0.
+     *
+     * @return how many ships were added
+     */
+    public int addMissingShips(List<StoredShip> ships, String voice, String commanderName) {
+        return Database.withDao(ShipDao.class, dao -> {
+            int added = 0;
+            for (StoredShip stored : ships) {
+                if (dao.findShip(stored.shipId()) != null) continue;
+                ShipDao.Ship ship = new ShipDao.Ship();
+                ship.setShipId(stored.shipId());
+                ship.setShipName(stored.shipName());
+                ship.setCargoCapacity(0);
+                ship.setShipIdentifier(stored.shipMake());
+                ship.setVoice(voice);
+                ship.setPersonality(ShipPersonality.DEFAULT.name());
+                ship.setCommanderName(commanderName);
+                dao.save(ship);
+                added++;
+            }
+            return added;
+        });
+    }
+
     public ShipDao.Ship getShipById(int shipId) {
         return Database.withDao(ShipDao.class, dao -> dao.findShip(shipId));
     }
