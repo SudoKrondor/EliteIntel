@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reconcile dialog mock-up</title>
 <!-- Storage S22 (Alan, 2026-11-16). A mock-up: colours are placeholders; the dialog uses the theme roles and the HUD canon. Devices, names and counts are made up. -->
+<!--suppress CssUnusedSymbol, CssUnresolvedCustomProperty -->
 <style>
 body{margin:0;background:#05080b;font-family:Segoe UI,Arial,sans-serif;color:#e6e6e6;padding:30px 16px}
 .case{max-width:1000px;margin:0 auto 46px}
@@ -43,10 +44,36 @@ td.cont{color:#5f6b74}
 .ib:has(input:checked)::before{content:"✓ "}
 tbody:has(input[name=a1]:checked) tr.pick:has(input[name=a1]:not(:checked)) td,
 tbody:has(input[name=a2]:checked) tr.pick:has(input[name=a2]:not(:checked)) td,
+tbody:has(input[name=a3]:checked) tr.pick:has(input[name=a3]:not(:checked)) td,
 tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) td{color:#4a555d}
 tbody:has(input[name=a1]:checked) tr.pick:has(input[name=a1]:not(:checked)) .ib,
 tbody:has(input[name=a2]:checked) tr.pick:has(input[name=a2]:not(:checked)) .ib,
+tbody:has(input[name=a3]:checked) tr.pick:has(input[name=a3]:not(:checked)) .ib,
 tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) .ib{border-color:#3a4650;color:#5f6b74}
+.done{display:none;font-size:12px;color:#5fc08a;margin-left:6px}
+.ib.mg:has(input:checked) ~ .done{display:inline}
+tbody:has(.mg input[name=a2]:checked) tr.pick:has(input[name=a2]) td{color:#e0a040 !important}
+tbody:has(.mg input[name=a2]:checked) tr.pick:has(input[name=a2]) td.cont{color:#e0a040 !important}
+tbody:has(.mg input[name=a2]:checked) tr.pick:has(input[name=a2]) .ib{border-color:#e0a040 !important;color:#e6e6e6 !important}
+tbody:has(.mg input[name=a2]:checked) tr.pick:has(input[name=a2]) .ib.mg{border-color:#3fb3bf !important}
+tbody:has(.mg input[name=c1]:checked) tr.pick:has(input[name=c1]) td{color:#e6e6e6 !important}
+tbody:has(.mg input[name=c1]:checked) tr.pick:has(input[name=c1]) td.cont{color:#5f6b74 !important}
+tbody:has(.mg input[name=c1]:checked) tr.pick:has(input[name=c1]) .ib{border-color:#e0a040 !important;color:#e6e6e6 !important}
+tbody:has(.mg input[name=c1]:checked) tr.pick:has(input[name=c1]) .ib.mg{border-color:#3fb3bf !important}
+tr.lm td{color:#e0a040}
+tr.lm:has(input:checked) td{color:#5fc08a}
+tr.lm:has(input:checked) .ib:not(:has(input:checked)){border-color:#3a4650;color:#5f6b74}
+tr.lm td .ib{color:#e6e6e6}
+.ib .lb{text-transform:none;color:#cfd8de}
+.lmcount{text-align:right;font-size:12px;color:#e0a040}
+.lmcount.all{color:#5fc08a}
+tr.dead td{color:#4a555d}
+.keep{display:none;margin-top:6px;font-size:12px;color:#e6e6e6}
+.keep input{background:#0b0f14;border:1px solid #2a8f9a;color:#e6e6e6;padding:3px 6px;font-size:12px;width:120px;margin-left:4px}
+.keep .nmh{display:block;margin-top:3px;color:#8a969f}
+.keep .nmh.bad{color:#e05a5a}
+.keep .nmh.ok{color:#5fc08a}
+tbody:has(input[name=a3]:checked) tr.pick:has(input[name=a3]:not(:checked)) .keep{display:block}
 .f{display:flex;justify-content:space-between;padding:11px 14px;border-top:1px solid #1d2a33}
 .pending{color:#e0a040}
 .modes{max-width:1000px;margin:0 auto 18px;display:flex;gap:8px;flex-wrap:wrap}
@@ -54,40 +81,118 @@ tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) .ib{
 .modes label{border:1px solid #3a4650;color:#9aa7b0;padding:7px 14px;font-size:13px;cursor:pointer;user-select:none}
 .modes label:hover{background:#13262b}
 .case{display:none}
-#mA:checked ~ .modes label[for=mA],#mB:checked ~ .modes label[for=mB],#mC:checked ~ .modes label[for=mC]{border-color:#3fb3bf;background:#1f6f78;color:#e6e6e6}
-#mA:checked ~ .cA,#mB:checked ~ .cB,#mC:checked ~ .cC{display:block}
+#mA:checked ~ .modes label[for=mA],#mB:checked ~ .modes label[for=mB],#mC:checked ~ .modes label[for=mC],#mD:checked ~ .modes label[for=mD],#mE:checked ~ .modes label[for=mE],#mF:checked ~ .modes label[for=mF]{border-color:#3fb3bf;background:#1f6f78;color:#e6e6e6}
+#mA:checked ~ .cA,#mB:checked ~ .cB,#mC:checked ~ .cC,#mD:checked ~ .cD,#mE:checked ~ .cE,#mF:checked ~ .cF{display:block}
+.tps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.tp{border:1px solid #3a4650;background:#0b0f14;color:#9aa7b0;padding:5px 10px;font:12px Segoe UI,Arial,sans-serif;cursor:pointer}
+.tp.on{border-color:#3fb3bf;background:#1f6f78;color:#e6e6e6}
+.cE .hud{background:var(--body);border-color:var(--frame);color:var(--text)}
+.cE .hud .t{background:var(--head);border-color:var(--sep);color:var(--title)}
+.cE .imp{color:var(--warning)}
+.cE .safe{color:var(--success)}
+.cE .ban{background:var(--panel);border-left-color:var(--info);color:var(--text)}
+.cE .legend{display:grid;gap:2px;background:var(--panel);padding:8px 10px;font-size:12px}
+.cE .l-d{color:var(--danger)}
+.cE .l-w{color:var(--warning)}
+.cE .l-s{color:var(--success)}
+.cE th{color:var(--sec);border-bottom-color:var(--sep)}
+.cE td{background:var(--cell);border-bottom-color:var(--body)}
+.cE td .dim{color:inherit;opacity:.8}
+.cE tr.sd td{color:var(--danger)}
+.cE tr.sw td{color:var(--warning)}
+.cE tr.ss td{color:var(--success)}
+.cE tr.lost td{color:var(--disabled)}
+.cE .ib{border-color:var(--warning);color:var(--text)}
+.cE .ib:hover{background:var(--panel)}
+.cE .ib:has(input:checked){background:var(--fill);border-color:var(--accent);color:var(--seltext)}
+.cE tr.lost .ib{border-color:var(--disabled);color:var(--disabled)}
+.cE .done{color:var(--success)}
+.cE tr.lost .keep{display:block;color:var(--text)}
+.cE .keep input{background:var(--field);border-color:var(--accent);color:var(--text)}
+.cE .keep .nmh{color:var(--sec)}
+.cE .keep .nmh.bad{color:var(--danger)}
+.cE .keep .nmh.ok{color:var(--success)}
+.cE .hb{background:var(--body);border-color:var(--accent);color:var(--text)}
+.cE .hb:hover{background:var(--panel)}
+.cE .hb.p{background:var(--pbtn);border-color:var(--accent);color:var(--btntext)}
+.cE .hb.off{background:var(--body);border-color:var(--disabled);color:var(--disabled)}
+.cE .warn{color:var(--warning)}
+.cE .warn.off{color:var(--disabled)}
+.cE .ackbox:checked ~ div .ack{background:var(--body);border-color:var(--accent);color:var(--text)}
+.cE .ackbox:checked ~ .gate .hb.off{background:var(--body);border-color:var(--accent);color:var(--text)}
+.cE .ackbox:checked ~ .gate .warn.off{color:var(--warning)}
+.cE .f{border-top-color:var(--sep)}
+.fr{display:flex;align-items:center;gap:12px}
+.ftl{font-size:12px;color:#e0a040}
+.cE .ftl{color:var(--warning)}
+.legend{display:grid;gap:2px;background:#111a22;padding:8px 10px;font-size:12px}
+.l-d{color:#e05a5a}
+.l-w{color:#e0a040}
+.l-s{color:#5fc08a}
+.unr{color:#e0a040}
+.cE .unr{color:var(--warning)}
+tr.sd td{color:#e05a5a}
+tr.sw td{color:#e0a040}
+tr.ss td{color:#5fc08a}
+.warn.off.nl{color:#3f6a52}
+.ackbox:checked ~ .gate .warn.off.nl{color:#5fc08a}
+.cE .warn.off.nl{color:var(--disabled)}
+.cE .ackbox:checked ~ .gate .warn.off.nl{color:var(--success)}
+tbody:has(.mg input[name=a1]:checked) tr.pick:has(input[name=a1]) td{color:#e05a5a !important}
+tbody:has(.mg input[name=a1]:checked) tr.pick:has(input[name=a1]) .ib{border-color:#e0a040 !important;color:#e6e6e6 !important}
+tbody:has(.mg input[name=a1]:checked) tr.pick:has(input[name=a1]) .ib.mg{border-color:#3fb3bf !important}
+tr.am td{color:#e0a040}
+tr.am:has(input:checked) td{color:#5fc08a}
+tr.am td .ib{color:#e6e6e6}
+tr.am:has(input:checked) .ib:not(:has(input:checked)){border-color:#3a4650;color:#5f6b74}
+.hs{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.alb{display:inline-block;border:1px solid #e0a040;color:#e6e6e6;padding:8px 16px;font-size:13px;cursor:pointer;user-select:none}
+.alb input{position:absolute;opacity:0;pointer-events:none}
+.alb:hover{background:#13262b}
+.alb:has(input:checked){background:#1f6f78;border-color:#3fb3bf}
+.alb:has(input:checked)::before{content:"\2713  "}
+tr.ahead:has(.alb input:checked) .alb:not(:has(input:checked)){border-color:#3a4650;color:#5f6b74}
 </style>
 </head>
 <body>
 <input type="radio" name="mode" id="mA" class="mode" checked autocomplete="off">
 <input type="radio" name="mode" id="mB" class="mode" autocomplete="off">
 <input type="radio" name="mode" id="mC" class="mode" autocomplete="off">
-<div class="modes"><label for="mA">A. Installations differ</label><label for="mB">B. Every installation matches</label><label for="mC">C. The check</label></div>
+<input type="radio" name="mode" id="mD" class="mode" autocomplete="off">
+<input type="radio" name="mode" id="mE" class="mode" autocomplete="off">
+<input type="radio" name="mode" id="mF" class="mode" autocomplete="off">
+<div class="modes"><label for="mA">A. Installations differ</label><label for="mB">B. Every installation matches</label><label for="mC">C. The check</label><label for="mD">D. MERGE pressed: the label merge</label><label for="mE">E. Severity colours</label><label for="mF">F. MERGE on two aliases</label></div>
 
 <div class="case cA">
 <h2>A. FIRST-TIME STARTUP, THE INSTALLATIONS DIFFER</h2>
-<p class="why">Replaces the old choice dialog and both "Create Your Working Copy" confirmations (Use one, and Merge's summary).</p>
+<p class="why">Replaces the old choice dialog and both "Create Your Working Copy" confirmations (Use one, and Merge's summary). The OCULUS line shows only when an installation cannot be reached.</p>
 <div class="hud">
 <div class="t"><span>FIRST-TIME STARTUP</span><span>&times;</span></div>
 <div class="b">
 <div class="imp">THIS IS VERY IMPORTANT, PLEASE READ</div>
-<div class="safe">Everything is backed up before anything is written. This backup is kept forever.</div>
+<div class="safe">Everything is backed up before anything is written. The backup called "First Setup" is kept forever.</div>
 <div class="ban">Each installation of the game holds different device files. BindForge does not manage multiple installations separately, and VEGA needs one set of controls to press the in-game inputs. Below are the devices and the installations that use them. If you have ever edited them by hand in either installation you can merge them; if not, you can use one installation to overwrite the device files in the other installations.</div>
+<div class="unr">OCULUS could not be reached, so it is left out. BindForge will check it when it is back.</div>
+<div class="legend"><span class="l-d">Your bindings use this device. Losing its entry would break them.</span><span class="l-w">This device differs, but no binding stops working.</span><span class="l-s">Every installation agrees.</span></div>
 <table>
-<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">DeviceMappings.xml entry</th><th style="width:28%">Button map</th><th>Installation</th></tr>
-<tr class="pick"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap</td><td><label class="ib"><input type="radio" name="a1" autocomplete="off">STEAM</label></td></tr>
-<tr class="pick"><td class="cont">VPC Stick WarBRD+ (right)</td><td>RightStick</td><td>RightStick.buttonMap</td><td><label class="ib"><input type="radio" name="a1" autocomplete="off">EPIC</label></td></tr>
-<tr class="pick"><td>VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap <span class="dim">(14 labels)</span></td><td><label class="ib"><input type="radio" name="a2" autocomplete="off">STEAM</label></td></tr>
-<tr class="pick"><td class="cont">VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap <span class="dim">(17 labels)</span></td><td><label class="ib"><input type="radio" name="a2" autocomplete="off">EPIC</label></td></tr>
-<tr><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>LVWAP.buttonMap</td><td>EPIC</td></tr>
-<tr><td>T-Rudder pedals</td><td>Pedals</td><td class="dim">none</td><td>STEAM</td></tr>
-<tr><td>Saitek X52 <span class="dim">(not connected)</span></td><td>X52</td><td>X52.buttonMap</td><td>STEAM, EPIC</td></tr>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">Device Alias</th><th style="width:28%">Button Label Map</th><th>Installation</th></tr>
+<tr class="pick sd"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>12 different labels</td><td><label class="ib"><input type="radio" name="a1" autocomplete="off">STEAM</label> <label class="ib mg"><input type="radio" name="a1" autocomplete="off">MERGE</label> <span class="done">6 of 6 chosen</span></td></tr>
+<tr class="pick sd"><td class="cont">VPC Stick WarBRD+ (right)</td><td>RightStick</td><td>9 different labels</td><td><label class="ib"><input type="radio" name="a1" autocomplete="off">EPIC</label></td></tr>
+<tr class="pick sw"><td>VPC Throttle CM3</td><td>Throttle</td><td>14 different labels</td><td><label class="ib"><input type="radio" name="a2" autocomplete="off">STEAM</label> <label class="ib mg"><input type="radio" name="a2" autocomplete="off">MERGE</label> <span class="done">7 of 7 chosen</span></td></tr>
+<tr class="pick sw"><td class="cont">VPC Throttle CM3</td><td>Throttle</td><td>17 different labels</td><td><label class="ib"><input type="radio" name="a2" autocomplete="off">EPIC</label></td></tr>
+<tr class="pick sd"><td>Logitech Flight Yoke</td><td>Yoke</td><td>20 different labels</td><td><label class="ib"><input type="radio" name="a3" autocomplete="off">STEAM</label><label class="keep">Keep as<input class="nm" type="text" autocomplete="off" placeholder="new name"><span class="nmh">Leave blank to drop this controller.</span></label></td></tr>
+<tr class="pick sd"><td>Logitech X56 Stick <span class="dim">(not connected)</span></td><td>Yoke</td><td>11 different labels</td><td><label class="ib"><input type="radio" name="a3" autocomplete="off">EPIC</label><label class="keep">Keep as<input class="nm" type="text" autocomplete="off" placeholder="new name"><span class="nmh">Leave blank to drop this controller.</span></label></td></tr>
+<tr class="ss"><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr class="sd"><td>T-Rudder pedals</td><td>Pedals</td><td>12 labels</td><td>STEAM</td></tr>
+<tr class="ss"><td>Saitek X52 <span class="dim">(not connected)</span></td><td>X52</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr class="ss"><td>VPC Control Panel</td><td>VPCPanel</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr class="dead"><td>Saitek X52 <span>(not connected)</span></td><td>OldX52</td><td>no labels exist</td><td>Not used by the game</td></tr>
 </table>
 <div class="ban">Once you make these decisions, BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files.</div>
 <input type="checkbox" id="ackA" class="ackbox" autocomplete="off">
 <div style="text-align:center;padding:8px 0"><label for="ackA" class="hb p ack"><span class="a1">I have read and understood this information</span><span class="a2">Read and understood</span></label></div>
 <div class="gate">
-<div class="row"><span class="hb off" role="button">Use STEAM for All</span><span class="warn off">You will lose the 131 binds that use LVWAP in the EPIC installation.</span></div>
+<div class="row"><span class="hb off" role="button">Use STEAM for All</span><span class="warn off nl">Nothing is lost.</span></div>
 <div class="row"><span class="hb off" role="button">Use EPIC for All</span><span class="warn off">You will lose the 24 binds that use Pedals in the STEAM installation.</span></div>
 </div>
 </div>
@@ -101,14 +206,14 @@ tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) .ib{
 <div class="hud">
 <div class="t"><span>FIRST-TIME STARTUP</span><span>&times;</span></div>
 <div class="b">
-<div class="safe">Everything is backed up before anything is written. This backup is kept forever.</div>
+<div class="safe">Everything is backed up before anything is written. The backup called "First Setup" is kept forever.</div>
 <div class="ban">We found 2 installations, STEAM and EPIC, and they hold the same device files, so there is nothing to choose.</div>
 <table>
-<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">DeviceMappings.xml entry</th><th style="width:28%">Button map</th><th>Installation</th></tr>
-<tr><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap</td><td>STEAM, EPIC</td></tr>
-<tr><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>LVWAP.buttonMap</td><td>STEAM, EPIC</td></tr>
-<tr><td>VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap</td><td>STEAM, EPIC</td></tr>
-<tr><td>T-Rudder pedals</td><td>Pedals</td><td class="dim">none</td><td>STEAM, EPIC</td></tr>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">Device Alias</th><th style="width:28%">Button Label Map</th><th>Installation</th></tr>
+<tr><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr><td>VPC Throttle CM3</td><td>Throttle</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr><td>T-Rudder pedals</td><td>Pedals</td><td>no labels exist</td><td>STEAM, EPIC</td></tr>
 </table>
 <div class="ban">BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files.</div>
 </div>
@@ -123,14 +228,14 @@ tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) .ib{
 <div class="t"><span>YOUR CONTROL FILES CHANGED</span><span>&times;</span></div>
 <div class="b">
 <div class="imp">THIS IS VERY IMPORTANT, PLEASE READ</div>
-<div class="safe">Everything is backed up before anything is written. This backup is kept forever.</div>
+<div class="safe">Everything is backed up before anything is written.</div>
 <div class="ban">Your installations' device files no longer match BindForge's working copy. Use the working copy or one installation's files for all of them, or merge them.</div>
 <table>
-<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">DeviceMappings.xml entry</th><th style="width:28%">Button map</th><th>Source</th></tr>
-<tr class="pick"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap</td><td><label class="ib"><input type="radio" name="c1" autocomplete="off">Working copy</label></td></tr>
-<tr class="pick"><td class="cont">VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>RVWAP.buttonMap <span class="dim">(labels differ)</span></td><td><label class="ib"><input type="radio" name="c1" autocomplete="off">EPIC</label></td></tr>
-<tr><td>T-Rudder pedals</td><td>Pedals</td><td class="dim">none</td><td>Working copy</td></tr>
-<tr><td>VPC Throttle CM3</td><td>Throttle</td><td>Throttle.buttonMap</td><td>Working copy, EPIC</td></tr>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">Device Alias</th><th style="width:28%">Button Label Map</th><th>Source</th></tr>
+<tr class="pick"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>12 different labels</td><td><label class="ib"><input type="radio" name="c1" autocomplete="off">Working copy</label> <label class="ib mg"><input type="radio" name="c1" autocomplete="off">MERGE</label> <span class="done">3 of 3 chosen</span></td></tr>
+<tr class="pick"><td class="cont">VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>15 different labels</td><td><label class="ib"><input type="radio" name="c1" autocomplete="off">EPIC</label></td></tr>
+<tr><td>T-Rudder pedals</td><td>Pedals</td><td>no labels exist</td><td>Working copy</td></tr>
+<tr><td>VPC Throttle CM3</td><td>Throttle</td><td>all labels match</td><td>Working copy, EPIC</td></tr>
 </table>
 <div class="ban">Once you make these decisions, the result is written to BindForge's working copy and to every installation the check read.</div>
 <input type="checkbox" id="ackC" class="ackbox" autocomplete="off">
@@ -143,6 +248,122 @@ tbody:has(input[name=c1]:checked) tr.pick:has(input[name=c1]:not(:checked)) .ib{
 <div class="f"><span class="hb" role="button">Cancel</span><span class="hb p" role="button">Merge</span></div>
 </div>
 </div>
+
+<div class="case cD">
+<h2>D. MERGE PRESSED ON THE THROTTLE: THE LABEL MERGE</h2>
+<p class="why">Opens at once over the reconcile. Only the inputs the installations label differently. Each row is answered with a button per installation carrying its label; the input turns from the warning to the success colour once answered. A label only one installation holds is taken without a question, so it is not listed.</p>
+<div class="hud">
+<div class="t"><span>MERGE THE LABELS: VPC THROTTLE CM3</span><span>&times;</span></div>
+<div class="b">
+<div class="ban">These installations label these inputs differently. Choose which label to keep for each one, or press a column's heading to take all of that installation's labels. Inputs they label the same are kept as they are.</div>
+<div class="lmcount" id="lmc">0 of 7 chosen</div>
+<table>
+<tr><th style="width:24%;vertical-align:bottom">Input</th><th style="width:38%"><span class="hb" role="button" onclick="lmAll(0)">Use STEAM's labels</span></th><th><span class="hb" role="button" onclick="lmAll(1)">Use EPIC's labels</span></th></tr>
+<tr class="lm"><td>Joy_1</td><td><label class="ib"><input type="radio" name="lm0" autocomplete="off"><span class="lb">Boost</span></label></td><td><label class="ib"><input type="radio" name="lm0" autocomplete="off"><span class="lb">Afterburner</span></label></td></tr>
+<tr class="lm"><td>Joy_4</td><td><label class="ib"><input type="radio" name="lm1" autocomplete="off"><span class="lb">Landing gear</span></label></td><td><label class="ib"><input type="radio" name="lm1" autocomplete="off"><span class="lb">Gear</span></label></td></tr>
+<tr class="lm"><td>Joy_7</td><td><label class="ib"><input type="radio" name="lm2" autocomplete="off"><span class="lb">Cargo scoop</span></label></td><td><label class="ib"><input type="radio" name="lm2" autocomplete="off"><span class="lb">Scoop</span></label></td></tr>
+<tr class="lm"><td>Joy_12</td><td><label class="ib"><input type="radio" name="lm3" autocomplete="off"><span class="lb">Flight assist</span></label></td><td><label class="ib"><input type="radio" name="lm3" autocomplete="off"><span class="lb">FA off</span></label></td></tr>
+<tr class="lm"><td>Joy_15</td><td><label class="ib"><input type="radio" name="lm4" autocomplete="off"><span class="lb">Night vision</span></label></td><td><label class="ib"><input type="radio" name="lm4" autocomplete="off"><span class="lb">NV</span></label></td></tr>
+<tr class="lm"><td>Joy_POV2Up</td><td><label class="ib"><input type="radio" name="lm5" autocomplete="off"><span class="lb">Target ahead</span></label></td><td><label class="ib"><input type="radio" name="lm5" autocomplete="off"><span class="lb">Select target</span></label></td></tr>
+<tr class="lm"><td>Joy_RZAxis</td><td><label class="ib"><input type="radio" name="lm6" autocomplete="off"><span class="lb">Throttle</span></label></td><td><label class="ib"><input type="radio" name="lm6" autocomplete="off"><span class="lb">Main throttle</span></label></td></tr>
+</table>
+</div>
+<div class="f"><span class="hb" role="button">Cancel</span><span class="hb p" role="button">Done</span></div>
+</div>
+</div>
+<div class="case cE" id="caseE">
+<h2>E. THE SAME DIALOG, WITH SEVERITY COLOURS ON THE ROWS</h2>
+<p class="why">Example for decision 6. Every colour on this tab is the real theme role from Elite Intel's shipped themes. Press a theme to see the rows in it.</p>
+<div class="tps"><button type="button" class="tp on" data-t="Default">Default</button><button type="button" class="tp" data-t="Clockwork Orange">Clockwork Orange</button><button type="button" class="tp" data-t="Coffee">Coffee</button><button type="button" class="tp" data-t="Hackers Green">Hackers Green</button><button type="button" class="tp" data-t="High contrast">High contrast</button><button type="button" class="tp" data-t="Purple Rain">Purple Rain</button></div>
+<div class="hud">
+<div class="t"><span>FIRST-TIME STARTUP</span><span>&times;</span></div>
+<div class="b">
+<div class="imp">THIS IS VERY IMPORTANT, PLEASE READ</div>
+<div class="safe">Everything is backed up before anything is written. The backup called "First Setup" is kept forever.</div>
+<div class="ban">Each installation of the game holds different device files. BindForge does not manage multiple installations separately, and VEGA needs one set of controls to press the in-game inputs. Below are the devices and the installations that use them. If you have ever edited them by hand in either installation you can merge them; if not, you can use one installation to overwrite the device files in the other installations.</div>
+<div class="unr">OCULUS could not be reached, so it is left out. BindForge will check it when it is back.</div>
+<div class="legend"><span class="l-d">Your bindings use this device. Losing its entry would break them.</span><span class="l-w">This device differs, but no binding stops working.</span><span class="l-s">Every installation agrees.</span></div>
+<table>
+<tr><th style="width:30%">Device (Windows)</th><th style="width:22%">Device Alias</th><th style="width:28%">Button Label Map</th><th>Installation</th></tr>
+<tr class="pick sd" data-g="e1"><td>VPC Stick WarBRD+ (right)</td><td>RVWAP</td><td>12 different labels</td><td><label class="ib"><input type="radio" name="e1" autocomplete="off">STEAM</label> <label class="ib mg"><input type="radio" name="e1" autocomplete="off">MERGE</label> <span class="done">6 of 6 chosen</span></td></tr>
+<tr class="pick sd" data-g="e1"><td>VPC Stick WarBRD+ (right)</td><td>RightStick</td><td>9 different labels</td><td><label class="ib"><input type="radio" name="e1" autocomplete="off">EPIC</label></td></tr>
+<tr class="pick sw" data-g="e2"><td>VPC Throttle CM3</td><td>Throttle</td><td>14 different labels</td><td><label class="ib"><input type="radio" name="e2" autocomplete="off">STEAM</label> <label class="ib mg"><input type="radio" name="e2" autocomplete="off">MERGE</label> <span class="done">7 of 7 chosen</span></td></tr>
+<tr class="pick sw" data-g="e2"><td>VPC Throttle CM3</td><td>Throttle</td><td>17 different labels</td><td><label class="ib"><input type="radio" name="e2" autocomplete="off">EPIC</label></td></tr>
+<tr class="pick sd" data-g="e3"><td>Logitech Flight Yoke</td><td>Yoke</td><td>20 different labels</td><td><label class="ib"><input type="radio" name="e3" autocomplete="off">STEAM</label><label class="keep">Keep as<input class="nm" type="text" autocomplete="off" placeholder="new name"><span class="nmh">Leave blank to drop this controller.</span></label></td></tr>
+<tr class="pick sd" data-g="e3"><td>Logitech X56 Stick <span class="dim">(not connected)</span></td><td>Yoke</td><td>11 different labels</td><td><label class="ib"><input type="radio" name="e3" autocomplete="off">EPIC</label><label class="keep">Keep as<input class="nm" type="text" autocomplete="off" placeholder="new name"><span class="nmh">Leave blank to drop this controller.</span></label></td></tr>
+<tr class="pick ss"><td>VPC Stick WarBRD+ (left)</td><td>LVWAP</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr class="pick sd"><td>T-Rudder pedals</td><td>Pedals</td><td>12 labels</td><td>STEAM</td></tr>
+<tr class="pick sw"><td>Spare gamepad <span class="dim">(not connected)</span></td><td>Spare</td><td>no labels exist</td><td>STEAM</td></tr>
+<tr class="pick ss"><td>Saitek X52 <span class="dim">(not connected)</span></td><td>X52</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr class="pick ss"><td>VPC Control Panel</td><td>VPCPanel</td><td>all labels match</td><td>STEAM, EPIC</td></tr>
+<tr class="pick lost"><td>Saitek X52 <span class="dim">(not connected)</span></td><td>OldX52</td><td>no labels exist</td><td>Not used by the game</td></tr>
+</table>
+<div class="ban">Once you make these decisions, BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files.</div>
+<input type="checkbox" id="ackE" class="ackbox" autocomplete="off">
+<div style="text-align:center;padding:8px 0"><label for="ackE" class="hb p ack"><span class="a1">I have read and understood this information</span><span class="a2">Read and understood</span></label></div>
+<div class="gate">
+<div class="row"><span class="hb off" role="button">Use STEAM for All</span><span class="warn off nl">Nothing is lost.</span></div>
+<div class="row"><span class="hb off" role="button">Use EPIC for All</span><span class="warn off">You will lose the 24 binds that use Pedals in the STEAM installation.</span></div>
+</div>
+</div>
+<div class="f"><span class="hb" role="button">Cancel</span><span class="hb p" role="button">Merge</span></div>
+</div>
+</div>
+<script>
+const THEMES={"Default":{"body":"#0B0F14FF","head":"#111820FF","panel":"#111820FF","cell":"#161F29FF","field":"#0B0F14FF","text":"#E6E6E6FF","sec":"#A9B8C2FF","title":"#A9B8C2FF","btntext":"#E6E6E6FF","accent":"#33D7E8A6","fill":"#33D7E8A6","seltext":"#0B0F14FF","pbtn":"#1B6F7BFF","frame":"#3A4C58FF","sep":"#3A4C58FF","success":"#7CE8A8FF","warning":"#8FA6FFFF","danger":"#E8602CFF","disabled":"#566874FF","info":"#33D7E8A6"},"Clockwork Orange":{"body":"#10141C","head":"#10141C","panel":"#10141C","cell":"#141724","field":"#10141C","text":"#FFFFFF","sec":"#A9B8C2FF","title":"#A9B8C2FF","btntext":"#10141C","accent":"#CC6600","fill":"#CC6600","seltext":"#10141C","pbtn":"#CC6600","frame":"#3A4C58FF","sep":"#3A4C58FF","success":"#7CE8A8FF","warning":"#8FA6FFFF","danger":"#CC6600","disabled":"#566874FF","info":"#D8DEE3"},"Coffee":{"body":"#160F08","head":"#110B06","panel":"#110B06","cell":"#1C130A","field":"#160F08","text":"#E6E6E6FF","sec":"#A9B8C2FF","title":"#A9B8C2FF","btntext":"#E6E6E6FF","accent":"#BCAB9C","fill":"#BCAB9C","seltext":"#160F08","pbtn":"#634A35","frame":"#3A4C58FF","sep":"#3A4C58FF","success":"#7CE8A8FF","warning":"#EBDFD0","danger":"#E8602CFF","disabled":"#452C0B","info":"#877B70"},"Hackers Green":{"body":"#000000","head":"#000000","panel":"#000000","cell":"#161F29FF","field":"#000000","text":"#E6E6E6FF","sec":"#A9B8C2FF","title":"#A9B8C2FF","btntext":"#E6E6E6FF","accent":"#129115","fill":"#129115","seltext":"#000000","pbtn":"#006633","frame":"#3A4C58FF","sep":"#3A4C58FF","success":"#7CE8A8FF","warning":"#8FA6FFFF","danger":"#E8602CFF","disabled":"#566874FF","info":"#129115"},"High contrast":{"body":"#000000","head":"#101519","panel":"#0A0D10","cell":"#12181E","field":"#000000","text":"#FFFFFF","sec":"#D0DAE0","title":"#E0E8EC","btntext":"#FFFFFF","accent":"#5FD3ED","fill":"#5FD3ED","seltext":"#000000","pbtn":"#0B4A54","frame":"#A0B4C0","sep":"#8FA3B0","success":"#B5FEB6","warning":"#6793FA","danger":"#F37344","disabled":"#8494A0","info":"#5FD3ED"},"Purple Rain":{"body":"#0C040C","head":"#0C040C","panel":"#0C040C","cell":"#330066","field":"#0C040C","text":"#E6E6E6FF","sec":"#AF36FF","title":"#A9B8C2FF","btntext":"#EBEBEB","accent":"#AC30FF","fill":"#AC30FF","seltext":"#FFFFFF","pbtn":"#9900FF","frame":"#3A4C58FF","sep":"#3A4C58FF","success":"#7CE8A8FF","warning":"#AC30FF","danger":"#E8602CFF","disabled":"#566874FF","info":"#AC30FF"}};
+function useTheme(n){const c=document.getElementById('caseE');Object.entries(THEMES[n]).forEach(([k,v])=>c.style.setProperty('--'+k,v));document.querySelectorAll('.tp').forEach(b=>b.classList.toggle('on',b.dataset.t===n));}
+document.querySelectorAll('.tp').forEach(b=>b.addEventListener('click',()=>useTheme(b.dataset.t)));
+document.getElementById('caseE').addEventListener('change',e=>{const r=e.target.closest('tr[data-g]');if(!r||e.target.type!=='radio')return;const merged=e.target.closest('.mg');document.querySelectorAll('#caseE tr[data-g="'+r.dataset.g+'"]').forEach(x=>x.classList.toggle('lost',!merged&&!x.querySelector('input:checked')));});
+useTheme('Default');
+</script>
+<div class="case cF">
+<h2>F. MERGE PRESSED ON ONE CONTROLLER WITH TWO ALIASES</h2>
+<p class="why">RVWAP in Steam and RightStick in Epic are the same stick. One alias button per alias, as many as there are, above each column. Done waits for an alias and every conflict. Merge then builds one button label file under the kept alias.</p>
+<div class="hud">
+<div class="t"><span>MERGE THE LABELS: VPC STICK WARBRD+ (RIGHT)</span><span>&times;</span></div>
+<div class="b">
+<div class="ban">These installations use different aliases and label these inputs differently. Choose the alias to keep, then which label to keep for each input, or press a column's heading to take all of that installation's labels. Inputs they label the same are kept as they are.</div>
+<div class="lmcount" id="amc">0 of 6 chosen</div>
+<table>
+<tr class="ahead"><th style="width:24%;vertical-align:bottom">Input</th><th style="width:38%"><div class="hs"><label class="alb"><input type="radio" name="amalias" autocomplete="off">Use "RVWAP" alias</label><span class="hb" role="button" onclick="amAll(0)">Use STEAM's labels</span></div></th><th><div class="hs"><label class="alb"><input type="radio" name="amalias" autocomplete="off">Use "RightStick" alias</label><span class="hb" role="button" onclick="amAll(1)">Use EPIC's labels</span></div></th></tr>
+<tr class="am"><td>Joy_1</td><td><label class="ib"><input type="radio" name="am0" autocomplete="off"><span class="lb">Fire</span></label></td><td><label class="ib"><input type="radio" name="am0" autocomplete="off"><span class="lb">Trigger</span></label></td></tr>
+<tr class="am"><td>Joy_2</td><td><label class="ib"><input type="radio" name="am1" autocomplete="off"><span class="lb">Missiles</span></label></td><td><label class="ib"><input type="radio" name="am1" autocomplete="off"><span class="lb">Secondary fire</span></label></td></tr>
+<tr class="am"><td>Joy_3</td><td><label class="ib"><input type="radio" name="am2" autocomplete="off"><span class="lb">Target</span></label></td><td><label class="ib"><input type="radio" name="am2" autocomplete="off"><span class="lb">Select target</span></label></td></tr>
+<tr class="am"><td>Joy_POV1Up</td><td><label class="ib"><input type="radio" name="am3" autocomplete="off"><span class="lb">Look up</span></label></td><td><label class="ib"><input type="radio" name="am3" autocomplete="off"><span class="lb">Up</span></label></td></tr>
+<tr class="am"><td>Joy_XAxis</td><td><label class="ib"><input type="radio" name="am4" autocomplete="off"><span class="lb">Roll</span></label></td><td><label class="ib"><input type="radio" name="am4" autocomplete="off"><span class="lb">Bank</span></label></td></tr>
+</table>
+</div>
+<div class="f"><span class="hb" role="button">Cancel</span><span class="hb p off" role="button" id="amd">Done</span></div>
+</div>
+</div>
+<script>
+function amCount(){const r=[...document.querySelectorAll('tr.am')];const a=document.querySelector('input[name=amalias]:checked')?1:0;const d=r.filter(x=>x.querySelector('input:checked')).length+a,t=r.length+1,c=document.getElementById('amc');c.textContent=d+' of '+t+' chosen';c.classList.toggle('all',d===t);document.getElementById('amd').classList.toggle('off',d!==t);}
+function amAll(side){document.querySelectorAll('tr.am').forEach(r=>{r.querySelectorAll('input')[side].checked=true;});amCount();}
+document.querySelector('.cF').addEventListener('change',amCount);
+</script>
+<script>
+document.addEventListener('input',e=>{if(!e.target.classList.contains('nm'))return;const v=e.target.value.trim(),h=e.target.parentElement.querySelector('.nmh'),taken=['yoke','rvwap','rightstick','throttle','lvwap','pedals','x52'];h.className='nmh'+(!v?'':taken.includes(v.toLowerCase())?' bad':' ok');h.textContent=!v?'Leave blank to drop this controller.':taken.includes(v.toLowerCase())?'That name is already in use.':'Kept under this name, with no bindings.';});
+function lmCount(){const r=[...document.querySelectorAll('tr.lm')];const d=r.filter(x=>x.querySelector('input:checked')).length;const c=document.getElementById('lmc');c.textContent=d+' of '+r.length+' chosen';c.classList.toggle('all',d===r.length);}
+function lmAll(side){document.querySelectorAll('tr.lm').forEach(r=>{const b=r.querySelectorAll('input');const pick=b.length===2?b[side]:b[0];if(pick)pick.checked=true;});lmCount();}
+document.addEventListener('change',e=>{if(e.target.closest('tr.lm'))lmCount();});
+</script>
+
+<script>
+document.querySelectorAll('.case').forEach(c=>{
+  const ack=c.querySelector('.ackbox'),merge=[...c.querySelectorAll('.f .hb.p')].find(b=>b.textContent==='Merge');
+  if(!ack||!merge)return;
+  const wrap=document.createElement('span');wrap.className='fr';const line=document.createElement('span');line.className='ftl';
+  merge.replaceWith(wrap);wrap.append(line,merge);
+  const update=()=>{
+    const names=[...new Set([...c.querySelectorAll('table input[type=radio]')].map(r=>r.name))];
+    const left=names.filter(n=>!c.querySelector('table input[name="'+n+'"]:checked')).length;
+    const bad=[...c.querySelectorAll('.nmh.bad')].some(h=>!h.closest('tr').querySelector('input[type=radio]:checked'));
+    const text=left?left+(left===1?' device still needs a choice':' devices still need a choice'):bad?'Fix the Keep as name':!ack.checked?'Press I have read and understood this information':'';
+    line.textContent=text;merge.classList.toggle('off',!!text);
+  };
+  c.addEventListener('change',update);c.addEventListener('input',()=>setTimeout(update));update();
+});
+</script>
 
 </body>
 </html>

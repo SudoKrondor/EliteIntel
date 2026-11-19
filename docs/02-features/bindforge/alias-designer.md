@@ -438,7 +438,7 @@ the Merge summary listed, go in the report that first-time startup is complete.
 **What it shows, top to bottom:**
 
 - **"THIS IS VERY IMPORTANT, PLEASE READ"**, large, as a title in the body - left out when nothing can be lost.
-- **"Everything is backed up before anything is written. This backup is kept forever."** First, centred, larger than
+- **"Everything is backed up before anything is written. The backup called "First Setup" is kept forever."** First, centred, larger than
   the body text, in the theme's success colour - said first because it is what makes the rest safe to touch.
 - **The reason**, in the user's words: each installation holds different device files; BindForge keeps one set, and
   VEGA needs one set of controls to press the in-game inputs; merge if you have set the installations up
@@ -447,7 +447,11 @@ the Merge summary listed, go in the report that first-time startup is complete.
   - **Device (Windows)** - the name Windows gives the controller, matched to the entry by its hardware; a controller
     not plugged in shows the entry's name and *(not connected)*. **The user has named nothing yet**: naming comes
     after, once the working copy exists.
-  - **DeviceMappings.xml entry** and **Button map** - what that installation holds for the device, or *none*.
+  - **Device Alias** - the name that installation holds for the device.
+  - **Button Label Map** - how the labels stand, in the user's words and never a file name (2026-11-18, Alan): *"14
+    different labels"* where the rows of a device disagree, the number being the labels that row holds; *"all labels
+    match"* where the installations agree; *"no labels exist"* where there are none; *"12 labels"* where only one installation holds the device, so there
+    is nothing to compare.
   - **Installation** - where the row comes from. A device on **two or more rows** - two entries for one controller,
     or one entry whose button maps disagree - gets **a button on each row, named for its installation**; pressing
     one makes that row the winner and greys the others. A device on one row, or the same everywhere, needs no
@@ -457,26 +461,144 @@ the Merge summary listed, go in the report that first-time startup is complete.
   BindForge's working copy folder, which is where you make changes before applying them to the live game input
   configuration files."** Under the table. Each flow puts its own words here - RESTORE says what it replaces and
   that edits on screen are lost, the check says where the result goes.
-- **"I have read and understood this information"** - until it is pressed, the "Use … for All" buttons are greyed.
-  Merge and Cancel are not gated.
+- **"I have read and understood this information"** - until it is pressed, the "Use … for All" buttons and Merge are
+  greyed. Cancel is never greyed.
 - **One "Use … for All" button per side, stacked, each with what it loses beside it** - *"You will lose the 131
   binds that use LVWAP in the EPIC installation."* Worked out before anything is pressed, for every side, so the
   warning that only the confirmation gave is on screen when the choice is made. Same weight as Merge: no quiet
-  buttons.
+  buttons. A side that loses nothing says **"Nothing is lost."** in the success colour, in the same place (2026-11-17,
+  Alan).
 - **Cancel** and **Merge** (or **Create working copy**) at the foot.
 
 **Themable, and the HUD canon holds** ([ui-component-map.md](ui-component-map.md)): every colour is a theme role -
 the warning title and the losses the warning colour, the backup line the success colour, a greyed row or button the
-disabled colour - and state is text colour, never a fill or a pill.
+disabled colour - and state is text colour, never a fill or a pill. **No colour is hard-coded** (Krondor,
+2026-11-17): each is read from `HudPalette`'s roles (`HUD_COLOR_ROLE_WARNING` = `ActiveTheme.color(ThemeRole.WARNING)`
+and its siblings), because a fixed yellow vanishes on a light theme.
+
+**The label merge stays, as a MERGE button on the row** (2026-11-17, Alan). One controller whose labels disagree gets **MERGE** beside its installation button, on its first row only -
+whether it holds one alias or several (2026-11-18, Alan). Two different controllers under one alias get none. Pressing it **opens the [label merge](#the-buttonmap-label-merge--2026-10-08-alan)
+at once**, since the foot buttons write and there is no later step to ask in. The merge lists **only the inputs the
+installations label differently**, and each row is answered with **a button per installation, carrying only that side's
+label** - the column heading names the installation, so the button does not - pressed, it takes the check mark and greys the others, as the reconcile's installation buttons do - in place
+of clicking a label cell. **Each installation's column heading is its "Use …'s labels" button**, answering every row at once in that
+installation's favour; there are no buttons under the table. A label only one installation holds is taken without a
+question and is not a row, as the label merge has always worked. Only with three or more installations can a row show
+*none* for a side - the other two disagree - and that side's heading leaves the row unanswered. Back in the
+reconcile, MERGE shows as chosen with *"5 of 7 chosen"* beside it, neither of the device's rows greys, and pressing an
+installation button afterwards replaces the merge.
+
+**One controller under two or more aliases merges the alias too** (2026-11-18, Alan). RVWAP in Steam and RightStick in
+Epic are one stick, so its labels combine and only the alias has to be one choice. Above each installation's column, the
+label merge shows **a button per alias, *Use "RVWAP" alias***, as many as there are aliases; an alias two installations
+share is one choice. The alias chosen and the labels chosen are independent: the alias names the device and its button
+label file, and the labels are answered row by row or by a column's heading. **Done** waits for an alias and every
+conflict, and the count on the reconcile's row includes the alias. Nothing is written yet: pressing Merge builds **one
+`.buttonMap` under the kept alias, holding the combined labels**, and saves it to the working copy when first-time startup
+finishes. Bindings on an alias that lost move to the one kept, as a losing name's always have.
+
+**One entry name on two controllers: pick one, and the other can be kept under a new name** (2026-11-17, Alan). Two
+installations hold `Yoke` on different hardware, so each controller is a row with its installation button, and no
+MERGE: labels from two controllers cannot be combined, and each controller keeps its own.
+
+- **The row pressed wins.** Its controller keeps the name and every binding that uses it: a binding says only
+  `Device="Yoke"`, and the one set of binds files cannot tell which controller it was made for.
+- **The losing row greys and shows a name box, "Keep as".** A name typed there keeps that controller's entry and its
+  own labels under the new name, with no bindings. Left blank, its entry is not kept; the backup still holds it.
+- **The name follows the controller name rule** (`DeviceNames.validate`) and may not be one Frontier ships, one any
+  row of the table holds, or one typed in another box. The reason shows beside the box in the danger colour, and
+  Merge does not write until the name is right or the box is empty.
+- **Nothing is written until the foot button.** The typed name is one more answer the dialog holds.
+- **A "Use … for All" names nothing:** that side's controller is taken and no other is kept.
+
+**A dead entry's bindings move to the entry the game uses** (2026-11-17, Alan). A dead entry is a second name for one
+controller, below the first in the same `DeviceMappings.xml`; the game never uses it and the working copy does not
+take it. It is a plain greyed row reading *"Not used by the game"*, with nothing to press. Bindings that still name it
+would leave the working copy naming an entry it does not hold, and
+[the game rejects the whole binds file](domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22)
+for that, so they **move to the entry above it on that controller** - or, where that name lost a name conflict, to the
+name that beat it - the way a losing name's bindings move. First-time startup's report lists them with the other moved
+bindings.
+
+**The user's labels on a Frontier device are a plain row** (2026-11-17, Alan): the device, the entry, the button map and
+the installations as text, with nothing to press, since the working copy keeps them. Where the installations label
+that device differently it is a row like any other whose labels disagree, with MERGE.
+
+**Each row's text carries its severity, in the theme's colours** (2026-11-17, Alan). Tab E of the mock-up shows it in
+every shipped theme.
+
+| Theme role | When |
+|---|---|
+| **Danger** (`HUD_COLOR_ROLE_DANGER`) | the binds files use the device, so losing its entry would break them |
+| **Warning** (`HUD_COLOR_ROLE_WARNING`) | it differs, but no binding stops working |
+| **Success** (`HUD_COLOR_ROLE_SUCCESS`) | every installation agrees |
+| **Disabled** (`HUD_COLOR_ROLE_DISABLED`) | a row that lost to the one pressed, and a dead entry |
+
+The severity is the one `FirstSetupPlan` already gives each row. A row that loses takes the disabled colour in place of
+its severity; pressing MERGE greys neither row.
+
+**A legend above the table says what the colours mean** (2026-11-17, Alan): one short line each for danger, warning and
+success, each in its own colour. A theme's colours do not say "warning" by themselves, so the words carry the meaning.
+It is left out when there is nothing to choose.
+
+**An installation that cannot be reached is named under the reason** (2026-11-17, Alan), in the warning colour and only
+when one is missing: *"EPIC could not be reached, so it is left out. BindForge will check it when it is back."* It is
+not in the table and nothing is written to it.
+
+**Merge waits for every choice and for the read gate** (2026-11-17, Alan). It is greyed until every device with a choice
+is answered, a label merge in full, every **Keep as** name is right or empty, and *I have read and understood this
+information* is pressed. A line beside it, in the warning colour, says what is left, one thing at a time: *"2 devices
+still need a choice"*, *"Fix the Keep as name"*, then *"Press I have read and understood this information"*. It goes
+when nothing is left. *This replaces the notice Merge gave when pressed too early.*
+
+**The words - 2026-11-18 (Alan).** Approved for now; Alan may come back to them.
+
+| Where | English |
+|---|---|
+| Title | THIS IS VERY IMPORTANT, PLEASE READ |
+| Backup line, first-time startup | Everything is backed up before anything is written. The backup called "First Setup" is kept forever. |
+| Reason | Each installation of the game holds different device files. BindForge does not manage multiple installations separately, and VEGA needs one set of controls to press the in-game inputs. Below are the devices and the installations that use them. If you have ever edited them by hand in either installation you can merge them; if not, you can use one installation to overwrite the device files in the other installations. |
+| An installation not reached | {0} could not be reached, so it is left out. BindForge will check it when it is back. |
+| Legend, danger | Your bindings use this device. Losing its entry would break them. |
+| Legend, warning | This device differs, but no binding stops working. |
+| Legend, success | Every installation agrees. |
+| Under the table | Once you make these decisions, BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files. |
+| Read gate | I have read and understood this information |
+| A side that loses nothing | Nothing is lost. |
+| The losing row's box | Keep as - Leave blank to drop this controller. |
+| A dead entry | Not used by the game |
+| Label merge intro | These installations label these inputs differently. Choose which label to keep for each one, or press a column's heading to take all of that installation's labels. Inputs they label the same are kept as they are. |
+
+**The rest of first-time startup's words - 2026-11-18 (Alan).**
+
+| Where | English |
+|---|---|
+| Dialog title | FIRST-TIME STARTUP |
+| Table headings | Device (Windows) - Device Alias - Button Label Map - Installation |
+| A controller not plugged in | (not connected) |
+| Button Label Map | 1 different label - {0} different labels - all labels match - no labels exist - 1 label - {0} labels |
+| A side's loss | You will lose the {0} binds that use {1} in the {2} installation. |
+| A side's button | Use {0} for All |
+| Read gate, once pressed | Read and understood |
+| Foot buttons | Cancel - Merge - Create working copy |
+| Merge waits, choices left | 1 device still needs a choice - {0} devices still need a choice |
+| Merge waits, a name is wrong | Fix the Keep as name |
+| Merge waits, the read gate | Press I have read and understood this information |
+| Keep as, a name in use | That name is already in use. |
+| Keep as, a good name | Kept under this name, with no bindings. |
+| Row's merge button, and its count | MERGE - {0} of {1} chosen |
+| Label merge title | Merge the labels: {0} |
+| Label merge heading and buttons | Input - Use {0}'s labels - Cancel - Done |
+| Label merge, an alias button | Use "{0}" alias |
+| Label merge intro, several aliases | These installations use different aliases and label these inputs differently. Choose the alias to keep, then which label to keep for each input, or press a column's heading to take all of that installation's labels. Inputs they label the same are kept as they are. |
+| Nothing to choose, the finding | We found {0} installations, {1}, and they hold the same device files, so there is nothing to choose. |
+| Nothing to choose, under the table | BindForge will copy the device files and your current binds files to BindForge's working copy folder, which is where you make changes before applying them to the live game input configuration files. |
 
 **To settle at the sources:**
 
-- **The label merge.** A device whose button maps disagree is now two rows, and pressing one takes that
-  installation's labels whole. Whether **Compare N inputs** (the [label merge](#the-buttonmap-label-merge--2026-10-08-alan),
-  label by label) stays on such a row.
-- **A "Use … for All" that loses nothing** - what its line says.
 - **The check's and RESTORE's words** - the reason, the line under the table and the title, reworked as first-time
-  startup's were.
+  startup's were. **Their backup line too:** the backup they take is a before-changes one, which is pruned, so
+  the *"First Setup"* backup line is true only of first-time startup (found 2026-11-18).
 - **Where the Windows name comes from** - live hardware (`DeviceService`, `bindforge.devices`), matched by VID/PID.
 
 ### Settled while building it — 2026-10-07 (Alan)
