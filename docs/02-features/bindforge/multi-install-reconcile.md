@@ -245,6 +245,7 @@ files agree. No Plug in step: the player is mid-session.
 | Plugged-in state, Windows' names, presses | `LiveControllers` (`DeviceBus`, for the dialog's lifetime) |
 | Input codes in words | `InputNames` (`InputNamesTest`) |
 | Cards, chips, wrapped text | `ReconcileWidgets` |
+| A picture beside each controller (gamepad, joystick, throttle, yoke, pedals), guessed from Windows' name and the aliases, joystick when unsure, tinted to the theme | `ControllerIcons` (`ControllerIconsTest`), images in `resources/images` |
 | Dead entries' moves; one label merge per controller; a name on two controllers keeps the chosen one's labels | `FirstSetupPlan` (`FirstSetupPlanTest`) |
 
 - **Callers:** `FirstTimeStartupFlow` (Mode `firstSetup`), `RestoreFlow` (`restore`, its trailer on the Check step),

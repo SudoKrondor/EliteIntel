@@ -62,6 +62,24 @@ final class ReconcileWizard extends JDialog {
     private static final int WIDTH = 980;
     private static final int HEIGHT = 720;
     private static final int TEXT_WIDTH = 860;
+    /** A table row tall enough for a controller's picture. */
+    private static final int ICON_ROW_HEIGHT = ControllerIcons.TABLE + 14;
+    /** Keeps the text of a row with no picture in line with the rows that have one. */
+    private static final Icon EMPTY_ICON = new Icon() {
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+        }
+
+        @Override
+        public int getIconWidth() {
+            return ControllerIcons.TABLE;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return ControllerIcons.TABLE;
+        }
+    };
 
     /**
      * The files the player settled on.
@@ -516,7 +534,9 @@ final class ReconcileWizard extends JDialog {
             }
         };
         int pressedRow = -1;
+        List<Icon> icons = new ArrayList<>();
         for (ReconcileQuestions.Controller controller : controllers) {
+            icons.add(ControllerIcons.icon(kindOf(controller.hardware(), controller.aliases()), ControllerIcons.TABLE));
             boolean on = live.isConnected(controller.hardware());
             boolean pressed = on && controller.hardware().equals(lastPressed);
             if (pressed) pressedRow = model.getRowCount();
@@ -529,31 +549,40 @@ final class ReconcileWizard extends JDialog {
         JTable table = new JTable(model);
         HudTable.style(table);
         table.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
-        table.setDefaultRenderer(Object.class, new ConnectionRenderer(3));
+        table.setDefaultRenderer(Object.class, new ConnectionRenderer(3, icons));
+        table.setRowHeight(ICON_ROW_HEIGHT);
         table.setRowSelectionAllowed(true);
         if (pressedRow >= 0) table.setRowSelectionInterval(pressedRow, pressedRow);
         HudTable.fitColumnsToContent(table, 320);
         JScrollPane scroll = HudTable.dataPlaneScrollPane(table);
         scroll.setPreferredSize(new Dimension(TEXT_WIDTH, Math.min(420,
-                HudPalette.HUD_TABLE_HEADER_HEIGHT + (controllers.size() + 1) * HudPalette.HUD_TABLE_ROW_HEIGHT)));
+                HudPalette.HUD_TABLE_HEADER_HEIGHT + controllers.size() * ICON_ROW_HEIGHT + 8)));
         stack(column, scroll);
         stack(column, wrapped(getText("bindings.reconcile.plugIn.tip"), HudPalette.HUD_COLOR_ROLE_READOUT_LABEL,
                 HudPalette.HUD_FONT_SM, TEXT_WIDTH));
         return column;
     }
 
-    /** Plugged-in state as the cell's text colour, never a fill - the HUD canon's rule for state. */
+    /**
+     * Plugged-in state as the cell's text colour, never a fill - the HUD canon's rule for state - and each row's
+     * controller picture in the first column.
+     */
     private final class ConnectionRenderer extends HudTable.CellRenderer {
         private final int stateColumn;
+        private final List<Icon> icons;
 
-        ConnectionRenderer(int stateColumn) {
+        /** @param icons the picture for each row, in row order */
+        ConnectionRenderer(int stateColumn, List<Icon> icons) {
             this.stateColumn = stateColumn;
+            this.icons = List.copyOf(icons.stream().map(icon -> icon == null ? EMPTY_ICON : icon).toList());
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean selected, boolean focused,
                                                        int row, int column) {
             Component cell = super.getTableCellRendererComponent(table, value, selected, focused, row, column);
+            setIcon(column == 0 && row < icons.size() ? icons.get(row) : null);
+            setIconTextGap(12);
             if (column == stateColumn && !selected) {
                 boolean on = live.available() && String.valueOf(value).startsWith(connectionText(true));
                 cell.setForeground(on ? HudPalette.HUD_COLOR_ROLE_SUCCESS : HudPalette.HUD_COLOR_ROLE_READOUT_LABEL);
@@ -629,9 +658,14 @@ final class ReconcileWizard extends JDialog {
             boolean on = live.isConnected(hardware);
             ChoiceCard card = new ChoiceCard();
             card.with(from(option.installs(), "bindings.reconcile.controller.uses"));
-            card.with(line(controllerName(hardware, List.of()), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT,
+            JPanel identity = transparentPanel(new BorderLayout(12, 0));
+            identity.add(ControllerIcons.boxed(kindOf(hardware, List.of(name))), BorderLayout.WEST);
+            JPanel named = column(2);
+            stack(named, line(controllerName(hardware, List.of()), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT,
                     HudPalette.HUD_FONT_MD, Font.BOLD));
-            card.with(connection(on, hardware));
+            stack(named, connection(on, hardware));
+            identity.add(named, BorderLayout.CENTER);
+            card.with(identity);
             if (uses > 0) card.with(consequence(getText("bindings.reconcile.controller.works", name, uses), Mark.OK));
             if (!on && live.available()) {
                 card.with(consequence(getText("bindings.reconcile.controller.unplugged"), Mark.WARN));
@@ -863,8 +897,10 @@ final class ReconcileWizard extends JDialog {
                 return false;
             }
         };
+        List<Icon> icons = new ArrayList<>();
         for (ReconcileQuestions.Outcome outcome : outcomes) {
             FirstSetupPlan.Kept kept = outcome.kept();
+            icons.add(ControllerIcons.icon(kindOf(kept.hardware(), List.of(kept.name())), ControllerIcons.TABLE));
             model.addRow(new Object[]{
                     controllerName(kept.hardware(), List.of(kept.name())),
                     kept.name(),
@@ -875,11 +911,12 @@ final class ReconcileWizard extends JDialog {
         JTable table = new JTable(model);
         HudTable.style(table);
         table.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
-        table.setDefaultRenderer(Object.class, new ConnectionRenderer(4));
+        table.setDefaultRenderer(Object.class, new ConnectionRenderer(4, icons));
+        table.setRowHeight(ICON_ROW_HEIGHT);
         HudTable.fitColumnsToContent(table, 300);
         JScrollPane scroll = HudTable.dataPlaneScrollPane(table);
         scroll.setPreferredSize(new Dimension(TEXT_WIDTH, Math.min(340,
-                HudPalette.HUD_TABLE_HEADER_HEIGHT + (outcomes.size() + 1) * HudPalette.HUD_TABLE_ROW_HEIGHT)));
+                HudPalette.HUD_TABLE_HEADER_HEIGHT + outcomes.size() * ICON_ROW_HEIGHT + 8)));
         stack(column, scroll);
 
         List<ReconcileQuestions.Tidied> tidied = questions.tidied(resolution, answers);
@@ -1027,6 +1064,8 @@ final class ReconcileWizard extends JDialog {
 
     /** A controller's product name and plugged-in state, with a line under it. */
     private JComponent controllerLine(HardwareId hardware, List<String> aliases, String sub) {
+        JPanel line = transparentPanel(new BorderLayout(14, 0));
+        line.add(ControllerIcons.boxed(kindOf(hardware, aliases)), BorderLayout.WEST);
         JPanel row = column(2);
         JPanel top = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         top.add(line(hardware == null ? String.join(" / ", aliases) : controllerName(hardware, aliases),
@@ -1036,8 +1075,12 @@ final class ReconcileWizard extends JDialog {
             top.add(connection(live.isConnected(hardware), hardware));
         }
         stack(row, top);
-        stack(row, wrapped(sub, HudPalette.HUD_COLOR_ROLE_READOUT_LABEL, HudPalette.HUD_FONT_SM, TEXT_WIDTH));
-        return row;
+        stack(row, wrapped(sub, HudPalette.HUD_COLOR_ROLE_READOUT_LABEL, HudPalette.HUD_FONT_SM,
+                TEXT_WIDTH - ControllerIcons.BOX - 14));
+        line.add(row, BorderLayout.CENTER);
+        line.setMaximumSize(new Dimension(Integer.MAX_VALUE, Math.max(ControllerIcons.BOX,
+                row.getPreferredSize().height)));
+        return line;
     }
 
     private JComponent connection(boolean on, HardwareId hardware) {
@@ -1062,6 +1105,13 @@ final class ReconcileWizard extends JDialog {
         if (!aliases.isEmpty()) return String.join(" / ", aliases);
         if (hardware.vid().isEmpty() && hardware.pid().isEmpty()) return getText("bindings.reconcile.unknownController");
         return getText("bindings.reconcile.controllerById", hardware.vid() + ":" + hardware.pid());
+    }
+
+    /** The picture for a controller: from what Windows calls it, when plugged in, and its aliases. */
+    private ControllerIcons.Kind kindOf(HardwareId hardware, Collection<String> aliases) {
+        List<String> names = new ArrayList<>(aliases);
+        if (hardware != null) live.productName(hardware).ifPresent(names::add);
+        return ControllerIcons.kindOf(names);
     }
 
     private String nameOf(long installId) {
