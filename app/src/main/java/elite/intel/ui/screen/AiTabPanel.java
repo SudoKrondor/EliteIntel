@@ -13,17 +13,20 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
+import elite.intel.ui.dialog.BugReportDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.overlay.HudOverlayPresence;
 import elite.intel.ui.overlay.HudOverlaySettingsDialog;
 import elite.intel.ui.support.AiSetupReport;
 import elite.intel.ui.support.SupportBundle;
+import elite.intel.ui.support.SupportReportUpload;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
 import elite.intel.util.AppPaths;
+import elite.intel.util.OsDetector;
 import elite.intel.util.SleepNoThrow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -196,7 +199,7 @@ public class AiTabPanel extends JPanel {
         copyLogButton.setEnabled(false);
         systemPanel.addPropertyChangeListener(HudLogArea.SELECTION_PROPERTY,
                 event -> copyLogButton.setEnabled(systemPanel.hasSelectedText()));
-        systemSection.setHeaderActions(copyLogButton, buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
+        systemSection.setHeaderActions(copyLogButton, buildReportBugButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 chatSection,
@@ -320,12 +323,12 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Builds the SYSTEM LOG header action: a save-glyph button that writes the diagnostics bundle to a zip.
+     * Builds the SYSTEM LOG header action: a bug-glyph button that files a bug report with the diagnostics bundle.
      */
-    private HudGlyphButton buildSaveLogButton() {
-        return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
+    private HudGlyphButton buildReportBugButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudBugGlyph,
                 HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.save.tooltip"), this::saveSupportBundle,
+                getText("ai.section.systemMessages.report.tooltip"), this::reportBug,
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
@@ -377,6 +380,74 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
+     * Asks what went wrong, then sends the report with its diagnostics bundle to the team, or saves the bundle to a
+     * file when the commander would rather post it themselves.
+     */
+    private void reportBug() {
+        switch (BugReportDialog.show(this)) {
+            case BugReportDialog.Choice.Send send -> sendBugReport(send.description(), send.email());
+            case BugReportDialog.Choice.SaveToFile ignored -> saveSupportBundle();
+            case BugReportDialog.Choice.Cancelled ignored -> {
+            }
+        }
+    }
+
+    /**
+     * Builds the diagnostics bundle in the temp folder and uploads it with the commander's words. Both run off the
+     * EDT, for the reason {@link #saveSupportBundle()} gives, and every outcome is a SYSTEM LOG line.
+     */
+    private void sendBugReport(String description, String email) {
+        SupportBundle.Sources sources = bundleSources();
+        String version = sources.appVersion();
+        String os = OsDetector.getOs().getOs();
+        UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.report.sending")));
+        Thread.ofVirtual().name("bug-report").start(() -> {
+            Path bundle = Path.of(System.getProperty("java.io.tmpdir"), defaultBundleFileName());
+            try {
+                SupportBundle.writeTo(bundle, sources);
+                SupportReportUpload.Report report = new SupportReportUpload.Report(description, email, os, version, bundle);
+                reportUploadOutcome(new SupportReportUpload().send(report), bundle);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                reportUploadFailure(bundle, e.toString());
+            } catch (IOException | RuntimeException e) {
+                // WHY: the broad catch is this thread's boundary, as in writeBundle: anything escaping it dies in
+                // silence, and the commander would never learn that the report did not go.
+                log.warn("Bug report failed: {}", bundle, e);
+                reportUploadFailure(bundle, String.valueOf(e.getMessage()));
+            }
+        });
+    }
+
+    /**
+     * Says how the upload went. A sent report's bundle is deleted; any other outcome keeps it and names where it is,
+     * so the commander can still post it by hand.
+     */
+    private static void reportUploadOutcome(SupportReportUpload.Outcome outcome, Path bundle) throws IOException {
+        switch (outcome) {
+            case SupportReportUpload.Outcome.Sent sent -> {
+                Files.deleteIfExists(bundle);
+                UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.report.sent", sent.reportId())));
+            }
+            case SupportReportUpload.Outcome.TooLarge ignored -> UiBus.publish(new AppLogEvent(
+                    getText("ai.section.systemMessages.report.tooLarge", bundle.toString())));
+            case SupportReportUpload.Outcome.RateLimited ignored -> UiBus.publish(new AppLogEvent(
+                    getText("ai.section.systemMessages.report.rateLimited", bundle.toString())));
+            case SupportReportUpload.Outcome.Refused refused -> {
+                log.warn("Bug report refused by the relay: HTTP {} {}", refused.status(), refused.error());
+                reportUploadFailure(bundle, "HTTP " + refused.status() + " " + refused.error());
+            }
+        }
+    }
+
+    private static void reportUploadFailure(Path bundle, String reason) {
+        String message = Files.exists(bundle)
+                ? getText("ai.section.systemMessages.report.failedKept", reason.strip(), bundle.toString())
+                : getText("ai.section.systemMessages.report.failed", reason.strip());
+        UiBus.publish(new AppLogEvent(message));
+    }
+
+    /**
      * Writes the diagnostics bundle - system log, application log, live journal and active bindings - to a
      * user-chosen {@code .zip}. The chooser runs on the EDT (button click); the collection does not, because
      * a journal file runs to megabytes and freezing the HUD while copying it would look like the hang the
@@ -396,9 +467,16 @@ public class AiTabPanel extends JPanel {
             chosen = new File(chosen.getAbsolutePath() + ".zip");
         }
         File target = chosen;
+        SupportBundle.Sources sources = bundleSources();
+        Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
+    }
 
-        // Read the transcript on the EDT: it is Swing state, and the worker must not touch it.
-        SupportBundle.Sources sources = new SupportBundle.Sources(
+    /**
+     * What goes into a diagnostics bundle. Call it on the EDT: it reads the SYSTEM LOG transcript, which is Swing
+     * state the bundle worker must not touch.
+     */
+    private SupportBundle.Sources bundleSources() {
+        return new SupportBundle.Sources(
                 SystemSession.getInstance().readVersionFromResources(),
                 systemPanel.exportText(),
                 APP_LOG_FILE,
@@ -412,8 +490,6 @@ public class AiTabPanel extends JPanel {
                 bindingsBackupDir(),
                 BindForgeSupport::collect,
                 LmStudioSupport::render);
-
-        Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
     }
 
     /**

@@ -7,6 +7,8 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * HUD icon and glyph primitives: image loading/tinting helpers, flat vector glyph painters
@@ -327,43 +329,32 @@ public final class HudGlyphs {
     }
 
     /**
-     * Draws the flat "save to file" (download) glyph centred within (x, y, w, h): a downward arrow dropping into
-     * an open tray. All geometry is proportional so it scales with the box; caller chooses colour by state.
+     * Paints the "report a bug" glyph centred within (x, y, w, h): {@code images/bug.png}, tinted {@code color} the
+     * way the vector glyphs are, so it follows the theme and the hover state.
+     * <p>
+     * WHY a raster: the bug's legs and body do not reduce to a few proportional strokes that still read as a bug
+     * at header size. The image is a single-colour mask, which is what {@link #tintIcon} needs.
      *
      * @param g2    graphics context (not disposed by this method)
      * @param x     left edge of the available area
      * @param y     top edge of the available area
      * @param w     width of the available area
      * @param h     height of the available area
-     * @param color stroke colour for the arrow and tray
+     * @param color tint for the bug
      */
-    public static void paintHudSaveGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
-        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        Stroke oldStroke = g2.getStroke();
-        float strokeW = Math.max(2f, w / 9f);
-        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.setColor(color);
+    public static void paintHudBugGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        int size = Math.min(w, h);
+        Image bug = BUG_GLYPHS.computeIfAbsent(new TintedGlyph(size, color.getRGB()),
+                key -> tintIcon(scaledIcon(HudGlyphs.class, BUG_IMAGE, size), size, size, color).getImage());
+        g2.drawImage(bug, x + (w - size) / 2, y + (h - size) / 2, null);
+    }
 
-        int cx = x + w / 2;
-        int arrowTop = y + Math.round(h * 0.14f);
-        int arrowBottom = y + Math.round(h * 0.58f);
-        int headHalf = Math.round(w * 0.22f);
-        int headTop = arrowBottom - Math.round(h * 0.20f);
-        g2.drawLine(cx, arrowTop, cx, arrowBottom);                 // shaft
-        g2.drawLine(cx - headHalf, headTop, cx, arrowBottom);       // arrowhead left diagonal
-        g2.drawLine(cx + headHalf, headTop, cx, arrowBottom);       // arrowhead right diagonal
+    private static final String BUG_IMAGE = "/images/bug.png";
 
-        int trayY = y + Math.round(h * 0.82f);
-        int trayLeft = x + Math.round(w * 0.20f);
-        int trayRight = x + w - Math.round(w * 0.20f);
-        int trayTickTop = trayY - Math.round(h * 0.16f);
-        g2.drawLine(trayLeft, trayTickTop, trayLeft, trayY);        // tray left wall
-        g2.drawLine(trayLeft, trayY, trayRight, trayY);             // tray floor
-        g2.drawLine(trayRight, trayY, trayRight, trayTickTop);      // tray right wall
+    /** One tinted bug per size and colour, painted on the EDT only: a theme has a handful of each. */
+    private static final Map<TintedGlyph, Image> BUG_GLYPHS = new HashMap<>();
 
-        g2.setStroke(oldStroke);
-        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    private record TintedGlyph(int size, int rgb) {
     }
 
     /**
