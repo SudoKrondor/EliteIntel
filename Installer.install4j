@@ -740,7 +740,7 @@ return console.askYesNo(message, true);
     </widgetStyles>
   </installerGui>
   <mediaSets>
-    <windows name="Windows" id="36" overrideLaf="true" architecture="64" />
+    <windows name="Windows" id="36" overrideLaf="true" architecture="64" customInstallBaseDir="~\AppData\Local\Programs" />
     <unixInstaller name="Unix Installer" id="37" installDir="elite.intel.app" overrideLaf="true" customInstallBaseDir="~/.var/app/" require64BitVm="true">
       <jreBundle jdkProviderId="JBR" release="25/25.0.3-b508.4" overrideJdkRelease="true" />
       <laf darkModeStrategy="dark" />
