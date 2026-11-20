@@ -9,6 +9,7 @@ import elite.intel.bindforge.storage.ConfigurationFiles;
 import elite.intel.bindforge.storage.FirstSetupFiles;
 import elite.intel.bindforge.storage.FirstSetupReading;
 import elite.intel.bindforge.storage.InstallationFiles;
+import elite.intel.bindforge.storage.ReconcileRecord;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -113,22 +114,24 @@ final class ReconcileWizard extends JDialog {
      * @param shortcutFirst  whether to open on "which setup is current?" - the check
      * @param finish         the last button
      * @param checkTrailer   said under the result, or {@code null}
+     * @param purpose        which flow it is, in English, for BindForge's log ({@link ReconcileRecord})
      */
     record Mode(String title, boolean introduce, String lead, boolean shortcutFirst, String finish,
-                String checkTrailer) {
+                String checkTrailer, String purpose) {
 
         static Mode firstSetup() {
-            return new Mode(getText("bindings.reconcile.title"), true, null, false, null, null);
+            return new Mode(getText("bindings.reconcile.title"), true, null, false, null, null,
+                    "first-time startup");
         }
 
         static Mode check(String lead) {
             return new Mode(getText("bindings.check.title"), false, lead, true,
-                    getText("bindings.reconcile.check.useThis"), null);
+                    getText("bindings.reconcile.check.useThis"), null, "the check");
         }
 
         static Mode restore(String trailer) {
             return new Mode(getText("bindings.restore.title"), false, getText("bindings.restore.reconcile.intro"),
-                    false, getText("bindings.restore.confirm.button"), trailer);
+                    false, getText("bindings.restore.confirm.button"), trailer, "RESTORE");
         }
     }
 
@@ -177,6 +180,7 @@ final class ReconcileWizard extends JDialog {
         this.mineSide = mineSide;
         this.live = LiveControllers.open();
         this.stepper = new Stepper(mode.introduce());
+        ReconcileRecord.logReading(mode.purpose(), reading);
         this.shortcutLink = ReconcileWidgets.link(getText("bindings.reconcile.shortcut.link"));
         buildUi();
     }
@@ -975,6 +979,7 @@ final class ReconcileWizard extends JDialog {
         // dialog greyed until it is done.
         FlowSteps.inBackground("BindForge-Reconcile", log, "The reconcile's merge of the installations", () -> {
                     FirstSetupFiles.Merged merged = FirstSetupFiles.merge(reading, given);
+                    ReconcileRecord.logDecision(mode.purpose(), reading, given, favouredSide, merged);
                     return () -> finished(new Choice(merged.files(), merged.bindingsMoved(), merged.moves(),
                             favouredSide, unplugged), null);
                 },

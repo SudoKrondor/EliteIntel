@@ -28,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
@@ -59,12 +60,26 @@ public final class BindForgeSupport {
     private static final String LIVE_BINDINGS = FILES_FOLDER + "live/Bindings/";
     private static final String WORKING_COPY_DEVICES = FILES_FOLDER + "working-copy/";
     private static final String INSTALLATIONS = FILES_FOLDER + "installations/";
+    private static final String BACKUPS = FILES_FOLDER + "backups/";
 
     /**
      * The raw files are in the bundle for the rest: these bound the report, not what can be diagnosed.
      */
     private static final int MAX_ROWS_PER_FILE = 40;
     private static final int MAX_BACKUPS_LISTED = 30;
+
+    /**
+     * The backups carried whole, newest first, and the bytes they may take together. A backup is a zip of a few tens
+     * of KB - every binds, preset and device file - so this costs little of the bundle's room.
+     * <p>
+     * WHY carried, not only listed: "my binds are all wrong" asks what the files were before BindForge touched them,
+     * and before its last few writes. The first setup backup holds the first - the player's own files, as they were
+     * before the reconcile, however they had been edited by hand - and each before-changes backup the set one write
+     * replaced. The log names the backup each write took ({@code WritePath}), and these are those backups.
+     */
+    private static final int FIRST_SETUP_BACKUPS_CARRIED = 3;
+    private static final int BEFORE_CHANGES_BACKUPS_CARRIED = 5;
+    private static final long MAX_BACKUP_BYTES = 4L * 1024 * 1024;
 
     /**
      * What a bundle carries from BindForge.
@@ -120,6 +135,9 @@ public final class BindForgeSupport {
         int dailyBackupDays();
 
         int beforeChangesBackupsKept();
+
+        /** A backup zip's bytes. */
+        byte[] backupBytes(Path zip) throws IOException;
 
         List<AnswerRow> identityAnswers();
     }
@@ -409,15 +427,55 @@ public final class BindForgeSupport {
         Map<Backups.Kind, Long> kinds = new EnumMap<>(Backups.Kind.class);
         backups.forEach(backup -> kinds.merge(backup.kind(), 1L, Long::sum));
         line("Held: " + (kinds.isEmpty() ? "none" : kinds.toString()));
-        backups.stream().limit(MAX_BACKUPS_LISTED).forEach(this::writeBackup);
+        Set<Path> carried = collectBackups(backups);
+        backups.stream().limit(MAX_BACKUPS_LISTED).forEach(backup -> writeBackup(backup, carried));
         if (backups.size() > MAX_BACKUPS_LISTED) line("... and " + (backups.size() - MAX_BACKUPS_LISTED) + " older");
     }
 
-    private void writeBackup(Backup backup) {
+    private void writeBackup(Backup backup, Set<Path> carried) {
         line(Backups.TAKEN_FORMAT.format(backup.taken()) + " " + backup.kind()
                 + (backup.before() == null ? "" : " before " + backup.before())
-                + (backup.full() ? ", full" : ", PARTIAL"));
+                + (backup.full() ? ", full" : ", PARTIAL")
+                + (carried.contains(backup.zip()) ? ", in the bundle as " + backupEntry(backup) : ""));
         backup.notRead().forEach(reason -> line("  not read: " + reason));
+    }
+
+    /**
+     * Carries the newest first setup and before-changes backups whole, as long as they fit
+     * ({@link #MAX_BACKUP_BYTES}). First setup's go first: they are kept forever, and only they hold the files from
+     * before BindForge. One that cannot be read is named and skipped.
+     *
+     * @return the zips carried
+     */
+    private Set<Path> collectBackups(List<Backup> newestFirst) {
+        List<Backup> wanted = new ArrayList<>();
+        newestFirst.stream().filter(backup -> backup.kind() == Backups.Kind.FIRST_SETUP)
+                .limit(FIRST_SETUP_BACKUPS_CARRIED).forEach(wanted::add);
+        newestFirst.stream().filter(backup -> backup.kind() == Backups.Kind.BEFORE_CHANGES)
+                .limit(BEFORE_CHANGES_BACKUPS_CARRIED).forEach(wanted::add);
+        Set<Path> carried = new HashSet<>();
+        long bytes = 0;
+        for (Backup backup : wanted) {
+            byte[] content;
+            try {
+                content = readings.backupBytes(backup.zip());
+            } catch (IOException e) {
+                line("could not carry " + backup.zip().getFileName() + ": " + e.getMessage());
+                continue;
+            }
+            if (bytes + content.length > MAX_BACKUP_BYTES) {
+                line("not carried, the bundle's room for backups is used: " + backup.zip().getFileName());
+                continue;
+            }
+            bytes += content.length;
+            files.put(backupEntry(backup), content);
+            carried.add(backup.zip());
+        }
+        return carried;
+    }
+
+    private static String backupEntry(Backup backup) {
+        return BACKUPS + backup.kind() + "/" + backup.zip().getFileName();
     }
 
     private void writeIdentityAnswers() {
@@ -536,6 +594,11 @@ public final class BindForgeSupport {
         @Override
         public int beforeChangesBackupsKept() {
             return BindForgeSettingsManager.getInstance().getBeforeChangesBackupsKept();
+        }
+
+        @Override
+        public byte[] backupBytes(Path zip) throws IOException {
+            return Files.readAllBytes(zip);
         }
 
         @Override
