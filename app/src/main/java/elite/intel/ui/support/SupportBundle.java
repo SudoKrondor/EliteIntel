@@ -1,6 +1,7 @@
 package elite.intel.ui.support;
 
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
+import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.bindforge.storage.Backup;
 import elite.intel.bindforge.storage.BackupContents;
@@ -135,13 +136,30 @@ public final class SupportBundle {
      *                          {@code LmStudioSupport}). Deferred for the same reason as {@code micDiagnostics}: it
      *                          runs {@code nvidia-smi} and asks LM Studio for its models. Null when the caller has
      *                          none to report.
+     * @param vegaMemory        VEGA's conversation memory as JSON (see {@code VegaMemoryDump}): what VEGA thought
+     *                          was said, which is often the answer to "why did it do that". Deferred so it is taken
+     *                          when the bundle is written, not when the dialog opened. Null when the caller has no
+     *                          VEGA to ask.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
                           @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
                           @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
                           @Nullable Supplier<BindForgeSupport.Contents> bindForge,
-                          @Nullable Supplier<String> lmStudio) {
+                          @Nullable Supplier<String> lmStudio, @Nullable Supplier<String> vegaMemory) {
+
+        /**
+         * Sources with no VEGA memory to carry.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
+                       @Nullable Supplier<BindForgeSupport.Contents> bindForge,
+                       @Nullable Supplier<String> lmStudio) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    bindingsBackupDir, bindForge, lmStudio, null);
+        }
 
         /**
          * Sources with no LM Studio report to carry.
@@ -262,6 +280,7 @@ public final class SupportBundle {
                     included, omitted);
             writeBindForge(zip, sources.bindForge(), included, omitted);
             writeReport(zip, LmStudioSupport.REPORT_ENTRY, "LM Studio report", sources.lmStudio(), included, omitted);
+            writeReport(zip, VegaMemoryDump.REPORT_ENTRY, "VEGA memory", sources.vegaMemory(), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
         }
@@ -304,7 +323,7 @@ public final class SupportBundle {
     }
 
     /**
-     * Adds a computed text report - the microphone's, LM Studio's - or records why there is none.
+     * Adds a computed text report - the microphone's, LM Studio's, VEGA's memory - or records why there is none.
      * <p>
      * The supplier is called inside the try because these sources are computed rather than read: the microphone's
      * probes the machine's audio devices, and a machine whose audio subsystem is broken enough to swallow the
