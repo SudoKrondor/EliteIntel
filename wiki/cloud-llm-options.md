@@ -16,7 +16,7 @@ selects it for your provider:
 | **xAI** | `grok-4-1-fast-non-reasoning` |
 | **OpenAI** | `gpt-5.4-mini` |
 | **Gemini** (Generative Language API) | `gemini-3.1-flash-lite-preview` |
-| **Anthropic / Claude** | `claude-haiku-4-5` |
+| **Anthropic / Claude** | `claude-haiku-5-5` |
 | **DeepSeek** | `deepseek-v4-flash` |
 
 
