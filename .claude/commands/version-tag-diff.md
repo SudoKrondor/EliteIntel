@@ -9,8 +9,11 @@ Do NOT stage or commit anything; just write the draft to a file and print it. Th
 
 # 1. Gather the change set
 
-The version is in app/src/main/resources/version.txt. For example is version.txt reads v-1.1.0015-dev compare that tag to the tag of the previous release v-1.1.0015 (without the "dev")
-Once we are ready, I will tag the next version, in this case v-1.1.0016 Once v-1.1.0016 becomes tag (an official release), the current version.txt will read v-1.1.0016-dev and so on...
+Unless I provide specific versions for diff:
+
+- The version is in app/src/main/resources/version.txt. For example is version.txt reads v-1.1.0015-dev compare that tag to the tag of the previous release v-1.1.0015 (without the "dev")
+
+- Once we are ready, I will tag the next version, in this case v-1.1.0016 Once v-1.1.0016 becomes tag (an official release), the current version.txt will read v-1.1.0016-dev and so on...
 
 Run the diff, provide information in plain English targeted at non-technical users describing the changes in the new release.
 

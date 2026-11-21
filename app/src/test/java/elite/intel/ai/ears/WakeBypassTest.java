@@ -3,11 +3,19 @@ package elite.intel.ai.ears;
 import elite.intel.ai.brain.i18n.AiActionAliasProvider;
 import elite.intel.ai.brain.i18n.de.GermanAiActionAliases;
 import elite.intel.ai.brain.i18n.en.EnglishAiActionAliases;
+import elite.intel.ai.brain.i18n.es.SpanishAiActionAliases;
+import elite.intel.ai.brain.i18n.fr.FrenchAiActionAliases;
+import elite.intel.ai.brain.i18n.it.ItalianAiActionAliases;
+import elite.intel.ai.brain.i18n.pt.PortugueseAiActionAliases;
+import elite.intel.ai.brain.i18n.ptbz.BrazilianPortugueseAiActionAliases;
 import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
 import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -56,6 +64,36 @@ class WakeBypassTest {
         assertEquals("wake", en.admit("wake"));
         assertEquals("listen", en.admit("listen"));
         assertNull(en.strippedOrder("wake up"));
+    }
+
+    // --- VEGA's name ---------------------------------------------------------
+
+    @ParameterizedTest(name = "\"{0}\" is a listen prefix in every language")
+    @MethodSource("everyLanguage")
+    void vegaNamePrefixesAnOrderInEveryLanguage(AiActionAliasProvider provider) {
+        WakeBypass bypass = bypass(provider);
+        assertEquals("open galaxy map", bypass.admit("Vega open galaxy map"));
+        assertEquals("open galaxy map", bypass.admit("vega open galaxy map"));
+    }
+
+    @Test
+    void vegaNameKeepsListenUpWorking() {
+        WakeBypass en = bypass(new EnglishAiActionAliases());
+        assertEquals("open galaxy map", en.admit("listen up open galaxy map"));
+        assertEquals("open galaxy map", en.admit("vega open galaxy map"));
+    }
+
+    @ParameterizedTest(name = "[EN] \"{0}\" is blocked")
+    @CsvSource({"vega", "vegas open galaxy map", "open galaxy map vega", "hey vega open galaxy map"})
+    void vegaNameIsOnlyAPrefixAtTheStart(String transcript) {
+        assertNull(bypass(new EnglishAiActionAliases()).admit(transcript));
+    }
+
+    static Stream<AiActionAliasProvider> everyLanguage() {
+        return Stream.of(new EnglishAiActionAliases(), new GermanAiActionAliases(), new SpanishAiActionAliases(),
+                new FrenchAiActionAliases(), new ItalianAiActionAliases(), new PortugueseAiActionAliases(),
+                new BrazilianPortugueseAiActionAliases(), new RussianAiActionAliases(),
+                new UkrainianAiActionAliases());
     }
 
     // --- German --------------------------------------------------------------
