@@ -9,7 +9,6 @@ import elite.intel.bindforge.storage.BindingsComparison.NewerVersion;
 import elite.intel.bindforge.storage.BindingsComparison.Side;
 import elite.intel.bindforge.storage.DeviceCheck;
 import elite.intel.bindforge.storage.Edits;
-import elite.intel.bindforge.storage.FirstSetupFiles;
 import elite.intel.bindforge.storage.FirstSetupReading;
 import elite.intel.bindforge.storage.PlainBinds;
 import elite.intel.bindforge.storage.WriteReport;
@@ -50,9 +49,9 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  *       next click runs the check again - a binding changed in the game while Elite-Intel runs is asked about without
  *       an APPLY or a restart. Nothing opens until that click (Alan, 2026-11-11).
  *       <strong>The device files are checked here too</strong> (Storage S9a): every installation that differs is named
- *       in the same warning; taking the game's files takes the one installation that differs, or opens first setup's
- *       reconcile, with the working copy as one side, when several do; merge answers the binds rows, then opens the
- *       reconcile. One backup and one write for everything.</li>
+ *       in the same warning; taking the game's files favours the one installation that differs, shown as the result
+ *       first, or opens the reconcile wizard, with the working copy as one side, when several do; merge answers the
+ *       binds rows, then opens the wizard. One backup and one write for everything.</li>
  *   <li><strong>APPLY</strong> (Storage S8b, S9b; {@link ApplyBar}): after the confirmation; the write is APPLY's, the
  *       edits on top. The rows the edits change are not asked about, and the warning says how many. Not now cancels the
  *       APPLY, leaving the edits on screen (Alan, 2026-10-30). The device files are judged as at the first click, and
@@ -405,7 +404,7 @@ final class CheckFlow {
             write(found, answers, DeviceCheck.Answer.PUT_MINE_BACK, true, then);
             return;
         }
-        withReading(checked, answers, then, reading -> reconciled(checked, reading).ifPresentOrElse(
+        withReading(checked, answers, then, reading -> reconciled(checked, reading, null).ifPresentOrElse(
                 devices -> write(found, answers, devices, true, then),
                 // WHY: with no binds rows, reopening the merge would open the reconcile again at once.
                 () -> {
@@ -430,38 +429,43 @@ final class CheckFlow {
     }
 
     /**
-     * The game's device files (Alan, 2026-10-31): the one installation that differs, taken whole after "use one
-     * installation for all"'s confirmation; the reconcile when several do. Empty when cancelled.
+     * The game's device files (Alan, 2026-10-31): the one installation that differs, in its favour - shown as the result
+     * before anything is written, with any question only the player can answer asked first; the reconcile when several
+     * differ. Never that installation's files whole: a name only the working copy holds stays, so the one set of binds
+     * files still finds every device it names (Alan, 2026-11-18, D1). Empty when cancelled.
      */
     private Optional<DeviceCheck.Answer> theGames(Checked checked, FirstSetupReading reading) {
         List<DeviceCheck.Judged> sides = checked.found().devices().sides();
-        if (sides.size() > 1) return reconciled(checked, reading);
+        if (sides.size() > 1) return reconciled(checked, reading, null);
         DeviceCheck.Judged only = sides.getFirst();
         long id = only.row().id();
         String name = checked.names().getOrDefault(String.valueOf(id), only.row().storefront());
-        if (!FirstSetupDialog.confirmUseOne(parent, reading, id, name, wording(checked))) {
-            return Optional.empty();
-        }
         if (only.state().reset() && !deviceSure(name)) return Optional.empty();
-        return Optional.of(DeviceCheck.Answer.reconciled(FirstSetupFiles.useOne(reading, id), Map.of()));
+        return reconciled(checked, reading, id);
     }
 
     /**
-     * First setup's reconcile, with the user's own files as one side (storage.md rule 14) - the working copy, with the
-     * edits not applied at APPLY. Empty when cancelled.
+     * The reconcile wizard, with the user's own files as one side (storage.md rule 14) - the working copy, with the
+     * edits not applied at APPLY. It opens on <em>which setup is current?</em> (Alan, 2026-11-18, Q3), or with
+     * {@code favouring} already taken. Empty when cancelled.
+     *
+     * @param favouring the installation already chosen, or {@code null} to ask
      */
-    private Optional<DeviceCheck.Answer> reconciled(Checked checked, FirstSetupReading reading) {
+    private Optional<DeviceCheck.Answer> reconciled(Checked checked, FirstSetupReading reading, Long favouring) {
         while (true) {
-            Optional<FirstSetupDialog.Choice> choice = new FirstSetupDialog(parent, reading,
-                    checked.names(), wording(checked)).showDialog();
+            ReconcileWizard wizard = new ReconcileWizard(parent, reading, checked.names(),
+                    ReconcileWizard.Mode.check(getText("bindings.check.devices.intro")), DeviceCheck.WORKING_COPY_SIDE);
+            if (favouring != null) wizard.favour(favouring);
+            Optional<ReconcileWizard.Choice> choice = wizard.showDialog();
             if (choice.isEmpty()) return Optional.empty();
-            FirstSetupDialog.Choice chosen = choice.get();
-            Long usedOne = chosen.usedOne();
-            if (usedOne != null && usedOne == DeviceCheck.WORKING_COPY_SIDE) {
+            ReconcileWizard.Choice chosen = choice.get();
+            Long favoured = chosen.favoured();
+            if (favoured != null && favoured == DeviceCheck.WORKING_COPY_SIDE) {
                 return Optional.of(DeviceCheck.Answer.PUT_MINE_BACK);
             }
-            if (usedOne != null && resetInstallation(checked, usedOne)
-                    && !deviceSure(checked.names().getOrDefault(String.valueOf(usedOne), String.valueOf(usedOne)))) {
+            // WHY: asked here only when the installation was picked in the wizard - "Use the game's files" asked before.
+            if (favouring == null && favoured != null && resetInstallation(checked, favoured)
+                    && !deviceSure(checked.names().getOrDefault(String.valueOf(favoured), String.valueOf(favoured)))) {
                 continue;
             }
             return Optional.of(DeviceCheck.Answer.reconciled(chosen.files(), chosen.moves()));
@@ -471,15 +475,6 @@ final class CheckFlow {
     private static boolean resetInstallation(Checked checked, long id) {
         return checked.found().devices().sides().stream()
                 .anyMatch(judged -> judged.row().id() == id && judged.state().reset());
-    }
-
-    /** The reconcile's words, for the check: the result goes to every installation the check read. */
-    private static FirstSetupDialog.Wording wording(Checked checked) {
-        long installations = checked.found().devices().installations().stream()
-                .filter(judged -> judged.state() != DeviceCheck.State.UNREADABLE).count();
-        return new FirstSetupDialog.Wording(getText("bindings.check.title"), getText("bindings.check.devices.intro"),
-                getText("bindings.aliasDesigner.firstSetup.backupBefore"), getText("bindings.check.title"),
-                getText("bindings.check.devices.confirm"), getText("bindings.check.devices.trailer", installations));
     }
 
     /** Whether any row of a file that looks reset keeps the game's side. */

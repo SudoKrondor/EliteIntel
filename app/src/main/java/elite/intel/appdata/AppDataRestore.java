@@ -30,8 +30,9 @@ import java.util.zip.ZipFile;
  * nothing live is touched here; the swap happens at startup, before the database opens.
  * <p>
  * Everything a restored database says that belongs to the old computer is put right while it is still staged:
- * folders that do not exist here are forgotten, an LM Studio install made on another computer is forgotten, and API
- * keys this computer's key cannot read are cleared.
+ * folders that do not exist here are forgotten, an LM Studio install made on another computer is forgotten, API
+ * keys this computer's key cannot read are cleared, and BindForge's record of this computer - its game installations
+ * and whether its first-time startup ran - is this computer's own, whatever the backup said.
  * Touches the disk - not for the EDT.
  */
 public final class AppDataRestore {
@@ -44,7 +45,8 @@ public final class AppDataRestore {
     private static final List<FolderSetting> FOLDER_SETTINGS = List.of(
             new FolderSetting("user_preferences", "journal_dir"),
             new FolderSetting("user_preferences", "bindings_dir"),
-            new FolderSetting("jukebox_state", "musicFolder"));
+            new FolderSetting("jukebox_state", "musicFolder"),
+            new FolderSetting("bindforge_settings", "backup_destination"));
 
     private record FolderSetting(String table, String column) {
     }
@@ -53,6 +55,13 @@ public final class AppDataRestore {
      * The API keys, each encrypted with {@code secret.key}.
      */
     private static final List<String> ENCRYPTED_KEY_COLUMNS = List.of("encryptedLLMKey", "encryptedTTSKey");
+
+    /**
+     * BindForge's record of the computer it runs on: the game installations it found or was given, and whether
+     * first-time startup ran ({@code activated_at}).
+     */
+    private static final String BINDFORGE_INSTALLATIONS = "bindforge_installations";
+    private static final String BINDFORGE_ACTIVATION = "bindforge_activation";
 
     private AppDataRestore() {
     }
@@ -234,10 +243,12 @@ public final class AppDataRestore {
             Path unlockedKey = staging.resolve(AppDataArchive.KEY_FILE);
             Path key = Files.isRegularFile(unlockedKey) ? unlockedKey : currentKeyFile;
             byte[] keyBytes = Files.isRegularFile(key) ? Files.readAllBytes(key) : null;
+            Path liveDatabase = dataDir.resolve(AppDataArchive.DB_FOLDER).resolve(AppDataArchive.SHARED_DATABASE);
             withDatabase(sharedDatabase, h -> {
                 forgetMissingFolders(h);
                 forgetForeignLmStudioInstall(h);
                 clearUnreadableApiKeys(h, keyBytes);
+                keepThisComputersBindForge(h, liveDatabase);
                 return null;
             });
             Files.deleteIfExists(staging.resolve(AppDataArchive.SEALED_KEY));
@@ -323,6 +334,76 @@ public final class AppDataRestore {
                 h.execute("UPDATE game_session SET " + column + " = NULL WHERE " + column + " = ?", encrypted);
             }
         }
+    }
+
+    /**
+     * Puts this computer's BindForge record in place of the backup's: its installations, and whether its first-time
+     * startup ran. A computer whose app never opened BindForge - or has no database yet - gets none, and first-time
+     * startup runs at the first click on the BindForge tab.
+     * <p>
+     * WHY: both describe this computer, like the working copy they go with, which a restore never touches
+     * ({@link AppDataArchive#FOLDERS}). Restored from another computer, the old installations - an Epic install on a PC
+     * that now runs Steam - are missing here, and a missing installation makes BindForge read only at every start
+     * until the commander removes it. Worse, one the commander removed there stays removed: detection skips it here
+     * too, even where this computer's game sits at that same default path. And the flag would say first-time startup
+     * ran on a computer with no working copy, so the BindForge tab would open on "the working copy is missing" and
+     * offer the old computer's newest backup over this computer's files. Restored onto the same computer, both are
+     * already what this computer has, so nothing changes.
+     * <p>
+     * The commander's bindings from the old computer are not lost: its BindForge backups come with the restore
+     * ({@link PendingRestore}), and RESTORE in File Manager puts one back once first-time startup has run.
+     */
+    private static void keepThisComputersBindForge(Handle staged, Path liveDatabase) {
+        boolean live = Files.isRegularFile(liveDatabase);
+        if (hasTable(staged, BINDFORGE_INSTALLATIONS)) {
+            List<String> columns = columnsOf(staged, BINDFORGE_INSTALLATIONS);
+            List<Map<String, Object>> rows = live ? withDatabase(liveDatabase, h -> hasTable(h, BINDFORGE_INSTALLATIONS)
+                    ? readRows(h, BINDFORGE_INSTALLATIONS, columns)
+                    : List.<Map<String, Object>>of()) : List.of();
+            staged.execute("DELETE FROM " + BINDFORGE_INSTALLATIONS);
+            for (Map<String, Object> row : rows) {
+                insertRow(staged, BINDFORGE_INSTALLATIONS, row);
+            }
+        }
+        if (hasColumn(staged, BINDFORGE_ACTIVATION, "activated_at")) {
+            String activatedAt = live ? withDatabase(liveDatabase, h -> hasColumn(h, BINDFORGE_ACTIVATION, "activated_at")
+                    ? h.createQuery("SELECT activated_at FROM " + BINDFORGE_ACTIVATION + " WHERE id = 1")
+                    .mapTo(String.class)
+                    .findOne()
+                    .orElse(null)
+                    : null) : null;
+            staged.execute("UPDATE " + BINDFORGE_ACTIVATION + " SET activated_at = ? WHERE id = 1", activatedAt);
+        }
+    }
+
+    /**
+     * Every row of {@code table}, in the columns of {@code wanted} that it has. WHY not every column: the live database
+     * and the backup's may be a migration apart, and a column only one of them has keeps its default.
+     */
+    private static List<Map<String, Object>> readRows(Handle h, String table, List<String> wanted) {
+        List<String> columns = columnsOf(h, table).stream().filter(wanted::contains).toList();
+        if (columns.isEmpty()) return List.of();
+        return h.createQuery("SELECT " + String.join(", ", columns) + " FROM " + table)
+                .mapToMap()
+                .list();
+    }
+
+    private static void insertRow(Handle h, String table, Map<String, Object> row) {
+        List<String> columns = List.copyOf(row.keySet());
+        String placeholders = String.join(", ", Collections.nCopies(columns.size(), "?"));
+        h.execute("INSERT INTO " + table + " (" + String.join(", ", columns) + ") VALUES (" + placeholders + ")",
+                columns.stream().map(row::get).toArray());
+    }
+
+    private static List<String> columnsOf(Handle h, String table) {
+        return h.createQuery("SELECT name FROM pragma_table_info(:table)")
+                .bind("table", table)
+                .mapTo(String.class)
+                .list();
+    }
+
+    private static boolean hasTable(Handle h, String table) {
+        return !columnsOf(h, table).isEmpty();
     }
 
     private static boolean hasColumn(Handle h, String table, String column) {

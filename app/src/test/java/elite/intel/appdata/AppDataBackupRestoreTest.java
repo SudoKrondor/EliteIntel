@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -305,6 +306,148 @@ class AppDataBackupRestoreTest {
         try (Stream<Path> entries = Files.list(dataDir)) {
             assertTrue(entries.noneMatch(p -> p.getFileName().toString().startsWith(AppDataArchive.SAFETY_FOLDER_PREFIX)));
         }
+    }
+
+    @Test
+    void aChosenBindForgeBackupFolderThatIsNotHereIsForgotten() throws Exception {
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("UPDATE bindforge_settings SET backup_destination = ? WHERE id = 1", "D:\\ED Backups");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertNull(restored.createQuery("SELECT backup_destination FROM bindforge_settings WHERE id = 1")
+                    .mapTo(String.class).one());
+        }
+    }
+
+    @Test
+    void colourThemesAreBackedUpAndRestored() throws Exception {
+        Files.createDirectories(oldDir.resolve("themes"));
+        Files.writeString(oldDir.resolve("themes/Deep Space.json"), "{\"name\":\"Deep Space\"}");
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("INSERT OR IGNORE INTO game_session (id) VALUES (1)");
+            live.execute("UPDATE game_session SET uiTheme = ? WHERE id = 1", "Deep Space.json");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals("{\"name\":\"Deep Space\"}", Files.readString(newDir.resolve("themes/Deep Space.json")));
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertEquals("Deep Space.json",
+                    restored.createQuery("SELECT uiTheme FROM game_session WHERE id = 1").mapTo(String.class).one());
+        }
+    }
+
+    /**
+     * The storefront switch: set up on an Epic PC that had removed its Steam install, restored a month later onto a PC
+     * that runs Steam at that same default path. The old installations would make BindForge read only here (Epic is
+     * missing) and keep this PC's Steam install out (it was removed there), and the old flag would claim a first-time
+     * startup this PC never ran.
+     */
+    @Test
+    void bindForgeKeepsThisComputersInstallationsAndFirstTimeStartup() throws Exception {
+        Path steam = Files.createDirectories(root.resolve("Steam/steamapps/common/Elite Dangerous"));
+        try (Handle old = open(oldDir.resolve("db/database.db"))) {
+            recordInstallation(old, "EPIC", "C:\\Program Files\\Epic Games\\EliteDangerous", false);
+            recordInstallation(old, "STEAM", steam.toString(), true);
+            old.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
+        }
+        Path newDatabase = Files.createDirectories(newDir.resolve("db")).resolve("database.db");
+        migrate(newDatabase, DatabaseMigrator.Tree.SHARED);
+        try (Handle here = open(newDatabase)) {
+            recordInstallation(here, "STEAM", steam.toString(), false);
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDatabase)) {
+            assertEquals(List.of("STEAM " + steam + " removed=0"), installations(restored));
+            assertFalse(firstTimeStartupComplete(restored), "first-time startup runs on this computer's files");
+        }
+    }
+
+    @Test
+    void aComputerThatNeverOpenedBindForgeGetsNoInstallationsFromTheBackup() throws Exception {
+        try (Handle old = open(oldDir.resolve("db/database.db"))) {
+            recordInstallation(old, "EPIC", "C:\\Program Files\\Epic Games\\EliteDangerous", false);
+            old.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertEquals(List.of(), installations(restored));
+            assertFalse(firstTimeStartupComplete(restored));
+        }
+    }
+
+    @Test
+    void theSameComputerKeepsItsBindForgeRecord() throws Exception {
+        Path epic = Files.createDirectories(root.resolve("Epic Games/EliteDangerous"));
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            recordInstallation(live, "EPIC", epic.toString(), false);
+            live.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, oldDir).commit(oldKey);
+        PendingRestore.applyIfPresent(oldDir, oldKey);
+
+        try (Handle restored = open(oldDir.resolve("db/database.db"))) {
+            assertEquals(List.of("EPIC " + epic + " removed=0"), installations(restored));
+            assertTrue(firstTimeStartupComplete(restored));
+        }
+    }
+
+    /**
+     * BindForge's backups go with the working copy a restore leaves alone, so this computer keeps its own - the first
+     * setup backup above all, kept forever - and the old computer's are added beside them for RESTORE.
+     */
+    @Test
+    void bindForgeBackupsAreAddedToThisComputersNotReplaced() throws Exception {
+        Path oldDaily = oldDir.resolve("playerbackups/Daily/2026-10-01_09-00-00.zip");
+        Files.createDirectories(oldDaily.getParent());
+        Files.writeString(oldDaily, "old computer");
+        Path sameName = oldDir.resolve("playerbackups/FirstSetup/2026-11-01_10-00-00.zip");
+        Files.createDirectories(sameName.getParent());
+        Files.writeString(sameName, "old computer");
+        Path newFirstSetup = newDir.resolve("playerbackups/FirstSetup/2026-11-01_10-00-00.zip");
+        Files.createDirectories(newFirstSetup.getParent());
+        Files.writeString(newFirstSetup, "this computer");
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        assertEquals(PendingRestore.Outcome.RESTORED, PendingRestore.applyIfPresent(newDir, newKey));
+
+        assertEquals("this computer", Files.readString(newFirstSetup), "a backup here is never replaced");
+        assertEquals("old computer", Files.readString(newDir.resolve("playerbackups/Daily/2026-10-01_09-00-00.zip")));
+    }
+
+    private static void recordInstallation(Handle h, String storefront, String rootPath, boolean removed) {
+        h.execute("INSERT INTO bindforge_installations (storefront, root_path, is_removed) VALUES (?, ?, ?)",
+                storefront, rootPath, removed);
+    }
+
+    private static List<String> installations(Handle h) {
+        return h.createQuery("SELECT storefront || ' ' || root_path || ' removed=' || is_removed FROM bindforge_installations ORDER BY id")
+                .mapTo(String.class)
+                .list();
+    }
+
+    private static boolean firstTimeStartupComplete(Handle h) {
+        return h.createQuery("SELECT activated_at IS NOT NULL FROM bindforge_activation WHERE id = 1")
+                .mapTo(Boolean.class)
+                .one();
     }
 
     @Test

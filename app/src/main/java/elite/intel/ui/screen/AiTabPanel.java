@@ -3,9 +3,7 @@ package elite.intel.ui.screen;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
-import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
-import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.ears.MicDiagnosticsReport;
 import elite.intel.bindforge.storage.BackupDestination;
 import elite.intel.bindforge.storage.BindForgeSupport;
@@ -36,7 +34,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -199,7 +196,7 @@ public class AiTabPanel extends JPanel {
         copyLogButton.setEnabled(false);
         systemPanel.addPropertyChangeListener(HudLogArea.SELECTION_PROPERTY,
                 event -> copyLogButton.setEnabled(systemPanel.hasSelectedText()));
-        systemSection.setHeaderActions(copyLogButton, buildReportBugButton(), buildDumpMemoryButton(), buildClearLogButton());
+        systemSection.setHeaderActions(copyLogButton, buildReportBugButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 chatSection,
@@ -333,53 +330,6 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Builds the SYSTEM LOG header action: a memory-glyph button that dumps VEGA's memory to a JSON file.
-     */
-    private HudGlyphButton buildDumpMemoryButton() {
-        return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
-                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.dump.tooltip"), this::dumpVegaMemory,
-                HudPalette.HUD_ICON_HEADER_ACTION);
-    }
-
-    /**
-     * Writes a full JSON snapshot of VEGA's session memory to a user-chosen {@code .json} file. Runs on
-     * the EDT (button click). When VEGA subsystem is not running its memory is unreachable, so the button
-     * reports that as a SYSTEM LOG line instead of failing; every outcome (dumped file, not running, or write
-     * error) is reported the same way, keeping feedback inside the HUD instead of a native popup.
-     */
-    private void dumpVegaMemory() {
-        MemoryGateway memory;
-        try {
-            memory = VegaRuntime.memory();
-        } catch (IllegalStateException notRunning) {
-            // WHY: only the not-installed case degrades to "nothing to dump" here (VegaRuntime getters throw
-            // when the subsystem is stopped). Snapshot and serialization run outside this guard so any real failure
-            // there surfaces as a write error rather than being mislabelled "not running".
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.empty")));
-            return;
-        }
-        String content = VegaMemoryDump.toJson(memory.snapshot());
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle(getText("ai.section.systemMessages.dump.title"));
-        chooser.setSelectedFile(new File(defaultMemoryDumpFileName()));
-        chooser.setFileFilter(new FileNameExtensionFilter("JSON (*.json)", "json"));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-        File file = chooser.getSelectedFile();
-        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".json")) {
-            file = new File(file.getAbsolutePath() + ".json");
-        }
-        try {
-            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.success", file.getName())));
-        } catch (IOException e) {
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.error", String.valueOf(e.getMessage()))));
-        }
-    }
-
-    /**
      * Asks what went wrong, then sends the report with its diagnostics bundle to the team, or saves the bundle to a
      * file when the commander would rather post it themselves.
      */
@@ -489,7 +439,9 @@ public class AiTabPanel extends JPanel {
                 AiSetupReport::render,
                 bindingsBackupDir(),
                 BindForgeSupport::collect,
-                LmStudioSupport::render);
+                LmStudioSupport::render,
+                // Taken by the bundle worker, so the memory is what VEGA held when the bundle was written.
+                VegaMemoryDump::render);
     }
 
     /**
@@ -552,12 +504,6 @@ public class AiTabPanel extends JPanel {
     private static String defaultBundleFileName() {
         return "elite_intel_support_"
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
-    }
-
-    /** Timestamped default file name, e.g. {@code vega_memory_dump_20260704_132155.json}. */
-    private static String defaultMemoryDumpFileName() {
-        return "vega_memory_dump_"
-                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
     }
 
     public void initData(boolean sleepingModeOn, ServicesStateEvent.State serviceState) {

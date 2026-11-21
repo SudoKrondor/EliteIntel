@@ -58,6 +58,17 @@ import java.util.TreeSet;
  *     <li><strong>Colliding labels are answered per input</strong>, in the merge view ({@link LabelMerge}). The
  *     device keeps one row here; its options are the whole-file route, which answers every input at once.</li>
  * </ul>
+ * One set of aliases everywhere - 2026-11-17/18 (Alan), built with the reconcile wizard
+ * (multi-install-reconcile.md):
+ * <ul>
+ *     <li><strong>A dead entry's bindings move to the entry the game uses</strong> on that controller - or to the name
+ *     that beat it - since bindings naming an entry the working copy does not hold make the game reject the whole
+ *     binds file.</li>
+ *     <li><strong>One controller under several aliases is one label device</strong>: its labels from every
+ *     installation combine under whichever alias is kept, and only real collisions are asked.</li>
+ *     <li><strong>One alias on two controllers never mixes their labels</strong>: the controller chosen keeps its
+ *     own.</li>
+ * </ul>
  */
 public final class FirstSetupPlan {
 
@@ -201,6 +212,11 @@ public final class FirstSetupPlan {
     private final List<Row> rows;
     /** Every name the installations hold for one VID/PID, where there is more than one. */
     private final Map<HardwareId, Set<String>> namesByHardware;
+    /**
+     * The names one controller goes by across the installations, by the label device they make up - only where there
+     * is more than one. A name in none is its own label device.
+     */
+    private final Map<String, List<String>> namesByLabelDevice;
 
     /**
      * @param referenced the device names the binds files use - what ranks a row red
@@ -211,6 +227,7 @@ public final class FirstSetupPlan {
         this.effective = this.installations.stream().map(FirstSetupPlan::withoutShadowed).toList();
         this.shadowed = shadowedEverywhere(this.installations, this.effective);
         this.namesByHardware = conflictingNames(this.effective);
+        this.namesByLabelDevice = labelDevices(this.namesByHardware);
         this.rows = buildRows();
     }
 
@@ -270,6 +287,44 @@ public final class FirstSetupPlan {
     }
 
     /**
+     * The controller a {@link Kind#NAME_DIFFERS} row is about.
+     *
+     * @throws IllegalArgumentException for any other kind of row
+     */
+    public HardwareId hardwareOf(Row row) {
+        if (row.kind() != Kind.NAME_DIFFERS) throw new IllegalArgumentException(row.kind() + " is not a name row");
+        String[] parts = row.id().substring(NAME_ROW.length()).split(":", -1);
+        return new HardwareId(parts[0], parts.length > 1 ? parts[1] : "");
+    }
+
+    /** The controller one answer to a {@link Kind#HARDWARE_DIFFERS} row stands for. */
+    public static HardwareId hardwareOf(Option option) {
+        String[] parts = option.key().split(":", -1);
+        return new HardwareId(parts[0], parts.length > 1 ? parts[1] : "");
+    }
+
+    /**
+     * The controller a name, or a label device, stands for: the first installation's, for a name on several. Empty for
+     * a name no installation holds as a live entry.
+     */
+    public Optional<HardwareId> hardwareOfDevice(String device) {
+        for (String name : namesOfLabelDevice(device)) {
+            Map<Long, HardwareId> byInstall = hardwareByInstall(name);
+            if (!byInstall.isEmpty()) return Optional.of(byInstall.values().iterator().next());
+            for (Installation install : installations) {
+                HardwareId builtIn = install.builtIns().get(name);
+                if (builtIn != null) return Optional.of(builtIn);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** The aliases a label device - a {@link Kind#LABELS_DIFFER} row's device - is made of: itself for a plain name. */
+    public List<String> namesOfLabelDevice(String device) {
+        return namesByLabelDevice.getOrDefault(device, List.of(device));
+    }
+
+    /**
      * One device's labels across the installations, keyed by installation id as text - the merge view's rows.
      * A device no installation labels gives a merge with nothing in it.
      */
@@ -319,14 +374,41 @@ public final class FirstSetupPlan {
         for (String name : elementNames()) {
             if (losers.containsKey(name)) continue;
             HardwareId hardware = hardwareFor(name, answers);
-            devices.add(new Kept(name, hardware, sourceOf(name, hardware), false, labelsFor(name, answers)));
+            devices.add(new Kept(name, hardware, sourceOf(name, hardware), false,
+                    labelsFor(name, hardware, answers)));
         }
         for (String name : builtInNames()) {
             Installation holder = firstBuiltInHolder(name);
             devices.add(new Kept(name, holder.builtIns().get(name), holder.installId(), true,
-                    labelsFor(name, answers)));
+                    labelMerge(name).merged(labelAnswers(name, answers))));
         }
-        return new Resolution(devices, losers);
+        return new Resolution(devices, withShadowedMoves(losers));
+    }
+
+    /**
+     * The losers' moves, and each dead entry's: to the entry the game uses on that controller in the first installation
+     * holding it - or, where that entry lost a name conflict, to the name that beat it (Alan, 2026-11-17).
+     */
+    private Map<String, String> withShadowedMoves(Map<String, String> losers) {
+        Map<String, String> moves = new LinkedHashMap<>(losers);
+        for (String name : shadowed.keySet()) {
+            usedInstead(name).map(used -> losers.getOrDefault(used, used))
+                    .filter(target -> !target.equals(name))
+                    .ifPresent(target -> moves.putIfAbsent(name, target));
+        }
+        return moves;
+    }
+
+    /** The entry the game uses where {@code name} is dead: the first on the same controller in that installation. */
+    private Optional<String> usedInstead(String name) {
+        for (int i = 0; i < installations.size(); i++) {
+            HardwareId hardware = installations.get(i).elements().get(name);
+            if (hardware == null) continue;
+            for (Map.Entry<String, HardwareId> entry : effective.get(i).elements().entrySet()) {
+                if (entry.getValue().equals(hardware)) return Optional.of(entry.getKey());
+            }
+        }
+        return Optional.empty();
     }
 
     /** The first installation, in list order, whose element under {@code name} has {@code hardware}. */
@@ -359,6 +441,7 @@ public final class FirstSetupPlan {
 
     private List<Row> buildRows() {
         List<Row> built = new ArrayList<>();
+        Set<String> labelled = new LinkedHashSet<>();
         Set<String> inNameConflict = new LinkedHashSet<>();
         namesByHardware.forEach((hardware, names) -> {
             inNameConflict.addAll(names);
@@ -377,7 +460,11 @@ public final class FirstSetupPlan {
                 built.add(new Row(name, everywhere ? Kind.IDENTICAL : Kind.ONLY_IN_SOME, severity, name,
                         byInstall.keySet(), List.of()));
             }
-            labelsRow(name).ifPresent(built::add);
+            // WHY: two controllers under one name each keep their own labels, so there is nothing to merge - the
+            // controller chosen brings its own (Alan, 2026-11-17).
+            if (distinct.size() > 1) continue;
+            String device = labelDeviceOf(name);
+            if (labelled.add(device)) labelsRow(device).ifPresent(built::add);
         }
         for (String name : builtInNames()) {
             built.add(labelsRow(name).orElse(new Row(LABELS_ROW + name, Kind.BUILT_IN_LABELS, Severity.GREEN, name,
@@ -430,9 +517,31 @@ public final class FirstSetupPlan {
                 holders.keySet(), options));
     }
 
-    /** The union of every installation's labels for the device, each colliding input taking its answer. */
-    private Map<String, String> labelsFor(String name, Map<String, String> answers) {
-        return labelMerge(name).merged(labelAnswers(name, answers));
+    /**
+     * A kept element's labels: for a name on several controllers, the labels of the installations holding the one
+     * chosen, the first installation's winning an input they disagree on; otherwise its label device's labels, every
+     * colliding input taking its answer.
+     */
+    private Map<String, String> labelsFor(String name, HardwareId hardware, Map<String, String> answers) {
+        Map<Long, HardwareId> byInstall = hardwareByInstall(name);
+        if (new LinkedHashSet<>(byInstall.values()).size() > 1) {
+            Map<String, String> labels = new TreeMap<>();
+            for (Installation install : installations) {
+                if (!hardware.equals(byInstall.get(install.installId()))) continue;
+                install.labels().getOrDefault(name, Map.of()).forEach(labels::putIfAbsent);
+            }
+            return labels;
+        }
+        String device = labelDeviceOf(name);
+        return labelMerge(device).merged(labelAnswers(device, answers));
+    }
+
+    /** The label device a name belongs to: its controller's several aliases, or the name itself. */
+    private String labelDeviceOf(String name) {
+        for (Map.Entry<String, List<String>> device : namesByLabelDevice.entrySet()) {
+            if (device.getValue().contains(name)) return device.getKey();
+        }
+        return name;
     }
 
     /**
@@ -487,13 +596,43 @@ public final class FirstSetupPlan {
         return byInstall;
     }
 
-    private Map<Long, Map<String, String>> labelHolders(String name) {
+    /**
+     * Each installation's labels for a device. For a controller under several aliases, an installation's labels are
+     * those of the first of its aliases that installation labels.
+     */
+    private Map<Long, Map<String, String>> labelHolders(String device) {
+        List<String> names = namesOfLabelDevice(device);
         Map<Long, Map<String, String>> holders = new LinkedHashMap<>();
         installations.forEach(install -> {
-            Map<String, String> labels = install.labels().get(name);
-            if (labels != null && !labels.isEmpty()) holders.put(install.installId(), labels);
+            for (String name : names) {
+                Map<String, String> labels = install.labels().get(name);
+                if (labels != null && !labels.isEmpty()) {
+                    holders.put(install.installId(), labels);
+                    return;
+                }
+            }
         });
         return holders;
+    }
+
+    /**
+     * The aliases of each controller known under more than one, grouped - a name on two controllers joins both
+     * controllers' groups into one. Keyed as a name row names them: the aliases, sorted, joined by {@code " / "}.
+     */
+    private static Map<String, List<String>> labelDevices(Map<HardwareId, Set<String>> namesByHardware) {
+        List<Set<String>> groups = new ArrayList<>();
+        for (Set<String> names : namesByHardware.values()) {
+            Set<String> merged = new TreeSet<>(names);
+            groups.removeIf(group -> {
+                if (Collections.disjoint(group, merged)) return false;
+                merged.addAll(group);
+                return true;
+            });
+            groups.add(merged);
+        }
+        Map<String, List<String>> devices = new LinkedHashMap<>();
+        groups.forEach(group -> devices.put(String.join(" / ", group), List.copyOf(group)));
+        return devices;
     }
 
     private Set<String> elementNames() {

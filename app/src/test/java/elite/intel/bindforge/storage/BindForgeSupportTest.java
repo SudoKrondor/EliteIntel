@@ -211,6 +211,33 @@ class BindForgeSupportTest {
         assertTrue(report.contains("(the default)"), report);
     }
 
+    /**
+     * "My binds are all wrong": the first setup backup holds the player's files from before BindForge, and the newest
+     * before-changes ones what its last writes replaced - carried whole. A daily backup is only listed.
+     */
+    @Test
+    void firstSetupAndRecentBeforeChangesBackupsAreCarriedWhole() throws IOException {
+        backup("FirstSetup", "2026-10-20_09-00-00", "Kind: First setup\nStatus: Full\n");
+        for (int day = 1; day <= 7; day++) {
+            backup("BeforeChanges", "2026-11-0" + day + "_10-00-00",
+                    "Kind: Before changes\nTaken before: APPLY\nStatus: Full\n");
+        }
+        backup("Daily", "2026-11-08_10-00-00", "Kind: Daily\nStatus: Full\n");
+
+        BindForgeSupport.Contents contents = BindForgeSupport.collect(readings);
+
+        assertTrue(contents.files().containsKey("bindforge/backups/FIRST_SETUP/2026-10-20_09-00-00.zip"));
+        for (int day = 3; day <= 7; day++) {
+            assertTrue(contents.files().containsKey("bindforge/backups/BEFORE_CHANGES/2026-11-0" + day + "_10-00-00.zip"),
+                    contents.files().keySet().toString());
+        }
+        assertFalse(contents.files().containsKey("bindforge/backups/BEFORE_CHANGES/2026-11-02_10-00-00.zip"),
+                "only the newest five before-changes backups");
+        assertTrue(contents.files().keySet().stream().noneMatch(name -> name.contains("/DAILY/")));
+        assertTrue(contents.report().contains("2026-10-20 09:00:00 FIRST_SETUP, full, in the bundle as "
+                + "bindforge/backups/FIRST_SETUP/2026-10-20_09-00-00.zip"), contents.report());
+    }
+
     @Test
     void aChosenBackupFolderThatFellBackIsCalledOut() {
         readings.chosen = tmp.resolve("gone").toString();
@@ -369,6 +396,11 @@ class BindForgeSupportTest {
         @Override
         public int beforeChangesBackupsKept() {
             return 50;
+        }
+
+        @Override
+        public byte[] backupBytes(Path zip) throws IOException {
+            return Files.readAllBytes(zip);
         }
 
         @Override

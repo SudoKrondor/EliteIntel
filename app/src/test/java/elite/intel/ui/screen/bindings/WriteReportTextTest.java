@@ -136,7 +136,7 @@ class WriteReportTextTest {
         Written written = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
 
         assertEquals(QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT,
-                FirstTimeStartupFlow.writtenReport(written, 0).quietable());
+                FirstTimeStartupFlow.writtenReport(written, 0, List.of()).quietable());
     }
 
     @Test
@@ -144,8 +144,18 @@ class WriteReportTextTest {
         Written plain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
         Written askedAgain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), true);
 
-        assertNull(FirstTimeStartupFlow.writtenReport(plain, 2).quietable(), "devices moved to a new ID");
-        assertNull(FirstTimeStartupFlow.writtenReport(askedAgain, 0).quietable(), "the flag could not be set");
+        assertNull(FirstTimeStartupFlow.writtenReport(plain, 2, List.of()).quietable(), "devices moved to a new ID");
+        assertNull(FirstTimeStartupFlow.writtenReport(askedAgain, 0, List.of()).quietable(), "the flag could not be set");
+    }
+
+    /** "I lost all my binds": a controller the bindings use, unplugged at launch, sends the game to keyboard and mouse. */
+    @Test
+    void firstTimeStartupsReportNamingAControllerToPlugInAlwaysShows() {
+        Written plain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
+
+        CheckFlow.Report report = FirstTimeStartupFlow.writtenReport(plain, 0, List.of("T-Rudder"));
+        assertNull(report.quietable());
+        assertTrue(report.text().contains("T-Rudder"), report.text());
     }
 
     @Test
@@ -154,7 +164,7 @@ class WriteReportTextTest {
                 new Place(Kind.INSTALLATION, "EPIC", EPIC, List.of(), List.of(), List.of(), List.of(), true)),
                 backup(), false);
 
-        assertNull(FirstTimeStartupFlow.writtenReport(written, 0).quietable());
+        assertNull(FirstTimeStartupFlow.writtenReport(written, 0, List.of()).quietable());
     }
 
     private static Place steamUpdated() {
