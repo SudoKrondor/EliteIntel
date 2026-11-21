@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -89,6 +90,8 @@ public class GameInstallLocationsPanel extends JPanel {
     private JButton runAgainButton;
     /** First-time startup run again, at once - wired by the BindForge tab, which owns the flow. */
     private Runnable runAgain;
+    /** Told when an installation is added or removed - wired by the BindForge tab, for the Playing: selector. */
+    private Runnable listChanged = () -> { };
 
     public GameInstallLocationsPanel() {
         this(new InstallationRegistry(
@@ -126,6 +129,14 @@ public class GameInstallLocationsPanel extends JPanel {
      */
     public void setRunAgain(Runnable runAgain) {
         this.runAgain = runAgain;
+    }
+
+    /**
+     * Wired by the BindForge tab: run after an installation is added or removed (linux-several-installations.md,
+     * rule 4).
+     */
+    public void setListChanged(Runnable listChanged) {
+        this.listChanged = Objects.requireNonNull(listChanged, "listChanged");
     }
 
     /** CREATE greyed the editors, or brought them back - the Bindings File section follows them (D3). On the EDT. */
@@ -235,10 +246,31 @@ public class GameInstallLocationsPanel extends JPanel {
                     getText("button.ok"));
             return;
         }
+        if (registry.asksForWinePrefix()) askForWinePrefix(added);
         // WHY: remembered rather than selected here. The list reloads off the EDT, so the row does not exist
         // in the table yet - the selection happens when it does.
         pendingSelection = added.id();
         initData();
+        listChanged.run();
+    }
+
+    /**
+     * On Linux, the installation's Wine prefix, where its own bindings and journal folders are
+     * (linux-several-installations.md, rule 6). Cancelling keeps it without one: its device files are still written.
+     */
+    private void askForWinePrefix(InstallationRow added) {
+        Path prefix = chooseFolder(getText("bindings.installLocations.add.prefixChooserTitle"));
+        if (prefix == null) return;
+        try {
+            registry.setWinePrefix(added.id(), prefix);
+        } catch (IllegalArgumentException e) {
+            // WHY: the user's choice, refused as an ordinary outcome - told what was expected, and Add Missing on the same
+            // folder asks again.
+            HudConfirmDialog.info(this,
+                    getText("bindings.installLocations.add.prefixRejected.title"),
+                    getText("bindings.installLocations.add.prefixRejected.text", prefix.toString()),
+                    getText("button.ok"));
+        }
     }
 
     private void performRemove() {
@@ -257,6 +289,7 @@ public class GameInstallLocationsPanel extends JPanel {
         // is left (Alan, 2026-11-05, S14a Q4). Plugging a drive back in waits for the next start.
         ReadOnlyMode.stored().removed(row.id());
         initData();
+        listChanged.run();
     }
 
     /**

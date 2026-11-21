@@ -18,7 +18,8 @@ import java.util.stream.Stream;
 
 /**
  * Writes one set of files to every live copy: the {@code .binds} and {@code StartPreset.N.start} to the bindings
- * folder, and the device files to every installation (storage.md rules 7-8; alias-designer.md, <em>What APPLY does to
+ * folder - and to each other installation's own, on Linux, where it still holds what BindForge last wrote
+ * (linux-several-installations.md, rule 5) - and the device files to every installation (storage.md rules 7-8; alias-designer.md, <em>What APPLY does to
  * each installation's device files</em>):
  * <ul>
  *     <li><strong>Device files whole, to every installation</strong> - a missing {@code DeviceMappings.xml} is
@@ -137,6 +138,23 @@ final class LiveCopies {
      */
     WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings,
                       Set<String> moveFromBindings) {
+        return write(files, leaveAlone, removeFromBindings, moveFromBindings, Optional.empty());
+    }
+
+    /**
+     * {@link #write(ConfigurationFiles, LeaveAlone, Set, Set)}, then each other installation's own bindings folder -
+     * on Linux, where each installation keeps its own (linux-several-installations.md, rule 5) - written as the bindings
+     * folder is, its leftovers not moved, <strong>but only where it still holds what BindForge last wrote</strong>.
+     * One changed outside BindForge is left alone and reported, until its installation is played and the check reads
+     * it; so is one whose installation did not take its device files, since a binds file naming a device the
+     * installation does not know is rejected by the game, and so is every one when there is nothing to compare it with -
+     * each reported for its own reason ({@link WriteReport.NotWritten}).
+     *
+     * @param lastWritten the binds and preset files of the working copy before this write - empty before first-time
+     *                    startup, when every other folder is left alone
+     */
+    WriteReport write(ConfigurationFiles files, LeaveAlone leaveAlone, Set<String> removeFromBindings,
+                      Set<String> moveFromBindings, Optional<Map<String, byte[]>> lastWritten) {
         requireNamesToTakeAway(removeFromBindings, moveFromBindings);
         Place bindings = writeBindings(files, removeFromBindings, moveFromBindings);
         List<Place> installations = sources.installations().stream()
@@ -149,7 +167,63 @@ final class LiveCopies {
                     return writeInstallation(installation, files);
                 })
                 .toList();
-        return new WriteReport(bindings, installations);
+        List<Place> otherBindings = writeOtherBindings(files, removeFromBindings, installations, lastWritten);
+        return new WriteReport(bindings, installations, otherBindings);
+    }
+
+    /**
+     * Each installation's own bindings folder apart from the bindings folder, once per folder however many
+     * installations report it. A folder that is not there is skipped, not reported: the game makes it the first time it
+     * runs there, and the check takes it in once that installation is played.
+     */
+    private List<Place> writeOtherBindings(ConfigurationFiles files, Set<String> remove, List<Place> installations,
+                                           Optional<Map<String, byte[]>> lastWritten) {
+        Set<Path> seen = new HashSet<>();
+        seen.add(realFolder(sources.bindingsFolder()));
+        List<Place> places = new ArrayList<>();
+        for (int i = 0; i < sources.installations().size(); i++) {
+            BackupSources.Installation installation = sources.installations().get(i);
+            Path folder = installation.bindingsFolder();
+            if (folder == null || !installation.reachable() || !Files.isDirectory(folder)) continue;
+            if (!seen.add(realFolder(folder))) continue;
+            places.add(writeOtherBindings(installation, folder, files, remove, installations.get(i), lastWritten));
+        }
+        return places;
+    }
+
+    private Place writeOtherBindings(BackupSources.Installation installation, Path folder, ConfigurationFiles files,
+                                     Set<String> remove, Place deviceFiles, Optional<Map<String, byte[]>> lastWritten) {
+        String storefront = installation.storefront();
+        if (!deviceFiles.updated()) {
+            return Place.unwritten(storefront, folder, WriteReport.NotWritten.DEVICE_FILES_NOT_TAKEN);
+        }
+        if (lastWritten.isEmpty()) return Place.unwritten(storefront, folder, WriteReport.NotWritten.NOT_COMPARED);
+        boolean asLastWritten;
+        try {
+            asLastWritten = BindingsComparison.compare(lastWritten.get(), BindingsCheck.readBindingsFolder(folder),
+                    BindingsComparison.Factory.NONE).none();
+        } catch (IOException e) {
+            // WHY: a file there that cannot be read could hold anything of the user's - left alone, never written over
+            // unseen, as an installation whose device files cannot be read is - and reported as the failure it is.
+            log.warn("Could not read {} to compare it with what BindForge last wrote, so it is left alone", folder, e);
+            return new Place(WriteReport.Kind.INSTALLATION_BINDINGS, storefront, folder, List.of(), List.of(),
+                    List.of(), List.of("could not be read to compare it with what BindForge last wrote: "
+                    + e.getMessage()));
+        }
+        if (!asLastWritten) {
+            return new Place(WriteReport.Kind.INSTALLATION_BINDINGS, storefront, folder, List.of(), List.of(),
+                    List.of(), List.of(), true);
+        }
+        return writeBindingsInto(WriteReport.Kind.INSTALLATION_BINDINGS, storefront, folder, files, remove, Set.of());
+    }
+
+    /** A folder by its real path, so two routes to one folder are one - its plain path when it cannot be resolved. */
+    private static Path realFolder(Path folder) {
+        try {
+            return folder.toRealPath();
+        } catch (IOException e) {
+            return folder.toAbsolutePath().normalize();
+        }
     }
 
     /**
@@ -171,15 +245,20 @@ final class LiveCopies {
 
     private Place writeBindings(ConfigurationFiles files, Set<String> remove, Set<String> move) {
         Path folder = sources.bindingsFolder();
-        Writing writing = new Writing(mover);
         // WHY: not created. The game makes this folder; one that is not there is a wrong setting or an unplugged
         // drive, and creating it would put the user's files where the game never reads them.
         if (!Files.isDirectory(folder)) {
+            Writing writing = new Writing(mover);
             writing.failures.add(FOLDER_NOT_FOUND);
             return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
         }
-        // WHY: the one folder Elite-Intel is set to, on Linux too, where each installation has its own - every .binds
-        // read and write in BindForge uses it (input-environment.md section 7; storage brief, Known issues).
+        return writeBindingsInto(WriteReport.Kind.BINDINGS_FOLDER, null, folder, files, remove, move);
+    }
+
+    /** The binds files, then the preset file, then the removals and moves, into one bindings folder that is there. */
+    private Place writeBindingsInto(WriteReport.Kind kind, String storefront, Path folder, ConfigurationFiles files,
+                                    Set<String> remove, Set<String> move) {
+        Writing writing = new Writing(mover);
         Map<String, byte[]> presetFiles = new TreeMap<>(files.bindings());
         presetFiles.keySet().removeIf(name -> !FileNames.isPresetFile(name));
         Map<String, byte[]> bindsFiles = new TreeMap<>(files.bindings());
@@ -194,7 +273,7 @@ final class LiveCopies {
             writing.heldBack(remove);
             // WHY: a converted plain file's binds file may be the one that failed, so the plain file stays too.
             writing.heldBack(move);
-            return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
+            return writing.place(kind, storefront, folder);
         }
         for (String name : remove) {
             // WHY: a name the set holds in any spelling is the file just written - the edit wins (Storage S13a).
@@ -202,7 +281,7 @@ final class LiveCopies {
             writing.spellingsIn(folder, name).forEach(spelling -> writing.remove(folder.resolve(spelling)));
         }
         for (String name : move) writing.moveAway(folder.resolve(name), leftovers);
-        return writing.place(WriteReport.Kind.BINDINGS_FOLDER, null, folder);
+        return writing.place(kind, storefront, folder);
     }
 
     private Place writeInstallation(BackupSources.Installation installation, ConfigurationFiles files) {

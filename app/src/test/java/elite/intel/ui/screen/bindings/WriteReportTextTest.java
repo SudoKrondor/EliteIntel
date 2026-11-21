@@ -167,6 +167,47 @@ class WriteReportTextTest {
         assertNull(FirstTimeStartupFlow.writtenReport(written, 0, List.of()).quietable());
     }
 
+    @Test
+    void anotherInstallationsFolderChangedOutsideBindForgeIsSaidToBe() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                new Place(Kind.INSTALLATION_BINDINGS, "EPIC", EPIC, List.of(), List.of(), List.of(), List.of(), true)));
+
+        assertTrue(text.contains(getText("bindings.applyBar.result.otherBindingsDiffers", name("EPIC", EPIC))), text);
+    }
+
+    @Test
+    void anotherInstallationsFolderNotComparedIsNeverSaidToHaveBeenChanged() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                Place.unwritten("EPIC", EPIC, WriteReport.NotWritten.NOT_COMPARED)));
+
+        assertTrue(text.contains(getText("bindings.applyBar.result.otherBindingsNotCompared", name("EPIC", EPIC))),
+                text);
+        assertFalse(text.contains(getText("bindings.applyBar.result.otherBindingsDiffers", name("EPIC", EPIC))),
+                "first-time startup: nothing of the user's was changed - " + text);
+    }
+
+    @Test
+    void anotherInstallationsFolderHeldWithItsDeviceFilesGetsOneLine() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                Place.unwritten("EPIC", EPIC, WriteReport.NotWritten.DEVICE_FILES_NOT_TAKEN)));
+
+        assertEquals("\n" + getText("bindings.applyBar.result.otherBindingsDeviceFiles", name("EPIC", EPIC)), text);
+    }
+
+    @Test
+    void anotherInstallationsFolderThatFailedShowsTheFailure() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                new Place(Kind.INSTALLATION_BINDINGS, "EPIC", EPIC, List.of(), List.of(), List.of(),
+                        List.of("locked"))));
+
+        assertTrue(text.contains(getText("bindings.firstTimeStartup.result.place", name("EPIC", EPIC), "locked")),
+                text);
+    }
+
+    private static WriteReport otherBindings(Place place) {
+        return new WriteReport(bindingsUpdated(), List.of(), List.of(place));
+    }
+
     private static Place steamUpdated() {
         return new Place(Kind.INSTALLATION, "STEAM", STEAM, List.of("LVWAP.buttonMap"), List.of(), List.of(),
                 List.of());

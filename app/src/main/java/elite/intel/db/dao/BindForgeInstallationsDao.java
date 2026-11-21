@@ -48,6 +48,9 @@ public interface BindForgeInstallationsDao {
     @SqlUpdate("UPDATE bindforge_installations SET is_missing = :missing WHERE id = :id")
     void setMissing(@Bind("id") long id, @Bind("missing") boolean missing);
 
+    @SqlUpdate("UPDATE bindforge_installations SET wine_prefix = :winePrefix WHERE id = :id")
+    void setWinePrefix(@Bind("id") long id, @Bind("winePrefix") String winePrefix);
+
 
     class InstallationRowMapper implements RowMapper<InstallationRow> {
         @Override
@@ -57,7 +60,8 @@ public interface BindForgeInstallationsDao {
                     rs.getString("storefront"),
                     rs.getString("root_path"),
                     rs.getBoolean("added_by_hand"),
-                    rs.getBoolean("is_missing"));
+                    rs.getBoolean("is_missing"),
+                    rs.getString("wine_prefix"));
         }
     }
 
@@ -65,7 +69,15 @@ public interface BindForgeInstallationsDao {
      * @param id          the row's key
      * @param addedByHand true when the user added this rather than detection finding it
      * @param missing     true when the folder is not there right now - a state, never a reason to delete
+     * @param winePrefix  the Wine prefix of one added by hand on Linux, the folder holding {@code drive_c}, or
+     *                    {@code null} - detection finds a Steam installation's own, and Windows has none
      */
-    record InstallationRow(long id, String storefront, String rootPath, boolean addedByHand, boolean missing) {
+    record InstallationRow(long id, String storefront, String rootPath, boolean addedByHand, boolean missing,
+                           String winePrefix) {
+
+        /** A row with no Wine prefix. */
+        public InstallationRow(long id, String storefront, String rootPath, boolean addedByHand, boolean missing) {
+            this(id, storefront, rootPath, addedByHand, missing, null);
+        }
     }
 }

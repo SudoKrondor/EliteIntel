@@ -100,6 +100,21 @@ public class BindForgeSettingsManager {
         update(settings -> settings.setBeforeChangesBackupsKept(kept));
     }
 
+    /**
+     * When the installation being played was last chosen, as {@code yyyyMMddHHmmss} local time, or 0 for never
+     * (linux-several-installations.md, rule 3).
+     */
+    public long getGameFoldersChosenAt() {
+        return Database.withDao(BindForgeSettingsDao.class, dao -> dao.get().getGameFoldersChosenAt());
+    }
+
+    /**
+     * @param chosenAt {@code yyyyMMddHHmmss} local time, the form of a journal name's start stamp
+     */
+    public void setGameFoldersChosenAt(long chosenAt) {
+        update(settings -> settings.setGameFoldersChosenAt(chosenAt));
+    }
+
     // WHY: rejected here rather than where it is read. The value is persisted, so an unparseable path stored
     // now would throw on every later read - including the backup that runs at launch - far from the caller
     // that supplied it.

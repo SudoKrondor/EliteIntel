@@ -216,6 +216,21 @@ public class BindingsMonitor {
         processingThread = null;
     }
 
+    /**
+     * Watches the bindings folder Elite-Intel is set to now, when it changed while this ran - the installation being
+     * played changed (linux-several-installations.md, rule 2). Reads it at once. Does nothing while not running: the
+     * next start reads the setting anyway.
+     */
+    public synchronized void watchAgain() {
+        if (processingThread == null || !processingThread.isAlive()) return;
+        stopMonitoring();
+        try {
+            startMonitoring();
+        } catch (IOException e) {
+            log.error("Could not watch the bindings folder {} again", PlayerSession.getInstance().getBindingsDir(), e);
+        }
+    }
+
     private void monitorBindings() {
         // WHY no folder check here: SetupCheck says what is wrong with the folder at startup, and the folder field
         // when it is changed. A check here spoke a second time, and one that looked for .binds called a fresh install

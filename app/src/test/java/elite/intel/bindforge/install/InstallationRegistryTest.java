@@ -3,6 +3,7 @@ package elite.intel.bindforge.install;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.db.managers.InstallationsTable;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -267,6 +269,62 @@ class InstallationRegistryTest {
 
         assertEquals(List.of(GameInstallation.controlSchemesUnder(steam)),
                 InstallationRegistry.reachableControlSchemes());
+    }
+
+    /** An installation added by hand on Linux finds its own bindings folder in its Wine prefix (rule 6). */
+    @Test
+    void aHandAddedInstallationsBindingsFolderIsTheOneInItsWinePrefix() throws IOException {
+        Path root = gameAt("heroic-game");
+        Path prefix = machine.resolve("Heroic/Prefixes/EliteDangerous");
+        GameUserFolder user = new GameUserFolder(prefix.resolve("drive_c/users/krondor"));
+        Files.createDirectories(user.bindingsFolder());
+        InstallationRegistry registry = registry();
+        InstallationRow added = registry.addByHand(root);
+
+        registry.setWinePrefix(added.id(), prefix);
+        InstallationRow stored = installations.findAll().getFirst();
+
+        assertEquals(prefix.toString(), stored.winePrefix());
+        assertEquals(user.bindingsFolder(), InstallationRegistry.ownBindingsFolder(stored, List.of()));
+    }
+
+    @Test
+    void aFolderWithNoDriveCIsNotAWinePrefix() throws IOException {
+        InstallationRegistry registry = registry();
+        InstallationRow added = registry.addByHand(gameAt("heroic-game"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> registry.setWinePrefix(added.id(), machine.resolve("not a prefix")));
+        assertEquals(null, installations.findAll().getFirst().winePrefix());
+    }
+
+    /** A prefix whose users folder cannot be listed gives no bindings folder now - never a throw out of a write. */
+    @Test
+    void aWinePrefixThatCannotBeListedHasNoBindingsFolderForNow() throws IOException {
+        Path prefix = machine.resolve("Heroic/Prefixes/EliteDangerous");
+        Path users = prefix.resolve("drive_c/users");
+        Files.createDirectories(new GameUserFolder(users.resolve("krondor")).bindingsFolder());
+        InstallationRow row = new InstallationRow(1, "MANUAL", gameAt("heroic-game").toString(), true, false,
+                prefix.toString());
+        Assumptions.assumeTrue(Files.getFileStore(users).supportsFileAttributeView("posix"), "POSIX permissions");
+        Files.setPosixFilePermissions(users, PosixFilePermissions.fromString("---------"));
+        try {
+            Assumptions.assumeFalse(Files.isReadable(users), "running as a user who can read it anyway");
+
+            assertEquals(null, InstallationRegistry.ownBindingsFolder(row, List.of()));
+        } finally {
+            Files.setPosixFilePermissions(users, PosixFilePermissions.fromString("rwx------"));
+        }
+    }
+
+    @Test
+    void detectionsBindingsFolderWinsOverNone() throws IOException {
+        Path root = gameAt("steam");
+        detect(Storefront.STEAM, root);
+        InstallationRow row = registry().rescan().getFirst();
+
+        assertEquals(machine.resolve("Bindings"), InstallationRegistry.ownBindingsFolder(row, detected));
+        assertEquals(null, InstallationRegistry.ownBindingsFolder(row, List.of()), "no detection and no prefix");
     }
 
     private InstallationRegistry registry() {

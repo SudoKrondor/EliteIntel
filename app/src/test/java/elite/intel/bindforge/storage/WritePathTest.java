@@ -251,6 +251,33 @@ class WritePathTest {
     }
 
     /** APPLY's write - the one that finds the places itself - leaving no installation alone. */
+    /**
+     * Another installation's own bindings folder is written while it holds the working copy as it was before this
+     * write, and left alone once it does not (linux-several-installations.md, rule 5).
+     */
+    @Test
+    void anotherInstallationsBindingsFolderIsComparedWithTheWorkingCopyBeforeTheWrite() throws IOException {
+        Path epic = temp.resolve("Epic/EliteDangerous");
+        Files.createDirectories(GameInstallation.controlSchemesUnder(epic));
+        Path epicBindings = temp.resolve("EpicPrefix/Bindings");
+        write(epicBindings.resolve("Custom.4.2.binds"), "<previous/>");
+        workingCopy.write(new ConfigurationFiles(Map.of("Custom.4.2.binds", bytes("<previous/>")), bytes("<Mappings/>"),
+                Map.of()));
+        WritePath writePath = new WritePath(workingCopy, () -> new BackupSources(bindings, List.of(
+                new BackupSources.Installation("STEAM", steam, false, null),
+                new BackupSources.Installation("EPIC", epic, false, epicBindings))), NO_HAND_OFF);
+
+        assertTrue(applyWrite(writePath, set(), sources -> backup()).complete());
+        assertEquals("<new/>", Files.readString(epicBindings.resolve("Custom.4.2.binds")));
+
+        write(epicBindings.resolve("Custom.4.2.binds"), "<rebound in the game/>");
+        WriteReport report = applyWrite(writePath, set().withBindingsFile("Custom.4.2.binds", bytes("<newer/>")),
+                sources -> backup());
+
+        assertTrue(report.otherBindings().getFirst().differs());
+        assertEquals("<rebound in the game/>", Files.readString(epicBindings.resolve("Custom.4.2.binds")));
+    }
+
     private static WriteReport applyWrite(WritePath writePath, ConfigurationFiles files, WritePath.BackUpFirst backUp)
             throws IOException {
         return writePath.write(files, backUp, LiveCopies.LeaveAlone.NONE, Set.of(), Set.of());

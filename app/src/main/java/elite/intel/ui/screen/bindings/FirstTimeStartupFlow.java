@@ -335,6 +335,39 @@ public final class FirstTimeStartupFlow {
             }
             text.append('\n').append(getText("bindings.firstTimeStartup.result.leftAsItIs", name));
         }
+        return text + otherBindingsFailures(report);
+    }
+
+    /**
+     * Each other installation's own bindings folder that did not take the write (linux-several-installations.md, rule 5):
+     * left alone because it was changed outside BindForge, because there was nothing to compare it with, or because its
+     * installation did not take its device files - or failed.
+     */
+    private static String otherBindingsFailures(WriteReport report) {
+        StringBuilder text = new StringBuilder();
+        for (WriteReport.Place place : report.otherBindings()) {
+            if (place.updated()) continue;
+            String name = getText("bindings.firstTimeStartup.place.installation", place.storefront(), place.folder());
+            if (place.differs()) {
+                text.append('\n').append(getText("bindings.applyBar.result.otherBindingsDiffers", name));
+                continue;
+            }
+            if (place.notWritten() != null) {
+                text.append('\n').append(getText(switch (place.notWritten()) {
+                    case NOT_COMPARED -> "bindings.applyBar.result.otherBindingsNotCompared";
+                    case DEVICE_FILES_NOT_TAKEN -> "bindings.applyBar.result.otherBindingsDeviceFiles";
+                }, name));
+                continue;
+            }
+            if (!place.failures().isEmpty()) {
+                text.append('\n').append(getText("bindings.firstTimeStartup.result.place", name,
+                        String.join("; ", place.failures())));
+            }
+            if (!place.keptReadOnly().isEmpty()) {
+                text.append('\n').append(getText("bindings.firstTimeStartup.result.keptReadOnly", name,
+                        String.join(", ", place.keptReadOnly())));
+            }
+        }
         return text.toString();
     }
 

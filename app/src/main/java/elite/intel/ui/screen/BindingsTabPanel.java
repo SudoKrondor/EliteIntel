@@ -5,6 +5,7 @@ import elite.intel.bindforge.storage.ReadOnlyMode;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.event.BindingsFolderChangedEvent;
+import elite.intel.ui.event.GameFoldersChangedEvent;
 import elite.intel.ui.screen.bindings.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -37,7 +38,8 @@ public class BindingsTabPanel extends JPanel {
     // WHY: the binds files are in this folder, and Game Install Locations names it - a new one is read again there.
     private final BindingsFolderField bindingsFolder =
             new BindingsFolderField(bindingManagementPanel::refreshInstallLocations);
-    private final ApplyBar applyBar = new ApplyBar(bindingsFolder);
+    private final PlayedInstallationField played = new PlayedInstallationField();
+    private final ApplyBar applyBar = new ApplyBar(played, bindingsFolder);
     private final SplitPresetFlow splitPreset = new SplitPresetFlow(this, applyBar);
     // WHY afterwards: the split preset file's question comes after first-time startup and the check, with BindForge's
     // other questions at the click, never over them (Krondor, 2026-11-10, Storage S13f).
@@ -85,6 +87,20 @@ public class BindingsTabPanel extends JPanel {
         firstTimeStartup.checkAgainAtNextClick();
     }
 
+    /**
+     * The installation being played changed (linux-several-installations.md, rule 2): the bindings folder is another
+     * now, so it is shown again, Game Install Locations reads it again, and the check runs again at the next click - the
+     * new folder may hold changes made in the game.
+     */
+    @Subscribe
+    public void onGameFoldersChanged(GameFoldersChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            bindingsFolder.refresh();
+            bindingManagementPanel.refreshInstallLocations();
+        });
+        firstTimeStartup.checkAgainAtNextClick();
+    }
+
     private void buildUi() {
         setLayout(new BorderLayout());
         setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
@@ -127,6 +143,8 @@ public class BindingsTabPanel extends JPanel {
         // WHY: Run First-Time Startup Again runs it at once - the user is on the BindForge tab already, so waiting for the
         // next click on it left them to leave and come back (Alan, 2026-11-11, Storage S19).
         bindingManagementPanel.setRunAgain(firstTimeStartup::runAgainNow);
+        // WHY: an installation added with its Wine prefix is one more to play, and one removed is one fewer.
+        bindingManagementPanel.setInstallListChanged(played::refresh);
 
         add(applyBar, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
@@ -167,10 +185,12 @@ public class BindingsTabPanel extends JPanel {
         bindingManagementPanel.dispose();
         aliasDesignerPanel.dispose();
         applyBar.dispose();
+        played.dispose();
     }
 
     public void initData() {
         bindingsFolder.refresh();
+        played.refresh();
         bindingProfilePanel.initData();
         presetEditorPanel.initData();
         bindingManagementPanel.initData();
