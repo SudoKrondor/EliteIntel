@@ -2,6 +2,11 @@ package elite.intel.ai.mouth.supertonic;
 
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -208,46 +213,72 @@ class SupertonicTextNormalizerTest {
                 SupertonicTextNormalizer.normalize("A new ship", Language.EN));
     }
 
-    @Test
-    void spellsSingleUppercaseLettersBeforePunctuation() {
-        assertEquals("double you.", SupertonicTextNormalizer.normalize("W.", Language.EN));
-        assertEquals("Ready double you. now",
-                SupertonicTextNormalizer.normalize("Ready W. now", Language.EN));
-        assertEquals("ay, bee! see?", SupertonicTextNormalizer.normalize("A, B! C?", Language.EN));
-        assertEquals("ipsilon,", SupertonicTextNormalizer.normalize("Y,", Language.IT));
-        assertEquals("w.", SupertonicTextNormalizer.normalize("w.", Language.EN));
+    @ParameterizedTest
+    @MethodSource("singleLettersBeforePunctuation")
+    void spellsSingleUppercaseLettersBeforePunctuation(String written, Language language, String spoken) {
+        assertEquals(spoken, SupertonicTextNormalizer.normalize(written, language));
+    }
+
+    static Stream<Arguments> singleLettersBeforePunctuation() {
+        return Stream.of(
+                Arguments.of("W.", Language.EN, "double you."),
+                Arguments.of("Ready W. now", Language.EN, "Ready double you. now"),
+                Arguments.of("A, B! C?", Language.EN, "ay, bee! see?"),
+                Arguments.of("Y,", Language.IT, "ipsilon,"),
+                Arguments.of("w.", Language.EN, "w."));
+    }
+
+    @ParameterizedTest
+    @MethodSource("singleLettersJoinedToAWord")
+    void leavesSingleUppercaseLettersJoinedToAWord(String written, Language language) {
+        assertEquals(written, SupertonicTextNormalizer.normalize(written, language));
+    }
+
+    static Stream<Arguments> singleLettersJoinedToAWord() {
+        return Stream.of(
+                Arguments.of("I'm plotting a route. I'll tell you.", Language.EN),
+                Arguments.of("A-rated", Language.EN),
+                Arguments.of("L'unico mercato. C'è un problema. D'accordo", Language.IT),
+                Arguments.of("L’astronave", Language.IT),
+                Arguments.of("C'est fait. J'ai trouvé l'équipage.", Language.FR));
     }
 
     @Test
     void spellsItalianClassLettersWithItalianNames() {
         assertEquals("classe ipsilon",
                 SupertonicTextNormalizer.normalize("classe Y", Language.IT));
+        assertEquals("Classe ipsilon",
+                SupertonicTextNormalizer.normalize("Classe Y", Language.IT));
+        assertEquals("classe a",
+                SupertonicTextNormalizer.normalize("classe a", Language.IT));
+    }
+
+    @ParameterizedTest
+    @MethodSource("italianSpokenFixes")
+    void normalizesSelectedItalianWordsForSpeech(String written, String spoken) {
+        assertEquals(spoken, SupertonicTextNormalizer.normalize(written, Language.IT));
+    }
+
+    static Stream<Arguments> italianSpokenFixes() {
+        return Stream.of(
+                Arguments.of("riattivati svegliati ascoltami anomalie binding scegline prenderti fermati attivala",
+                        "riattiva ti sveglia ti ascolta mi anomalìe bai nding scegli ne prender ti ferma ti attiva la"),
+                Arguments.of("fermati,", "ferma ti,"),
+                Arguments.of("riattivati, anomalie.", "riattiva ti, anomalìe."),
+                Arguments.of("fermati!", "ferma ti!"),
+                Arguments.of("svegliati?", "sveglia ti?"),
+                Arguments.of("ascoltami;", "ascolta mi;"),
+                Arguments.of("riattivati:", "riattiva ti:"),
+                Arguments.of("Svegliati e vola.", "Sveglia ti e vola."),
+                Arguments.of("Apri BindForge.", "Apri Baindforge."),
+                Arguments.of("Di' \"svegliati\" quando vuoi", "Di' \"sveglia ti\" quando vuoi"),
+                Arguments.of("Di' svegliati", "Di' sveglia ti."),
+                Arguments.of("riattivatiX anomaliee", "riattivatiX anomaliee"));
     }
 
     @Test
-    void normalizesSelectedItalianWordsForSpeech() {
-        assertEquals("riattiva ti. sveglia ti. ascolta mi. anomalìe bai nding baindforge scegli ne prender ti ferma ti attiva la",
-                SupertonicTextNormalizer.normalize(
-                        "riattivati svegliati ascoltami anomalie binding BindForge scegline prenderti fermati attivala", Language.IT));
-        assertEquals("ferma ti,",
-                SupertonicTextNormalizer.normalize("fermati,", Language.IT));
-        assertEquals("prender ti,",
-                SupertonicTextNormalizer.normalize("prenderti,", Language.IT));
-        assertEquals("attiva la,",
-                SupertonicTextNormalizer.normalize("attivala,", Language.IT));
-        assertEquals("riattiva ti, anomalìe.",
-                SupertonicTextNormalizer.normalize("riattivati, anomalie.", Language.IT));
-        assertEquals("ferma ti!",
-                SupertonicTextNormalizer.normalize("fermati!", Language.IT));
-        assertEquals("sveglia ti?",
-                SupertonicTextNormalizer.normalize("svegliati?", Language.IT));
-        assertEquals("ascolta mi;",
-                SupertonicTextNormalizer.normalize("ascoltami;", Language.IT));
-        assertEquals("riattiva ti:",
-                SupertonicTextNormalizer.normalize("riattivati:", Language.IT));
-        assertEquals("riattivati anomalie binding BindForge scegline prenderti fermati attivala",
-                SupertonicTextNormalizer.normalize("riattivati anomalie binding BindForge scegline prenderti fermati attivala", Language.EN));
-        assertEquals("riattivatiX anomaliee",
-                SupertonicTextNormalizer.normalize("riattivatiX anomaliee", Language.IT));
+    void leavesItalianWordsAloneInOtherLanguages() {
+        String text = "riattivati anomalie binding BindForge scegline prenderti fermati attivala";
+        assertEquals(text, SupertonicTextNormalizer.normalize(text, Language.EN));
     }
 }
