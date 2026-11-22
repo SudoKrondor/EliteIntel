@@ -28,11 +28,13 @@ public interface BindForgeSettingsDao {
             INSERT OR REPLACE INTO bindforge_settings (id,
                                                        backup_destination,
                                                        daily_backup_retention_days,
-                                                       before_changes_backups_kept)
+                                                       before_changes_backups_kept,
+                                                       game_folders_chosen_at)
             VALUES (1,
                     :backupDestination,
                     :dailyBackupRetentionDays,
-                    :beforeChangesBackupsKept)
+                    :beforeChangesBackupsKept,
+                    :gameFoldersChosenAt)
             """)
     void save(@BindBean BindForgeSettings settings);
 
@@ -44,6 +46,7 @@ public interface BindForgeSettingsDao {
             entity.setBackupDestination(rs.getString("backup_destination"));
             entity.setDailyBackupRetentionDays(rs.getInt("daily_backup_retention_days"));
             entity.setBeforeChangesBackupsKept(rs.getInt("before_changes_backups_kept"));
+            entity.setGameFoldersChosenAt(rs.getLong("game_folders_chosen_at"));
             return entity;
         }
     }
@@ -53,6 +56,7 @@ public interface BindForgeSettingsDao {
         String backupDestination;
         int dailyBackupRetentionDays;
         int beforeChangesBackupsKept;
+        long gameFoldersChosenAt;
 
         /**
          * Where backups are written, or {@code null} to use Elite-Intel's default backup path.
@@ -85,6 +89,18 @@ public interface BindForgeSettingsDao {
 
         public void setBeforeChangesBackupsKept(int beforeChangesBackupsKept) {
             this.beforeChangesBackupsKept = beforeChangesBackupsKept;
+        }
+
+        /**
+         * When the installation being played was last chosen, as {@code yyyyMMddHHmmss} local time - a journal name's
+         * stamp - or 0 for never (linux-several-installations.md, rule 3).
+         */
+        public long getGameFoldersChosenAt() {
+            return gameFoldersChosenAt;
+        }
+
+        public void setGameFoldersChosenAt(long gameFoldersChosenAt) {
+            this.gameFoldersChosenAt = gameFoldersChosenAt;
         }
     }
 }

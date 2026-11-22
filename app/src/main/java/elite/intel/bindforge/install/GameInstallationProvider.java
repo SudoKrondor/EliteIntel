@@ -29,6 +29,15 @@ public interface GameInstallationProvider {
     List<GameInstallation> findInstallations();
 
     /**
+     * Whether an installation added by hand is asked for its Wine prefix, the folder holding {@code drive_c} - where its
+     * own bindings and journal folders are (linux-several-installations.md, rule 6). False where every installation
+     * shares the Windows user's folders.
+     */
+    default boolean asksForWinePrefix() {
+        return false;
+    }
+
+    /**
      * The provider for the operating system Elite-Intel is running on - the one place that asks.
      *
      * @param windowsBindingsFolder the one {@code Options\Bindings} folder every Windows installation shares; Linux

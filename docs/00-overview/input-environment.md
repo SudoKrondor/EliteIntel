@@ -287,6 +287,12 @@ exactly as Windows does now. BindForge needs no change for the flip, because it 
 
 ### What BindForge does with several Linux installations - 2026-10-14 (Alan)
 
+*Superseded 2026-11-21 by [Several Game Installations on Linux](../02-features/bindforge/linux-several-installations.md)
+(Krondor): Elite-Intel follows the game to whichever installation it starts in, reading that installation's bindings
+and journal folders, and every write of the working copy also goes to each other installation's own bindings folder
+while it still holds what BindForge last wrote. The symlinks were not inverted. The 2026-10-14 rule is kept below as
+history.*
+
 **For now, BindForge treats the bindings folder as one, as on Windows:** every `.binds` read and write uses the folder
 Elite-Intel is set to - on Linux, the prefix the launcher's `ed-bindings` link points at - even when detection finds
 several installations, each with its own folder. Device files still go to every installation.

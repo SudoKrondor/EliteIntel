@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.storage.*;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
-import elite.intel.db.managers.BindForgeInstallationsManager;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.dialog.QuietableNotice;
@@ -13,7 +12,6 @@ import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
-import elite.intel.util.OsDetector;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +54,9 @@ import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
  * CREATE is not shown. The bar is above the tabs, not an editor, so it may name installations (principle 12).
  * <p>
  * <strong>The User Configuration Folder sits left of DISCARD and APPLY</strong> ({@link BindingsFolderField}; Alan,
- * 2026-11-08), shown whatever the mode: it is the folder every tab's binds files come from.
+ * 2026-11-08), shown whatever the mode: it is the folder every tab's binds files come from. <strong>Playing:</strong>, the
+ * installation being played, sits left of it when there are two or more to play ({@link PlayedInstallationField};
+ * linux-several-installations.md, rule 4).
  */
 public final class ApplyBar extends JPanel {
 
@@ -73,9 +73,11 @@ public final class ApplyBar extends JPanel {
     };
 
     /**
+     * @param played         the installation being played, placed left of the User Configuration Folder - shown only
+     *                       with two or more to play (linux-several-installations.md, rule 4)
      * @param bindingsFolder the User Configuration Folder's row, placed left of DISCARD and APPLY
      */
-    public ApplyBar(BindingsFolderField bindingsFolder) {
+    public ApplyBar(PlayedInstallationField played, BindingsFolderField bindingsFolder) {
         super(new BorderLayout());
         setOpaque(false);
         apply.addActionListener(e -> apply(() -> {
@@ -89,7 +91,7 @@ public final class ApplyBar extends JPanel {
         leading.setOpaque(false);
         leading.add(create);
         leading.add(status);
-        add(HudFooter.build(false, null, leading, List.of(), List.of(bindingsFolder, discard, apply, override)),
+        add(HudFooter.build(false, null, leading, List.of(), List.of(played, bindingsFolder, discard, apply, override)),
                 BorderLayout.CENTER);
         refresh();
         UiBus.register(this);
@@ -238,15 +240,9 @@ public final class ApplyBar extends JPanel {
             return;
         }
         String question = getText("bindings.applyBar.confirm");
-        // WHY: told, not fixed (Alan, 2026-10-14, A11). On Linux each installation has its own bindings folder, and
-        // BindForge moves bindings in the one Elite-Intel uses.
-        if (OsDetector.getOs() == OsDetector.OS.LINUX
-                && BindForgeInstallationsManager.getInstance().findAll().size() > 1) {
-            question += "\n\n" + getText("bindings.applyBar.linuxNote");
-        }
         String title = getText("bindings.applyBar.title");
-        // WHY: quieted, APPLY writes on the press, the Linux note with it - the user ticked the box under it (Alan,
-        // 2026-11-14, Storage S21; storage.md rule 13).
+        // WHY: quieted, APPLY writes on the press - the user ticked the box under it (Alan, 2026-11-14, Storage S21;
+        // storage.md rule 13).
         if (!HudConfirmDialog.confirmQuietable(this, QuietableNotice.BINDFORGE_APPLY_CONFIRM, title, question,
                 getText("bindings.applyBar.apply"), getText("button.cancel"))) {
             finished.run();

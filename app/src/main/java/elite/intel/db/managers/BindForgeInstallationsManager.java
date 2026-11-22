@@ -115,6 +115,19 @@ public class BindForgeInstallationsManager {
     }
 
     /**
+     * Records the Wine prefix of an installation added by hand on Linux (linux-several-installations.md, rule 6).
+     *
+     * @param winePrefix the folder holding {@code drive_c}, or {@code null} for none
+     */
+    public synchronized void setWinePrefix(long id, Path winePrefix) {
+        cached = null;
+        Database.withDao(BindForgeInstallationsDao.class, dao -> {
+            dao.setWinePrefix(id, winePrefix == null ? null : winePrefix.toString());
+            return Void.TYPE;
+        });
+    }
+
+    /**
      * Removes an installation from the list - Remove on Game Install Locations. <strong>It stays removed</strong>:
      * the row is kept and marked, so detection at the next start does not put it back, and it is neither backed up
      * nor written (file-manager.md, <em>Game Install Locations</em>; Storage S2b, 2026-10-25). Add missing on its

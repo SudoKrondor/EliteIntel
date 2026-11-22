@@ -26,7 +26,7 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return status.isInMainShip() || status.isInSrv() || status.isOnFoot();
     }
 
     @Override
@@ -48,6 +48,10 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
 
         if (status.isInMainShip()) {
             toggleLights(Bindings.GameCommand.BINDING_SHIP_LIGHTS_TOGGLE.getGameBinding());
+        }
+
+        if(status.isOnFoot()){
+            toggleLights(Bindings.GameCommand.BINDING_HUMANOID_FLASHLIGHT_BUTTON.getGameBinding());
         }
         return null;
     }

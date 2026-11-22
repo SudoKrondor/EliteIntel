@@ -8,9 +8,7 @@ import elite.intel.session.PlayerSession;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -97,29 +95,19 @@ public record BackupSources(Path bindingsFolder, List<Installation> installation
     }
 
     private static InstallationRow asMissing(InstallationRow row) {
-        return new InstallationRow(row.id(), row.storefront(), row.rootPath(), row.addedByHand(), true);
+        return new InstallationRow(row.id(), row.storefront(), row.rootPath(), row.addedByHand(), true,
+                row.winePrefix());
     }
 
     /**
-     * Joins the stored list to what detection found: a stored installation detection also found takes the bindings
-     * folder detection reports for it. One added by hand has none, and is covered by the folder Elite-Intel is set
-     * to.
+     * Joins the stored list to what detection found: each installation takes its own bindings folder
+     * ({@link InstallationRegistry#ownBindingsFolder}); one with none is covered by the folder Elite-Intel is set to.
      */
     static BackupSources of(Path bindingsFolder, List<InstallationRow> rows, List<GameInstallation> detected) {
-        Map<Path, Path> bindingsByRoot = new HashMap<>();
-        for (GameInstallation installation : detected) {
-            bindingsByRoot.put(normal(installation.root()), installation.bindingsFolder());
-        }
         List<Installation> installations = rows.stream()
-                .map(row -> {
-                    Path root = Path.of(row.rootPath());
-                    return new Installation(row.storefront(), root, row.missing(), bindingsByRoot.get(normal(root)));
-                })
+                .map(row -> new Installation(row.storefront(), Path.of(row.rootPath()), row.missing(),
+                        InstallationRegistry.ownBindingsFolder(row, detected)))
                 .toList();
         return new BackupSources(bindingsFolder, installations);
-    }
-
-    private static Path normal(Path path) {
-        return path.toAbsolutePath().normalize();
     }
 }

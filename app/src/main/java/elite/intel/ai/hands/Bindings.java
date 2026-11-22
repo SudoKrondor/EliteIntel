@@ -301,7 +301,7 @@ public class Bindings {
         BINDING_HUMANOID_SWITCH_TO_SUIT_TOOL("HumanoidSwitchToSuitTool"),
         BINDING_HUMANOID_SWITCH_WEAPON("HumanoidSwitchWeapon"),
         BINDING_HUMANOID_THROW_GRENADE_BUTTON("HumanoidThrowGrenadeButton"),
-        BINDING_HUMANOID_FLASHLIGHT_BUTTON("HumanoidToggleFlashlightButton"),
+        BINDING_HUMANOID_FLASHLIGHT_BUTTON("HumanoidToggleFlashlightButton", DRIVEN),
         BINDING_HUMANOID_MISSION_HELP_PANEL_BUTTON("HumanoidToggleMissionHelpPanelButton"),
         BINDING_HUMANOID_NIGHT_VISION_BUTTON("HumanoidToggleNightVisionButton", DRIVEN),
         BINDING_HUMANOID_SHIELDS_BUTTON("HumanoidToggleShieldsButton"),

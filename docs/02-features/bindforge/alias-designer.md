@@ -2019,6 +2019,9 @@ Applies, with CLEAR refused while a rename was under way. The working copy and w
   installation:* which installations should share controls is the user's to say, not BindForge's to infer — a
   commander owns no input file, so "same commander" does not answer it — and asking belongs to a later slice that <!-- terminology-ok: the in-game commander, contrasted with the user -->
   moves every `.binds` consumer together, not the rename alone.
+  *Superseded 2026-11-21 by [Several Game Installations on Linux](linux-several-installations.md): the rename's
+  `.binds` move reaches each other installation's own bindings folder too, and the Linux note in Apply's confirm is
+  gone.*
 - **Several renames per Apply, no chains** (Alan, 2026-10-14). Each device's `.binds` move is its own rewrite, run one
   after another as onboarding's hex moves are, and one that stops (the bindings monitor reloading under it) is
   retried by the next Apply. **A name still waiting as some device's old name** — a `previous_name` in the master or

@@ -3,6 +3,10 @@ package elite.intel.bindforge.install;
 import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
 import elite.intel.db.managers.BindForgeInstallationsManager;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -16,6 +20,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * removed (Storage S2b, 2026-10-25).
  */
 public class InstallationRegistry {
+
+    private static final Logger log = LogManager.getLogger(InstallationRegistry.class);
 
     /**
      * Whether detection has run since the application started.
@@ -102,6 +108,27 @@ public class InstallationRegistry {
         return installations.addByHand(Storefront.MANUAL.name(), root);
     }
 
+    /** Whether an installation added by hand is then asked for its Wine prefix - on Linux (rule 6). */
+    public boolean asksForWinePrefix() {
+        return provider.asksForWinePrefix();
+    }
+
+    /**
+     * Records the Wine prefix of an installation added by hand on Linux - where its own bindings and journal folders are
+     * (linux-several-installations.md, rule 6).
+     *
+     * @throws IllegalArgumentException if the folder holds no {@code drive_c}
+     */
+    public void setWinePrefix(long id, Path prefix) {
+        // WHY: validated before it is stored, as the installation folder is - a wrong prefix would send binds files to a
+        // folder the game never reads.
+        if (!GameUserFolder.isWinePrefix(prefix)) {
+            throw new IllegalArgumentException("Not a Wine prefix: " + prefix + " (expected "
+                    + prefix.resolve(GameUserFolder.DRIVE_C) + ")");
+        }
+        installations.setWinePrefix(id, prefix);
+    }
+
     /**
      * Removes an installation from the list. It stays removed: detection skips it, and nothing backs it up or writes
      * to it, until Add missing brings it back (Storage S2b, 2026-10-25).
@@ -151,6 +178,34 @@ public class InstallationRegistry {
             DETECTED_THIS_RUN.set(true);
             return rows;
         }
+    }
+
+    /**
+     * A stored installation's own bindings folder (linux-several-installations.md, rule 1): the one detection reports for
+     * it, else the one in the Wine prefix recorded for it when it was added by hand - {@code null} when it has neither, or
+     * the game has not run in its prefix yet. On Windows every installation reports the one shared folder. Touches the
+     * disk for a prefix.
+     *
+     * @param detected a full detection, {@link GameInstallationProvider#findInstallations()}
+     */
+    public static Path ownBindingsFolder(InstallationRow row, List<GameInstallation> detected) {
+        Path root = normal(Path.of(row.rootPath()));
+        for (GameInstallation installation : detected) {
+            if (normal(installation.root()).equals(root)) return installation.bindingsFolder();
+        }
+        if (row.winePrefix() == null) return null;
+        try {
+            return GameUserFolder.inPrefix(Path.of(row.winePrefix())).map(GameUserFolder::bindingsFolder).orElse(null);
+        } catch (IOException e) {
+            // WHY: a prefix that cannot be listed cannot be read now - its installation's own bindings folder is then
+            // neither backed up, written nor offered, as one the game has not made yet, and the log says why.
+            log.warn("Could not list the users of the Wine prefix {} of {}", row.winePrefix(), row.rootPath(), e);
+            return null;
+        }
+    }
+
+    private static Path normal(Path path) {
+        return path.toAbsolutePath().normalize();
     }
 
     /**

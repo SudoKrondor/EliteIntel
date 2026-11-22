@@ -85,23 +85,21 @@ final class RestoreFlow {
 
     private void confirm(Restore restore, Restore.Prepared prepared, boolean browsed, Runnable onFinished) {
         String trailer = trailer(prepared, browsed);
-        Optional<FirstSetupDialog.Choice> choice;
+        Optional<ReconcileWizard.Choice> choice;
         if (prepared.identical()) {
             choice = HudConfirmDialog.confirm(parent, getText("bindings.restore.title"), trailer,
                     getText("bindings.restore.confirm.button"), getText("button.cancel"))
-                    ? Optional.of(FirstSetupDialog.Choice.whole(prepared.files()))
+                    ? Optional.of(ReconcileWizard.Choice.whole(prepared.files()))
                     : Optional.empty();
         } else {
-            FirstSetupDialog.Wording wording = new FirstSetupDialog.Wording(getText("bindings.restore.title"),
-                    getText("bindings.restore.reconcile.intro"), getText("bindings.restore.reconcile.backupBefore"),
-                    getText("bindings.restore.title"), getText("bindings.restore.confirm.button"), trailer);
-            choice = new FirstSetupDialog(parent, prepared.reading(), namesOf(prepared), wording).showDialog();
+            choice = new ReconcileWizard(parent, prepared.reading(), namesOf(prepared),
+                    ReconcileWizard.Mode.restore(trailer), null).showDialog();
         }
         if (choice.isEmpty()) {
             onFinished.run();
             return;
         }
-        FirstSetupDialog.Choice chosen = choice.get();
+        ReconcileWizard.Choice chosen = choice.get();
         background("BindForge-RestoreWrite", onFinished, () -> {
             String message;
             try {

@@ -277,7 +277,9 @@ what is being edited; this sub-tab is where the files go. It lists:
   per installation rather than on every device row;
 - **Add missing** — browse to an installation's root folder, checked for `EliteDangerous64.exe` and the other files
   that confirm it — and **Remove** beside each row: the same list and buttons as first-time startup
-  ([storage.md](storage.md) rule 1). Moving the game to another drive is Remove, then Add missing. An installation
+  ([storage.md](storage.md) rule 1). On Linux, Add missing then asks for the installation's Wine prefix, where its
+  own bindings and journal folders are ([linux-several-installations.md](linux-several-installations.md) rule 6).
+  Moving the game to another drive is Remove, then Add missing. An installation
   added later, or one that comes back, is left alone if its device files match the working copy, and reconciled as
   in first-time startup if they differ - never overwritten automatically ([storage.md](storage.md) rule 1; Alan,
   2026-10-25).

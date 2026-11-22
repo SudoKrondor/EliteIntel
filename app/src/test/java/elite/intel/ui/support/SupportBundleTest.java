@@ -1,6 +1,7 @@
 package elite.intel.ui.support;
 
 import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
+import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.bindforge.storage.Backups;
 import elite.intel.bindforge.storage.BindForgeSupport;
 import org.junit.jupiter.api.Test;
@@ -176,6 +177,31 @@ class SupportBundleTest {
         assertFalse(entries.containsKey(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
         assertTrue(entries.containsKey("Journal.01.log"), "one failed source must not cost the rest");
         assertTrue(result.omitted().stream().anyMatch(line -> line.contains("no audio subsystem")));
+    }
+
+    @Test
+    void carriesVegasMemoryWhenItIsSupplied(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.2.0", "log",
+                null, null, null, null, null, null, null, null, null, () -> "{\"recent\": []}"));
+
+        assertEquals("{\"recent\": []}", unzip(zip).get(VegaMemoryDump.REPORT_ENTRY));
+        assertTrue(result.included().contains(VegaMemoryDump.REPORT_ENTRY), result.toString());
+    }
+
+    @Test
+    void aStoppedVegaCostsOnlyItsMemory(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        // The real supplier throws when VEGA is not running - often the very thing being reported.
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.2.0", "log",
+                null, null, null, null, null, null, null, null, null, VegaMemoryDump::render));
+
+        Map<String, String> entries = unzip(zip);
+        assertFalse(entries.containsKey(VegaMemoryDump.REPORT_ENTRY));
+        assertTrue(entries.containsKey(SupportBundle.SESSION_LOG_ENTRY), "one failed source must not cost the rest");
+        assertTrue(result.omitted().stream().anyMatch(line -> line.startsWith("VEGA memory - ")), result.toString());
     }
 
     @Test

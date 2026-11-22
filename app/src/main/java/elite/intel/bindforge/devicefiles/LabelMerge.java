@@ -60,6 +60,11 @@ public final class LabelMerge {
         return List.copyOf(sides.keySet());
     }
 
+    /** One side's labels, input to label; empty for a side holding none. */
+    public Map<String, String> labelsOf(String side) {
+        return sides.getOrDefault(side, Map.of());
+    }
+
     /** The inputs that disagree, by input. Empty when there is nothing to ask. */
     public List<Collision> collisions() {
         return collisions;

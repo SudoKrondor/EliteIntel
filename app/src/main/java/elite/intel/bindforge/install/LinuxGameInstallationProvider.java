@@ -17,15 +17,13 @@ import java.util.*;
  * ({@code compatdata/359320}) in the library that holds the game (input environment, section 7).
  * <p>
  * Epic and Frontier-launcher copies run through Lutris, Heroic or a hand-made Wine prefix, which record nothing a
- * reader can rely on; those reach BindForge through the manual add.
+ * reader can rely on; those reach BindForge through the manual add, which asks for the prefix
+ * ({@link #asksForWinePrefix}).
  */
 public class LinuxGameInstallationProvider implements GameInstallationProvider {
 
-    /**
-     * The bindings folder inside a Proton prefix, below {@code pfx}.
-     */
-    private static final String PREFIX_BINDINGS =
-            "drive_c/users/steamuser/AppData/Local/Frontier Developments/Elite Dangerous/Options/Bindings";
+    /** The Windows user Proton runs every game as. */
+    private static final String PROTON_USER = "steamuser";
 
     private final List<Path> steamRoots;
 
@@ -71,8 +69,18 @@ public class LinuxGameInstallationProvider implements GameInstallationProvider {
      * The game's own bindings folder, in the Proton prefix of the library that holds it, whether or not it exists.
      */
     static Path protonBindingsIn(Path library) {
-        return library.resolve("steamapps").resolve("compatdata").resolve(SteamLibraries.APP_ID).resolve("pfx")
-                .resolve(PREFIX_BINDINGS);
+        Path prefix = library.resolve("steamapps").resolve("compatdata").resolve(SteamLibraries.APP_ID).resolve("pfx");
+        Path user = prefix.resolve(GameUserFolder.DRIVE_C).resolve(GameUserFolder.USERS).resolve(PROTON_USER);
+        return new GameUserFolder(user).bindingsFolder();
+    }
+
+    /**
+     * True: an installation added by hand runs in a Wine prefix of its own - Heroic, Lutris or one made by hand - which
+     * holds its own bindings and journal folders, and nothing on the machine says where it is.
+     */
+    @Override
+    public boolean asksForWinePrefix() {
+        return true;
     }
 
     /**

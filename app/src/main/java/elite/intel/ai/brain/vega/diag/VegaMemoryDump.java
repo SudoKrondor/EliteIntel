@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.vega.diag;
 
+import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
 import elite.intel.ai.brain.vega.memory.VegaMemoryPolicy;
 import elite.intel.ai.brain.vega.model.memory.MemoryEntry;
@@ -11,11 +12,25 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
- * Renders a VEGA session-memory snapshot as readable diagnostic JSON.
+ * Renders a VEGA session-memory snapshot as readable diagnostic JSON, carried in the support bundle.
  */
 public final class VegaMemoryDump {
 
+    /**
+     * The support bundle's entry for the dump.
+     */
+    public static final String REPORT_ENTRY = "vega-memory.json";
+
     private VegaMemoryDump() {
+    }
+
+    /**
+     * Dumps the running VEGA's memory.
+     *
+     * @throws IllegalStateException when VEGA is not running, so its memory cannot be reached
+     */
+    public static String render() {
+        return toJson(VegaRuntime.memory().snapshot());
     }
 
     /**

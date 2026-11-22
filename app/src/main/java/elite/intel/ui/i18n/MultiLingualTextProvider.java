@@ -3,6 +3,7 @@ package elite.intel.ui.i18n;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
+import java.text.Collator;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -109,6 +110,20 @@ public final class MultiLingualTextProvider {
      */
     public static String currentLanguageTag() {
         return locale().getLanguage();
+    }
+
+    /**
+     * A collator for sorting display text in the active UI language: case is ignored, accents are not.
+     * {@link String#CASE_INSENSITIVE_ORDER} compares code points, which puts "Éteindre" after "Zone" and
+     * Ukrainian "Є", "І", "Ї" outside the alphabet; a list a commander reads in their language sorts by it.
+     */
+    public static Collator collator() {
+        Language language = SystemSession.getInstance().getLanguage();
+        // "ptbz" is this app's own tag, not a locale the JDK has rules for; Brazilian Portuguese collates as pt-BR.
+        Locale locale = language == Language.PTBZ ? Locale.forLanguageTag("pt-BR") : locale(language);
+        Collator collator = Collator.getInstance(locale);
+        collator.setStrength(Collator.SECONDARY);
+        return collator;
     }
 
     private static Locale locale() {

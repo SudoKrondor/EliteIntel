@@ -429,4 +429,17 @@ player. Still needing a real machine, and all of it Krondor's platform:
   detector that does not resolve it reports the same installation twice.
 - **Decide what a Linux install list should show** when the same game appears under native, Flatpak and Snap
   Steam with different Steam logins.
+
+**Added 2026-11-21 — several installations, built** ([linux-several-installations.md](../02-features/bindforge/linux-several-installations.md)).
+On a machine with two installations of the game:
+
+- **Start the app, then the game in the installation not being played.** Within 5 seconds the *Playing:* selector
+  and the User Configuration Folder show that installation, the journal parser reads its journal, and the commander
+  loads.
+- **Confirm the game opens its journal at client start**, before the main menu. If it opens it only later, the switch
+  comes later too, still before `LoadGame`.
+- **APPLY writes the other installation's bindings folder**, and after a rebind made in the game in that installation,
+  APPLY leaves it alone and says so - until it is played, when the check offers the rebind.
+- **An Epic copy under Heroic, added by hand with its Wine prefix:** it is offered in the selector, and APPLY writes its
+  bindings folder.
 → [§5a–5c of the install-paths reference](../01-host-integration/domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26)

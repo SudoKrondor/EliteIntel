@@ -5,6 +5,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -16,7 +18,8 @@ import java.util.function.Supplier;
  *     <li><strong>back up</strong> - nothing is written until the backup exists (principle 3);</li>
  *     <li><strong>save the set as the working copy</strong>, in one step ({@link WorkingCopy});</li>
  *     <li><strong>write it to every live copy</strong>, everything it can, reporting what it could not
- *     ({@link LiveCopies}).</li>
+ *     ({@link LiveCopies}) - another installation's own bindings folder only while it holds what the working copy held
+ *     before this write.</li>
  * </ol>
  * A failure in the first two stops it with nothing after written. The working copy is saved before the live copies so
  * that it always holds what BindForge last wrote: a live copy the write missed then differs from it, and the check or
@@ -115,12 +118,30 @@ public final class WritePath {
                               LiveCopies.LeaveAlone leaveAlone, Set<String> removeFromBindings,
                               Set<String> moveFromBindings) throws IOException {
         Backup backup = backUp.take(places);
+        Optional<Map<String, byte[]>> lastWritten = lastWritten();
         workingCopy.write(files);
         written.accept(files);
         WriteReport report = new LiveCopies(places, LiveCopies.Mover.FILES, leftovers)
-                .write(files, leaveAlone, removeFromBindings, moveFromBindings);
+                .write(files, leaveAlone, removeFromBindings, moveFromBindings, lastWritten);
         log(backup, report);
         return report;
+    }
+
+    /**
+     * The binds and preset files BindForge last wrote - the working copy before this write - which another
+     * installation's own bindings folder must still hold to be written (linux-several-installations.md, rule 5). Empty
+     * before first-time startup.
+     */
+    private Optional<Map<String, byte[]>> lastWritten() {
+        try {
+            return workingCopy.exists() ? Optional.of(workingCopy.read().bindings()) : Optional.empty();
+        } catch (IOException e) {
+            // WHY: RESTORE is how a working copy that cannot be read is put right, so it must not stop the write. With
+            // nothing to compare against, every other installation's bindings folder is left alone and reported.
+            log.warn("Could not read the working copy before the write, so no other installation's bindings folder is "
+                    + "written", e);
+            return Optional.empty();
+        }
     }
 
     private static void log(Backup backup, WriteReport report) {
@@ -139,6 +160,18 @@ public final class WritePath {
         if (!report.bindings().updated()) {
             log.warn("The bindings folder ({}) was not fully updated: {}", report.bindings().folder(),
                     String.join("; ", report.bindings().failures()));
+        }
+        for (WriteReport.Place place : report.otherBindings()) {
+            if (place.differs()) {
+                log.info("The bindings folder of {} ({}) was left alone: it was changed outside BindForge",
+                        place.storefront(), place.folder());
+            } else if (place.notWritten() != null) {
+                log.info("The bindings folder of {} ({}) was left alone: {}", place.storefront(), place.folder(),
+                        place.notWritten());
+            } else if (!place.updated()) {
+                log.warn("The bindings folder of {} ({}) was not fully updated: {}", place.storefront(),
+                        place.folder(), String.join("; ", place.failures()));
+            }
         }
     }
 }

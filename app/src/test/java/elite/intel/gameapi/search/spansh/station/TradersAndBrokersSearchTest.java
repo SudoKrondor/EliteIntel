@@ -10,6 +10,7 @@ import elite.intel.gameapi.search.spansh.station.traderandbroker.TraderType;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,15 +43,48 @@ class TradersAndBrokersSearchTest {
     }
 
     @Test
-    void onlyRecentlyUpdatedListingsAreCandidates() {
-        JsonObject filters = filtersOf(criteria(TraderType.RAW, null, false));
+    void eachRungOfTheLadderBoundsTheListingAge() {
+        for (String rung : TradersAndBrokersSearch.FRESHNESS_LADDER) {
+            JsonObject filters = filtersOf(TradersAndBrokersSearch.buildCriteria(1, 2, 3, TraderType.RAW, null, 100, false, rung));
 
-        assertTrue(filters.has("updated_at"), () -> "freshness bound missing from " + filters);
-        JsonObject updatedAt = filters.getAsJsonObject("updated_at");
-        assertEquals("<=>", updatedAt.get("comparison").getAsString());
-        JsonArray window = updatedAt.getAsJsonArray("value");
-        assertEquals(TradersAndBrokersSearch.FRESHNESS_WINDOW, window.get(0).getAsString());
-        assertEquals("now", window.get(1).getAsString());
+            assertTrue(filters.has("updated_at"), () -> "freshness bound missing from " + filters);
+            JsonObject updatedAt = filters.getAsJsonObject("updated_at");
+            assertEquals("<=>", updatedAt.get("comparison").getAsString());
+            JsonArray window = updatedAt.getAsJsonArray("value");
+            assertEquals(rung, window.get(0).getAsString());
+            assertEquals("now", window.get(1).getAsString());
+        }
+    }
+
+    @Test
+    void theLadderStartsAtTheFreshWindowAndNeverGoesUnbounded() {
+        // WHY: Spansh's index trailed the game by a day (support bundle 2026-11-19), so seven hours alone
+        // found nothing anywhere - but a listing of any age at all would bring the demolished ports back.
+        List<String> ladder = TradersAndBrokersSearch.FRESHNESS_LADDER;
+        assertEquals("now-7h", ladder.getFirst());
+        assertTrue(ladder.size() > 1, "a single window has nothing to fall back to");
+        assertTrue(ladder.stream().allMatch(rung -> rung.startsWith("now-")), () -> "every rung bounded: " + ladder);
+    }
+
+    @Test
+    void aFreshListingIsAnnouncedWithoutAWarning() {
+        assertNull(TradersAndBrokersSearch.stalenessWarningKey(Duration.ofHours(6).plusMinutes(59)));
+        assertNull(TradersAndBrokersSearch.stalenessWarningKey(Duration.ZERO));
+    }
+
+    @Test
+    void theWarningGrowsWithTheListingAge() {
+        assertEquals("event.search.listingAge.recent", TradersAndBrokersSearch.stalenessWarningKey(Duration.ofHours(7)));
+        assertEquals("event.search.listingAge.recent", TradersAndBrokersSearch.stalenessWarningKey(Duration.ofHours(23)));
+        assertEquals("event.search.listingAge.old", TradersAndBrokersSearch.stalenessWarningKey(Duration.ofDays(3)));
+        assertEquals("event.search.listingAge.old", TradersAndBrokersSearch.stalenessWarningKey(Duration.ofDays(29)));
+        assertEquals("event.search.listingAge.stale", TradersAndBrokersSearch.stalenessWarningKey(Duration.ofDays(30)));
+        assertEquals("event.search.listingAge.stale", TradersAndBrokersSearch.stalenessWarningKey(Duration.ofDays(89)));
+    }
+
+    @Test
+    void aListingOfUnknownAgeIsStillWarnedAbout() {
+        assertEquals("event.search.listingAge.unknown", TradersAndBrokersSearch.stalenessWarningKey(null));
     }
 
     @Test
@@ -144,7 +178,8 @@ class TradersAndBrokersSearchTest {
     }
 
     private static TraderAndBrokerSearchCriteria criteria(TraderType trader, BrokerType broker, boolean largePad) {
-        return TradersAndBrokersSearch.buildCriteria(1, 2, 3, trader, broker, 100, largePad);
+        return TradersAndBrokersSearch.buildCriteria(1, 2, 3, trader, broker, 100, largePad,
+                TradersAndBrokersSearch.FRESHNESS_LADDER.getFirst());
     }
 
     private static JsonObject bodyOf(TraderAndBrokerSearchCriteria criteria) {

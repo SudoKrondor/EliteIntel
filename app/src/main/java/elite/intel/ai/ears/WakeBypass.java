@@ -1,5 +1,6 @@
 package elite.intel.ai.ears;
 
+import elite.intel.ai.brain.VegaIdentity;
 import elite.intel.ai.brain.i18n.AiActionAliasProvider;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import org.jspecify.annotations.Nullable;
@@ -20,6 +21,9 @@ import java.util.*;
  * open the map" from talking its way past a gate the commander deliberately closed: the phrase contains a
  * listen word, but it does not begin with one.
  * <p>
+ * VEGA's own name is a listen prefix in every language - "Vega, open the galaxy map" - because a name is not
+ * translated. It is a prefix only: a bare "Vega" is not a wake phrase, since nothing routes it to WAKEUP.
+ * <p>
  * Longest prefix first, so "listen up open galaxy map" is not first reduced by the shorter "listen" and left
  * with a stray "up".
  */
@@ -36,7 +40,7 @@ public final class WakeBypass {
     }
 
     public WakeBypass(AiActionAliasProvider provider) {
-        this(provider.wakeBypassPhrases(), provider.listenBypassPrefixes());
+        this(provider.wakeBypassPhrases(), withVegaName(provider.listenBypassPrefixes()));
     }
 
     /**
@@ -44,7 +48,13 @@ public final class WakeBypass {
      */
     public static WakeBypass forCurrentLanguage() {
         return new WakeBypass(AiActionLocalizations.wakeBypassPhrases(),
-                AiActionLocalizations.listenBypassPrefixes());
+                withVegaName(AiActionLocalizations.listenBypassPrefixes()));
+    }
+
+    private static Set<String> withVegaName(Collection<String> languagePrefixes) {
+        Set<String> prefixes = new LinkedHashSet<>(languagePrefixes);
+        prefixes.add(VegaIdentity.name());
+        return prefixes;
     }
 
     /**

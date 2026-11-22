@@ -26,6 +26,7 @@ class BindForgeSettingsManagerTest {
         settings.setBackupDestination(null);
         settings.setDailyBackupRetentionDays(30);
         settings.setBeforeChangesBackupsKept(100);
+        settings.setGameFoldersChosenAt(0);
     }
 
     @Test
@@ -33,6 +34,7 @@ class BindForgeSettingsManagerTest {
         assertEquals(30, settings.getDailyBackupRetentionDays(), "daily backups are kept for 30 days by default");
         assertEquals(100, settings.getBeforeChangesBackupsKept(), "the newest 100 before-changes backups by default");
         assertNull(settings.getBackupDestination(), "no folder chosen means no stored destination");
+        assertEquals(0, settings.getGameFoldersChosenAt(), "no installation chosen to play yet");
     }
 
     /**
@@ -44,6 +46,7 @@ class BindForgeSettingsManagerTest {
         settings.setBackupDestination("D:\\EliteBackups");
         settings.setDailyBackupRetentionDays(90);
         settings.setBeforeChangesBackupsKept(250);
+        settings.setGameFoldersChosenAt(20261121093000L);
 
         assertEquals("D:\\EliteBackups", settings.getBackupDestination());
         assertEquals(90, settings.getDailyBackupRetentionDays());
@@ -54,6 +57,7 @@ class BindForgeSettingsManagerTest {
         assertEquals("D:\\EliteBackups", settings.getBackupDestination(), "still set after an unrelated save");
         assertEquals(90, settings.getDailyBackupRetentionDays(), "still set after an unrelated save");
         assertEquals(40, settings.getBeforeChangesBackupsKept());
+        assertEquals(20261121093000L, settings.getGameFoldersChosenAt(), "still set after an unrelated save");
     }
 
     @Test

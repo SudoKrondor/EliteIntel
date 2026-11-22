@@ -20,7 +20,8 @@ import java.util.stream.Stream;
  * {@link AppDataRestore} left waiting.
  * <p>
  * What the backup replaces is moved into a {@value AppDataArchive#SAFETY_FOLDER_PREFIX} folder, never deleted
- * outright, and the newest {@value #SAFETY_FOLDERS_KEPT} such folders are kept. If any move fails, every move
+ * outright - except in {@link AppDataArchive#MERGED_FOLDERS}, where the backup's files are added and nothing is
+ * replaced - and the newest {@value #SAFETY_FOLDERS_KEPT} such folders are kept. If any move fails, every move
  * already made is undone, the app starts on the data it had, and the restore waits for the next start (up to
  * {@value #MAX_ATTEMPTS} starts).
  */
@@ -86,7 +87,11 @@ public final class PendingRestore {
         try {
             Files.createDirectories(safety);
             for (String part : restoredParts()) {
-                swap(pending.resolve(part), dataDir.resolve(part), safety.resolve(part), done);
+                if (AppDataArchive.MERGED_FOLDERS.contains(part)) {
+                    merge(pending.resolve(part), dataDir.resolve(part), done);
+                } else {
+                    swap(pending.resolve(part), dataDir.resolve(part), safety.resolve(part), done);
+                }
             }
             swap(pending.resolve(AppDataArchive.KEY_FILE), keyFile, safety.resolve(AppDataArchive.KEY_FILE), done);
         } catch (IOException e) {
@@ -119,6 +124,26 @@ public final class PendingRestore {
         Files.createDirectories(live.getParent());
         Files.move(staged, live);
         done.push(new Move(staged, live));
+    }
+
+    /**
+     * Moves each file of {@code staged} that {@code live} does not have into its place, and leaves every file
+     * {@code live} has where it is ({@link AppDataArchive#MERGED_FOLDERS}). Nothing is moved aside, so the undo takes
+     * back only what was added.
+     */
+    private static void merge(Path staged, Path live, Deque<Move> done) throws IOException {
+        if (!Files.isDirectory(staged)) return;
+        List<Path> files;
+        try (Stream<Path> walk = Files.walk(staged)) {
+            files = walk.filter(Files::isRegularFile).sorted().toList();
+        }
+        for (Path file : files) {
+            Path target = live.resolve(staged.relativize(file).toString());
+            if (Files.exists(target)) continue;
+            Files.createDirectories(target.getParent());
+            Files.move(file, target);
+            done.push(new Move(file, target));
+        }
     }
 
     /**

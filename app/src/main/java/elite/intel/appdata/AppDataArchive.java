@@ -39,6 +39,18 @@ final class AppDataArchive {
     static final List<String> FOLDERS = List.of("custom-commands", "playerbackups", "themes");
 
     /**
+     * The folders of {@link #FOLDERS} a restore adds to rather than replaces: what the backup holds goes in beside
+     * what this computer has, and a file here of the same name is kept.
+     * <p>
+     * WHY BindForge's backups ({@code AppPaths.getPlayerBackupsDir()}): they go with the working copy, which a restore
+     * leaves alone. Replaced, this computer would lose the backups of its own game files - the first setup backup,
+     * kept forever, and every before-changes backup taken since the zip was made - while its working copy stayed.
+     * Added to, the old computer's backups are there for RESTORE too. Each is a zip named with its date stamp
+     * ({@code Backups}), so the two sets do not collide.
+     */
+    static final List<String> MERGED_FOLDERS = List.of("playerbackups");
+
+    /**
      * A restore unpacks here while it is checked and unlocked.
      */
     static final String STAGING_FOLDER = "restore-pending.tmp";

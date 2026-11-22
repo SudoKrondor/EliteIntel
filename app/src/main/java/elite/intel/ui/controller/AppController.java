@@ -20,6 +20,8 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
+import elite.intel.bindforge.install.PlayedInstallationFollower;
+import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.bindforge.rules.KeyBindCheck;
 import elite.intel.bindforge.storage.StartupNotice;
 import elite.intel.devices.DeviceService;
@@ -224,6 +226,36 @@ public class AppController {
     @Subscribe
     void onRestartBrainEvent(RestartBrainEvent event) {
         new Thread(this::restartBrainService, "BrainRestart-Thread").start();
+    }
+
+    /**
+     * The installation being played changed (linux-several-installations.md, rule 2): only what reads its two folders
+     * restarts - the journal parser, the auxiliary-files monitor and the bindings monitor - so push-to-talk, VEGA and
+     * the Hands thread, with its input-permission prompt, are left running.
+     */
+    @Subscribe
+    void onGameFoldersChanged(GameFoldersChangedEvent event) {
+        new Thread(this::restartGameFolderReaders, "GameFoldersRestart-Thread").start();
+    }
+
+    private void restartGameFolderReaders() {
+        synchronized (lifecycleLock) {
+            if (!isServiceRunning()) return;
+            for (ServiceType type : List.of(ServiceType.JOURNAL_PARSER, ServiceType.AUXILIARY_FILES_MONITOR)) {
+                ServiceHolder holder = services.get(type);
+                if (holder == null) continue;
+                holder.stop();
+                try {
+                    holder.start();
+                } catch (RuntimeException e) {
+                    // WHY: broad at the worker-thread boundary - one reader that cannot start must not keep the other
+                    // stopped; the log says which.
+                    log.error("Failed to restart {} on the new game folders", type, e);
+                }
+            }
+            BindingsMonitor.getInstance().watchAgain();
+            appendToLog("Game folders changed: " + PlayerSession.getInstance().getJournalPath());
+        }
     }
 
     @Subscribe
@@ -611,6 +643,10 @@ public class AppController {
         // Status.json every 120 ms and JournalParser tails the real journal, both of which would overwrite the
         // Status/session the harness sets via @visible/@status/@event - defeating deterministic context control
         // and silently dropping any command gated on isVisibleForLLM. The harness owns game state instead.
+        // Before the journal parser: it may change the folder the parser reads, the moment the game starts in another
+        // installation (linux-several-installations.md, rule 3).
+        services.put(ServiceType.PLAYED_INSTALLATION, new ServiceHolder(
+                diagnostics ? NoOpService::new : PlayedInstallationFollower::new));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(
                 diagnostics ? NoOpService::new : JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(
@@ -683,7 +719,7 @@ public class AppController {
 
     enum ServiceType {
         MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK,
-        LOCAL_LLM_HOST, VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER,
-        AUXILIARY_FILES_MONITOR
+        LOCAL_LLM_HOST, VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, PLAYED_INSTALLATION,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
     }
 }

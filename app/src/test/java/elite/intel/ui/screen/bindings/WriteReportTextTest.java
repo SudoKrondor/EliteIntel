@@ -136,7 +136,7 @@ class WriteReportTextTest {
         Written written = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
 
         assertEquals(QuietableNotice.BINDFORGE_FIRST_TIME_STARTUP_REPORT,
-                FirstTimeStartupFlow.writtenReport(written, 0).quietable());
+                FirstTimeStartupFlow.writtenReport(written, 0, List.of()).quietable());
     }
 
     @Test
@@ -144,8 +144,18 @@ class WriteReportTextTest {
         Written plain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
         Written askedAgain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), true);
 
-        assertNull(FirstTimeStartupFlow.writtenReport(plain, 2).quietable(), "devices moved to a new ID");
-        assertNull(FirstTimeStartupFlow.writtenReport(askedAgain, 0).quietable(), "the flag could not be set");
+        assertNull(FirstTimeStartupFlow.writtenReport(plain, 2, List.of()).quietable(), "devices moved to a new ID");
+        assertNull(FirstTimeStartupFlow.writtenReport(askedAgain, 0, List.of()).quietable(), "the flag could not be set");
+    }
+
+    /** "I lost all my binds": a controller the bindings use, unplugged at launch, sends the game to keyboard and mouse. */
+    @Test
+    void firstTimeStartupsReportNamingAControllerToPlugInAlwaysShows() {
+        Written plain = new Written(report(bindingsUpdated(), steamUpdated()), backup(), false);
+
+        CheckFlow.Report report = FirstTimeStartupFlow.writtenReport(plain, 0, List.of("T-Rudder"));
+        assertNull(report.quietable());
+        assertTrue(report.text().contains("T-Rudder"), report.text());
     }
 
     @Test
@@ -154,7 +164,48 @@ class WriteReportTextTest {
                 new Place(Kind.INSTALLATION, "EPIC", EPIC, List.of(), List.of(), List.of(), List.of(), true)),
                 backup(), false);
 
-        assertNull(FirstTimeStartupFlow.writtenReport(written, 0).quietable());
+        assertNull(FirstTimeStartupFlow.writtenReport(written, 0, List.of()).quietable());
+    }
+
+    @Test
+    void anotherInstallationsFolderChangedOutsideBindForgeIsSaidToBe() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                new Place(Kind.INSTALLATION_BINDINGS, "EPIC", EPIC, List.of(), List.of(), List.of(), List.of(), true)));
+
+        assertTrue(text.contains(getText("bindings.applyBar.result.otherBindingsDiffers", name("EPIC", EPIC))), text);
+    }
+
+    @Test
+    void anotherInstallationsFolderNotComparedIsNeverSaidToHaveBeenChanged() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                Place.unwritten("EPIC", EPIC, WriteReport.NotWritten.NOT_COMPARED)));
+
+        assertTrue(text.contains(getText("bindings.applyBar.result.otherBindingsNotCompared", name("EPIC", EPIC))),
+                text);
+        assertFalse(text.contains(getText("bindings.applyBar.result.otherBindingsDiffers", name("EPIC", EPIC))),
+                "first-time startup: nothing of the user's was changed - " + text);
+    }
+
+    @Test
+    void anotherInstallationsFolderHeldWithItsDeviceFilesGetsOneLine() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                Place.unwritten("EPIC", EPIC, WriteReport.NotWritten.DEVICE_FILES_NOT_TAKEN)));
+
+        assertEquals("\n" + getText("bindings.applyBar.result.otherBindingsDeviceFiles", name("EPIC", EPIC)), text);
+    }
+
+    @Test
+    void anotherInstallationsFolderThatFailedShowsTheFailure() {
+        String text = FirstTimeStartupFlow.placeFailures(otherBindings(
+                new Place(Kind.INSTALLATION_BINDINGS, "EPIC", EPIC, List.of(), List.of(), List.of(),
+                        List.of("locked"))));
+
+        assertTrue(text.contains(getText("bindings.firstTimeStartup.result.place", name("EPIC", EPIC), "locked")),
+                text);
+    }
+
+    private static WriteReport otherBindings(Place place) {
+        return new WriteReport(bindingsUpdated(), List.of(), List.of(place));
     }
 
     private static Place steamUpdated() {

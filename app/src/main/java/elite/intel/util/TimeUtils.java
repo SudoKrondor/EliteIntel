@@ -1,8 +1,11 @@
 package elite.intel.util;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class TimeUtils {
     //public static final String ISO_8601 = "yyyy-MM-dd HH:mm:ss";
@@ -44,8 +47,31 @@ public class TimeUtils {
         }
         LocalDateTime updatedDateTime = LocalDateTime.parse(value, DateTimeFormatter.ofPattern(pattern));
         LocalDateTime now = LocalDateTime.now();
-        Duration duration = Duration.between(updatedDateTime, now);
+        return timeAgo(Duration.between(updatedDateTime, now));
+    }
 
+    /**
+     * How long ago a UTC timestamp was, or null when it cannot be read.
+     *
+     * <p>Accepts {@code 2026-11-15T14:01:27Z} and {@code 2026-11-15 14:01:27+00}, the two shapes Spansh has
+     * used. WHY UTC and not the PC's clock: comparing a UTC stamp against {@link LocalDateTime#now()}
+     * puts the age out by the commander's whole time-zone offset.
+     */
+    public static Duration ageOfUtc(String timestamp, Instant now) {
+        if (timestamp == null || timestamp.length() < 19) return null;
+        try {
+            Instant then = LocalDateTime.parse(timestamp.substring(0, 19).replace(' ', 'T')).toInstant(ZoneOffset.UTC);
+            Duration age = Duration.between(then, now);
+            return age.isNegative() ? Duration.ZERO : age;
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    /**
+     * A duration as localized speech, largest unit first: "2 days, 5 hours, 13 minutes ago".
+     */
+    public static String timeAgo(Duration duration) {
         long years = duration.toDays() / 365;
         long days = duration.toDays() % 365;
         long months = days / 30;

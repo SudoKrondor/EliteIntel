@@ -199,6 +199,8 @@ public final class FirstTimeStartup {
         // dialogs were open would get the working copy over files nobody reconciled (storage.md rule 1; Krondor's
         // review, 2026-10-27).
         read = BackupSources.of(folder, reachableRows, unreachable, detection.get());
+        // WHY only when identical: installations that differ open the reconcile, which records its own reading.
+        if (reading.identical()) ReconcileRecord.logReading("first-time startup", reading);
         return reading;
     }
 

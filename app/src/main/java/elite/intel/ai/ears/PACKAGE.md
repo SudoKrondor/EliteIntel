@@ -267,7 +267,7 @@ While the Sleep/Wake gate is closed, `WakeBypass.admit(transcript)` returns what
 - an exact **wake
   phrase** (`AiActionLocalizations.wakeBypassPhrases()`) is routed whole, so the model can send it to `WakeupCommand` and reopen the gate;
 - a **listen-bypass
-  prefix** (`AiActionLocalizations.listenBypassPrefixes()`) at the start, followed by real content, is stripped and the remainder routed - "listen, open the galaxy map" is an order to open the map.
+  prefix** (`AiActionLocalizations.listenBypassPrefixes()`) at the start, followed by real content, is stripped and the remainder routed - "listen, open the galaxy map" is an order to open the map. VEGA's own name (`VegaIdentity.name()`) joins every language's prefixes, since a name is not translated: "Vega, open the galaxy map" works on any client. It is a prefix only - a bare "Vega" is not a wake phrase, because nothing routes it to `WakeupCommand`.
 
 The prefix must be at the start, which is what stops "do not listen, open the map" from talking its way past a gate the commander deliberately closed. Longest prefix first, so "listen up …" is not first reduced by the shorter "listen" and left with a stray "up".
 
