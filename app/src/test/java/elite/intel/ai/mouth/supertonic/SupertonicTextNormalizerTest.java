@@ -209,8 +209,45 @@ class SupertonicTextNormalizerTest {
     }
 
     @Test
+    void spellsSingleUppercaseLettersBeforePunctuation() {
+        assertEquals("double you.", SupertonicTextNormalizer.normalize("W.", Language.EN));
+        assertEquals("Ready double you. now",
+                SupertonicTextNormalizer.normalize("Ready W. now", Language.EN));
+        assertEquals("ay, bee! see?", SupertonicTextNormalizer.normalize("A, B! C?", Language.EN));
+        assertEquals("ipsilon,", SupertonicTextNormalizer.normalize("Y,", Language.IT));
+        assertEquals("w.", SupertonicTextNormalizer.normalize("w.", Language.EN));
+    }
+
+    @Test
     void spellsItalianClassLettersWithItalianNames() {
         assertEquals("classe ipsilon",
                 SupertonicTextNormalizer.normalize("classe Y", Language.IT));
+    }
+
+    @Test
+    void normalizesSelectedItalianWordsForSpeech() {
+        assertEquals("riattiva ti. sveglia ti. ascolta mi. anomalìe bai nding baindforge scegli ne prender ti ferma ti attiva la",
+                SupertonicTextNormalizer.normalize(
+                        "riattivati svegliati ascoltami anomalie binding BindForge scegline prenderti fermati attivala", Language.IT));
+        assertEquals("ferma ti,",
+                SupertonicTextNormalizer.normalize("fermati,", Language.IT));
+        assertEquals("prender ti,",
+                SupertonicTextNormalizer.normalize("prenderti,", Language.IT));
+        assertEquals("attiva la,",
+                SupertonicTextNormalizer.normalize("attivala,", Language.IT));
+        assertEquals("riattiva ti, anomalìe.",
+                SupertonicTextNormalizer.normalize("riattivati, anomalie.", Language.IT));
+        assertEquals("ferma ti!",
+                SupertonicTextNormalizer.normalize("fermati!", Language.IT));
+        assertEquals("sveglia ti?",
+                SupertonicTextNormalizer.normalize("svegliati?", Language.IT));
+        assertEquals("ascolta mi;",
+                SupertonicTextNormalizer.normalize("ascoltami;", Language.IT));
+        assertEquals("riattiva ti:",
+                SupertonicTextNormalizer.normalize("riattivati:", Language.IT));
+        assertEquals("riattivati anomalie binding BindForge scegline prenderti fermati attivala",
+                SupertonicTextNormalizer.normalize("riattivati anomalie binding BindForge scegline prenderti fermati attivala", Language.EN));
+        assertEquals("riattivatiX anomaliee",
+                SupertonicTextNormalizer.normalize("riattivatiX anomaliee", Language.IT));
     }
 }

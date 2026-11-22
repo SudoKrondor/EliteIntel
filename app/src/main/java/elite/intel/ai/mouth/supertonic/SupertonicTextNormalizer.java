@@ -6,8 +6,10 @@ import elite.intel.util.SignedAndDecimalNumbers;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Makes text unambiguous for Supertonic's multilingual tokenizer.
@@ -16,6 +18,8 @@ final class SupertonicTextNormalizer {
 
     // Long uppercase words are emphasis, not acronyms: "RIATTIVA" must stay one word.
     private static final Pattern UPPERCASE_ACRONYM = Pattern.compile("(?<![\\p{L}])([A-Z]{2,4})(?![\\p{L}])");
+    private static final Pattern SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION =
+            Pattern.compile("(?<![\\p{L}\\p{M}\\p{N}_])([A-Z])(?=[\\p{P}])");
     private static final String WORD_START = "(?<![\\p{L}\\p{M}\\p{N}_])";
     private static final String WORD_END = "(?![\\p{L}\\p{M}\\p{N}_])";
     private static final String ROMAN_II_TO_V = "III|IV|II|V";
@@ -29,6 +33,24 @@ final class SupertonicTextNormalizer {
                     + "(" + ROMAN_II_TO_V + "|I(?!\\s+\\p{Ll}))" + WORD_END);
     private static final Pattern ITALIAN_CLASS_LETTER =
             Pattern.compile("(?i)(?<=\\bclasse\\s)([A-Z])(?![\\p{L}])");
+    // Sentence-ending punctuation keeps spoken replacements from running into the next utterance.
+    private static final Map<String, Function<String, String>> ITALIAN_SPOKEN_REPLACEMENTS = Map.ofEntries(
+            Map.entry("riattivati", punctuation -> "riattiva ti" + (punctuation.isEmpty() ? "." : punctuation)),
+            Map.entry("svegliati", punctuation -> "sveglia ti" + (punctuation.isEmpty() ? "." : punctuation)),
+            Map.entry("ascoltami", punctuation -> "ascolta mi" + (punctuation.isEmpty() ? "." : punctuation)),
+            Map.entry("anomalie", punctuation -> "anomalìe" + punctuation),
+            Map.entry("binding", punctuation -> "bai nding" + punctuation),
+            Map.entry("bindforge", punctuation -> "baindforge" + punctuation),
+            Map.entry("scegline", punctuation -> "scegli ne" + punctuation),
+            Map.entry("prenderti", punctuation -> "prender ti" + punctuation),
+            Map.entry("fermati", punctuation -> "ferma ti" + punctuation),
+            Map.entry("attivala", punctuation -> "attiva la" + punctuation));
+    private static final Pattern ITALIAN_SPOKEN_FIXES = Pattern.compile(
+            "(?iu)(?<![\\p{L}\\p{M}])("
+                    + ITALIAN_SPOKEN_REPLACEMENTS.keySet().stream()
+                            .map(Pattern::quote)
+                            .collect(Collectors.joining("|"))
+                    + ")([,.!?;:]?)(?![\\p{L}\\p{M}])");
     private static final Pattern DECIMAL_WITH_UNIT = Pattern.compile(
             "(?<![\\p{L}\\p{N}])([-−]?\\d+[.,]\\d+)([A-Z])([,.;:!?])?(?![\\p{L}])");
     private static final Pattern COMMA_DECIMAL =
@@ -92,16 +114,45 @@ final class SupertonicTextNormalizer {
             matcher.appendReplacement(result, Matcher.quoteReplacement(spokenLetters(matcher.group(1), language)));
         }
         matcher.appendTail(result);
+        String normalized = result.toString();
         if (language == Language.IT) {
-            Matcher classLetter = ITALIAN_CLASS_LETTER.matcher(result.toString());
+            Matcher classLetter = ITALIAN_CLASS_LETTER.matcher(normalized);
             StringBuffer withClassLetters = new StringBuffer();
             while (classLetter.find()) {
                 classLetter.appendReplacement(withClassLetters, Matcher.quoteReplacement(
                         letterName(classLetter.group(1).charAt(0), language)));
             }
             classLetter.appendTail(withClassLetters);
-            return withClassLetters.toString();
+            normalized = withClassLetters.toString();
         }
+        if (language == Language.IT) {
+            normalized = italianSpokenFixes(normalized);
+        }
+        return singleUppercaseLettersBeforePunctuation(normalized, language);
+    }
+
+    private static String italianSpokenFixes(String text) {
+        Matcher matcher = ITALIAN_SPOKEN_FIXES.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            Function<String, String> replacementForToken = ITALIAN_SPOKEN_REPLACEMENTS.get(
+                    matcher.group(1).toLowerCase(Locale.ROOT));
+            String punctuation = matcher.group(2);
+            String replacement = replacementForToken.apply(punctuation);
+            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String singleUppercaseLettersBeforePunctuation(String text, Language language) {
+        Matcher matcher = SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, Matcher.quoteReplacement(
+                    letterName(matcher.group(1).charAt(0), language)));
+        }
+        matcher.appendTail(result);
         return result.toString();
     }
 
