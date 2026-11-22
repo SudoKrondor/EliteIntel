@@ -59,7 +59,7 @@ class BindingsGroupTableFactoryTest {
     private JTable table(Object action) {
         List<Object[]> rows = new ArrayList<>();
         rows.add(new Object[]{CONTROL, "W", "-", "", action});
-        JScrollPane pane = factory.groupTable(rows, new JScrollPane(),
+        JScrollPane pane = factory.groupTable(rows, new JScrollPane(), true,
                 "ACTION", "PRIMARY", "SECONDARY", "AI ACCESS", "CLEAR");
         JTable table = (JTable) pane.getViewport().getView();
         table.setSize(500, table.getRowHeight());

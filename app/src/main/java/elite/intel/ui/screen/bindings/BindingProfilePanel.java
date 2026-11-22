@@ -187,6 +187,8 @@ public class BindingProfilePanel extends JPanel {
      */
     private JPanel modeArea() {
         modeTabs = AppTheme.makeSectionTabs();
+        // Larger than the app's other section tabs, to sit with the grid's larger type (Alan, 2026-11-22).
+        modeTabs.setFont(modeTabs.getFont().deriveFont(Font.PLAIN, HUD_FONT_BIND_GRID_TAB));
         gameMode.addSectionTabs(modeTabs);
         anomaliesTab = modeTabs.getTabCount();
         modeTabs.addTab(getText("bindings.mode.anomalies", 0), transparentPanel(null));

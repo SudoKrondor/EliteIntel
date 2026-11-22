@@ -999,12 +999,16 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * One table per section that has rows. {@code withHeaders} names each section above its table; a section tab passes
-     * false, since its tab already names the one section it shows (Alan, 2026-11-21).
+     * Each section that has rows: one table per group under the group's sub-heading ("Interface Mode",
+     * "Flight Rotation"), so the Binding column holds the control's own name, and the column headings pinned above the
+     * scrolling rows (Alan, 2026-11-21).
+     * {@code withHeaders} names each section above it; a section tab passes false, since its tab already names the one
+     * section it shows.
      */
     private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped, boolean withHeaders,
             String... columnNames) {
         targetPanel.removeAll();
+        JScrollPane outer = outerScrollPaneFor(targetPanel);
         for (BindingSection section : BindingSection.values()) {
             // Already in the game's own row order - groupedBindings sorted them, so leave them alone.
             List<Object[]> rows = grouped.getOrDefault(section, List.of());
@@ -1012,18 +1016,58 @@ class GameModePanel extends JPanel {
                 continue;
 
             targetPanel.add(withHeaders ? sectionHeader(section) : Box.createVerticalStrut(6));
-            targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), columnNames));
+            for (List<Object[]> groupRows : byGroup(rows)) {
+                String group = BindingDisplayNames.lookup(String.valueOf(groupRows.getFirst()[0])).group();
+                if (group != null)
+                    targetPanel.add(groupHeader(group));
+                targetPanel.add(tableFactory.groupTable(groupRows, outer, false, columnNames));
+            }
             targetPanel.add(Box.createVerticalStrut(6));
         }
         targetPanel.add(Box.createVerticalGlue());
+        // The headings sit in the scroll pane's column header, so they stay put while the rows scroll under them. A
+        // table of no rows, built as the grid's tables are, so its columns take the same widths.
+        outer.setColumnHeaderView(tableFactory.groupTable(List.of(), outer, true, columnNames));
+        outer.getColumnHeader().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         targetPanel.revalidate();
         targetPanel.repaint();
     }
 
+    /**
+     * The rows split where the group changes, keeping their order. The game lists a group's rows together, so each run
+     * is one group.
+     */
+    static List<List<Object[]>> byGroup(List<Object[]> rows) {
+        List<List<Object[]>> runs = new ArrayList<>();
+        String current = null;
+        for (Object[] row : rows) {
+            String group = BindingDisplayNames.lookup(String.valueOf(row[0])).group();
+            if (runs.isEmpty() || !Objects.equals(group, current)) {
+                runs.add(new ArrayList<>());
+                current = group;
+            }
+            runs.getLast().add(row);
+        }
+        return runs;
+    }
+
     private JComponent sectionHeader(BindingSection section) {
         JLabel label = hudGroupLabel(getText(section.getLabelKey()).toUpperCase());
+        // As large as the column titles, so the section still reads above its groups' sub-headings.
+        label.setFont(label.getFont().deriveFont(Font.BOLD, HUD_FONT_BIND_GRID_COLUMN_TITLE));
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         label.setBorder(new EmptyBorder(10, 8, 10, 0));
+        return label;
+    }
+
+    /**
+     * A group's sub-heading: the accent colour, mixed case and indented, one step below the section's white capitals.
+     */
+    private JComponent groupHeader(String group) {
+        JLabel label = hudSectionLabel(group);
+        label.setFont(label.getFont().deriveFont(Font.BOLD, HUD_FONT_BIND_GRID_GROUP));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setBorder(new EmptyBorder(8, 16, 4, 0));
         return label;
     }
 

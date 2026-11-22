@@ -8,6 +8,7 @@ import elite.intel.ui.support.TooltipCell;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.function.Predicate;
 
@@ -22,7 +23,9 @@ import static elite.intel.ui.theme.HudPalette.*;
  * Column 0 holds the raw .binds XML tag - every click, selection and conflict lookup reads the
  * binding id straight out of the model - but it is <em>drawn</em> as the control's in-game name
  * ({@link BindingDisplayNames}), so the table can be read against the game's own control screen
- * without the model ever carrying a display string.
+ * without the model ever carrying a display string. Only the name is drawn: the group is the
+ * sub-heading above the table, and the tooltip carries the full "group / name" and the id. The name is
+ * indented about ten characters, so it reads as an item under that sub-heading.
  * <p>
  * Column 0 is also tinted by the binding's status: red when the binding is in a
  * conflict ({@code hasConflict}), cyan when it carries a soft ship/SRV-twin recommendation
@@ -35,8 +38,16 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
     private final Predicate<String> hasConflict;
     private final Predicate<String> hasRecommendation;
 
+    private static final int VERTICAL_PADDING = 2;
+    /** The cell's own left and right padding, as {@link HudTable.CellRenderer} sets it. */
+    private static final int SIDE_PADDING = 8;
+    /**
+     * How far a control's name sits in from its group's sub-heading, in characters of the row's font (Alan, 2026-11-21).
+     */
+    private static final int NAME_INDENT_CHARACTERS = 10;
+
     public BindingSlotCellRenderer(Predicate<String> hasConflict, Predicate<String> hasRecommendation) {
-        super(2);
+        super(VERTICAL_PADDING);
         this.hasConflict = hasConflict;
         this.hasRecommendation = hasRecommendation;
         setOpaque(true);
@@ -55,8 +66,11 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
         label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.RIGHT);
         if (column == 0) {
             String bindingId = String.valueOf(value);
-            label.setText(BindingDisplayNames.label(bindingId));
-            label.setToolTipText(bindingId);
+            // The name alone: the grid shows the group as a sub-heading above the row (Alan, 2026-11-21).
+            label.setText(BindingDisplayNames.lookup(bindingId).name());
+            label.setToolTipText(BindingDisplayNames.label(bindingId) + " (" + bindingId + ")");
+            int indent = label.getFontMetrics(label.getFont()).charWidth('n') * NAME_INDENT_CHARACTERS;
+            label.setBorder(new EmptyBorder(VERTICAL_PADDING, SIDE_PADDING + indent, VERTICAL_PADDING, SIDE_PADDING));
         } else if (value instanceof TooltipCell cell) {
             label.setToolTipText(cell.tooltip());
         } else {

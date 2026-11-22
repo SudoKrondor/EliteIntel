@@ -179,6 +179,19 @@ class GameModePanelTest {
         assertEquals("anomalies", row.getTitleAt(ANOMALIES));
     }
 
+    @Test
+    void theRowsSplitWhereTheGroupChangesAndKeepTheirOrder() {
+        List<Object[]> rows = List.of(new Object[]{"UI_Up"}, new Object[]{"UI_Down"}, new Object[]{"CamPitchUp"},
+                new Object[]{"NotAControlTheGameNames"});
+
+        List<List<String>> runs = GameModePanel.byGroup(rows).stream()
+                .map(run -> run.stream().map(row -> String.valueOf(row[0])).toList())
+                .toList();
+
+        assertEquals(List.of(List.of("UI_Up", "UI_Down"), List.of("CamPitchUp"), List.of("NotAControlTheGameNames")),
+                runs);
+    }
+
     /**
      * Makes the controls required, as a custom command that taps them does, and reads the fixture again.
      */

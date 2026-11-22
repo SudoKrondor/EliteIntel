@@ -107,6 +107,21 @@ cross-verified section/subgroup/action inventory.
 *SHIP CONTROLS*, ...), since their rows come from every section. The GENERAL, SHIP, SRV and ON-FOOT tabs show no
 header: the tab already names the one section the grid holds.
 
+**Group sub-headings (Alan, 2026-11-21).** On every tab with the grid, each group of a section (*Interface Mode*,
+*Flight Rotation*, *Mouse Controls*, ...) is a sub-heading above its rows, and the Binding column shows the control's
+own name (*UI Panel Up*), not *Interface Mode / UI Panel Up*, indented about ten characters so it reads as an item
+under its sub-heading. The column headings (*Binding*, *Primary*, *Secondary*,
+*AI access*, *Action*; *Clear* on ANOMALIES) are pinned above the grid, one row that stays put while the rows scroll
+under it - not repeated in the grid. *Binding* sits left over the names; the other titles are centred over their
+columns (2026-11-22).
+
+**Type sizes (Alan, 2026-11-22).** Larger than the compact tables elsewhere, largest at the top: the column titles
+and the section headers 18, the group sub-headings 16, the binding rows 14 (the `HUD_FONT_BIND_GRID_*` roles in
+`HudPalette`). The tab row above the grid (ALL, GENERAL, ...) is 16, larger than the app's other section tabs (14). Chosen to be tuned in the app; the rows were 12 and the titles 11 before.
+Search, the conflict callouts and the dialogs keep the full *group / name*, since names repeat across groups. A
+control with no group in the game's list sits under its section with no sub-heading. *To be judged in the app:* Alan
+is checking this is the layout he means.
+
 ### What Game Mode still needs
 
 | Addition | Where it is specified | State, checked against the code 2026-11-10 |

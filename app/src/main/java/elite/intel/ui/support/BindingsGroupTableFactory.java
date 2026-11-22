@@ -96,7 +96,12 @@ public class BindingsGroupTableFactory {
         return table.getValueAt(row, column) instanceof RowActionCell cell ? cell.action() : RowAction.NONE;
     }
 
-    public JScrollPane groupTable(List<Object[]> rows, JScrollPane outerScrollPane, String... columnNames) {
+    /**
+     * One table of rows. {@code withColumnNames} draws the column headings; the grid's group tables pass false, and a
+     * table of no rows with them is pinned above the grid, so the groups line up under the one row of headings.
+     */
+    public JScrollPane groupTable(List<Object[]> rows, JScrollPane outerScrollPane, boolean withColumnNames,
+            String... columnNames) {
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -116,6 +121,11 @@ public class BindingsGroupTableFactory {
         table.setPreferredScrollableViewportSize(new Dimension(0, table.getRowHeight() * Math.max(1, rows.size())));
         forwardMouseWheelToOuterScrollPane(table, outerScrollPane);
         forwardMouseWheelToOuterScrollPane(table.getTableHeader(), outerScrollPane);
+        int headerHeight = table.getTableHeader().getPreferredSize().height;
+        if (!withColumnNames) {
+            table.setTableHeader(null);
+            headerHeight = 0;
+        }
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
@@ -128,7 +138,7 @@ public class BindingsGroupTableFactory {
         forwardMouseWheelToOuterScrollPane(scrollPane, outerScrollPane);
         forwardMouseWheelToOuterScrollPane(scrollPane.getViewport(), outerScrollPane);
 
-        int height = table.getRowHeight() * rows.size() + table.getTableHeader().getPreferredSize().height + 3;
+        int height = table.getRowHeight() * rows.size() + headerHeight + 3;
         scrollPane.setPreferredSize(new Dimension(0, height));
         scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
         return scrollPane;
@@ -287,9 +297,12 @@ public class BindingsGroupTableFactory {
         table.setFillsViewportHeight(false);
         HudTable.styleCompact(table);
         table.setRowHeight(TABLE_ROW_HEIGHT);
+        table.setFont(table.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_BIND_GRID_ROW));
         table.setAutoCreateRowSorter(false);
         table.getTableHeader().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
+        // The compact style fixes the header's height for its small titles; these are larger, so it takes their height.
+        table.getTableHeader().setPreferredSize(null);
         table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict, hasRecommendation));
     }
 
@@ -353,7 +366,10 @@ public class BindingsGroupTableFactory {
                     row,
                     column);
             label.setBorder(HEADER_CELL_BORDER);
-            label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.RIGHT);
+            label.setFont(label.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BIND_GRID_COLUMN_TITLE));
+            // Binding left, over the names; the slot, AI access and action titles centred over their columns (Alan,
+            // 2026-11-22).
+            label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.CENTER);
             return label;
         }
     }
