@@ -39,8 +39,6 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
     private final Predicate<String> hasRecommendation;
 
     private static final int VERTICAL_PADDING = 2;
-    /** The cell's own left and right padding, as {@link HudTable.CellRenderer} sets it. */
-    private static final int SIDE_PADDING = 8;
     /**
      * How far a control's name sits in from its group's sub-heading, in characters of the row's font (Alan, 2026-11-21).
      */
@@ -72,7 +70,8 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
             label.setText(BindingDisplayNames.lookup(bindingId).name());
             label.setToolTipText(BindingDisplayNames.label(bindingId) + " (" + bindingId + ")");
             int indent = label.getFontMetrics(label.getFont()).charWidth('n') * NAME_INDENT_CHARACTERS;
-            label.setBorder(new EmptyBorder(VERTICAL_PADDING, SIDE_PADDING + indent, VERTICAL_PADDING, SIDE_PADDING));
+            label.setBorder(new EmptyBorder(VERTICAL_PADDING, HudTable.CELL_SIDE_PADDING + indent, VERTICAL_PADDING,
+                    HudTable.CELL_SIDE_PADDING));
         } else if (value instanceof TooltipCell cell) {
             label.setToolTipText(cell.tooltip());
         } else {

@@ -176,7 +176,7 @@ public final class HudTable {
             label.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             label.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             label.setFont(label.getFont().deriveFont(Font.BOLD, label.getFont().getSize2D()));
-            label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
+            label.setBorder(new EmptyBorder(verticalPadding, CELL_SIDE_PADDING, verticalPadding, CELL_SIDE_PADDING));
             label.setHorizontalAlignment(SwingConstants.LEFT);
             return label;
         }
@@ -189,6 +189,8 @@ public final class HudTable {
      * row hover install a MouseMotionListener that maintains this property.
      */
     public static final String HOVER_ROW_PROPERTY = "elite.intel.hud.table.hoverRow";
+    /** A header or body cell's left and right padding, for a renderer that sets a border of its own. */
+    public static final int CELL_SIDE_PADDING = 8;
 
     /**
      * Standard alternating-row HUD table cell renderer.
@@ -229,7 +231,7 @@ public final class HudTable {
                 label.setBackground(hovered ? HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
                 label.setForeground(HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
             }
-            label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
+            label.setBorder(new EmptyBorder(verticalPadding, CELL_SIDE_PADDING, verticalPadding, CELL_SIDE_PADDING));
             label.setHorizontalAlignment(SwingConstants.LEFT);
             return label;
         }

@@ -563,7 +563,7 @@ class GameModePanel extends JPanel {
         return axis.input()
                 .map(input -> {
                     String raw = input.device() + " " + input.key();
-                    return new SlotCells(new SlotCell(input.device(), raw),
+                    return new SlotCells(new SlotCell(slotFormatter.formatDevice(input.device()), raw),
                             new SlotCell(slotFormatter.formatChord(input.device(), List.of(), input.key()), raw));
                 })
                 .orElseGet(() -> new SlotCells(new SlotCell("", null),
@@ -1031,12 +1031,14 @@ class GameModePanel extends JPanel {
             String... columnNames) {
         targetPanel.removeAll();
         JScrollPane outer = outerScrollPaneFor(targetPanel);
+        boolean anyRows = false;
         for (BindingSection section : BindingSection.values()) {
             // Already in the game's own row order - groupedBindings sorted them, so leave them alone.
             List<Object[]> rows = grouped.getOrDefault(section, List.of());
             if (rows.isEmpty())
                 continue;
 
+            anyRows = true;
             targetPanel.add(withHeaders ? sectionHeader(section) : Box.createVerticalStrut(6));
             for (List<Object[]> groupRows : byGroup(rows)) {
                 String group = BindingDisplayNames.lookup(String.valueOf(groupRows.getFirst()[0])).group();
@@ -1047,13 +1049,24 @@ class GameModePanel extends JPanel {
             targetPanel.add(Box.createVerticalStrut(6));
         }
         targetPanel.add(Box.createVerticalGlue());
-        // The headings sit in the scroll pane's column header, so they stay put while the rows scroll under them: one
-        // band, with Primary and Secondary over their Device and Input titles.
+        pinHeadings(outer, anyRows, columnNames);
+        targetPanel.revalidate();
+        targetPanel.repaint();
+    }
+
+    /**
+     * The headings sit in the scroll pane's column header, so they stay put while the rows scroll under them: one band,
+     * with Primary and Secondary over their Device and Input titles. None over a grid with no rows - no binds file, a
+     * search that matches nothing, ANOMALIES with nothing in conflict - where they would read as a broken table.
+     */
+    private void pinHeadings(JScrollPane outer, boolean anyRows, String... columnNames) {
+        if (!anyRows) {
+            outer.setColumnHeaderView(null);
+            return;
+        }
         outer.setColumnHeaderView(tableFactory.pinnedHeading(outer, getText("bindings.column.primary"),
                 getText("bindings.column.secondary"), columnNames));
         outer.getColumnHeader().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        targetPanel.revalidate();
-        targetPanel.repaint();
     }
 
     /**

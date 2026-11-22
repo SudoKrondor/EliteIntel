@@ -7,11 +7,13 @@ import elite.intel.bindforge.model.GameKeyboardLayout;
 import elite.intel.bindforge.storage.EditedDeviceLabels;
 import elite.intel.ui.support.BindingsGroupTableFactory.RowAction;
 import elite.intel.ui.support.BindingsGroupTableFactory.RowActionCell;
+import elite.intel.ui.support.SlotCell;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * One grid holds every control. The section tabs share a tab row with modes that are not sections, so choosing one of
@@ -192,6 +195,35 @@ class GameModePanelTest {
                 runs);
     }
 
+    @Test
+    void anAxisRowShowsItsDeviceAndAxisUnderPrimaryAndItsSettingsUnderSecondaryInput() throws IOException {
+        showWithValues("""
+                <Root>
+                    <YawAxisRaw>
+                        <Binding Device="0123ABCD" Key="Joy_XAxis" />
+                        <Inverted Value="0" />
+                        <Deadzone Value="0.00000000" />
+                    </YawAxisRaw>
+                </Root>
+                """);
+
+        List<String> cells = cellTexts("YawAxisRaw");
+
+        assertEquals("Device 0123ABCD", cells.get(1), "the device reads as a slot's does");
+        assertEquals("Joystick XAxis", cells.get(2));
+        assertEquals("", cells.get(3), "the settings are not a device");
+        assertTrue(cells.get(4).contains(getText("bindings.axis.normal")), cells.get(4));
+    }
+
+    @Test
+    void theHeadingsArePinnedOnlyOverRows() {
+        assertEquals(1, descendants(panel, JTableHeader.class).size());
+
+        panel.search("no control is called this");
+
+        assertTrue(descendants(panel, JTableHeader.class).isEmpty());
+    }
+
     /**
      * Makes the controls required, as a custom command that taps them does, and reads the fixture again.
      */
@@ -204,6 +236,29 @@ class GameModePanelTest {
         byte[] content = binds.getBytes(StandardCharsets.UTF_8);
         panel.show(new GameModePanel.Shown("Test.binds", content, KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(content),
                 GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE, BindsValues.NONE));
+    }
+
+    /** Shows a file with its axis values read, as the app does. */
+    private void showWithValues(String binds) throws IOException {
+        byte[] content = binds.getBytes(StandardCharsets.UTF_8);
+        panel.show(new GameModePanel.Shown("Test.binds", content, KeyBindingsParser.getInstance().parseReadOnlyBindingSlots(content),
+                GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE, BindsValues.of(content)));
+    }
+
+    /** Every cell of one control's row as it reads, from the Binding column to the action. */
+    private List<String> cellTexts(String bindingId) {
+        for (JTable table : descendants(panel, JTable.class)) {
+            for (int r = 0; r < table.getRowCount(); r++) {
+                if (!bindingId.equals(table.getValueAt(r, 0))) continue;
+                List<String> cells = new ArrayList<>();
+                for (int c = 0; c < table.getColumnCount(); c++) {
+                    Object value = table.getValueAt(r, c);
+                    cells.add(value instanceof SlotCell cell ? cell.text() : String.valueOf(value));
+                }
+                return cells;
+            }
+        }
+        throw new AssertionError("No row for " + bindingId);
     }
 
     private static String unassigned(String tag, String stickOnly) {

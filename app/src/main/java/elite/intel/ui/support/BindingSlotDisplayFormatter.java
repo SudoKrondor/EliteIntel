@@ -116,14 +116,26 @@ public class BindingSlotDisplayFormatter {
     }
 
     private String formatDevice(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        if (isEmptyDevice(slot)) {
+        return formatDevice(slot == null ? null : slot.device());
+    }
+
+    /**
+     * A device as every readout shows it, a slot's or an axis's alike: a raw id as {@code Device 0123ABCD}, and none as a
+     * dash.
+     */
+    public String formatDevice(String device) {
+        if (isEmptyDevice(device)) {
             return "\u2014";
         }
-        return isRawDeviceId(slot.device()) ? "Device " + slot.device() : slot.device();
+        return isRawDeviceId(device) ? "Device " + device : device;
     }
 
     private boolean isEmptyDevice(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return slot == null || slot.device() == null || slot.device().isBlank() || "{NoDevice}".equals(slot.device());
+        return isEmptyDevice(slot == null ? null : slot.device());
+    }
+
+    private boolean isEmptyDevice(String device) {
+        return device == null || device.isBlank() || "{NoDevice}".equals(device);
     }
 
     private boolean isRawDeviceId(String device) {
@@ -144,7 +156,7 @@ public class BindingSlotDisplayFormatter {
      * a choice not yet written.
      */
     public String formatInputs(String device, List<BindingModifier> modifiers, String key) {
-        return device + " | " + formatChord(device, modifiers, key);
+        return formatDevice(device) + " | " + formatChord(device, modifiers, key);
     }
 
     /**

@@ -374,7 +374,8 @@ DualVirpilDawnTreader.4.2.binds use it. Overwriting removes it, and those bindin
 keep it."* An entry no bindings use is simply overwritten. Binds files and `StartPreset.4.start` are not part of this
 choice: binds files sit side by side in the one folder, and there is one preset file. *Amended 2026-11-16 (Alan): the
 warning moves into the reconcile, beside each "Use … for All" button, worked out before anything is pressed - there is
-no confirmation after it ([One dialog](#one-dialog-no-confirmation-after-it--2026-11-16-alan)).*
+no confirmation after it ([One dialog](#one-dialog-no-confirmation-after-it--2026-11-16-alan), superseded by
+[the reconcile wizard](multi-install-reconcile.md)).*
 
 **How the reconciled files are made — settled with Storage S2b's sources (Alan, 2026-10-25):**
 
@@ -402,7 +403,8 @@ of them, since any can be made active later and the game checks them all at star
 3. **Two routes through:** **use one installation for all**, or **merge** and answer the conflicts (see above).
 4. ~~**A summary before anything is written:** *"Your working copy will hold 6 devices and 5 button maps, and be
    written to 2 installations."*~~ *Removed 2026-11-16 (Alan): the reconcile is the one dialog and its buttons write -
-   [One dialog, no confirmation after it](#one-dialog-no-confirmation-after-it--2026-11-16-alan).*
+   [One dialog, no confirmation after it](#one-dialog-no-confirmation-after-it--2026-11-16-alan), itself superseded by
+   [the reconcile wizard](multi-install-reconcile.md).*
 5. **The last button works like an APPLY** (2026-10-24, Alan): the working copy is created and written to every
    installation, and the report is per installation — *"updated 2 of 2"*, or which one failed and why. No separate
    APPLY is needed after first setup.
@@ -416,10 +418,16 @@ installation; rule 3's one backup replaces both.*
 
 ### One dialog, no confirmation after it — 2026-11-16 (Alan)
 
+> **Superseded 2026-11-18, never built.** The reconcile wizard (`ReconcileWizard`, branch `V1.2-reconcile`, in V1.2
+> since 2026-11-21) replaced this design: one question per screen instead of this table, no colour legend, no read
+> gate, and no *Keep as*. Its spec is [Making Several Game Copies Match](multi-install-reconcile.md). Only two engine rules from
+> this section carried over: a dead entry's bindings move to the entry the game uses, and one controller's aliases
+> share one label merge. Kept below as the record of what was decided; its mock-up was deleted 2026-11-22.
+
 *Replaces steps 3 and 4 of the flow above, and the "use one installation" confirmation in
 [Reconciliation](#reconciliation-is-per-device-element-never-per-file). From Krondor's note that "Then it is written
-to 2 installations" read, to a new user, as backups written to both installations. To be built in Storage S22a and
-S22b. Mock-up: [Reconcile_Dialog_Mockup.html](mockups/Reconcile_Dialog_Mockup.html) - its colours are placeholders.*
+to 2 installations" read, to a new user, as backups written to both installations. Was to be built in Storage S22a and
+S22b.*
 
 **The reconcile is the one dialog, and its buttons write.** "Use … for All", Merge and Create working copy do the
 work at once - back up, then make the working copy and write it to every installation, in the order the write

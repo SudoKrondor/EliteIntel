@@ -3,6 +3,7 @@ package elite.intel.ui.support;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -66,6 +67,31 @@ class BindingsGroupTableFactoryTest {
         click(table, SECONDARY_DEVICE_COLUMN);
 
         assertEquals(List.of(CONTROL + " PRIMARY", CONTROL + " SECONDARY"), captured);
+    }
+
+    @Test
+    void thePinnedTitlesSitOverTheirColumns() {
+        String[] names = {"ACTION", "DEVICE", "INPUT", "DEVICE", "INPUT", "AI ACCESS", "CLEAR"};
+        JScrollPane outer = new JScrollPane();
+        JTable rows = laidOut((JTable) factory.groupTable(List.<Object[]>of(new Object[]{CONTROL, "Keyboard", "W", "", "-", "",
+                new BindingsGroupTableFactory.RowActionCell(BindingsGroupTableFactory.RowAction.NONE, "")}), outer, false, names)
+                .getViewport().getView());
+        JScrollPane pinned = (JScrollPane) factory.pinnedHeading(outer, "PRIMARY", "SECONDARY", names);
+        JTableHeader titles = (JTableHeader) pinned.getColumnHeader().getView();
+        laidOut(titles.getTable());
+
+        for (int column = 0; column < names.length; column++) {
+            Rectangle title = titles.getHeaderRect(column);
+            Rectangle cell = rows.getCellRect(0, column, true);
+            assertEquals(cell.x, title.x, "column " + column);
+            assertEquals(cell.width, title.width, "column " + column);
+        }
+    }
+
+    private static JTable laidOut(JTable table) {
+        table.setSize(1400, table.getRowHeight());
+        table.doLayout();
+        return table;
     }
 
     private JTable table(Object action) {

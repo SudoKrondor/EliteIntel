@@ -114,7 +114,8 @@ under its sub-heading. Search, the conflict callouts and the dialogs keep the fu
 across groups. A control with no group in the game's list sits under its section with no sub-heading.
 
 **The column headings (Alan, 2026-11-21 and 2026-11-22)** are pinned above the grid and stay put while the rows
-scroll under them; they are not repeated in the grid. One band, two lines tall:
+scroll under them; they are not repeated in the grid. Over a grid with no rows - no binds file, a search that
+matches nothing, ANOMALIES with nothing in conflict - there are none. One band, two lines tall:
 
 ```
                     |      Primary       |     Secondary      |

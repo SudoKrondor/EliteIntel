@@ -45,6 +45,8 @@ to be removed before V1.2 shipped, and first-time startup waited for the next cl
    choice would lose before it is pressed, and nothing asks again after it - no "Create Your Working Copy"
    confirmation, no Merge summary. Identical installations open the same dialog with nothing to choose and one
    **Create working copy** button. The design is in [alias-designer.md, *One dialog*](alias-designer.md#one-dialog-no-confirmation-after-it--2026-11-16-alan).
+   *Superseded 2026-11-18, never built: the reconcile is the step-by-step wizard of
+   [multi-install-reconcile.md](multi-install-reconcile.md).*
 3. Once every decision is made: back up everything — **this backup is kept forever**, as the user's files before
    BindForge ever wrote anything (2026-10-23, Alan) — then create the working copy — every `.binds`, the
    `StartPreset.N.start`, **one** `DeviceMappings.xml` and **one** of each `.buttonMap`, reconciled — and mark
@@ -511,7 +513,9 @@ edits on screen. `Apply` is the one APPLY, `ui.screen.bindings.ApplyBar` the bar
       confirmation; otherwise RESTORE's own. Either names every installation it replaces, marks any not found, and
       says that edits on screen are thrown away. *Amended 2026-11-16 (Alan): the reconcile has no summary now, so when
       the backup's installations differ these words sit in the reconcile itself, under its table, and its buttons
-      restore ([alias-designer.md, *One dialog*](alias-designer.md#one-dialog-no-confirmation-after-it--2026-11-16-alan)).*
+      restore ([alias-designer.md, *One dialog*](alias-designer.md#one-dialog-no-confirmation-after-it--2026-11-16-alan)).
+      Superseded 2026-11-18: RESTORE reconciles through the wizard, with its own trailer on the Check step
+      ([multi-install-reconcile.md](multi-install-reconcile.md)).*
     - **The working copy is read at every click on the BindForge tab** once first-time startup is complete; one that
       cannot be read, or is missing, is said so with the newest backup offered - **Restore** or **Not now**. **With no
       backup at all, first-time startup is offered instead**, from the live files - **Set Up Again** or **Not now** -

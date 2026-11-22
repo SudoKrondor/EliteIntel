@@ -57,6 +57,15 @@ class BindingSlotDisplayFormatterTest {
     }
 
     @Test
+    void aRawDeviceIdReadsTheSameOnASlotAndOnAnAxis() {
+        ReadOnlyBindingSlot slot = slot("0123ABCD", "Joy_1", List.of());
+
+        assertEquals("Device 0123ABCD", formatter.formatSlotDevice(slot));
+        assertEquals("Device 0123ABCD", formatter.formatDevice("0123ABCD"));
+        assertEquals("Device 0123ABCD | Joystick 1", formatter.formatInputs("0123ABCD", List.of(), "Joy_1"));
+    }
+
+    @Test
     void anEmptySlotHasNoDeviceAndReadsNotDefined() {
         ReadOnlyBindingSlot slot = slot("{NoDevice}", "", List.of());
 
