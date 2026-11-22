@@ -103,6 +103,10 @@ uses — with the game's own row names (`BindingDisplayNames`), search, and a sh
 See [Binding Zone Map (domain knowledge)](domain-knowledge/EliteDangerous-ActionCatalog.md) for the full,
 cross-verified section/subgroup/action inventory.
 
+**Section headers (Alan, 2026-11-21).** ALL and ANOMALIES name each section above its rows (*GENERAL CONTROLS*,
+*SHIP CONTROLS*, ...), since their rows come from every section. The GENERAL, SHIP, SRV and ON-FOOT tabs show no
+header: the tab already names the one section the grid holds.
+
 ### What Game Mode still needs
 
 | Addition | Where it is specified | State, checked against the code 2026-11-10 |

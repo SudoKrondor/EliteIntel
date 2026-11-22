@@ -257,7 +257,7 @@ class GameModePanel extends JPanel {
         if (read.file() == null) {
             conflicts = ConflictIndex.empty();
             recommendationsByBinding = Map.of();
-            renderGroupedTables(bindingsPanel, Map.of(), getText("bindings.column.action"));
+            renderGroupedTables(bindingsPanel, Map.of(), true, getText("bindings.column.action"));
             showSectionCounts(List.of());
             renderAnomalies(currentAiAccess());
             fixAllButton.setEnabled(false);
@@ -706,6 +706,7 @@ class GameModePanel extends JPanel {
         renderGroupedTables(
                 bindingsPanel,
                 groupedBindings(inSelectedSection(shown), currentSlots, id -> rowActionOf(id, required), aiAccess),
+                SECTION_TABS.get(selectedSection).section() == null,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
                 getText("bindings.column.secondary"),
@@ -753,6 +754,7 @@ class GameModePanel extends JPanel {
         renderGroupedTables(
                 anomaliesPanel,
                 groupedBindings(filterBySearch(inConflict), currentSlots, id -> clearCell(), aiAccess),
+                true,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
                 getText("bindings.column.secondary"),
@@ -981,7 +983,8 @@ class GameModePanel extends JPanel {
 
     /**
      * WHY no keyboard-usable test: the scan reads every slot - a modifier held on a controller (FN-6), a main input on
-     * a controller or the mouse (D6) - and {@link BindingConflictScanner#chordOf} gives an empty chord for an empty one.
+     * a controller or the mouse (D6) - and {@link BindingConflictScanner#chordOf(KeyBindingsParser.ReadOnlyBindingSlot)}
+     * gives an empty chord for an empty one.
      */
     private boolean matchesChord(KeyBindingsParser.ReadOnlyBindingSlot slot, Set<String> chord) {
         return chord.equals(BindingConflictScanner.chordOf(slot));
@@ -995,7 +998,12 @@ class GameModePanel extends JPanel {
         return grouped;
     }
 
-    private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped, String... columnNames) {
+    /**
+     * One table per section that has rows. {@code withHeaders} names each section above its table; a section tab passes
+     * false, since its tab already names the one section it shows (Alan, 2026-11-21).
+     */
+    private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped, boolean withHeaders,
+            String... columnNames) {
         targetPanel.removeAll();
         for (BindingSection section : BindingSection.values()) {
             // Already in the game's own row order - groupedBindings sorted them, so leave them alone.
@@ -1003,7 +1011,7 @@ class GameModePanel extends JPanel {
             if (rows.isEmpty())
                 continue;
 
-            targetPanel.add(sectionHeader(section));
+            targetPanel.add(withHeaders ? sectionHeader(section) : Box.createVerticalStrut(6));
             targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), columnNames));
             targetPanel.add(Box.createVerticalStrut(6));
         }
