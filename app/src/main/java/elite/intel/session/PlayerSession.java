@@ -14,14 +14,12 @@ import elite.intel.gameapi.journal.events.ReputationEvent;
 import elite.intel.gameapi.journal.events.dto.*;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.ui.event.RadioTransmissionStateChangedEvent;
-import elite.intel.util.OsDetector;
 import elite.intel.util.Ranks;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -837,16 +835,7 @@ public class PlayerSession {
      */
     public Path getBindingsDir() {
         return Database.withDao(PlayerDao.class, dao ->
-                DirectorySetting.resolve(trimToNull(dao.get().getBindingsDirectory()), defaultBindingsDir()));
-    }
-
-    private static Path defaultBindingsDir() {
-        if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
-            return Paths.get(System.getProperty("user.home"), "AppData", "Local", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
-        } else if (OsDetector.getOs() == OsDetector.OS.LINUX) {
-            return Paths.get(System.getProperty("user.home"), ".var", "app", "elite.intel.app", "ed-bindings");
-        }
-        return Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Frontier Developments", "Elite Dangerous", "Options", "Bindings");
+                DirectorySetting.resolve(trimToNull(dao.get().getBindingsDirectory()), DirectorySetting.defaultBindingsPath()));
     }
 
     public void setAlternativeName(String alternativeName) {
@@ -980,10 +969,7 @@ public class PlayerSession {
         if (Boolean.FALSE.equals(isAddressMeOn())) {
             return "";
         }
-        // WHY: the speech-friendly alternative name replaces the in-game one rather than joining it as a
-        // fourth form; listing both gave the name two of the four draws and made rank and honorific rare.
-        String alternativeName = trimToNull(getAlternativeName());
-        String playerName = alternativeName != null ? alternativeName : trimToNull(getPlayerName());
+        String playerName = getSpokenName();
         // Rank and honorific are both derived from the stored (language-independent) navy rank numbers, so
         // equal standing in both navies is re-drawn on every address rather than frozen at rank-up time.
         Integer empireRank = getRankAndProgressDto().getCombatRankEmpire();
@@ -1002,6 +988,17 @@ public class PlayerSession {
         }
 
         return forms.get(new Random().nextInt(forms.size()));
+    }
+
+    /**
+     * The name VEGA may say aloud: only the one the commander typed for her, or null when they chose none.
+     * <p>
+     * WHY never the in-game name: Frontier allows commander names text-to-speech cannot pronounce - numbers,
+     * handles, invented spellings - and a fresh install has had no chance to set a spoken one. "Commander", or a
+     * rank, is always safe; a mangled name is the first thing a new commander hears.
+     */
+    public String getSpokenName() {
+        return trimToNull(getAlternativeName());
     }
 
     public String getConfiguredPlayerName() {

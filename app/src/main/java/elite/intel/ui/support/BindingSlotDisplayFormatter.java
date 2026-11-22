@@ -3,8 +3,10 @@ package elite.intel.ui.support;
 
 import elite.intel.bindforge.io.KeyBindingsParser;
 import elite.intel.bindforge.model.BindingModifier;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
 
 import java.util.List;
+import java.util.Optional;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -13,14 +15,48 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * <p>
  * It deliberately keeps raw action/device identifiers intact; this class only
  * decides how diagnostic slot values are presented in the Bindings tab.
+ * <p>
+ * A controller input reads as the name the user gave it in the Device Editor ({@code 1st Hat Up}) when there is
+ * one, and as its number ({@code Joystick 6}) otherwise - the way the game's own control screen shows it once
+ * the labels are applied.
  */
 public class BindingSlotDisplayFormatter {
+
+    private static final String KEYBOARD = "Keyboard";
+
+    private final EditedDeviceLabels deviceLabels;
+
+    /**
+     * Shows controller inputs by number - for text that never names a controller input.
+     */
+    public BindingSlotDisplayFormatter() {
+        this(EditedDeviceLabels.NONE);
+    }
+
+    public BindingSlotDisplayFormatter(EditedDeviceLabels deviceLabels) {
+        this.deviceLabels = deviceLabels;
+    }
 
     public String formatSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
         if (isEmptySlot(slot)) {
             return getText("bindings.status.notDefined");
         }
         return formatDevice(slot) + " | " + formatBinding(slot);
+    }
+
+    /**
+     * The slot's device on its own, for the grid's Device column: blank on an empty slot, whose Input reads "Not
+     * defined".
+     */
+    public String formatSlotDevice(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return isEmptySlot(slot) ? "" : formatDevice(slot);
+    }
+
+    /**
+     * The slot's input on its own, for the grid's Input column: the chord with its modifiers, or "Not defined".
+     */
+    public String formatSlotInput(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return isEmptySlot(slot) ? getText("bindings.status.notDefined") : formatBinding(slot);
     }
 
     public String formatBindingToken(String token) {
@@ -33,20 +69,73 @@ public class BindingSlotDisplayFormatter {
         return token;
     }
 
+    /**
+     * The raw tokens behind a slot that shows a controller input by its given name - {@code VKB-Stick Joy_6} -
+     * because support bundles, forum posts and the file itself all use the token. {@code null} when nothing on
+     * the slot was renamed, so there is nothing the text hides.
+     */
+    public String rawTokens(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        if (isEmptySlot(slot)) {
+            return null;
+        }
+        boolean renamed = labelOf(slot.device(), slot.key()).isPresent()
+                || slot.bindingModifiers().stream().anyMatch(m -> labelOf(m.device(), m.key()).isPresent());
+        if (!renamed) {
+            return null;
+        }
+        StringBuilder raw = new StringBuilder();
+        for (BindingModifier modifier : slot.bindingModifiers()) {
+            if (modifier.key() == null || modifier.key().isBlank()) continue;
+            raw.append(modifier.device()).append(' ').append(modifier.key()).append(" + ");
+        }
+        return raw.append(slot.device()).append(' ').append(slot.key()).toString();
+    }
+
+    /**
+     * What the search box matches on a slot that involves a controller: the slot as shown - device, and button
+     * name or number - and its raw tokens, so {@code 1st Hat Up}, {@code VKB-Stick} and {@code Joy_6} all find it.
+     * Empty for a keyboard-only slot: a search for a control's name must not match every row bound to a key
+     * spelled like it.
+     */
+    public String controllerSearchText(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        if (isEmptySlot(slot) || !involvesController(slot)) {
+            return "";
+        }
+        String raw = rawTokens(slot);
+        return formatSlot(slot) + (raw == null ? " " + slot.device() + " " + slot.key() : " " + raw);
+    }
+
+    private static boolean involvesController(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return !KEYBOARD.equals(slot.device())
+                || slot.bindingModifiers().stream().anyMatch(m -> m.device() != null && !KEYBOARD.equals(m.device()));
+    }
+
     private boolean isEmptySlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
         return isEmptyDevice(slot)
                 && (slot == null || slot.key() == null || slot.key().isBlank() || "Key_".equals(slot.key()));
     }
 
     private String formatDevice(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        if (isEmptyDevice(slot)) {
+        return formatDevice(slot == null ? null : slot.device());
+    }
+
+    /**
+     * A device as every readout shows it, a slot's or an axis's alike: a raw id as {@code Device 0123ABCD}, and none as a
+     * dash.
+     */
+    public String formatDevice(String device) {
+        if (isEmptyDevice(device)) {
             return "\u2014";
         }
-        return isRawDeviceId(slot.device()) ? "Device " + slot.device() : slot.device();
+        return isRawDeviceId(device) ? "Device " + device : device;
     }
 
     private boolean isEmptyDevice(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return slot == null || slot.device() == null || slot.device().isBlank() || "{NoDevice}".equals(slot.device());
+        return isEmptyDevice(slot == null ? null : slot.device());
+    }
+
+    private boolean isEmptyDevice(String device) {
+        return device == null || device.isBlank() || "{NoDevice}".equals(device);
     }
 
     private boolean isRawDeviceId(String device) {
@@ -59,11 +148,26 @@ public class BindingSlotDisplayFormatter {
      * chord-capture dialog so both render the same way.
      */
     public String formatChord(List<BindingModifier> modifiers, String key) {
+        return formatChord(KEYBOARD, modifiers, key);
+    }
+
+    /**
+     * One input on a device and its modifiers as a slot reads in the grid - {@code VKB-Stick | 1st Hat Up} - for
+     * a choice not yet written.
+     */
+    public String formatInputs(String device, List<BindingModifier> modifiers, String key) {
+        return formatDevice(device) + " | " + formatChord(device, modifiers, key);
+    }
+
+    /**
+     * One input on a device and its modifiers, without the device - {@code 1st Hat Up} - for the grid's Input column.
+     */
+    public String formatChord(String device, List<BindingModifier> modifiers, String key) {
         List<String> modifierLabels = modifiers.stream()
                 .filter(modifier -> modifier.key() != null && !modifier.key().isBlank() && !"Key_".equals(modifier.key()))
                 .map(this::formatModifier)
                 .toList();
-        String keyLabel = formatBindingToken(key);
+        String keyLabel = formatInput(device, key);
         if (modifierLabels.isEmpty()) {
             return keyLabel;
         }
@@ -74,17 +178,31 @@ public class BindingSlotDisplayFormatter {
         if (slot == null || slot.key() == null || slot.key().isBlank() || "Key_".equals(slot.key())) {
             return getText("bindings.status.notDefined");
         }
-        return formatChord(slot.bindingModifiers(), slot.key());
+        return formatChord(slot.device(), slot.bindingModifiers(), slot.key());
+    }
+
+    /**
+     * A controller input by its given name when it has one; a key, or an unnamed input, as the token reads.
+     */
+    private String formatInput(String device, String token) {
+        return labelOf(device, token).orElseGet(() -> formatBindingToken(token));
+    }
+
+    private Optional<String> labelOf(String device, String token) {
+        if (device == null || KEYBOARD.equals(device)) {
+            return java.util.Optional.empty();
+        }
+        return deviceLabels.label(device, token);
     }
 
     private String formatModifier(BindingModifier modifier) {
-        if ("Keyboard".equals(modifier.device())) {
+        if (KEYBOARD.equals(modifier.device())) {
             return formatBindingToken(modifier.key());
         }
         String device = modifier.device() == null || modifier.device().isBlank()
                 ? getText("bindings.assign.modifier.unknownDevice")
                 : modifier.device();
-        return device + " " + formatBindingToken(modifier.key());
+        return device + " " + formatInput(modifier.device(), modifier.key());
     }
 
     private String formatKeyboardToken(String token) {

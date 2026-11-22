@@ -16,9 +16,8 @@ import java.awt.event.MouseEvent;
  * {@code HUD_COLOR_ROLE_APPLICATION_BACKGROUND} gap, with the active segment carried by an inverted fill (section 0.4/section 11).
  * <p>
  * The canonical replacement for round LAF {@code JRadioButton}s: selection is shown by
- * a solid {@code HUD_COLOR_ROLE_PRIMARY_ACTION} fill with dark {@code HUD_COLOR_ROLE_SELECTED_TEXT} text - never a circular pill.
- * Colours mirror {@link HudCheckBox} (section 5.2) so the controls read as one family. No LAF
- * rendering is used; {@code super.paintComponent} is not called.
+ * a solid {@code HUD_COLOR_ROLE_ACCENT_FILL} fill with dark {@code HUD_COLOR_ROLE_SELECTED_TEXT} text - never a circular pill.
+ * No LAF rendering is used; {@code super.paintComponent} is not called.
  * <p>
  * Like an {@code ActionListener}, registered {@link ChangeListener}s fire only on user
  * interaction (a click on a segment), never from {@link #setSelectedIndex(int)} - so
@@ -124,7 +123,7 @@ public class HudSegmentedControl extends JComponent {
             int h = getHeight();
             boolean enabled = isEnabled();
 
-            // Gaps between segments read as HUD_COLOR_ROLE_APPLICATION_BACKGROUND, like the checkbox marker/text divider (section 5.2).
+            // Gaps between segments read as HUD_COLOR_ROLE_APPLICATION_BACKGROUND.
             g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g2.fillRect(0, 0, w, h);
 
@@ -145,7 +144,7 @@ public class HudSegmentedControl extends JComponent {
                     fill = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
                     textColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
                 } else if (on) {
-                    fill = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
+                    fill = HudPalette.HUD_COLOR_ROLE_ACCENT_FILL;
                     textColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
                 } else {
                     fill = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;

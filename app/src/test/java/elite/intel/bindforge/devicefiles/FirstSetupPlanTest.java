@@ -1,0 +1,449 @@
+package elite.intel.bindforge.devicefiles;
+
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Severity;
+import elite.intel.bindforge.devicefiles.DeviceEntry.HardwareId;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Installation;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Kind;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Option;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Resolution;
+import elite.intel.bindforge.devicefiles.FirstSetupPlan.Row;
+import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * First setup reconciles the user's elements per element, shows everything, and asks only about the genuine
+ * conflicts (alias-designer.md, <em>First setup</em>).
+ */
+class FirstSetupPlanTest {
+
+    private static final long STEAM = 1;
+    private static final long EPIC = 2;
+    private static final HardwareId LEFT = new HardwareId("3344", "83F4");
+    private static final HardwareId RIGHT = new HardwareId("3344", "03F5");
+    private static final HardwareId OLD_LEFT = new HardwareId("3344", "83F3");
+
+    @Test
+    void anElementTheSameEverywhereIsGreenAndAsksNothing() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT)),
+                install(EPIC, Map.of("LVWAP", LEFT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.IDENTICAL, row.kind());
+        assertEquals(Severity.GREEN, row.severity());
+        assertFalse(row.isQuestion());
+        assertEquals(List.of(device("LVWAP", LEFT, Map.of())), devices(plan.resolve(Map.of())));
+    }
+
+    /** The measured outage: Epic lacks the sticks Steam's .binds names, so the whole preset is rejected there. */
+    @Test
+    void anElementInOneInstallationIsTakenAndRedWhenTheBindsNameIt() {
+        FirstSetupPlan plan = plan(Set.of("RVWAP"),
+                install(STEAM, Map.of("RVWAP", RIGHT, "Spare", LEFT)),
+                install(EPIC, Map.of()));
+
+        Map<String, Row> rows = byDevice(plan.rows());
+        assertEquals(Kind.ONLY_IN_SOME, rows.get("RVWAP").kind());
+        assertEquals(Severity.RED, rows.get("RVWAP").severity());
+        assertEquals(Severity.YELLOW, rows.get("Spare").severity(), "nothing references it, so nothing breaks");
+        assertTrue(plan.unanswered(Map.of()).isEmpty(), "one sensible outcome, so no question");
+        assertEquals(List.of("RVWAP", "Spare"), names(plan.resolve(Map.of())));
+    }
+
+    @Test
+    void oneNameOnDifferentHardwareIsAQuestionAnsweredByTheHardware() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT)),
+                install(EPIC, Map.of("LVWAP", OLD_LEFT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.HARDWARE_DIFFERS, row.kind());
+        assertEquals(Severity.RED, row.severity());
+        assertEquals(List.of(row.id()), plan.unanswered(Map.of()));
+        assertThrows(IllegalStateException.class, () -> plan.resolve(Map.of()));
+
+        Option epics = optionHeldByEpic(row);
+        Resolution resolution = plan.resolve(Map.of(row.id(), epics.key()));
+        assertEquals(List.of(device("LVWAP", OLD_LEFT, Map.of())), devices(resolution));
+        assertEquals(EPIC, resolution.devices().getFirst().source(), "copied whole from the installation that won");
+    }
+
+    @Test
+    void oneHardwareUnderTwoNamesIsAQuestionAndTheLoserMovesToTheWinner() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.NAME_DIFFERS, row.kind());
+        assertEquals(Severity.YELLOW, row.severity(), "no binding names either, so nothing breaks yet");
+
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RVWAP"));
+        assertEquals(List.of("RVWAP"), names(resolution));
+        assertEquals(Map.of("RightStick", "RVWAP"), resolution.moves(),
+                "its entry leaves the working copy, and any binding naming it follows the winner");
+    }
+
+    /** A16, on the working copy (Storage S2b): a losing name the binds use hands its bindings to the winner. */
+    @Test
+    void aLosingNameTheBindsUseMovesToTheWinner() {
+        FirstSetupPlan plan = plan(Set.of("RVWAP"),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Severity.RED, row.severity());
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RightStick"));
+
+        assertEquals(List.of(device("RightStick", RIGHT, Map.of())), devices(resolution));
+        assertEquals(Map.of("RVWAP", "RightStick"), resolution.moves());
+    }
+
+    /**
+     * Storage S2b (Alan, 2026-10-25): a case-only loser is a move - in .binds LVWAP and lvwap are not the same name, so
+     * every binds file takes the winner's exact spelling.
+     */
+    @Test
+    void aCaseOnlyLoserIsABindingMove() {
+        FirstSetupPlan plan = plan(Set.of("lvwap"),
+                install(STEAM, Map.of("LVWAP", LEFT)),
+                install(EPIC, Map.of("lvwap", LEFT)));
+
+        Resolution resolution = plan.resolve(Map.of(only(plan.rows()).id(), "LVWAP"));
+
+        assertEquals(List.of(device("LVWAP", LEFT, Map.of())), devices(resolution));
+        assertEquals(Map.of("lvwap", "LVWAP"), resolution.moves());
+    }
+
+    /** Was stuck until A16: with both names in .binds, either may now win. */
+    @Test
+    void whenBothNamesAreInTheBindsEitherCanBeChosen() {
+        FirstSetupPlan plan = plan(Set.of("RVWAP", "RightStick"),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Map.of(row.id(), "RVWAP"), plan.answersFavouring(STEAM));
+        assertEquals(List.of(device("RVWAP", RIGHT, Map.of())), devices(plan.resolve(plan.answersFavouring(STEAM))));
+    }
+
+    /** A16, two losing names the binds use: both hand their bindings to the one winner. */
+    @Test
+    void twoLosingNamesBothMoveToTheWinner() {
+        FirstSetupPlan plan = plan(Set.of("RightStick", "Stick"),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)),
+                new Installation(3, "FRONTIER", Map.of("Stick", RIGHT), Map.of(), Map.of()));
+
+        Row row = only(plan.rows());
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RVWAP"));
+
+        assertEquals(List.of(device("RVWAP", RIGHT, Map.of())), devices(resolution));
+        assertEquals(Map.of("RightStick", "RVWAP", "Stick", "RVWAP"), resolution.moves());
+    }
+
+    @Test
+    void aLoserNeedsNoAnswerToItsOwnHardwareQuestion() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT)),
+                install(EPIC, Map.of("LVWAP", OLD_LEFT, "LeftStick", LEFT)));
+
+        Row names = plan.rows().stream().filter(row -> row.kind() == Kind.NAME_DIFFERS).findFirst().orElseThrow();
+        Resolution resolution = plan.resolve(Map.of(names.id(), "LeftStick"));
+
+        assertEquals(List.of("LeftStick"), names(resolution));
+        assertEquals(Map.of("LVWAP", "LeftStick"), resolution.moves());
+    }
+
+    @Test
+    void labelsInOneFileOnlyAreTakenAndIdenticalOnesAskNothing() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "TRIGGER", "Joy_2", "PINKY"))),
+                install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "TRIGGER", "Joy_4", "PADDLE"))));
+
+        assertEquals(Kind.IDENTICAL, only(plan.rows()).kind(), "twenty labels and five give twenty-five");
+        assertEquals(Map.of("Joy_1", "TRIGGER", "Joy_2", "PINKY", "Joy_4", "PADDLE"),
+                plan.resolve(Map.of()).devices().getFirst().labels());
+    }
+
+    @Test
+    void collidingLabelsAreAnsweredPerInputAndTheRestAreStillTaken() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT),
+                        Map.of("LVWAP", Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_2", "A"))),
+                install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "TRIGGER 1", "Joy_2", "B",
+                        "Joy_4", "PINKY"))));
+
+        Row labels = plan.rows().getFirst();
+        assertEquals(Kind.LABELS_DIFFER, labels.kind(), "a question sorts first");
+        assertEquals(List.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"),
+                        FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2")), plan.unanswered(Map.of()),
+                "one question per input that disagrees, Joy_4 not among them");
+
+        Resolution resolution = plan.resolve(Map.of(
+                FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"), "LV MAIN TRIGGER",
+                FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2"), "B"));
+
+        assertEquals(Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_2", "B", "Joy_4", "PINKY"),
+                resolution.devices().getFirst().labels(), "each input its own answer");
+        assertEquals(1, resolution.buttonMapCount());
+    }
+
+    @Test
+    void halfAnsweredLabelsAreNotFinished() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "A", "Joy_2", "A"))),
+                install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "B", "Joy_2", "B"))));
+        Map<String, String> answers = Map.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"), "A");
+
+        assertEquals(List.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2")), plan.unanswered(answers));
+        assertThrows(IllegalStateException.class, () -> plan.resolve(answers));
+        assertEquals(List.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1")),
+                plan.unanswered(Map.of(FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_1"), "NOT OFFERED",
+                        FirstSetupPlan.labelAnswerKey("LVWAP", "Joy_2"), "B")), "a label no installation holds");
+    }
+
+    @Test
+    void theWholeFileRouteAnswersEveryInputForOneDevice() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "LV MAIN TRIGGER"))),
+                install(EPIC, Map.of("LVWAP", LEFT), Map.of("LVWAP", Map.of("Joy_1", "TRIGGER 1", "Joy_4", "PINKY"))));
+
+        Map<String, String> answers = plan.labelAnswersFavouring("LVWAP", STEAM);
+
+        assertEquals(Map.of("Joy_1", "LV MAIN TRIGGER", "Joy_4", "PINKY"),
+                plan.resolve(answers).devices().getFirst().labels(), "use Steam's labels for this device");
+        assertEquals(answers, plan.answersFavouring(STEAM), "using Steam's file for all answers the same way");
+    }
+
+    @Test
+    void labelsOnABuiltInAreTakenUnderFrontiersName() {
+        HardwareId rudder = new HardwareId("044F", "B679");
+        FirstSetupPlan plan = plan(Set.of(),
+                new Installation(STEAM, "STEAM", Map.of(), Map.of("T-Rudder", rudder),
+                        Map.of("T-Rudder", Map.of("Joy_XAxis", "X Axis"))),
+                install(EPIC, Map.of()));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.BUILT_IN_LABELS, row.kind());
+        FirstSetupPlan.Kept rudderKept = only(plan.resolve(Map.of()).devices());
+        assertEquals(device("T-Rudder", rudder, Map.of("Joy_XAxis", "X Axis")), device(rudderKept));
+        assertTrue(rudderKept.builtIn(), "Frontier's element is already in the file - only its labels are the user's");
+    }
+
+    /** Answering in one installation's favour still never drops an element only another installation holds. */
+    @Test
+    void answeringInOneInstallationsFavourKeepsTheOthersExtras() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("LVWAP", LEFT, "RVWAP", RIGHT)),
+                install(EPIC, Map.of("LVWAP", OLD_LEFT, "Pedals", new HardwareId("044F", "B679"))));
+
+        Map<String, String> answers = plan.answersFavouring(STEAM);
+        Resolution resolution = plan.resolve(answers);
+
+        assertEquals(List.of(device("LVWAP", LEFT, Map.of()), device("Pedals", new HardwareId("044F", "B679"), Map.of()),
+                device("RVWAP", RIGHT, Map.of())), devices(resolution));
+    }
+
+    @Test
+    void questionsSortFirstThenRedThenYellowThenGreen() {
+        FirstSetupPlan plan = plan(Set.of("Bound"),
+                install(STEAM, Map.of("Alpha", LEFT, "Bound", RIGHT, "Spare", new HardwareId("1", "1"),
+                        "Twin", new HardwareId("2", "2"))),
+                install(EPIC, Map.of("Alpha", LEFT, "Twin", new HardwareId("2", "3"))));
+
+        assertEquals(List.of("Twin", "Bound", "Spare", "Alpha"),
+                plan.rows().stream().map(Row::deviceName).toList());
+    }
+
+    /**
+     * The review's crossing layout: a stale PID under one name in each installation, each pair also held under a
+     * second name. Favouring Steam must keep Steam's own device.
+     */
+    @Test
+    void aNameThatWinsOneConflictIsKeptEvenWhereItLosesAnother() {
+        HardwareId h1 = new HardwareId("3344", "0001");
+        HardwareId h2 = new HardwareId("3344", "0002");
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("X", h1, "Z", h2)),
+                install(EPIC, ordered("X", h2, "Y", h1)));
+
+        Resolution resolution = plan.resolve(plan.answersFavouring(STEAM));
+
+        assertEquals(List.of(device("X", h1, Map.of()), device("Z", h2, Map.of())), devices(resolution));
+        assertEquals(Map.of("Y", "X"), resolution.moves());
+    }
+
+    /** Answers that would leave two devices on one VID/PID are not accepted until changed. */
+    @Test
+    void answersPuttingTwoDevicesOnOneHardwareAreUnanswered() {
+        HardwareId h1 = new HardwareId("3344", "0001");
+        HardwareId h2 = new HardwareId("3344", "0002");
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("X", h1, "Z", h2)),
+                install(EPIC, ordered("X", h2, "Y", h1)));
+        Map<String, String> answers = new LinkedHashMap<>();
+        answers.put("name:3344:0001", "Y");
+        answers.put("name:3344:0002", "X");
+        answers.put("hardware:X", "3344:0001");
+
+        assertEquals(List.of("hardware:X"), plan.unanswered(answers), "X would sit on Y's hardware");
+
+        answers.put("hardware:X", "3344:0002");
+        assertEquals(List.of(device("X", h2, Map.of()), device("Y", h1, Map.of())), devices(plan.resolve(answers)));
+    }
+
+    /** The game uses the first of two elements on one VID/PID, so the second is not the user's choice to make. */
+    @Test
+    void aSecondNameForOneHardwareInsideOneInstallationIsShadowedNotAsked() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("RightStick", RIGHT, "RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        assertTrue(plan.unanswered(Map.of()).isEmpty());
+        Map<String, Row> rows = byDevice(plan.rows());
+        assertEquals(Kind.IDENTICAL, rows.get("RightStick").kind(), "the first in the file is the device");
+        assertEquals(Kind.SHADOWED, rows.get("RVWAP").kind());
+        Resolution resolution = plan.resolve(Map.of());
+        assertEquals(List.of("RightStick"), names(resolution), "the shadowed name is not in the working copy");
+        assertEquals(Map.of("RVWAP", "RightStick"), resolution.moves(),
+                "bindings still naming the dead entry would get the whole binds file rejected (Alan, 2026-11-17)");
+    }
+
+    @Test
+    void aDeadEntrysBindingsFollowTheEntryAboveItToTheNameThatBeatIt() {
+        FirstSetupPlan plan = plan(Set.of("OldStick"),
+                install(STEAM, ordered("RVWAP", RIGHT, "OldStick", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows().stream().filter(Row::isQuestion).toList());
+        Resolution resolution = plan.resolve(Map.of(row.id(), "RightStick"));
+        assertEquals(Map.of("RVWAP", "RightStick", "OldStick", "RightStick"), resolution.moves());
+    }
+
+    /** RVWAP in Steam and RightStick in Epic are one stick: its labels combine, whichever alias is kept. */
+    @Test
+    void oneControllersAliasesShareOneLabelMerge() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("RVWAP", RIGHT), Map.of("RVWAP", Map.of("Joy_1", "Boost", "Joy_2", "Gear"))),
+                install(EPIC, Map.of("RightStick", RIGHT),
+                        Map.of("RightStick", Map.of("Joy_1", "Afterburner", "Joy_3", "Scoop"))));
+
+        Row name = only(plan.rows().stream().filter(row -> row.kind() == Kind.NAME_DIFFERS).toList());
+        Row labels = only(plan.rows().stream().filter(row -> row.kind() == Kind.LABELS_DIFFER).toList());
+        assertEquals("RVWAP / RightStick", labels.deviceName());
+        assertEquals(List.of("RVWAP", "RightStick"), plan.namesOfLabelDevice(labels.deviceName()));
+        assertEquals(Set.of(STEAM, EPIC), labels.presentIn());
+
+        Map<String, String> answers = new LinkedHashMap<>();
+        answers.put(name.id(), "RightStick");
+        answers.put(FirstSetupPlan.labelAnswerKey(labels.deviceName(), "Joy_1"), "Boost");
+        assertEquals(List.of(device("RightStick", RIGHT, Map.of("Joy_1", "Boost", "Joy_2", "Gear", "Joy_3", "Scoop"))),
+                devices(plan.resolve(answers)));
+    }
+
+    /** Two controllers under one alias: the one chosen keeps its own labels, never a mix (Alan, 2026-11-17). */
+    @Test
+    void oneAliasOnTwoControllersKeepsTheChosenControllersLabels() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("Yoke", LEFT), Map.of("Yoke", Map.of("Joy_1", "Boost"))),
+                install(EPIC, Map.of("Yoke", OLD_LEFT), Map.of("Yoke", Map.of("Joy_1", "Trigger"))));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.HARDWARE_DIFFERS, row.kind(), "no label question: the labels are of two controllers");
+        Resolution resolution = plan.resolve(Map.of(row.id(), optionHeldByEpic(row).key()));
+        assertEquals(List.of(device("Yoke", OLD_LEFT, Map.of("Joy_1", "Trigger"))), devices(resolution));
+        assertEquals(OLD_LEFT, FirstSetupPlan.hardwareOf(optionHeldByEpic(row)));
+    }
+
+    @Test
+    void aNameRowSaysWhichControllerItIsAbout() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, Map.of("RVWAP", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        assertEquals(RIGHT, plan.hardwareOf(only(plan.rows())));
+        assertEquals(java.util.Optional.of(RIGHT), plan.hardwareOfDevice("RightStick"));
+    }
+
+    @Test
+    void aShadowedNameThatIsFirstElsewhereIsStillInPlay() {
+        FirstSetupPlan plan = plan(Set.of(),
+                install(STEAM, ordered("RVWAP", RIGHT, "RightStick", RIGHT)),
+                install(EPIC, Map.of("RightStick", RIGHT)));
+
+        Row row = only(plan.rows());
+        assertEquals(Kind.NAME_DIFFERS, row.kind(), "Steam uses RVWAP, Epic uses RightStick - a real disagreement");
+        assertEquals(Map.of("RVWAP", "RightStick"), plan.resolve(plan.answersFavouring(EPIC)).moves());
+    }
+
+    @Test
+    void nothingOfTheUsersMeansNothingToSetUp() {
+        assertTrue(plan(Set.of(), install(STEAM, Map.of()), install(EPIC, Map.of())).isEmpty());
+    }
+
+    private static FirstSetupPlan plan(Set<String> referenced, Installation... installations) {
+        return new FirstSetupPlan(List.of(installations), referenced);
+    }
+
+    private static Installation install(long id, Map<String, HardwareId> elements) {
+        return install(id, elements, Map.of());
+    }
+
+    private static Installation install(long id, Map<String, HardwareId> elements,
+                                        Map<String, Map<String, String>> labels) {
+        return new Installation(id, id == STEAM ? "STEAM" : "EPIC", elements, Map.of(), labels);
+    }
+
+    /** Elements in file order, which decides which of two on one VID/PID the game uses. */
+    private static Map<String, HardwareId> ordered(String first, HardwareId firstId, String second, HardwareId secondId) {
+        Map<String, HardwareId> elements = new LinkedHashMap<>();
+        elements.put(first, firstId);
+        elements.put(second, secondId);
+        return elements;
+    }
+
+    /** A kept device as the tests compare it: its name, hardware and labels. */
+    private record Device(String name, HardwareId hardware, Map<String, String> labels) {
+    }
+
+    private static Device device(String name, HardwareId hardware, Map<String, String> labels) {
+        return new Device(name, hardware, labels);
+    }
+
+    private static Device device(FirstSetupPlan.Kept kept) {
+        return new Device(kept.name(), kept.hardware(), kept.labels());
+    }
+
+    private static List<Device> devices(Resolution resolution) {
+        return resolution.devices().stream().map(FirstSetupPlanTest::device).toList();
+    }
+
+    private static <T> T only(List<T> items) {
+        assertEquals(1, items.size(), items.toString());
+        return items.getFirst();
+    }
+
+    private static Option optionHeldByEpic(Row row) {
+        return row.options().stream().filter(option -> option.installs().contains(EPIC)).findFirst().orElseThrow();
+    }
+
+    private static Map<String, Row> byDevice(List<Row> rows) {
+        Map<String, Row> map = new LinkedHashMap<>();
+        rows.forEach(row -> map.put(row.deviceName(), row));
+        return map;
+    }
+
+    private static List<String> names(Resolution resolution) {
+        return resolution.devices().stream().map(FirstSetupPlan.Kept::name).toList();
+    }
+}

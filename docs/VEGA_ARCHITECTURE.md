@@ -247,7 +247,7 @@ Every thought carries a `SOURCE#n` tag. The stages are `intake` (accepted text a
 `reduce` (function candidates), `compose` (counts of system functions, facts and history records),
 `llm-http` (physical request time), `llm` (the validated call or repair reason), `settle` (settling path), `exec-time` (handler time), `memory`, and `done` (total time).
 
-`VegaMemoryDump` shows the window's records by kind, preserving record boundaries.
+`VegaMemoryDump` shows the window's records by kind, preserving record boundaries. It is carried in the support bundle as `vega-memory.json`; there is no separate button for it.
 
 The file-driven diagnostics harness that drives all of this for routing tests is documented separately in `DIAGNOSTICS_INPUT.md`.
 
@@ -256,7 +256,7 @@ The file-driven diagnostics harness that drives all of this for routing tests is
 1. `:app:compileJava` and `:app:compileTestJava`;
 2. `:app:test`, then `:app:subscriberTest` (excluded from CI for timing, not correctness);
 3. a targeted `:app:localIntegrationTest` for the chosen language when a local model is running;
-4. a memory-dump check: no partial records, `QUERY` in paired form, nothing below the window;
+4. a memory-dump check (`vega-memory.json` in a support bundle): no partial records, `QUERY` in paired form, nothing below the window;
 5. a diagnostic transcript check: one settling call, no classification stage.
 
 A change to the memory rules is finished only when the record model, the store, prompt replay, diagnostics, this document and the tests have all moved together.

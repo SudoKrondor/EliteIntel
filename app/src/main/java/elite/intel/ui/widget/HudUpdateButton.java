@@ -29,7 +29,9 @@ public class HudUpdateButton extends HudButton {
         super(MultiLingualTextProvider.getText("settings.update.upToDate"), false);
         setEnabled(false);
         if (showIcon) {
-            setIcon(HudGlyphs.scaledIcon(getClass(), "/images/update.png", HudPalette.HUD_ICON_MAIN));
+            int side = HudPalette.HUD_ICON_MAIN;
+            setIcon(HudGlyphs.tintIcon(HudGlyphs.scaledIcon(getClass(), "/images/update.png", side),
+                    side, side, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION));
         }
         addActionListener(e -> onClick());
         UiBus.register(this);

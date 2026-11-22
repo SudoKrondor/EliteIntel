@@ -27,4 +27,12 @@ public interface NativeKeyInput {
     default boolean typeChar(char c) {
         return false;
     }
+
+    /**
+     * Whether the desktop may hold this backend's first key until the commander allows it (an Xwayland that hands
+     * XTEST to the compositor through libei). {@link InputPermissionPrimer} taps a key at service start when it may.
+     */
+    default boolean mayAskPermission() {
+        return false;
+    }
 }

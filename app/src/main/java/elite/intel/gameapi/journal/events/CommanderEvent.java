@@ -41,14 +41,10 @@ public class CommanderEvent extends BaseEvent {
 
     @Override
     public String memorySummary() {
-        // Feed the LLM the operator-configured name, not the raw in-game name: in-game
-        // commander names can carry numbers/random characters that TTS mangles, so the
-        // UI override (alternative/player name) takes precedence. getConfiguredPlayerName()
-        // falls back to the in-game name when no override is set, and to "Commander" when
-        // nothing is known -- which we treat as "nothing useful to remember".
-        String preferredName = PlayerSession.getInstance().getConfiguredPlayerName();
-        return preferredName == null || preferredName.isBlank() || "Commander".equals(preferredName)
-                ? "" : "our commander is " + preferredName;
+        // Only the name the commander chose to be called: the LLM repeats what it is told, and an in-game
+        // name may be one TTS cannot pronounce (see PlayerSession.getSpokenName).
+        String spokenName = PlayerSession.getInstance().getSpokenName();
+        return spokenName == null ? "" : "our commander is " + spokenName;
     }
 
     @Override

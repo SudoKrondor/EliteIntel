@@ -106,6 +106,9 @@ public class EventRegistry {
         registerEvent("NavRouteClear", NavRouteClearEvent.class);
         registerEvent("NpcCrewPaidWage", NpcCrewPaidWageEvent.class);
         registerEvent("Powerplay", PowerplayEvent.class);
+        registerEvent("PowerplayDefect", PowerplayDefectEvent.class);
+        registerEvent("PowerplayJoin", PowerplayJoinEvent.class);
+        registerEvent("PowerplayLeave", PowerplayLeaveEvent.class);
         registerEvent("Progress", ProgressEvent.class);
         registerEvent("ProspectedAsteroid", ProspectedAsteroidEvent.class);
         registerEvent("Rank", RankEvent.class);
@@ -128,6 +131,7 @@ public class EventRegistry {
         registerEvent("Shutdown", ShutdownEvent.class);
         registerEvent("SquadronStartup", SquadronStartupEvent.class);
         registerEvent("Died", DiedEvent.class);
+        registerEvent("WingInvite", WingInviteEvent.class);
 
         // Finance: realized credit movements (see FinanceSubscriber)
         registerEvent("Resurrect", ResurrectEvent.class);
@@ -148,6 +152,7 @@ public class EventRegistry {
         registerEvent("PayBounties", PayBountiesEvent.class);
         registerEvent("ShipyardSell", ShipyardSellEvent.class);
         registerEvent("ShipyardTransfer", ShipyardTransferEvent.class);
+        registerEvent("StoredShips", StoredShipsEvent.class);
         registerEvent("CarrierBuy", CarrierBuyEvent.class);
         registerEvent("CarrierBankTransfer", CarrierBankTransferEvent.class);
     }

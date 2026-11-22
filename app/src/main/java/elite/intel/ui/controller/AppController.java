@@ -8,18 +8,22 @@ import elite.intel.ai.brain.health.AiServiceCheck;
 import elite.intel.ai.brain.health.AiServiceHealth;
 import elite.intel.ai.brain.health.AiServiceReport;
 import elite.intel.ai.brain.health.AiServiceVerdict;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioHost;
 import elite.intel.ai.brain.vega.input.VegaSubsystemGate;
 import elite.intel.ai.brain.vega.prompt.SemanticCatalogWarmer;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.sherpa.SherpaOnnxTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicTTS;
+import elite.intel.bindforge.install.PlayedInstallationFollower;
+import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.bindforge.rules.KeyBindCheck;
+import elite.intel.bindforge.storage.StartupNotice;
 import elite.intel.devices.DeviceService;
 import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
@@ -43,9 +47,9 @@ import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 public class AppController {
@@ -62,6 +66,9 @@ public class AppController {
     });
 
     private final Object lifecycleLock = new Object();
+    private final AtomicBoolean audioCalibrationRunning = new AtomicBoolean(false);
+    // Read and written only under lifecycleLock.
+    private boolean sleepNoticeHeldBack = false;
     // Written only under lifecycleLock; volatile so the off-lock reads (e.g. onLlmConnectionStatus on the
     // EDT) observe the latest transition.
     private volatile ServicesStateEvent.State serviceState = ServicesStateEvent.State.STOPPED;
@@ -84,27 +91,20 @@ public class AppController {
     }
 
     private void checkForUpdates() {
-        SwingUtilities.invokeLater(() -> {
-            CompletableFuture<Boolean> checkAsync = Updater.isUpdateAvailableAsync();
-            try {
-                Boolean updateAvailable = checkAsync.get();
-                if (updateAvailable) {
-                    GameEventBus.publish(new AiVoxResponseEvent("Newer version available"));
-                    UiBus.publish(new UpdateAvailableEvent());
-                }
-            } catch (Exception e) {
+        // WHY: the check is a network call; react on completion so the EDT never waits on it.
+        // Every UpdateAvailableEvent subscriber hops to the EDT itself.
+        Updater.isUpdateAvailableAsync().whenComplete((updateAvailable, e) -> {
+            if (e != null) {
                 log.warn("Update check failed", e);
+            } else if (updateAvailable) {
+                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.updateAvailable")));
+                UiBus.publish(new UpdateAvailableEvent());
             }
         });
     }
 
     private void startIfWeHaveCredentials() {
         UiBus.publish(new ToggleServicesEvent(true));
-    }
-
-    @Subscribe
-    public void onSpeechSpeedChangeEvent(SpeechSpeedChangeEvent event) {
-        systemSession.setSpeechSpeed(event.getSpeed());
     }
 
     @Subscribe
@@ -143,29 +143,54 @@ public class AppController {
 
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            appendToLog(StringUtls.localizedSpeech("log.audioCalibrationStarting"));
-            EarsInterface ears = services.get(ServiceType.EARS).get();
-            if (ears == null) return;
-            ears.stop();
-            new Thread(() -> {
+        if (!audioCalibrationRunning.compareAndSet(false, true)) return;
+        new Thread(this::runAudioCalibration, "AudioCalibrator-Thread").start();
+    }
+
+    /**
+     * Stops voice input, calibrates and restarts it, all off the EDT: the capture line, the prompts and the speech
+     * model together take about 20 seconds. The lifecycle lock is held throughout so no restart or service stop can
+     * pull voice input out from under the run.
+     */
+    private void runAudioCalibration() {
+        try {
+            synchronized (lifecycleLock) {
+                if (!isServiceRunning()) return;
+                ServiceHolder holder = services.get(ServiceType.EARS);
+                EarsInterface ears = holder == null ? null : holder.get();
+                if (ears == null) return;
+
+                appendToLog(StringUtls.localizedSpeech("log.audioCalibrationStarting"));
+                ears.stop();
+                boolean calibrated = calibrateAudio();
                 try {
-                    Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
-                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
-                    AudioCalibrator.calibrateRMS(format, inputMixerInfo);
-                    SwingUtilities.invokeLater(() -> {
-                        ears.start();
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.audioCalibrationComplete")));
-                    });
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> {
-                        ears.start();
-                        appendToLog(StringUtls.localizedSpeech("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.audioCalibrationFailed")));
-                    });
+                    ears.start();
+                } catch (Exception e) {
+                    log.error("Failed to restart STT service after calibration", e);
+                    appendToLog(StringUtls.localizedSpeech("log.sttRestartFailed", String.valueOf(e.getMessage())));
                 }
-            }, "AudioCalibrator-Thread").start();
-        });
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse(
+                        calibrated ? "speech.audioCalibrationComplete" : "speech.audioCalibrationFailed")));
+            }
+        } finally {
+            audioCalibrationRunning.set(false);
+            UiBus.publish(new AudioCalibrationFinishedEvent());
+        }
+    }
+
+    private boolean calibrateAudio() {
+        try {
+            Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
+            AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
+            AudioCalibrator.calibrateRMS(format, inputMixerInfo);
+            return true;
+        } catch (Exception e) {
+            // WHY broad and returning false: the calibration runs vendor audio code, and whatever it throws, voice input
+            // restarts on the old thresholds. The on-screen line is for the commander; the log is for support.
+            log.error("Audio calibration failed", e);
+            appendToLog(StringUtls.localizedSpeech("log.audioCalibrationFailed", String.valueOf(e.getMessage())));
+            return false;
+        }
     }
 
     @Subscribe
@@ -186,9 +211,51 @@ public class AppController {
         }).start();
     }
 
+    /**
+     * WHY on the publishing thread, unlike the restarts: the uninstall that publishes it deletes LM Studio's folder
+     * next, and must not start before LM Studio has let go of its files.
+     */
+    @Subscribe
+    void onStopLocalLlmHostEvent(StopLocalLlmHostEvent event) {
+        synchronized (lifecycleLock) {
+            ServiceHolder host = services.get(ServiceType.LOCAL_LLM_HOST);
+            if (host != null) host.stop();
+        }
+    }
+
     @Subscribe
     void onRestartBrainEvent(RestartBrainEvent event) {
         new Thread(this::restartBrainService, "BrainRestart-Thread").start();
+    }
+
+    /**
+     * The installation being played changed (linux-several-installations.md, rule 2): only what reads its two folders
+     * restarts - the journal parser, the auxiliary-files monitor and the bindings monitor - so push-to-talk, VEGA and
+     * the Hands thread, with its input-permission prompt, are left running.
+     */
+    @Subscribe
+    void onGameFoldersChanged(GameFoldersChangedEvent event) {
+        new Thread(this::restartGameFolderReaders, "GameFoldersRestart-Thread").start();
+    }
+
+    private void restartGameFolderReaders() {
+        synchronized (lifecycleLock) {
+            if (!isServiceRunning()) return;
+            for (ServiceType type : List.of(ServiceType.JOURNAL_PARSER, ServiceType.AUXILIARY_FILES_MONITOR)) {
+                ServiceHolder holder = services.get(type);
+                if (holder == null) continue;
+                holder.stop();
+                try {
+                    holder.start();
+                } catch (RuntimeException e) {
+                    // WHY: broad at the worker-thread boundary - one reader that cannot start must not keep the other
+                    // stopped; the log says which.
+                    log.error("Failed to restart {} on the new game folders", type, e);
+                }
+            }
+            BindingsMonitor.getInstance().watchAgain();
+            appendToLog("Game folders changed: " + PlayerSession.getInstance().getJournalPath());
+        }
     }
 
     @Subscribe
@@ -218,6 +285,23 @@ public class AppController {
         }
     }
 
+    /**
+     * Starts the app's own LM Studio when the settings now call for it - an install that just finished saved them -
+     * and stops it when they no longer do, such as a switch to a cloud model. Left alone when nothing changed for it,
+     * since stopping and starting it reloads the model.
+     */
+    private void matchLocalLlmHostToSettings() {
+        ServiceHolder host = services.get(ServiceType.LOCAL_LLM_HOST);
+        if (host == null) return;
+        boolean wanted = LmStudioHost.isWanted();
+        if (wanted == host.isStarted()) return;
+        if (wanted) {
+            host.start();
+        } else {
+            host.stop();
+        }
+    }
+
     private void restartBrainService() {
         synchronized (lifecycleLock) {
             if (!isServiceRunning()) return;
@@ -229,8 +313,12 @@ public class AppController {
             // A restart is how a provider change takes effect; the old provider's record says nothing of the new one.
             AiServiceHealth.getInstance().reset();
             brain.stop();
+            matchLocalLlmHostToSettings();
             brain.start();
             appendToLog("LLM service restarted");
+            if (sleepNoticeHeldBack) {
+                announceSleepModeIfAsleep();
+            }
             Timer checkTimer = new Timer(2000, e -> connectionCheck());
             checkTimer.setRepeats(false);
             checkTimer.start();
@@ -289,8 +377,7 @@ public class AppController {
             appendToLog("Restarting TTS service...");
 
             // A dedicated radio engine is needed only when the main mouth is not itself the radio engine.
-            // Either side can change with what this restart reacts to (the TTS provider; the game client's
-            // language, which picks the radio engine - a Russian client moves radio to Supertonic), and every
+            // The main mouth can change with what this restart reacts to (the TTS provider), and every
             // engine is a singleton shared with the main mouth, so the radio engine is always retired BEFORE
             // the main mouth restarts: starting a main mouth while the same singleton still holds the RADIO
             // role would silence all narration.
@@ -351,6 +438,9 @@ public class AppController {
                 // configured app (KeyBindCheck reads a bindings profile; LocalLlmModelCheck judges a model).
                 SetupCheck.getInstance().check();
                 KeyBindCheck.getInstance().check();
+                // WHY after KeyBindCheck: the binding warnings are said first and BindForge's notice after, in a fixed
+                // order (Storage S14c). On its own thread - startup never waits on the disk for a hint.
+                StartupNotice.stored().runInBackground(AppController::sayStartupNotice);
                 CustomCommandLoadAnnouncement.getInstance().announce();
                 LocalLlmModelCheck.getInstance().check();
                 GameEditionCheck.getInstance().check();
@@ -365,20 +455,34 @@ public class AppController {
     }
 
     /**
+     * One line of BindForge's notice at Elite-Intel start: said once, straight to TTS as {@code SetupCheck} says its
+     * warnings, and to the app log (Storage S14c).
+     */
+    private static void sayStartupNotice(String line) {
+        GameEventBus.publish(new VocalisationRequestEvent(line, MissionCriticalAnnouncementEvent.class, false));
+        UiBus.publish(new AppLogEvent(line));
+    }
+
+    /**
      * Says out loud that the microphone gate is shut, when the services come up with Sleep/Wake still asleep
      * from a previous session. Spoken straight to TTS rather than through VEGA, for the same reason
      * {@link SetupCheck} does it: an app that silently ignores everything the commander says is
      * indistinguishable from a broken one, so the warning must not depend on the path it is warning about.
      * <p>
      * Silent while push-to-talk is on, where the mapped button already gates the microphone and the stored
-     * sleep flag is not consulted at all.
+     * sleep flag is not consulted at all. Held back while no model is set up, since the phrase it names would only
+     * be answered with what is missing, and said when one is ({@link #restartBrainService}): a new install starts
+     * asleep, so a commander who has just set up a model would otherwise be ignored with no word why.
      */
     private void announceSleepModeIfAsleep() {
         if (systemSession.isPushToTalkEnabled() || !systemSession.isSleeping()) {
             return;
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
-                StringUtls.localizedSpeech("speech.sleepModeStartupNotice")));
+        sleepNoticeHeldBack = SetupCheck.llmGapSpeechKey().isPresent();
+        if (sleepNoticeHeldBack) {
+            return;
+        }
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.sleepModeStartupNotice")));
         appendToLog("Starting in sleep mode: voice input is ignored until a wake phrase or the WAKE UP button.");
     }
 
@@ -526,6 +630,9 @@ public class AppController {
         // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path
         // without pressing keys into the game or calling third-party REST APIs) and a speech gateway that
         // delegates to the real TTS path (audible voice + chat-panel replies, indistinguishable from normal).
+        // Before VEGA, so the brain finds the app's own LM Studio answering, and stopped after it. Not started at all
+        // (a null instance) unless the app installed LM Studio and the brain runs on it.
+        services.put(ServiceType.LOCAL_LLM_HOST, new ServiceHolder(LmStudioHost::forOwnedInstall));
         services.put(ServiceType.VEGA, new ServiceHolder(diagnostics
                 ? () -> new VegaSubsystemGate(null, new DiagnosticsExecutionGateway(), new DiagnosticsSpeechGateway())
                 : VegaSubsystemGate::new));
@@ -536,6 +643,10 @@ public class AppController {
         // Status.json every 120 ms and JournalParser tails the real journal, both of which would overwrite the
         // Status/session the harness sets via @visible/@status/@event - defeating deterministic context control
         // and silently dropping any command gated on isVisibleForLLM. The harness owns game state instead.
+        // Before the journal parser: it may change the folder the parser reads, the moment the game starts in another
+        // installation (linux-several-installations.md, rule 3).
+        services.put(ServiceType.PLAYED_INSTALLATION, new ServiceHolder(
+                diagnostics ? NoOpService::new : PlayedInstallationFollower::new));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(
                 diagnostics ? NoOpService::new : JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(
@@ -550,7 +661,6 @@ public class AppController {
      */
     private static ManagedService radioEngine(TtsProvider provider) {
         return switch (provider) {
-            case KOKORO -> radioLocal(KokoroTTS.getInstance());
             case SUPERTONIC -> radioLocal(SupertonicTTS.getInstance());
             case GOOGLE -> throw new IllegalArgumentException(provider + " never voices radio transmissions");
         };
@@ -587,6 +697,13 @@ public class AppController {
             }
         }
 
+        /**
+         * Whether a service is running in this holder. False after a start whose creator declined with {@code null}.
+         */
+        synchronized boolean isStarted() {
+            return instance != null;
+        }
+
         synchronized void stop() {
             if (instance != null) {
                 instance.stop();
@@ -601,7 +718,8 @@ public class AppController {
     }
 
     enum ServiceType {
-        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK, VEGA, NOTIFICATION_MONITOR,
-        MISSING_MISSION_MONITOR, WEB_SOCKET, JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
+        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, PUSH_TO_TALK,
+        LOCAL_LLM_HOST, VEGA, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET, PLAYED_INSTALLATION,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
     }
 }

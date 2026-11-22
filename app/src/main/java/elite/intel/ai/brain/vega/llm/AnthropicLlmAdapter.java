@@ -37,7 +37,8 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
         JsonObject body = new JsonObject();
         body.addProperty("model", AnthropicClient.MODEL_COMMAND_MODEL);
         body.addProperty("max_tokens", MAX_TOKENS);
-        body.addProperty("temperature", request.profile().temperature());
+        // No temperature: Haiku 5.5 rejects any value other than its default with a 400.
+        body.add("output_config", AnthropicClient.outputConfig());
 
         List<LlmMessage> messages = ToolCallIdNormalizer.forWire(request.messages());
         String system = systemPrompt(messages);

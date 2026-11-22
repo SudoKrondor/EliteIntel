@@ -1,0 +1,445 @@
+# Testing Required
+
+A consolidated checklist of everything in this documentation package that's confirmed as a real, standing question — not a design decision — waiting on hands-on testing against real hardware and/or a real Elite Dangerous install. Each item links back to its full write-up in [conflicts-and-open-questions.md](../99-archive/conflicts-and-open-questions.md) and the relevant plugin doc. Nothing here blocks writing more documentation; these are implementation/verification tasks for later.
+
+---
+
+## BindForge
+
+**1. ~~Duplicate-VID/PID controllers~~ — DROPPED FROM SCOPE 2026-09-07. No longer a testing item.**
+BindForge designs nothing for two identical controllers; the existing duplicate warning and the
+alias-uniqueness rule already give defined behaviour, and Elite Dangerous cannot act on the distinction
+regardless. See [Conflict 3.7](../99-archive/conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision).
+The two DualShock 4 controllers acquired 2026-09-06 would not have covered it anyway — their PIDs differ
+(`05C4` vs `09CC`) — though they did settle the neighbouring case of two devices sharing one entry, see
+item 9.
+
+*Original question, for the record:* Connect two controllers of the identical model (VID and PID both match) and determine what Elite Dangerous actually does with two `DeviceMappings.xml` entries pointing at the same VID/PID: does it support both usefully, or silently conflate them? Neither `.binds` nor `DeviceMappings.xml` has any field that could distinguish two such entries, so this determines whether BindForge's auto-registration/disambiguation behaviour (see [Alias Designer — Automatic Device Registration](../02-features/bindforge/alias-designer.md#automatic-device-registration)) is even useful at the file-format level, not just how to present it.
+→ [Conflict 3.7](../99-archive/conflicts-and-open-questions.md#37-duplicate-vidpid-devices--resolved-confirmed-real-but-the-fix-needs-hands-on-testing-not-a-design-decision)
+
+**2. ~~VID/PID-to-device-identifier derivation~~ — half answered 2026-09-08; the button/axis offset is
+still open.** The **VID+PID order is confirmed**: a 2025-05 specimen carries `334483F3` and `334443F4`
+for two VIRPIL devices, and `3344` is VIRPIL's vendor ID, so the vendor half leads; a Razer device in the
+same file reads `15320244`. BindForge should still **read both orders** — fixed-width halves make it one
+extra comparison — and never writes hex at all. What remains is the numbering offset only.
+
+*Original wording:* confirm the VID+PID hex-concatenation rule for device identifiers, and confirm the 0-based (live input) vs. 1-based (`Joy_N` in `.binds`) numbering offset, both stated confidently in some source documents but flagged unverified in others with no bridging confirmation.
+→ [Conflict 3.15](../99-archive/conflicts-and-open-questions.md#315-vidpid-device-id-derivation-and-the-buttonaxis-index-off-by-one--resolved-logged-as-testing-required) · [Binding Schema](../03-data-models/binding-schema.md#live-input-to-file-format-numbering-offset-needs-independent-testing)
+
+**3. Cross-section conflict isolation** — confirm whether BindForge's four top-level sections (General/Ship/SRV/On Foot) are genuinely conflict-isolated from each other, or whether there's a real cross-section conflict (an unconfirmed observation during testing suggested a possible Ship↔SRV collision). This determines whether a cross-section conflict matrix is needed in addition to the four per-section matrices that already exist — the single most consequential open empirical question in BindForge's conflict-detection design.
+→ [Conflict 3.16](../99-archive/conflicts-and-open-questions.md#316-cross-section-conflict-isolation-may-be-wrong--merged-into-38) · [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
+
+**4. UI-action-vs-ship-action behavioural safety** — confirmed assignable to the same key with no in-game warning, but whether it's actually safe when both are live simultaneously (not just whether the assignment is *allowed*) needs a second, behaviour-focused round of testing.
+→ [Bind Editor — Shared Conflict Detection](../02-features/bindforge/bind-editor.md#how-the-game-actually-resolves-conflicts-confirmed-by-direct-in-game-testing)
+
+**5. On Foot conflict coverage** — only three On Foot subgroups have been identified/tested so far; real on-foot play likely has more untested contexts (ship-interior actions while on foot, SRV boarding, taxi/Apex travel).
+→ [BindForge Roadmap](../02-features/bindforge/roadmap.md)
+
+**6. Consolidated bind data table — done, but still carries unresolved spot-checks.** [`BindForge_ConsolidatedActionTable.xlsx`](../02-features/bindforge/reference-data/BindForge_ConsolidatedActionTable.xlsx) now merges all three sources with no data discarded; the reconciliation itself is complete. What's still testing-required: 62 rows where `ActionCatalog.json` disagreed with the other two sources on an action's name — spot-check any still-uncertain ones against real screenshots the same way "UI Panel Select" was confirmed, per the table's own Row Notes.
+→ [BindForge Roadmap](../02-features/bindforge/roadmap.md#formerly-needed-before-v1-can-be-built--now-resolved)
+
+**7. ~~First-Time Startup's file copy~~ — ANSWERED 2026-11-02 (Alan): it works.** He copied a factory binds file
+into the bindings folder, renamed it (`DawnTreaderKMO.binds`) and changed its `PresetName` to match; the game took it,
+and wrote it out again as `DawnTreaderKMO.4.2.binds`, treating the unversioned name as an older version and leaving
+the copy beside it. So a user can make their own copy of a factory file by hand, and CREATE's copy - factory bytes,
+`PresetName` changed, named `.4.2.binds` from the start - needs nothing more (Storage S11). *No longer a testing item.*
+
+*Original question, for the record:* confirm whether a factory binds file from `ControlSchemes` can be copied byte-for-byte into the player's bindings folder as a valid starting `.binds` file, or whether the game's own first-customization save does something to the file beyond a plain copy (e.g. a header/version rewrite) that a plain copy would miss.
+→ [BindForge Overview — First-Time Startup](../02-features/bindforge/overview.md#create--a-new-players-first-binds-file--2026-10-24)
+
+**9. ~~Does `.binds` reference a `DeviceMappings.xml` device by name or by hex?~~ ANSWERED 2026-09-08 —
+both, and the rule is now known.** *No longer a testing item.*
+
+> `.binds` names a device by its `DeviceMappings.xml` element name, matched on VID/PID. With no matching
+> entry it falls back to VID+PID hex.
+
+Confirmed from five specimens spanning 2024-08 to 2026-09, including the same user's file before and
+after adding entries for the same two devices — the two VIRPIL sticks appear as `334483F3`/`334443F4` in
+the 2025 file and as `RVWAP`/`LVWAP` today. See
+[§4.0 of the format reference](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#40-the-rule-confirmed-2026-09-08).
+
+**Device rename is therefore a multi-file operation** — the element name, every `Device=` in `.binds`
+using it, and the `.buttonMap` filename, together. That was the thing this item blocked, and it is now
+designable.
+
+*Original question, for the record:* §4.1 of the format reference
+lists plain names (`T-Rudder`, `RVWAP`, `LVWAP`) as valid `Device=` values; §4.2 says devices configured through
+`DeviceMappings.xml` use the derived 8-hex-character form. Both occur in the wild and the rule for which is
+undocumented. **This blocks device rename**, because if `.binds` can hold the name, renaming a device orphans
+every binding that used it.
+
+**A discriminating test is now available (2026-09-06).** Two DualShock 4 controllers on the developer's
+machine share one `DeviceMappings.xml` entry — `<DualShock4>` — through its `<Alternative>` pairs, while
+carrying different PIDs (`05C4` and `09CC`). That is exactly the pair needed: **same name, different hex.**
+
+Bind one action to a button on each controller, then read the resulting `.binds`:
+
+- both slots say `DualShock4` → **by name**, and the two controllers are indistinguishable to the game
+- the slots differ (`054C05C4` versus `054C09CC`) → **by hex**, and the `DeviceMappings.xml` name plays no
+  part in binding identity
+
+Either answer settles device rename. The first also answers what the game does when one entry covers two
+attached devices, which is item 1's question in a form that can actually be run today.
+→ [Alias Designer — Renaming a Device](../02-features/bindforge/alias-designer.md#renaming-a-device)
+
+**10. What does a game update actually do to the four file domains?** The next weekly tick is expected to add a
+vehicle, which may add bindable actions — a rare scheduled chance to observe all four domains at once with a
+baseline captured beforehand. Specifically:
+- Does the patcher replace `DeviceMappings.xml` wholesale, and do player-added entries survive? *(This is the
+  incident that motivated BindForge, and it also settles the built-in-vs-user provenance question empirically —
+  see [Device Provenance](../03-data-models/device-provenance.md).)*
+- **Does a new vehicle add a fifth binding section?** `StartPreset.4.start` has exactly four lines — General,
+  Ship, SRV, On Foot — and that four-ness is load-bearing across Preset Editor's UI, the four conflict
+  matrices, and First-Time Startup's per-section checks. **Lower risk than it first appears:** binding sections
+  are *control contexts, not vehicles*. A Ship Launched Vessel such as the Nomad, like a Ship Launched Fighter,
+  is flown with **Ship** bindings and needs no section of its own. So a new vehicle of that class should add
+  actions, not a section. Still worth confirming, because a genuinely new control context (as On Foot was)
+  would be a different matter.
+- Are `.buttonMap` files touched at all, or only `DeviceMappings.xml`? An asymmetry there would mean labels
+  survive updates while the device registry does not.
+- Do new actions appear in `.binds` immediately, or only after the in-game Controls menu is opened?
+
+Method: object-access auditing (SACL) on the install's `ControlSchemes` folder gives the process identity in
+Security event 4663; Process Monitor covers a known window. A file-hash baseline of all four domains must be
+captured **before** the tick or the after-state is much less informative.
+
+**11. ~~Do two installations on the same machine ever legitimately hold different device entries?~~ ANSWERED
+2026-09-06 — yes, demonstrably.** A Steam and an Epic installation on the developer's own machine differ
+right now: Steam's `DeviceMappings.xml` carries two hand-added elements, Epic's is Frontier stock. Epic also
+holds an `LVWAP.buttonMap` with **no matching element in its own `DeviceMappings.xml`** — a live orphan,
+left by an earlier BindForge attempt.
+
+**The mechanism is worth more than the answer.** Epic was reinstalled on 2026-07-01. That reinstall restored
+`DeviceMappings.xml` to stock — reverting the edit — while leaving the added `.buttonMap` untouched. A
+reinstall reverts the files the manifest ships and ignores files the player added. That is the motivating
+incident, observed directly rather than reported: **the edit is lost, the orphan survives.** It also means
+orphaned `.buttonMap` files exist in the wild, which
+[File Manager's restore scope](../02-features/bindforge/file-manager.md#restore) has to tolerate
+rather than treat as corruption.
+
+**Reframed 2026-09-23, and the original question answered itself.** They *do* differ — but differing is
+never legitimate. A shared `.binds` names devices by entries that live in these per-install files, so an
+install missing one
+[rejects the whole binds file](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+Difference is a latent outage, not a configuration, so
+[every install now gets the same files](../02-features/bindforge/overview.md#every-install-gets-the-same-files--settled-2026-09-23)
+and there is no per-install choice left to test.
+
+*Original question, for the record:* The
+per-installation model in [Alias Designer](../02-features/bindforge/alias-designer.md#one-record-and-where-it-lands--reworked-2026-09-26)
+assumes they can, and builds the UI around allowing it. It was answered the other way: installations that differ
+break the game, so they never differ on purpose.
+
+**12. Does the game tolerate a `DeviceMappings.xml` entry for hardware that is not attached?** Entries outlive
+hardware, and BindForge lists and preserves them deliberately. Confirm the game ignores a stale entry rather
+than erroring or discarding the file.
+
+**13. Does the game honour hex device references once a `DeviceMappings.xml` entry exists for that
+device?** `.binds` names a device by its entry once one exists, and by VID+PID hex until then. What is untested
+is the moment in between: add an entry for a device an existing `.binds` references by hex, start the game, and
+see whether those bindings still work — and whether the game rewrites them to the name on its next save.
+**The only evidence points the other way:** when Alan added `RVWAP` and `LVWAP`, the hex references were
+replaced by hand. So onboarding writes the entry and the `.binds` rewrite together, in one Apply. If the game
+turns out to cope on its own, the entry could be written straight away like any other name.
+→ [Alias Designer — What onboarding writes, and when](../02-features/bindforge/alias-designer.md#what-onboarding-writes-and-when)
+
+**14. What are the legal values of each settings enum?** *Added 2026-09-16, and it gates part of the
+release.* 31 of a `.binds` file's 93 [standalone settings](../03-data-models/binding-schema.md#binding-element--three-distinct-kinds)
+hold an enum token — `Bindings_MouseYaw`, `mute_toggle`, `FocusOption_Nothing` — and **a file contains the one
+token it holds, never the set it was chosen from.** Across all five specimens, `YawToRollMode` reads
+`Bindings_YawIntoRollNone` every time; whatever its on-states are called, we have never seen one. The
+mouse-axis family is the exception — sibling elements between them show `Bindings_MouseYaw`,
+`Bindings_MouseRoll`, `Bindings_MousePitch` and `Bindings_MousePitchInverted`.
+
+**The test, and why reading the screen is not enough (revised 2026-09-16).** *UI Focus Mode* reads
+**DIRECTION** on the options screen and is stored as `Bindings_FocusModeHold` — so the label does not give you
+the token in either direction. **Each option has to be selected, saved, and the file read back**, one at a
+time, recording the label and the token together. Roughly twenty minutes of clicking for the whole set,
+and it is the difference between a working dropdown and BindForge writing a value the game discards.
+
+**Three of them are not enums at all in the file.** *Headlook Button Increments* is a four-choice
+dropdown (CONTINUOUS, SMALL, MEDIUM, LARGE) stored as `HeadlookIncrement` = `0.00000000`; `ThrottleIncrement`
+and `BuggyThrottleIncrement` share the shape. Nothing in the file marks them as enumerated, so they need
+the same walk — recording which number each label writes.
+
+**Most of this was answered on 2026-09-16 without touching the game** — `ControlSchemes\Help.txt` ships with
+Elite and lists the legal values for `YawToRollMode` (None, Time, LowRoll), `ThrottleRange` (`""` and
+`Bindings_ThrottleForewardOnly`), `UIFocusMode` (Hold, Toggle), `HeadlookMode` (Direct, Accumulate) and
+`GunsightSystem`, and the 90 factory binds files supply `FocusOption_Show` on top. See
+[Frontier documents most of them](../02-features/bindforge/bind-editor.md#frontier-documents-most-of-them-in-the-game-folder--found-2026-09-16).
+**What is left is the short list below**, and the mouse family is closed entirely.
+
+**Partly captured already**, from Alan's pass over the options screen on 2026-09-16 — see
+[What the options screen showed](../02-features/bindforge/bind-editor.md#what-the-options-screen-showed--2026-09-16)
+for the labels and the tokens known so far. What is left is the token behind every option **not currently
+selected** — OFF and ROLL on the mouse X axis, CYCLE on UI Focus Mode, DIRECT on Headlook Axis Mode,
+**one confirmation** (2026-09-17). `mute_pushToMute` was found in 313 community files, the increment vocabularies
+are complete, and the panel-focus question was **settled in-game**: setting *Looking at Comms Panel* to
+*Focuses the panel* rewrote `CommsPanelFocusOptions` to `Value=""`, so the empty string is that choice and
+there is no third token.
+
+**Nothing remains open.** The On Foot question closed the same evening: with *Mouse X-Axis* on ROTATE, an
+in-game apply re-emitted the field as `Bindings_MouseYaw`, so that is what the current build writes and
+`Bindings_MouseHumanoidYawRotate` is not current. **Item 14 is complete** — every choice field's vocabulary is
+[tabulated](../02-features/bindforge/reference-data/settings-choice-fields.md), and the method that closed it is
+recorded under
+[an in-game apply re-emits the whole file](../02-features/bindforge/bind-editor.md#an-in-game-apply-re-emits-the-whole-file--observed-2026-09-17).
+
+Everything else closed on 2026-09-16 from sources that cost nothing: Frontier's `Help.txt`, the 90
+factory binds files Elite ships, and the 152 `.binds` files in [EDRefCard's repository](https://github.com/richardbuckle/EDRefCard).
+**The increments are the fraction the label names** — `ThrottleIncrement` = `0.10000000` for 10%,
+`HeadlookIncrement` = `0.25000000` for 25% — and `ThrottleRangeFreeCam` turned out to carry its own token,
+`Bindings_ThrottleForewardOnlyFreeCam`, rather than sharing its family's. **That last one is the argument for
+this whole testing item:** the obvious guess was wrong, in the one place nobody would have checked.
+
+**Do not crawl edrefcard.info for more.** Its 3,888 shared configs would be a richer sample, but the site's
+`robots.txt` allows `/list` and disallows everything else, `/configs/` included.
+
+**Second pass, 2026-09-16, ended early — the game crashed.** Nothing was lost: every value captured matched
+the binds file exactly, so the pairs already recorded stand. Worth confirming the `.binds` file survived the
+crash intact before the next pass, since a crash during an options change is precisely the case
+[Player Backups](../02-features/bindforge/file-manager.md) exist for.
+**If it does not happen before release, enums ship read-only** — booleans and floats do not depend on it.
+
+**The 31 entries are 6 families**, and the members of a family share a vocabulary, so the work is about
+**eight dropdowns**, not thirty-one. Tokens below were read out of the specimen files; none is inferred from an
+element's name.
+
+| Family | Entries | Tokens already observed | What the walk has to find |
+|---|---|---|---|
+| **Mouse axis mode** | 16 — `MouseXMode`/`MouseYMode` and the FSS, SAA, Multicrew, Turret, SRV steering, SRV rolling and On Foot copies, plus `YawCameraMouse` and `PitchCameraMouse` | `Bindings_MouseYaw`, `Bindings_MouseRoll`, `Bindings_MousePitch`, `Bindings_MousePitchInverted` | whether X offers yaw and roll only, whether each has an inverted form, whether an off/none exists |
+| **Panel focus** | 4 — `LeftPanelFocusOptions`, `RightPanelFocusOptions`, `RolePanelFocusOptions`, `CommsPanelFocusOptions` | `FocusOption_Nothing` **only** | every other `FocusOption_*` |
+| **Yaw into roll** | 3 — `YawToRollMode`, `YawToRollMode_FAOff`, `YawToRollMode_Landing` | `Bindings_YawIntoRollNone` **only** | the on-states |
+| **Throttle range** | 3 — `ThrottleRange`, `ThrottleRangeFreeCam`, `BuggyThrottleRange` | `Bindings_BuggyThrottleForewardOnly` = FORWARD ONLY (note the game's own spelling of *Foreward*); `""` = FULL RANGE | **the ship's FORWARD ONLY token**, and whether `ThrottleRangeFreeCam` uses the same vocabulary |
+| **Mute mode** | 2 — `MuteButtonMode`, `CqcMuteButtonMode` | `mute_pushToTalk`, `mute_toggle` | **there is a third** — the screen offers PUSH TO MUTE, whose token no file has ever held |
+| **Enumerated numerics** | 3 — `HeadlookIncrement`, `ThrottleIncrement`, `BuggyThrottleIncrement` | `0.00000000` = CONTINUOUS on all three | the SRV list reads CONTINUOUS, 10%, 12.5%, 16.7%, 25%, … — confirm the stored number is the fraction, and get the full list including whatever sits below the fold |
+| **Singletons** | 2 — `UIFocusMode`, `HeadlookMode` | `Bindings_FocusModeHold`, `Bindings_HeadlookModeAccumulate` | the other modes of each |
+
+**The observed vocabularies are tabulated** in
+[settings-choice-fields.md](../02-features/bindforge/reference-data/settings-choice-fields.md) — what this
+testing adds is the labels, and any value the files have never held.
+
+**Capture what empty means, per element.** An empty value is that element's default *choice*, and the choice
+differs: `""` reads DOES NOTHING on a panel-focus entry, FULL RANGE on `ThrottleRange` and OFF on
+`MouseBuggyYMode`. Record it alongside the tokens — it is what BindForge shows for a setting the user
+has never touched.
+
+**Confirm which panel element is which.** `LeftPanelFocusOptions`, `RightPanelFocusOptions`, `RolePanelFocusOptions`
+and `CommsPanelFocusOptions` line up with *Looking at External / Internal / Role / Comms Panel* by inference,
+not by observation. Setting one of them to a distinct value and reading the file settles all four.
+
+**Capture the missing display names in the same pass.** Eleven of the 31 have no row in the
+[Action Catalog](../02-features/bindforge/domain-knowledge/EliteDangerous-ActionCatalog.md) at all —
+`HeadlookMode`, `UIFocusMode`, `MuteButtonMode`, `CqcMuteButtonMode`, the four panel-focus entries,
+`YawCameraMouse`, `PitchCameraMouse` and `BuggyThrottleRange`. **Six of the eleven were named on 2026-09-16** —
+UI Focus Mode, Headlook Axis Mode, Mute Button Mode, Microphone State Mode (CQC) and the four *Looking at*
+panel entries — leaving `YawCameraMouse`, `PitchCameraMouse` and `BuggyThrottleRange`. The element is known, the label the game puts
+on it is not, and [every grid row needs a name](../02-features/bindforge/bind-editor.md#settings-entries-are-rows-too--settled-2026-09-16).
+Noting where each one appears on screen costs nothing extra while the options screen is already open.
+
+→ [Bind Editor — Enums need their vocabularies captured first](../02-features/bindforge/bind-editor.md#enums-need-their-vocabularies-captured-first--settled-2026-09-16)
+
+**15. ~~What does the game do when two files share one preset name?~~ WITHDRAWN 2026-09-21 — it cannot
+happen.** Alan: Elite migrates an older-version `.binds` to the current version under the same name, so a
+live folder never holds `Custom.3.0` beside `Custom.4.2`, and only the Live game is supported. The pair in
+`reference-data/` is two collected specimens, not one folder. *Original entry, for the record:* *Added 2026-09-17.* `Custom.3.0.binds`
+and `Custom.4.2.binds` both reduce to the preset name `Custom`, which is what `StartPreset.#.start` stores —
+so the name in that file cannot distinguish them. Presumably the game loads the one matching its own version
+and shows a single entry, but that is an assumption, and
+[Preset Editor](../02-features/bindforge/preset-editor.md#a-name-does-not-identify-a-file) is built on it. Put
+two versions of one name in the folder, open the game's Controls screen, and see what the preset list shows and
+which file a save writes back to.
+→ [Preset Editor — what a line actually holds](../02-features/bindforge/preset-editor.md#what-a-line-actually-holds--the-bindname-not-the-file-name)
+
+**16. ~~What does the game do with a `Device=` name its `DeviceMappings.xml` does not define?~~ ANSWERED
+2026-09-22 by direct test.** It logs one `Failed to find GUID for device: <name>` per reference into
+`BindingLoadingErrors.log` and **rejects the entire binds file**, falling back to `KEYBOARD & MOUSE` in all four
+sections — keyboard and mouse bindings included. Loading writes nothing: both `.binds` files and
+`StartPreset.4.start` kept their timestamps, and every `Device="..."` reference survived. The game also
+validates *every* `.binds` in the folder, not just the active one. Two installs sharing one bindings folder
+gave opposite results from this one difference. Full method:
+[§1.2b of the device-files reference](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#12b-what-happens-when-a-device-name-has-no-entry--measured-2026-09-22).
+**Still open:** the save path — whether committing a change on the Controls screen in that state writes the
+fallback into the shared `StartPreset.4.start`, which would carry the loss to every install on the machine.
+
+**17. Which game axis is a slider?** *Added 2026-10-10, for [A8b](../05-build-plan/alias-designer.md#slices).*
+A controller describes each axis as X, Y, Z, Rx, Ry, Rz, Slider or Dial. The first six match the game's
+`Joy_XAxis`…`Joy_RZAxis` by name; the [format reference](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#51-full-axis-codes)
+calls `Joy_UAxis` and `Joy_VAxis` the slider axes, from source notes rather than a test. Bind a controller's
+slider in the game (the VIRPIL Alpha Prime grip's brake, where it reports as a Slider) and read which token
+`.binds` writes. Do the same for a second slider, or a Dial, if one is to hand.
+*A8b built on Wine's answer (2026-10-10), read from its source, not measured:* Slider, Dial and Simulation
+Throttle are all sliders, and the first two in the order the controller describes them take U, then V. A test
+with two sliders says whether the order is right; the rule is in one place, `AxisSlots`, if it is not.
+→ [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
+
+**18. Does Proton name the axes as Windows does?** *Added 2026-10-10.* On Linux the game sees a controller
+through Wine, which presents it as a DirectInput device by its own translation. Read a controller's axes from
+Linux (`/sys/class/input/…/capabilities/abs`), bind each in the game under Proton, and check that the token
+`.binds` writes is the one the Windows reading predicts — sliders especially.
+*Since A8b (2026-10-10)* Elite-Intel's log names each controller's axes as it connects (`Device '…': axes …`),
+read on Linux from the HID descriptor under `/sys`. Wine sees the same descriptor only where Proton hands the
+game the raw HID device; where it builds one from evdev instead, the order can differ — this test finds out.
+→ [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
+
+**19. Does the game show a `.buttonMap` label for a half axis?** *Added 2026-10-10.* `.binds` uses
+`Pos_Joy_…` and `Neg_Joy_…` tokens for a button-type control bound to one direction of an axis (they are in
+the user's own `DualVirpilDawnTreader` specimens), and the
+[format reference](../02-features/bindforge/domain-knowledge/EliteDangerous-DeviceMappings-ButtonMap.md#23-input-codes-supported)
+lists them as `.buttonMap` tokens, but neither of Frontier's shipped maps uses one. Add a `Neg_Joy_YAxis`
+label to a `.buttonMap`, bind that half axis, and see whether the Controls screen shows the label. The Device
+Editor offers one box per whole axis and keeps a saved half-axis label without showing it; this decides
+whether that is enough.
+→ [Device Editor](../02-features/bindforge/alias-designer.md#device-editor)
+
+**20. How does the game name an 8-way hat's diagonals?** *Added 2026-10-10.* The game's hat tokens are
+`Joy_POV1Up`, `Joy_POV1Right`, `Joy_POV1Down` and `Joy_POV1Left`, so a diagonal is assumed to be two of them
+at once, and the Device Editor gives a hat four label boxes. Set a stick's hat to report as a true hat (not as
+buttons), bind a diagonal in the game, and read what `.binds` writes.
+→ [Device Editor](../02-features/bindforge/alias-designer.md#device-editor)
+
+**21. Does SDL's axis k match the axis A8b names?** *Added 2026-10-10, A8b — Alan can run this one.* SDL
+numbers a stick's axes without gaps; A8b matches its numbering to the HID description by a rule read from SDL's
+source (Windows: DirectInput slot order; Linux: the kernel's axis-code order). The two VIRPIL sticks put their
+twist on Z and on RZ, which is exactly the gap case. With each stick connected, check Elite-Intel's log reads
+`Device '…': axes [X, Y, Z]` for one and `[X, Y, RZ]` for the other, with `SDL numbering matched`; then twist
+each in the Device Editor (A9) and see the right box light.
+→ [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
+
+**22. What does the game make of more than eight axes?** *Added 2026-10-10, A8b — needs hardware nobody here
+has.* A8b gives the game's eight slots to the first axis of each kind and the first two sliders, and counts the
+rest as axes the game cannot see — DirectInput's rule as Wine implements it. A controller with a third slider,
+or two axes of one kind (two X), shows whether Windows agrees. Bind each extra axis in the game and read `.binds`.
+→ [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
+
+**23. Is the game's `Joy_POV1` SDL's hat 0?** *Added 2026-10-10, A8b.* SDL lists a controller's hats in
+DirectInput's order on Windows, which is presumably the game's `POV1`, `POV2`. On a controller with two true
+hats, bind each in the game and check that `.binds` names the one A8b's generated labels call `Hat 1`.
+→ [Which axes and hats a controller has](../02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan)
+
+**24. Is it one spelling per device in `.binds`, or case itself?** *Added 2026-10-14, A11 — Alan can run this
+one.* Measured: a `Device=` name finds its `DeviceMappings.xml` element ignoring case, and a binds file that spells one
+device two ways is rejected. Still open: whether a single spelling that differs from the element is fine whatever
+its case. Give `DeviceMappings.xml` `<LVWAP>` and write every `Device=` naming it as `lvwap`; it loads if the rule is
+one spelling per device. Then repeat on Proton, with `lvwap.buttonMap` beside `<LVWAP>`, to see whether the
+labels still show.
+→ [`.binds` format §4.3](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md#43-case-only-binds-cares-and-it-cares-about-one-spelling-per-device--measured-2026-10-14)
+
+**25. Does a shadowed built-in load, with every binds file moved to its name?** *Added 2026-10-16, A15 — Alan can run
+this one.* Measured so far: a user element *after* Frontier's is ignored, and Frontier's element renamed in place
+loads. A15 builds the third shape - the user's element **ahead** of Frontier's, Frontier's left in place - and moves
+every `Device=` naming Frontier's element to the user's name. In the Device Editor, rename the T-Rudder pedals
+(`MyRudder`), APPLY, and start the game: the active binds file loads, the pedals' labels show, and no
+`BindingLoadingErrors.log` is written for the inactive one. Not needed, since the bindings move, but worth a look
+while the game is open: a binds file left naming `T-Rudder` with the shadow in place. *After review (2026-10-17):* in the
+Device Editor, type `t-rudder` or `TRudder` and see SAVE dimmed - only `T-Rudder`, spelled exactly, goes back.
+→ [Built-in controllers in My Devices — A15](../02-features/bindforge/alias-designer.md#built--2026-10-16-alan-a15)
+
+**26. Does a yes for a controller known only by id move its bindings?** *Added 2026-10-17, A17 — Alan can run this
+one.* The suite tests the question, the record and Apply's move, not the Swing flow between them. Take a stick with
+no entry and a copy of a `.binds` that binds it by hex, and change that hex to an id nothing has (keep the VID, change
+the PID). Open BindForge: the question lists the stick, saying the old id is not attached. Pick it, check the name
+page says how many bindings move from the old id, FINISH, then APPLY - `.binds` should name the stick, and the
+binds file load in the game. Then repeat, but plug in a controller with the old id before APPLY: nothing should move.
+*After review (2026-10-17):* pick the stick again and press BACK on the name page - the screen should read again,
+nothing be named, and the question come back next run.
+→ [Built — A17](../02-features/bindforge/alias-designer.md#built--2026-10-17-alan-a17)
+
+**27. Which tokens does the game write for an Xbox pad?** *Added 2026-10-23 — needs a tester with a pad; Krondor is
+asking the one who reported
+it.* In the game's own controls screen, bind one face button and one trigger (as a button) on the pad, then send the active `.binds` file and the pad's model, wired or wireless. The file says which family the game writes, `Pad_…` or `GamePad_…`, and whether the pad is on `Device="GamePad"` at all - a wired Xbox Series pad (`045E:0B12`) is not on Frontier's `<GamePad>` list. Also worth a look: open the pad in the Device Editor and say whether the sticks light, or nothing at all. Blocks A18 and E7. → [A gamepad is not a joystick](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
+
+**28. ~~Does the game leave a preset line naming a plain `.binds`?~~ — MEASURED 2026-11-08 (Alan): no.** He put
+`keyboardandmouseonly2.binds` (a plain name, no version) in the bindings folder, picked it for General in the game's
+controls screen, and on Apply the game at once wrote `keyboardandmouseonly2.4.2.binds`. So the game never leaves
+`StartPreset.4.start` naming a preset that has only a plain file; only a hand edit would (principle 13). Elite-Intel's
+loader therefore reads the true binds file a preset line names, else that preset's factory file from `ControlSchemes`,
+and never a plain file or the newest one (Storage S13c). *No longer a testing item.*
+→ [storage.md — Settled with Storage S13a's sources, D6](../02-features/bindforge/storage.md#how-the-files-are-written--2026-10-24)
+
+**29. Does picking a factory preset in game rewrite any `.binds`?** *Added 2026-11-08, the S13c-S13e review's D3 — Alan can
+run this.* VEGA reloads its bindings only when a `.binds` in the bindings folder changes (`BindingsMonitor`). Since
+Storage S13c, a preset line naming a factory preset is read from that preset's factory file, so picking one in the
+game's controls screen may change only `StartPreset.4.start`. Pick a factory preset for General, press Apply, and say
+which files in the bindings folder changed (their modified times). If only `StartPreset.4.start` did, VEGA keeps the
+old preset's keys until the next start, and the monitor should watch `StartPreset.*.start` too.
+→ [Storage brief — S13eR](../05-build-plan/storage.md#slices)
+
+**30. What does `DeviceIndex` mean in a `.binds`?** *Added 2026-11-10, D6 — needs two identical controllers (Krondor's
+Virpil pair under one name would do, or a tester's).* Binds fixtures in the tests carry `DeviceIndex="0"`, `"1"` and
+`"2"` on a `Device=` (`<Primary Device="T16000MTHROTTLE" DeviceIndex="1" Key="Joy_7">`), which suggests the game tells
+two identical controllers apart by index under one name; nothing in the docs records it, and the parser drops it. With
+two identical controllers attached, bind one button on each in the game's controls screen and send the `.binds`. If
+the index separates them, BindForge's conflict scan (which today treats two identical controllers as one device) and
+the parser need it. → [Conflicts (the kind)](../02-features/bindforge/bind-editor.md#conflicts-the-kind)
+
+**31. Which `MouseGUI` does the game read when the two differ?** *Added 2026-11-11 — Alan can run this.* Every binds
+file the game saves holds `<MouseGUI Value="…" />` twice, once among the mouse settings and once after
+`EnableMenuGroups`, and in every file seen the two values agree. With the game closed, back up the active binds file,
+then set the first to `1` and the second to `0` by hand. Start the game and say whether the mouse widget shows. Then
+change any binding in the game's controls, press Apply, and say what the two values are in the file the game wrote.
+Repeat with the first `0` and the second `1`. BindForge always writes both the same, so nothing waits on this; the
+answer says what to show for a hand-edited file whose copies differ.
+→ [storage.md rule 14 — Settled 2026-11-11](../02-features/bindforge/storage.md#when-a-live-copy-differs)
+
+**32. Does the bindings folder watcher survive a save from the game?** *Added 2026-11-11, Storage S18R — Alan can run
+this.* The game saves `StartPreset.4.start` by emptying it and writing it again, which used to end `BindingsMonitor`
+for the rest of the session. With Elite-Intel running, change any binding in the game's controls screen and press
+Apply. The log should show *Reloaded bindings from:* the active binds file - perhaps after a *trying again* warning -
+and no *Gave up working out which binds file to read*. Then change a second binding and press Apply again: a second
+*Reloaded bindings* line says the watcher is still running. Covers the retry, which has no unit test because it lives
+inside the `WatchService` loop.
+→ [overview.md — External change detection](../02-features/bindforge/overview.md#external-change-detection--2026-10-23)
+
+**33. Does a binding changed in the game reach BindForge's check without a restart?** *Added 2026-11-11, Storage S17 —
+Alan can run this.* With Elite-Intel running, click the BindForge tab once, so the session's first check has run, then
+switch to another Elite-Intel tab. Change a binding in the game's controls screen and press Apply. Nothing should open
+in Elite-Intel. The log should show *The bindings folder changed: the check runs again at the next BindForge click*.
+Click the BindForge tab: the check's warning should name the binds file, and Merge should offer the changed binding as
+a row. Then choose Not now, click another tab and back: nothing should be asked until the folder changes again. Last,
+press APPLY with an edit on the bar and click away and back: the check runs and says nothing, since the files are as
+BindForge wrote them. Covers the watch loop's event, which has no unit test.
+→ [storage.md — Opening BindForge](../02-features/bindforge/storage.md#opening-bindforge)
+
+**34. Are the Toggles tab's names the game's?** *Added 2026-11-11, E10 — Alan can run this.* The Toggles tab names
+each yes/no setting as the game's options screen does, read off screenshots. One was matched by elimination:
+`HeadlookResetOnToggle` is taken to be *Centre When Headlook Inactive* (Ship > Headlook Mode). Turn that option over in
+the game, press Apply, and say whether `HeadlookResetOnToggle` is what changed in the binds file. Three show on no
+options screen and sit under *Other* by their XML names: `MotionHeadlook`, `yawRotateHeadlook` and
+`EnableRumbleTrigger`. If you find where the game shows any of them, send its section, group and name, and it goes into
+`ed_control_names.properties`. Then press a few toggles on the tab, press APPLY, and say whether the game shows the
+same values, Show Mouse Widget included.
+→ [bind-editor.md — Toggles](../02-features/bindforge/bind-editor.md#toggles--settled-2026-11-11-alan)
+
+## Core Platform
+
+**8. Linux/Proton path resolution — Krondor's, not a BindForge testing item.** *Reassigned 2026-09-06.* Not a one-time check but ongoing, given how much Linux path resolution varies by distro and by how an individual user has their Steam library configured — which is exactly why it is owned by the person running it. BindForge builds and tests Windows storefront detection; Krondor makes the edits his platform needs. Listed here so the dependency stays visible, not as work waiting on Alan. The journal path is confirmed against independent precedent (EDMarketConnector); the bindings-folder path is inferred from the same structure but not independently confirmed.
+→ [Conflict 1.5](../99-archive/conflicts-and-open-questions.md#15-linuxproton-bindings-folder-path--resolved-reframed-as-ongoing-testing-feedback-not-a-one-time-check) · [Path Resolution](../01-host-integration/elite-intel-platform-map.md#path-resolution)
+
+**Updated 2026-09-26 — both paths are now confirmed**, read out of `Installer.install4j`, which ships and runs
+on every Linux start. What replaced them is harder. Krondor: *"I had all three Steams installed... I can have
+at least 3 Steams and be logged in to all three with different steam accounts."* Since `compatdata` sits under
+the Steam root, **each Steam installation carries its own Proton prefix, so its own bindings folder and its own
+journal folder** — which is the one place Linux breaks the Windows model, where those are one shared set per
+player. Still needing a real machine, and all of it Krondor's platform:
+
+- **Confirm three concurrent Steam roots really do produce three independent bindings folders**, rather than
+  sharing a library. The reasoning is sound; nobody has looked.
+- **Confirm `$HOME/.steam/steam` is a symlink to `$HOME/.local/share/Steam`** on a live install, since a
+  detector that does not resolve it reports the same installation twice.
+- **Decide what a Linux install list should show** when the same game appears under native, Flatpak and Snap
+  Steam with different Steam logins.
+
+**Added 2026-11-21 — several installations, built** ([linux-several-installations.md](../02-features/bindforge/linux-several-installations.md)).
+On a machine with two installations of the game:
+
+- **Start the app, then the game in the installation not being played.** Within 5 seconds the *Playing:* selector
+  and the User Configuration Folder show that installation, the journal parser reads its journal, and the commander
+  loads.
+- **Confirm the game opens its journal at client start**, before the main menu. If it opens it only later, the switch
+  comes later too, still before `LoadGame`.
+- **APPLY writes the other installation's bindings folder**, and after a rebind made in the game in that installation,
+  APPLY leaves it alone and says so - until it is played, when the check offers the rebind.
+- **An Epic copy under Heroic, added by hand with its Wine prefix:** it is offered in the selector, and APPLY writes its
+  bindings folder.
+→ [§5a–5c of the install-paths reference](../01-host-integration/domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26)

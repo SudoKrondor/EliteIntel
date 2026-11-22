@@ -3,9 +3,19 @@ package elite.intel.ai.ears;
 import elite.intel.ai.brain.i18n.AiActionAliasProvider;
 import elite.intel.ai.brain.i18n.de.GermanAiActionAliases;
 import elite.intel.ai.brain.i18n.en.EnglishAiActionAliases;
+import elite.intel.ai.brain.i18n.es.SpanishAiActionAliases;
+import elite.intel.ai.brain.i18n.fr.FrenchAiActionAliases;
+import elite.intel.ai.brain.i18n.it.ItalianAiActionAliases;
+import elite.intel.ai.brain.i18n.pt.PortugueseAiActionAliases;
+import elite.intel.ai.brain.i18n.ptbz.BrazilianPortugueseAiActionAliases;
+import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
+import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,8 +25,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * pipeline calls — an earlier version of this suite re-implemented the matching in its own helpers, which
  * would have gone on passing had the pipeline's copy drifted.
  * <p>
- * English and German rather than every language, and deliberately so: German has the two-word "hör mir zu"
- * beside "hör zu", which is where the longest-prefix and prefix-at-the-start rules actually bite.
+ * Four languages rather than nine, and deliberately so: they are the ones whose wake phrases overlap
+ * (Russian and Ukrainian share "слушай"/"слухай" shapes, German has the two-word "hör mir zu"), which is
+ * where the longest-prefix and prefix-at-the-start rules actually bite.
  */
 class WakeBypassTest {
 
@@ -55,6 +66,36 @@ class WakeBypassTest {
         assertNull(en.strippedOrder("wake up"));
     }
 
+    // --- VEGA's name ---------------------------------------------------------
+
+    @ParameterizedTest(name = "\"{0}\" is a listen prefix in every language")
+    @MethodSource("everyLanguage")
+    void vegaNamePrefixesAnOrderInEveryLanguage(AiActionAliasProvider provider) {
+        WakeBypass bypass = bypass(provider);
+        assertEquals("open galaxy map", bypass.admit("Vega open galaxy map"));
+        assertEquals("open galaxy map", bypass.admit("vega open galaxy map"));
+    }
+
+    @Test
+    void vegaNameKeepsListenUpWorking() {
+        WakeBypass en = bypass(new EnglishAiActionAliases());
+        assertEquals("open galaxy map", en.admit("listen up open galaxy map"));
+        assertEquals("open galaxy map", en.admit("vega open galaxy map"));
+    }
+
+    @ParameterizedTest(name = "[EN] \"{0}\" is blocked")
+    @CsvSource({"vega", "vegas open galaxy map", "open galaxy map vega", "hey vega open galaxy map"})
+    void vegaNameIsOnlyAPrefixAtTheStart(String transcript) {
+        assertNull(bypass(new EnglishAiActionAliases()).admit(transcript));
+    }
+
+    static Stream<AiActionAliasProvider> everyLanguage() {
+        return Stream.of(new EnglishAiActionAliases(), new GermanAiActionAliases(), new SpanishAiActionAliases(),
+                new FrenchAiActionAliases(), new ItalianAiActionAliases(), new PortugueseAiActionAliases(),
+                new BrazilianPortugueseAiActionAliases(), new RussianAiActionAliases(),
+                new UkrainianAiActionAliases());
+    }
+
     // --- German --------------------------------------------------------------
 
     @ParameterizedTest(name = "[DE] \"{0}\" passes the gate")
@@ -83,6 +124,67 @@ class WakeBypassTest {
         assertNull(de.strippedOrder("wach auf"));
         assertNull(de.strippedOrder("aktiviere dich"));
         assertNull(de.strippedOrder("hör zu"));
+    }
+
+    // --- Russian -------------------------------------------------------------
+
+    @ParameterizedTest(name = "[RU] \"{0}\" passes the gate")
+    @CsvSource({"проснись", "слушай", "слушай меня", "активируйся", "слушай открой карту"})
+    void russianPassesGate(String transcript) {
+        assertTrue(bypass(new RussianAiActionAliases()).passesGate(transcript));
+    }
+
+    @ParameterizedTest(name = "[RU] \"{0}\" is blocked")
+    @CsvSource({"открой карту галактики", "прыжок в гиперпространство", "не слушай открой карту",
+            "пожалуйста слушай открой карту", "открой карту слушай"})
+    void russianBlockedWhileSleeping(String transcript) {
+        assertNull(bypass(new RussianAiActionAliases()).admit(transcript));
+    }
+
+    @Test
+    void russianLongerPrefixWinsOverShorter() {
+        WakeBypass ru = bypass(new RussianAiActionAliases());
+        assertEquals("открой карту", ru.admit("слушай открой карту"));
+        // "слушай меня открой карту" must not be reduced by the shorter "слушай" and left with a stray "меня"
+        assertEquals("открой карту", ru.admit("слушай меня открой карту"));
+    }
+
+    @Test
+    void russianPureWakePhraseReachesTheModelWhole() {
+        WakeBypass ru = bypass(new RussianAiActionAliases());
+        assertNull(ru.strippedOrder("проснись"));
+        assertNull(ru.strippedOrder("активируйся"));
+        assertNull(ru.strippedOrder("слушай"));
+    }
+
+    // --- Ukrainian -----------------------------------------------------------
+
+    @ParameterizedTest(name = "[UK] \"{0}\" passes the gate")
+    @CsvSource({"прокинься", "слухай", "слухай мене", "активуйся", "слухай відкрий карту"})
+    void ukrainianPassesGate(String transcript) {
+        assertTrue(bypass(new UkrainianAiActionAliases()).passesGate(transcript));
+    }
+
+    @ParameterizedTest(name = "[UK] \"{0}\" is blocked")
+    @CsvSource({"відкрий карту галактики", "стрибок у гіперпростір", "не слухай відкрий карту",
+            "будь ласка слухай відкрий карту", "відкрий карту слухай"})
+    void ukrainianBlockedWhileSleeping(String transcript) {
+        assertNull(bypass(new UkrainianAiActionAliases()).admit(transcript));
+    }
+
+    @Test
+    void ukrainianLongerPrefixWinsOverShorter() {
+        WakeBypass uk = bypass(new UkrainianAiActionAliases());
+        assertEquals("відкрий карту", uk.admit("слухай відкрий карту"));
+        assertEquals("відкрий карту", uk.admit("слухай мене відкрий карту"));
+    }
+
+    @Test
+    void ukrainianPureWakePhraseReachesTheModelWhole() {
+        WakeBypass uk = bypass(new UkrainianAiActionAliases());
+        assertNull(uk.strippedOrder("прокинься"));
+        assertNull(uk.strippedOrder("активуйся"));
+        assertNull(uk.strippedOrder("слухай"));
     }
 
     // --- Blank input ---------------------------------------------------------

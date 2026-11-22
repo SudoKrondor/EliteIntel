@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.MassacreKill;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -137,7 +138,7 @@ class MassacreKillsCharacterizationTest {
     private String compute(List<MissionDto> missions, List<BountyDto> bounties) {
         Map<Long, MissionDto> byId = new LinkedHashMap<>();
         for (MissionDto m : missions) byId.put(m.getMissionId(), m);
-        return query.computeKillsRemaining(byId, new LinkedHashSet<>(bounties));
+        return query.computeKillsRemaining(byId, MassacreKill.fromBounties(bounties));
     }
 
     /**

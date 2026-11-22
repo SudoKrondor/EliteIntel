@@ -24,14 +24,15 @@ import java.util.*;
  *       mission only starts once its first is done, so those DO add up.</li>
  * </ul>
  * A kill only counts toward missions accepted before it was earned, which is
- * what stops pre-existing bounties from completing a freshly taken mission.
+ * what stops kills made earlier from completing a freshly taken mission.
  * <p>
- * <b>Bounties over-count, so they can never finish a mission.</b> The journal has
- * no per-kill mission counter: progress here is inferred from {@code Bounty}
- * events, and a bounty is not proof of mission credit - a kill someone else
- * landed the final blow on still pays a voucher, and not every ship flying a
- * faction's flag is one the contract counts. Inferred progress is therefore an
- * upper bound and is held one kill short of done. The one authoritative signal
+ * <b>Payments over-count, so they can never finish a mission.</b> The journal has
+ * no per-kill mission counter: progress here is inferred from what each kill
+ * paid ({@link MassacreKill} - a {@code Bounty} for a pirate contract, a
+ * {@code FactionKillBond} for a war one), and a payment is not proof of mission
+ * credit - a kill someone else landed the final blow on still pays a voucher,
+ * and not every ship flying a faction's flag is one the contract counts. Inferred
+ * progress is therefore an upper bound and is held one kill short of done. The one authoritative signal
  * the game gives is {@code MissionRedirected}, which fires when the objectives
  * are met and the mission is sent to its turn-in point; only that completes a
  * mission here, rolls its provider onto the next one, and lets the whole stack
@@ -78,7 +79,18 @@ public record MassacreProgress(
 
     // -- computation ---------------------------------------------------------
 
+    /**
+     * Progress counted from bounties alone, for a caller that has no combat bonds to offer.
+     */
     public static MassacreProgress compute(Collection<MissionDto> missions, Collection<BountyDto> bounties) {
+        return fromKills(missions, MassacreKill.fromBounties(bounties));
+    }
+
+    /**
+     * Progress counted from every kill the journal paid for. Only kills against the stack's target faction
+     * count, whichever way they were paid.
+     */
+    public static MassacreProgress fromKills(Collection<MissionDto> missions, Collection<MassacreKill> kills) {
         List<MissionDto> sorted = missions.stream()
                 .filter(Objects::nonNull)
                 .filter(m -> m.getMissionTargetFaction() != null)
@@ -132,7 +144,7 @@ public record MassacreProgress(
             }
         }
 
-        applyHistoricalKills(bounties, targetFaction, activeMission, activeRemaining, activeSince);
+        applyHistoricalKills(kills, targetFaction, activeMission, activeRemaining, activeSince);
 
         Map<String, Integer> killsRemainingByFaction = new LinkedHashMap<>();
         Map<String, Integer> queueRemainingByFaction = new LinkedHashMap<>();
@@ -155,27 +167,27 @@ public record MassacreProgress(
     }
 
     /**
-     * Applies bounties in chronological order to each provider's active mission.
+     * Applies kills in chronological order to each provider's active mission.
      * A kill counts only toward a mission that was already accepted - and already
-     * the provider's active one - when the bounty was earned.
+     * the provider's active one - when it was paid for.
      * <p>
-     * The count stops one short of done: a bounty is evidence of a kill, not of
+     * The count stops one short of done: a payment is evidence of a kill, not of
      * mission credit, so it can drive the bar forward but must never declare the
      * mission finished. Only {@code MissionRedirected} does that, and it has
      * already been applied by the caller.
      */
-    private static void applyHistoricalKills(Collection<BountyDto> bounties, String targetFaction,
+    private static void applyHistoricalKills(Collection<MassacreKill> kills, String targetFaction,
                                              Map<String, MissionDto> activeMission,
                                              Map<String, Integer> activeRemaining,
                                              Map<String, Instant> activeSince) {
-        List<BountyDto> relevant = bounties.stream()
+        List<MassacreKill> relevant = kills.stream()
                 .filter(Objects::nonNull)
-                .filter(b -> targetFaction.equals(b.getVictimFaction()) && b.getPilotName() != null)
+                .filter(kill -> targetFaction.equals(kill.victimFaction()))
                 .sorted(Comparator.comparing(MassacreProgress::earnedAt))
                 .toList();
 
-        for (BountyDto bounty : relevant) {
-            Instant killTime = earnedAt(bounty);
+        for (MassacreKill kill : relevant) {
+            Instant killTime = earnedAt(kill);
             List<String> eligible = activeMission.entrySet().stream()
                     .filter(e -> e.getValue() != null
                             && acceptedAt(e.getValue()).compareTo(killTime) <= 0
@@ -250,10 +262,10 @@ public record MassacreProgress(
     }
 
     /**
-     * Missing or unreadable earn time = pre-timestamp record; treated as MAX so it counts toward any mission.
+     * Missing or unreadable payment time = pre-timestamp record; treated as MAX so it counts toward any mission.
      */
-    private static Instant earnedAt(BountyDto b) {
-        return parseOr(b.getEarnedAt(), Instant.MAX);
+    private static Instant earnedAt(MassacreKill kill) {
+        return parseOr(kill.earnedAt(), Instant.MAX);
     }
 
     /**

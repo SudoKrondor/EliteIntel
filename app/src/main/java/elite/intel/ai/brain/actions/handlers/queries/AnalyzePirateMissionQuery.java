@@ -3,9 +3,11 @@ package elite.intel.ai.brain.actions.handlers.queries;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.ai.brain.vega.SpokenAmounts;
+import elite.intel.db.managers.CombatBondManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.MassacreKill;
 import elite.intel.gameapi.missions.MassacreProgress;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -20,7 +22,7 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
 
     @Override
     public String llmDescription() {
-        return "Report progress on active pirate-massacre (kill) missions: kills remaining per faction and total, and the total combined reward.";
+        return "Report progress on active massacre (kill) missions, pirate or war: kills remaining per faction and total, and the total combined reward.";
     }
 
 
@@ -32,14 +34,14 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) {
-        Map<Long, MissionDto> missions = missionManager.getMissions(
-                missionManager.getPirateMissionTypes()
-        );
+        // The same stack and the same kills as the HUD card, so the bar and the spoken answer agree.
+        Map<Long, MissionDto> missions = missionManager.getMassacreStack();
         Set<BountyDto> bounties = session.getBounties();
-        String remainingKills = computeKillsRemaining(missions, bounties);
+        String remainingKills = computeKillsRemaining(missions,
+                MassacreKill.of(bounties, CombatBondManager.getInstance().kills()));
         long missionProfit = computeMissionProfit(missions, bounties);
         String instructions = """
-                Answer the user's question about active pirate kill missions.
+                Answer the user's question about active massacre (kill) missions.
                 
                 Data fields:
                 - totalMissionKillsLeft: pre-computed kills remaining per faction and total, formatted as a summary string
@@ -60,8 +62,8 @@ public class AnalyzePirateMissionQuery extends BaseQueryAnalyzer implements Inte
      * reports the same numbers; only the wording belongs here.
      */
     // Package-private for the characterization tests that pin this wording.
-    String computeKillsRemaining(Map<Long, MissionDto> missions, Set<BountyDto> bounties) {
-        MassacreProgress progress = MassacreProgress.compute(missions.values(), bounties);
+    String computeKillsRemaining(Map<Long, MissionDto> missions, Collection<MassacreKill> kills) {
+        MassacreProgress progress = MassacreProgress.fromKills(missions.values(), kills);
         if (!progress.hasMissions()) {
             return "no missions available";
         }

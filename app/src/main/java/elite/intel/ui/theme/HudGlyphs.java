@@ -5,7 +5,10 @@ import java.awt.*;
 import java.awt.font.GlyphVector;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * HUD icon and glyph primitives: image loading/tinting helpers, flat vector glyph painters
@@ -257,43 +260,101 @@ public final class HudGlyphs {
     }
 
     /**
-     * Draws the flat "save to file" (download) glyph centred within (x, y, w, h): a downward arrow dropping into
-     * an open tray. All geometry is proportional so it scales with the box; caller chooses colour by state.
+     * Draws the window "minimize" glyph within (x, y, w, h): one horizontal bar across the lower part of the box,
+     * at the close glyph's padding and stroke so the three window buttons read as a set.
      *
      * @param g2    graphics context (not disposed by this method)
      * @param x     left edge of the available area
      * @param y     top edge of the available area
      * @param w     width of the available area
      * @param h     height of the available area
-     * @param color stroke colour for the arrow and tray
+     * @param color stroke colour
      */
-    public static void paintHudSaveGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
-        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    public static void paintHudMinimizeGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
         Stroke oldStroke = g2.getStroke();
-        float strokeW = Math.max(2f, w / 9f);
-        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        float strokeW = Math.max(2f, w / 8f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        int barY = y + h - pad;
         g2.setColor(color);
-
-        int cx = x + w / 2;
-        int arrowTop = y + Math.round(h * 0.14f);
-        int arrowBottom = y + Math.round(h * 0.58f);
-        int headHalf = Math.round(w * 0.22f);
-        int headTop = arrowBottom - Math.round(h * 0.20f);
-        g2.drawLine(cx, arrowTop, cx, arrowBottom);                 // shaft
-        g2.drawLine(cx - headHalf, headTop, cx, arrowBottom);       // arrowhead left diagonal
-        g2.drawLine(cx + headHalf, headTop, cx, arrowBottom);       // arrowhead right diagonal
-
-        int trayY = y + Math.round(h * 0.82f);
-        int trayLeft = x + Math.round(w * 0.20f);
-        int trayRight = x + w - Math.round(w * 0.20f);
-        int trayTickTop = trayY - Math.round(h * 0.16f);
-        g2.drawLine(trayLeft, trayTickTop, trayLeft, trayY);        // tray left wall
-        g2.drawLine(trayLeft, trayY, trayRight, trayY);             // tray floor
-        g2.drawLine(trayRight, trayY, trayRight, trayTickTop);      // tray right wall
-
+        g2.drawLine(x + pad, barY, x + w - pad, barY);
         g2.setStroke(oldStroke);
-        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws the window "maximize" glyph within (x, y, w, h): one square outline, at the close glyph's padding.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour
+     */
+    public static void paintHudMaximizeGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Stroke oldStroke = g2.getStroke();
+        g2.setStroke(new BasicStroke(Math.max(1.5f, w / 10f), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        g2.setColor(color);
+        g2.drawRect(x + pad, y + pad, w - 2 * pad, h - 2 * pad);
+        g2.setStroke(oldStroke);
+    }
+
+    /**
+     * Draws the window "restore" glyph within (x, y, w, h): two overlapping square outlines, the back one up and to
+     * the right, showing only its two edges that are not behind the front one.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour
+     */
+    public static void paintHudRestoreGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Stroke oldStroke = g2.getStroke();
+        g2.setStroke(new BasicStroke(Math.max(1.5f, w / 10f), BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        // WHY min: the squares stay square in a box that is not.
+        int side = Math.min(w, h) - 2 * pad;
+        int offset = Math.max(2, side / 4);
+        int front = side - offset;
+        int fx = x + pad, fy = y + pad + offset;
+        int bx = fx + offset, by = y + pad;
+        g2.setColor(color);
+        g2.drawRect(fx, fy, front, front);
+        g2.drawLine(bx, by, bx + front, by);               // back square, top edge
+        g2.drawLine(bx + front, by, bx + front, by + front); // back square, right edge
+        g2.setStroke(oldStroke);
+    }
+
+    /**
+     * Paints the "report a bug" glyph centred within (x, y, w, h): {@code images/bug.png}, tinted {@code color} the
+     * way the vector glyphs are, so it follows the theme and the hover state.
+     * <p>
+     * WHY a raster: the bug's legs and body do not reduce to a few proportional strokes that still read as a bug
+     * at header size. The image is a single-colour mask, which is what {@link #tintIcon} needs.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color tint for the bug
+     */
+    public static void paintHudBugGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        int size = Math.min(w, h);
+        Image bug = BUG_GLYPHS.computeIfAbsent(new TintedGlyph(size, color.getRGB()),
+                key -> tintIcon(scaledIcon(HudGlyphs.class, BUG_IMAGE, size), size, size, color).getImage());
+        g2.drawImage(bug, x + (w - size) / 2, y + (h - size) / 2, null);
+    }
+
+    private static final String BUG_IMAGE = "/images/bug.png";
+
+    /** One tinted bug per size and colour, painted on the EDT only: a theme has a handful of each. */
+    private static final Map<TintedGlyph, Image> BUG_GLYPHS = new HashMap<>();
+
+    private record TintedGlyph(int size, int rgb) {
     }
 
     /**
@@ -325,46 +386,6 @@ public final class HudGlyphs {
         int frontH = Math.round(h * 0.58f);
         g2.drawRect(backX, backY, backW, backH);
         g2.drawRect(frontX, frontY, frontW, frontH);
-
-        g2.setStroke(oldStroke);
-        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
-    }
-
-    /**
-     * Draws the flat "memory dump" glyph centred within (x, y, w, h): a database cylinder (a top rim ellipse, two
-     * front band arcs, and the two side walls). It reads as "export the stored data", distinct from the save
-     * glyph's arrow-into-tray, so the two header actions are not confused. All geometry is proportional so it
-     * scales with the box; caller chooses colour by state.
-     *
-     * @param g2    graphics context (not disposed by this method)
-     * @param x     left edge of the available area
-     * @param y     top edge of the available area
-     * @param w     width of the available area
-     * @param h     height of the available area
-     * @param color stroke colour for the cylinder
-     */
-    public static void paintHudMemoryGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
-        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        Stroke oldStroke = g2.getStroke();
-        float strokeW = Math.max(2f, w / 9f);
-        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.setColor(color);
-
-        int ovalW = Math.round(w * 0.60f);
-        int ovalH = Math.round(h * 0.20f);
-        int left = x + (w - ovalW) / 2;
-        int right = left + ovalW;
-        int topRimY = y + Math.round(h * 0.16f);    // top of the top rim ellipse
-        int midBandY = y + Math.round(h * 0.40f);   // top of the middle band ellipse
-        int botBandY = y + Math.round(h * 0.62f);   // top of the bottom band ellipse
-        int half = ovalH / 2;
-
-        g2.drawOval(left, topRimY, ovalW, ovalH);                 // top rim (full ellipse)
-        g2.drawArc(left, midBandY, ovalW, ovalH, 180, 180);       // middle band: front half only
-        g2.drawArc(left, botBandY, ovalW, ovalH, 180, 180);       // bottom band: front half only
-        g2.drawLine(left, topRimY + half, left, botBandY + half); // left wall
-        g2.drawLine(right, topRimY + half, right, botBandY + half); // right wall
 
         g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
@@ -539,6 +560,10 @@ public final class HudGlyphs {
 
     /** Base length of a focus corner-mark leg; lengthens by 2 px while focused. */
     private static final int FOCUS_CORNER_MARK = 6;
+    /**
+     * Corner rounding of the checkbox marker, in px.
+     */
+    private static final int CHECK_MARKER_ARC = 4;
 
     /**
      * Paints the diagonal HUD focus corner accent: short 1 px L-marks one pixel inside the top-left
@@ -564,45 +589,50 @@ public final class HudGlyphs {
     }
 
     /**
-     * Paints the HUD checkbox marker: a 2-px double-outline square box, with a centred tick
-     * when {@code filled} is true. Caller is responsible for antialiasing hints.
+     * Paints the HUD checkbox marker: a rounded square, outlined when off and filled with a tick when on.
      * <p>
-     * The tick is built in floating point and stroked, rather than snapped to whole pixels. The
-     * previous inner-square marker used integer arithmetic ({@code size / 2} then
-     * {@code (size - innerSize) / 2}), which at the sizes actually in use left an uneven margin —
-     * at the standard 14px marker the square sat 3px from the left and 4px from the right, reading
-     * as visibly crooked. Fractional geometry keeps the tick optically centred at any size.
+     * The tick is built in floating point and stroked, rather than snapped to whole pixels, so it
+     * stays optically centred at any size. The tick has a colour of its own because it must read
+     * against the fill, and a selected table row inverts the marker's colours.
      *
      * @param g2          graphics context (not disposed by this method)
      * @param x           left edge of the marker box
      * @param y           top edge of the marker box
      * @param size        outer marker size in px (e.g. {@code HUD_TABLE_ROW_HEIGHT_COMPACT - 2*HUD_PADDING_SMALL})
-     * @param markerColor colour of the outline and the tick
-     * @param filled      draw the tick (ON state) when true
+     * @param markerColor colour of the outline, and of the fill when {@code checked}
+     * @param tickColor   colour of the tick
+     * @param checked     fill the box and draw the tick when true
      */
     public static void paintHudCheckMarker(Graphics2D g2, int x, int y, int size,
-                                           Color markerColor, boolean filled) {
-        g2.setColor(markerColor);
-        g2.drawRect(x,     y,     size - 1, size - 1);
-        g2.drawRect(x + 1, y + 1, size - 3, size - 3);
-        if (!filled) return;
+                                           Color markerColor, Color tickColor, boolean checked) {
+        Graphics2D g = (Graphics2D) g2.create();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            g.setColor(markerColor);
 
-        Stroke oldStroke = g2.getStroke();
-        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            if (!checked) {
+                // Half-pixel inset: a 1 px stroke centred on the box edge would straddle two pixel rows and blur.
+                g.setStroke(new BasicStroke(1f));
+                g.draw(new RoundRectangle2D.Float(x + 0.5f, y + 0.5f, size - 1, size - 1,
+                        CHECK_MARKER_ARC, CHECK_MARKER_ARC));
+                return;
+            }
 
-        // Tick proportions are expressed as fractions of the box so the mark scales with it.
-        float w = size;
-        Path2D.Float tick = new Path2D.Float();
-        tick.moveTo(x + w * 0.28f, y + w * 0.52f);
-        tick.lineTo(x + w * 0.44f, y + w * 0.69f);
-        tick.lineTo(x + w * 0.74f, y + w * 0.33f);
+            g.fill(new RoundRectangle2D.Float(x, y, size, size, CHECK_MARKER_ARC, CHECK_MARKER_ARC));
 
-        g2.setStroke(new BasicStroke(Math.max(2f, size / 7f),
-                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.draw(tick);
+            // Tick proportions are expressed as fractions of the box so the mark scales with it.
+            float w = size;
+            Path2D.Float tick = new Path2D.Float();
+            tick.moveTo(x + w * 0.25f, y + w * 0.52f);
+            tick.lineTo(x + w * 0.43f, y + w * 0.70f);
+            tick.lineTo(x + w * 0.76f, y + w * 0.32f);
 
-        g2.setStroke(oldStroke);
-        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+            g.setColor(tickColor);
+            g.setStroke(new BasicStroke(Math.max(2f, size / 7f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.draw(tick);
+        } finally {
+            g.dispose();
+        }
     }
 }

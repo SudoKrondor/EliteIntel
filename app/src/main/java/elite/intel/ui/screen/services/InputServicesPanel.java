@@ -1,0 +1,405 @@
+package elite.intel.ui.screen.services;
+
+import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.ears.PushToTalkService;
+import elite.intel.bindforge.devicefiles.ButtonMapLabels;
+import elite.intel.bindforge.devices.CaptureControllers;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
+import elite.intel.db.managers.QuietedNoticesManager;
+import elite.intel.devices.DeviceService;
+import elite.intel.devices.events.DeviceConnectedEvent;
+import elite.intel.devices.events.DeviceDisconnectedEvent;
+import elite.intel.devices.model.Device;
+import elite.intel.eventbus.DeviceBus;
+import elite.intel.eventbus.UiBus;
+import elite.intel.session.SystemSession;
+import elite.intel.ui.event.PushToTalkSettingsChangedEvent;
+import elite.intel.ui.event.RestartEarsEvent;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudComboBox;
+import elite.intel.ui.widget.HudSection;
+import elite.intel.ui.widget.HudTwoColumns;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.HierarchyEvent;
+import java.util.Map;
+
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.AppTheme.makeCheckBox;
+import static elite.intel.ui.theme.AppTheme.transparentPanel;
+import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
+
+/**
+ * "Input" settings tab - lets the commander map a controller button to push-to-talk, from the devices the
+ * shared SDL3 poll loop in {@link DeviceService} reports, and a mouse button beside it for the times the
+ * controller is out of reach (on foot, in the SRV).
+ * <p>
+ * Only the middle and the two side buttons are offered for the mouse: left and right fire the ship's
+ * weapons, and a gate that opened on every shot would be worse than none.
+ * <p>
+ * Editing only. The mapped button is acted on by {@link PushToTalkService}, which reads these settings back
+ * from {@code SystemSession}: a controller button must keep working whether or not this tab was ever opened,
+ * and the microphone gate is not something anyone should have to find inside a settings screen.
+ */
+public class InputServicesPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(InputServicesPanel.class);
+
+    private JCheckBox enablePushToTalkCheck;
+    private HudComboBox<Object> controllerCombo;
+    private HudComboBox<String> buttonCombo;
+    private HudComboBox<String> mouseButtonCombo;
+    private JButton resetWarningsButton;
+
+    /**
+     * SDL 0-based mouse button index behind each entry of {@link #mouseButtonCombo} after the placeholder:
+     * middle, X1 (back), X2 (forward). Left (0) and right (2) are not offered.
+     */
+    private static final int[] MOUSE_BUTTON_CHOICES = {1, 3, 4};
+
+    // Selection state behind the combos. EDT-only: the device subscriptions below hand straight to
+    // invokeLater, and the button itself is read by PushToTalkService, not here.
+    private boolean pushToTalkEnabled = false;
+    private Device selectedDevice = null;
+    private int selectedButtonIndex = -1; // 0-based SDL button index, -1 = none
+
+    // Name of the controller persisted in game_session, used to re-select it once it appears
+    // in the connected-devices list (initial load, or reconnect after a disconnect).
+    private String persistedControllerName = null;
+
+    // Suppresses SystemSession writes while combo selections are being driven programmatically
+    // (initial load, or reacting to DeviceConnected/DeviceDisconnectedEvent) rather than by the user.
+    private boolean suppressPersistence = false;
+
+    public InputServicesPanel() {
+        UiBus.register(this);
+        DeviceBus.register(this);
+        buildUi();
+    }
+
+    public void dispose() {
+        UiBus.unregister(this);
+        DeviceBus.unregister(this);
+    }
+
+    public void initData() {
+        SystemSession session = SystemSession.getInstance();
+        pushToTalkEnabled = session.isPushToTalkEnabled();
+        persistedControllerName = session.getPushToTalkControllerName();
+
+        enablePushToTalkCheck.setSelected(pushToTalkEnabled);
+        setControlsEnabled(pushToTalkEnabled);
+
+        reconcileControllerSelection();
+        selectMouseButton(session.getPushToTalkMouseButton());
+        refreshResetWarnings();
+    }
+
+    private void buildUi() {
+        setLayout(new BorderLayout());
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+
+        // Single flat working section (section 9). Two-column body (section 10): left column holds the master
+        // enable slab (stretched to the column width, no label); right column holds the controller/button
+        // pickers as aligned rows.
+        HudSection section = HudSection.flat(getText("settings.input.section.binding"), new BorderLayout());
+        JPanel body = section.body();
+
+        enablePushToTalkCheck = makeCheckBox(getText("settings.input.enablePushToTalk"), false);
+        enablePushToTalkCheck.addActionListener(e -> onPushToTalkToggled());
+
+        // Left column - the enable slab, full-width (span) and label-less. GridBag + baseGbc so its row
+        // insets come from the same shared source as the right column (no hand-tuned border).
+        JPanel leftCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints lgc = baseGbc();
+        addSpanComponent(leftCol, enablePushToTalkCheck, lgc);
+        JPanel leftWrap = transparentPanel(new BorderLayout());
+        leftWrap.add(leftCol, BorderLayout.NORTH);
+
+        // Right column - controller / button as aligned label->control rows.
+        JPanel rightCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints gc = baseGbc();
+
+        addLabel(rightCol, getText("settings.input.controller"), gc, 0);
+        controllerCombo = new HudComboBox<>(new Object[0]);
+        controllerCombo.addItem(getText("settings.input.controller.placeholder"));
+        controllerCombo.addActionListener(e -> onControllerSelected());
+        addField(rightCol, controllerCombo, gc, 1, 1.0);
+
+        nextRow(gc);
+        addLabel(rightCol, getText("settings.input.button"), gc, 0);
+        buttonCombo = new HudComboBox<>(new String[0]);
+        buttonCombo.addItem(getText("settings.input.button.placeholder"));
+        buttonCombo.addActionListener(e -> onButtonSelected());
+        addField(rightCol, buttonCombo, gc, 1, 1.0);
+
+        nextRow(gc);
+        addLabel(rightCol, getText("settings.input.mouseButton"), gc, 0);
+        mouseButtonCombo = new HudComboBox<>(new String[]{
+                getText("settings.input.mouseButton.placeholder"),
+                getText("settings.input.mouseButton.middle"),
+                getText("settings.input.mouseButton.back"),
+                getText("settings.input.mouseButton.forward")});
+        mouseButtonCombo.addActionListener(e -> onMouseButtonSelected());
+        addField(rightCol, mouseButtonCombo, gc, 1, 1.0);
+
+        JPanel rightWrap = transparentPanel(new BorderLayout());
+        rightWrap.add(rightCol, BorderLayout.NORTH);
+
+        body.add(new HudTwoColumns(leftWrap, rightWrap), BorderLayout.CENTER);
+
+        JPanel content = transparentPanel(null);
+        content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
+        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        content.add(section);
+        content.add(Box.createVerticalStrut(HudPalette.HUD_GAP));
+        content.add(warningsSection());
+
+        add(content, BorderLayout.NORTH);
+
+        setControlsEnabled(false);
+    }
+
+    /**
+     * Reset warnings: every notice the user ticked <em>"Don't show this again"</em> on shows again (Alan, 2026-11-14,
+     * Storage S21; storage.md rule 13). No dialog - the button greys at once, and it is greyed while nothing is quieted,
+     * read again each time the page is shown. App-wide, so it sits here rather than in BindForge.
+     */
+    private HudSection warningsSection() {
+        HudSection warnings = HudSection.flat(getText("settings.warnings.section"), new BorderLayout());
+        resetWarningsButton = AppTheme.makeButtonSubtle(getText("settings.warnings.reset"));
+        resetWarningsButton.addActionListener(e -> {
+            QuietedNoticesManager.getInstance().resetAll();
+            refreshResetWarnings();
+        });
+        JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        row.add(resetWarningsButton);
+        warnings.body().add(row, BorderLayout.CENTER);
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) refreshResetWarnings();
+        });
+        return warnings;
+    }
+
+    private void refreshResetWarnings() {
+        boolean any;
+        try {
+            any = QuietedNoticesManager.getInstance().anyQuieted();
+        } catch (RuntimeException e) {
+            // WHY: a settings page must still open with the database unreadable; the button then offers the reset.
+            log.warn("Could not read the quieted notices", e);
+            any = true;
+        }
+        resetWarningsButton.setEnabled(any);
+        resetWarningsButton.setToolTipText(getText(any ? "settings.warnings.reset.tooltip"
+                : "settings.warnings.reset.none"));
+    }
+
+    // -- UI handlers -----------------------------------------------------------
+
+    private void onPushToTalkToggled() {
+        boolean enabled = enablePushToTalkCheck.isSelected();
+        pushToTalkEnabled = enabled;
+        setControlsEnabled(enabled);
+        if (enabled) {
+            reconcileControllerSelection();
+        }
+        SystemSession.getInstance().setPushToTalkEnabled(enabled);
+        UiBus.publish(new PushToTalkSettingsChangedEvent());
+        // PTT on/off only affects the STT pipeline; it previously took effect only after an app
+        // restart. Restart just the EARS service so the change applies now (no full rebuild needed).
+        UiBus.publish(new RestartEarsEvent());
+    }
+
+    private void setControlsEnabled(boolean enabled) {
+        controllerCombo.setEnabled(enabled);
+        buttonCombo.setEnabled(enabled);
+        mouseButtonCombo.setEnabled(enabled);
+    }
+
+    private void onControllerSelected() {
+        Object selected = controllerCombo.getSelectedItem();
+        Device device = (selected instanceof Device d) ? d : null;
+        selectedDevice = device;
+        populateButtonCombo(device);
+        if (!suppressPersistence) {
+            persistedControllerName = device != null ? device.name() : null;
+            SystemSession.getInstance().setPushToTalkControllerName(persistedControllerName);
+        }
+    }
+
+    private void onButtonSelected() {
+        selectedButtonIndex = buttonCombo.getSelectedIndex() - 1; // -1 = placeholder
+        if (!suppressPersistence) {
+            SystemSession.getInstance().setPushToTalkButtonIndex(selectedButtonIndex);
+        }
+    }
+
+    private void onMouseButtonSelected() {
+        if (suppressPersistence) {
+            return;
+        }
+        int choice = mouseButtonCombo.getSelectedIndex() - 1; // -1 = placeholder
+        SystemSession.getInstance().setPushToTalkMouseButton(choice < 0 ? -1 : MOUSE_BUTTON_CHOICES[choice]);
+    }
+
+    /**
+     * Drives the mouse combo from a stored SDL button index without writing it back; an index that is not
+     * on offer (a left or right button from a hand-edited database) shows as none.
+     */
+    private void selectMouseButton(int sdlButton) {
+        int item = 0;
+        for (int i = 0; i < MOUSE_BUTTON_CHOICES.length; i++) {
+            if (MOUSE_BUTTON_CHOICES[i] == sdlButton) {
+                item = i + 1;
+            }
+        }
+        suppressPersistence = true;
+        try {
+            mouseButtonCombo.setSelectedIndex(item);
+        } finally {
+            suppressPersistence = false;
+        }
+    }
+
+    // -- Combo population --------------------------------------------------------
+
+    private void refreshControllerCombo() {
+        Device previouslySelected = selectedDevice;
+
+        controllerCombo.removeAllItems();
+        controllerCombo.addItem(getText("settings.input.controller.placeholder"));
+        for (Device device : DeviceService.getInstance().getConnectedDevices()) {
+            controllerCombo.addItem(device);
+        }
+
+        if (previouslySelected != null) {
+            for (int i = 1; i < controllerCombo.getItemCount(); i++) {
+                if (controllerCombo.getItemAt(i) instanceof Device d && d.id() == previouslySelected.id()) {
+                    controllerCombo.setSelectedIndex(i);
+                    return;
+                }
+            }
+        } else if (persistedControllerName != null) {
+            for (int i = 1; i < controllerCombo.getItemCount(); i++) {
+                if (controllerCombo.getItemAt(i) instanceof Device d && d.name().equals(persistedControllerName)) {
+                    controllerCombo.setSelectedIndex(i);
+                    return;
+                }
+            }
+        }
+        controllerCombo.setSelectedIndex(0);
+    }
+
+    /**
+     * Refreshes the controller combo and, if a device matching {@link #persistedControllerName}
+     * becomes selected, restores the persisted button index. Runs with persistence suppressed so
+     * that the intermediate "no button selected" state hit while rebuilding the button combo does
+     * not overwrite the saved {@code pushToTalkButtonIndex}/{@code pushToTalkControllerName}.
+     */
+    private void reconcileControllerSelection() {
+        int targetButtonIndex = (selectedDevice != null)
+                ? selectedButtonIndex
+                : SystemSession.getInstance().getPushToTalkButtonIndex();
+
+        suppressPersistence = true;
+        try {
+            refreshControllerCombo();
+            if (selectedDevice != null && targetButtonIndex >= 0
+                    && targetButtonIndex < buttonCombo.getItemCount() - 1) {
+                buttonCombo.setSelectedIndex(targetButtonIndex + 1);
+            }
+        } finally {
+            suppressPersistence = false;
+        }
+    }
+
+    /**
+     * Fills the button combo with {@code Button N} at once, then swaps in the controller's saved labels when they have
+     * been read. The read is the master and the draft, so it runs off the EDT (review, 2026-10-17).
+     */
+    private void populateButtonCombo(Device device) {
+        fillButtonCombo(device, Map.of());
+        buttonCombo.setSelectedIndex(0);
+        if (device == null) return;
+        Thread reader = new Thread(() -> {
+            Map<String, String> labels = savedLabelsOf(device);
+            SwingUtilities.invokeLater(() -> relabelButtonCombo(device, labels));
+        }, "PTT-ButtonLabels");
+        reader.setDaemon(true);
+        reader.start();
+    }
+
+    private void fillButtonCombo(Device device, Map<String, String> labels) {
+        buttonCombo.removeAllItems();
+        buttonCombo.addItem(getText("settings.input.button.placeholder"));
+        if (device == null) return;
+        for (int i = 1; i <= device.buttonCount(); i++) {
+            String label = labels.get(ButtonMapLabels.buttonToken(i));
+            buttonCombo.addItem(label == null || label.isBlank() ? getText("settings.input.button.label", i) : label);
+        }
+    }
+
+    /**
+     * The saved labels, once read - only if the controller is still the one picked, keeping the button picked meanwhile.
+     */
+    private void relabelButtonCombo(Device device, Map<String, String> labels) {
+        if (labels.isEmpty() || selectedDevice == null || selectedDevice.id() != device.id()) return;
+        int picked = buttonCombo.getSelectedIndex();
+        boolean suppressed = suppressPersistence;
+        suppressPersistence = true;
+        try {
+            fillButtonCombo(device, labels);
+            buttonCombo.setSelectedIndex(Math.max(picked, 0));
+        } finally {
+            suppressPersistence = suppressed;
+        }
+    }
+
+    /**
+     * The names the user gave this controller's buttons, by token: BindForge's labels in the working copy with the edits
+     * on it, as the bind editor shows them - so a label saved and not yet applied shows here before the game has it.
+     * Empty for a controller BindForge has no name for, or when they cannot be read.
+     */
+    private static Map<String, String> savedLabelsOf(Device device) {
+        try {
+            EditedDeviceLabels labels = EditedDeviceLabels.load();
+            return CaptureControllers.nameOf(device, labels).map(labels::labelsOf).orElse(Map.of());
+        } catch (RuntimeException e) {
+            // WHY: broad on purpose - a thread boundary, and a label read must never break the PTT picker; it falls
+            // back to Button N.
+            log.warn("Could not read the saved button names for {}: {}", device.name(), e.getMessage());
+            return Map.of();
+        }
+    }
+
+    // -- SDL event subscriptions -------------------------------------------------
+
+    @Subscribe
+    public void onDeviceConnected(DeviceConnectedEvent event) {
+        SwingUtilities.invokeLater(this::reconcileControllerSelection);
+    }
+
+    @Subscribe
+    public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            suppressPersistence = true;
+            try {
+                if (selectedDevice != null && selectedDevice.id() == event.deviceId()) {
+                    selectedDevice = null;
+                    selectedButtonIndex = -1;
+                    populateButtonCombo(null);
+                }
+                refreshControllerCombo();
+            } finally {
+                suppressPersistence = false;
+            }
+        });
+    }
+
+}

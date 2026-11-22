@@ -1,0 +1,628 @@
+
+    =========================== USB Port10 ===========================
+
+Connection Status        : 0x01 (Device is connected)
+Port Chain               : 1-10
+Properties               : 0x01
+ IsUserConnectable       : yes
+ PortIsDebugCapable      : no
+ PortHasMultiCompanions  : no
+ PortConnectorIsTypeC    : no
+ConnectionIndex          : 0x0A (Port 10)
+CompanionIndex           : 0
+ CompanionHubSymLnk      : USB#ROOT_HUB30#7&dacba&0&0#{f18a0e88-c30c-11d0-8815-00a0c906bed8}
+ CompanionPortNumber     : 0x05 (Port 5)
+ -> CompanionPortChain   : 1-5
+
+      ========================== Summary =========================
+Vendor ID                : 0x3344 (VIRPIL, UAB)
+Product ID               : 0x83F4
+Manufacturer String      : VIRPIL Controls CONF_A02
+Product String           : L-L-VP-WBD-CAP
+Serial                   : 080E2000
+USB Version              : 1.1
+Port maximum Speed       : High-Speed (Companion Port 1-5 is doing the SuperSpeed)
+Device maximum Speed     : Full-Speed
+Device Connection Speed  : Full-Speed
+Self powered             : no
+Demanded Current         : 500 mA
+Used Endpoints           : 3
+
+      ======================== USB Device ========================
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Device Description       : USB Composite Device
+Device Path              : \\?\USB#VID_3344&PID_83F4#080E2000#{a5dcbf10-6530-11d2-901f-00c04fb951ed} (GUID_DEVINTERFACE_USB_DEVICE)
+Kernel Name              : \Device\USBPDO-14
+Device ID                : USB\VID_3344&PID_83F4\080E2000
+Hardware IDs             : USB\VID_3344&PID_83F4&REV_0100 USB\VID_3344&PID_83F4
+Driver KeyName           : {36fc9e60-c465-11cf-8056-444553540000}\0041 (GUID_DEVCLASS_USB)
+Driver                   : \SystemRoot\System32\drivers\usbccgp.sys (Version: 10.0.26100.9549  Date: 2026-09-22  Company: Microsoft Corporation)
+Driver Inf               : C:\WINDOWS\inf\usb.inf
+Legacy BusType           : PNPBus
+Class                    : USB
+Class GUID               : {36fc9e60-c465-11cf-8056-444553540000} (GUID_DEVCLASS_USB)
+Service                  : usbccgp
+Enumerator               : USB
+Location Info            : Port_#0010.Hub_#0004
+Address                  : 10
+Location IDs             : PCIROOT(0)#PCI(0201)#PCI(0000)#PCI(0C00)#PCI(0000)#USBROOT(0)#USB(10), ACPI(_SB_)#ACPI(PCI0)#ACPI(GPP7)#ACPI(UP00)#ACPI(DP60)#ACPI(XH00)#ACPI(RHUB)#ACPI(POTA)
+Container ID             : {8ce5bd27-2ca9-55ab-8035-0c4c5dd8fcd7}
+Manufacturer Info        : (Standard USB Host Controller)
+Capabilities             : 0x94 (Removable, UniqueID, SurpriseRemovalOK)
+Status                   : 0x0180600A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_REMOVABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+Problem Code             : 0
+Address                  : 10
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3, wake from D0)
+
+        +++++++++++++++++ Registry USB Flags +++++++++++++++++
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\usbflags\334483F40100
+ NewInterfaceUsage       : REG_DWORD 00000000 (0)
+
+        ---------------- Connection Information ---------------
+Connection Index         : 0x0A (Port 10)
+Connection Status        : 0x01 (DeviceConnected)
+Current Config Value     : 0x01 (Configuration 1)
+Device Address           : 0x05 (5)
+Is Hub                   : 0x00 (no)
+Device Bus Speed         : 0x01 (Full-Speed)
+Number of open Pipes     : 0x02 (2 pipes to data endpoints)
+Pipe[0]                  : EndpointID=1  Direction=IN   ScheduleOffset=0  Type=Interrupt  wMaxPacketSize=0x40    bInterval=2   -> 718 Bits/ms = 89750 Bytes/s
+Pipe[1]                  : EndpointID=2  Direction=IN   ScheduleOffset=0  Type=Interrupt  wMaxPacketSize=0x40    bInterval=2   -> 718 Bits/ms = 89750 Bytes/s
+Data (HexDump)           : 0A 00 00 00 12 01 10 01 00 00 00 40 44 33 F4 83   ...........@D3..
+                           00 01 01 02 03 01 01 01 00 05 00 02 00 00 00 01   ................
+                           00 00 00 07 05 81 03 40 00 02 00 00 00 00 07 05   .......@........
+                           82 03 40 00 02 00 00 00 00                        ..@......
+
+        --------------- Connection Information V2 -------------
+Connection Index         : 0x0A (10)
+Length                   : 0x10 (16 bytes)
+SupportedUsbProtocols    : 0x03
+ Usb110                  : 1 (yes, port supports USB 1.1)
+ Usb200                  : 1 (yes, port supports USB 2.0)
+ Usb300                  : 0 (no, port not supports USB 3.0) -> but Companion Port 1-5 does
+ ReservedMBZ             : 0x00
+Flags                    : 0x00
+ DevIsOpAtSsOrHigher     : 0 (Device is not operating at SuperSpeed or higher)
+ DevIsSsCapOrHigher      : 0 (Device is not SuperSpeed capable or higher)
+ DevIsOpAtSsPlusOrHigher : 0 (Device is not operating at SuperSpeedPlus or higher)
+ DevIsSsPlusCapOrHigher  : 0 (Device is not SuperSpeedPlus capable or higher)
+ ReservedMBZ             : 0x00
+Data (HexDump)           : 0A 00 00 00 10 00 00 00 03 00 00 00 00 00 00 00   ................
+
+    ---------------------- Device Descriptor ----------------------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x01 (Device Descriptor)
+bcdUSB                   : 0x110 (USB Version 1.1)
+bDeviceClass             : 0x00 (defined by the interface descriptors)
+bDeviceSubClass          : 0x00
+bDeviceProtocol          : 0x00
+bMaxPacketSize0          : 0x40 (64 bytes)
+idVendor                 : 0x3344 (VIRPIL, UAB)
+idProduct                : 0x83F4
+bcdDevice                : 0x0100
+iManufacturer            : 0x01 (String Descriptor 1)
+ Language 0x0409         : "VIRPIL Controls CONF_A02"
+iProduct                 : 0x02 (String Descriptor 2)
+ Language 0x0409         : "L-L-VP-WBD-CAP"
+iSerialNumber            : 0x03 (String Descriptor 3)
+ Language 0x0409         : "080E2000"
+bNumConfigurations       : 0x01 (1 Configuration)
+Data (HexDump)           : 12 01 10 01 00 00 00 40 44 33 F4 83 00 01 01 02   .......@D3......
+                           03 01                                             ..
+
+    ------------------ Configuration Descriptor -------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x02 (Configuration Descriptor)
+wTotalLength             : 0x003B (59 bytes)
+bNumInterfaces           : 0x02 (2 Interfaces)
+bConfigurationValue      : 0x01 (Configuration 1)
+iConfiguration           : 0x00 (No String Descriptor)
+bmAttributes             : 0x80
+ D7: Reserved, set 1     : 0x01
+ D6: Self Powered        : 0x00 (no)
+ D5: Remote Wakeup       : 0x00 (no)
+ D4..0: Reserved, set 0  : 0x00
+MaxPower                 : 0xFA (500 mA)
+Data (HexDump)           : 09 02 3B 00 02 01 00 80 FA 09 04 00 00 01 03 00   ..;.............
+                           00 00 09 21 11 01 00 01 22 6F 00 07 05 81 03 40   ...!...."o.....@
+                           00 02 09 04 01 00 01 03 00 00 00 09 21 11 01 00   ............!...
+                           01 22 3C 00 07 05 82 03 40 00 02                  ."<.....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x00 (Interface 0)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 00 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 6F 00                        .!...."o.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x006F (111 bytes)
+  05 01             Usage Page (Generic Desktop Controls)
+  09 04             Usage (Joystick)
+  A1 01             Collection (Application)
+  05 01               Usage Page (Generic Desktop Controls)
+  85 01               Report ID (0x01)
+  75 10               Report Size (16)
+  95 01               Report Count (1)
+  15 00               Logical Minimum (0)
+  27 60 EA 00 00      Logical Maximum (60000)
+  09 30               Usage (Direction-X)
+  81 02               Input (Var)
+  09 31               Usage (Direction-Y)
+  81 02               Input (Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 33               Usage (Rotate-X)
+  81 02               Input (Var)
+  09 34               Usage (Rotate-Y)
+  81 02               Input (Var)
+  09 35               Usage (Rotate-Z)
+  81 02               Input (Var)
+  09 36               Usage (Slider)
+  81 02               Input (Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  75 08               Report Size (8)
+  95 01               Report Count (1)
+  15 00               Logical Minimum (0)
+  25 47               Logical Maximum (71)
+  35 00               Physical Minimum (0)
+  46 63 01            Physical Maximum (355)
+  65 14               Unit (0x14)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  05 09               Usage Page (Buttons)
+  19 01               Usage Minimum (1)
+  2A 20 00            Usage Maximum (32)
+  15 00               Logical Minimum (0)
+  25 01               Logical Maximum (1)
+  35 00               Physical Minimum (0)
+  45 01               Physical Maximum (1)
+  75 01               Report Size (1)
+  96 80 00            Report Count (128)
+  55 00               Unit Exponent (0x00: 0)
+  65 00               Unit (0x00)
+  81 02               Input (Var)
+  C0                End Collection
+Data (HexDump)           : 05 01 09 04 A1 01 05 01 85 01 75 10 95 01 15 00   ..........u.....
+                           27 60 EA 00 00 09 30 81 02 09 31 81 02 09 00 81   '`....0...1.....
+                           03 09 33 81 02 09 34 81 02 09 35 81 02 09 36 81   ..3...4...5...6.
+                           02 09 00 81 03 75 08 95 01 15 00 25 47 35 00 46   .....u.....%G5.F
+                           63 01 65 14 09 00 81 03 09 00 81 03 09 00 81 03   c.e.............
+                           09 00 81 03 05 09 19 01 2A 20 00 15 00 25 01 35   ........* ...%.5
+                           00 45 01 75 01 96 80 00 55 00 65 00 81 02 C0      .E.u....U.e....
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x81 (Direction=IN EndpointID=1)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x02 (2 ms)
+Data (HexDump)           : 07 05 81 03 40 00 02                              ....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 01 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 3C 00                        .!...."<.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x003C (60 bytes)
+  06 00 FF          Usage Page (Vendor Defined)
+  09 01             Usage (unk)
+  A1 01             Collection (Application)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  85 01               Report ID (0x01)
+  95 24               Report Count (36)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 02               Report ID (0x02)
+  95 24               Report Count (36)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 03               Report ID (0x03)
+  95 D3               Report Count (211)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 04               Report ID (0x04)
+  95 13               Report Count (19)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 FF               Report ID (0xFF)
+  95 82               Report Count (130)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  C0                End Collection
+Data (HexDump)           : 06 00 FF 09 01 A1 01 15 00 26 FF 00 75 08 85 01   .........&..u...
+                           95 24 09 00 B2 02 01 85 02 95 24 09 00 B2 02 01   .$........$.....
+                           85 03 95 D3 09 00 B2 02 01 85 04 95 13 09 00 B2   ................
+                           02 01 85 FF 95 82 09 00 B2 02 01 C0               ............
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x82 (Direction=IN EndpointID=2)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x02 (2 ms)
+Data (HexDump)           : 07 05 82 03 40 00 02                              ....@..
+
+      -------------------- String Descriptors -------------------
+             ------ String Descriptor 0 ------
+bLength                  : 0x04 (4 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language ID[0]           : 0x0409 (English - United States)
+Data (HexDump)           : 04 03 09 04                                       ....
+             ------ String Descriptor 1 ------
+bLength                  : 0x32 (50 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "VIRPIL Controls CONF_A02"
+Data (HexDump)           : 32 03 56 00 49 00 52 00 50 00 49 00 4C 00 20 00   2.V.I.R.P.I.L. .
+                           43 00 6F 00 6E 00 74 00 72 00 6F 00 6C 00 73 00   C.o.n.t.r.o.l.s.
+                           20 00 43 00 4F 00 4E 00 46 00 5F 00 41 00 30 00    .C.O.N.F._.A.0.
+                           32 00                                             2.
+             ------ String Descriptor 2 ------
+bLength                  : 0x1E (30 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "L-L-VP-WBD-CAP"
+Data (HexDump)           : 1E 03 4C 00 2D 00 4C 00 2D 00 56 00 50 00 2D 00   ..L.-.L.-.V.P.-.
+                           57 00 42 00 44 00 2D 00 43 00 41 00 50 00         W.B.D.-.C.A.P.
+             ------ String Descriptor 3 ------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "080E2000"
+Data (HexDump)           : 12 03 30 00 38 00 30 00 45 00 32 00 30 00 30 00   ..0.8.0.E.2.0.0.
+                           30 00                                             0.
+
+
+
+    =========================== USB Port9 ===========================
+
+Connection Status        : 0x01 (Device is connected)
+Port Chain               : 1-9
+Properties               : 0x01
+ IsUserConnectable       : yes
+ PortIsDebugCapable      : no
+ PortHasMultiCompanions  : no
+ PortConnectorIsTypeC    : no
+ConnectionIndex          : 0x09 (Port 9)
+CompanionIndex           : 0
+ CompanionHubSymLnk      : USB#ROOT_HUB30#7&dacba&0&0#{f18a0e88-c30c-11d0-8815-00a0c906bed8}
+ CompanionPortNumber     : 0x04 (Port 4)
+ -> CompanionPortChain   : 1-4
+
+      ========================== Summary =========================
+Vendor ID                : 0x3344 (VIRPIL, UAB)
+Product ID               : 0x03F5
+Manufacturer String      : VIRPIL Controls CONF_A02
+Product String           : R-VP-WBD-CAP
+Serial                   : 080E2100
+USB Version              : 1.1
+Port maximum Speed       : High-Speed (Companion Port 1-4 is doing the SuperSpeed)
+Device maximum Speed     : Full-Speed
+Device Connection Speed  : Full-Speed
+Self powered             : no
+Demanded Current         : 500 mA
+Used Endpoints           : 3
+
+      ======================== USB Device ========================
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Device Description       : USB Composite Device
+Device Path              : \\?\USB#VID_3344&PID_03F5#080E2100#{a5dcbf10-6530-11d2-901f-00c04fb951ed} (GUID_DEVINTERFACE_USB_DEVICE)
+Kernel Name              : \Device\USBPDO-13
+Device ID                : USB\VID_3344&PID_03F5\080E2100
+Hardware IDs             : USB\VID_3344&PID_03F5&REV_0100 USB\VID_3344&PID_03F5
+Driver KeyName           : {36fc9e60-c465-11cf-8056-444553540000}\0042 (GUID_DEVCLASS_USB)
+Driver                   : \SystemRoot\System32\drivers\usbccgp.sys (Version: 10.0.26100.9549  Date: 2026-09-22  Company: Microsoft Corporation)
+Driver Inf               : C:\WINDOWS\inf\usb.inf
+Legacy BusType           : PNPBus
+Class                    : USB
+Class GUID               : {36fc9e60-c465-11cf-8056-444553540000} (GUID_DEVCLASS_USB)
+Service                  : usbccgp
+Enumerator               : USB
+Location Info            : Port_#0009.Hub_#0004
+Address                  : 9
+Location IDs             : PCIROOT(0)#PCI(0201)#PCI(0000)#PCI(0C00)#PCI(0000)#USBROOT(0)#USB(9), ACPI(_SB_)#ACPI(PCI0)#ACPI(GPP7)#ACPI(UP00)#ACPI(DP60)#ACPI(XH00)#ACPI(RHUB)#ACPI(POT9)
+Container ID             : {8ee0c7c8-cdce-50f9-aba0-72d50486463d}
+Manufacturer Info        : (Standard USB Host Controller)
+Capabilities             : 0x94 (Removable, UniqueID, SurpriseRemovalOK)
+Status                   : 0x0180600A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_REMOVABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+Problem Code             : 0
+Address                  : 9
+EnhancedPowerMgmtEnabled : 0
+Power State              : D0 (supported: D0, D3, wake from D0)
+
+        +++++++++++++++++ Registry USB Flags +++++++++++++++++
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\usbflags\334403F50100
+ NewInterfaceUsage       : REG_DWORD 00000000 (0)
+
+        ---------------- Connection Information ---------------
+Connection Index         : 0x09 (Port 9)
+Connection Status        : 0x01 (DeviceConnected)
+Current Config Value     : 0x01 (Configuration 1)
+Device Address           : 0x04 (4)
+Is Hub                   : 0x00 (no)
+Device Bus Speed         : 0x01 (Full-Speed)
+Number of open Pipes     : 0x02 (2 pipes to data endpoints)
+Pipe[0]                  : EndpointID=1  Direction=IN   ScheduleOffset=0  Type=Interrupt  wMaxPacketSize=0x40    bInterval=2   -> 718 Bits/ms = 89750 Bytes/s
+Pipe[1]                  : EndpointID=2  Direction=IN   ScheduleOffset=0  Type=Interrupt  wMaxPacketSize=0x40    bInterval=2   -> 718 Bits/ms = 89750 Bytes/s
+Data (HexDump)           : 09 00 00 00 12 01 10 01 00 00 00 40 44 33 F5 03   ...........@D3..
+                           00 01 01 02 03 01 01 01 00 04 00 02 00 00 00 01   ................
+                           00 00 00 07 05 81 03 40 00 02 00 00 00 00 07 05   .......@........
+                           82 03 40 00 02 00 00 00 00                        ..@......
+
+        --------------- Connection Information V2 -------------
+Connection Index         : 0x09 (9)
+Length                   : 0x10 (16 bytes)
+SupportedUsbProtocols    : 0x03
+ Usb110                  : 1 (yes, port supports USB 1.1)
+ Usb200                  : 1 (yes, port supports USB 2.0)
+ Usb300                  : 0 (no, port not supports USB 3.0) -> but Companion Port 1-4 does
+ ReservedMBZ             : 0x00
+Flags                    : 0x00
+ DevIsOpAtSsOrHigher     : 0 (Device is not operating at SuperSpeed or higher)
+ DevIsSsCapOrHigher      : 0 (Device is not SuperSpeed capable or higher)
+ DevIsOpAtSsPlusOrHigher : 0 (Device is not operating at SuperSpeedPlus or higher)
+ DevIsSsPlusCapOrHigher  : 0 (Device is not SuperSpeedPlus capable or higher)
+ ReservedMBZ             : 0x00
+Data (HexDump)           : 09 00 00 00 10 00 00 00 03 00 00 00 00 00 00 00   ................
+
+    ---------------------- Device Descriptor ----------------------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x01 (Device Descriptor)
+bcdUSB                   : 0x110 (USB Version 1.1)
+bDeviceClass             : 0x00 (defined by the interface descriptors)
+bDeviceSubClass          : 0x00
+bDeviceProtocol          : 0x00
+bMaxPacketSize0          : 0x40 (64 bytes)
+idVendor                 : 0x3344 (VIRPIL, UAB)
+idProduct                : 0x03F5
+bcdDevice                : 0x0100
+iManufacturer            : 0x01 (String Descriptor 1)
+ Language 0x0409         : "VIRPIL Controls CONF_A02"
+iProduct                 : 0x02 (String Descriptor 2)
+ Language 0x0409         : "R-VP-WBD-CAP"
+iSerialNumber            : 0x03 (String Descriptor 3)
+ Language 0x0409         : "080E2100"
+bNumConfigurations       : 0x01 (1 Configuration)
+Data (HexDump)           : 12 01 10 01 00 00 00 40 44 33 F5 03 00 01 01 02   .......@D3......
+                           03 01                                             ..
+
+    ------------------ Configuration Descriptor -------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x02 (Configuration Descriptor)
+wTotalLength             : 0x003B (59 bytes)
+bNumInterfaces           : 0x02 (2 Interfaces)
+bConfigurationValue      : 0x01 (Configuration 1)
+iConfiguration           : 0x00 (No String Descriptor)
+bmAttributes             : 0x80
+ D7: Reserved, set 1     : 0x01
+ D6: Self Powered        : 0x00 (no)
+ D5: Remote Wakeup       : 0x00 (no)
+ D4..0: Reserved, set 0  : 0x00
+MaxPower                 : 0xFA (500 mA)
+Data (HexDump)           : 09 02 3B 00 02 01 00 80 FA 09 04 00 00 01 03 00   ..;.............
+                           00 00 09 21 11 01 00 01 22 6F 00 07 05 81 03 40   ...!...."o.....@
+                           00 02 09 04 01 00 01 03 00 00 00 09 21 11 01 00   ............!...
+                           01 22 3C 00 07 05 82 03 40 00 02                  ."<.....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x00 (Interface 0)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 00 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 6F 00                        .!...."o.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x006F (111 bytes)
+  05 01             Usage Page (Generic Desktop Controls)
+  09 04             Usage (Joystick)
+  A1 01             Collection (Application)
+  05 01               Usage Page (Generic Desktop Controls)
+  85 01               Report ID (0x01)
+  75 10               Report Size (16)
+  95 01               Report Count (1)
+  15 00               Logical Minimum (0)
+  27 60 EA 00 00      Logical Maximum (60000)
+  09 30               Usage (Direction-X)
+  81 02               Input (Var)
+  09 31               Usage (Direction-Y)
+  81 02               Input (Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 33               Usage (Rotate-X)
+  81 02               Input (Var)
+  09 34               Usage (Rotate-Y)
+  81 02               Input (Var)
+  09 35               Usage (Rotate-Z)
+  81 02               Input (Var)
+  09 36               Usage (Slider)
+  81 02               Input (Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  75 08               Report Size (8)
+  95 01               Report Count (1)
+  15 00               Logical Minimum (0)
+  25 47               Logical Maximum (71)
+  35 00               Physical Minimum (0)
+  46 63 01            Physical Maximum (355)
+  65 14               Unit (0x14)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  09 00               Usage (Undefined)
+  81 03               Input (Const, Var)
+  05 09               Usage Page (Buttons)
+  19 01               Usage Minimum (1)
+  2A 20 00            Usage Maximum (32)
+  15 00               Logical Minimum (0)
+  25 01               Logical Maximum (1)
+  35 00               Physical Minimum (0)
+  45 01               Physical Maximum (1)
+  75 01               Report Size (1)
+  96 80 00            Report Count (128)
+  55 00               Unit Exponent (0x00: 0)
+  65 00               Unit (0x00)
+  81 02               Input (Var)
+  C0                End Collection
+Data (HexDump)           : 05 01 09 04 A1 01 05 01 85 01 75 10 95 01 15 00   ..........u.....
+                           27 60 EA 00 00 09 30 81 02 09 31 81 02 09 00 81   '`....0...1.....
+                           03 09 33 81 02 09 34 81 02 09 35 81 02 09 36 81   ..3...4...5...6.
+                           02 09 00 81 03 75 08 95 01 15 00 25 47 35 00 46   .....u.....%G5.F
+                           63 01 65 14 09 00 81 03 09 00 81 03 09 00 81 03   c.e.............
+                           09 00 81 03 05 09 19 01 2A 20 00 15 00 25 01 35   ........* ...%.5
+                           00 45 01 75 01 96 80 00 55 00 65 00 81 02 C0      .E.u....U.e....
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x81 (Direction=IN EndpointID=1)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x02 (2 ms)
+Data (HexDump)           : 07 05 81 03 40 00 02                              ....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 01 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 3C 00                        .!...."<.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x003C (60 bytes)
+  06 00 FF          Usage Page (Vendor Defined)
+  09 01             Usage (unk)
+  A1 01             Collection (Application)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  85 01               Report ID (0x01)
+  95 24               Report Count (36)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 02               Report ID (0x02)
+  95 24               Report Count (36)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 03               Report ID (0x03)
+  95 D3               Report Count (211)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 04               Report ID (0x04)
+  95 13               Report Count (19)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  85 FF               Report ID (0xFF)
+  95 82               Report Count (130)
+  09 00               Usage (unk)
+  B2 02 01            Feature (Var, BuffBytes)
+  C0                End Collection
+Data (HexDump)           : 06 00 FF 09 01 A1 01 15 00 26 FF 00 75 08 85 01   .........&..u...
+                           95 24 09 00 B2 02 01 85 02 95 24 09 00 B2 02 01   .$........$.....
+                           85 03 95 D3 09 00 B2 02 01 85 04 95 13 09 00 B2   ................
+                           02 01 85 FF 95 82 09 00 B2 02 01 C0               ............
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x82 (Direction=IN EndpointID=2)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x02 (2 ms)
+Data (HexDump)           : 07 05 82 03 40 00 02                              ....@..
+
+      -------------------- String Descriptors -------------------
+             ------ String Descriptor 0 ------
+bLength                  : 0x04 (4 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language ID[0]           : 0x0409 (English - United States)
+Data (HexDump)           : 04 03 09 04                                       ....
+             ------ String Descriptor 1 ------
+bLength                  : 0x32 (50 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "VIRPIL Controls CONF_A02"
+Data (HexDump)           : 32 03 56 00 49 00 52 00 50 00 49 00 4C 00 20 00   2.V.I.R.P.I.L. .
+                           43 00 6F 00 6E 00 74 00 72 00 6F 00 6C 00 73 00   C.o.n.t.r.o.l.s.
+                           20 00 43 00 4F 00 4E 00 46 00 5F 00 41 00 30 00    .C.O.N.F._.A.0.
+                           32 00                                             2.
+             ------ String Descriptor 2 ------
+bLength                  : 0x1A (26 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "R-VP-WBD-CAP"
+Data (HexDump)           : 1A 03 52 00 2D 00 56 00 50 00 2D 00 57 00 42 00   ..R.-.V.P.-.W.B.
+                           44 00 2D 00 43 00 41 00 50 00                     D.-.C.A.P.
+             ------ String Descriptor 3 ------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "080E2100"
+Data (HexDump)           : 12 03 30 00 38 00 30 00 45 00 32 00 31 00 30 00   ..0.8.0.E.2.1.0.
+                           30 00                                             0.

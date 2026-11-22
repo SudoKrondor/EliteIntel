@@ -17,7 +17,7 @@ import java.util.List;
  * The catalogue is three shared tables: a system holds bodies, a body holds species. It comes from a file and is
  * replaceable. The progress is the commander's own and lives in their file: {@code exo_mastery_harvest} holds the
  * bodies they sampled out ({@code completed}, meaning the game will not let this body be sampled again) and
- * {@code exo_mastery_sample} the species they have scanned. A harvest keeps the body's value as it was, so the
+ * {@code exo_mastery_sample} every species they have sampled out, listed or not. A harvest keeps the body's value as it was, so the
  * harvested total survives the catalogue being purged or replaced.
  * <p>
  * Callers go through {@code ExoMasteryManager} rather than touching this directly.
@@ -161,7 +161,9 @@ public interface ExoMasteryDao {
     int completeSystem(@Bind("systemAddress") long systemAddress, @Bind("completedAt") String completedAt);
 
     /**
-     * Records a species as sampled.
+     * Records a species as sampled, whether the catalogue lists it or not. The game will not let a species be
+     * sampled twice on one body, so a sample taken before the catalogue was loaded - or before it listed that
+     * body - still has to count against it when it arrives ({@link #adoptSampledBodies}).
      *
      * @return 1 when the catalogue lists this species on this body (sampled before or not), 0 when it does not
      */
@@ -172,13 +174,29 @@ public interface ExoMasteryDao {
 
     @SqlUpdate("""
             INSERT OR IGNORE INTO exo_mastery_sample (systemAddress, bodyId, speciesSymbol)
-            SELECT systemAddress, bodyId, speciesSymbol
-              FROM exo_mastery_species
-             WHERE systemAddress = :systemAddress AND bodyId = :bodyId AND speciesSymbol = :speciesSymbol
+                 VALUES (:systemAddress, :bodyId, :speciesSymbol)
             """)
     int recordSample(@Bind("systemAddress") long systemAddress,
                      @Bind("bodyId") long bodyId,
                      @Bind("speciesSymbol") String speciesSymbol);
+
+    /**
+     * Completes every catalogued body whose listed species have all been sampled already - the same rule as the
+     * third scan of the last listed species, applied to samples on file before the catalogue arrived.
+     */
+    @SqlUpdate("""
+            INSERT OR IGNORE INTO exo_mastery_harvest (systemAddress, bodyId, value, completedAt)
+            SELECT b.systemAddress, b.bodyId, b.value, :completedAt
+              FROM exo_mastery_body b
+             WHERE EXISTS (SELECT 1 FROM exo_mastery_species s
+                            WHERE s.systemAddress = b.systemAddress AND s.bodyId = b.bodyId)
+               AND NOT EXISTS (SELECT 1 FROM exo_mastery_species s
+                                WHERE s.systemAddress = b.systemAddress AND s.bodyId = b.bodyId
+                                  AND NOT EXISTS (SELECT 1 FROM exo_mastery_sample x
+                                                   WHERE x.systemAddress = s.systemAddress AND x.bodyId = s.bodyId
+                                                     AND x.speciesSymbol = s.speciesSymbol))
+            """)
+    int adoptSampledBodies(@Bind("completedAt") String completedAt);
 
     @SqlQuery("""
             SELECT COUNT(*) FROM exo_mastery_species

@@ -65,8 +65,9 @@ typedef enum {
 /// These are the defaults a commander gets before they touch anything, and the
 /// app sends the whole palette on every start - so this table only decides what
 /// the binary draws when it is driven by hand (test-feed.sh) or by an app too
-/// old to send colours. It mirrors HudPalette.java, which is where the same
-/// colours are defined for the desktop window.
+/// old to send colours. It mirrors HudOverlayColor.java, which is where the
+/// app keeps the same defaults. These are NOT the desktop window colours
+/// (HudPalette.java): the overlay keeps its own, matched to the game HUD.
 #define HUD_COL_DEFAULT_PRIMARY  0xFF7100
 #define HUD_COL_DEFAULT_SUCCESS  0x4FC56B
 #define HUD_COL_DEFAULT_WARNING  0xFFB000
@@ -84,7 +85,7 @@ typedef enum {
 /// commander sees in the settings dialog rather than as three rounded decimals.
 #define HUD_RGB(hex) { ((hex) >> 16 & 0xFF) / 255.0, ((hex) >> 8 & 0xFF) / 255.0, ((hex) & 0xFF) / 255.0 }
 
-typedef enum { ST_NORMAL, ST_GOOD, ST_WARN, ST_CRITICAL } State;
+typedef enum { ST_NORMAL, ST_GOOD, ST_WARN, ST_CRITICAL, ST_BLUE, ST_WHITE } State;
 
 typedef struct {
     char  label[128];

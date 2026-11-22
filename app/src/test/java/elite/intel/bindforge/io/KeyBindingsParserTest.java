@@ -165,4 +165,40 @@ class KeyBindingsParserTest {
         assertFalse(KeyBindingsParser.isBoundToNonKeyboardDeviceOnly(slots.primary(), slots.secondary()),
                 "an unassigned action is the missing-binding check's business, not this warning's");
     }
+
+    /** The Bind Editor reads the edits not applied, held in memory (Storage S5) - the same slots as from a file. */
+    @Test
+    void aBindsFileHeldInMemoryReadsAsTheFileDoes() throws Exception {
+        File file = bindsFile("""
+                	<UseBoostJuice>
+                		<Primary Device="Keyboard" Key="Key_Tab">
+                			<Hold Value="1" />
+                		</Primary>
+                		<Secondary Device="Throttle" Key="Joy_4" />
+                	</UseBoostJuice>
+                """);
+        byte[] content = Files.readAllBytes(file.toPath());
+        byte[] withBom = new byte[content.length + 3];
+        withBom[0] = (byte) 0xEF;
+        withBom[1] = (byte) 0xBB;
+        withBom[2] = (byte) 0xBF;
+        System.arraycopy(content, 0, withBom, 3, content.length);
+
+        KeyBindingsParser parser = KeyBindingsParser.getInstance();
+        String fromFile = described(parser.parseReadOnlyBindingSlots(file));
+        assertEquals("UseBoostJuice: Keyboard/Key_Tab hold, Throttle/Joy_4", fromFile);
+        assertEquals(fromFile, described(parser.parseReadOnlyBindingSlots(content)));
+        assertEquals(fromFile, described(parser.parseReadOnlyBindingSlots(withBom)), "a byte-order mark is read past");
+    }
+
+    private static String described(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
+        StringBuilder text = new StringBuilder();
+        slots.forEach((id, pair) -> text.append(id).append(": ").append(described(pair.primary()))
+                .append(", ").append(described(pair.secondary())));
+        return text.toString();
+    }
+
+    private static String described(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return slot.device() + "/" + slot.key() + (slot.hold() ? " hold" : "");
+    }
 }

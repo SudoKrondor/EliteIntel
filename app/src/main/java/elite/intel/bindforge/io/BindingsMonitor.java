@@ -1,17 +1,20 @@
 package elite.intel.bindforge.io;
 
 import elite.intel.ai.hands.Bindings;
+import elite.intel.ai.hands.FsdControls;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.bindforge.model.BindingSection;
 import elite.intel.bindforge.rules.BindingConflictRules;
 import elite.intel.bindforge.rules.BindingConflictScanner;
 import elite.intel.bindforge.rules.KeyBindCheck;
 import elite.intel.bindforge.rules.ReservedKeyChords;
+import elite.intel.db.dao.BindingConflictDao;
 import elite.intel.db.managers.BindingConflictManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.BindingsFolderChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,8 +22,10 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static elite.intel.util.StringUtls.humanizeBindingName;
 import static elite.intel.util.StringUtls.localizedSpeech;
@@ -41,6 +46,8 @@ import static elite.intel.util.StringUtls.localizedSpeech;
  * - Automatically reloads and parses bindings when a new or modified file is
  * detected.
  * - Provides access to the current bindings map.
+ * - Publishes {@link BindingsFolderChangedEvent} after any change in the folder, so BindForge's check runs again at the
+ * next click on its tab (Storage S17). BindForge still does not watch the files itself.
  * <p>
  * Thread Safety:
  * - This class uses synchronization to ensure thread-safe access to start and
@@ -58,6 +65,14 @@ import static elite.intel.util.StringUtls.localizedSpeech;
  */
 public class BindingsMonitor {
     private static final Logger log = LogManager.getLogger(BindingsMonitor.class);
+    /**
+     * How many quiet seconds a reload is tried again in when the file to read could not be worked out. The game's
+     * save is over well inside one; the rest is margin, and the limit keeps a folder that is genuinely broken from
+     * writing a warning every second for the whole session.
+     */
+    private static final int RELOAD_RETRIES = 5;
+    /** How long the game is given to finish writing before a change is read. */
+    private static final Duration SETTLE = Duration.ofMillis(300);
     private static volatile BindingsMonitor instance;
     private final KeyBindingsParser parser;
     private final BindingsLoader bindingsLoader = new BindingsLoader();
@@ -81,6 +96,11 @@ public class BindingsMonitor {
      * a commander sitting in the controls menu rebinding.
      */
     private String parsedFileFingerprint;
+    /**
+     * The warning last spoken for a read that failed, until a read succeeds - so a cause is said once, not again by
+     * {@link #ensureBindingsLoaded()} racing the first parse, or by every {@link #reread()}.
+     */
+    private final AtomicReference<String> lastFailureSpoken = new AtomicReference<>();
 
     /**
      * The Elite controls a built-in command presses - {@link Bindings.GameCommand#isDrivenByApp()}.
@@ -113,9 +133,13 @@ public class BindingsMonitor {
      * the commander's custom commands press. A custom command's control is required from the moment it is
      * saved - the commander chose it, so it counts as missing, is filled by auto-assign, and its conflicts are
      * reported like a built-in one's.
+     * <p>
+     * Hyperspace and Toggle Frame Shift Drive are alternatives: the commander's FSD choice decides which one the
+     * built-in commands press, and the other is left out unless a custom command presses it.
      */
     public static Set<String> requiredControls() {
         Set<String> required = new LinkedHashSet<>(APP_DRIVEN_ACTIONS);
+        required.remove(FsdControls.unusedControl());
         required.addAll(customCommandControls);
         return Collections.unmodifiableSet(required);
     }
@@ -192,8 +216,25 @@ public class BindingsMonitor {
         processingThread = null;
     }
 
+    /**
+     * Watches the bindings folder Elite-Intel is set to now, when it changed while this ran - the installation being
+     * played changed (linux-several-installations.md, rule 2). Reads it at once. Does nothing while not running: the
+     * next start reads the setting anyway.
+     */
+    public synchronized void watchAgain() {
+        if (processingThread == null || !processingThread.isAlive()) return;
+        stopMonitoring();
+        try {
+            startMonitoring();
+        } catch (IOException e) {
+            log.error("Could not watch the bindings folder {} again", PlayerSession.getInstance().getBindingsDir(), e);
+        }
+    }
+
     private void monitorBindings() {
-        DataDirectoryValidator.validateAndWarn(bindingsDir, DataDirectoryValidator.DirectoryKind.BINDINGS);
+        // WHY no folder check here: SetupCheck says what is wrong with the folder at startup, and the folder field
+        // when it is changed. A check here spoke a second time, and one that looked for .binds called a fresh install
+        // on a stock preset - the right folder, read from the installation - a folder with no bindings files.
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             bindingsDir.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY,
                     StandardWatchEventKinds.ENTRY_CREATE);
@@ -202,6 +243,8 @@ public class BindingsMonitor {
             // Initial parse of bindings
             parseAndUpdateBindings();
 
+            BindsReloadRetry reloads = new BindsReloadRetry(bindingsLoader::bindsFileToRead, this::reloadIfChanged,
+                    RELOAD_RETRIES, SETTLE);
             while (running) {
                 WatchKey key = watchService.poll(1, TimeUnit.SECONDS);
                 if (key == null) {
@@ -209,31 +252,28 @@ public class BindingsMonitor {
                         log.info("Shutting down BindingsMonitor due to interruption or stop signal");
                         return;
                     }
+                    if (reloads.quietSecond()) {
+                        // As after a batch of folder events below: the file just read is the one a save from the
+                        // game's controls screen wrote, so its conflicts are taken in now, not at the next change.
+                        checkForConflictsAndPersist();
+                    }
                     continue;
                 }
 
-                for (WatchEvent<?> event : key.pollEvents()) {
+                List<WatchEvent<?>> events = key.pollEvents();
+                for (WatchEvent<?> event : events) {
                     WatchEvent.Kind<?> kind = event.kind();
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
                         if (changed.toString().endsWith(".binds")) {
-                            File activeFile = bindingsLoader.getLatestBindsFile();
-                            boolean activeFileWasModified = activeFile.getName().equals(changed.toString());
-                            boolean activeFileChanged = !activeFile.equals(currentBindsFile);
-                            if (activeFileWasModified || activeFileChanged) {
-                                currentBindsFile = activeFile;
-                                Thread.sleep(300); // wait for the game to finish writing
-                                if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
-                                    log.debug("Ignoring repeat change event for unchanged file: {}",
-                                            activeFile.getName());
-                                } else {
-                                    parseAndUpdateBindings();
-                                    log.info("Reloaded bindings from: {}", currentBindsFile.getName());
-                                }
-                            }
+                            reloads.changed(changed.toString());
                         }
                     }
                 }
+                // WHY any file, and an overflow too: BindForge's check judges everything in the folder, so any change
+                // sends the next BindForge click through it; one that turns out to be nothing costs a silent read
+                // (Alan, 2026-11-11, Storage S17 Q1 and Q2).
+                if (!events.isEmpty()) UiBus.publish(new BindingsFolderChangedEvent());
                 checkForConflictsAndPersist();
                 boolean valid = key.reset();
                 if (!valid) {
@@ -254,22 +294,93 @@ public class BindingsMonitor {
         }
     }
 
+    /**
+     * Reads {@code activeFile} again after the bindings folder changed, if it is the one that changed, is another file
+     * than before, or - on a retry ({@code changed} null) - differs from what was last parsed. The lookup, its wait
+     * and its retries are {@link BindsReloadRetry}'s.
+     */
+    private void reloadIfChanged(File activeFile, String changed) {
+        boolean activeFileWasModified = changed == null || activeFile.getName().equals(changed);
+        boolean activeFileChanged = !activeFile.equals(currentBindsFile);
+        if (!activeFileWasModified && !activeFileChanged) {
+            return;
+        }
+        currentBindsFile = activeFile;
+        if (fingerprintOf(activeFile).equals(parsedFileFingerprint)) {
+            log.debug("Ignoring repeat change event for unchanged file: {}", activeFile.getName());
+        } else {
+            parseAndUpdateBindings(activeFile);
+            log.info("Reloaded bindings from: {}", currentBindsFile.getName());
+        }
+    }
+
+    /**
+     * Works out which binds file to read and reads it - for the first parse at start, {@link #ensureBindingsLoaded()}
+     * and {@link #reread()}, which have no file in hand. A file that cannot be worked out is reported as a failed
+     * update, as a file that cannot be parsed is.
+     */
     private void parseAndUpdateBindings() {
+        File toRead;
         try {
-            currentBindsFile = bindingsLoader.getLatestBindsFile();
+            toRead = bindingsLoader.bindsFileToRead();
+        } catch (Exception e) {
+            // WHY its own sentence: nothing was parsed, so naming a file would point a support bundle at the previous
+            // one, which is fine (Alan, 2026-11-11, Storage S13fR D3).
+            reportUpdateFailed("Could not work out which binds file to read", e, speechKeyFor(e));
+            return;
+        }
+        parseAndUpdateBindings(toRead);
+    }
+
+    /**
+     * Reads {@code toRead}, the file already worked out. WHY a file passed in rather than looked up again: after a
+     * change, {@link BindsReloadRetry} has just looked it up, and a second lookup could land while the game is
+     * rewriting {@code StartPreset.4.start} - failing with no retry, which is what the retry exists to avoid.
+     */
+    private void parseAndUpdateBindings(File toRead) {
+        try {
+            currentBindsFile = toRead;
             Map<String, KeyBindingsParser.BindingSlots> slots = parser.parseBindingSlots(currentBindsFile);
             snapshot = new BindingsSnapshot(slots, parser.toExecutableBindings(slots));
             parsedFileFingerprint = fingerprintOf(currentBindsFile);
             GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
             UiBus.publish(new BindingsUpdatedEvent());
+            lastFailureSpoken.set(null);
             log.info("Key bindings updated from: {}", currentBindsFile.getName());
         } catch (Exception e) {
-            log.error("Failed to parse key bindings from: {}",
-                    currentBindsFile != null ? currentBindsFile.getName() : "null", e);
-            GameEventBus.publish(
-                    new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
+            reportUpdateFailed("Failed to parse key bindings from: " + toRead.getName(), e,
+                    Optional.of("speech.warning.bindingsUnreadable"));
         }
+    }
+
+    /**
+     * What to tell the commander when the file to read could not be worked out - empty when it is not this class's to
+     * say. WHY "check the folder" is never said here: by the time the monitor reads, the folder is the one the commander
+     * chose, and every cause below needs a fix in the game or in Game Install Locations, not a different folder.
+     */
+    static Optional<String> speechKeyFor(Exception e) {
+        if (!(e instanceof BindsFileNotFoundException notFound)) {
+            return Optional.of("speech.warning.bindingsDirectoryInaccessible");
+        }
+        return switch (notFound.reason()) {
+            // WHY silent: a folder with no StartPreset is a folder problem, which SetupCheck and the folder field speak.
+            // It is also what a read sees while the game rewrites the file.
+            case NO_PRESET_FILE -> Optional.empty();
+            case NO_INSTALLATION -> Optional.of("speech.warning.bindingsStockPresetNoInstallation");
+            case PRESET_FILE_MISSING -> Optional.of("speech.warning.bindingsPresetFileMissing");
+        };
+    }
+
+    /**
+     * Logs what failed - in {@code what}, worded by the caller so the log says what actually went wrong - and speaks
+     * {@code speechKey}, the cause in the commander's words, unless it is the one already spoken since the last read
+     * that worked.
+     */
+    private void reportUpdateFailed(String what, Exception e, Optional<String> speechKey) {
+        log.error(what, e);
+        speechKey.filter(key -> !key.equals(lastFailureSpoken.getAndSet(key)))
+                .ifPresent(key -> GameEventBus.publish(new AiVoxResponseEvent(localizedSpeech(key))));
     }
 
     /**
@@ -323,18 +434,29 @@ public class BindingsMonitor {
         }
     }
 
+    /**
+     * Reads the binds file again now, for a change the watch loop cannot see: the user chose which file of a split
+     * preset file the assistant reads (Storage S13f), and nothing in the bindings folder changed. Unsynchronized, as
+     * {@link #ensureBindingsLoaded()} is, and for the same reason.
+     */
+    public void reread() {
+        parseAndUpdateBindings();
+    }
+
     public File getCurrentBindsFile() {
         return currentBindsFile;
     }
 
     /**
-     * Returns the file currently being monitored, falling back to a fresh
-     * {@link BindingsLoader#getLatestBindsFile()} lookup if monitoring hasn't started or hasn't
-     * found one yet. Shared by anything that needs "the active game binds file" outside the
-     * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
+     * The sections of the game's controls on another preset than the file parsed - see
+     * {@link BindingsLoader#sectionsNotIn}. Empty when nothing has been parsed, which
+     * {@code SetupCheck} already speaks about.
      */
-    public File resolveActiveBindsFile() throws IOException {
-        return currentBindsFile != null ? currentBindsFile : bindingsLoader.getLatestBindsFile();
+    public Map<BindingSection, String> sectionsNotRead() {
+        File read = currentBindsFile;
+        return read == null
+                ? Map.of()
+                : bindingsLoader.sectionsNotIn(PlayerSession.getInstance().getBindingsDir(), read);
     }
 
     /**
@@ -400,7 +522,7 @@ public class BindingsMonitor {
         // Diff against persisted state
         Set<String> persistedKeys = new HashSet<>(
                 conflictManager.getConflicts().stream()
-                        .map(r -> r.getConflictKey())
+                        .map(BindingConflictDao.ConflictRecord::getConflictKey)
                         .toList());
 
         for (Map.Entry<String, BindingConflictScanner.Conflict> entry : currentConflictDescriptions.entrySet()) {

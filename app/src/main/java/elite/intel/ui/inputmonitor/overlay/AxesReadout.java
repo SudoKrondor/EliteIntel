@@ -154,9 +154,6 @@ public class AxesReadout extends ReadoutWindow {
 
     @Override
     protected void openSettings() {
-        SwingUtilities.invokeLater(() -> {
-            AxesSettingsDialog dlg = new AxesSettingsDialog(this);
-            dlg.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new AxesSettingsDialog(this).open());
     }
 }

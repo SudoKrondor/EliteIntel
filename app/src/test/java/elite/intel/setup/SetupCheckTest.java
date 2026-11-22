@@ -5,8 +5,10 @@ import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.bindforge.io.BindingsLoader;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.i18n.Language;
+import elite.intel.session.DirectorySetting;
 import elite.intel.session.SystemSession;
 import elite.intel.setup.SetupCheck.LlmSetup;
+import elite.intel.setup.SetupCheck.SelectedLlm;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,6 +92,33 @@ class SetupCheckTest {
         assertFalse(new LlmSetup("gemma-4-e4b", "sk-whatever").nothingConfigured());
     }
 
+    // ── can the selected model run ───────────────────────────────────────────
+
+    @Test
+    void aSelectedLocalModelWithANameCanRun() {
+        assertEquals(Optional.empty(), new SelectedLlm(true, "google/gemma-4-e4b", "", false).gapSpeechKey());
+    }
+
+    @Test
+    void localWithNoModelCannotRunEvenWithACloudKeyStored() {
+        assertEquals(Optional.of("speech.setup.noLlm"), new SelectedLlm(true, " ", "sk-whatever", true).gapSpeechKey());
+    }
+
+    @Test
+    void cloudWithAKeyAndAProviderCanRun() {
+        assertEquals(Optional.empty(), new SelectedLlm(false, "", "sk-whatever", true).gapSpeechKey());
+    }
+
+    @Test
+    void cloudWithNoKeyCannotRunEvenWithALocalModelNamed() {
+        assertEquals(Optional.of("speech.setup.noLlm"), new SelectedLlm(false, "gemma-4-e4b", "", true).gapSpeechKey());
+    }
+
+    @Test
+    void cloudWithAKeyButNoProviderSaysToPickOne() {
+        assertEquals(Optional.of("speech.setup.noLlmProvider"), new SelectedLlm(false, "", "sk-whatever", false).gapSpeechKey());
+    }
+
     // ── journals ─────────────────────────────────────────────────────────────
 
     @Test
@@ -120,33 +150,23 @@ class SetupCheckTest {
 
     // ── bindings ─────────────────────────────────────────────────────────────
 
-    @Test
-    void aFolderWithBindsIsAccepted(@TempDir Path dir) throws IOException {
-        Files.createFile(dir.resolve("Custom.4.0.binds"));
-
-        assertTrue(checkWith(false, dir, dir).hasBindingsFiles(dir));
-    }
-
-    @Test
-    void anEmptyFolderHasNoBindings(@TempDir Path dir) {
-        assertFalse(checkWith(false, dir, dir).hasBindingsFiles(dir));
-    }
-
-    @Test
-    void aMissingFolderHasNoBindings(@TempDir Path dir) {
-        assertFalse(checkWith(false, dir, dir).hasBindingsFiles(dir.resolve("nope")));
-        assertFalse(checkWith(false, dir, dir).hasBindingsFiles(null));
-    }
-
+    /**
+     * The game writes its preset file on its first run, customised controls or not, so a folder holding one is the
+     * game's - with no {@code .binds} in it at all, on a stock preset (Krondor, 2026-11-16).
+     */
     @Test
     void aStockPresetFolderIsRecognisedAsElitesOwn(@TempDir Path dir) throws IOException {
-        // Elite's folder, no .binds: the commander runs a stock preset and has never saved custom controls.
         Files.writeString(dir.resolve("StartPreset.4.start"), "ControlPad\n");
 
-        SetupCheck check = checkWith(false, dir, dir);
+        assertTrue(checkWith(false, dir, dir).isEliteBindingsFolder(dir));
+    }
 
-        assertFalse(check.hasBindingsFiles(dir));
-        assertTrue(check.isEliteBindingsFolder(dir));
+    /** A .binds alone does not make a folder the game's: the game always writes its preset file beside it. */
+    @Test
+    void aFolderOfBindsWithNoStartPresetIsNotElitesOwn(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Custom.4.0.binds"));
+
+        assertFalse(checkWith(false, dir, dir).isEliteBindingsFolder(dir));
     }
 
     @Test
@@ -175,22 +195,56 @@ class SetupCheckTest {
     }
 
     /**
-     * The bindings folder is right and the setting needs no touching, so the commander must not be told to go
-     * and change it - the fix for a never-customised stock preset is in the game.
+     * The bindings folder is right and the setting needs no touching, so the commander must not be told to go and
+     * change it: a stock preset is read from the installation, and the bindings monitor speaks if it cannot be.
      */
     @Test
-    void anUncustomisedStockPresetIsNotBlamedOnTheFolderSetting(@TempDir Path dir) throws IOException {
+    void anUncustomisedStockPresetSaysNothingAboutTheFolder(@TempDir Path dir) throws IOException {
         Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
         Files.writeString(dir.resolve("StartPreset.4.start"), "ControlPad\n");
 
-        List<String> spoken = capture(() -> checkWith(false, dir, dir).check());
+        assertTrue(capture(() -> checkWith(false, dir, dir).check()).isEmpty());
+    }
 
-        assertEquals(List.of(text("speech.setup.noSavedBindings")), spoken);
+    /**
+     * Alan, 2026-10-24: a new player's game has not created its bindings folder yet - it appears once they have
+     * played through the training - so they are told to play, not to change a setting that is already right.
+     */
+    @Test
+    void aNewPlayerWithNoGameBindingsFolderIsToldToPlayTheTrainingFirst(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Path gameDefault = dir.resolve("Options").resolve("Bindings");
+
+        List<String> spoken = capture(() -> checkWith(dir, gameDefault, gameDefault).check());
+
+        assertEquals(List.of(text("speech.setup.noBindingsYet")), spoken);
+    }
+
+    @Test
+    void theGameFolderWithNoStartPresetIsStillANewPlayer(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Path gameDefault = Files.createDirectories(dir.resolve("Options").resolve("Bindings"));
+
+        List<String> spoken = capture(() -> checkWith(dir, gameDefault, gameDefault).check());
+
+        assertEquals(List.of(text("speech.setup.noBindingsYet")), spoken);
+    }
+
+    /** A folder the commander chose that is missing is the wrong-folder case, not a new player. */
+    @Test
+    void aChosenFolderThatIsMissingIsStillTheWrongFolder(@TempDir Path dir) throws IOException {
+        Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Path gameDefault = dir.resolve("Options").resolve("Bindings");
+
+        List<String> spoken = capture(() -> checkWith(dir, dir.resolve("somewhere else"), gameDefault).check());
+
+        assertEquals(List.of(text("speech.setup.noBindings")), spoken);
     }
 
     @Test
     void aFullyConfiguredInstallSaysNothing(@TempDir Path dir) throws IOException {
         Files.createFile(dir.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(dir.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(dir.resolve("Custom.4.0.binds"));
 
         assertTrue(capture(() -> checkWith(false, dir, dir).check()).isEmpty());
@@ -199,6 +253,7 @@ class SetupCheckTest {
     @Test
     void aConfiguredModelWithTheWrongJournalFolderOnlyMentionsTheJournals(
             @TempDir Path journals, @TempDir Path bindings) throws IOException {
+        Files.writeString(bindings.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(bindings.resolve("Custom.4.0.binds"));
 
         List<String> spoken = capture(() -> checkWith(false, journals, bindings).check());
@@ -224,6 +279,7 @@ class SetupCheckTest {
     @Test
     void aCloudSetupWithNoProviderIsToldToPickOne(@TempDir Path journals, @TempDir Path bindings) throws IOException {
         Files.createFile(journals.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(bindings.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(bindings.resolve("Custom.4.0.binds"));
 
         List<String> spoken = capture(() -> checkWith(false, true, journals, bindings).check());
@@ -239,6 +295,7 @@ class SetupCheckTest {
     void theFreshInstallWarningIsNotDoubledByTheProviderOne(@TempDir Path journals, @TempDir Path bindings)
             throws IOException {
         Files.createFile(journals.resolve("Journal.2026-08-11T200621.01.log"));
+        Files.writeString(bindings.resolve("StartPreset.4.start"), "Custom\n");
         Files.createFile(bindings.resolve("Custom.4.0.binds"));
 
         List<String> spoken = capture(() -> checkWith(true, true, journals, bindings).check());
@@ -252,7 +309,13 @@ class SetupCheckTest {
 
     private static SetupCheck checkWith(boolean llmUnconfigured, boolean providerMissing, Path journals, Path bindings) {
         return new SetupCheck(new BindingsLoader(), () -> llmUnconfigured, () -> providerMissing,
-                () -> journals, () -> bindings);
+                () -> journals, () -> bindings, DirectorySetting::defaultBindingsPath);
+    }
+
+    /** A configured model, with the game's default bindings folder at {@code gameDefault}. */
+    private static SetupCheck checkWith(Path journals, Path bindings, Path gameDefault) {
+        return new SetupCheck(new BindingsLoader(), () -> false, () -> false, () -> journals, () -> bindings,
+                () -> gameDefault);
     }
 
     private static String text(String key) {
@@ -284,7 +347,8 @@ class SetupCheckTest {
 
     @Test
     void everyWarningIsTranslatedInEveryLanguage() {
-        for (String key : new String[]{"speech.setup.noLlm", "speech.setup.noJournals", "speech.setup.noBindings"}) {
+        for (String key : new String[]{"speech.setup.noLlm", "speech.setup.noJournals", "speech.setup.noBindings",
+                "speech.setup.noBindingsYet"}) {
             String english = MultiLingualTextProvider.getText(Language.EN, key);
             assertFalse(english.isBlank(), key);
             assertNotEquals(key, english, "missing from the base bundle: " + key);
@@ -301,19 +365,35 @@ class SetupCheckTest {
     }
 
     /**
-     * The onboarding line has to name the two ways out and where to read about them, in every language -
-     * a commander who cannot act on it is no better off than one who heard nothing.
+     * The onboarding line has to name the local model and where to read about the ways out, in every language -
+     * a commander who cannot act on it is no better off than one who heard nothing. It promises no free cloud
+     * tier: Mistral ended its own, and no other provider has one to send a commander to.
+     * <p>
+     * The site is spoken, never shown, so Cyrillic locales say it phonetically ("элит интел точка орг"): a
+     * Russian voice handed a Latin domain either spells it out or mangles it. Hence the expected token is
+     * per-language rather than the Latin name everywhere.
      */
     @Test
-    void theOnboardingLineNamesBothOptionsAndTheSite() {
+    void theOnboardingLineNamesTheLocalModelAndTheSite() {
         for (Language language : Language.values()) {
             String text = MultiLingualTextProvider.getText(language, "speech.setup.noLlm");
 
-            assertTrue(text.contains("Mistral"), language + " does not name Mistral");
+            assertFalse(text.contains("Mistral"), language + " still offers the Mistral free tier");
             assertTrue(text.contains("Gemma 4 E4B"), language + " does not name the local model");
-            assertTrue(text.toLowerCase().contains("intel"),
+            assertTrue(text.toLowerCase().contains(spokenSiteToken(language)),
                     language + " does not point at the site");
         }
+    }
+
+    /**
+     * How this language says the "intel" of the site name aloud.
+     */
+    private static String spokenSiteToken(Language language) {
+        return switch (language) {
+            case RU -> "интел";
+            case UK -> "інтел";
+            default -> "intel";
+        };
     }
 
     @Test

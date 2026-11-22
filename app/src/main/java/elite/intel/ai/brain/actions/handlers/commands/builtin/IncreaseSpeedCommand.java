@@ -29,10 +29,12 @@ public final class IncreaseSpeedCommand implements IntelCommand {
     /**
      * How long each throttle step holds its key. WHY not a tap: the throttle keys are read as held state each
      * frame, and a tap (about 20 ms on the Robot path) can fall between two frames - the beeps sounded but the
-     * throttle never moved, while the same key pressed by hand worked. 120 ms is what UI select already needs
-     * to register (see RequestDockingCommand). Shared with {@link DecreaseSpeedCommand}.
+     * throttle never moved, while the same key pressed by hand worked. The throttle also moves for as long as the
+     * key is down, so this length sets the size of a step: at 120 ms "increase speed by four" moved it about one
+     * notch, and at 250 ms the HUD throttle moves exactly one notch per step (checked in game). Shared with
+     * {@link DecreaseSpeedCommand}.
      */
-    static final int THROTTLE_STEP_HOLD_MS = 120;
+    static final int THROTTLE_STEP_HOLD_MS = 250;
 
     @Override
     public String llmDescription() {

@@ -1,19 +1,17 @@
 package elite.intel.bindforge.io;
 
 /**
- * Outcome of a single-slot keyboard binding save attempt.
+ * Outcome of one binding edit.
  * <p>
- * The UI should treat every non-success result as non-destructive: the writer
- * either did not write, or failed while using a backup/temp-file flow.
+ * Every result but {@link #SAVED} leaves the file as it was. The edits' own failures are exceptions, not results
+ * (Storage S5: the writer reads and writes no file, so the stale-file, backup and write-failed results went with the
+ * file it wrote - the last in S6R).
  */
 public enum BindingSaveResult {
     SAVED,
     NO_CHANGE,
-    STALE_FILE,
     UNKNOWN_KEY,
     KEY_OCCUPIED,
     BINDING_NOT_FOUND,
-    UNSUPPORTED_XML,
-    BACKUP_FAILED,
-    WRITE_FAILED
+    UNSUPPORTED_XML
 }

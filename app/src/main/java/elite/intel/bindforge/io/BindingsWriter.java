@@ -2,16 +2,10 @@ package elite.intel.bindforge.io;
 
 import elite.intel.bindforge.model.*;
 import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
-import elite.intel.io.AtomicFiles;
-import elite.intel.io.TimestampedBackups;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,11 +26,16 @@ import java.util.stream.Collectors;
  * application does not take it away; only an empty {@code {NoDevice}} slot or an
  * existing keyboard slot the user is explicitly reassigning may be written.
  * <p>
- * The user-edit path - {@link #assignSlot(SlotAssignment)} and {@link #assignAxis(AxisAssignment)} - is the
- * exception, and only for an edit the user made on purpose in the bindings editor, having been shown what was
- * there: it may write any device. Nothing automatic calls it. {@link #rewriteDeviceReferences(List,
- * DeviceReferenceRewrite, Path)} moves a device's references when its {@code DeviceMappings.xml} name changes.
+ * The user-edit path - {@link #assignSlot(byte[], SlotAssignment)} and
+ * {@link #assignAxis(byte[], AxisAssignment)} - is the exception, and only for an edit the user made on purpose in
+ * the bindings editor, having been shown what was there: it may write any device. Nothing automatic calls it.
+ * {@link #rewriteDeviceReferences(String, DeviceReferenceRewrite)} moves a device's references when its
+ * {@code DeviceMappings.xml} name changes.
  * None of this widens {@link KeyBindingsParser}: writing a controller binding never makes one executable.
+ * <p>
+ * <strong>Nothing here reads or writes a file</strong> (Storage S5, 2026-10-28). Each method takes a binds file's
+ * bytes - the edits not applied hold them - and returns the changed bytes; APPLY is the only thing that reaches the
+ * game ({@code bindforge.storage.Edits}, storage.md rules 6-7). A UTF-8 byte-order mark is kept.
  */
 public class BindingsWriter {
     private static final Logger log = LogManager.getLogger(BindingsWriter.class);
@@ -47,71 +46,57 @@ public class BindingsWriter {
     private static final Pattern DEVICE_ATTRIBUTE = Pattern.compile("(?<![A-Za-z0-9_.:-])Device\\s*=\\s*([\"'])(.*?)\\1");
     private static final Pattern VALUE_ATTRIBUTE = Pattern.compile("(?<![A-Za-z0-9_.:-])Value\\s*=\\s*([\"'])(.*?)\\1");
 
+    // The binds file's own layout, which decides what a keyboard key may be called - see namedOnFileLayout.
+    private static final Pattern KEYBOARD_LAYOUT = Pattern.compile("<KeyboardLayout>\\s*([^<]*?)\\s*</KeyboardLayout>");
+
     // The tokens the user-edit path writes, by device - the vocabulary the game itself writes.
     // Characters that would need escaping in an attribute are never part of one.
     // WHY no list of keys: a non-English layout writes the character itself (Key_ß, Key_é), so
     // EliteKeyboardKeys cannot hold every key the game writes; any Key_ name with something after it is a key.
-    private static final Pattern KEYBOARD_LAYOUT = Pattern.compile("<KeyboardLayout>\\s*([^<]*?)\\s*</KeyboardLayout>");
     private static final Pattern KEYBOARD_TOKEN = Pattern.compile("Key_[^\\s\"'<>&]+");
     private static final Pattern MOUSE_BUTTON_TOKEN = Pattern.compile("Mouse_[1-9][0-9]*|(?:Pos|Neg)_Mouse_ZAxis");
     private static final String GAME_AXIS = "(?:X|Y|Z|RX|RY|RZ|U|V)Axis";
+    private static final String GAMEPAD_TOKEN = "Pos_GamePad_(?:LTrigger|RTrigger)"
+            + "|GamePad_(?:Face(?:Down|Right|Left|Up)|Back|LBumper|RBumper|LThumb|RThumb|DPad(?:Up|Right|Down|Left))";
     private static final Pattern CONTROLLER_BUTTON_TOKEN =
-            Pattern.compile("Joy_[1-9][0-9]*|Joy_POV[1-4](?:Up|Down|Left|Right)|(?:Pos|Neg)_Joy_" + GAME_AXIS);
+            Pattern.compile("Joy_[1-9][0-9]*|Joy_POV[1-4](?:Up|Down|Left|Right)|(?:Pos|Neg)_Joy_" + GAME_AXIS
+                    + "|" + GAMEPAD_TOKEN);
     private static final Pattern CONTROLLER_AXIS_TOKEN = Pattern.compile("Joy_" + GAME_AXIS);
+    private static final Pattern SETTING_VALUE = Pattern.compile("[^\"'<>&]*");
 
     // Any child element of a slot, by name - comments, processing instructions and closing tags excluded.
     private static final Pattern SLOT_CHILD = Pattern.compile("<(?![/!?])([A-Za-z_][A-Za-z0-9_.:-]*)(?=[\\s>/])");
 
     private final KeyboardKeyAvailabilityService availabilityService;
-    private final TimestampedBackups backups;
-    private final FileWrite deviceRewriteWrite;
 
     public BindingsWriter() {
         this(new KeyboardKeyAvailabilityService());
     }
 
     BindingsWriter(KeyboardKeyAvailabilityService availabilityService) {
-        this(availabilityService, new TimestampedBackups());
-    }
-
-    BindingsWriter(KeyboardKeyAvailabilityService availabilityService, TimestampedBackups backups) {
-        this(availabilityService, backups, AtomicFiles::write);
-    }
-
-    BindingsWriter(KeyboardKeyAvailabilityService availabilityService, TimestampedBackups backups,
-                   FileWrite deviceRewriteWrite) {
         this.availabilityService = availabilityService;
-        this.backups = backups;
-        this.deviceRewriteWrite = deviceRewriteWrite;
-    }
-
-    /**
-     * How the multi-file device rewrite writes and puts back a file: {@link AtomicFiles#write} in use. A test
-     * replaces it to act between one file's write and the next - the game saving a file mid-rewrite.
-     */
-    @FunctionalInterface
-    interface FileWrite {
-        void write(Path file, byte[] content) throws IOException;
     }
 
     /**
      * Replaces exactly one selected V1-supported slot with a plain keyboard
      * slot or the canonical Elite Dangerous empty slot.
      * <p>
-     * The method rejects stale files before and after backup creation, validates
-     * the key against the full active file, and edits raw XML text instead of
-     * using a DOM Transformer. That avoids reformatting the whole file and keeps
-     * unrelated XML byte-for-byte identical apart from the selected slot.
+     * The method validates the key against the whole file and edits raw XML text instead of using a DOM
+     * Transformer. That avoids reformatting the whole file and keeps unrelated XML byte-for-byte identical apart
+     * from the selected slot.
+     *
+     * @param binds the binds file's bytes
      */
-    public BindingSaveResult assignKeyboardKey(KeyboardBindingEdit edit) {
-        return assignKeyboardKey(edit, List.of(), false);
+    public EditedBinds assignKeyboardKey(byte[] binds, KeyboardBindingEdit edit) {
+        return assignKeyboardKey(binds, edit, List.of(), false);
     }
 
     /**
      * Assigns a keyboard key with exactly one supported keyboard modifier.
      */
-    public BindingSaveResult assignKeyboardKeyWithModifier(KeyboardBindingEdit edit, BindingModifier modifier) {
-        return assignKeyboardKeyWithModifiers(edit, modifier == null ? List.of() : List.of(modifier));
+    public EditedBinds assignKeyboardKeyWithModifier(byte[] binds, KeyboardBindingEdit edit,
+                                                     BindingModifier modifier) {
+        return assignKeyboardKeyWithModifiers(binds, edit, modifier == null ? List.of() : List.of(modifier));
     }
 
     /**
@@ -119,15 +104,16 @@ public class BindingsWriter {
      * modifiers (e.g. Left Ctrl + Left Shift). The order of {@code modifiers} is
      * preserved in the written XML but is not significant to the game.
      */
-    public BindingSaveResult assignKeyboardKeyWithModifiers(KeyboardBindingEdit edit, List<BindingModifier> modifiers) {
+    public EditedBinds assignKeyboardKeyWithModifiers(byte[] binds, KeyboardBindingEdit edit,
+                                                      List<BindingModifier> modifiers) {
         if (modifiers == null || modifiers.isEmpty()
                 || !modifiers.stream().allMatch(BindingModifier::isSupportedKeyboardModifier)) {
-            return BindingSaveResult.UNSUPPORTED_XML;
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
         }
         if (edit.clearsSlot()) {
-            return BindingSaveResult.UNKNOWN_KEY;
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
-        return assignKeyboardKey(edit, modifiers, true);
+        return assignKeyboardKey(binds, edit, modifiers, true);
     }
 
     /**
@@ -144,91 +130,133 @@ public class BindingsWriter {
      * layout writes the character itself ({@code Key_ß}). Hold is written as the child the game writes, unless
      * the slot already carries it as an attribute, which is kept.
      */
-    public BindingSaveResult assignSlot(SlotAssignment edit) {
+    public EditedBinds assignSlot(byte[] binds, SlotAssignment edit) {
         if ((!edit.clearsSlot() && !isButtonInput(edit.input()))
                 || !edit.modifiers().stream().allMatch(BindingsWriter::isButtonInput)) {
-            return BindingSaveResult.UNKNOWN_KEY;
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
-        try {
-            if (isStale(edit.file(), edit.expectedLastModified(), edit.expectedFileSize())) {
-                return BindingSaveResult.STALE_FILE;
-            }
-
-            EncodedXml encodedXml = readXml(edit.file());
-            String xml = encodedXml.xml();
-            if (!edit.clearsSlot() && BindingInput.KEYBOARD.equals(edit.input().device())
-                    && !namedOnFileLayout(xml, edit.input().key())) {
-                return BindingSaveResult.UNKNOWN_KEY;
-            }
-            LocatedAction action = locateAction(xml, edit.bindingId());
-            if (action.result() != null) {
-                return action.result();
-            }
-            LocatedSlot slot = locateSlot(xml, action.range(), edit.slotType());
-            if (slot.result() != null) {
-                return slot.result();
-            }
-            ExistingSlot existing = readUserEditableSlot(xml, slot.range(), edit.slotType());
-            if (existing == null) {
-                return BindingSaveResult.UNSUPPORTED_XML;
-            }
-            if (existing.matches(edit)) {
-                return BindingSaveResult.NO_CHANGE;
-            }
-
-            String replacement = userSlotXml(edit, lineIndent(xml, slot.range().start()), existing.holdAsAttribute());
-            String updatedXml = replaceRange(xml, slot.range(), replacement);
-            return writeReplacement(edit.file(), new EncodedXml(updatedXml, encodedXml.hasUtf8Bom()));
-        } catch (IOException e) {
-            log.warn("Could not write slot {} {} in {}: {}", edit.bindingId(), edit.slotType(), edit.file(), e.getMessage());
-            return BindingSaveResult.WRITE_FAILED;
+        EncodedXml encodedXml = decode(binds);
+        String xml = encodedXml.xml();
+        if (!edit.clearsSlot() && BindingInput.KEYBOARD.equals(edit.input().device())
+                && !namedOnFileLayout(xml, edit.input().key())) {
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
+        LocatedAction action = locateAction(xml, edit.bindingId());
+        if (action.result() != null) {
+            return EditedBinds.unchanged(action.result(), binds);
+        }
+        LocatedSlot slot = locateSlot(xml, action.range(), edit.slotType());
+        if (slot.result() != null) {
+            return EditedBinds.unchanged(slot.result(), binds);
+        }
+        ExistingSlot existing = readUserEditableSlot(xml, slot.range(), edit.slotType());
+        if (existing == null) {
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+        }
+        if (existing.matches(edit)) {
+            return EditedBinds.unchanged(BindingSaveResult.NO_CHANGE, binds);
+        }
+
+        String replacement = userSlotXml(edit, lineIndent(xml, slot.range().start()), existing.holdAsAttribute());
+        String updatedXml = replaceRange(xml, slot.range(), replacement);
+        return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
     }
 
     /**
      * Writes one axis element as the user chose it in the editor - its {@code <Binding>}, {@code <Inverted>} and
      * {@code <Deadzone>} - or clears its binding, keeping Inverted and Deadzone as given. The user-edit path, as
-     * {@link #assignSlot(SlotAssignment)}.
+     * {@link #assignSlot(byte[], SlotAssignment)}.
      * <p>
-     * Takes a controller's whole axis only, {@code Joy_XAxis} to {@code Joy_VAxis} ({@code UNKNOWN_KEY} otherwise).
-     * An element without exactly one of each of the three, or with any of them in a shape it does not know, is
-     * refused ({@code UNSUPPORTED_XML}). A deadzone equal, as a float, to the one already there keeps its text.
+     * Takes a controller's whole axis only, {@code Joy_XAxis} to {@code Joy_VAxis} ({@code UNKNOWN_KEY} otherwise) -
+     * or the input the element already holds, whatever it is, so Inverted and Deadzone can change on a gamepad's stick
+     * without the stick being refused. An element without exactly one of each of the three, or with any of them in a
+     * shape it does not know, is refused ({@code UNSUPPORTED_XML}). A deadzone equal, as a float, to the one already
+     * there keeps its text.
      */
-    public BindingSaveResult assignAxis(AxisAssignment edit) {
-        if (!edit.clearsSlot() && !isAxisInput(edit.axis())) {
-            return BindingSaveResult.UNKNOWN_KEY;
+    public EditedBinds assignAxis(byte[] binds, AxisAssignment edit) {
+        EncodedXml encodedXml = decode(binds);
+        String xml = encodedXml.xml();
+        LocatedAction action = locateAction(xml, edit.bindingId());
+        if (action.result() != null) {
+            return edit.clearsSlot() || isAxisInput(edit.axis())
+                    ? EditedBinds.unchanged(action.result(), binds)
+                    : EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
-        try {
-            if (isStale(edit.file(), edit.expectedLastModified(), edit.expectedFileSize())) {
-                return BindingSaveResult.STALE_FILE;
-            }
-
-            EncodedXml encodedXml = readXml(edit.file());
-            String xml = encodedXml.xml();
-            LocatedAction action = locateAction(xml, edit.bindingId());
-            if (action.result() != null) {
-                return action.result();
-            }
-            AxisParts parts = locateAxisParts(xml, action.range());
-            if (parts == null) {
-                return BindingSaveResult.UNSUPPORTED_XML;
-            }
-
-            List<Replacement> replacements = axisReplacements(edit, parts);
-            if (replacements.isEmpty()) {
-                return BindingSaveResult.NO_CHANGE;
-            }
-            // Replace from the end of the file backwards, so an earlier range is not moved by a later replacement.
-            replacements.sort(Comparator.comparingInt((Replacement r) -> r.range().start()).reversed());
-            String updatedXml = xml;
-            for (Replacement replacement : replacements) {
-                updatedXml = replaceRange(updatedXml, replacement.range(), replacement.text());
-            }
-            return writeReplacement(edit.file(), new EncodedXml(updatedXml, encodedXml.hasUtf8Bom()));
-        } catch (IOException e) {
-            log.warn("Could not write axis {} in {}: {}", edit.bindingId(), edit.file(), e.getMessage());
-            return BindingSaveResult.WRITE_FAILED;
+        AxisParts parts = locateAxisParts(xml, action.range());
+        if (!edit.clearsSlot() && !isAxisInput(edit.axis()) && !holds(parts, edit.axis())) {
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
+        if (parts == null) {
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+        }
+
+        List<Replacement> replacements = axisReplacements(edit, parts);
+        if (replacements.isEmpty()) {
+            return EditedBinds.unchanged(BindingSaveResult.NO_CHANGE, binds);
+        }
+        // Replace from the end of the file backwards, so an earlier range is not moved by a later replacement.
+        replacements.sort(Comparator.comparingInt((Replacement r) -> r.range().start()).reversed());
+        String updatedXml = xml;
+        for (Replacement replacement : replacements) {
+            updatedXml = replaceRange(updatedXml, replacement.range(), replacement.text());
+        }
+        return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
+    }
+
+    private static boolean holds(AxisParts parts, BindingInput input) {
+        return parts != null && input.device().equals(parts.device()) && input.key().equals(parts.key());
+    }
+
+    /**
+     * Writes the value of one bare setting, {@code <MouseSensitivity Value="1.00000000" />}. The user-edit path: nothing
+     * automatic calls it. An empty value is a real one - it is the game's default choice - so it is written, never
+     * removed.
+     * <p>
+     * <strong>A setting the file holds more than once is one setting</strong> (bind-editor.md, <em>Toggles</em>, Q4
+     * settled 2026-11-11): the value is written into every copy, adding or removing none, so the copies never differ
+     * afterwards. Every binds file the game saves holds {@code MouseGUI} twice (storage.md rule 14).
+     * <p>
+     * Refuses a setting the file does not hold ({@code BINDING_NOT_FOUND}), and one with any copy in another shape than
+     * {@code <Name Value="..." />} ({@code UNSUPPORTED_XML}). {@code NO_CHANGE} only when every copy already holds it.
+     * <p>
+     * A copy is a direct child of the root, as {@link BindsValues} reads it: an element of the same name nested deeper,
+     * or one inside a comment, is not the setting and is left as it is. WHY: the reader decides a row is editable from
+     * those copies alone, and a writer that counted more would refuse a row shown as editable, or rewrite a comment.
+     *
+     * @param value what to write; characters that would need escaping in an attribute are refused ({@code UNKNOWN_KEY})
+     */
+    public EditedBinds assignSetting(byte[] binds, String setting, String value) {
+        if (!SETTING_VALUE.matcher(value).matches()) {
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
+        }
+        EncodedXml encodedXml = decode(binds);
+        String xml = encodedXml.xml();
+        List<Integer> starts = topLevelStarts(xml, setting);
+        if (starts == null) {
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+        }
+        if (starts.isEmpty()) {
+            return EditedBinds.unchanged(BindingSaveResult.BINDING_NOT_FOUND, binds);
+        }
+        List<TextRange> values = new ArrayList<>();
+        TextRange wholeFile = new TextRange(0, xml.length());
+        for (int start : starts) {
+            TextRange tag = selfClosingTagAt(xml, start, wholeFile, Set.of("Value"));
+            TextRange current = tag == null ? null : valueRange(xml, tag);
+            if (current == null) {
+                return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
+            }
+            values.add(current);
+        }
+        if (values.stream().allMatch(range -> value.equals(xml.substring(range.start(), range.end())))) {
+            return EditedBinds.unchanged(BindingSaveResult.NO_CHANGE, binds);
+        }
+        String updatedXml = xml;
+        // WHY last first: replacing a later copy leaves the offsets of the earlier ones where they were.
+        for (TextRange current : values.reversed()) {
+            updatedXml = replaceRange(updatedXml, current, value);
+        }
+        return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
     }
 
     /**
@@ -262,171 +290,47 @@ public class BindingsWriter {
         return new RewrittenXml(out.toString(), references);
     }
 
-    /**
-     * Moves every reference to a device across several {@code .binds} files - the game's, and any draft or saved
-     * copy of them - all or nothing. A device's name in {@code .binds} has to change with its
-     * {@code DeviceMappings.xml} entry, and one file left naming the old one costs the user the whole preset.
-     * <p>
-     * Every file is read before any is written, and a file whose text cannot be rewritten whole stops it there
-     * ({@code UNSUPPORTED_XML}). Each file that changes is backed up to {@code backupDirectory} first, re-read just
-     * before its write - if the game saved it in between, nothing is overwritten - and written atomically, BOM kept.
-     * If any write fails, or any file turns out changed, every file already written is put back, unless the game
-     * has saved it since, which is left as the game wrote it. One file named twice, under any spelling, is
-     * rewritten once.
-     * <p>
-     * Rewriting the game's file and its working copy together moves both away from the working copy's baseline,
-     * which would make the next apply refuse the draft as a conflict. A caller that rewrites a working copy calls
-     * {@link BindingsWorkingCopyRepository#recordGameFileBaseline(String, Path)} for its preset once this succeeds.
-     * <p>
-     * Files are written in the order given, so list the game's file last. Writing it makes {@link BindingsMonitor}
-     * reload the bindings, and that reload copies the game's file over a working copy that holds no draft; a working
-     * copy still to come would then read as changed, and the whole rewrite would be put back as {@code STALE_FILE}.
-     */
-    public DeviceRewriteResult rewriteDeviceReferences(List<Path> bindsFiles, DeviceReferenceRewrite rewrite,
-                                                       Path backupDirectory) {
-        Objects.requireNonNull(rewrite, "rewrite");
-        Objects.requireNonNull(backupDirectory, "backupDirectory");
-
-        RewritePlan plan = planDeviceRewrite(bindsFiles, rewrite);
-        if (plan.failure() != null) {
-            return plan.failure();
-        }
-        Map<Path, Integer> references = plan.references();
-        if (references.isEmpty()) {
-            return new DeviceRewriteResult(DeviceRewriteResult.Status.NO_REFERENCES, references, null, List.of());
-        }
-        DeviceRewriteResult backupFailure = backUp(plan.files(), references, backupDirectory);
-        if (backupFailure != null) {
-            return backupFailure;
-        }
-        DeviceRewriteResult result = writeAll(plan.files(), references);
-        if (result.status() == DeviceRewriteResult.Status.REWRITTEN) {
-            log.info("Moved {} device references from {} to {} in {} file(s)",
-                    result.totalReferences(), rewrite.from(), rewrite.to(), references.size());
-        }
-        return result;
-    }
-
-    // Phase one: read every file and work out its rewritten bytes, writing nothing.
-    private RewritePlan planDeviceRewrite(List<Path> bindsFiles, DeviceReferenceRewrite rewrite) {
-        Set<Path> seen = new HashSet<>();
-        List<PlannedFile> planned = new ArrayList<>();
-        Map<Path, Integer> references = new LinkedHashMap<>();
-        for (Path given : bindsFiles) {
-            Path file = given.toAbsolutePath().normalize();
-            byte[] bytes;
-            try {
-                // WHY toRealPath: on Windows one file has many spellings - case, 8.3 short names, junctions. Two
-                // entries for one file would make the second's stale check see the first's write and roll back.
-                file = file.toRealPath();
-                if (!seen.add(file)) {
-                    continue;
-                }
-                bytes = Files.readAllBytes(file);
-            } catch (IOException e) {
-                log.warn("Device rewrite stopped: cannot read {}: {}", file, e.getMessage());
-                return RewritePlan.failed(DeviceRewriteResult.Status.READ_FAILED, references, file);
-            }
-            EncodedXml encodedXml = decode(bytes);
-            RewrittenXml result;
-            try {
-                result = rewriteDeviceReferences(encodedXml.xml(), rewrite);
-            } catch (IllegalArgumentException e) {
-                log.warn("Device rewrite stopped: cannot rewrite {} whole: {}", file, e.getMessage());
-                return RewritePlan.failed(DeviceRewriteResult.Status.UNSUPPORTED_XML, references, file);
-            }
-            if (result.references() > 0) {
-                planned.add(new PlannedFile(file, bytes,
-                        encode(new EncodedXml(result.xml(), encodedXml.hasUtf8Bom()))));
-                references.put(file, result.references());
-            }
-        }
-        return new RewritePlan(planned, references, null);
-    }
-
-    // Phase two: back up every file that will change; null when all were backed up.
-    private DeviceRewriteResult backUp(List<PlannedFile> planned, Map<Path, Integer> references, Path backupDirectory) {
-        for (PlannedFile plannedFile : planned) {
-            try {
-                backups.create(plannedFile.file(), backupDirectory);
-            } catch (IOException e) {
-                log.warn("Device rewrite stopped: cannot back up {}: {}", plannedFile.file(), e.getMessage());
-                return new DeviceRewriteResult(DeviceRewriteResult.Status.BACKUP_FAILED, references,
-                        plannedFile.file(), List.of());
-            }
-        }
-        return null;
-    }
-
-    // Phase three: write each file, refusing one the game changed since phase one; on any failure, put back.
-    private DeviceRewriteResult writeAll(List<PlannedFile> planned, Map<Path, Integer> references) {
-        List<PlannedFile> written = new ArrayList<>();
-        for (PlannedFile plannedFile : planned) {
-            Path file = plannedFile.file();
-            try {
-                if (!Arrays.equals(Files.readAllBytes(file), plannedFile.original())) {
-                    log.warn("Device rewrite stopped: {} changed after it was read", file);
-                    return putBack(DeviceRewriteResult.Status.STALE_FILE, references, file, written);
-                }
-                deviceRewriteWrite.write(file, plannedFile.rewritten());
-                written.add(plannedFile);
-            } catch (IOException e) {
-                log.warn("Device rewrite stopped: cannot write {}: {}", file, e.getMessage());
-                return putBack(DeviceRewriteResult.Status.WRITE_FAILED, references, file, written);
-            }
-        }
-        return new DeviceRewriteResult(DeviceRewriteResult.Status.REWRITTEN, references, null, List.of());
-    }
-
-    private BindingSaveResult assignKeyboardKey(
+    private EditedBinds assignKeyboardKey(
+            byte[] binds,
             KeyboardBindingEdit edit,
             List<BindingModifier> requestedModifiers,
             boolean rewriteModifier
     ) {
         if (!edit.clearsSlot() && !EliteKeyboardKeys.isAssignable(edit.key())) {
-            return BindingSaveResult.UNKNOWN_KEY;
+            return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
         }
 
         try {
-            if (isStale(edit)) {
-                return BindingSaveResult.STALE_FILE;
-            }
-
-            EncodedXml encodedXml = readXml(edit.file());
+            EncodedXml encodedXml = decode(binds);
             if (!edit.clearsSlot() && !namedOnFileLayout(encodedXml.xml(), edit.key())) {
-                return BindingSaveResult.UNKNOWN_KEY;
+                return EditedBinds.unchanged(BindingSaveResult.UNKNOWN_KEY, binds);
             }
             LocatedAction action = locateAction(encodedXml.xml(), edit.bindingId());
             if (action.result() != null) {
-                return action.result();
+                return EditedBinds.unchanged(action.result(), binds);
             }
 
             LocatedSlot slot = locateSlot(encodedXml.xml(), action.range(), edit.slotType());
             if (slot.result() != null) {
-                return slot.result();
+                return EditedBinds.unchanged(slot.result(), binds);
             }
 
             SlotXml slotXml = inspectSlot(encodedXml.xml(), slot.range(), edit.slotType());
             if (!slotXml.supportedForV1Edit()) {
-                return BindingSaveResult.UNSUPPORTED_XML;
+                return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
             }
 
             if (isNoChange(slotXml, edit, requestedModifiers, rewriteModifier)) {
-                return BindingSaveResult.NO_CHANGE;
+                return EditedBinds.unchanged(BindingSaveResult.NO_CHANGE, binds);
             }
 
             if (!edit.clearsSlot() && availabilityService.isKeyOccupiedByOtherSlot(
-                    edit.file(),
+                    binds,
                     edit.bindingId(),
-                    edit.slotType(),
                     edit.key(),
                     rewriteModifier ? requestedModifiers : List.of()
             )) {
-                return BindingSaveResult.KEY_OCCUPIED;
-            }
-
-            if (isStale(edit)) {
-                return BindingSaveResult.STALE_FILE;
+                return EditedBinds.unchanged(BindingSaveResult.KEY_OCCUPIED, binds);
             }
 
             String updatedXml = replaceRange(
@@ -434,11 +338,11 @@ public class BindingsWriter {
                     slot.range(),
                     replacementSlot(edit, requestedModifiers, rewriteModifier, slotXml)
             );
-            return writeReplacement(edit.file(), new EncodedXml(updatedXml, encodedXml.hasUtf8Bom()));
-        } catch (IOException e) {
-            return BindingSaveResult.WRITE_FAILED;
+            return EditedBinds.saved(encode(new EncodedXml(updatedXml, encodedXml.hasUtf8Bom())));
         } catch (Exception e) {
-            return BindingSaveResult.UNSUPPORTED_XML;
+            // WHY: the occupancy check parses the whole file; a file it cannot parse is not rewritten.
+            log.warn("Could not edit keyboard slot {} {}", edit.bindingId(), edit.slotType(), e);
+            return EditedBinds.unchanged(BindingSaveResult.UNSUPPORTED_XML, binds);
         }
     }
 
@@ -453,24 +357,11 @@ public class BindingsWriter {
         return GameKeyboardLayout.fromBindsTag(layout.find() ? layout.group(1) : null).namesKey(key);
     }
 
-    private EncodedXml readXml(Path file) throws IOException {
-        return decode(Files.readAllBytes(file));
-    }
-
     private boolean hasUtf8Bom(byte[] bytes) {
         return bytes.length >= UTF_8_BOM.length
                 && bytes[0] == UTF_8_BOM[0]
                 && bytes[1] == UTF_8_BOM[1]
                 && bytes[2] == UTF_8_BOM[2];
-    }
-
-    private BindingSaveResult writeReplacement(Path file, EncodedXml updatedXml) {
-        try {
-            AtomicFiles.write(file, encode(updatedXml));
-            return BindingSaveResult.SAVED;
-        } catch (IOException e) {
-            return BindingSaveResult.WRITE_FAILED;
-        }
     }
 
     private byte[] encode(EncodedXml encodedXml) {
@@ -483,10 +374,6 @@ public class BindingsWriter {
         System.arraycopy(UTF_8_BOM, 0, withBom, 0, UTF_8_BOM.length);
         System.arraycopy(content, 0, withBom, UTF_8_BOM.length, content.length);
         return withBom;
-    }
-
-    private boolean isStale(KeyboardBindingEdit edit) throws IOException {
-        return isStale(edit.file(), edit.expectedLastModified(), edit.expectedFileSize());
     }
 
     private boolean isNoChange(
@@ -725,6 +612,55 @@ public class BindingsWriter {
         return starts;
     }
 
+    /**
+     * Where each element named {@code tagName} starts that is a direct child of the root element - comments, CDATA,
+     * processing instructions and declarations skipped. {@code null} when the text is not well enough formed to tell:
+     * a comment, section or tag that never closes, or an end tag with no start.
+     */
+    private List<Integer> topLevelStarts(String xml, String tagName) {
+        List<Integer> starts = new ArrayList<>();
+        int depth = 0;
+        int at = xml.indexOf('<');
+        while (at >= 0) {
+            int next;
+            if (xml.startsWith("<!--", at)) {
+                next = endOf(xml, "-->", at + 4);
+            } else if (xml.startsWith("<![CDATA[", at)) {
+                next = endOf(xml, "]]>", at + 9);
+            } else if (xml.startsWith("<?", at)) {
+                next = endOf(xml, "?>", at + 2);
+            } else if (xml.startsWith("<!", at)) {
+                next = endOf(xml, ">", at + 2);
+            } else if (xml.startsWith("</", at)) {
+                if (--depth < 0) return null;
+                next = endOf(xml, ">", at + 2);
+            } else {
+                int tagEnd = findStartTagEnd(xml, at);
+                if (tagEnd < 0) return null;
+                if (depth == 1 && namedAt(xml, at, tagName)) starts.add(at);
+                if (!isSelfClosingStartTag(xml, at, tagEnd)) depth++;
+                next = tagEnd + 1;
+            }
+            if (next < 0) return null;
+            at = xml.indexOf('<', next);
+        }
+        return starts;
+    }
+
+    // Just past the first terminator at or after from; -1 when there is none.
+    private static int endOf(String xml, String terminator, int from) {
+        int found = xml.indexOf(terminator, from);
+        return found < 0 ? -1 : found + terminator.length();
+    }
+
+    // Whether the start tag at tagStart is named exactly tagName.
+    private static boolean namedAt(String xml, int tagStart, String tagName) {
+        int after = tagStart + 1 + tagName.length();
+        if (!xml.startsWith(tagName, tagStart + 1) || after >= xml.length()) return false;
+        char c = xml.charAt(after);
+        return Character.isWhitespace(c) || c == '>' || c == '/';
+    }
+
     private Pattern closingTagPattern(String tagName) {
         return Pattern.compile("</" + Pattern.quote(tagName) + "\\s*>");
     }
@@ -778,41 +714,10 @@ public class BindingsWriter {
         return names;
     }
 
-    // Puts each written file back, unless it no longer holds what the rewrite wrote: then the game has saved it
-    // since, and that save is the user's to keep.
-    private DeviceRewriteResult putBack(DeviceRewriteResult.Status status, Map<Path, Integer> references,
-                                        Path failedFile, List<PlannedFile> written) {
-        List<Path> notRestored = new ArrayList<>();
-        for (PlannedFile plannedFile : written.reversed()) {
-            Path file = plannedFile.file();
-            try {
-                if (!Arrays.equals(Files.readAllBytes(file), plannedFile.rewritten())) {
-                    log.warn("Device rewrite left {} alone: it changed after the rewrite wrote it; "
-                            + "its pre-rewrite copy is in the backup folder", file);
-                    notRestored.add(file);
-                    continue;
-                }
-                deviceRewriteWrite.write(file, plannedFile.original());
-            } catch (IOException e) {
-                log.error("Device rewrite could not put {} back; its pre-rewrite copy is in the backup folder: {}",
-                        file, e.getMessage());
-                notRestored.add(file);
-            }
-        }
-        return new DeviceRewriteResult(status, references, failedFile, notRestored);
-    }
-
     private EncodedXml decode(byte[] bytes) {
         boolean hasBom = hasUtf8Bom(bytes);
         int offset = hasBom ? UTF_8_BOM.length : 0;
         return new EncodedXml(new String(bytes, offset, bytes.length - offset, StandardCharsets.UTF_8), hasBom);
-    }
-
-    private boolean isStale(Path file, FileTime expectedLastModified, long expectedFileSize) throws IOException {
-        if (expectedLastModified == null || expectedFileSize < 0) {
-            return true;
-        }
-        return !Files.getLastModifiedTime(file).equals(expectedLastModified) || Files.size(file) != expectedFileSize;
     }
 
     // An input a button slot - or a modifier - can hold: a key, a mouse button or wheel direction, or a controller's
@@ -964,10 +869,11 @@ public class BindingsWriter {
 
     private TextRange singleSelfClosingTag(String xml, String tagName, TextRange within, Set<String> attributes) {
         List<Integer> starts = openingTagStarts(xml, tagName, within.start(), within.end());
-        if (starts.size() != 1) {
-            return null;
-        }
-        int start = starts.getFirst();
+        return starts.size() == 1 ? selfClosingTagAt(xml, starts.getFirst(), within, attributes) : null;
+    }
+
+    // The self-closing start tag at start, ending inside within and holding exactly these attributes; null otherwise.
+    private TextRange selfClosingTagAt(String xml, int start, TextRange within, Set<String> attributes) {
         int tagEnd = findStartTagEnd(xml, start);
         if (tagEnd < 0 || tagEnd >= within.end() || !isSelfClosingStartTag(xml, start, tagEnd)
                 || !attributes.equals(attributeNames(xml.substring(start, tagEnd + 1)))) {
@@ -980,17 +886,6 @@ public class BindingsWriter {
     private TextRange valueRange(String xml, TextRange tagRange) {
         Matcher value = VALUE_ATTRIBUTE.matcher(xml).region(tagRange.start(), tagRange.end()).useTransparentBounds(true);
         return value.find() ? new TextRange(value.start(2), value.end(2)) : null;
-    }
-
-    // One file of a device rewrite: its bytes as read, and as they will be written.
-    private record PlannedFile(Path file, byte[] original, byte[] rewritten) {
-    }
-
-    // Phase one's outcome: the files that change and their reference counts, or the failure that stopped it.
-    private record RewritePlan(List<PlannedFile> files, Map<Path, Integer> references, DeviceRewriteResult failure) {
-        private static RewritePlan failed(DeviceRewriteResult.Status status, Map<Path, Integer> references, Path file) {
-            return new RewritePlan(List.of(), references, new DeviceRewriteResult(status, references, file, List.of()));
-        }
     }
 
     private record SlotShape(String startTag, boolean selfClosing, int bodyStart, int bodyEnd) {

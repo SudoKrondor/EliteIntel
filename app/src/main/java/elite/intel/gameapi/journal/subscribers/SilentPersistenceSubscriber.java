@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.*;
 import elite.intel.gameapi.PreScanOnly;
@@ -12,6 +12,9 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
+import elite.intel.eventbus.UiBus;
+import elite.intel.ui.event.ShipProfileChangedEvent;
 import elite.intel.session.Position;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -252,13 +255,14 @@ public class SilentPersistenceSubscriber {
         ShipDao.Ship existing = shipManager.getShipById(event.getShipId());
         if (existing == null) {
             shipManager.save(event.getShipId(), shipName, event.getCargoCapacity(),
-                    event.getShip(), KokoroVoices.BELLA.name(), lastCommanderName);
+                    event.getShip(), SupertonicVoices.BELLA.name(), lastCommanderName);
         } else {
             existing.setCargoCapacity(event.getCargoCapacity());
             existing.setShipIdentifier(event.getShip());
             existing.setShipName(shipName);
             if (lastCommanderName != null) existing.setCommanderName(lastCommanderName);
             shipManager.saveShip(existing);
+            shipManager.inFleet(event.getShipId());
         }
 
         // Persist the full loadout and ship name so getShipLoadout() / getShipId()
@@ -267,6 +271,28 @@ public class SilentPersistenceSubscriber {
         playerSession.setShipLoadout(loadout);
         playerSession.setCurrentShipName(shipName);
         log.debug("PreScan: saved ship {} ({})", shipName, event.getShipId());
+    }
+
+    /**
+     * Replays a sale in journal order, so a Loadout replayed from before the sale cannot bring the sold ship back.
+     */
+    @Subscribe
+    public void onShipyardSell(ShipyardSellEvent event) {
+        if (shipManager.markSold(event.getSellShipID(), event.timestamp)) {
+            log.debug("PreScan: marked ship {} sold", event.getSellShipID());
+        }
+    }
+
+    /** Ships stored before the app started still reach the fleet - see {@link StoredShipsSubscriber}. */
+    @Subscribe
+    public void onStoredShips(StoredShipsEvent event) {
+        int added = StoredShips.addMissing(event,
+                SystemSession.getInstance().getTtsProvider().defaultVoiceName(), lastCommanderName);
+        log.debug("PreScan: added {} stored ships to the fleet", added);
+        // The Fleet tab may already have drawn the fleet without them, and the pre-scan announces nothing else.
+        if (added > 0) {
+            UiBus.publish(new ShipProfileChangedEvent());
+        }
     }
 
 }

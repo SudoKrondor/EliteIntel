@@ -18,8 +18,10 @@ public final class HudModalSpec {
     /** PRIMARY - main action (SAVE/RUN/...), right side, outermost.
      *  DISMISS - close without action (BACK), left side.
      *  EXTRA   - secondary actions (edit/delete), grouped with primary on the
-     *            right, placed to the left of primary. */
-    public enum Role { PRIMARY, DISMISS, EXTRA }
+     *            right, placed to the left of primary.
+     *  MIDDLE  - a destructive action kept away from both (CLEAR), centred between
+     *            the left and right groups. Added 2026-10-10 for the Device Editor. */
+    public enum Role { PRIMARY, DISMISS, EXTRA, MIDDLE }
 
     public record FooterButton(AbstractButton button, Role role) {}
 
@@ -28,6 +30,7 @@ public final class HudModalSpec {
     private final JComponent body;
     private final boolean scrollBody;
     private final List<FooterButton> footerButtons;
+    private final JComponent unsavedHint;   // nullable -> none
 
     private HudModalSpec(Builder b) {
         this.title = b.title;
@@ -35,6 +38,7 @@ public final class HudModalSpec {
         this.body = b.body;
         this.scrollBody = b.scrollBody;
         this.footerButtons = List.copyOf(b.footerButtons);
+        this.unsavedHint = b.unsavedHint;
     }
 
     public String title() { return title; }
@@ -42,6 +46,8 @@ public final class HudModalSpec {
     public JComponent body() { return body; }
     public boolean scrollBody() { return scrollBody; }
     public List<FooterButton> footerButtons() { return footerButtons; }
+    /** The HudUnsavedHint shown immediately left of the right-hand group, or null. */
+    public JComponent unsavedHint() { return unsavedHint; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -51,6 +57,7 @@ public final class HudModalSpec {
         private JComponent body;
         private boolean scrollBody;
         private final List<FooterButton> footerButtons = new ArrayList<>();
+        private JComponent unsavedHint;
 
         public Builder title(String title) { this.title = title; return this; }
         public Builder onClose(Runnable onClose) { this.onClose = onClose; return this; }
@@ -59,6 +66,9 @@ public final class HudModalSpec {
         public Builder primary(AbstractButton b) { footerButtons.add(new FooterButton(b, Role.PRIMARY)); return this; }
         public Builder dismiss(AbstractButton b) { footerButtons.add(new FooterButton(b, Role.DISMISS)); return this; }
         public Builder extra(AbstractButton b)   { footerButtons.add(new FooterButton(b, Role.EXTRA));   return this; }
+        public Builder middle(AbstractButton b)  { footerButtons.add(new FooterButton(b, Role.MIDDLE));  return this; }
+        /** The standard HudUnsavedHint, placed immediately left of the right-hand group (section 10). */
+        public Builder unsavedHint(JComponent hint) { this.unsavedHint = hint; return this; }
 
         public HudModalSpec build() {
             if (body == null) throw new IllegalStateException("HudModalSpec: body is required");

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Conflict Matrix — SRV Controls</title>
+<link rel="stylesheet" href="ConflictMatrix.css">
+</head>
+<body>
+<div class="cm-page">
+  <div class="cm-header">
+    <h1 class="cm-title">Subgroup Conflict Matrix — SRV Controls</h1>
+    <div class="cm-sub">
+      Click a cell to cycle Untested &rarr; No Conflict &rarr; Conflicts. Saved automatically in
+      this browser (localStorage). Add more subgroups below if testing turns up others beyond
+      these two.
+    </div>
+    <div class="cm-nav">
+      <a href="ConflictMatrix-General.html">GENERAL</a>
+      <a href="ConflictMatrix-Ship.html">SHIP</a>
+      <a href="ConflictMatrix-SRV.html" class="active">SRV</a>
+      <a href="ConflictMatrix-OnFoot.html">ON FOOT</a>
+    </div>
+  </div>
+  <div id="cm-root"></div>
+  <div class="cm-note">Nothing tested yet — Driving vs. Driving Turret Controls is still open.</div>
+</div>
+<script src="ConflictMatrix.js"></script>
+<script>
+ConflictMatrix.init({
+  storageKey: 'bindforge-conflict-matrix-srv',
+  subgroups: ['Driving','Driving Turret Controls'],
+  knownPairs: []
+});
+</script>
+</body>
+</html>

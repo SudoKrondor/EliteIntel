@@ -19,10 +19,15 @@ public interface ShipDao {
     @SqlQuery("SELECT * FROM ship where shipId= :shipId")
     Ship findShip(@Bind("shipId") int shipId);
 
-    @SqlQuery("SELECT * FROM ship")
+    /** The fleet: every ship not sold. */
+    @SqlQuery("SELECT * FROM ship WHERE soldAt IS NULL")
     List<Ship> allShips();
 
-    @SqlQuery("SELECT * FROM ship WHERE commanderName = :commanderName OR commanderName IS NULL")
+    /** Every row, sold ships included. */
+    @SqlQuery("SELECT * FROM ship")
+    List<Ship> allRows();
+
+    @SqlQuery("SELECT * FROM ship WHERE soldAt IS NULL AND (commanderName = :commanderName OR commanderName IS NULL)")
     List<Ship> allShipsForCommander(@Bind("commanderName") String commanderName);
 
 
@@ -40,10 +45,15 @@ public interface ShipDao {
     void save(@BindBean ShipDao.Ship ship);
 
     /**
-     * Forgets a ship. Its ship_settings and trade_profile rows go with it (ON DELETE CASCADE).
+     * Takes a sold ship off the fleet without deleting it, so its settings and trade profile survive a sale the
+     * game later contradicts. A ship already marked keeps its first stamp.
      */
-    @SqlUpdate("DELETE FROM ship WHERE shipId = :shipId")
-    int delete(@Bind("shipId") int shipId);
+    @SqlUpdate("UPDATE ship SET soldAt = :soldAt WHERE shipId = :shipId AND soldAt IS NULL")
+    int markSold(@Bind("shipId") int shipId, @Bind("soldAt") String soldAt);
+
+    /** Puts a ship the game names again back in the fleet. */
+    @SqlUpdate("UPDATE ship SET soldAt = NULL WHERE shipId = :shipId AND soldAt IS NOT NULL")
+    int clearSold(@Bind("shipId") int shipId);
 
 
     class ShipRowMapper implements RowMapper<Ship> {

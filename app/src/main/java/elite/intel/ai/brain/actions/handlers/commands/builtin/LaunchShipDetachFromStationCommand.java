@@ -43,6 +43,12 @@ public final class LaunchShipDetachFromStationCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         UiNavCommon.prepToTopOfTheDockedMenu();
+
+        // Fet the fuel before we leave
+        GameControllerBus.publish(GameInputSequenceEvent.of(
+                GameInputStep.bindingHold(Bindings.GameCommand.BINDING_UI_SELECT.getGameBinding(), 250)
+        ));
+
         // Launch is the third row, counted down from the top - see prepToTopOfTheDockedMenu() for why
         // the count runs downwards and not up from the bottom.
         GameControllerBus.publish(GameInputSequenceEvent.of(

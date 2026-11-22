@@ -1,0 +1,473 @@
+
+    =========================== USB Port4 ===========================
+
+Connection Status        : 0x01 (Device is connected)
+Port Chain               : 4-1-1-4
+Properties               : 0x01
+ IsUserConnectable       : yes
+ PortIsDebugCapable      : no
+ PortHasMultiCompanions  : no
+ PortConnectorIsTypeC    : no
+ConnectionIndex          : 0x04 (Port 4)
+CompanionIndex           : 0
+ CompanionHubSymLnk      : USB#VID_0BDA&PID_0411#7&21965cb6&0&1#{f18a0e88-c30c-11d0-8815-00a0c906bed8}
+ CompanionPortNumber     : 0x04 (Port 4)
+ -> CompanionPortChain   : 4-3-1-4
+
+      ========================== Summary =========================
+Vendor ID                : 0x054C (Sony Group Corporation)
+Product ID               : 0x05C4
+Manufacturer String      : Sony Computer Entertainment
+Product String           : Wireless Controller
+Serial                   : ---
+USB Version              : 2.0 -> but Device is Full-Speed only
+Port maximum Speed       : High-Speed (Companion Port 4-3-1-4 is doing the SuperSpeed)
+Device maximum Speed     : Full-Speed
+Device Connection Speed  : Full-Speed
+Self powered             : yes
+Demanded Current         : 500 mA
+Used Endpoints           : 3
+
+      ======================== USB Device ========================
+
+        +++++++++++++++++ Device Information ++++++++++++++++++
+Device Description       : USB Input Device
+Device Path              : \\?\USB#VID_054C&PID_05C4#8&1f31a475&0&4#{a5dcbf10-6530-11d2-901f-00c04fb951ed} (GUID_DEVINTERFACE_USB_DEVICE)
+Kernel Name              : \Device\USBPDO-31
+Device ID                : USB\VID_054C&PID_05C4\8&1F31A475&0&4
+Hardware IDs             : USB\VID_054C&PID_05C4&REV_0100 USB\VID_054C&PID_05C4
+Driver KeyName           : {745a17a0-74d3-11d0-b6fe-00a0c90f57da}\0003 (GUID_DEVCLASS_HIDCLASS)
+Driver                   : \SystemRoot\System32\drivers\hidusb.sys (Version: 10.0.26100.9278  Date: 2026-08-27  Company: Microsoft Corporation)
+Driver Inf               : C:\WINDOWS\inf\input.inf
+Legacy BusType           : PNPBus
+Class                    : HIDClass
+Class GUID               : {745a17a0-74d3-11d0-b6fe-00a0c90f57da} (GUID_DEVCLASS_HIDCLASS)
+Service                  : HidUsb
+Enumerator               : USB
+Location Info            : Port_#0004.Hub_#0014
+Address                  : 4
+Location IDs             : PCIROOT(0)#PCI(0801)#PCI(0003)#USBROOT(0)#USB(1)#USB(1)#USB(4), ACPI(_SB_)#ACPI(PCI0)#ACPI(GP17)#ACPI(XHC0)#ACPI(RHUB)#ACPI(PRT1)#USB(1)#USB(4)
+Container ID             : {40900647-a9f6-11f1-90af-a83b764f5b3a}
+Manufacturer Info        : (Standard system devices)
+Capabilities             : 0x84 (Removable, SurpriseRemovalOK)
+Status                   : 0x0180600A (DN_DRIVER_LOADED, DN_STARTED, DN_DISABLEABLE, DN_REMOVABLE, DN_NT_ENUMERATOR, DN_NT_DRIVER)
+Problem Code             : 0
+SelectiveSuspendEnabled  : 0
+EnhancedPowerMgmtEnabled : 1
+Power State              : D0 (supported: D0, D2, D3, wake from D0, wake from D2)
+
+        +++++++++++++++++ Registry USB Flags +++++++++++++++++
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\usbflags\054C05C40100
+ osvc                    : REG_BINARY 00 00
+
+        ---------------- Connection Information ---------------
+Connection Index         : 0x04 (Port 4)
+Connection Status        : 0x01 (DeviceConnected)
+Current Config Value     : 0x01 (Configuration 1)
+Device Address           : 0x09 (9)
+Is Hub                   : 0x00 (no)
+Device Bus Speed         : 0x01 (Full-Speed)
+Number of open Pipes     : 0x02 (2 pipes to data endpoints)
+Pipe[0]                  : EndpointID=4  Direction=IN   ScheduleOffset=0  Type=Interrupt  wMaxPacketSize=0x40    bInterval=5   -> 718 Bits/ms = 89750 Bytes/s
+Pipe[1]                  : EndpointID=3  Direction=OUT  ScheduleOffset=0  Type=Interrupt  wMaxPacketSize=0x40    bInterval=5   -> 718 Bits/ms = 89750 Bytes/s
+Data (HexDump)           : 04 00 00 00 12 01 00 02 00 00 00 40 4C 05 C4 05   ...........@L...
+                           00 01 01 02 00 01 01 01 00 09 00 02 00 00 00 01   ................
+                           00 00 00 07 05 84 03 40 00 05 00 00 00 00 07 05   .......@........
+                           03 03 40 00 05 00 00 00 00                        ..@......
+
+        --------------- Connection Information V2 -------------
+Connection Index         : 0x04 (4)
+Length                   : 0x10 (16 bytes)
+SupportedUsbProtocols    : 0x03
+ Usb110                  : 1 (yes, port supports USB 1.1)
+ Usb200                  : 1 (yes, port supports USB 2.0)
+ Usb300                  : 0 (no, port not supports USB 3.0) -> but Companion Port 4-3-1-4 does
+ ReservedMBZ             : 0x00
+Flags                    : 0x00
+ DevIsOpAtSsOrHigher     : 0 (Device is not operating at SuperSpeed or higher)
+ DevIsSsCapOrHigher      : 0 (Device is not SuperSpeed capable or higher)
+ DevIsOpAtSsPlusOrHigher : 0 (Device is not operating at SuperSpeedPlus or higher)
+ DevIsSsPlusCapOrHigher  : 0 (Device is not SuperSpeedPlus capable or higher)
+ ReservedMBZ             : 0x00
+Data (HexDump)           : 04 00 00 00 10 00 00 00 03 00 00 00 00 00 00 00   ................
+
+    ---------------------- Device Descriptor ----------------------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x01 (Device Descriptor)
+bcdUSB                   : 0x200 (USB Version 2.0) -> but device is Full-Speed only
+bDeviceClass             : 0x00 (defined by the interface descriptors)
+bDeviceSubClass          : 0x00
+bDeviceProtocol          : 0x00
+bMaxPacketSize0          : 0x40 (64 bytes)
+idVendor                 : 0x054C (Sony Group Corporation)
+idProduct                : 0x05C4
+bcdDevice                : 0x0100
+iManufacturer            : 0x01 (String Descriptor 1)
+ Language 0x0409         : "Sony Computer Entertainment"
+iProduct                 : 0x02 (String Descriptor 2)
+ Language 0x0409         : "Wireless Controller"
+iSerialNumber            : 0x00 (No String Descriptor)
+bNumConfigurations       : 0x01 (1 Configuration)
+Data (HexDump)           : 12 01 00 02 00 00 00 40 4C 05 C4 05 00 01 01 02   .......@L.......
+                           00 01                                             ..
+
+    ------------------ Configuration Descriptor -------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x02 (Configuration Descriptor)
+wTotalLength             : 0x0029 (41 bytes)
+bNumInterfaces           : 0x01 (1 Interface)
+bConfigurationValue      : 0x01 (Configuration 1)
+iConfiguration           : 0x00 (No String Descriptor)
+bmAttributes             : 0xC0
+ D7: Reserved, set 1     : 0x01
+ D6: Self Powered        : 0x01 (yes)
+ D5: Remote Wakeup       : 0x00 (no)
+ D4..0: Reserved, set 0  : 0x00
+MaxPower                 : 0xFA (500 mA)
+Data (HexDump)           : 09 02 29 00 01 01 00 C0 FA 09 04 00 00 02 03 00   ..).............
+                           00 00 09 21 11 01 00 01 22 F3 01 07 05 84 03 40   ...!...."......@
+                           00 05 07 05 03 03 40 00 05                        ......@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x00 (Interface 0)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x02 (2 Endpoints)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 00 00 02 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 F3 01                        .!...."..
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x01F3 (499 bytes)
+  05 01             Usage Page (Generic Desktop Controls)
+  09 05             Usage (Gamepad)
+  A1 01             Collection (Application)
+  85 01               Report ID (0x01)
+  09 30               Usage (Direction-X)
+  09 31               Usage (Direction-Y)
+  09 32               Usage (Direction-Z)
+  09 35               Usage (Rotate-Z)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  95 04               Report Count (4)
+  81 02               Input (Var)
+  09 39               Usage (Hat Switch)
+  15 00               Logical Minimum (0)
+  25 07               Logical Maximum (7)
+  35 00               Physical Minimum (0)
+  46 3B 01            Physical Maximum (315)
+  65 14               Unit (0x14)
+  75 04               Report Size (4)
+  95 01               Report Count (1)
+  81 42               Input (Var, NullState)
+  65 00               Unit (0x00)
+  05 09               Usage Page (Buttons)
+  19 01               Usage Minimum (1)
+  29 0E               Usage Maximum (14)
+  15 00               Logical Minimum (0)
+  25 01               Logical Maximum (1)
+  75 01               Report Size (1)
+  95 0E               Report Count (14)
+  81 02               Input (Var)
+  06 00 FF            Usage Page (Vendor Defined)
+  09 20               Usage (unk)
+  75 06               Report Size (6)
+  95 01               Report Count (1)
+  15 00               Logical Minimum (0)
+  25 7F               Logical Maximum (127)
+  81 02               Input (Var)
+  05 01               Usage Page (Generic Desktop Controls)
+  09 33               Usage (Rotate-X)
+  09 34               Usage (Rotate-Y)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  95 02               Report Count (2)
+  81 02               Input (Var)
+  06 00 FF            Usage Page (Vendor Defined)
+  09 21               Usage (unk)
+  95 36               Report Count (54)
+  81 02               Input (Var)
+  85 05               Report ID (0x05)
+  09 22               Usage (unk)
+  95 1F               Report Count (31)
+  91 02               Output (Var)
+  85 04               Report ID (0x04)
+  09 23               Usage (unk)
+  95 24               Report Count (36)
+  B1 02               Feature (Var)
+  85 02               Report ID (0x02)
+  09 24               Usage (unk)
+  95 24               Report Count (36)
+  B1 02               Feature (Var)
+  85 08               Report ID (0x08)
+  09 25               Usage (unk)
+  95 03               Report Count (3)
+  B1 02               Feature (Var)
+  85 10               Report ID (0x10)
+  09 26               Usage (unk)
+  95 04               Report Count (4)
+  B1 02               Feature (Var)
+  85 11               Report ID (0x11)
+  09 27               Usage (unk)
+  95 02               Report Count (2)
+  B1 02               Feature (Var)
+  85 12               Report ID (0x12)
+  06 02 FF            Usage Page (Vendor Defined)
+  09 21               Usage (unk)
+  95 0F               Report Count (15)
+  B1 02               Feature (Var)
+  85 13               Report ID (0x13)
+  09 22               Usage (unk)
+  95 16               Report Count (22)
+  B1 02               Feature (Var)
+  85 14               Report ID (0x14)
+  06 05 FF            Usage Page (Vendor Defined)
+  09 20               Usage (unk)
+  95 10               Report Count (16)
+  B1 02               Feature (Var)
+  85 15               Report ID (0x15)
+  09 21               Usage (unk)
+  95 2C               Report Count (44)
+  B1 02               Feature (Var)
+  06 80 FF            Usage Page (Vendor Defined)
+  85 80               Report ID (0x80)
+  09 20               Usage (unk)
+  95 06               Report Count (6)
+  B1 02               Feature (Var)
+  85 81               Report ID (0x81)
+  09 21               Usage (unk)
+  95 06               Report Count (6)
+  B1 02               Feature (Var)
+  85 82               Report ID (0x82)
+  09 22               Usage (unk)
+  95 05               Report Count (5)
+  B1 02               Feature (Var)
+  85 83               Report ID (0x83)
+  09 23               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 84               Report ID (0x84)
+  09 24               Usage (unk)
+  95 04               Report Count (4)
+  B1 02               Feature (Var)
+  85 85               Report ID (0x85)
+  09 25               Usage (unk)
+  95 06               Report Count (6)
+  B1 02               Feature (Var)
+  85 86               Report ID (0x86)
+  09 26               Usage (unk)
+  95 06               Report Count (6)
+  B1 02               Feature (Var)
+  85 87               Report ID (0x87)
+  09 27               Usage (unk)
+  95 23               Report Count (35)
+  B1 02               Feature (Var)
+  85 88               Report ID (0x88)
+  09 28               Usage (unk)
+  95 22               Report Count (34)
+  B1 02               Feature (Var)
+  85 89               Report ID (0x89)
+  09 29               Usage (unk)
+  95 02               Report Count (2)
+  B1 02               Feature (Var)
+  85 90               Report ID (0x90)
+  09 30               Usage (unk)
+  95 05               Report Count (5)
+  B1 02               Feature (Var)
+  85 91               Report ID (0x91)
+  09 31               Usage (unk)
+  95 03               Report Count (3)
+  B1 02               Feature (Var)
+  85 92               Report ID (0x92)
+  09 32               Usage (unk)
+  95 03               Report Count (3)
+  B1 02               Feature (Var)
+  85 93               Report ID (0x93)
+  09 33               Usage (unk)
+  95 0C               Report Count (12)
+  B1 02               Feature (Var)
+  85 A0               Report ID (0xA0)
+  09 40               Usage (unk)
+  95 06               Report Count (6)
+  B1 02               Feature (Var)
+  85 A1               Report ID (0xA1)
+  09 41               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 A2               Report ID (0xA2)
+  09 42               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 A3               Report ID (0xA3)
+  09 43               Usage (unk)
+  95 30               Report Count (48)
+  B1 02               Feature (Var)
+  85 A4               Report ID (0xA4)
+  09 44               Usage (unk)
+  95 0D               Report Count (13)
+  B1 02               Feature (Var)
+  85 A5               Report ID (0xA5)
+  09 45               Usage (unk)
+  95 15               Report Count (21)
+  B1 02               Feature (Var)
+  85 A6               Report ID (0xA6)
+  09 46               Usage (unk)
+  95 15               Report Count (21)
+  B1 02               Feature (Var)
+  85 F0               Report ID (0xF0)
+  09 47               Usage (unk)
+  95 3F               Report Count (63)
+  B1 02               Feature (Var)
+  85 F1               Report ID (0xF1)
+  09 48               Usage (unk)
+  95 3F               Report Count (63)
+  B1 02               Feature (Var)
+  85 F2               Report ID (0xF2)
+  09 49               Usage (unk)
+  95 0F               Report Count (15)
+  B1 02               Feature (Var)
+  85 A7               Report ID (0xA7)
+  09 4A               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 A8               Report ID (0xA8)
+  09 4B               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 A9               Report ID (0xA9)
+  09 4C               Usage (unk)
+  95 08               Report Count (8)
+  B1 02               Feature (Var)
+  85 AA               Report ID (0xAA)
+  09 4E               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 AB               Report ID (0xAB)
+  09 4F               Usage (unk)
+  95 39               Report Count (57)
+  B1 02               Feature (Var)
+  85 AC               Report ID (0xAC)
+  09 50               Usage (unk)
+  95 39               Report Count (57)
+  B1 02               Feature (Var)
+  85 AD               Report ID (0xAD)
+  09 51               Usage (unk)
+  95 0B               Report Count (11)
+  B1 02               Feature (Var)
+  85 AE               Report ID (0xAE)
+  09 52               Usage (unk)
+  95 01               Report Count (1)
+  B1 02               Feature (Var)
+  85 AF               Report ID (0xAF)
+  09 53               Usage (unk)
+  95 02               Report Count (2)
+  B1 02               Feature (Var)
+  85 B0               Report ID (0xB0)
+  09 54               Usage (unk)
+  95 3F               Report Count (63)
+  B1 02               Feature (Var)
+  85 B1               Report ID (0xB1)
+  09 55               Usage (unk)
+  95 02               Report Count (2)
+  B1 02               Feature (Var)
+  85 B2               Report ID (0xB2)
+  09 56               Usage (unk)
+  95 02               Report Count (2)
+  B1 02               Feature (Var)
+  85 B3               Report ID (0xB3)
+  09 55               Usage (unk)
+  95 3F               Report Count (63)
+  B1 02               Feature (Var)
+  85 B4               Report ID (0xB4)
+  09 55               Usage (unk)
+  95 3F               Report Count (63)
+  B1 02               Feature (Var)
+  C0                End Collection
+Data (HexDump)           : 05 01 09 05 A1 01 85 01 09 30 09 31 09 32 09 35   .........0.1.2.5
+                           15 00 26 FF 00 75 08 95 04 81 02 09 39 15 00 25   ..&..u......9..%
+                           07 35 00 46 3B 01 65 14 75 04 95 01 81 42 65 00   .5.F;.e.u....Be.
+                           05 09 19 01 29 0E 15 00 25 01 75 01 95 0E 81 02   ....)...%.u.....
+                           06 00 FF 09 20 75 06 95 01 15 00 25 7F 81 02 05   .... u.....%....
+                           01 09 33 09 34 15 00 26 FF 00 75 08 95 02 81 02   ..3.4..&..u.....
+                           06 00 FF 09 21 95 36 81 02 85 05 09 22 95 1F 91   ....!.6....."...
+                           02 85 04 09 23 95 24 B1 02 85 02 09 24 95 24 B1   ....#.$.....$.$.
+                           02 85 08 09 25 95 03 B1 02 85 10 09 26 95 04 B1   ....%.......&...
+                           02 85 11 09 27 95 02 B1 02 85 12 06 02 FF 09 21   ....'..........!
+                           95 0F B1 02 85 13 09 22 95 16 B1 02 85 14 06 05   ......."........
+                           FF 09 20 95 10 B1 02 85 15 09 21 95 2C B1 02 06   .. .......!.,...
+                           80 FF 85 80 09 20 95 06 B1 02 85 81 09 21 95 06   ..... .......!..
+                           B1 02 85 82 09 22 95 05 B1 02 85 83 09 23 95 01   .....".......#..
+                           B1 02 85 84 09 24 95 04 B1 02 85 85 09 25 95 06   .....$.......%..
+                           B1 02 85 86 09 26 95 06 B1 02 85 87 09 27 95 23   .....&.......'.#
+                           B1 02 85 88 09 28 95 22 B1 02 85 89 09 29 95 02   .....(.".....)..
+                           B1 02 85 90 09 30 95 05 B1 02 85 91 09 31 95 03   .....0.......1..
+                           B1 02 85 92 09 32 95 03 B1 02 85 93 09 33 95 0C   .....2.......3..
+                           B1 02 85 A0 09 40 95 06 B1 02 85 A1 09 41 95 01   .....@.......A..
+                           B1 02 85 A2 09 42 95 01 B1 02 85 A3 09 43 95 30   .....B.......C.0
+                           B1 02 85 A4 09 44 95 0D B1 02 85 A5 09 45 95 15   .....D.......E..
+                           B1 02 85 A6 09 46 95 15 B1 02 85 F0 09 47 95 3F   .....F.......G.?
+                           B1 02 85 F1 09 48 95 3F B1 02 85 F2 09 49 95 0F   .....H.?.....I..
+                           B1 02 85 A7 09 4A 95 01 B1 02 85 A8 09 4B 95 01   .....J.......K..
+                           B1 02 85 A9 09 4C 95 08 B1 02 85 AA 09 4E 95 01   .....L.......N..
+                           B1 02 85 AB 09 4F 95 39 B1 02 85 AC 09 50 95 39   .....O.9.....P.9
+                           B1 02 85 AD 09 51 95 0B B1 02 85 AE 09 52 95 01   .....Q.......R..
+                           B1 02 85 AF 09 53 95 02 B1 02 85 B0 09 54 95 3F   .....S.......T.?
+                           B1 02 85 B1 09 55 95 02 B1 02 85 B2 09 56 95 02   .....U.......V..
+                           B1 02 85 B3 09 55 95 3F B1 02 85 B4 09 55 95 3F   .....U.?.....U.?
+                           B1 02 C0                                          ...
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x05 (5 ms)
+Data (HexDump)           : 07 05 84 03 40 00 05                              ....@..
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x03 (Direction=OUT EndpointID=3)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x05 (5 ms)
+Data (HexDump)           : 07 05 03 03 40 00 05                              ....@..
+
+    ----------------- Device Qualifier Descriptor -----------------
+Error                    : ERROR_GEN_FAILURE  (because the device is Full-Speed only)
+
+      -------------------- String Descriptors -------------------
+             ------ String Descriptor 0 ------
+bLength                  : 0x04 (4 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language ID[0]           : 0x0409 (English - United States)
+Data (HexDump)           : 04 03 09 04                                       ....
+             ------ String Descriptor 1 ------
+bLength                  : 0x38 (56 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "Sony Computer Entertainment"
+Data (HexDump)           : 38 03 53 00 6F 00 6E 00 79 00 20 00 43 00 6F 00   8.S.o.n.y. .C.o.
+                           6D 00 70 00 75 00 74 00 65 00 72 00 20 00 45 00   m.p.u.t.e.r. .E.
+                           6E 00 74 00 65 00 72 00 74 00 61 00 69 00 6E 00   n.t.e.r.t.a.i.n.
+                           6D 00 65 00 6E 00 74 00                           m.e.n.t.
+             ------ String Descriptor 2 ------
+bLength                  : 0x28 (40 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "Wireless Controller"
+Data (HexDump)           : 28 03 57 00 69 00 72 00 65 00 6C 00 65 00 73 00   (.W.i.r.e.l.e.s.
+                           73 00 20 00 43 00 6F 00 6E 00 74 00 72 00 6F 00   s. .C.o.n.t.r.o.
+                           6C 00 6C 00 65 00 72 00                           l.l.e.r.

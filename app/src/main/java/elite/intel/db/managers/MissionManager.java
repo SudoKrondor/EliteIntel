@@ -97,6 +97,36 @@ public class MissionManager {
         ).toArray(MissionType[]::new);
     }
 
+    /**
+     * War massacres: kill a faction's ships in its war, paid in combat bonds rather than bounties.
+     */
+    public MissionType[] getWarMassacreMissionTypes() {
+        return new MissionType[]{MissionType.MISSION_MASSACRE_CONFLICT};
+    }
+
+    /**
+     * Every kill contract the massacre card and progress query add up - pirate and war alike.
+     */
+    public MissionType[] getMassacreMissionTypes() {
+        return new MissionType[]{
+                MissionType.MISSION_PIRATE_MASSACRE,
+                MissionType.MISSION_PIRATE_MASSACRE_WING,
+                MissionType.MISSION_MASSACRE_CONFLICT
+        };
+    }
+
+    /**
+     * The massacre stack being flown: the war contracts when any are open, the pirate ones otherwise.
+     * <p>
+     * WHY one family and never both: a stack shares one bar because every contract in it names the same target,
+     * and a war and a pirate hunt never do. A war contract goes first because it is bound to a war that is over
+     * within days, while a pirate stack can wait at its hunting ground.
+     */
+    public Map<Long, MissionDto> getMassacreStack() {
+        Map<Long, MissionDto> war = getMissions(getWarMassacreMissionTypes());
+        return war.isEmpty() ? getMissions(getPirateMissionTypes()) : war;
+    }
+
     public MissionType getMissionType(String missionTypeName) {
         MissionType[] values = MissionType.values();
         return Arrays.stream(values).filter(type -> type.getMissionType().equalsIgnoreCase(missionTypeName)).findFirst().orElse(MissionType.UNKNOWN);

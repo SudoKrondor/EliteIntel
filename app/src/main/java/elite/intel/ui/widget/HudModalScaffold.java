@@ -23,7 +23,8 @@ import java.util.List;
  *  - header HudDialogHeader(title, onClose) when title != null;
  *  - body inside side inset HUD_DIALOG_BODY_INSET (when scrollBody, wrapped in
  *    HudScrollPane with viewport bg overridden to HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND);
- *  - footer: shared HudFooter (modal=true) - dismiss/BACK on the left, primary+extra on the right.
+ *  - footer: shared HudFooter (modal=true) - dismiss/BACK on the left, primary+extra on the right,
+ *    any middle button centred between them, and the unsaved hint just left of the right-hand group.
  *
  * Does NOT orchestrate showing or scrim (kept outside: runWithModalScrim(owner, showModal)).
  * The default button is set by the caller after setContentPane (the scaffold has no rootPane).
@@ -74,7 +75,8 @@ public final class HudModalScaffold {
 
     private static JPanel buildFooter(HudModalSpec spec) {
         // Trailing actions left-to-right: extras first (insertion order), then primary outermost right.
-        List<AbstractButton> trailing = new ArrayList<>();
+        List<Component> trailing = new ArrayList<>();
+        if (spec.unsavedHint() != null) trailing.add(spec.unsavedHint());
         for (HudModalSpec.FooterButton fb : spec.footerButtons()) {
             if (fb.role() == HudModalSpec.Role.EXTRA) trailing.add(fb.button());
         }
@@ -82,10 +84,12 @@ public final class HudModalScaffold {
             if (fb.role() == HudModalSpec.Role.PRIMARY) trailing.add(fb.button());
         }
         AbstractButton dismiss = null;
+        List<AbstractButton> middle = new ArrayList<>();
         for (HudModalSpec.FooterButton fb : spec.footerButtons()) {
             if (fb.role() == HudModalSpec.Role.DISMISS) dismiss = fb.button();
+            if (fb.role() == HudModalSpec.Role.MIDDLE) middle.add(fb.button());
         }
         // Modal footer: BACK/dismiss on the left.
-        return HudFooter.build(true, dismiss, null, trailing);
+        return HudFooter.build(true, dismiss, null, middle, trailing);
     }
 }

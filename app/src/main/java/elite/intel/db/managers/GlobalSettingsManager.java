@@ -1,7 +1,9 @@
 package elite.intel.db.managers;
 
+import elite.intel.community.MassacreSetSharingChangedEvent;
 import elite.intel.db.dao.GlobalSettingsDao;
 import elite.intel.db.util.Database;
+import elite.intel.eventbus.GameEventBus;
 
 public class GlobalSettingsManager {
     private static volatile GlobalSettingsManager instance;
@@ -214,5 +216,66 @@ public class GlobalSettingsManager {
 
     public boolean getAnnounceFuelAvailable() {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceFuelAvailable());
+    }
+
+    public void setAiRespondsToPirateScan(boolean aiRespondsToPirateScan) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAiRespondsToPirateScan(aiRespondsToPirateScan);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAiRespondsToPirateScan() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAiRespondsToPirateScan());
+    }
+
+    public void setAiBountyKillGloat(boolean aiBountyKillGloat) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAiBountyKillGloat(aiBountyKillGloat);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAiBountyKillGloat() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAiBountyKillGloat());
+    }
+
+    /**
+     * Turns sharing of massacre sets on or off, and tells the community sync so it uploads or withdraws the
+     * report straight away.
+     */
+    public void setShareMassacreSets(boolean share) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setShareMassacreSets(share);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+        GameEventBus.publish(new MassacreSetSharingChangedEvent(share));
+    }
+
+    public boolean getShareMassacreSets() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isShareMassacreSets());
+    }
+
+    /**
+     * Whether the supercruise and hyperspace commands both press the game's Toggle Frame Shift Drive, leaving the
+     * game to pick which of the two happens, rather than each pressing its own control. See {@code FsdControls}.
+     */
+    public void setUseFsdToggle(boolean useFsdToggle) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setUseFsdToggle(useFsdToggle);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getUseFsdToggle() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isUseFsdToggle());
     }
 }

@@ -62,6 +62,15 @@ public final class ClarificationCoordinator {
                 : Optional.of(claimed);
     }
 
+    /**
+     * Gives back a clarification a commander turn claimed but never ran with - the turn was dropped from its queue.
+     * WHY only into an empty slot: a clarification opened since is the current dialogue state, and the old one must
+     * not replace it. Its expiry is unchanged, so a give-back never extends how long the question stands.
+     */
+    public void giveBack(PendingClarification claimed) {
+        pending.compareAndSet(null, Objects.requireNonNull(claimed, "claimed"));
+    }
+
     /** Returns the live pending state without consuming it; intended for diagnostics and tests. */
     public Optional<PendingClarification> peek() {
         PendingClarification current = pending.get();

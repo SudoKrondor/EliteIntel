@@ -2,6 +2,7 @@ package elite.intel.ui.support;
 
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.GameClockDisagreementEvent;
 
 import javax.swing.*;
@@ -24,11 +25,8 @@ public final class GameClockWarning {
     }
 
     public static void show(Component parent, GameClockDisagreementEvent event) {
-        JOptionPane.showMessageDialog(
-                parent,
-                message(event, SystemSession.getInstance().getLanguage()),
-                getText("gameClock.dialog.title"),
-                JOptionPane.WARNING_MESSAGE);
+        HudConfirmDialog.info(parent, getText("gameClock.dialog.title"),
+                message(event, SystemSession.getInstance().getLanguage()), getText("button.close"));
     }
 
     static String message(GameClockDisagreementEvent event, Language language) {

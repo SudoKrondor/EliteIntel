@@ -362,8 +362,20 @@ public final class CustomCommandEditorDialog extends JDialog {
         gbc.fill = GridBagConstraints.BOTH;
         JScrollPane sp = AppTheme.hudScrollPane(area);
         sp.setBorder(AppTheme.hudFieldBorder());
-        sp.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        area.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        sp.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND);
+        area.setBackground(HudPalette.HUD_COLOR_ROLE_FIELD_BACKGROUND);
+        // The frame is the scroll pane's and the focus the area's: the area's own repaint would not reach the frame.
+        area.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                sp.repaint();
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                sp.repaint();
+            }
+        });
         // Pin a sensible height so the row can't be squashed by GridBag under layout pressure from the
         // other rows: at least 4 lines visible, with a roomier preferred height.
         int lineHeight = area.getFontMetrics(area.getFont()).getHeight();

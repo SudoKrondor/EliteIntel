@@ -17,7 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class AudioCalibratorTest {
 
-    private static final double GATE_BELOW_SPEECH_DB = 12.0;
+    private static final double GATE_BELOW_SPEECH_DB = 18.0;
+    private static final double MAX_GATE_TOWARD_SPEECH_DB = 12.0;
     private static final double MIN_GATE_ABOVE_NOISE_DB = 6.0;
 
     /**
@@ -47,12 +48,12 @@ class AudioCalibratorTest {
 
         @ParameterizedTest(name = "floor={0} speech={1}")
         @CsvSource(textBlock = USABLE_ROOMS)
-        @DisplayName("gate never rises above the speech anchor nor falls below the noise bound")
+        @DisplayName("gate never crowds speech nor falls below the noise bound")
         void gateHonoursBothBounds(double floor, double speech) {
             double gate = AudioCalibrator.gateOpenLevel(floor, speech);
 
-            assertTrue(db(speech) - db(gate) >= GATE_BELOW_SPEECH_DB - 1e-9,
-                    "gate must sit at least " + GATE_BELOW_SPEECH_DB + " dB under speech");
+            assertTrue(db(speech) - db(gate) >= MAX_GATE_TOWARD_SPEECH_DB - 1e-9,
+                    "gate must sit at least " + MAX_GATE_TOWARD_SPEECH_DB + " dB under speech");
             assertTrue(db(gate) - db(floor) >= MIN_GATE_ABOVE_NOISE_DB - 1e-9,
                     "gate must clear the noise floor by at least " + MIN_GATE_ABOVE_NOISE_DB + " dB");
         }
@@ -72,7 +73,7 @@ class AudioCalibratorTest {
         @DisplayName("in a noisy room the noise bound takes over")
         void noiseBoundGovernsInANoisyRoom() {
             double floor = 800;
-            double speech = 4000; // only 14 dB of separation: speech - 12 dB would sit under floor + 6 dB
+            double speech = 4000; // only 14 dB of separation: speech - 18 dB would sit under floor + 6 dB
             double gate = AudioCalibrator.gateOpenLevel(floor, speech);
 
             assertEquals(MIN_GATE_ABOVE_NOISE_DB, db(gate) - db(floor), 1e-9);
@@ -126,7 +127,7 @@ class AudioCalibratorTest {
             assertTrue(AudioCalibrator.separationDb(floor, speech) > 47.0);
 
             double gate = AudioCalibrator.gateOpenLevel(floor, speech);
-            assertEquals(406.3, gate, 0.5, "gate should land 12 dB under speech");
+            assertEquals(203.6, gate, 0.5, "gate should land 18 dB under speech");
             assertTrue(gate < 127.2 * 4, "gate must not be dragged up by any absolute constant");
             assertTrue(AudioCalibrator.gateClearsNoiseFloor(floor, gate),
                     "a low gate from a quiet room must not trip the startup warning");
@@ -161,6 +162,59 @@ class AudioCalibratorTest {
             assertEquals(Double.NEGATIVE_INFINITY, AudioCalibrator.separationDb(200, 0), "muted mic");
             assertEquals(Double.POSITIVE_INFINITY, AudioCalibrator.separationDb(0, 4000), "silent floor");
             assertFalse(AudioCalibrator.gateClearsNoiseFloor(200, 0), "no gate at all");
+        }
+    }
+
+    @Nested
+    @DisplayName("what a finished calibration leaves behind")
+    class StoredCalibration {
+
+        /**
+         * The reported regression: a microphone behind its own noise gate reads digital silence in the
+         * noise phase. That floor of zero was taken for "not calibrated", so the restart after every
+         * calibration ran another one, and the unattended second run replaced the good result.
+         */
+        @Test
+        @DisplayName("a floor of zero is a measurement, only a missing gate means not calibrated")
+        void onlyTheGateDecidesWhetherCalibrationRan() {
+            double floor = 0;
+            double gate = AudioCalibrator.storedGate(AudioCalibrator.gateOpenLevel(floor, 2502));
+
+            assertTrue(AudioCalibrator.isCalibrated(gate));
+            assertTrue(AudioCalibrator.gateClearsNoiseFloor(floor, gate));
+            assertFalse(AudioCalibrator.isCalibrated(0));
+        }
+
+        @Test
+        @DisplayName("a run that heard no speech keeps a stored calibration")
+        void noSpeechKeepsAStoredCalibration() {
+            assertTrue(AudioCalibrator.keepsPreviousCalibration(628.61, 0));
+        }
+
+        @Test
+        @DisplayName("a run that heard no speech is still saved when nothing is stored to keep")
+        void noSpeechWithNothingStoredStillSaves() {
+            assertFalse(AudioCalibrator.keepsPreviousCalibration(0, 0));
+        }
+
+        @Test
+        @DisplayName("a run that heard speech replaces a stored calibration")
+        void speechReplacesAStoredCalibration() {
+            assertFalse(AudioCalibrator.keepsPreviousCalibration(628.61, 193));
+        }
+
+        /**
+         * Rounded to the nearest hundredth, a floor of 110.67 and a gate of 220.81 read as 5.9998 dB and
+         * failed the check on a gate placed exactly on the margin.
+         */
+        @ParameterizedTest(name = "floor={0}")
+        @CsvSource({"110.668", "100.037", "7.2", "33.333", "800.005", "4864.76"})
+        @DisplayName("rounding never takes a floor-pinned gate under the margin")
+        void roundingKeepsAPinnedGateOnTheMargin(double floor) {
+            double gate = AudioCalibrator.gateOpenLevel(floor, 0);
+
+            assertTrue(AudioCalibrator.gateClearsNoiseFloor(
+                    AudioCalibrator.storedFloor(floor), AudioCalibrator.storedGate(gate)));
         }
     }
 }

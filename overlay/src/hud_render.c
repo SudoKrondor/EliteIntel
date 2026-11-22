@@ -18,6 +18,10 @@
 // and a colour picker on top of that would let a card be made opaque and bright
 // enough to hide the cockpit behind it.
 static const Rgb COL_PANEL    = {0.01569,  0.02745,  0.03529};
+// Fixed, not palette roles: bright blue with its hue kept clear of cyan so it
+// never reads as the success green, and plain white.
+static const Rgb COL_BLUE     = HUD_RGB(0x3D8BFF);
+static const Rgb COL_WHITE    = HUD_RGB(0xFFFFFF);
 
 static Rgb col(ColorRole role) {
     return model.palette[role];
@@ -42,6 +46,8 @@ static Rgb color_for(State s) {
         case ST_GOOD:     return col(HUD_COL_SUCCESS);
         case ST_WARN:     return col(HUD_COL_WARNING);
         case ST_CRITICAL: return col(HUD_COL_DANGER);
+        case ST_BLUE:     return COL_BLUE;
+        case ST_WHITE:    return COL_WHITE;
         default:          return col(HUD_COL_PRIMARY);
     }
 }
@@ -79,6 +85,24 @@ void hud_paint_panel(cairo_t *cr, int width, int height) {
 
 // -- layout / rendering ------------------------------------------------------
 
+/// Shows a layout at the current point in colour c, ringed in black.
+///
+/// The outline is what keeps the glyphs readable when `CFG alpha` lets a bright
+/// sky or a sunlit planet through the panel: against the panel itself it is
+/// black on near-black and invisible. Stroked first and filled after, so the
+/// ring sits only outside the letter and never eats into its strokes.
+static void show_outlined(cairo_t *cr, PangoLayout *l, Rgb c) {
+    cairo_save(cr);
+    pango_cairo_layout_path(cr, l);
+    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+    cairo_set_line_width(cr, sz(3));
+    cairo_set_source_rgba(cr, 0, 0, 0, 1.0);
+    cairo_stroke_preserve(cr);
+    set_rgb(cr, c, 1.0);          // text is always fully opaque
+    cairo_fill(cr);
+    cairo_restore(cr);
+}
+
 static PangoLayout *make_layout(cairo_t *cr, int size, int bold) {
     PangoLayout *l = pango_cairo_create_layout(cr);
     char desc[64];
@@ -98,18 +122,16 @@ static int layout_height(PangoLayout *l, const char *s) {
 
 static void draw_at(cairo_t *cr, PangoLayout *l, double x, double y, const char *s, Rgb c) {
     pango_layout_set_text(l, s, -1);
-    set_rgb(cr, c, 1.0);          // text is always fully opaque
     cairo_move_to(cr, x, y);
-    pango_cairo_show_layout(cr, l);
+    show_outlined(cr, l, c);
 }
 
 static void draw_right(cairo_t *cr, PangoLayout *l, double right, double y, const char *s, Rgb c) {
     int w, h;
     pango_layout_set_text(l, s, -1);
     pango_layout_get_pixel_size(l, &w, &h);
-    set_rgb(cr, c, 1.0);
     cairo_move_to(cr, right - w, y);
-    pango_cairo_show_layout(cr, l);
+    show_outlined(cr, l, c);
 }
 
 /// Draws a row's track: one dot per stop on a line, nearest stop on the left,
@@ -246,9 +268,8 @@ int hud_render(cairo_t *cr, int width, int draw) {
         if (draw) {
             snprintf(buf, sizeof(buf), "%s: %.*s", l->speaker, l->visible_bytes, l->text);
             pango_layout_set_text(body, buf, -1);
-            set_rgb(cr, color_for_speaker(l->kind), 1.0);
             cairo_move_to(cr, pad, y);
-            pango_cairo_show_layout(cr, body);
+            show_outlined(cr, body, color_for_speaker(l->kind));
         }
         y += th;
     }

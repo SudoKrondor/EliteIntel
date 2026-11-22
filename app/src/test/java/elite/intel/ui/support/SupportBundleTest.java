@@ -1,5 +1,9 @@
 package elite.intel.ui.support;
 
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
+import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
+import elite.intel.bindforge.storage.Backups;
+import elite.intel.bindforge.storage.BindForgeSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,6 +40,99 @@ class SupportBundleTest {
         Path file = dir.resolve(name);
         Files.writeString(file, content, StandardCharsets.UTF_8);
         return file;
+    }
+
+    @Test
+    void carriesBindForgesReportFilesAndLogs(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+        write(tmp, "bindforge.log", "applied");
+        write(tmp, "bindforge_1.log", "applied before that");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null, null, null, null, null,
+                        () -> new BindForgeSupport.Contents("BindForge report",
+                                Map.of("bindforge/live/Bindings/StartPreset.4.start", "Main".getBytes(StandardCharsets.UTF_8)))));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("BindForge report", entries.get(BindForgeSupport.REPORT_ENTRY));
+        assertEquals("Main", entries.get("bindforge/live/Bindings/StartPreset.4.start"));
+        assertEquals("applied", entries.get("bindforge.log"));
+        assertEquals("applied before that", entries.get("bindforge_1.log"));
+        assertTrue(result.included().contains("bindforge/live/Bindings/StartPreset.4.start"), result.toString());
+        assertTrue(entries.get(SupportBundle.INFO_ENTRY).contains(BindForgeSupport.REPORT_ENTRY));
+    }
+
+    @Test
+    void carriesTheLmStudioReportAndLogs(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+        write(tmp, "lm-studio.log", "Step INSTALL: started");
+        write(tmp, "lm-studio_1.log", "the run before");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null, null, null, null, null, null,
+                        () -> "LM Studio install assistance"));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("LM Studio install assistance", entries.get(LmStudioSupport.REPORT_ENTRY));
+        assertEquals("Step INSTALL: started", entries.get("lm-studio.log"));
+        assertEquals("the run before", entries.get("lm-studio_1.log"));
+        assertTrue(result.included().contains(LmStudioSupport.REPORT_ENTRY), result.toString());
+    }
+
+    @Test
+    void noLmStudioLogBesideTheAppLogIsNotAnOmission(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null));
+
+        assertTrue(result.omitted().stream().noneMatch(line -> line.contains("LM Studio")), result.toString());
+    }
+
+    @Test
+    void anLmStudioReportThatThrowsCostsOnlyItself(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "system log line", appLog, null, null, null, null, null, null,
+                        null, () -> {
+                            throw new IllegalStateException("nvidia-smi wedged");
+                        }));
+
+        Map<String, String> entries = unzip(zip);
+        assertEquals("app", entries.get("elite-intel.log"));
+        assertFalse(entries.containsKey(LmStudioSupport.REPORT_ENTRY));
+        assertTrue(result.omitted().stream().anyMatch(line -> line.startsWith("LM Studio report")
+                && line.contains("nvidia-smi wedged")), result.toString());
+    }
+
+    @Test
+    void aBindForgeReportThatThrowsCostsOnlyItself(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "system log line", null, null, null, null, null, null, null,
+                        () -> {
+                            throw new IllegalStateException("no database");
+                        }));
+
+        assertTrue(unzip(zip).containsKey(SupportBundle.SESSION_LOG_ENTRY));
+        assertTrue(result.omitted().stream().anyMatch(line -> line.contains("no database")), result.toString());
+    }
+
+    @Test
+    void noBindForgeLogBesideTheAppLogIsNotAnOmission(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+        Path appLog = write(tmp, "elite-intel.log", "app");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip,
+                new SupportBundle.Sources("1.2.0", "log", appLog, null, null));
+
+        assertTrue(result.omitted().stream().noneMatch(line -> line.contains("BindForge")), result.toString());
     }
 
     @Test
@@ -79,6 +177,31 @@ class SupportBundleTest {
         assertFalse(entries.containsKey(SupportBundle.MIC_DIAGNOSTICS_ENTRY));
         assertTrue(entries.containsKey("Journal.01.log"), "one failed source must not cost the rest");
         assertTrue(result.omitted().stream().anyMatch(line -> line.contains("no audio subsystem")));
+    }
+
+    @Test
+    void carriesVegasMemoryWhenItIsSupplied(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.2.0", "log",
+                null, null, null, null, null, null, null, null, null, () -> "{\"recent\": []}"));
+
+        assertEquals("{\"recent\": []}", unzip(zip).get(VegaMemoryDump.REPORT_ENTRY));
+        assertTrue(result.included().contains(VegaMemoryDump.REPORT_ENTRY), result.toString());
+    }
+
+    @Test
+    void aStoppedVegaCostsOnlyItsMemory(@TempDir Path tmp) throws IOException {
+        Path zip = tmp.resolve("bundle.zip");
+
+        // The real supplier throws when VEGA is not running - often the very thing being reported.
+        SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.2.0", "log",
+                null, null, null, null, null, null, null, null, null, VegaMemoryDump::render));
+
+        Map<String, String> entries = unzip(zip);
+        assertFalse(entries.containsKey(VegaMemoryDump.REPORT_ENTRY));
+        assertTrue(entries.containsKey(SupportBundle.SESSION_LOG_ENTRY), "one failed source must not cost the rest");
+        assertTrue(result.omitted().stream().anyMatch(line -> line.startsWith("VEGA memory - ")), result.toString());
     }
 
     @Test
@@ -137,6 +260,8 @@ class SupportBundleTest {
             write(journalDir, state, "{}");
         }
         write(bindingsDir, "Custom.4.0.binds", "<Root/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
         Path commands = write(tmp, "custom_commands.json", "[]");
         Path zip = tmp.resolve("bundle.zip");
 
@@ -371,17 +496,43 @@ class SupportBundleTest {
     }
 
     /**
-     * "The app changed my binds" is answered by what the last apply replaced, so the newest backup of the active
-     * preset travels with it - and only that preset's, since another preset's history says nothing about this one.
+     * A backup zip in BindForge's layout: {@code backup-info.txt} and each binds file under {@code Bindings/}, in
+     * the kind's folder, named with its stamp.
+     */
+    private static void backup(Path backupDir, Backups.Kind kind, String stamp, Map<String, String> binds)
+            throws IOException {
+        Path folder = Files.createDirectories(backupDir.resolve(kind.folder()));
+        try (ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(folder.resolve(stamp + ".zip")),
+                StandardCharsets.UTF_8)) {
+            out.putNextEntry(new ZipEntry(Backups.INFO_FILE));
+            out.write("Status: Full\n".getBytes(StandardCharsets.UTF_8));
+            out.closeEntry();
+            for (Map.Entry<String, String> file : binds.entrySet()) {
+                out.putNextEntry(new ZipEntry("Bindings/" + file.getKey()));
+                out.write(file.getValue().getBytes(StandardCharsets.UTF_8));
+                out.closeEntry();
+            }
+        }
+    }
+
+    /**
+     * "The app changed my binds" is answered by what the last apply replaced, so the active preset's copy in the
+     * newest before-changes backup travels with it - and only that preset's, since another preset's history says
+     * nothing about this one, and only a before-changes backup's, since a daily one was not taken before a write.
      */
     @Test
     void carriesTheNewestBackupOfTheActivePreset(@TempDir Path tmp) throws IOException {
         Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
         Path backupDir = Files.createDirectory(tmp.resolve("backups"));
         write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
-        write(backupDir, "Custom.4.2.binds.20261027-120000.bak", "<Root older/>");
-        write(backupDir, "Custom.4.2.binds.20261027-165718.bak", "<Root before apply/>");
-        write(backupDir, "Other.4.2.binds.20261028-090000.bak", "<Root other preset/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_12-00-00",
+                Map.of("Custom.4.2.binds", "<Root older/>"));
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
+                Map.of("Custom.4.2.binds", "<Root before apply/>", "Other.4.2.binds", "<Root other preset/>"));
+        backup(backupDir, Backups.Kind.DAILY, "2026-10-28_09-00-00",
+                Map.of("Custom.4.2.binds", "<Root daily/>"));
         Path zip = tmp.resolve("bundle.zip");
 
         SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
@@ -389,27 +540,59 @@ class SupportBundleTest {
 
         Map<String, String> entries = unzip(zip);
         assertEquals("<Root now/>", entries.get("Custom.4.2.binds"));
-        assertEquals("<Root before apply/>", entries.get("Custom.4.2.binds.20261027-165718.bak"));
-        assertFalse(entries.containsKey("Custom.4.2.binds.20261027-120000.bak"));
-        assertFalse(entries.containsKey("Other.4.2.binds.20261028-090000.bak"));
+        assertEquals("<Root before apply/>", entries.get("Custom.4.2.binds.before-changes-2026-10-27_16-57-18"));
+        assertFalse(entries.containsKey("Custom.4.2.binds.before-changes-2026-10-27_12-00-00"));
+        assertTrue(entries.keySet().stream().noneMatch(name -> name.startsWith("Other.4.2.binds")), entries.keySet().toString());
+        assertTrue(entries.values().stream().noneMatch("<Root daily/>"::equals));
         assertTrue(result.omitted().stream().noneMatch(line -> line.startsWith("bindings backup")),
                 result.omitted().toString());
     }
 
     /**
-     * No backup means Elite Intel never wrote the preset, which is the answer to the report - so it is said.
+     * A newer backup that does not hold the preset, or cannot be read, is passed over for the one that does.
      */
     @Test
-    void aPresetEliteIntelNeverWroteIsSaidSo(@TempDir Path tmp) throws IOException {
+    void takesTheNewestBackupThatHoldsThePreset(@TempDir Path tmp) throws IOException {
+        Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
+        Path backupDir = Files.createDirectory(tmp.resolve("backups"));
+        write(bindingsDir, "Custom.4.2.binds", "<Root now/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
+                Map.of("Custom.4.2.binds", "<Root before apply/>"));
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-28_09-00-00",
+                Map.of("Other.4.2.binds", "<Root other preset/>"));
+        write(Files.createDirectories(backupDir.resolve(Backups.Kind.BEFORE_CHANGES.folder())),
+                "2026-10-29_09-00-00.zip", "not a zip");
+        Path zip = tmp.resolve("bundle.zip");
+
+        SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
+                null, null, bindingsDir, null, null, null, backupDir));
+
+        assertEquals("<Root before apply/>",
+                unzip(zip).get("Custom.4.2.binds.before-changes-2026-10-27_16-57-18"));
+    }
+
+    /**
+     * No before-changes backup holding the preset means no APPLY or RESTORE wrote it, which is the answer to the
+     * report - so it is said.
+     */
+    @Test
+    void aPresetNoBackupHoldsIsSaidSo(@TempDir Path tmp) throws IOException {
         Path bindingsDir = Files.createDirectory(tmp.resolve("bindings"));
         Path backupDir = Files.createDirectory(tmp.resolve("backups"));
         write(bindingsDir, "Custom.4.2.binds", "<Root/>");
+        // WHY: the preset file names the active preset; with none, nothing is read (Storage S13c).
+        write(bindingsDir, "StartPreset.4.start", "Custom");
+        backup(backupDir, Backups.Kind.BEFORE_CHANGES, "2026-10-27_16-57-18",
+                Map.of("Other.4.2.binds", "<Root other preset/>"));
         Path zip = tmp.resolve("bundle.zip");
 
         SupportBundle.Result result = SupportBundle.writeTo(zip, new SupportBundle.Sources("1.1.0", "log",
                 null, null, bindingsDir, null, null, null, backupDir));
 
-        assertTrue(result.omitted().contains("bindings backup - none - Elite Intel has never written Custom.4.2.binds"),
+        assertTrue(result.omitted().contains(
+                "bindings backup - none - no before-changes backup holds Custom.4.2.binds"),
                 result.omitted().toString());
     }
 

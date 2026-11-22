@@ -1,5 +1,4 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -8,6 +7,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 
 /**
@@ -27,6 +28,49 @@ public final class HudTable {
         style(table, HudPalette.HUD_TABLE_ROW_HEIGHT, HudPalette.HUD_TABLE_HEADER_HEIGHT,
                 HudPalette.HUD_FONT_TABLE_ROW, HudPalette.HUD_FONT_TABLE_HEADER, 5, 4);
     }
+
+    /**
+     * Sizes every column to the widest thing actually in it - its header or one of its cells - so nothing is
+     * cut off and nobody has to drag a divider.
+     * <p>
+     * Measured through each column's own renderer rather than guessed in pixels, which is what makes it
+     * survive localization: the same table is German and Russian too, and those run considerably longer than
+     * the English the numbers would have been picked from.
+     * <p>
+     * Call it after the rows are in. Widths are a snapshot of the current content, so a table that reloads
+     * calls this again.
+     *
+     * @param table   the table to size, already populated
+     * @param maxWidth the widest any single column may become, so one long value - a full install path -
+     *                 cannot push every other column off the screen
+     */
+    public static void fitColumnsToContent(JTable table, int maxWidth) {
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            int width = headerWidth(table, column);
+            for (int row = 0; row < table.getRowCount(); row++) {
+                width = Math.max(width, cellWidth(table, row, column));
+            }
+            width = Math.min(width + COLUMN_PADDING, maxWidth);
+            table.getColumnModel().getColumn(column).setPreferredWidth(width);
+        }
+    }
+
+    private static int headerWidth(JTable table, int column) {
+        TableColumn tableColumn = table.getColumnModel().getColumn(column);
+        TableCellRenderer renderer = tableColumn.getHeaderRenderer();
+        if (renderer == null) renderer = table.getTableHeader().getDefaultRenderer();
+        Component rendered = renderer.getTableCellRendererComponent(
+                table, tableColumn.getHeaderValue(), false, false, -1, column);
+        return rendered.getPreferredSize().width;
+    }
+
+    private static int cellWidth(JTable table, int row, int column) {
+        Component rendered = table.prepareRenderer(table.getCellRenderer(row, column), row, column);
+        return rendered.getPreferredSize().width;
+    }
+
+    /** Breathing room either side of the widest value, so text never touches the column divider. */
+    private static final int COLUMN_PADDING = 18;
 
     /**
      * Applies compact HUD table styling for dense cockpit data panels.
@@ -53,7 +97,7 @@ public final class HudTable {
         table.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);   // table body = window colour; darker than HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND tile -> gap reads as dark slot (section 2)
         table.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         table.setGridColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        table.setSelectionBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        table.setSelectionBackground(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
         table.setSelectionForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
         table.setShowGrid(false);
         table.setShowVerticalLines(false);
@@ -132,7 +176,7 @@ public final class HudTable {
             label.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             label.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             label.setFont(label.getFont().deriveFont(Font.BOLD, label.getFont().getSize2D()));
-            label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
+            label.setBorder(new EmptyBorder(verticalPadding, CELL_SIDE_PADDING, verticalPadding, CELL_SIDE_PADDING));
             label.setHorizontalAlignment(SwingConstants.LEFT);
             return label;
         }
@@ -145,6 +189,8 @@ public final class HudTable {
      * row hover install a MouseMotionListener that maintains this property.
      */
     public static final String HOVER_ROW_PROPERTY = "elite.intel.hud.table.hoverRow";
+    /** A header or body cell's left and right padding, for a renderer that sets a border of its own. */
+    public static final int CELL_SIDE_PADDING = 8;
 
     /**
      * Standard alternating-row HUD table cell renderer.
@@ -177,15 +223,15 @@ public final class HudTable {
         ) {
             JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             if (isSelected) {
-                label.setBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
                 label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else {
                 Object hoveredObj = table.getClientProperty(HOVER_ROW_PROPERTY);
                 boolean hovered = hoveredObj instanceof Integer h && h == row;
                 label.setBackground(hovered ? HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-                label.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
             }
-            label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
+            label.setBorder(new EmptyBorder(verticalPadding, CELL_SIDE_PADDING, verticalPadding, CELL_SIDE_PADDING));
             label.setHorizontalAlignment(SwingConstants.LEFT);
             return label;
         }
@@ -196,14 +242,16 @@ public final class HudTable {
      * alignment. Use for columns where the value is an identifier (pass {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_TEXT}),
      * a numeric (pass {@link SwingConstants#RIGHT}), or needs explicit caps without global impact.
      *
-     * @param fg        non-selected foreground; {@code null} keeps the default {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}
+     * @param fg        non-selected foreground; {@code null} keeps the default {@link HudPalette#HUD_COLOR_ROLE_VALUE_TEXT}
      * @param alignment {@link SwingConstants#LEFT} or {@link SwingConstants#RIGHT}
      */
     public static class ValueCellRenderer extends CellRenderer {
         private final java.awt.Color fg;
         private final int alignment;
 
-        /** Creates a renderer with caps, default HUD_COLOR_ROLE_PRIMARY_ACTION foreground, and LEFT alignment. */
+        /**
+         * Creates a renderer with caps, default HUD_COLOR_ROLE_VALUE_TEXT foreground, and LEFT alignment.
+         */
         public ValueCellRenderer() {
             this(null, SwingConstants.LEFT);
         }

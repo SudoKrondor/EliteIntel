@@ -149,8 +149,7 @@ public class PromptFactory implements AiPromptFactory {
                     .append(" by name, rank or title. Speak without any form of address.\n");
             return;
         }
-        String alternativeName = playerSession.getAlternativeName();
-        String playerName = alternativeName != null ? alternativeName : playerSession.getPlayerName();
+        String playerName = playerSession.getSpokenName();
         // Both forms are derived from the stored (language-independent) navy rank numbers rather than from
         // the captured rank string, so equal standing in both navies is re-drawn on every prompt.
         Integer empireRank = playerSession.getRankAndProgressDto().getCombatRankEmpire();

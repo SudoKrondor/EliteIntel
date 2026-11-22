@@ -140,12 +140,14 @@ class ShippedCustomCommandFilesTest {
                 AiActionLocalizations.splitPhraseGroup(camera.getPhrases()).stream()
                         .map(phrase -> phrase.trim().toLowerCase(Locale.ROOT))
                         .toList());
-        // The English wording the commander actually said.
+        // The English wording, and the Cyrillic transliteration of it the RU commander actually said.
         assertTrue(phrases.contains("deploy external camera"));
+        assertTrue(phrases.contains("экстернал камера"));
         // One phrase per shipped language, so no commander is left without a trigger.
         for (String perLocale : List.of(
                 "external camera", "externe kamera", "cámara externa", "caméra externe",
-                "telecamera esterna", "câmara externa", "câmera externa")) {
+                "telecamera esterna", "câmara externa", "câmera externa",
+                "внешняя камера", "зовнішня камера")) {
             assertTrue(phrases.contains(perLocale), () -> "missing localized phrase: " + perLocale);
         }
     }

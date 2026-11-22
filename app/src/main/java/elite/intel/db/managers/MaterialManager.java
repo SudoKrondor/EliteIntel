@@ -3,6 +3,7 @@ package elite.intel.db.managers;
 import elite.intel.db.NameColumns;
 import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.util.Database;
+import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
 import elite.intel.i18n.Language;
 import elite.intel.util.StringUtls;
@@ -88,6 +89,19 @@ public class MaterialManager {
         reportedLive.add(key);
         Database.withDao(MaterialNameDao.class, dao -> {
             dao.subtractAmount(key, amountUsed);
+            return null;
+        });
+    }
+
+    /**
+     * Registers a material an old journal mentions, under the language the client that wrote it ran in, and leaves
+     * every held amount alone: what the commander held years ago says nothing about what they hold now.
+     */
+    public void learnName(String symbol, MaterialsType type, String displayName, Optional<Language> clientLanguage) {
+        String key = key(symbol);
+        if (key == null) return;
+        Database.withDao(MaterialNameDao.class, dao -> {
+            ensureKnown(dao, key, type, displayName, clientLanguage);
             return null;
         });
     }
@@ -182,8 +196,13 @@ public class MaterialManager {
      * column it may not belong to.
      */
     private void ensureKnown(MaterialNameDao dao, String symbol, MaterialsType type, String displayName) {
+        ensureKnown(dao, symbol, type, displayName, GameLanguage.getInstance().language());
+    }
+
+    private void ensureKnown(MaterialNameDao dao, String symbol, MaterialsType type, String displayName,
+                             Optional<Language> clientLanguage) {
         String display = displayNameOr(symbol, displayName);
-        Optional<String> gameColumn = NameColumns.gameMaterial();
+        Optional<String> gameColumn = clientLanguage.map(NameColumns::material);
         if (gameColumn.isPresent() && gameColumn.get().equals(NameColumns.material(Language.EN))) {
             dao.insertIfMissing(symbol, display, type.getType(), false);
             dao.fillEnglishIfPending(symbol, display);

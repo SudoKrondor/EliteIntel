@@ -13,4 +13,12 @@ public interface SystemPromptText {
      * @return the assembled static instruction text, ending with a newline
      */
     String staticRules(ThoughtSource source);
+
+    /**
+     * The EVENT rules for a line spoken to {@code addressee} instead of the commander. The default keeps the
+     * commander's rules, for test doubles that do not care who is spoken to.
+     */
+    default String narrationRulesTo(String addressee) {
+        return staticRules(ThoughtSource.EVENT);
+    }
 }

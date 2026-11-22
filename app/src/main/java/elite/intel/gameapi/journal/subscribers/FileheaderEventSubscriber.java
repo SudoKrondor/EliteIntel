@@ -1,52 +1,25 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.RadioVoicing;
-import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.GameLanguage;
 import elite.intel.gameapi.journal.events.FileheaderEvent;
-import elite.intel.i18n.Language;
 import elite.intel.setup.GameEditionCheck;
-import elite.intel.ui.event.RestartMouthEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A game session started while the app was already running: hands its edition to {@link GameEditionCheck},
- * which warns when it is not Odyssey, and its client language to {@link GameLanguage}, which decides which
- * engine voices radio transmissions and in what language. The other order - app started while the game runs -
+ * which warns when it is not Odyssey, and its client language to {@link GameLanguage}, which decides the
+ * language radio transmissions are read in. The other order - app started while the game runs -
  * never reaches this subscriber, because the header is then a replay; both of those read the header off disk
  * instead.
  * <p>
- * The radio engine is decided once, when the mouth starts, so a client relaunched in another language means
- * the mouth is restarted: the same {@link RestartMouthEvent} a TTS setting change sends, and a no-op while the
- * services are stopped (they will read the new language when they start).
+ * A client relaunched in another language needs nothing more: the radio engine reads the transmission language
+ * on every request, so the next transmission is read in the new one without restarting the mouth.
  */
 public class FileheaderEventSubscriber {
-
-    private static final Logger log = LogManager.getLogger(FileheaderEventSubscriber.class);
 
     @Subscribe
     public void onEvent(FileheaderEvent event) {
         GameEditionCheck.getInstance().onGameSessionStarted(event.isOdyssey());
-
-        RadioReading before = RadioReading.now();
         GameLanguage.getInstance().onGameSessionStarted(event.getLanguage());
-        RadioReading after = RadioReading.now();
-        if (!after.equals(before)) {
-            log.info("Radio transmissions now read as {} (was {}); restarting the mouth", after, before);
-            UiBus.publish(new RestartMouthEvent());
-        }
-    }
-
-    /**
-     * What the radio engine is started with: the engine, and the language it reads in. Both are needed - a
-     * Russian client changes the engine but has no {@link Language} of its own.
-     */
-    private record RadioReading(TtsProvider engine, Language language) {
-        static RadioReading now() {
-            return new RadioReading(RadioVoicing.engine(), RadioVoicing.transmissionLanguage());
-        }
     }
 }

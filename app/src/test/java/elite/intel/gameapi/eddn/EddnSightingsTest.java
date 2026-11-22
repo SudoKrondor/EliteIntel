@@ -3,10 +3,12 @@ package elite.intel.gameapi.eddn;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.ConflictZoneManager;
 import elite.intel.db.managers.HuntingGroundManager;
+import elite.intel.db.managers.PowerConflictZoneManager;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.missions.HuntingGround;
 import elite.intel.gameapi.missions.ResourceSiteProfile;
 import elite.intel.gameapi.signals.ConflictZoneProfile;
+import elite.intel.gameapi.signals.PowerWarZone;
 import elite.intel.gameapi.signals.WarZone;
 import elite.intel.util.Cypher;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class EddnSightingsTest {
 
     private final EddnSightings sightings = new EddnSightings(
-            HuntingGroundManager.getInstance(), ConflictZoneManager.getInstance());
+            HuntingGroundManager.getInstance(), ConflictZoneManager.getInstance(), PowerConflictZoneManager.getInstance());
 
     @BeforeAll
     static void boot() throws Exception {
@@ -114,6 +117,48 @@ class EddnSightingsTest {
     }
 
     @Test
+    void aPowerConflictZoneIsOfferedToAPowerTheRelayFoundThere() {
+        sightings.accept(sweep("Eddn Power E", 90005, 13000.0, minutesAgo(30),
+                "$Warzone_Powerplay_Med:#index=1;", "$Warzone_Powerplay_Med:#index=2;", "$Warzone_Powerplay_Med:#index=1;"));
+        assertTrue(sightings.accept(arrival("Eddn Power E", 90005, 13000.0, minutesAgo(20),
+                "\"ControllingPower\": \"Aisling Duval\", \"Powers\": [\"Aisling Duval\", \"Zemina Torval\"], ")));
+
+        Coordinates near = new Coordinates("Eddn Near E", 13000.5, 0, 0);
+        PowerWarZone zone = PowerConflictZoneManager.getInstance().bestZonesFor("Zemina Torval", near, 1).getFirst();
+        assertEquals("Eddn Power E", zone.starSystem());
+        assertEquals(2, zone.zones(), "index 1 listed twice is one zone");
+        assertEquals("Aisling Duval", zone.controllingPower());
+        assertEquals(List.of("Zemina Torval"), zone.contenders());
+        assertTrue(PowerConflictZoneManager.getInstance().bestZonesFor("Felicia Winters", near, 1).isEmpty(),
+                "a fight between two other powers is no fight of a Winters pledge");
+    }
+
+    @Test
+    void anArrivalWithNoPowersEndsThePowerConflictZonesOnFile() {
+        sightings.accept(sweep("Eddn Power F", 90006, 14000.0, minutesAgo(30), "$Warzone_Powerplay_Med:#index=1;"));
+        sightings.accept(arrival("Eddn Power F", 90006, 14000.0, minutesAgo(25), "\"Powers\": [\"Nakato Kaine\"], "));
+        Coordinates near = new Coordinates("Eddn Near F", 14000.5, 0, 0);
+        assertFalse(PowerConflictZoneManager.getInstance().bestZonesFor("Nakato Kaine", near, 1).isEmpty());
+
+        sightings.accept(arrival("Eddn Power F", 90006, 14000.0, minutesAgo(10), ""));
+
+        assertTrue(PowerConflictZoneManager.getInstance().bestZonesFor("Nakato Kaine", near, 1).isEmpty(),
+                "no power left in the system is no power war in it");
+    }
+
+    @Test
+    void anOlderArrivalNeverOverwritesTheNewerPowers() {
+        sightings.accept(sweep("Eddn Power G", 90007, 15000.0, minutesAgo(30), "$Warzone_Powerplay_Med:#index=1;"));
+        sightings.accept(arrival("Eddn Power G", 90007, 15000.0, minutesAgo(10), "\"Powers\": [\"Jerome Archer\"], "));
+        sightings.accept(arrival("Eddn Power G", 90007, 15000.0, minutesAgo(20), "\"Powers\": [\"Li Yong-Rui\"], "));
+
+        Coordinates near = new Coordinates("Eddn Near G", 15000.5, 0, 0);
+        assertFalse(PowerConflictZoneManager.getInstance().bestZonesFor("Jerome Archer", near, 1).isEmpty(),
+                "the relay delivers out of order, and the newest arrival is the one that says who is there");
+        assertTrue(PowerConflictZoneManager.getInstance().bestZonesFor("Li Yong-Rui", near, 1).isEmpty());
+    }
+
+    @Test
     void everythingElseOnTheRelayIsIgnoredUnparsed() {
         assertFalse(sightings.accept("""
                 {"$schemaRef": "https://eddn.edcd.io/schemas/commodity/3", "header": {}, "message": {"this is": "not even valid for us", "oops": [}}
@@ -131,6 +176,14 @@ class EddnSightingsTest {
      */
     private static String minutesAgo(int minutes) {
         return Instant.now().minus(Duration.ofMinutes(minutes)).truncatedTo(ChronoUnit.SECONDS).toString();
+    }
+
+    private static String arrival(String starSystem, long address, double x, String timestamp, String powerFields) {
+        return """
+                {"$schemaRef": "https://eddn.edcd.io/schemas/journal/1", "header": {},
+                 "message": {"timestamp": "%s", "event": "FSDJump", %s
+                   "StarSystem": "%s", "SystemAddress": %d, "StarPos": [%s, 0.0, 0.0]}}
+                """.formatted(timestamp, powerFields, starSystem, address, x);
     }
 
     private static String sweep(String starSystem, long address, double x, String timestamp, String... symbols) {

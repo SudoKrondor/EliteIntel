@@ -37,6 +37,32 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
+        <!-- BindForge's own record, for the support bundle. The file above rolls at every start and
+             shares its megabyte with the keystroke trail, so an APPLY from a few sessions ago is gone
+             from it long before a commander reports what it did. This one takes only BindForge's lines
+             (the two loggers below) and rolls only on size, so its history spans sessions - which is
+             why its pattern carries the date, and the one above does not need to. Current file plus
+             one rolled: 2MB at most. -->
+        <RollingFile name="bindForgeFile" fileName="${logPath}/bindforge.log"
+                     filePattern="${logPath}/bindforge_%i.log" immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-6p→ %c{1}.%M(%F:%L) - %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="1"/>
+        </RollingFile>
+        <!-- LM Studio install assistance's own record, for the support bundle, on BindForge's
+             pattern above: an install runs once, and the commander who reports it has usually
+             restarted the app since, which costs the in-app system log and rolls the file above.
+             Takes only the install package's lines and rolls only on size. 2MB at most. -->
+        <RollingFile name="lmStudioFile" fileName="${logPath}/lm-studio.log"
+                     filePattern="${logPath}/lm-studio_%i.log" immediateFlush="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-6p→ %c{1}.%M(%F:%L) - %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="1"/>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -79,6 +105,32 @@
              counts. "Push-to-talk does nothing" and "my HOTAS stopped working" are both answered
              by whether the device was ever seen, and nothing else in the bundle records that. -->
         <Logger name="elite.intel.devices" level="info"/>
+        <!-- Also louder than elite.intel, and it has to be. BindForge's failures are all quiet ones:
+             an unreadable DeviceMappings.xml, an installation that cannot be refreshed, a backup
+             destination that will not parse. Each is handled by carrying on with less, which is the
+             right behaviour and leaves nothing on screen - so the warn line is the only record that
+             it happened, and at the parent's error level it was being discarded. Info rather than
+             warn because one line genuinely belongs at info: what BindForge read a controller's
+             VID/PID as. That reading is silent when wrong - every controller simply fails to match
+             its entry, with no error anywhere - so it must be visible without turning logging up. -->
+        <Logger name="elite.intel.bindforge" level="info">
+            <!-- level on the ref, not only on the logger: bindforge.io, .model and .rules below log at
+                 debug and reach this appender through additivity, which ignores this logger's level. -->
+            <AppenderRef ref="bindForgeFile" level="info"/>
+        </Logger>
+        <!-- The same, for the screens: they hold the thread boundaries where a background refresh
+             reports what it could not do, and the line saying the device service is not running at
+             all, which otherwise looks identical to having no controllers plugged in. -->
+        <Logger name="elite.intel.ui.screen.bindings" level="info">
+            <AppenderRef ref="bindForgeFile"/>
+        </Logger>
+        <!-- LM Studio install assistance: every step and line of an install or uninstall, what lms
+             printed, the GPU check's reading, and the host's start and stop. Louder than elite.intel
+             for BindForge's reason: an install that fails ends on screen, in a dialog the commander
+             closes, and at the parent's error level nothing of it would be kept. -->
+        <Logger name="elite.intel.ai.brain.inference.lmstudio.install" level="info">
+            <AppenderRef ref="lmStudioFile" level="info"/>
+        </Logger>
         <!-- Also louder than elite.intel, for the same reason as the overlay above. Memory
              consolidation used to announce its failures out loud, which told the commander
              about housekeeping they can do nothing about (the batch is retried, and falls
@@ -129,7 +181,9 @@
         <Logger name="elite.intel.util.NavigationUtils" level="error"/>
         <Logger name="elite.intel.ai.hands" level="debug"/>
         <!-- The bindings IO and rules code moved out of ai.hands and keeps the debug level it had
-             there. Named one by one so the rest of bindforge keeps the elite.intel default. -->
+             there. Named one by one rather than raising all of elite.intel.bindforge, which is already
+             set to info above for BindForge's own failure diagnostics - these three are louder than
+             that, not louder than elite.intel's error default. -->
         <Logger name="elite.intel.bindforge.io" level="debug"/>
         <Logger name="elite.intel.bindforge.model" level="debug"/>
         <Logger name="elite.intel.bindforge.rules" level="debug"/>
@@ -141,7 +195,7 @@
              edge-triggered - one per utterance, never per audio frame - so a session costs a few dozen. -->
         <Logger name="elite.intel.ai.ears" level="info"/>
         <!-- warn, not error: every warn under here is a FAILURE and none of them fire per
-             utterance - Kokoro playback errors, a voice list that could not be enumerated, a
+             utterance - playback errors, a voice list that could not be enumerated, a
              request that could not be queued. At error level "the voice stopped working"
              arrived with nothing under it, because the thing that broke logged a warn. -->
         <Logger name="elite.intel.ai.mouth" level="warn"/>

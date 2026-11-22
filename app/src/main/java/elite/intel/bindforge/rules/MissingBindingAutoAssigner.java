@@ -13,9 +13,9 @@ import java.util.*;
  * Plans safe keyboard assignments for controls that have no keyboard binding.
  * <p>
  * This class is pure and file-free: it works from the parsed read-only slot map
- * and produces a list of intended edits plus a list of skips with reasons. The
- * caller is responsible for actually writing the edits (via {@link BindingsWriter})
- * and applying the draft.
+ * and produces a list of intended changes plus a list of skips with reasons. The
+ * caller turns them into edits not applied (via {@link BindingsWriter}), and APPLY
+ * writes them like every other edit.
  * <p>
  * Three invariants drive the design:
  * <ul>
@@ -132,6 +132,17 @@ public class MissingBindingAutoAssigner {
      */
     public boolean isKeyboardBound(ReadOnlyBindingSlots binding) {
         return isKeyboardUsable(binding.primary()) || isKeyboardUsable(binding.secondary());
+    }
+
+    /**
+     * Whether an assignment here could ever go in: not a control left unbound on purpose, and with a slot free to take a
+     * key. So a row can leave out a button that would only refuse. Whether a free key remains is not asked, because that
+     * changes as the file does and the commander is told when it runs out.
+     */
+    public boolean canAssign(String bindingId, ReadOnlyBindingSlots binding) {
+        return !ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
+                && !LEFT_TO_THE_COMMANDER.contains(bindingId)
+                && chooseWritableSlot(binding) != null;
     }
 
     /**
@@ -255,7 +266,7 @@ public class MissingBindingAutoAssigner {
      * control that is live alongside it - pressing the chord would fire that control first.
      * <p>
      * Judged per target with the same context rule the conflict scan uses
-     * ({@link BindingConflictRules#isSafeOverlap}), so on-foot Sprint on {@code Left Shift} does not
+     * ({@link BindingConflictRules#isSafeShadow}), so on-foot Sprint on {@code Left Shift} does not
      * take Shift away from a ship control. A context-blind version of a guard like this once emptied
      * the pool on real files; this one only ever removes a modifier the scan would report.
      */
@@ -263,7 +274,7 @@ public class MissingBindingAutoAssigner {
         Set<String> shadowed = new HashSet<>();
         for (Map.Entry<String, Set<String>> entry : bareModifierOwners.entrySet()) {
             for (String owner : entry.getValue()) {
-                if (!owner.equals(bindingId) && !BindingConflictRules.isSafeOverlap(bindingId, owner)) {
+                if (!owner.equals(bindingId) && !BindingConflictRules.isSafeShadow(bindingId, owner)) {
                     shadowed.add(entry.getKey());
                     break;
                 }

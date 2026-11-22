@@ -4,7 +4,7 @@ import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.VoiceGender;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipLoadoutManager;
 import elite.intel.db.managers.ShipManager;
@@ -53,16 +53,16 @@ class PerShipVoicePersonalityTest {
     void voiceAndPersonalityFollowTheActiveShip() {
         SystemSession session = SystemSession.getInstance();
 
-        saveShip(101, KokoroVoices.NOVA.name(), ShipPersonality.PROFESSIONAL.name());
-        saveShip(102, KokoroVoices.ALICE.name(), ShipPersonality.ROGUE.name());
+        saveShip(101, SupertonicVoices.NOVA.name(), ShipPersonality.PROFESSIONAL.name());
+        saveShip(102, SupertonicVoices.ALICE.name(), ShipPersonality.ROGUE.name());
 
         makeActive(101);
-        assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
+        assertEquals(SupertonicVoices.NOVA, session.getSupertonicVoice());
         assertEquals(ShipPersonality.PROFESSIONAL, session.getAIPersonality());
 
         // Switching the active ship switches the voice and personality with it.
         makeActive(102);
-        assertEquals(KokoroVoices.ALICE, session.getKokoroVoice());
+        assertEquals(SupertonicVoices.ALICE, session.getSupertonicVoice());
         assertEquals(ShipPersonality.ROGUE, session.getAIPersonality());
     }
 
@@ -71,22 +71,22 @@ class PerShipVoicePersonalityTest {
         SystemSession session = SystemSession.getInstance();
         TtsProvider previousProvider = session.getTtsProvider();
         try {
-            session.setTtsProvider(TtsProvider.KOKORO);
+            session.setTtsProvider(TtsProvider.SUPERTONIC);
 
-            saveShip(301, KokoroVoices.GEORGE.name(), ShipPersonality.CASUAL.name());
+            saveShip(301, SupertonicVoices.GEORGE.name(), ShipPersonality.CASUAL.name());
             makeActive(301);
-            assertEquals(KokoroVoices.GEORGE, session.getKokoroVoice());
+            assertEquals(SupertonicVoices.GEORGE, session.getSupertonicVoice());
             // The voice is the only thing picked; the prompt's self-reference follows it.
             assertEquals(VoiceGender.MALE, session.getVoiceGender());
 
-            saveShip(302, KokoroVoices.NOVA.name(), ShipPersonality.CASUAL.name());
+            saveShip(302, SupertonicVoices.NOVA.name(), ShipPersonality.CASUAL.name());
             makeActive(302);
             assertEquals(VoiceGender.FEMALE, session.getVoiceGender());
 
             // A ship carrying a voice this engine does not know takes the default voice, which is female.
             saveShip(303, GoogleVoices.JAKE.name(), ShipPersonality.CASUAL.name());
             makeActive(303);
-            assertEquals(KokoroVoices.DEFAULT_VOICE, session.getKokoroVoice());
+            assertEquals(SupertonicVoices.DEFAULT_VOICE, session.getSupertonicVoice());
             assertEquals(VoiceGender.FEMALE, session.getVoiceGender());
         } finally {
             session.setTtsProvider(previousProvider);
@@ -104,8 +104,8 @@ class PerShipVoicePersonalityTest {
             session.setTtsProvider(TtsProvider.GOOGLE);
             assertEquals(VoiceGender.MALE, session.getVoiceGender());
 
-            // Kokoro has no voice by that name: it falls back to its default, and so does the gender.
-            session.setTtsProvider(TtsProvider.KOKORO);
+            // Supertonic has no voice by that name: it falls back to its default, and so does the gender.
+            session.setTtsProvider(TtsProvider.SUPERTONIC);
             assertEquals(VoiceGender.FEMALE, session.getVoiceGender());
         } finally {
             session.setTtsProvider(previousProvider);
@@ -116,11 +116,11 @@ class PerShipVoicePersonalityTest {
     void voiceInvalidForActiveProviderFallsBackToProviderDefault() {
         SystemSession session = SystemSession.getInstance();
 
-        // A Kokoro voice name isn't a valid Google voice, so the Google getter falls back to its default.
-        saveShip(201, KokoroVoices.NOVA.name(), ShipPersonality.CASUAL.name());
+        // A Supertonic voice name isn't a valid Google voice, so the Google getter falls back to its default.
+        saveShip(201, SupertonicVoices.NOVA.name(), ShipPersonality.CASUAL.name());
         makeActive(201);
 
-        assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
+        assertEquals(SupertonicVoices.NOVA, session.getSupertonicVoice());
         assertEquals(GoogleVoices.DEFAULT_VOICE, session.getGoogleVoice());
     }
 }

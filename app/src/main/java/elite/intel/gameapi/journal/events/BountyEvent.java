@@ -20,6 +20,9 @@ public class BountyEvent extends BaseEvent {
     @SerializedName("Target")
     private String target;
 
+    @SerializedName("Target_Localised")
+    private String targetLocalised;
+
     @SerializedName("TotalReward")
     private long totalReward;
 
@@ -33,6 +36,7 @@ public class BountyEvent extends BaseEvent {
         this.pilotName = event.pilotName;
         this.pilotNameLocalised = event.pilotNameLocalised;
         this.target = event.target;
+        this.targetLocalised = event.targetLocalised;
         this.totalReward = event.totalReward;
         this.victimFaction = event.victimFaction;
     }
@@ -81,6 +85,13 @@ public class BountyEvent extends BaseEvent {
 
     public String getTarget() {
         return target;
+    }
+
+    /**
+     * The ship as the game names it for a human, null when the journal left it unlocalised ({@code "python"}).
+     */
+    public String getTargetLocalised() {
+        return targetLocalised;
     }
 
     public long getTotalReward() {

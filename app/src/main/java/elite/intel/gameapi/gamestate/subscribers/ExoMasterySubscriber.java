@@ -23,8 +23,9 @@ import org.apache.logging.log4j.Logger;
  *       so a body can be finished here while the game still has cheaper organisms on it - the money
  *       the commander came for has been collected, which is what the list is for.</li>
  * </ul>
- * Nothing is looked up when the catalogue is not loaded: {@link ExoMasteryManager#isEnabled()} is a
- * cached flag, so an idle feature costs the scan pipeline nothing.
+ * The survey latch is not looked at when the catalogue is not loaded: {@link ExoMasteryManager#isEnabled()} is a
+ * cached flag. A final scan is recorded either way - one insert, at most a few times an hour - because it is the
+ * record a catalogue loaded later is checked against.
  */
 public class ExoMasterySubscriber {
 
@@ -50,7 +51,8 @@ public class ExoMasterySubscriber {
     @Subscribe
     public void onScanOrganic(ScanOrganicEvent event) {
         if (!FINAL_SCAN.equalsIgnoreCase(event.getScanType()) || event.getBody() == null) return;
-        if (!exoMastery.isEnabled()) return;
+        // Recorded with the catalogue unloaded too: the game will not let this species be sampled here again, and a
+        // catalogue loaded next month must not send the commander back for it.
         String species = BioForms.normalizeSpecies(event.getSpecies());
         if (exoMastery.recordSampled(event.getSystemAddress(), event.getBody(), species)) {
             log.debug("Exo-Mastery body {}/{} completed: last listed species {} sampled",

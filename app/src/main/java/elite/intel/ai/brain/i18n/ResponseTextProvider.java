@@ -55,6 +55,8 @@ public final class ResponseTextProvider {
 
     private static Locale locale(Language language) {
         return switch (language) {
+            case RU -> Locale.forLanguageTag("ru");
+            case UK -> Locale.forLanguageTag("uk");
             case DE -> Locale.GERMAN;
             case FR -> Locale.FRENCH;
             case EN -> Locale.ENGLISH;

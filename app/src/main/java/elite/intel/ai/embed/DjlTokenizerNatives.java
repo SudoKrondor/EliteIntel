@@ -17,10 +17,11 @@ import org.apache.logging.log4j.Logger;
  * guard: if the bundled native is ever missing, DJL fails fast instead of reaching the network.
  * <p>
  * Both are honoured by DJL only if set before its tokenizer loader first runs, so {@link #configure()} is
- * called at the top of {@link OnnxTextEmbedder}'s construction, before any tokenizer is created. Values the
+ * called before any tokenizer is created: at the top of {@link OnnxTextEmbedder}'s construction, and before the
+ * Russian stress models load ({@code elite.intel.ai.mouth.supertonic.stress.RussianStress}). Values the
  * operator has already set (env var or {@code -D}) are left untouched, so a power user can still override.
  */
-final class DjlTokenizerNatives {
+public final class DjlTokenizerNatives {
 
     private static final Logger log = LogManager.getLogger(DjlTokenizerNatives.class);
     private static boolean configured = false;
@@ -28,7 +29,7 @@ final class DjlTokenizerNatives {
     private DjlTokenizerNatives() {
     }
 
-    static synchronized void configure() {
+    public static synchronized void configure() {
         if (configured) {
             return;
         }

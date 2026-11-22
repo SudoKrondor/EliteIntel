@@ -73,13 +73,61 @@ public class ShipManager {
     }
 
     /**
-     * Drops a sold ship from the fleet, with its settings and trade profile. The game never reuses a
-     * ShipID, so a ship bought again comes back as a new row on its first Loadout.
+     * Takes a sold ship off the fleet. The row is kept, flagged, with its settings and trade profile: if the game
+     * later names the ship again (Loadout or StoredShips), {@link #inFleet} puts it back as the commander left it.
+     * The game never reuses a ShipID, so a ship really sold is never brought back by mistake.
      *
-     * @return true when the ship was known and is now gone
+     * @param soldAt the sale's journal timestamp
+     * @return true when the ship was in the fleet and is now marked sold
      */
-    public boolean forgetSoldShip(int shipId) {
-        return Database.withDao(ShipDao.class, dao -> dao.delete(shipId)) > 0;
+    public boolean markSold(int shipId, String soldAt) {
+        return Database.withDao(ShipDao.class, dao -> dao.markSold(shipId, soldAt)) > 0;
+    }
+
+    /**
+     * Records that the game has just named this ship as the commander's, clearing a sale mark if it had one.
+     *
+     * @return true when the ship had been marked sold and is back in the fleet
+     */
+    public boolean inFleet(int shipId) {
+        return Database.withDao(ShipDao.class, dao -> dao.clearSold(shipId)) > 0;
+    }
+
+    /**
+     * A ship the game lists as stored: its ShipID, the name the fleet shows and its make.
+     */
+    public record StoredShip(int shipId, String shipName, String shipMake) {
+    }
+
+    /**
+     * Adds every stored ship the fleet does not know yet, so the fleet heals from the game's own list instead of
+     * waiting for each ship to be flown. A ship already known keeps its row as it is - the commander's voice,
+     * personality and settings - and comes back into the fleet if it was marked sold. A Loadout refreshes the
+     * rest when the ship is flown. A new row's cargo capacity is unknown until then and stored as 0.
+     *
+     * @return how many ships were added or brought back
+     */
+    public int addMissingShips(List<StoredShip> ships, String voice, String commanderName) {
+        return Database.withDao(ShipDao.class, dao -> {
+            int added = 0;
+            for (StoredShip stored : ships) {
+                if (dao.findShip(stored.shipId()) != null) {
+                    added += dao.clearSold(stored.shipId());
+                    continue;
+                }
+                ShipDao.Ship ship = new ShipDao.Ship();
+                ship.setShipId(stored.shipId());
+                ship.setShipName(stored.shipName());
+                ship.setCargoCapacity(0);
+                ship.setShipIdentifier(stored.shipMake());
+                ship.setVoice(voice);
+                ship.setPersonality(ShipPersonality.DEFAULT.name());
+                ship.setCommanderName(commanderName);
+                dao.save(ship);
+                added++;
+            }
+            return added;
+        });
     }
 
     public ShipDao.Ship getShipById(int shipId) {
@@ -94,8 +142,9 @@ public class ShipManager {
         return Database.withDao(ShipDao.class, dao -> dao.allShipsForCommander(commanderName));
     }
 
+    /** Sold ships too: one brought back must not carry a voice the new engine lacks. */
     public void resetAllVoicesToDefault(String defaultVoice) {
-        List<ShipDao.Ship> ships = getAllShips();
+        List<ShipDao.Ship> ships = Database.withDao(ShipDao.class, ShipDao::allRows);
         for (ShipDao.Ship ship : ships) {
             ship.setVoice(defaultVoice);
             saveShip(ship);

@@ -71,7 +71,8 @@ public class ExoMasteryManager {
      * <p>
      * Every row is an upsert that leaves the progress flags alone, so re-importing over a catalogue
      * already loaded - or over the completed bodies kept through a purge - loses nothing. Bodies the
-     * location table already knows to be sampled out are completed on the spot.
+     * location table already knows to be sampled out are completed on the spot, and so are bodies whose
+     * listed species were all sampled before the catalogue was loaded.
      *
      * @param progress told the import percentage as systems land, 0 to 100, on the calling thread
      */
@@ -93,6 +94,7 @@ public class ExoMasteryManager {
                     }
                 }
                 dao.adoptCompletedLocations(now);
+                dao.adoptSampledBodies(now);
             });
         }
         enabled = null;
@@ -189,8 +191,9 @@ public class ExoMasteryManager {
     }
 
     /**
-     * Records the third scan of a species on a body. When it was the last listed species on that body,
-     * the body is completed too: everything the catalogue promised there has been collected.
+     * Records the third scan of a species on a body, catalogued or not, so that a catalogue loaded later still
+     * knows it was taken. When it was the last listed species on that body, the body is completed too:
+     * everything the catalogue promised there has been collected.
      *
      * @return true when this scan completed the body
      */

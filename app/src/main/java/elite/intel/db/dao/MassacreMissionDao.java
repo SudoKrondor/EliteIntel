@@ -108,6 +108,48 @@ public interface MassacreMissionDao {
     @SqlQuery("SELECT COUNT(*) FROM massacre_mission")
     int count();
 
+    /**
+     * What this commander can share with others: one row per provider faction and target, for every target the
+     * shared ledger knows to have resource sites.
+     * <p>
+     * WHY a target the commander forgot is still shared: forgetting is a matter of taste (too easy, too hard,
+     * the wrong power), not a verdict that the pairing is false, and it stays on this commander's side.
+     */
+    @SqlQuery("""
+            SELECT m.providerSystem, MAX(m.providerStation) AS providerStation, m.providerFaction,
+                   m.targetSystem, m.targetFaction,
+                   g.resStandard, g.resLow, g.resHigh, g.resHazardous,
+                   MAX(substr(m.acceptedAt, 1, 10)) AS lastSeen
+              FROM massacre_mission m
+              JOIN hunting_ground g ON g.starSystem = m.targetSystem
+             WHERE m.providerFaction IS NOT NULL AND m.targetFaction IS NOT NULL
+             GROUP BY m.providerSystem, m.providerFaction, m.targetSystem, m.targetFaction
+            """)
+    @RegisterRowMapper(ShareableMapper.class)
+    List<Shareable> shareable();
+
+    class ShareableMapper implements RowMapper<Shareable> {
+        @Override
+        public Shareable map(ResultSet rs, StatementContext ctx) throws SQLException {
+            return new Shareable(rs.getString("providerSystem"), rs.getString("providerStation"),
+                    rs.getString("providerFaction"), rs.getString("targetSystem"), rs.getString("targetFaction"),
+                    rs.getInt("resStandard"), rs.getInt("resLow"), rs.getInt("resHigh"), rs.getInt("resHazardous"),
+                    rs.getString("lastSeen"));
+        }
+    }
+
+    record Shareable(String providerSystem,
+                     String providerStation,
+                     String providerFaction,
+                     String targetSystem,
+                     String targetFaction,
+                     int standard,
+                     int low,
+                     int high,
+                     int hazardous,
+                     String lastSeen) {
+    }
+
     class PairMapper implements RowMapper<Pair> {
         @Override
         public Pair map(ResultSet rs, StatementContext ctx) throws SQLException {

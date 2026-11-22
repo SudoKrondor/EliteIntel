@@ -104,9 +104,6 @@ public class KeyboardReadout extends ReadoutWindow {
 
     @Override
     protected void openSettings() {
-        SwingUtilities.invokeLater(() -> {
-            KeyboardSettingsDialog dlg = new KeyboardSettingsDialog(this);
-            dlg.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new KeyboardSettingsDialog(this).open());
     }
 }

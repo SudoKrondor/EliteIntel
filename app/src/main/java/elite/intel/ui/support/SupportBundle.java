@@ -1,9 +1,14 @@
 package elite.intel.ui.support;
 
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
+import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
 import elite.intel.bindforge.io.BindingsLoader;
+import elite.intel.bindforge.storage.Backup;
+import elite.intel.bindforge.storage.BackupContents;
+import elite.intel.bindforge.storage.Backups;
+import elite.intel.bindforge.storage.BindForgeSupport;
 import elite.intel.gameapi.GameClock;
 import elite.intel.gameapi.JournalFiles;
-import elite.intel.io.TimestampedBackups;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,6 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -94,6 +100,9 @@ public final class SupportBundle {
      */
     static final long MAX_SOURCE_BYTES = 32L * 1024 * 1024;
 
+    private static final String BINDFORGE_LOG = "bindforge.log";
+    private static final String LM_STUDIO_LOG = "lm-studio.log";
+
     private SupportBundle() {
     }
 
@@ -117,13 +126,63 @@ public final class SupportBundle {
      * @param aiSetup        the language model and voice engine in use (see {@link AiSetupReport}), written into
      *                       the manifest. Deferred for the same reason as {@code micDiagnostics}: it reads the
      *                       database. Null when the caller has no settings to report.
-     * @param bindingsBackupDir where Elite Intel keeps the copy of the game's {@code .binds} it takes before every
-     *                          write (see {@link #previousBindings}). Null when the caller cannot resolve it.
+     * @param bindingsBackupDir BindForge's backup folder, whose before-changes backups hold the game's {@code .binds}
+     *                          as it was before every write (see {@link #previousBindings}). Null when the caller
+     *                          cannot resolve it.
+     * @param bindForge         BindForge's report and raw files (see {@link BindForgeSupport}). Deferred for the same
+     *                          reason as {@code micDiagnostics}: it reads the game's folders and the database. Null
+     *                          when the caller has no BindForge to report.
+     * @param lmStudio          how LM Studio install assistance stands on this PC (see
+     *                          {@code LmStudioSupport}). Deferred for the same reason as {@code micDiagnostics}: it
+     *                          runs {@code nvidia-smi} and asks LM Studio for its models. Null when the caller has
+     *                          none to report.
+     * @param vegaMemory        VEGA's conversation memory as JSON (see {@code VegaMemoryDump}): what VEGA thought
+     *                          was said, which is often the answer to "why did it do that". Deferred so it is taken
+     *                          when the bundle is written, not when the dialog opened. Null when the caller has no
+     *                          VEGA to ask.
      */
     public record Sources(String appVersion, String sessionLog,
                           @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
                           @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
-                          @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir) {
+                          @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
+                          @Nullable Supplier<BindForgeSupport.Contents> bindForge,
+                          @Nullable Supplier<String> lmStudio, @Nullable Supplier<String> vegaMemory) {
+
+        /**
+         * Sources with no VEGA memory to carry.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
+                       @Nullable Supplier<BindForgeSupport.Contents> bindForge,
+                       @Nullable Supplier<String> lmStudio) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    bindingsBackupDir, bindForge, lmStudio, null);
+        }
+
+        /**
+         * Sources with no LM Studio report to carry.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir,
+                       @Nullable Supplier<BindForgeSupport.Contents> bindForge) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    bindingsBackupDir, bindForge, null);
+        }
+
+        /**
+         * Sources with no BindForge report to carry.
+         */
+        public Sources(String appVersion, String sessionLog,
+                       @Nullable Path appLog, @Nullable Path journalDir, @Nullable Path bindingsDir,
+                       @Nullable Supplier<String> micDiagnostics, @Nullable Path customCommands,
+                       @Nullable Supplier<String> aiSetup, @Nullable Path bindingsBackupDir) {
+            this(appVersion, sessionLog, appLog, journalDir, bindingsDir, micDiagnostics, customCommands, aiSetup,
+                    bindingsBackupDir, null);
+        }
 
         /**
          * Sources with no bindings backups to report.
@@ -203,7 +262,13 @@ public final class SupportBundle {
             }
 
             copy(zip, "application log", appLog(sources.appLog()), included, omitted);
-            copy(zip, "previous application log", previousAppLog(sources.appLog()), included, omitted);
+            copy(zip, "previous application log", previousLog(sources.appLog()), included, omitted);
+            copy(zip, "BindForge log", siblingLog(sources.appLog(), BINDFORGE_LOG), included, omitted);
+            copy(zip, "previous BindForge log", previousLog(siblingLogPath(sources.appLog(), BINDFORGE_LOG)),
+                    included, omitted);
+            copy(zip, "LM Studio log", siblingLog(sources.appLog(), LM_STUDIO_LOG), included, omitted);
+            copy(zip, "previous LM Studio log", previousLog(siblingLogPath(sources.appLog(), LM_STUDIO_LOG)),
+                    included, omitted);
             copy(zip, "journal", newestJournal(sources.journalDir()), included, omitted);
             copyGameState(zip, sources.journalDir(), included, omitted);
             Collected activeBindings = activeBindings(sources.bindingsDir());
@@ -211,7 +276,11 @@ public final class SupportBundle {
             copy(zip, "bindings backup", previousBindings(sources.bindingsBackupDir(), activeBindings),
                     included, omitted);
             copy(zip, "custom commands", customCommands(sources.customCommands()), included, omitted);
-            writeMicDiagnostics(zip, sources.micDiagnostics(), included, omitted);
+            writeReport(zip, MIC_DIAGNOSTICS_ENTRY, "microphone diagnostics", sources.micDiagnostics(),
+                    included, omitted);
+            writeBindForge(zip, sources.bindForge(), included, omitted);
+            writeReport(zip, LmStudioSupport.REPORT_ENTRY, "LM Studio report", sources.lmStudio(), included, omitted);
+            writeReport(zip, VegaMemoryDump.REPORT_ENTRY, "VEGA memory", sources.vegaMemory(), included, omitted);
 
             writeEntry(zip, INFO_ENTRY, manifest(sources, included, omitted).getBytes(StandardCharsets.UTF_8));
         }
@@ -226,6 +295,16 @@ public final class SupportBundle {
      */
     private static void copy(ZipOutputStream zip, String label, Collected source,
                              List<String> included, List<String> omitted) {
+        if (source.content() != null) {
+            try {
+                writeEntry(zip, source.entryName(), source.content());
+                included.add(source.entryName());
+            } catch (IOException e) {
+                log.warn("Diagnostics bundle: could not write {} ({}): {}", label, source.entryName(), e.toString());
+                omitted.add(label + " - could not write " + source.entryName() + ": " + e);
+            }
+            return;
+        }
         if (source.path() == null) {
             if (!source.reason().isBlank()) omitted.add(label + " - " + source.reason());
             return;
@@ -244,36 +323,62 @@ public final class SupportBundle {
     }
 
     /**
-     * Adds the microphone report, or records why there is none.
+     * Adds a computed text report - the microphone's, LM Studio's, VEGA's memory - or records why there is none.
      * <p>
-     * The supplier is called inside the try because this one source is computed rather than read: it probes
-     * the machine's audio devices, and a machine whose audio subsystem is broken enough to swallow the
+     * The supplier is called inside the try because these sources are computed rather than read: the microphone's
+     * probes the machine's audio devices, and a machine whose audio subsystem is broken enough to swallow the
      * commander's voice is exactly the machine most likely to throw here. Letting that escape would cost the
      * whole bundle - including the journal and the logs - to save one section of it.
      */
-    private static void writeMicDiagnostics(ZipOutputStream zip, @Nullable Supplier<String> micDiagnostics,
-                                            List<String> included, List<String> omitted) throws IOException {
-        // Silent rather than reported, on the same rule as an absent Collected: a caller with no audio
-        // pipeline to ask is not an incomplete bundle, and saying so would make every healthy one read as one.
-        if (micDiagnostics == null) {
+    private static void writeReport(ZipOutputStream zip, String entryName, String label,
+                                    @Nullable Supplier<String> render,
+                                    List<String> included, List<String> omitted) throws IOException {
+        // Silent rather than reported, on the same rule as an absent Collected: a caller with nothing to ask
+        // is not an incomplete bundle, and saying so would make every healthy one read as one.
+        if (render == null) {
             return;
         }
         String report;
         try {
-            report = micDiagnostics.get();
+            report = render.get();
         } catch (RuntimeException | LinkageError e) {
-            log.warn("Diagnostics bundle: could not collect microphone diagnostics", e);
-            omitted.add("microphone diagnostics - could not be collected: " + e);
+            log.warn("Diagnostics bundle: could not collect the {}", label, e);
+            omitted.add(label + " - could not be collected: " + e);
             return;
         }
         // A supplier that ran and produced nothing IS worth reporting, unlike an absent one: the renderer
         // always has something to say, so an empty answer means it failed to say it.
         if (report == null || report.isBlank()) {
-            omitted.add("microphone diagnostics - the report came back empty");
+            omitted.add(label + " - the report came back empty");
             return;
         }
-        writeEntry(zip, MIC_DIAGNOSTICS_ENTRY, report.getBytes(StandardCharsets.UTF_8));
-        included.add(MIC_DIAGNOSTICS_ENTRY);
+        writeEntry(zip, entryName, report.getBytes(StandardCharsets.UTF_8));
+        included.add(entryName);
+    }
+
+    /**
+     * Adds BindForge's report and raw files, or records why there are none. The supplier is called inside the try for
+     * the reason {@link #writeReport} gives: this source is computed, and the fault being reported may be what
+     * breaks it.
+     */
+    private static void writeBindForge(ZipOutputStream zip, @Nullable Supplier<BindForgeSupport.Contents> bindForge,
+                                       List<String> included, List<String> omitted) throws IOException {
+        if (bindForge == null) return;
+        BindForgeSupport.Contents contents;
+        try {
+            contents = bindForge.get();
+        } catch (RuntimeException | LinkageError e) {
+            log.warn("Diagnostics bundle: could not collect the BindForge report", e);
+            omitted.add("BindForge report - could not be collected: " + e);
+            return;
+        }
+        writeEntry(zip, BindForgeSupport.REPORT_ENTRY, contents.report().getBytes(StandardCharsets.UTF_8));
+        included.add(BindForgeSupport.REPORT_ENTRY);
+        // WHY: sorted so that two bundles of one state list their entries alike, and can be compared by eye.
+        for (var file : new TreeMap<>(contents.files()).entrySet()) {
+            writeEntry(zip, file.getKey(), file.getValue());
+            included.add(file.getKey());
+        }
     }
 
     /**
@@ -354,23 +459,35 @@ public final class SupportBundle {
         zip.closeEntry();
     }
 
-    private record Collected(@Nullable Path path, String reason) {
+    /**
+     * One source: a file to copy, bytes already read from somewhere that is not a file of its own (a file inside a
+     * backup zip), or the reason there is neither.
+     */
+    private record Collected(@Nullable Path path, String reason, @Nullable String entryName,
+                             @Nullable byte[] content) {
         static Collected of(Path path) {
-            return new Collected(path, "");
+            return new Collected(path, "", null, null);
+        }
+
+        /**
+         * Already read, written into the bundle under {@code entryName}.
+         */
+        static Collected read(String entryName, byte[] content) {
+            return new Collected(null, "", entryName, content);
         }
 
         /**
          * Not collected, and worth reporting: something the bundle wanted and could not get.
          */
         static Collected missing(String reason) {
-            return new Collected(null, reason);
+            return new Collected(null, reason, null, null);
         }
 
         /**
          * Not collected, and that is normal - reported nowhere, so it cannot make a good bundle look broken.
          */
         static Collected absent() {
-            return new Collected(null, "");
+            return new Collected(null, "", null, null);
         }
     }
 
@@ -381,7 +498,28 @@ public final class SupportBundle {
     }
 
     /**
-     * The newest rolled sibling of the application log, e.g. {@code elite-intel_2026-08-04_1.log}.
+     * A feature's own log, written beside the application log (see {@code log4j2.xml}): BindForge's, LM Studio
+     * install assistance's.
+     * <p>
+     * WHY a second log rather than the lines already in the first: the application log rolls at every start and shares
+     * its megabyte with the keystroke trail, so an APPLY from a few sessions ago - or an install that failed before
+     * the commander restarted - has gone from it by the time anyone reports it. These hold one feature's lines alone
+     * and roll only on size.
+     * <p>
+     * Absent is silent, like the rolled log: a commander who never used the feature has no such file.
+     */
+    private static Collected siblingLog(@Nullable Path appLog, String name) {
+        Path log = siblingLogPath(appLog, name);
+        return log != null && Files.isRegularFile(log) ? Collected.of(log) : Collected.absent();
+    }
+
+    @Nullable
+    private static Path siblingLogPath(@Nullable Path appLog, String name) {
+        return appLog == null ? null : appLog.resolveSibling(name);
+    }
+
+    /**
+     * The newest rolled sibling of a log, e.g. {@code elite-intel_2026-08-04_1.log}.
      * <p>
      * WHY this is worth a second file: the appender rolls on startup, so {@code elite-intel.log} only ever
      * holds the current session. A commander who hits a problem, restarts the app and then saves a bundle -
@@ -391,11 +529,11 @@ public final class SupportBundle {
      * Absent is not a failure here: on a first-ever run nothing has rolled yet, and a bundle carrying only
      * the current log is complete. Only an unreadable directory is reported.
      */
-    private static Collected previousAppLog(@Nullable Path appLog) {
-        if (appLog == null) return Collected.absent();
-        Path dir = appLog.toAbsolutePath().getParent();
+    private static Collected previousLog(@Nullable Path currentLog) {
+        if (currentLog == null) return Collected.absent();
+        Path dir = currentLog.toAbsolutePath().getParent();
         if (dir == null || !Files.isDirectory(dir)) return Collected.absent();
-        String stem = rolledPrefix(appLog);
+        String stem = rolledPrefix(currentLog);
         try (var files = Files.list(dir)) {
             return files
                     .filter(p -> {
@@ -441,33 +579,52 @@ public final class SupportBundle {
         if (bindingsDir == null) return Collected.missing("no bindings directory configured");
         if (!Files.isDirectory(bindingsDir)) return Collected.missing("not a directory: " + bindingsDir);
         try {
-            return Collected.of(new BindingsLoader().getLatestBindsFile(bindingsDir).toPath());
+            return Collected.of(new BindingsLoader().bindsFileToRead(bindingsDir).toPath());
         } catch (IOException e) {
             return Collected.missing("could not resolve the active preset in " + bindingsDir + ": " + e);
         }
     }
 
     /**
-     * The newest copy of the active preset's {@code .binds} that Elite Intel took before it last wrote that file.
+     * The newest copy of the active preset's {@code .binds} that Elite Intel took before it last wrote that file:
+     * the copy in the newest before-changes backup that holds it (BindForge's backups, {@link Backups}), carried as
+     * {@code <preset>.before-changes-<backup stamp>}. A backup that cannot be read is skipped for the one before it.
+     * Read out of the zip rather than from a loose copy since {@code TimestampedBackups} went (Alan, 2026-10-31).
      * <p>
      * WHY: "the app changed my gamepad binds" is a report the current file alone cannot answer, because it shows
      * the result and not what it replaced. A bundle of 2026-10-27 turned on exactly that question, and the
      * answer sat in this backup on the commander's disk, in a folder they had no reason to know about. Diffed
-     * against the active file, it shows every change the last apply made, and nothing the game itself made later.
+     * against the active file, it shows every change since that backup: the last apply's, and anything the game
+     * changed since.
      * <p>
-     * No backup at all is worth a line of its own: it means Elite Intel has never written this preset, which
-     * answers the report by itself. Nothing is said when the active preset is unknown, since the bindings entry
-     * has already said why, or when the caller has no backup folder to point at.
+     * No backup holding it is worth a line of its own: no APPLY or RESTORE has written this preset, or it was made
+     * after the last one, which answers the report by itself. Nothing is said when the active preset is unknown,
+     * since the bindings entry has already said why, or when the caller has no backup folder to point at.
      */
     private static Collected previousBindings(@Nullable Path backupDir, Collected activeBindings) {
         if (backupDir == null || activeBindings.path() == null) return Collected.absent();
         String presetFile = activeBindings.path().getFileName().toString();
+        List<Backup> backups;
         try {
-            return new TimestampedBackups().newest(backupDir, presetFile).map(Collected::of)
-                    .orElseGet(() -> Collected.missing("none - Elite Intel has never written " + presetFile));
+            backups = Backups.list(backupDir);
         } catch (IOException e) {
             return Collected.missing("could not list " + backupDir + ": " + e);
         }
+        for (Backup backup : backups) {
+            if (backup.kind() != Backups.Kind.BEFORE_CHANGES) continue;
+            try {
+                byte[] copy = BackupContents.read(backup.zip()).bindings().get(presetFile);
+                if (copy != null) return Collected.read(presetFile + ".before-changes-" + stemOf(backup.zip()), copy);
+            } catch (IOException e) {
+                log.warn("Diagnostics bundle: skipped the backup {}: {}", backup.zip(), e.toString());
+            }
+        }
+        return Collected.missing("none - no before-changes backup holds " + presetFile);
+    }
+
+    private static String stemOf(Path zip) {
+        String name = zip.getFileName().toString();
+        return name.endsWith(".zip") ? name.substring(0, name.length() - ".zip".length()) : name;
     }
 
     /**
@@ -570,7 +727,7 @@ public final class SupportBundle {
 
     /**
      * The AI setup section, or a line saying why it is missing. Caught here for the reason
-     * {@link #writeMicDiagnostics} catches: it reads the database, and a report from a session whose database
+     * {@link #writeReport} catches: it reads the database, and a report from a session whose database
      * is failing must still carry its logs.
      */
     private static String aiSetup(@Nullable Supplier<String> aiSetup) {

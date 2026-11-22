@@ -142,12 +142,8 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
         if (BrowserUtil.openUrl(buildIssueUrl())) {
             dispose();
         } else {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("actions.commands.suggest.browserError"),
-                    getText("actions.commands.suggest.title"),
-                    JOptionPane.ERROR_MESSAGE
-            );
+            HudConfirmDialog.info(this, getText("actions.commands.suggest.title"),
+                    getText("actions.commands.suggest.browserError"), getText("button.close"));
         }
     }
 
@@ -175,6 +171,8 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
     private static String languageDisplayName(Language language) {
         return switch (language) {
             case EN -> getText("language.english");
+            case RU -> getText("language.russian");
+            case UK -> getText("language.ukrainian");
             case DE -> getText("language.german");
             case FR -> getText("language.french");
             case ES -> getText("language.spanish");

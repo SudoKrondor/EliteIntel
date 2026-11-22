@@ -1,0 +1,11 @@
+-- Combat bonds cashed in during a war massacre contract are kept, not deleted.
+--
+-- A war massacre (Mission_Massacre_Conflict_War and _CivilWar) is paid one combat bond per kill, and those bonds
+-- are the only record of its progress. Redeeming them used to empty combat_bond, so a commander who cashed in
+-- halfway through a 24-kill contract saw its kill bar drop back to nothing. While such a contract is open the rows
+-- now stay and are flagged instead, the same way bounties are kept for a pirate massacre. The conflict-zone card
+-- adds up only the bonds not yet cashed in, and the kill count reads them all.
+--
+-- NOTE: no semicolon may appear inside these comments. Migrations are split on a semicolon at end of line before
+-- comments are stripped.
+ALTER TABLE combat_bond ADD COLUMN cashedIn INTEGER NOT NULL DEFAULT 0;

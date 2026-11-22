@@ -1,6 +1,6 @@
 # `elite.intel.devices` - Developer Reference
 
-The devices package owns joystick, HOTAS, gamepad, and pedal input, plus the mouse buttons as a pseudo-device. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the DeviceBus. It is shared infrastructure - the input monitor, Bindings, and push-to-talk all consume these events rather than managing their own SDL3 context.
+The devices package owns joystick, HOTAS, gamepad, and pedal input, plus the mouse buttons as a pseudo-device. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, button and hat events on the DeviceBus. It is shared infrastructure - the input monitor, Bindings, and push-to-talk all consume these events rather than managing their own SDL3 context.
 
 Read-only device access only. This package never writes to the game, the
 `.binds` file, or any other file.
@@ -32,7 +32,8 @@ pollLoop()
     ├─ for each open handle:
     │     pollJoystick()
     │       ├─ SDL_GetJoystickAxis()   → DeviceAxisEvent (on change only)
-    │       └─ SDL_GetJoystickButton() → DeviceButtonEvent (on state transition only)
+    │       ├─ SDL_GetJoystickButton() → DeviceButtonEvent (on state transition only)
+    │       └─ SDL_GetJoystickHat()    → DeviceHatEvent (on change only)
     │
     └─ pollMouse()                  ← only when the video subsystem came up
           └─ SDL_GetGlobalMouseState() → DeviceButtonEvent(MOUSE_DEVICE_ID, ...) (on transition only)
@@ -96,13 +97,18 @@ The loop runs on the `elite-intel-devices` platform thread (not a virtual thread
 **State polling** is delta-only:
 
 - Axes: previous raw `short` stored in
-  `prevAxes[deviceId][axisIndex]`. Published only when the raw value changes; no deadzone threshold - all movement is reported and consumers apply their own deadzone if needed.
+  `prevAxes[deviceId][axisIndex]`, seeded at connect with where each axis rests then - a trigger rests at -1, not 0,
+  so seeding zeros reported every such axis as moved on the first poll. Published only when the raw value changes;
+  no deadzone threshold - all movement is reported and consumers apply their own deadzone if needed.
 - Buttons: previous `boolean` stored in
   `prevButtons[deviceId][buttonIndex]`. Published on both press and release transitions. Never published while held
   (unlike keyboard repeat events).
+- Hats: previous direction bits stored in `prevHats[deviceId][hatIndex]`, starting centred. Published whenever the
+  bits change, including the return to centre. Added 2026-10-10 for BindForge's Device Editor (A9), which lights a
+  hat direction while it is pushed.
 
 `POLL_INTERVAL_MS = 16` gives approximately 60 Hz polling rate. The `openHandles`,
-`prevAxes`, `prevButtons`, and
+`prevAxes`, `prevButtons`, `prevHats`, and
 `vidPidByDevice` maps are accessed exclusively from the poll thread; no synchronization is needed.
 
 `connectedDevices` is a `CopyOnWriteArrayList` so
@@ -121,6 +127,7 @@ All events are published on `DeviceBus`.
 | `DeviceDisconnectedEvent` | Known device no longer enumerated | `deviceId` (SDL3 instance ID) |
 | `DeviceAxisEvent` | Axis raw value changes | `deviceId`, `axisIndex`, `value` [-1.0, 1.0] |
 | `DeviceButtonEvent` | Button state transitions (a controller, or the mouse under `MOUSE_DEVICE_ID`) | `deviceId`, `buttonIndex`, `pressed` |
+| `DeviceHatEvent` | A hat's position changes | `deviceId`, `hatIndex` (0-based; the game's `POV1` is 0), `directions` - SDL's bits `UP` 1, `RIGHT` 2, `DOWN` 4, `LEFT` 8, two at once on a diagonal |
 | `DeviceDuplicateWarningEvent` | Two connected devices share VID/PID | `device1`, `device2` |
 
 `DeviceServiceStateEvent` is published from the poll thread before any other events. Subscribers that touch Swing components must switch to the EDT.
@@ -140,8 +147,9 @@ The
 | `name` | `String` | SDL3 device name; fallback: `"Joystick <id>"` |
 | `axisCount` | `int` | Number of analog axes reported by SDL3 |
 | `buttonCount` | `int` | Number of buttons reported by SDL3 |
-| `usbPath` | `String` | USB port path from `SDL_GetJoystickPathForID`; empty string if unavailable |
+| `usbPath` | `String` | USB port path from `SDL_GetJoystickPathForID`; empty string if unavailable. Identifies the **port**, not the unit |
 | `guid` | `String` | 32-char hex SDL3 GUID (see below) |
+| `gamepad` | `boolean` | Whether SDL types the joystick as a gamepad (`SDL_GetJoystickType`), independent of its name |
 
 ### `DeviceIdentity` (record)
 
@@ -158,8 +166,27 @@ A resolved identity suitable for `.binds` file correlation. Not produced by
 ### SDL3 GUID
 
 `readGuid(id)` calls `SDL_GetJoystickGUIDForID` + `SDL_GUIDToString` via a stack-allocated
-`MemoryStack` to produce the 32-character hex string. The GUID encodes VID, PID, and bus type; extracting bytes 8-11 (little-endian) yields the VID and PID used for
-`.binds` correlation. Returns `""` on failure (logged at DEBUG level).
+`MemoryStack` to produce the 32-character hex string. Returns `""` on failure (logged at DEBUG level).
+
+The GUID encodes bus type, a CRC of the device name, VID, PID and version. Read as hex characters, **VID is
+at 8–11 and PID at 16–19**, each written little-endian:
+
+```
+03002cec44330000f483000000000000
+bus  crc  vid  --   pid  --
+                3344      83F4
+```
+
+**Corrected 2026-10-02.** This passage read "extracting bytes 8-11 (little-endian) yields the VID and PID".
+Those are hex character positions rather than bytes — bytes 8-11 would be the PID field plus two zeros — and
+it gave no position for the PID at all, which is the half a consumer has to find for itself. Confirmed on
+four controllers attached at once, each against a source outside this code: two VIRPIL sticks against a
+USB-level capture, a Thrustmaster T-Rudder against Frontier's own shipped device list, and vJoy against its
+published ids.
+
+`DeviceIdentity` is a record and builds none of this itself — the derivation lives with the consumer, as the
+note under [Data Model](#deviceidentity-record) says. BindForge's `DeviceIdentities` is the one that does it
+today, and its test carries those four real GUIDs.
 
 ---
 
@@ -178,14 +205,36 @@ No upper clamp is needed. `DeviceAxisEvent.value` is always in [−1.0, 1.0].
 
 ---
 
-## 6. Duplicate Device Detection
+## 6. Duplicate Device Detection, and the Three Tiers of Identity
 
 After opening each device,
 `checkForDuplicate()` compares its VID/PID against all already-opened devices. A match publishes
 `DeviceDuplicateWarningEvent`. This matters because Elite Dangerous uses VID/PID to identify devices in
-`.binds` files and cannot distinguish two identical physical devices (e.g., two of the same HOTAS). The
-`usbPath` field (
-`SDL_GetJoystickPathForID`) allows UI consumers to display which USB port each physical unit is plugged into, but the game itself has no mechanism to separate them.
+`.binds` files and cannot distinguish two identical physical devices (e.g., two of the same HOTAS).
+
+Three identifiers are captured, and they answer different questions:
+
+| Identifier | Identifies | Survives | Read today? |
+|---|---|---|---|
+| serial | the **physical unit** | being moved to another port, and reboots | **no** - see below |
+| `usbPath` | the **port** it is plugged into | nothing - it changes the moment the unit is moved | yes |
+| VID/PID (via `guid`) | the **model** | everything, and is shared by identical units | yes |
+
+**`SDL_GetJoystickSerial` is available in the LWJGL 3.4.0 binding and is not currently called.** Reading it
+would be a few lines against the already-open joystick handle. It is noted rather than done because it is
+not needed yet: nothing today asks "is this the same stick as last time?", and widening the `Device` record
+breaks every existing construction of it.
+
+**A serial is the only identifier that answers that question, and many devices do not report one.** Verified 2026-09-06 against two Sony DualShock 4 controllers (v1 `054C:05C4`, v2
+`054C:09CC`): both report `iSerialNumber 0x00`, no serial at all. Their Windows instance IDs
+(`8&1F31A475&0&4` and `8&1F31A475&0&3`) share the hub portion and differ only in the trailing port number
+- so for a serial-less device even the OS identity is port-derived. An empty `serial` is the normal case,
+never an error.
+
+**None of this lets Elite Dangerous tell two identical devices apart, and it must not be presented as if it
+did.** The game keys on VID/PID, and `DeviceMappings.xml` has no field that could carry anything more. What
+these buy is honest UI labelling - naming which port a unit is in, or recognising a unit across sessions -
+and nothing at the binding layer.
 
 ---
 
@@ -214,6 +263,40 @@ Elite Dangerous uses 1-based `Joy_N` tokens; SDL3 uses 0-based indices.
 | 5 | `Joy_RZAxis` |
 
 `axisToBindsToken(idx)` throws `IllegalArgumentException` for index ≥ 6 (no standard `.binds` name beyond RZ).
+It also maps by position, which is wrong for a stick with a gap - SDL numbers X, Y and RZ as 0, 1 and 2. Where
+the controller's description has matched SDL's numbering, `DeviceDescription.axisAt(idx)` names the real axis.
+
+---
+
+## 8. Which Axes and Hats a Controller Has (`hid/`)
+
+SDL gives an axis count and numbers the axes without gaps; it cannot say which axis is which. As each controller
+connects, `onDeviceAdded` asks `hid/DeviceDescriber` for a `model/DeviceDescription` and stores it **before**
+publishing the `DeviceConnectedEvent`, so a subscriber can call `DeviceService.description(deviceId)` straight
+away. It is dropped at disconnect. `Device` and the events are unchanged.
+
+```
+onDeviceAdded
+    ├─ SDL_GetNumJoystickHats()                      → hatCount
+    └─ DeviceDescriber.describe(name, usbPath, axes, hats)
+          ├─ Windows: WindowsHidUsages  - hid.dll, opened by SDL's DirectInput device path
+          ├─ Linux:   LinuxHidUsages    - /sys/class/input/eventN/device/device/report_descriptor
+          │                                read by HidReportDescriptor
+          └─ AxisSlots                  - each axis's game slot, and SDL's numbering where it is certain
+```
+
+- **Axes are named by game slot** (`model/GameAxis`: X, Y, Z, RX, RY, RZ, U, V - `Joy_XAxis` to `Joy_VAxis`), by
+  DirectInput's rule as Wine implements it: each of X…Rz takes the first axis of its kind, U and V the first two
+  slider-kind axes (Slider, Dial, Simulation Throttle). An axis left over is counted in `axesWithoutSlot`.
+- **`agreesWith(sdlAxisCount)`** says whether the description counts the axes SDL does; a consumer that disagrees
+  treats the axes as unknown, as `.buttonMap` generation does.
+- **`sdlAxes` is SDL's numbering**, filled only when every axis has a slot and SDL counts exactly those; Windows
+  orders by slot (SDL's DirectInput backend), Linux by the kernel's `ABS_` code (SDL's evdev backend).
+- **Nothing here throws onto the poll thread.** A description that cannot be read - an XInput pad, a non-HID
+  stick, a sandbox hiding `/sys`, `hid.dll` failing to load - is `axesKnown = false`, and a consumer falls back to
+  what it did without one.
+- The full rationale, and what is not measured, is in the
+  [Alias Designer spec](../../../../../../../docs/02-features/bindforge/alias-designer.md#which-axes-and-hats-a-controller-has--2026-10-10-alan).
 
 ---
 
@@ -222,14 +305,21 @@ Elite Dangerous uses 1-based `Joy_N` tokens; SDL3 uses 0-based indices.
 | Class | Role |
 |---|---|
 | `DeviceService` | Singleton; SDL3 poll loop; publishes all device events |
-| `model/Device` | Immutable record for a connected device (id, name, axes, buttons, usbPath, guid) |
+| `model/Device` | Immutable record for a connected device (id, name, axes, buttons, usbPath, guid, gamepad) |
 | `model/DeviceIdentity` | Resolved VID/PID + bindsHexId for `.binds` correlation |
 | `model/ButtonInputMapper` | SDL3 index ↔ Elite `.binds` token translation |
+| `model/DeviceDescription` | Which game axes and hats a connected controller has; `DeviceService.description(id)` |
+| `model/GameAxis` | The game's eight axis slots, X…V, and their tokens |
+| `hid/DeviceDescriber` | Reads a controller's description at connect; never throws |
+| `hid/AxisSlots` | Pure: HID axes → game slots, and SDL's axis numbering |
+| `hid/HidReportDescriptor` | Pure: a raw HID report descriptor → its inputs (Linux) |
+| `hid/WindowsHidUsages`, `hid/LinuxHidUsages` | Read the HID description on each platform |
 | `events/DeviceServiceStateEvent` | SDL3 init result (available + optional error) |
 | `events/DeviceConnectedEvent` | New device detected |
 | `events/DeviceDisconnectedEvent` | Device removed |
 | `events/DeviceAxisEvent` | Axis change (delta only) |
 | `events/DeviceButtonEvent` | Button press or release |
+| `events/DeviceHatEvent` | Hat moved, pushed or centred |
 | `events/DeviceDuplicateWarningEvent` | Two devices share VID/PID |
 
 ## Key Constants

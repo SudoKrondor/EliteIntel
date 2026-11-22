@@ -139,6 +139,10 @@ final class CarrierArrival {
                 // removeLeg. Nothing else decrements carrier fuel on arrival, and charging it again
                 // for a system the carrier was already sitting in would burn tritium for no jump.
                 carrierData.chargeEstimatedFuel(completedLeg.getFuelUsed());
+            } else if (carrierMoved) {
+                // WHY: a jump off any plotted route still burned tritium, an amount we cannot work out.
+                // Left alone, the pre-jump reading would go on being quoted as the depot's exact level.
+                carrierData.markFuelLevelStale();
             }
 
             if (authoritativeStarPos != null) {

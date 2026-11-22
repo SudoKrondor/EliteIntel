@@ -20,7 +20,8 @@ public enum ReminderContact {
     INTERSTELLAR_FACTORS,
     VISTA_GENOMICS,
     REFUEL,
-    OUTFITTING;
+    OUTFITTING,
+    SHIPYARD;
 
     /**
      * The stored form. Null-safe so callers can pass an absent contact straight through.

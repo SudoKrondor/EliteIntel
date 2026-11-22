@@ -248,7 +248,8 @@ public final class CustomCommandStepEditorDialog extends JDialog {
     }
 
     private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, getText("actions.customCommands.editor.validation.title"), JOptionPane.ERROR_MESSAGE);
+        HudConfirmDialog.info(this, getText("actions.customCommands.editor.validation.title"),
+                message, getText("button.close"));
     }
 
     private static void selectPickerItem(

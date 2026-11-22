@@ -9,6 +9,7 @@ import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
 import elite.intel.gameapi.DiscoveryScanner;
 import elite.intel.gameapi.FuelScoop;
+import elite.intel.gameapi.StarKind;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.hge.HighGradeEmissionsAdvisor;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
@@ -150,12 +151,26 @@ public class JumpCompletedSubscriber {
             NavRouteDto nextStop = remainingRoute.getFirst();
             if (!sb.isEmpty()) sb.append(" ");
             sb.append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()));
+            // Not behind the fuel toggle: the heat of the next star matters to every ship, scoop or no scoop.
+            sb.append(notableStarClause(nextStop.getStarClass()));
             if (announceFuel) {
                 sb.append(isFuelStarClause(nextStop.getStarClass()));
             }
             sb.append(" ").append(localizedEventPlural(remainingJump, "event.route.jumpsLeft"));
         }
         return sb.toString();
+    }
+
+    /**
+     * What a bare class code cannot tell the commander about the next star: a Wolf-Rayet is dangerously hot, and
+     * the rare classes are worth looking up from the route for.
+     */
+    private static String notableStarClause(String starClass) {
+        return switch (StarKind.of(starClass)) {
+            case WOLF_RAYET -> " " + localizedEvent("event.route.wolfRayetAhead");
+            case RARE -> " " + localizedEvent("event.route.rareObjectAhead");
+            case NEUTRON, WHITE_DWARF, ORDINARY -> "";
+        };
     }
 
     /**

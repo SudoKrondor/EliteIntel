@@ -59,12 +59,12 @@ Code: `elite.intel.ai.brain.health` (`AiServiceCheck`, `AiServiceHealth`, `AiSer
 
 | Situation | How we know | Spoken (English) |
 |---|---|---|
-| Nothing configured | `SetupCheck.isLlmUnconfigured()`, or local with no model named | "No AI model is set up yet. Choose one on the AI Services settings tab." |
-| Cloud chosen, no provider | `LlmProviderResolver.cloudProvider()` is empty | "You are set up for a cloud AI, but no provider is chosen. Pick one on the AI Services settings tab." |
+| Nothing configured | `SetupCheck.isLlmUnconfigured()`, or local with no model named | "No AI model is set up yet. Choose one on the AI Services tab." |
+| Cloud chosen, no provider | `LlmProviderResolver.cloudProvider()` is empty | "You are set up for a cloud AI, but no provider is chosen. Pick one on the AI Services tab." |
 | LM Studio not answering | No HTTP answer to its model list, or to the test request | "LM Studio is not answering. Check that it is running and that its local server is started." |
-| LM Studio up, model not available | The configured model isn't in LM Studio's model list | "LM Studio is running, but it does not have the model you chose. Check the model name on the AI Services settings tab." |
+| LM Studio up, model not available | The configured model isn't in LM Studio's model list | "LM Studio is running, but it does not have the model you chose. Check the model name on the AI Services tab." |
 | Cloud unreachable | The test request got no HTTP answer | "I cannot reach Mistral at all. Check your internet connection." |
-| Answering but refusing | The test request got a non-2xx answer | "Mistral is answering, but it refused my test request." When the refusals started at least a minute before the check: "...but it has refused every request for 2 hours." A 401 or 403 adds "If you changed your API key recently, check it on the AI Services settings tab." |
+| Answering but refusing | The test request got a non-2xx answer | "Mistral is answering, but it refused my test request." When the refusals started at least a minute before the check: "...but it has refused every request for 2 hours." A 401 or 403 adds "If you changed your API key recently, check it on the AI Services tab." |
 | No answer in time | Nothing came back within 10 seconds | "OpenAI did not answer within 10 seconds." |
 | All good | The test request got a 2xx | "LM Studio is answering. Replies take about 1 second." For a local model other than gemma-4-e4b, it adds "It is running a model other than the recommended one, so some commands may go wrong." |
 
@@ -102,7 +102,8 @@ It is fed from `BaseAiClient.sendTransportRequest`, the single place every provi
 
 | Situation | How we know | Spoken |
 |---|---|---|
-| No `.binds` file | `SetupCheck.hasBindingsFiles` / `isEliteBindingsFolder` | Reuse `speech.setup.noBindings` / `noSavedBindings` |
+| No bindings folder (no `StartPreset`) | `SetupCheck.isEliteBindingsFolder` | Reuse `speech.setup.noBindings` / `noBindingsYet` |
+| No binds file to read | `BindsFileNotFoundException.reason()` | Reuse `speech.warning.bindingsStockPresetNoInstallation` / `bindingsPresetFileMissing` |
 | Blocking conflicts | The existing blocking-conflict detection (game menu key, UI_Select vs QuickComms, interface switch) | "Two of your key bindings clash in a way that stops my commands. Check the bindings tab." |
 
 Phase 2 could add a count of key commands with no binding. Leave it out until we know which ones count as "key".
@@ -165,7 +166,7 @@ Phase 1 has:
 
 - `AiServiceHealthTest`: failure runs, reset on an answer, median reply time.
 - `AiServiceCheckTest`: every verdict, from a fake gateway that records outcomes the way the transport does.
-- `AiServiceReportTest`: the English sentences.
+- `AiServiceReportTest`: the English sentences and Russian plurals.
 - `LMStudioModelListTest`: the models address, parsing, and model-name matching.
 - `ReflexAliasFormsTest`: pins the phrases.
 

@@ -5,10 +5,10 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 /**
- * How far the journal backfill has read.
+ * How far the journal backfill has read the open commander's archive.
  * <p>
- * One row, id 1. It holds the name of the last journal file read to the end, so a second run over a
- * commander's archive skips what it has already seen instead of re-reading years of flying.
+ * One row, id 1, in the commander's own file. It holds the name of the last of their journals read to
+ * the end, so a second run skips what it has already seen instead of re-reading years of flying.
  */
 public interface HuntingGroundScanDao {
 

@@ -1,23 +1,32 @@
 package elite.intel;
 
-import com.formdev.flatlaf.FlatLightLaf;
 import elite.intel.ai.LlmProviderUpgrade;
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
+import elite.intel.appdata.PendingRestore;
+import elite.intel.bindforge.storage.StartupBackup;
 import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
 import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;
+import elite.intel.community.CommunitySync;
 import elite.intel.gameapi.eddn.EddnListener;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.AppController;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.screen.AppView;
-import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.ActiveTheme;
+import elite.intel.ui.theme.ColorTheme;
+import elite.intel.ui.theme.HudLookAndFeel;
+import elite.intel.ui.theme.ThemeStore;
+import elite.intel.util.AppPaths;
+import elite.intel.util.AppRelauncher;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
@@ -26,7 +35,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import javax.swing.*;
+import java.io.IOException;
 
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class App {
 
@@ -54,9 +65,19 @@ public class App {
         // The JDK reads the property once at class-init of sun.awt.screencast.XdgDesktopPortal.
         System.setProperty("awt.robot.screenshotMethod", "x11");
 
+        // A restore swaps in the commander's data, key included, so it runs before either is opened. A restart
+        // that began it first waits for the old process to let go of the files.
+        AppRelauncher.awaitPreviousInstance(args);
+        PendingRestore.Outcome restore = PendingRestore.applyAtStartup();
+
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();
+        // WHY here: the palette reads the theme once, when it first loads, and nothing has touched it yet.
+        installColorTheme();
+        // BindForge's silent backup of every game input configuration file, on a thread of its own, before anything
+        // else BindForge does (storage.md rule 12). It needs only the database, never the services.
+        StartupBackup.getInstance().startInBackground();
         // Before anything builds an LLM client or the settings tab reads the provider.
         LlmProviderUpgrade.run();
         CustomCommandRegistry.getInstance().load();
@@ -92,6 +113,10 @@ public class App {
         // silent, one daemon thread: the app is whole without it and just learns more slowly.
         EddnListener.getInstance().start();
 
+        // The daily stats ping, and the massacre sets traded with other installs while the commander shares.
+        // Background and silent: the app is whole without it.
+        CommunitySync.getInstance().start();
+
         // Event subscribers
         SubscriberRegistration.registerSubscribers();
         AudioPlayer.getInstance();
@@ -100,24 +125,23 @@ public class App {
         GameEventBus.publish(new LoadSessionEvent());
 
         // init UI
-        System.setProperty("awt.useSystemAAFontSettings", "lcd");
-        System.setProperty("swing.aatext", "true");
-        FlatLightLaf.setup();
+        HudLookAndFeel.prepare();
         SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-                // FlatLaf paints hover/pressed over the renderer; neutralise it here.
-                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-                UIManager.put("TableHeader.hoverForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-                UIManager.put("TableHeader.pressedForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            AppView view = new AppView();
+            AppView view = new AppView(HudLookAndFeel.install());
             new AppController();
             view.getUiComponent().setVisible(true);
+            reportRestore(view.getUiComponent(), restore);
         });
+    }
+
+    private static void reportRestore(JFrame window, PendingRestore.Outcome restore) {
+        if (restore == PendingRestore.Outcome.NONE) return;
+        String message = getText(switch (restore) {
+            case RESTORED -> "settings.appData.restore.done";
+            case RETRYING -> "settings.appData.restore.retrying";
+            case FAILED, NONE -> "settings.appData.restore.failed";
+        });
+        HudConfirmDialog.info(window, getText("settings.appData.restore.title"), message, getText("button.ok"));
     }
 
     /**
@@ -128,5 +152,19 @@ public class App {
     private static String identify(Thread thread) {
         String name = thread.getName();
         return name == null || name.isBlank() ? thread.toString() : "thread " + name;
+    }
+
+    /**
+     * Installs the commander's colour theme for this run. A theme that cannot be loaded leaves the app on Default
+     * ({@link ThemeStore#loadOrDefault}): a theme file must never stop the app from starting.
+     */
+    private static void installColorTheme() {
+        try {
+            ThemeStore store = new ThemeStore(AppPaths.getThemesDir());
+            ActiveTheme.install(store.loadOrDefault(SystemSession.getInstance().getUiTheme()));
+        } catch (IOException e) {
+            log.error("Could not open the themes folder, using the Default colour theme", e);
+            ActiveTheme.install(ColorTheme.DEFAULT);
+        }
     }
 }

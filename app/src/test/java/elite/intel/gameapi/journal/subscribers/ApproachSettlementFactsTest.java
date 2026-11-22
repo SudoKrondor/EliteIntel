@@ -6,8 +6,7 @@ import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Reads a settlement off real-shaped {@code ApproachSettlement} payloads. The journal leaves a field
@@ -102,5 +101,51 @@ class ApproachSettlementFactsTest {
 
         assertTrue(facts.contains("Nameless Outpost"), facts);
         assertFalse(facts.contains("null"), facts);
+    }
+
+    /**
+     * Recorded 2026-10-28 at Synuefe TP-F b44-0 CD 1: Guardian ruins carry a symbol for a name, the game's
+     * wording beside it, and nothing else. VEGA read out "$Ancient:#index=3;" and invented "Trade and Repair".
+     */
+    private static ApproachSettlementEvent guardianRuins() {
+        return event("""
+                "Name":"$Ancient:#index=3;","Name_Localised":"Ancient Ruins (3)",
+                "SystemAddress":682228131193,"BodyID":16,"BodyName":"Synuefe TP-F b44-0 CD 1",
+                "Latitude":59.331982,"Longitude":15.105293
+                """);
+    }
+
+    @Test
+    @DisplayName("Guardian ruins are named in the game's wording, never by their symbol")
+    void guardianRuinsAreNamedNotSymbolised() {
+        String facts = ApproachSettlementSubscriber.settlementFacts(guardianRuins());
+
+        assertTrue(facts.contains("Ancient Ruins (3)"), facts);
+        assertFalse(facts.contains("$"), "the commander is not read journal symbols: " + facts);
+        assertFalse(facts.contains("Services"), "the ruins reported no services: " + facts);
+        assertTrue(guardianRuins().memorySummary().contains("Ancient Ruins (3)"));
+    }
+
+    @Test
+    @DisplayName("Guardian ruins are filed under their readable name")
+    void guardianRuinsAreRecordedByReadableName() {
+        DockedStationRecord record = DockedStationRecord.of(guardianRuins(), "Synuefe TP-F b44-0");
+        assertEquals("Ancient Ruins (3)", record.recordKey());
+    }
+
+    @Test
+    @DisplayName("a name-only site is announced without any talk of services")
+    void nameOnlyInstructionsNeverAskAboutServices() {
+        assertFalse(ApproachSettlementSubscriber.narrationInstructions(true).toLowerCase().contains("service"));
+        assertTrue(ApproachSettlementSubscriber.narrationInstructions(false).contains("Mention only what the data states"));
+    }
+
+    @Test
+    @DisplayName("an ordinary settlement keeps its plain name")
+    void plainNameIsUnchanged() {
+        ApproachSettlementEvent event = event("""
+                "Name":"Bogacki Prospecting Facility","MarketID":3908321536,"SystemAddress":1247427922275,"BodyID":31
+                """);
+        assertEquals("Bogacki Prospecting Facility", event.getDisplayName());
     }
 }

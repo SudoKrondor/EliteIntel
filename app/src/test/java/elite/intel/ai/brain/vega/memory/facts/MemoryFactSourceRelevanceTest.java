@@ -20,9 +20,9 @@ class MemoryFactSourceRelevanceTest {
     private Language previousLanguage;
 
     @BeforeEach
-    void useEnglishInputRules() {
+    void useRussianInputRules() {
         previousLanguage = SystemSession.getInstance().getLanguage();
-        SystemSession.getInstance().setLanguage(Language.EN);
+        SystemSession.getInstance().setLanguage(Language.RU);
     }
 
     @AfterEach
@@ -32,15 +32,15 @@ class MemoryFactSourceRelevanceTest {
 
     @Test
     void eachRegisteredSourceOwnsItsLocalizedSubjectDecision() {
-        assertTrue(new CurrentSystemFactSource().isRelevant(ctx("what is the security level in this system")));
-        assertTrue(new CurrentStationFactSource().isRelevant(ctx("what services are at this station")));
-        assertTrue(new CurrentBodyFactSource().isRelevant(ctx("what materials are on this planet")));
-        assertTrue(new SystemSignalsFactSource().isRelevant(ctx("what signals are in the system")));
+        assertTrue(new CurrentSystemFactSource().isRelevant(ctx("какой уровень безопасности в этой системе")));
+        assertTrue(new CurrentStationFactSource().isRelevant(ctx("какие услуги есть на этой станции")));
+        assertTrue(new CurrentBodyFactSource().isRelevant(ctx("какие материалы на этой планете")));
+        assertTrue(new SystemSignalsFactSource().isRelevant(ctx("какие сигналы в системе")));
     }
 
     @Test
     void locationSourcesIndependentlyOptIntoAnExplicitLocationQuestion() {
-        MemoryFactContext location = ctx("where are we now");
+        MemoryFactContext location = ctx("где мы сейчас");
 
         assertTrue(new CurrentSystemFactSource().isRelevant(location));
         assertTrue(new CurrentStationFactSource().isRelevant(location));
@@ -50,20 +50,20 @@ class MemoryFactSourceRelevanceTest {
 
     @Test
     void aBareDomainWordIsNotAnExternalFactTrigger() {
-        MemoryFactContext systemChat = ctx("so what do you think of this system");
+        MemoryFactContext systemChat = ctx("а что скажешь про эту систему");
 
         assertFalse(new CurrentSystemFactSource().isRelevant(systemChat));
-        assertTrue(builtInSources().stream().noneMatch(source -> source.isRelevant(ctx("the stars are beautiful here"))));
+        assertTrue(builtInSources().stream().noneMatch(source -> source.isRelevant(ctx("звёзды тут красивые"))));
     }
 
     @Test
     void unrelatedCommandsAndBroadPropertyWordsStayIrrelevant() {
         for (String input : List.of(
-                "target the engines",
-                "hello",
-                "what is in our cargo hold right now",
-                "which faction is our combat mission against",
-                "what was the fighter pilot called")) {
+                "целься в двигатели",
+                "привет",
+                "что у нас сейчас в трюме",
+                "против какой фракции у нас боевая миссия",
+                "как звали пилота истребителя")) {
             assertTrue(builtInSources().stream().noneMatch(source -> source.isRelevant(ctx(input))), input);
         }
     }

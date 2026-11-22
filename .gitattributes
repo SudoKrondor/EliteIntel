@@ -1,9 +1,7 @@
 distribution/models/**/*.onnx filter=lfs diff=lfs merge=lfs -text
 distribution/models/**/*.bin filter=lfs diff=lfs merge=lfs -text
-distribution/models/tts/kokoro-en-v0_19/espeak-ng-data/** filter=lfs diff=lfs merge=lfs -text
 distribution/tts/**/*.onnx filter=lfs diff=lfs merge=lfs -text
 distribution/tts/**/*.bin filter=lfs diff=lfs merge=lfs -text
-distribution/tts/*/espeak-ng-data/** filter=lfs diff=lfs merge=lfs -text
 distribution/whisper/*.bin filter=lfs diff=lfs merge=lfs -text
 distribution/native/**/*.so filter=lfs diff=lfs merge=lfs -text
 distribution/native/**/*.dll filter=lfs diff=lfs merge=lfs -text
@@ -17,5 +15,6 @@ distribution/overlays/elite-intel-overlay filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.exe filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.dll filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.so filter=lfs diff=lfs merge=lfs -text
-# Game-file specimens: kept byte-exact (CRLF, no final newline), never line-ending converted
-app/src/test/resources/bindforge/startpreset/* -text
+# Frontier's stock DeviceMappings.xml is a byte-exact capture (CRLF, sha256 in FrontierStock-README.md)
+app/src/main/resources/bindforge/FrontierStock-DeviceMappings.xml -text
+docs/02-features/bindforge/reference-data/FrontierStock-DeviceMappings.xml -text

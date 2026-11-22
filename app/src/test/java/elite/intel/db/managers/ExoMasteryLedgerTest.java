@@ -156,6 +156,27 @@ class ExoMasteryLedgerTest {
     }
 
     @Test
+    void speciesSampledBeforeTheCatalogueWasLoadedCountAgainstItWhenItIs() {
+        long address = BAND + 80;
+        // Sampled with no catalogue loaded for this system - a journal import of last year's flying, or a commander
+        // who enabled Exo-Mastery after the trip.
+        assertFalse(ledger.recordSampled(address, 1, "Stratum_07"));
+        assertFalse(ledger.recordSampled(address, 1, "Tussocks_14"));
+        assertFalse(ledger.recordSampled(address, 2, "Stratum_07"));
+
+        load(system("Exo Before G", address,
+                body("Exo Before G 1", 1, 40_000_000, "Stratum_07", "Tussocks_14"),
+                body("Exo Before G 2", 2, 30_000_000, "Stratum_07", "Osseus_02")));
+
+        List<Body> bodies = ledger.bodiesIn(address);
+        assertEquals(List.of("Exo Before G 2", "Exo Before G 1"), bodies.stream().map(Body::bodyName).toList());
+        assertTrue(bodies.get(1).completed(), "both listed species were sampled already: never offered at all");
+        assertFalse(bodies.get(0).completed(), "Osseus is still there to sample");
+        assertTrue(ledger.recordSampled(address, 2, "Osseus_02"),
+                "and the earlier Stratum still counts when the last one is taken");
+    }
+
+    @Test
     void theSurveyCompleteLatchFlippingOnALocationCompletesTheBodyThroughTheBus() {
         long address = BAND + 70;
         load(system("Exo Latch G", address, body("Exo Latch G 2", 2, 20_000_000, "Stratum_07")));

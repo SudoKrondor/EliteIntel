@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Conflict Matrix — On Foot Controls</title>
+<link rel="stylesheet" href="ConflictMatrix.css">
+</head>
+<body>
+<div class="cm-page">
+  <div class="cm-header">
+    <h1 class="cm-title">Subgroup Conflict Matrix — On Foot Controls</h1>
+    <div class="cm-sub">
+      Click a cell to cycle Untested &rarr; No Conflict &rarr; Conflicts. No known sub-modes yet —
+      add them below as testing turns them up (e.g. suit tool switching, ship-interior actions
+      while on foot, Apex/taxi, SRV boarding).
+    </div>
+    <div class="cm-nav">
+      <a href="ConflictMatrix-General.html">GENERAL</a>
+      <a href="ConflictMatrix-Ship.html">SHIP</a>
+      <a href="ConflictMatrix-SRV.html">SRV</a>
+      <a href="ConflictMatrix-OnFoot.html" class="active">ON FOOT</a>
+    </div>
+  </div>
+  <div id="cm-root"></div>
+  <div class="cm-note">Empty — this section hasn't been started yet.</div>
+</div>
+<script src="ConflictMatrix.js"></script>
+<script>
+ConflictMatrix.init({
+  storageKey: 'bindforge-conflict-matrix-onfoot',
+  subgroups: [],
+  knownPairs: []
+});
+</script>
+</body>
+</html>

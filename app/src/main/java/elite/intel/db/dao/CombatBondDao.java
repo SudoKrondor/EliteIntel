@@ -1,5 +1,6 @@
 package elite.intel.db.dao;
 
+import elite.intel.gameapi.missions.MassacreKill;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
@@ -9,9 +10,13 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Combat bonds earned and not yet cashed in - the conflict-zone twin of {@link BountyDao}.
+ * <p>
+ * A bond cashed in while a war massacre contract is open is kept, flagged {@code cashedIn}, because it is
+ * still one of that contract's kills: the card's held total leaves it out, the kill count does not.
  * <p>
  * Callers go through {@code CombatBondManager} rather than touching this directly.
  */
@@ -40,13 +45,32 @@ public interface CombatBondDao {
     @SqlQuery("""
             SELECT COUNT(*)                 AS kills,
                    COALESCE(SUM(reward), 0) AS credits,
-                   (SELECT awardingFaction FROM combat_bond ORDER BY earnedAt DESC, id DESC LIMIT 1) AS side
+                   (SELECT awardingFaction FROM combat_bond WHERE cashedIn = 0
+                     ORDER BY earnedAt DESC, id DESC LIMIT 1) AS side
               FROM combat_bond
+             WHERE cashedIn = 0
             """)
     Pending pending();
 
+    /**
+     * Every bond on record, cashed in or not, as the kill it paid for.
+     */
+    @SqlQuery("SELECT victimFaction, earnedAt FROM combat_bond ORDER BY earnedAt, id")
+    @RegisterRowMapper(KillMapper.class)
+    List<MassacreKill> kills();
+
+    @SqlUpdate("UPDATE combat_bond SET cashedIn = 1")
+    void markAllCashedIn();
+
     @SqlUpdate("DELETE FROM combat_bond")
     void clear();
+
+    class KillMapper implements RowMapper<MassacreKill> {
+        @Override
+        public MassacreKill map(ResultSet rs, StatementContext ctx) throws SQLException {
+            return new MassacreKill(rs.getString("victimFaction"), rs.getString("earnedAt"));
+        }
+    }
 
     class PendingMapper implements RowMapper<Pending> {
         @Override

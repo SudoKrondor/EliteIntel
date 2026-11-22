@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.security.GeneralSecurityException;
 import java.util.Base64;
 import java.util.Set;
 
@@ -120,6 +121,21 @@ public class Cypher {
         }
     }
 
+
+    /**
+     * Whether {@code encryptedData} was encrypted with {@code keyBytes} - asked of a restored database, whose API
+     * keys may have been written under another computer's key. Says nothing about what the data holds.
+     */
+    public static boolean decryptsWith(byte[] keyBytes, String encryptedData) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(keyBytes, "AES"));
+            cipher.doFinal(Base64.getDecoder().decode(encryptedData));
+            return true;
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            return false;
+        }
+    }
 
     /**
      * Decrypts the given encrypted data using AES decryption and returns the plaintext string.

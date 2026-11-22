@@ -24,6 +24,17 @@ public final class AppPaths {
 
 
     /// --- APP USER DATA LOCATION
+
+    /**
+     * The folder holding everything the app keeps for the commander - the databases, custom commands, BindForge's
+     * working copy and the player backups. Backup Settings and Data saves from it and a restore lands in it; a new
+     * folder under it that holds the commander's data must join {@code AppDataArchive.FOLDERS}, or no backup has it.
+     * BindForge's working copy is the exception: it is left out on purpose ({@code AppDataArchive.FOLDERS} says why).
+     */
+    public static Path getAppDataDir() throws IOException {
+        return getAppDataBase().resolve("elite-intel");
+    }
+
     public static Path getDatabasePath() throws IOException {
         Path dbDir = getAppDataBase().resolve("elite-intel/db");
         Files.createDirectories(dbDir);
@@ -47,25 +58,37 @@ public final class AppPaths {
         return dir;
     }
 
-    /** Returns the directory for per-preset working copies, creating it if needed. */
-    public static Path getBindingsWorkingDir() throws IOException {
-        Path dir = getAppDataBase().resolve("elite-intel/bindings");
+    /** Returns BindForge's working copy folder ({@code bindforge.storage.WorkingCopy}), creating it if needed. */
+    public static Path getWorkingCopyDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/working-copy");
         Files.createDirectories(dir);
         return dir;
     }
 
-    /** Returns the directory for timestamped game-file backups, creating it if needed. */
-    public static Path getBindingsBackupDir() throws IOException {
-        Path dir = getAppDataBase().resolve("elite-intel/bindings/backups");
+    /**
+     * Returns the folder BindForge's check moves what does not belong in the bindings folder to - each move in a
+     * date-stamped folder of its own - creating it if needed (storage.md rule 14, <em>Settled 2026-11-08</em>).
+     * BindForge does nothing more with it: the user opens it in the file manager.
+     */
+    public static Path getLeftoverUserFilesDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/Leftover User Files");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    /**
+     * Returns the folder of the commander's colour themes, one JSON file each ({@code ThemeFile}), creating it if
+     * needed. The built-in themes are in the jar, not here.
+     */
+    public static Path getThemesDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/themes");
         Files.createDirectories(dir);
         return dir;
     }
 
     /**
      * Returns the directory for user-facing, on-demand player backups (bindings/preset
-     * snapshots, and later other profile data), creating it if needed. Deliberately separate
-     * from {@link #getBindingsBackupDir()}, which is an internal safety net tied to the
-     * apply-pipeline rather than a user-triggered feature.
+     * snapshots, and later other profile data), creating it if needed.
      */
     public static Path getPlayerBackupsDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/playerbackups");
@@ -94,7 +117,7 @@ public final class AppPaths {
     }
 
     /**
-     * Optional file holding a language code (e.g. {@code DE}) the tester writes before launch. The command
+     * Optional file holding a language code (e.g. {@code RU}) the tester writes before launch. The command
      * language must be set at startup, before VEGA is built: its semantic reducer freezes the language
      * at construction, so switching afterwards would not reach it.
      */
@@ -132,7 +155,7 @@ public final class AppPaths {
 
     /**
      * Directory holding the in-process text-embedding model (multilingual-e5-small int8 ONNX +
-     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Kokoro models so the
+     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Supertonic models so the
      * installer/updater bundle it and users never hunt one down.
      */
     public static Path getEmbedModelDir() {

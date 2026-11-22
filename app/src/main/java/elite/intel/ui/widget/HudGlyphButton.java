@@ -23,7 +23,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
  */
 public final class HudGlyphButton extends JComponent {
 
-    private final HudGlyphs.Painter painter;
+    private HudGlyphs.Painter painter;
     private final Color restTint;
     private final Color hoverTint;
     private final Runnable onClick;
@@ -101,6 +101,18 @@ public final class HudGlyphButton extends JComponent {
                 }
             }
         });
+    }
+
+    /**
+     * Swaps the glyph and its tooltip, for a button whose action flips with state (the window's maximize/restore).
+     *
+     * @param painter glyph to paint from now on
+     * @param tooltip localized tooltip, or {@code null} for none
+     */
+    public void setGlyph(HudGlyphs.Painter painter, String tooltip) {
+        this.painter = Objects.requireNonNull(painter, "painter");
+        setToolTipText(tooltip);
+        repaint();
     }
 
     @Override

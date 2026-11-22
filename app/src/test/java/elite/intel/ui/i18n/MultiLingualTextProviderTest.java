@@ -11,6 +11,32 @@ class MultiLingualTextProviderTest {
 
     private static final String BLOCKING_CONFLICT_KEY = "speech.bindingConflictsBlocking";
 
+    /**
+     * A commander follows the spoken path by reading the screen, so each step has to be the label the tab actually
+     * shows in that language.
+     */
+    @Test
+    void conflictWarningsNameTheTabsAsTheScreenLabelsThem() {
+        for (Language language : Language.values()) {
+            String anomalies = MultiLingualTextProvider.getText(language, "bindings.mode.anomalies", 0).replace(" (0)", "");
+            String[] steps = {
+                    MultiLingualTextProvider.getText(language, "tab.bindings"),
+                    MultiLingualTextProvider.getText(language, "bindings.tab.bindingProfile"),
+                    anomalies};
+            String[] warnings = {
+                    MultiLingualTextProvider.getText(language, "speech.bindingConflicts", 2),
+                    MultiLingualTextProvider.getText(language, BLOCKING_CONFLICT_KEY, 2, "W, A")};
+            for (String warning : warnings) {
+                int from = 0;
+                for (String step : steps) {
+                    int at = warning.indexOf(step, from);
+                    assertTrue(at >= 0, language + " does not say '" + step + "' in order: " + warning);
+                    from = at + step.length();
+                }
+            }
+        }
+    }
+
     @Test
     void choiceFormatSpeechKeysDoNotSplitAsVariants() {
         String[] keys = {"speech.bindingsMissing", "speech.bindingConflicts"};

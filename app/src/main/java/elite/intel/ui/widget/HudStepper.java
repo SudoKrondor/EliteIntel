@@ -1,19 +1,12 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
 
-import javax.swing.JComponent;
-import javax.swing.UIManager;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -21,12 +14,12 @@ import java.awt.event.MouseEvent;
  * HUD discrete numeric stepper rendered as "< value >" (HUD section 4).
  * <p>
  * Triangle buttons sit at the left/right edges of a borderless warm slab
- * ({@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND}, like the HUD checkbox OFF state, section 5.2), separated from the
+ * ({@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND}), separated from the
  * centred value by {@link HudPalette#HUD_COLOR_ROLE_APPLICATION_BACKGROUND} dividers. Clicking a triangle steps the value by
  * {@code step}, clamped to {@code [min, max]}.
  * <p>
- * Arrow states: rest {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}; hover - light HUD_COLOR_ROLE_PRIMARY_ACTION wash on the zone; pressed -
- * full {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION} fill with the arrow inverted to {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} (matching
+ * Arrow states: rest {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}; hover - light HUD_COLOR_ROLE_ACCENT_FILL wash on the zone; pressed -
+ * full {@link HudPalette#HUD_COLOR_ROLE_ACCENT_FILL} fill with the arrow inverted to {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} (matching
  * the subtle button); disabled at the range end - {@link HudPalette#HUD_COLOR_ROLE_DISABLED}. The value is
  * display-only (no free text entry).
  */
@@ -112,13 +105,22 @@ public class HudStepper extends JComponent {
         return value;
     }
 
-    /** Sets the value, clamped to the configured range, and repaints. */
+    /** Sets the value, clamped to the configured range, repaints, and tells the change listeners if it changed. */
     public void setValue(int newValue) {
         int clamped = clamp(newValue);
         if (clamped != value) {
             value = clamped;
             repaint();
+            ChangeEvent event = new ChangeEvent(this);
+            for (ChangeListener listener : listenerList.getListeners(ChangeListener.class)) {
+                listener.stateChanged(event);
+            }
         }
+    }
+
+    /** Told whenever the value changes - an arrow click or {@link #setValue(int)}. */
+    public void addChangeListener(ChangeListener listener) {
+        listenerList.add(ChangeListener.class, listener);
     }
 
     private int clamp(int v) {
@@ -189,7 +191,7 @@ public class HudStepper extends JComponent {
             int h = getHeight();
             int zw = zoneWidth();
 
-            // Borderless warm slab, like the HUD checkbox in its OFF state (section 5.2).
+            // Borderless warm slab.
             g2.setColor(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
             g2.fillRect(0, 0, w, h);
 
@@ -197,7 +199,7 @@ public class HudStepper extends JComponent {
             paintArrowZone(g2, -1, 0, zw, h, value > min);
             paintArrowZone(g2, 1, w - zw, zw, h, value < max);
 
-            // Vertical dividers (HUD_COLOR_ROLE_APPLICATION_BACKGROUND) between arrow zones and the value, as in the checkbox gap.
+            // Vertical dividers (HUD_COLOR_ROLE_APPLICATION_BACKGROUND) between arrow zones and the value.
             g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g2.fillRect(zw, 0, HudPalette.HUD_SEP_W, h);
             g2.fillRect(w - zw - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
@@ -220,14 +222,14 @@ public class HudStepper extends JComponent {
         if (!enabled) {
             arrowColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
         } else if (pressedZone == dir) {
-            // Full HUD_COLOR_ROLE_PRIMARY_ACTION fill + inverted arrow, matching the subtle button's pressed state.
-            g2.setColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+            // Full HUD_COLOR_ROLE_ACCENT_FILL fill + inverted arrow, matching the subtle button's pressed state.
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
             g2.fillRect(x, 0, zw, h);
             arrowColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
         } else if (hoverZone == dir) {
-            // Light HUD_COLOR_ROLE_PRIMARY_ACTION wash on hover (base slab is already HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND).
-            g2.setColor(new Color(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION.getRed(), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION.getGreen(),
-                    HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION.getBlue(), 45));
+            // Light HUD_COLOR_ROLE_ACCENT_FILL wash on hover (base slab is already HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND).
+            g2.setColor(new Color(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL.getRed(), HudPalette.HUD_COLOR_ROLE_ACCENT_FILL.getGreen(),
+                    HudPalette.HUD_COLOR_ROLE_ACCENT_FILL.getBlue(), 45));
             g2.fillRect(x, 0, zw, h);
             arrowColor = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
         } else {

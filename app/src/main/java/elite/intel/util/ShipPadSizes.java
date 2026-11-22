@@ -77,6 +77,7 @@ public class ShipPadSizes {
             Map.entry("belugaliner", LARGE),
             Map.entry("type9_military", LARGE),
             Map.entry("anaconda", LARGE),
+            Map.entry("anacondamkii", LARGE),
             Map.entry("federation_corvette", LARGE),
             Map.entry("cutter", LARGE),
             Map.entry("panthermkii", LARGE),
@@ -115,7 +116,8 @@ public class ShipPadSizes {
             Map.entry("panther clipper mkii", LARGE),
             Map.entry("caspian explorer", LARGE),
             Map.entry("kestrel mk ii", SMALL),
-            Map.entry("lynx highliner", LARGE)
+            Map.entry("lynx highliner", LARGE),
+            Map.entry("anaconda mk ii", LARGE)
     );
 
     /**

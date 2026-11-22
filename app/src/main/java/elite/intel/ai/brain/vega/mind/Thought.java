@@ -5,6 +5,7 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
+import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.memory.VegaMemoryPolicy;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
@@ -18,6 +19,7 @@ import elite.intel.ai.brain.vega.prompt.Fact;
 import elite.intel.ai.brain.vega.prompt.PromptXml;
 import elite.intel.ai.brain.vega.tools.SpeakFunction;
 import elite.intel.ai.brain.vega.tools.SystemFunctionResultFields;
+import elite.intel.ai.mouth.SpeechEmotes;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.json.JsonUtils;
@@ -53,6 +55,10 @@ public abstract class Thought {
      * Localized service phrase for a turn lost because the LLM provider never answered, not because the request was impossible.
      */
     private static final String SERVICE_UNREACHABLE_KEY = "handler.common.aiServiceUnreachable";
+    /**
+     * What a round that ran out of time reports: the provider did not answer.
+     */
+    private static final LlmResult NO_ANSWER = new LlmResult(LlmResult.Status.SERVICE_UNAVAILABLE, List.of());
 
     /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
     private final String trace;
@@ -72,6 +78,9 @@ public abstract class Thought {
      * completed the call before it; the settlement chain's happens-before is what makes that read safe.
      */
     private boolean firstToolStarted;
+
+    /** Set when the model never answered this thought; its lane then drops the queued thoughts that need the model. */
+    private volatile boolean endedWithoutAnAnswer;
 
     /** Creates a thought from its immutable turn signals and the shared service context. */
     protected Thought(ThoughtContext context, ThoughtDependencies dependencies) {
@@ -113,11 +122,20 @@ public abstract class Thought {
     }
 
     /**
-     * Creates a reactive thought from a gameplay subscriber's {@link VegaNarrator} call: VEGA
-     * phrases the supplied event data and speaks it. Data and instructions exist only in this LLM request; after a
+     * Creates a reactive thought from a gameplay subscriber's {@link elite.intel.ai.brain.vega.VegaNarrator} call:
+     * VEGA phrases the supplied event data and speaks it. Data and instructions exist only in this LLM request; after a
      * successful round the narration is voiced and not stored.
      */
     public static Thought eventReaction(Urgency urgency, String stimulus, String instructions,
+                                        ThoughtDependencies dependencies) {
+        return eventReaction(urgency, stimulus, instructions, null, dependencies);
+    }
+
+    /**
+     * As above, for a line spoken to {@code addressee} rather than the commander - a reply over comms to an NPC.
+     * A {@code null} addressee is the commander.
+     */
+    public static Thought eventReaction(Urgency urgency, String stimulus, String instructions, String addressee,
                                         ThoughtDependencies dependencies) {
         String eventData = boundTransientInput(stimulus, VegaMemoryPolicy.eventDataMaxChars());
         StringBuilder promptInput = new StringBuilder(PromptXml.element("event_data", eventData));
@@ -126,7 +144,8 @@ public abstract class Thought {
                     .append(PromptXml.element("narration_instructions", boundTransientInput(
                             instructions, VegaMemoryPolicy.eventInstructionsMaxChars())));
         }
-        return new EventThought(ThoughtContext.event(urgency, eventData, promptInput.toString()), dependencies);
+        return new EventThought(
+                ThoughtContext.event(urgency, eventData, promptInput.toString(), addressee), dependencies);
     }
 
     /**
@@ -157,6 +176,38 @@ public abstract class Thought {
 
     /** Runs this thought on the lane thread. Each concrete kind drives its own lifecycle. */
     public abstract void run();
+
+    /**
+     * Whether this thought cannot do anything without an answer from the model, so a queued one is dropped once the
+     * turn ahead of it ended with the model not answering ({@link #endedWithoutAnAnswer()}). Default: no.
+     */
+    boolean needsTheModel() {
+        return false;
+    }
+
+    /**
+     * Whether this thought ended because the model never answered - unreachable, refused, or past the deadline.
+     * Read by its lane once the thought's cognitive stage returns.
+     */
+    final boolean endedWithoutAnAnswer() {
+        return endedWithoutAnAnswer;
+    }
+
+    /**
+     * This thought was dropped from its lane's queue and never ran: a clarification it claimed at submit goes back,
+     * so the commander's repeat of the answer - the dropping turn told them to try again - still resumes the action.
+     * WHY: the claim happens at submit, before the queue, and a dropped answer otherwise took VEGA's question with it.
+     */
+    final void dropped() {
+        if (context.pendingClarification() != null) {
+            dependencies.clarificationCoordinator().giveBack(context.pendingClarification());
+        }
+    }
+
+    /** Records that the model never answered this thought, so its lane drops the queued thoughts that need it. */
+    protected final void markEndedWithoutAnAnswer() {
+        endedWithoutAnAnswer = true;
+    }
 
     /**
      * Starts the lane-owned lifecycle and returns its real completion. The default is synchronous; thoughts that
@@ -228,6 +279,14 @@ public abstract class Thought {
                     describeResult(result) + " | " + (System.currentTimeMillis() - startedMillis) + " ms");
             return result;
         } catch (RuntimeException llmFailure) {
+            if (!isStopped() && LlmGateway.isTimeout(llmFailure)) {
+                // WHY a result, not null: the provider never answered, which is "the service did not answer" -
+                // not a failure of this turn's own code. A Windows tester's local model, still slow from its first
+                // load, ran past the deadline and the commander heard "I can't do that right now" (2026-11-10).
+                log.warn("VEGA LLM round got no answer within the deadline: {}", llmFailure.getMessage());
+                VegaDiagnostics.debug(trace, "llm", "response: no answer within the deadline");
+                return NO_ANSWER;
+            }
             if (!isStopped()) {
                 // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
                 log.warn("VEGA LLM round failed; treating as no usable result", llmFailure);
@@ -281,7 +340,7 @@ public abstract class Thought {
         long promptStartedNanos = System.nanoTime();
         ComposedPrompt composed = dependencies.promptComposer().compose(
                 source(), context.matchInput(), gameTools, sysTools, history, candidates,
-                context.pendingClarification());
+                context.pendingClarification(), context.addressee());
         long promptMillis = elapsedMillis(promptStartedNanos);
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
@@ -417,7 +476,8 @@ public abstract class Thought {
         if (isStopped() || reply == null || reply.isBlank()) {
             return;
         }
-        MemoryRecord record = MemoryRecord.dialogue(Instant.now(), context.memoryInput(), reply);
+        // WHY stripped: a remembered emote is copied into the next reply, and the next, until every line laughs.
+        MemoryRecord record = MemoryRecord.dialogue(Instant.now(), context.memoryInput(), SpeechEmotes.strip(reply));
         boolean recorded = publishSettlement(() -> dependencies.memoryGateway().write(record));
         if (recorded) {
             VegaDiagnostics.debug(trace, "memory", "record dialogue");

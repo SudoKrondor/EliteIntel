@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException;
  * The action key must be an ASCII snake_case identifier: in VEGA it becomes the LLM tool name
  * ({@code GameToolCandidates} → {@link LlmToolDefinition}), and provider
  * tool-name schemas (OpenAI, Anthropic, Gemini, ...) accept only {@code [a-zA-Z0-9_-]}. A Java-derived key
- * that preserved the commander's own letters (e.g. French {@code aller_à_la_mission}) is rejected by those
+ * that preserved the commander's own script (e.g. Cyrillic {@code лететь_к_миссии}) is rejected by those
  * APIs, so a non-English commander's custom command would never call. Deriving the key in-language cannot
  * solve this; only the model can translate the intent to an English identifier. That is what this does.
  * <p>
@@ -49,7 +49,7 @@ public final class CustomCommandKeyGenerator {
             no leading or trailing underscore. Translate non-English phrases to English first, then name
             the intent - do not transliterate the foreign words.
             Reply with ONLY the identifier: no quotes, no punctuation, no explanation, no code fences.
-            Example input: anzugspezifisches Werkzeug auswählen, Werkzeug auswählen
+            Example input: выбрать специальный инструмент скафандра, выбрать инструмент
             Example output: select_suit_specific_tool""";
 
     private CustomCommandKeyGenerator() {
@@ -73,7 +73,7 @@ public final class CustomCommandKeyGenerator {
         if (LlmProviderResolver.isCloudProviderMissing()) {
             // The factory would hand back the stand-in gateway, which answers nothing; say why instead.
             throw new KeyGenerationException(
-                    "No cloud AI provider is selected. Choose one on the AI Services settings tab, then try again.");
+                    "No cloud AI provider is selected. Choose one on the AI Services tab, then try again.");
         }
         LlmGateway gateway = VegaLlmGatewayFactory.create();
         // The gateway owns a single-thread executor; close it once the (single, blocking) call has returned

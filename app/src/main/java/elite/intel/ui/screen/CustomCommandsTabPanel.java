@@ -7,6 +7,7 @@ import elite.intel.ai.brain.actions.handlers.commands.custom.*;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.bindforge.io.BindingsMonitor;
 import elite.intel.ui.dialog.*;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.support.CustomCommandStepPickerItem;
@@ -222,10 +223,8 @@ public class CustomCommandsTabPanel extends JPanel {
     private void exportCustomCommands() {
         List<CustomCommandDefinition> commands = CustomCommandRegistry.getInstance().getCustomCommands();
         if (commands.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    getText("actions.customCommands.export.noSelection"),
-                    getText("actions.customCommands.export.title"),
-                    JOptionPane.INFORMATION_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.export.title"),
+                    getText("actions.customCommands.export.noSelection"), getText("button.close"));
             return;
         }
         new CustomCommandExportDialog(this, commands).showDialog();
@@ -279,13 +278,9 @@ public class CustomCommandsTabPanel extends JPanel {
         if (currentCount == 0) {
             return true;
         }
-        int choice = JOptionPane.showConfirmDialog(
-                this,
+        return HudConfirmDialog.confirm(this, getText("actions.customCommands.import.title"),
                 getText("actions.customCommands.import.replaceConfirm", currentCount, importCount),
-                getText("actions.customCommands.import.title"),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        return choice == JOptionPane.OK_OPTION;
+                getText("button.continue"), getText("button.cancel"));
     }
 
     /**
@@ -330,26 +325,14 @@ public class CustomCommandsTabPanel extends JPanel {
 
     private void showImportSuccess(int count, Path backup) {
         if (backup == null) {
-            JOptionPane.showMessageDialog(this,
-                    getText("actions.customCommands.import.success", count),
-                    getText("actions.customCommands.import.title"),
-                    JOptionPane.INFORMATION_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.import.title"),
+                    getText("actions.customCommands.import.success", count), getText("button.close"));
             return;
         }
-        Object[] options = {
-                getText("button.ok"),
-                getText("actions.customCommands.backup.openFolder")
-        };
-        int choice = JOptionPane.showOptionDialog(
-                this,
-                getText("actions.customCommands.import.successBackup", count),
-                getText("actions.customCommands.import.title"),
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                options,
-                options[0]);
-        if (choice == 1) {
+        HudConfirmDialog.Result choice = HudConfirmDialog.show(this, getText("actions.customCommands.import.title"),
+                getText("actions.customCommands.import.successBackup", count), getText("button.close"),
+                getText("actions.customCommands.backup.openFolder"), null);
+        if (choice == HudConfirmDialog.Result.EXTRA) {
             openBackupsFolder();
         }
     }
@@ -406,13 +389,9 @@ public class CustomCommandsTabPanel extends JPanel {
     }
 
     private void deleteCustomCommand(CustomCommandRow row) {
-        int result = JOptionPane.showConfirmDialog(
-                this,
+        if (!HudConfirmDialog.confirm(this, getText("actions.customCommands.delete.title"),
                 getText("actions.customCommands.delete.confirm", row.entry().name()),
-                getText("actions.customCommands.delete.title"),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        if (result != JOptionPane.OK_OPTION) {
+                getText("actions.customCommands.delete.button"), getText("button.back"))) {
             return;
         }
 
@@ -427,11 +406,8 @@ public class CustomCommandsTabPanel extends JPanel {
      */
     private boolean persistAndRefresh(List<CustomCommandDefinition> customCommands) {
         if (!customCommandRepository.trySave(customCommands)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("actions.customCommands.save.error", AppPaths.CUSTOM_COMMANDS_FILE_NAME),
-                    getText("actions.customCommands.title"),
-                    JOptionPane.ERROR_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.title"),
+                    getText("actions.customCommands.save.error", AppPaths.CUSTOM_COMMANDS_FILE_NAME), getText("button.close"));
             return false;
         }
         CustomCommandRegistry.getInstance().replaceCustomCommands(customCommands);
@@ -459,11 +435,8 @@ public class CustomCommandsTabPanel extends JPanel {
         String names = unbound.stream()
                 .map(id -> "- " + CustomCommandStepPickerItem.inGameLabel(id))
                 .collect(Collectors.joining("\n"));
-        JOptionPane.showMessageDialog(
-                this,
-                getText("actions.customCommands.unboundControls.text", names),
-                getText("actions.customCommands.unboundControls.title"),
-                JOptionPane.WARNING_MESSAGE);
+        HudConfirmDialog.info(this, getText("actions.customCommands.unboundControls.title"),
+                getText("actions.customCommands.unboundControls.text", names), getText("button.close"));
     }
 
     private void styleTable(JTable table) {

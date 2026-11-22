@@ -121,7 +121,7 @@ class CustomCommandStepPickerItemTest {
                 .sorted()
                 .toList();
 
-        assertEquals(List.of("BlockMouseDecay", "HumanoidPing", "MouseReset"), unnamed);
+        assertEquals(List.of("HumanoidPing"), unnamed);
     }
 
     private static CustomCommandStepPickerItem itemFor(String bindingId) {

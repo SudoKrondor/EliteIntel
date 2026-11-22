@@ -35,6 +35,18 @@ public interface VegaNarrator {
     void narrate(String data, String instructions);
 
     /**
+     * As {@link #narrate}, for a line VEGA transmits to someone other than the commander - a retort to a pirate
+     * scanning the hold. The narration rules then speak to {@code addressee} and never address the commander.
+     * <p>
+     * The default narrates to the commander, for test doubles that do not care who is spoken to.
+     *
+     * @param addressee who the line is spoken to, as they should be named in it
+     */
+    default void narrateTo(String addressee, String data, String instructions) {
+        narrate(data, instructions);
+    }
+
+    /**
      * Voices a finished phrase verbatim. Nothing is stored.
      *
      * @param phrase the finished line to voice

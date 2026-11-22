@@ -29,7 +29,7 @@ class AiServiceReportTest {
                 new AiServiceVerdict.Refused("Mistral", Optional.of(Duration.ofMinutes(150)), true));
 
         assertEquals("Mistral is answering, but it has refused every request for 2 hours. "
-                + "If you changed your API key recently, check it on the AI Services settings tab.", spoken);
+                + "If you changed your API key recently, check it on the AI Services tab.", spoken);
     }
 
     @Test
@@ -57,5 +57,20 @@ class AiServiceReportTest {
     void noAnswerSaysHowLongItWaited() {
         assertEquals("OpenAI did not answer within 10 seconds.",
                 AiServiceReport.spoken(new AiServiceVerdict.NoAnswer("OpenAI", Duration.ofSeconds(10))));
+    }
+
+    @Test
+    void anUnfinishedSetupSaysWhereToFinishIt() {
+        assertEquals("LM Studio setup is not finished, so I cannot rely on it yet. "
+                        + "Press Continue setup on the AI Services tab.",
+                AiServiceReport.spoken(new AiServiceVerdict.LocalSetupUnfinished()));
+    }
+
+    @Test
+    void secondsFollowTheLanguagePluralRules() {
+        SystemSession.getInstance().setLanguage(Language.RU);
+
+        assertEquals("LM Studio отвечает. Время ответа примерно 3 секунды.", AiServiceReport.spoken(
+                new AiServiceVerdict.Connected("LM Studio", Optional.of(Duration.ofSeconds(3)), false)));
     }
 }

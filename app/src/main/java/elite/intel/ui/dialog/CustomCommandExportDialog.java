@@ -120,10 +120,8 @@ public final class CustomCommandExportDialog extends JDialog {
     private void doExport() {
         List<CustomCommandDefinition> selected = tableModel.selectedCommands();
         if (selected.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                getText("actions.customCommands.export.noSelection"),
-                getText("actions.customCommands.export.title"),
-                JOptionPane.WARNING_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.export.title"),
+                    getText("actions.customCommands.export.noSelection"), getText("button.close"));
             return;
         }
 
@@ -143,16 +141,12 @@ public final class CustomCommandExportDialog extends JDialog {
         try {
             String json = CustomCommandExportImportService.toJson(selected);
             Files.writeString(file.toPath(), json, StandardCharsets.UTF_8);
-            JOptionPane.showMessageDialog(this,
-                getText("actions.customCommands.export.success", selected.size()),
-                getText("actions.customCommands.export.title"),
-                JOptionPane.INFORMATION_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.export.title"),
+                    getText("actions.customCommands.export.success", selected.size()), getText("button.close"));
             dispose();
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this,
-                getText("actions.customCommands.export.error"),
-                getText("actions.customCommands.export.title"),
-                JOptionPane.ERROR_MESSAGE);
+            HudConfirmDialog.info(this, getText("actions.customCommands.export.title"),
+                    getText("actions.customCommands.export.error"), getText("button.close"));
         }
     }
 

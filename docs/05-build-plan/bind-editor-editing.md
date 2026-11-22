@@ -1,0 +1,239 @@
+# Bind Editor — editing
+
+**Editing every control on every device from the Binding Profile
+grid.** The grid, search, conflict colouring and the keyboard capture dialog shipped in V1.1; this section grows them into the Bind Editor the spec describes. Its sibling section, [Anomalies](README.md#sections-in-build-order), is separate.
+
+## Spec
+
+- [bind-editor.md](../02-features/bindforge/bind-editor.md) — **read the sections a slice names end to end**:
+  [Capture Dialog](../02-features/bindforge/bind-editor.md#capture-dialog--settled-2026-09-13) (all of it, down to *Open
+  items*), and [Modifiers, Hold, Inverted, Deadzone](../02-features/bindforge/bind-editor.md#modifiers-hold-inverted-deadzone).
+- [overview.md — Two narrow boundaries](../02-features/bindforge/overview.md#two-narrow-boundaries--one-stays-one-widens)
+  — why a deliberate edit may write a controller slot and nothing automatic may.
+- [EliteDangerous-BindsFileFormat.md](../02-features/bindforge/domain-knowledge/EliteDangerous-BindsFileFormat.md)
+  §5 — the tokens: `Joy_N`, `Joy_POVnUp`, `Pos_`/`Neg_` axis directions, `Joy_XAxis`…`Joy_VAxis`.
+- [foundation.md](foundation.md) — F4, the writer's user-edit path this section writes through.
+
+## Built
+
+| What | Where |
+|---|---|
+| The grid | `ui.screen.bindings.BindingProfilePanel` (the shell: EDITING line, search, the one tab row) and `GameModePanel` (the grid, Anomalies' view of it, the footer filters); `SettingsModePanel` (Dead Zones & Sensitivity); tables from `ui.support.BindingsGroupTableFactory`, cells drawn by `ui.render.BindingSlotCellRenderer` |
+| Button names in the grid, the dialogs and the search | `bindforge.storage.EditedDeviceLabels` (the edits' names and labels, since Storage S5); `ui.support.BindingSlotDisplayFormatter` (`withSavedLabels`, `rawTokens`, `controllerSearchText`); `SlotCell` with the raw token as tooltip |
+| AI ACCESS column | `bindforge.rules.AiAccess`, `ui.support.AiAccessCell`; recorded in [bind-editor.md](../02-features/bindforge/bind-editor.md#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12) |
+| The capture dialog (E1) | `ui.dialog.AssignKeyboardBindingDialog` (name kept) — a **row editor**: title = in-game name, CONTROL / XML BINDING, then a card per slot (`SlotCard`: now, → new, CLEAR, what blocks it), the orange card being filled; one picker below that follows the orange card (`showSourceOf`) — KEYBOARD (V1.1's capture field and map, checks unchanged) and a tab per connected controller; one SAVE for every changed slot. Per-slot state in `SlotEdit`. `ui.dialog.ControllerInputsPanel` (BUTTONS / HATS pages, names, free/used/own colouring, click to pick); `KeyboardAvailabilityView.setOtherSlotKey` |
+| Which controllers, under which name (E1) | `bindforge.devices.CaptureControllers.all` — connected ones, plus every one the master or the bindings name (click-only when unplugged); the master's name, else Frontier's; unnamed connected ones get a greyed tab |
+| Press-to-capture (E1) | `bindforge.devices.ControllerCapture` — held inputs on any controller become modifiers (up to three); hats as `Joy_POV` tokens. Fed from `DeviceBus` while the dialog is open |
+| Input already held elsewhere (E1, D6) | `bindforge.rules.BindingConflictScanner.holderOf` — the rules the red rows use: the same inputs and Hold, or a modifier shadow, between controls live together. Blocks SAVE. *`SlotInputConflicts` until D6 (2026-11-10)* |
+| Axis directions on a button slot (E2) | `ui.dialog.ControllerInputsPanel`'s **Axis directions** page: a − and a + cell per axis, clicked (`axisTokens`, `cellText`); an unplugged controller offers the axes its names mention, else all eight (`CaptureControllers.axesOffered`). Moving the axis still picks: `ControllerCapture.axis`, measured from the rest each dialog reads when it opens (`CaptureControllers.restAxes`, `DeviceService.axisValue`). Capture first built by Andrea (`847987878`, 2026-10-25) |
+| Gamepad inputs (part of E7) | `ControllerCapture.gamepadAxis`, `buttonToken`, `gamepadDPadTokens`; `bindforge.devices.GamepadSupport`. Buttons, D-pad and triggers under `GamePad_` tokens; sticks not captured. Same commit |
+| Saving (E1; on the edits since Storage S5) | `ui.support.AssignSelection` — `AssignKeyboardBindingSelection` (keyboard path, unchanged) or `AssignSlotSelection` → `BindingsWriter.assignSlot`, on the binds file's bytes; `BindingProfilePanel.saveSelections` makes them one edit through `BindsEdits.change`, all or none, Hold kept from each slot |
+| Required-by-Vega filter | `GameModePanel`'s `vegaOnlyCheck`, a footer checkbox beside *Show conflicts only* and *Show unassigned*. It keeps the rows whose AI ACCESS state is not `NOT_USED`, and combines with the conflicts filter and search |
+| Clear column | `ui.dialog.ClearKeyboardBindingDialog` — keyboard slots only, as V1.1 shipped it |
+| MOUSE tab (E4) | `ui.dialog.MouseInputsPanel` — the pad (`tokenForAwtButton`: AWT's 2 and 3 swap) and the two wheel cells; picks go through the dialog's `pickMouse`, checked by `BindingConflictScanner.holderOf` like a controller input |
+| The two settings tabs' shared list (E10R) | `ui.screen.bindings.SettingRowsPanel`, which `SettingsModePanel` and `TogglesModePanel` extend: the list, the headings, search, read only, the sort, and sending an edit through `SettingWrite` (`THROUGH_EDITS`, or a test's own) |
+| The Toggles tab (E10) | `ui.screen.bindings.TogglesModePanel` (a `HudToggleButton` reading ON/OFF per row, grouped as `SettingsModePanel` groups); `bindforge.model.SettingToggles` (the 42 settings, only `1` on); the names in `bindings/ed_control_names.properties`. A setting held more than once is written in every copy by `BindingsWriter.assignSetting` and read as one by `BindsValues` |
+| SHIFT, CTRL, ALT on a controller input (E5) | `bindforge.devices.ControllerKeyboardModifiers` (left key on a tick, a side already held is kept); the dialog's `withKeys`, `onWithKey`, `rekeySwapped` (a swapped input keeps its Hold); the three-modifier cap refused on the card (`bindings.assign.tooManyModifiers`). No writer change: `assignSlot` already takes keyboard modifiers on any slot |
+
+## Settled — and where it is recorded
+
+- **A click on a slot opens the
+  dialog**; the Capture-button rule is reversed. [Capture is the only way in](../02-features/bindforge/bind-editor.md#capture-is-the-only-way-in)
+- **An input another control holds blocks SAVE on every
+  tab**; the user frees it first. The writer stays permissive. [What the writer takes from the dialog](../02-features/bindforge/bind-editor.md#what-the-writer-takes-from-the-dialog--settled-2026-10-12-alan-foundation-f4)
+- **The dialog edits the row: both slots as cards, all sources in view, one
+  SAVE.** [The dialog edits the row](../02-features/bindforge/bind-editor.md#the-dialog-edits-the-row-both-slots--settled-2026-10-15-alan-e1)
+- **A controller's tab writes the working copy's
+  name** (the master's, before Storage S5). [Which name a controller's tab writes](../02-features/bindforge/bind-editor.md#which-name-a-controllers-tab-writes--settled-2026-10-15-alan-e1)
+- **The KEYBOARD tab is V1.1's dialog unchanged**, including its refusals (Alan, 2026-10-15).
+- **AI ACCESS wording, and only Vega's controls
+  judged.** [The mechanism](../02-features/bindforge/bind-editor.md#the-mechanism-an-assistant-column-in-the-grid--settled-2026-09-12)
+
+## Known issues
+
+- **A keyboard key with a stick button held as its modifier cannot be
+  captured.** The keyboard tab sees keys only, and a controller tab sees controller inputs only. *Stays so in V1.2:
+  E5 builds only the other direction, a controller input with SHIFT, ALT or CTRL held (Krondor, 2026-11-10).*
+- **The Clear column still clears keyboard slots only.** A HOTAS slot is cleared from the dialog's CLEAR BINDING.
+- **Losing Vega's access is a warning, not a
+  block** (amber banner above the tabs). The user can save past it. The grid's AI ACCESS column shows the result afterwards.
+  *Raise with Alan:* it is the kind of message he says nobody reads.
+- **Which tokens a gamepad should get is not
+  measured** (found 2026-10-23, Krondor; updated 2026-11-03). A pad's buttons, D-pad and triggers are captured under `GamePad_` tokens since `847987878`, no longer `Joy_N`, and its sticks are not captured. Whether the game reads those tokens waits on testing item 27. E7 finishes it. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor)
+- **Checked 2026-11-10:** the uses are now in `GameModePanel` (12, among them Auto-Assign's confirm and results and
+  `fixAllMissing`), `BindingSaveResultPresenter` (4) and `ClearKeyboardBindingDialog` (2). A V1.2 task of its own
+  ([v1.2-remaining-work.md](v1.2-remaining-work.md)). **Done 2026-11-10 (HC), widened to the whole app:** none is left,
+  and `NoOptionPaneTest` keeps it so. As first recorded:
+  **18 `JOptionPane` uses in the Bind Editor, against hard rule 16** (`HudConfirmDialog`, never `JOptionPane`) - in
+  `BindingProfilePanel` (the Auto-Assign confirm and its results among them), `ClearKeyboardBindingDialog.onCleared`
+  and `BindingSaveResultPresenter`. Older than S5; found in the S5/S6 review (Alan, 2026-10-29, D8). Its own item - move them to `HudConfirmDialog` when a slice is in those files, the first one first.
+  **One more, in `GameModePanel.fixAllMissing`** (the Missing tab's fix-all confirm) - found in the S14a-S13a review
+  (Alan, 2026-11-07, S13aR D6), left with the rest.
+- **The controller conflict check matches exact chords
+  only.** The keyboard check also flags a modifier that another control binds on its own (`shadowedModifier`). Whether that holds for controller buttons is unmeasured.
+
+## Boundaries
+
+- **`bindforge.io` and `bindforge.rules` are changed here like any other V1.2 code** (CLAUDE.md, *Branching Model*:
+  Krondor repealed the V1.1-only rule on 2026-10-20). *Corrected 2026-11-11 (E10): this said "no change to
+  `bindforge.io`", the F4-era rule, which no longer holds; E10 changed `BindingsWriter.assignSetting` and
+  `BindsValues`.*
+- **`KeyBindingsParser` never widens.** Writing a controller binding never makes it executable.
+- **The keyboard path and its refusals stay as they are**, for the auto-fixer and for the keyboard tab.
+
+## Slices
+
+| # | Slice | Status |
+|---|---|---|
+| E1 | **Controller buttons and hats in the capture dialog.** The gate is removed, there is a tab per connected controller, capture by press or click, held buttons become modifiers, an input in use blocks SAVE, the AI-access warning shows, and saving goes through `assignSlot` | **done 2026-10-15** |
+| E2 | **AXIS DIRECTIONS on a button slot.** `Pos_`/`Neg_Joy_*Axis` as a third page of a controller tab, captured by pushing an axis past a threshold from where it rests (reuse `DeviceEditorLights`' rest rule) and mapped through `DeviceDescription.axisAt` | **done 2026-11-10**, checked on real hardware: the page has the spec's *−* and *+* cells ([spec](../02-features/bindforge/bind-editor.md#axis-directions-and-hats-are-button-inputs)) |
+| E3 | **Axis rows.** One `<Binding>` plus Inverted and Deadzone, edited in `AssignAxisDialog`, not inline (Krondor and Alan, 2026-11-03). An axis is picked by moving it or clicking it, and saving goes through `assignAxis`. The throttle axes also carry Full Range / Forward Only | **built 2026-11-03, needs a run on real hardware** |
+| E4 | **MOUSE tab.** A button pressed over the pad is captured, the wheel half-axes are clicked (Krondor, 2026-11-10, replacing the spec's pick list; [spec](../02-features/bindforge/bind-editor.md#mouse-a-button-is-pressed-over-the-pad-the-wheel-is-clicked)) | **built 2026-11-10, needs a run on real hardware** (side-button numbers on Linux and Windows) |
+| E5 | **Cross-device chords.** ~~A keyboard key with controller buttons held, and~~ a controller input with keyboard modifiers held - **SHIFT, ALT and CTRL only**, as checkboxes on each controller tab (Krondor, 2026-11-10) | **built 2026-11-10, needs a run in the game** |
+| E6 | **Game Mode and Settings rows** — the spec's grid modes | **closed 2026-11-10.** The Settings tab's number rows were built 2026-11-03; booleans, dropdowns and inline rows in the grid were **rejected** (Krondor, 2026-11-10: no drop-downs or settings in the grid) |
+| D6 | **Conflicts between two controller inputs**, in the red rows and Anomalies (section 7 has no brief, so it is kept here - Krondor, 2026-11-10). Every device scanned, an input named by device and token, the HOTAS shift-button shadow, never blocking off the keyboard; SAVE judges by the same rules. [Spec](../02-features/bindforge/bind-editor.md#conflicts-the-kind) | **done 2026-11-10**, not yet run on real hardware |
+| E8 | **A controller's button or hat is picked when it is let go** (Krondor, 2026-11-10, from D6's Q2(b)): a release picks the input pressed last with every other input held, when something was pressed since the last pick. Axis directions and triggers still pick as they move; keyboard, MOUSE and clicks unchanged. [Spec](../02-features/bindforge/bind-editor.md#modifiers-hold-inverted-deadzone) | **done 2026-11-10**, checked on real hardware the same day |
+| E7 | **Gamepad capture.** On a controller named `GamePad`, the tab offers and captures the game's gamepad tokens, never `Joy_N` or hats; a trigger pulled past a threshold is a press of its `Pos_` token and can be held as a modifier. Needs [A18](alias-designer.md#slices)'s gamepad events and token table. [Spec](../02-features/bindforge/alias-designer.md#a-gamepad-is-not-a-joystick--found-2026-10-23-krondor) | **part built, the rest blocked** on A18 and testing item 27 (updated 2026-11-03): buttons, D-pad and triggers capture today, unmeasured |
+| E9 | ~~**Show Mouse Widget on the Dead Zones & Sensitivity tab**~~ **folded into E10 the same day** (Alan, 2026-11-11): the toggle sits on the Toggles tab. *As planned:* ([spec](../02-features/bindforge/bind-editor.md#settings--settled-2026-09-19)). One boolean, `MouseGUI`, as a yes/no toggle - amending E6's rejection for this setting only. Changing it writes every copy of `MouseGUI` in the file (the game writes two; [storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)); an edit not applied; greyed while read only. **After [Storage S18](storage.md#slices)**, which settles how a repeated element is read and written. **To settle at the sources:** the HUD canon's control for a yes/no; where on the tab; the label; a file whose copies differ, or with none; strings in all nine bundles | **folded into E10** |
+| E10 | **The Toggles tab** (Alan, 2026-11-11; [spec](../02-features/bindforge/bind-editor.md#toggles--settled-2026-11-11-alan)). A fourth mode tab after Dead Zones & Sensitivity: every yes/no setting the binds file holds - 35 in Alan's file, Show Mouse Widget (`MouseGUI`) among them - each a toggle, grouped as that tab groups its rows. **Changing Show Mouse Widget writes every copy of `MouseGUI`** (the game writes two; [storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)), so this slice comes **after [Storage S18](storage.md#slices)** (done 2026-11-11: the check reads and merges such a file; `BindingsWriter.assignSetting` still refuses a repeated setting, so writing every copy is this slice's). It amends E6's rejection of the booleans; dropdowns and inline rows stay rejected. A change is an edit not applied; greyed while read only; Search reaches it; a value neither `0` nor `1` shown as written and left alone. **To settle at the sources:** the HUD canon's control for a yes/no and the tab's label in nine bundles; the groups' headings and order; each row's name; how a 0/1 is written (`BindingsWriter` writes a number today); a setting the editor cannot change; Show Mouse Widget for a file whose copies differ, or with one copy | **done 2026-11-11**, settled at its sources Q1-Q5 ([spec](../02-features/bindforge/bind-editor.md#settled-at-e10s-sources-alan-2026-11-11)); names to confirm in the game ([testing item 34](../00-overview/testing-required.md#bindforge)) |
+| E10R | **The E10 / S19 code-integrity review's follow-up** (Alan, 2026-11-11, D1, D2 and D4 as recommended). **D1:** one package-private base class in `ui.screen.bindings` (the review names it `SettingRowsPanel`) holding what `SettingsModePanel` and `TogglesModePanel` share - the list, `show`, `search`, `readOnlyChanged`, the headings, the sort with its tie-break, and sending the edit, putting the control back while another edit runs; each tab keeps only its `Row`. **D2:** a *Toggles mode* table in [ui-component-map.md](../02-features/bindforge/ui-component-map.md) (`HudToggleButton` reading ON/OFF, grouped as Settings mode; E10 Q1), and the Settings table's toggle row marked as moved there. **D4:** tests that ON writes `1` and OFF `0`, that a refused write puts the button back and says *Change it in the game*, and that a press while an edit runs puts it back; S19's confirmation text pulled into a static method and tested with and without edits (`GameInstallLocationsPanel`). **No decision needed, in the same slice:** `assignSetting`'s per-copy shape check and `singleSelfClosingTag` share one helper (finding 3); `TogglesModePanel.commit`'s guard that cannot be true goes (4); a Javadoc line in `FirstTimeStartupFlow` re-wrapped to 120 columns (8); Dead Zones & Sensitivity's sort gets the tie-break (P1, done by D1). **Not done (D3, Alan: neither):** Run first-time startup again's two guards - the check a press could collide with takes milliseconds and its dialog blocks the window, and read only begins only at start while the button is greyed. Writer and `BindsValues` counting copies differently (P2) stays a known latent risk | **done 2026-11-11** |
+
+## Hand-off notes — newest first
+
+**2026-11-11, E10R done: the E10 / S19 review's follow-up (Alan approving the sources).** **Built:**
+`SettingRowsPanel`, the base both settings tabs extend (D1), each tab keeping its `Row`; a change goes through a
+`SettingWrite`, so tests run it without the edits. `BindingsWriter.selfClosingTagAt` serves both
+`singleSelfClosingTag` and `assignSetting` (finding 3); `TogglesModePanel.commit`'s dead guard gone (4); the Javadoc
+re-wrapped (8); P1's tie-break, by D1. `GameInstallLocationsPanel.runAgainText` and its test; Toggles tests for `1` /
+`0`, a refused write, a failed change and a press while an edit runs (D4). **Recorded:** the *Toggles mode* table in
+[ui-component-map.md](../02-features/bindforge/ui-component-map.md#toggles-mode) (D2); in
+[bind-editor.md *Settings*](../02-features/bindforge/bind-editor.md#settings--settled-2026-09-19), that a number
+kept while another edit runs, or after a change that failed, is put back as a Toggles button is - a change on Dead
+Zones & Sensitivity, approved with the sources. **Not checked by test:** that put-back on Dead Zones & Sensitivity,
+and either tab in the running app. **Next:** no slice here is open - E7 waits on A18 and testing item 27.
+
+**2026-11-11, the E10 / S19 code-integrity review (Alan).** Four decisions, one at a time: D1 (a), D2 (a), D3 (c), D4
+(a) - all in E10R above, which is next. D3 was settled as neither guard after Alan asked what they guarded against: the
+first-click check runs in milliseconds, and read only is decided only at Elite-Intel start, so neither case can arise.
+Read only itself stays as built (Alan: *"lets not change any thing that is already done"*). P2, the writer finding a
+setting anywhere in the file while `BindsValues` reads the top level only, is latent: no setting name appears nested
+in any file measured.
+
+**2026-11-11, E10 done: the Toggles tab (Alan).** Settled at the sources one question at a time, recorded in
+[bind-editor.md, *Settled at E10's sources*](../02-features/bindforge/bind-editor.md#settled-at-e10s-sources-alan-2026-11-11):
+Q1 an ON/OFF `HudToggleButton`; Q2 the game's names and groups, read off Alan's options screenshots into
+`ed_control_names.properties`; Q3 every listed setting has a row whatever its value (the spec's "0 or 1" corrected);
+Q4 any setting held more than once can be changed on any tab, every copy written, none added or removed - the general
+rule, not `MouseGUI` by name ([storage.md rule 14](../02-features/bindforge/storage.md#when-a-live-copy-differs)
+updated); Q5 a value the game would not write reads OFF, carries no warning, and is overwritten when pressed. **Found:**
+`MouseGUI` is still the only repeated setting in any file measured, so Dead Zones & Sensitivity behaves as before;
+`BindsValues`' old note that "old files repeat `HeadlookSensitivity`" had no file behind it and is gone. The game's
+action catalog and consolidated table name none of the relative-mouse toggles - the screenshots did.
+`HeadlookResetOnToggle` was matched by elimination, and `MotionHeadlook`, `yawRotateHeadlook` and `EnableRumbleTrigger`
+show on no screen; [testing item 34](../00-overview/testing-required.md#bindforge) asks. The Boundaries line on
+`bindforge.io` was the F4-era rule and is corrected. **Next:** no slice here is open - E7 waits on A18 and testing item
+27. A code-integrity review of E10 runs in its own session.
+
+**2026-11-10, D6, E2, E8 and HC done, and two capture-dialog faults fixed (Krondor).** Each slice's decisions are in
+the Bind Editor spec: [Conflicts (the kind)](../02-features/bindforge/bind-editor.md#conflicts-the-kind) (D6),
+[Axis directions](../02-features/bindforge/bind-editor.md#axis-directions-and-hats-are-button-inputs) (E2),
+[Modifiers, Hold, Inverted, Deadzone](../02-features/bindforge/bind-editor.md#modifiers-hold-inverted-deadzone) (E8).
+**Found on real hardware:** a spring-loaded stick's return to centre was picked as the opposite direction - capture
+took the first report, already mid-push, as the rest; each dialog now reads the rest when it opens. And a capture
+dialog opened while the services were starting never saw the controllers - it listed them once and listened only if
+one was live; both dialogs now take a controller that connects. Both checked on hardware. **Left open:** axes are not
+scanned for conflicts (the beta may say whether they should be); two identical controllers under one name are one
+device until [testing item 30](../00-overview/testing-required.md#bindforge) measures `DeviceIndex`. HC, every
+`JOptionPane` in the app replaced, is recorded in [v1.2-remaining-work.md](v1.2-remaining-work.md). **Next:** a
+code-integrity review of these slices and A19, in its own session.
+
+**2026-11-10, the Bind Editor is final for V1.2 (Krondor).** The one tab row of 2026-11-06 stays as it is. E6 and
+GM1 are rejected; E4, E5 (SHIFT, ALT and CTRL only) and D6 (conflicts between two controller inputs, in the scan) are
+owed. The sub-tab is labelled Bind Editor and the section BindForge, in all nine bundles; Binding Management keeps its
+name. What is left: [v1.2-remaining-work.md](v1.2-remaining-work.md).
+
+**2026-11-03, shell layout (
+Krondor).** The search moved to a footer owned by `BindingProfilePanel`, left of Game Mode's filters and Auto-Assign (`GameModePanel.footerControls`), which show only on that tab, so Anomalies and Settings keep the search. The keyboard hint sits left of the pacing slider on one row.
+
+**2026-11-03, the game's conflict matrix added to our rules (
+Krondor).** `BindingConflictRules.isSafeOverlap` now also reports any identical-chord pair the game warns about (`GameConflictMatrix`); `isSafeShadow` is the same check without the matrix, for modifier shadows. This reaches everything that asks: the red rows, Anomalies, the startup check, SAVE in the capture dialog and auto-assign.
+**SAVE now refuses these
+pairs**, as it does any other conflict. `MouseReset` and `BlockMouseDecay` gained names under Mouse Controls so the matrix can place them. [Rules](../02-features/bindforge/domain-knowledge/EliteDangerous-ConflictRules.md#4-implication-for-bindforges-own-conflict-detection-algorithm)
+
+**2026-11-03, Binding Profile re-scoped and built (Krondor and Alan).**
+
+-
+
+**Tabs:** `BindingProfilePanel` holds Game Mode, Anomalies and Settings under the shared search. Game Mode has section tabs (All, General, Ship, SRV, On-Foot), each with a count of what the filters and the search leave, over the Used and Missing tabs, which stay. *Changed 2026-11-06 (Krondor and Alan): the section tabs sit in one row with Anomalies and Settings, over one grid, and a Show Unassigned filter replaces the Used and Missing tabs ([Bind Editor](../02-features/bindforge/bind-editor.md#shell-common-to-all-modes)).* A control the name table does not know shows under All only: `MouseReset`, `BlockMouseDecay` and `HumanoidPing` in `Custom.4.2.binds`.
+- **Axis
+  rows:** read by `BindsValues`, never by `KeyBindingsParser`. Their second column shows Normal or Inverted, the dead zone and any throttle range. `ed_control_names.properties` gained the 70 axis tags and 22 number settings, from the Action Catalog; those names were not read off the game screen for this.
+- **Anomalies is a view of `GameModePanel`'s
+  rows**, narrowed to the ones in its conflict index, so it cannot disagree with the red rows.
+- **Settings sliders use measured limits (
+  2026-11-04).** Krondor saved binds files with every slider at its minimum and maximum, and `SettingNumbers.range` holds the result. A typed number is still checked only against Frontier's `Help.txt`, so a value past a stop is kept and the row names the range. `HeadlookMotionSensitivity` stayed at 1 in both passes, so it has no slider.
+- **The axis dialog's dead zone slider runs 0 to 100%**, which is also the game's own range, measured the same way.
+- **A shared axis does not block
+  SAVE.** The dialog names the other controls instead, because `YawAxisRaw` and `YawAxis_Landing` are normally on one stick. This differs from buttons, on purpose.
+-
+**Gamepads:** a pad's tab is greyed in the axis dialog, since its stick tokens are E7's. Inverted and Deadzone can still change on a row already holding one: `assignAxis` now accepts the input the element already holds.
+- **Not run on real hardware or in the running
+  app.** Layout was checked by rendering the panels; moving a real axis, and the game reading the result, are not checked.
+
+**2026-11-03, status corrected against the
+code.** E2's capture and part of E7 were built outside this brief (`847987878`, Andrea, 2026-10-25). The rows above now say so. The work left and how it is split are in
+[v1.2-remaining-work.md](v1.2-remaining-work.md).
+
+**2026-10-29, Storage S6R tidied this screen.** One failure message for a change the edits could not take
+(`bindings.change.failed`; `BindingSaveResult.WRITE_FAILED` gone); `ClearOutcome` says `CLEARED`, `REFUSED` or
+`ALREADY_REPORTED`; `KeyboardKeyAvailabilityService` keeps only its bytes check. The `JOptionPane` uses are under
+*Known issues*.
+
+**2026-10-28, Storage S5 moved this screen onto the edits.** LOAD opens any binds file; SAVE, the Clear column and
+Auto-Assign are edits not applied; the writer takes and returns bytes (`EditedBinds`), so E2–E3 write through
+`BindsEdits.change` and never a file. The "re-stamp between writes" note below no longer applies. See
+[storage.md](storage.md#hand-off-notes).
+
+**2026-10-24, build plan rewritten to back up, edit, apply** (Alan). [Storage S5](storage.md#slices) moves this
+screen onto the working copy and the one APPLY / DISCARD bar: any binds file loads, capture SAVE is an edit not
+applied, and the grid's own APPLY / REVERT and close prompt go. E2–E6 build on that, so E2 waits for S5.
+
+**2026-10-15, E1 fix: the input page is larger.** A controller page is now eight rows of four, so a 32-button
+stick no longer scrolls, and a page with more than 32 inputs splits into numbered group tabs (`1–32`, `33–64`…),
+as the Device Editor does. Pressing an input brings its group forward (`ControllerInputsPanel.showGroup`).
+Recorded in [bind-editor.md](../02-features/bindforge/bind-editor.md#tabs-are-input-sources-sub-tabs-are-input-kinds).
+**For E2:** an AXIS DIRECTIONS page built through `page()` gets the same grouping for free.
+
+**2026-10-15, E1 reworked after Alan's first run.**
+
+-
+**Why:** the per-cell dialog was hard to follow, even for Alan. It is now a row editor; the decision is in the spec, [The dialog edits the row](../02-features/bindforge/bind-editor.md#the-dialog-edits-the-row-both-slots--settled-2026-10-15-alan-e1).
+- **Also fixed from that
+  run:** the theme's scroll bar, names without the `JOY_N` prefix, and the slot's own input shown orange rather than as free.
+- **Watch for in
+  E2+:** two writes per SAVE re-stamp the file in between (`saveSelections`). The keyboard map is built for the slot the dialog opened on, which matters only for a Hold slot's colouring.
+- **Strings:** `bindings.assign.slot`, `currentValue` and `newInput` were removed from all seven bundles.
+-
+**Height:** the first rework ran off a laptop screen and hid SAVE. Now the body scrolls under a fixed header and footer, and the dialog is capped to the screen's usable area (`fitToScreen`). CONTROL and the XML tag share one line, the keyboard legend is the map's tooltip, and the controller list shows six rows.
+- **Colours and going
+  back:** inputs the control holds now sit on blue (`HUD_COLOR_ROLE_ASSIGNED_INPUT_BACKGROUND`). A chord either slot held at opening stays green and is never refused (`isOwnChord`,
+  `KeyboardAvailabilityView.setOwnChords`, `ControllerInputsPanel` `own`), so a cleared key no longer reads as taken.
+- **Refused picks and
+  UNDO:** a pick that cannot be saved no longer sits in its card. `choose` restores the slot and records why in `SlotEdit.rejected`, and each changed card has UNDO (`onUndo`).
+- **Unplugged
+  controllers:** Alan's stick slept and its tab vanished. Every controller the master or the bindings name now has a tab (`CaptureControllers.all`). The keyboard field no longer says
+  *Not defined* under a stick slot; it says *Click here, then press a key*.
+- **One picker, not
+  two:** with keyboard left and controllers right, a stick Primary and a keyboard Secondary read as cross-wired. The single picker follows the orange card, and the dialog is now at least 760 px wide instead of 1180.
+
+**2026-10-15, E1 done.**
+
+-
+**Decisions:** Alan reversed the Capture-button rule, extended the keyboard tab's block-on-conflict to controllers, and settled the master's name for renamed devices. All three are recorded in bind-editor.md with the date.
+- **Spec gaps
+  closed:** the "what the dialog cannot do yet" table now shows the HOTAS gate, the keyboard-only wording, hats, and the raw-tag title as closed.
+- **Strings:** the gate's `bindings.assign.unsupportedReadOnlyMessage` was removed from all seven bundles.
+  `bindings.assign.dialogTitle` and `section.assignment` now read *Assign control*.
+- **For
+  E2:** `ControllerInputsPanel` takes a list of tokens per page, so a third page is a list and a capture method on `ControllerCapture`. A whole axis must never land on a button slot, and the writer refuses one anyway.
+- **Not
+  done:** the dialog has not been run against a real HOTAS. The unit tests cover the rules (`ControllerCaptureTest`, `SlotInputConflictsTest`); the Swing layout and live capture still need Alan's eyes.

@@ -1,0 +1,506 @@
+package elite.intel.appdata;
+
+import elite.intel.ai.brain.inference.lmstudio.install.InstallMarker;
+import elite.intel.db.util.DatabaseMigrator;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.Jdbi;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * A backup made on one computer ({@code oldDir}, its key {@code oldKey}) restored onto another ({@code newDir},
+ * {@code newKey}), through both halves: staging and the swap at the next start.
+ */
+class AppDataBackupRestoreTest {
+
+    private static final byte[] OLD_KEY = "old-computer-key-0123456789abcde".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] NEW_KEY = "new-computer-key-0123456789abcde".getBytes(StandardCharsets.US_ASCII);
+    private static final char[] PASSWORD = "o7 commander".toCharArray();
+
+    @TempDir
+    Path root;
+
+    private Path oldDir;
+    private Path oldKey;
+    private Path newDir;
+    private Path newKey;
+    private Path zip;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        oldDir = Files.createDirectories(root.resolve("old/elite-intel"));
+        oldKey = Files.write(oldDir.resolve("secret.key"), OLD_KEY);
+        newDir = Files.createDirectories(root.resolve("new/elite-intel"));
+        newKey = Files.write(newDir.resolve("secret.key"), NEW_KEY);
+        zip = root.resolve("backup.zip");
+
+        Path sharedDatabase = Files.createDirectories(oldDir.resolve("db")).resolve("database.db");
+        Path commanderDatabase = oldDir.resolve("db/cmdr_F1234.db");
+        migrate(sharedDatabase, DatabaseMigrator.Tree.SHARED);
+        migrate(commanderDatabase, DatabaseMigrator.Tree.COMMANDER);
+        Files.createDirectories(oldDir.resolve("custom-commands"));
+        Files.writeString(oldDir.resolve("custom-commands/custom_commands.json"), "[\"launch\"]");
+    }
+
+    @Test
+    void aPasswordCarriesTheKeySoTheApiKeysStillRead() throws Exception {
+        String llmKey = encrypt(OLD_KEY, "sk-test");
+        // WHY the open handle: the write then sits in the WAL file, which a plain copy of the .db would miss.
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            setApiKey(live, llmKey);
+            AppDataBackup.write(oldDir, oldKey, zip, PASSWORD, "1.2.0-test");
+        }
+
+        AppDataRestore.Staged staged = AppDataRestore.stage(zip, newDir);
+        assertTrue(staged.hasLockedKey());
+        assertFalse(staged.unlock("wrong".toCharArray()));
+        assertTrue(staged.unlock(PASSWORD));
+        staged.commit(newKey);
+
+        assertEquals(PendingRestore.Outcome.RESTORED, PendingRestore.applyIfPresent(newDir, newKey));
+        assertArrayEquals(OLD_KEY, Files.readAllBytes(newKey));
+        assertEquals(Optional.of(llmKey), apiKey(newDir));
+        assertEquals("[\"launch\"]", Files.readString(newDir.resolve("custom-commands/custom_commands.json")));
+        assertTrue(Files.exists(newDir.resolve("db/cmdr_F1234.db")));
+        assertFalse(Files.exists(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+        assertArrayEquals(NEW_KEY, Files.readAllBytes(safetyFolder(newDir).resolve("secret.key")));
+    }
+
+    @Test
+    void withoutAPasswordAnotherComputerLosesTheApiKeys() throws Exception {
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            setApiKey(live, encrypt(OLD_KEY, "sk-test"));
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.Staged staged = AppDataRestore.stage(zip, newDir);
+        assertFalse(staged.hasLockedKey());
+        staged.commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals(Optional.empty(), apiKey(newDir));
+        assertArrayEquals(NEW_KEY, Files.readAllBytes(newKey));
+    }
+
+    /**
+     * BindForge's working copy is its master: a restore over it would put back files older than the game's live
+     * ones. It is not backed up, a restore leaves this computer's alone, and an older zip carrying one - in
+     * {@code working-copy}, or in {@code bindings} before Storage S8R4 - restores without it.
+     */
+    @Test
+    void bindForgesWorkingCopyIsNeitherBackedUpNorRestoredOver() throws Exception {
+        Path oldBinds = oldDir.resolve("working-copy/Bindings/Custom.4.2.binds");
+        Files.createDirectories(oldBinds.getParent());
+        Files.writeString(oldBinds, "older");
+        Path newBinds = newDir.resolve("working-copy/Bindings/Custom.4.2.binds");
+        Files.createDirectories(newBinds.getParent());
+        Files.writeString(newBinds, "newer");
+
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+        try (ZipFile backup = new ZipFile(zip.toFile())) {
+            assertTrue(backup.stream().noneMatch(entry -> entry.getName().startsWith("working-copy/")),
+                    "the working copy is not in the backup");
+        }
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals("newer", Files.readString(newBinds));
+        assertFalse(AppDataArchive.isBackupEntry("working-copy/Bindings/Custom.4.2.binds"),
+                "an older zip's working copy is not unpacked");
+        assertFalse(AppDataArchive.isBackupEntry("bindings/Bindings/Custom.4.2.binds"),
+                "nor one from before the folder was renamed");
+    }
+
+    @Test
+    void withoutAPasswordTheSameComputerKeepsTheApiKeys() throws Exception {
+        String llmKey = encrypt(OLD_KEY, "sk-test");
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            setApiKey(live, llmKey);
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, oldDir).commit(oldKey);
+        PendingRestore.applyIfPresent(oldDir, oldKey);
+
+        assertEquals(Optional.of(llmKey), apiKey(oldDir));
+    }
+
+    @Test
+    void foldersThatDoNotExistHereAreForgotten() throws Exception {
+        Path bindingsHere = Files.createDirectories(root.resolve("bindings-here"));
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("UPDATE user_preferences SET journal_dir = ?, bindings_dir = ? WHERE id = 1",
+                    "C:\\Users\\cmdr\\Saved Games\\Frontier Developments\\Elite Dangerous", bindingsHere.toString());
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertNull(restored.createQuery("SELECT journal_dir FROM user_preferences WHERE id = 1").mapTo(String.class).one());
+            assertEquals(bindingsHere.toString(),
+                    restored.createQuery("SELECT bindings_dir FROM user_preferences WHERE id = 1").mapTo(String.class).one());
+        }
+    }
+
+    @Test
+    void anLmStudioInstallWhoseFolderHoldsItsMarkerIsKept() throws Exception {
+        Path lmStudioHome = Files.createDirectories(root.resolve("lmstudio-home"));
+        UUID installId = UUID.randomUUID();
+        InstallMarker.write(lmStudioHome, installId);
+        recordLmStudioInstall(installId, lmStudioHome);
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals(1, lmStudioInstallRows(newDir), "restored onto the PC that made it");
+    }
+
+    /**
+     * The dangerous case: the folder exists here too - the same user name on both PCs - but holds an LM Studio the
+     * app never installed on this one, so no marker. Uninstalling from that record would delete it.
+     */
+    @Test
+    void anLmStudioInstallFromAnotherComputerIsForgottenEvenWhereItsFolderExists() throws Exception {
+        Path sameNamedHome = Files.createDirectories(root.resolve("lmstudio-home"));
+        recordLmStudioInstall(UUID.randomUUID(), sameNamedHome);
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals(0, lmStudioInstallRows(newDir));
+    }
+
+    private void recordLmStudioInstall(UUID installId, Path home) {
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("INSERT INTO lm_studio_install (id, install_id, home_dir, pointer_written, setup_complete, "
+                    + "installed_at) VALUES (1, ?, ?, 0, 1, '2026-11-09T10:00:00Z')", installId.toString(), home.toString());
+        }
+    }
+
+    private static int lmStudioInstallRows(Path dataDir) {
+        try (Handle h = open(dataDir.resolve("db/database.db"))) {
+            return h.createQuery("SELECT COUNT(*) FROM lm_studio_install").mapTo(Integer.class).one();
+        }
+    }
+
+    @Test
+    void aBackupFromANewerVersionIsRefused() throws Exception {
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("INSERT INTO schema_migration (version) VALUES ('99999__from_the_future.sql')");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "9.9.0-test");
+
+        AppDataRestore.RefusedException refused = assertThrows(AppDataRestore.RefusedException.class,
+                () -> AppDataRestore.stage(zip, newDir));
+
+        assertEquals(AppDataRestore.Refusal.NEWER_VERSION, refused.refusal());
+        assertFalse(Files.exists(newDir.resolve(AppDataArchive.STAGING_FOLDER)));
+    }
+
+    @Test
+    void aMigrationRemovedFromTheTreeSinceIsNotANewerVersion() throws Exception {
+        // WHY: long-lived databases record migrations later dropped from the tree, such as 01028__remove_ollama.sql.
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("INSERT INTO schema_migration (version) VALUES ('00054__schema.sql')");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+
+        assertEquals(PendingRestore.Outcome.RESTORED, PendingRestore.applyIfPresent(newDir, newKey));
+    }
+
+    @Test
+    void aZipThatIsNotABackupIsRefused() throws Exception {
+        writeZip(zip, "readme.txt");
+
+        AppDataRestore.RefusedException refused = assertThrows(AppDataRestore.RefusedException.class,
+                () -> AppDataRestore.stage(zip, newDir));
+
+        assertEquals(AppDataRestore.Refusal.NOT_A_BACKUP, refused.refusal());
+    }
+
+    @Test
+    void anEntryReachingOutsideTheDataFolderIsRefused() throws Exception {
+        writeZip(zip, "db/../../escaped.txt");
+
+        AppDataRestore.RefusedException refused = assertThrows(AppDataRestore.RefusedException.class,
+                () -> AppDataRestore.stage(zip, newDir));
+
+        assertEquals(AppDataRestore.Refusal.NOT_A_BACKUP, refused.refusal());
+        assertFalse(Files.exists(newDir.resolve("escaped.txt")));
+    }
+
+    /**
+     * A swap that fails part way - on Windows, a file the previous copy still holds - leaves this computer's data in
+     * place and the restore waiting, so the next start finishes it without the commander choosing the zip again.
+     */
+    @Test
+    void aSwapThatFailsIsKeptAndRetriedAtTheNextStart() throws Exception {
+        Files.createDirectories(newDir.resolve("custom-commands"));
+        Files.writeString(newDir.resolve("custom-commands/custom_commands.json"), "[\"mine\"]");
+        Path blocker = newDir.resolve("blocker");
+        Path blockedKey = blockedKeyFile(blocker);
+
+        assertEquals(PendingRestore.Outcome.RETRYING, PendingRestore.applyIfPresent(newDir, blockedKey));
+        assertEquals("[\"mine\"]", Files.readString(newDir.resolve("custom-commands/custom_commands.json")));
+        assertTrue(Files.isDirectory(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+        assertNoSafetyFolder(newDir);
+
+        Files.delete(blocker);
+        assertEquals(PendingRestore.Outcome.RESTORED, PendingRestore.applyIfPresent(newDir, blockedKey));
+        assertEquals("[\"launch\"]", Files.readString(newDir.resolve("custom-commands/custom_commands.json")));
+        assertArrayEquals(OLD_KEY, Files.readAllBytes(blockedKey));
+        assertFalse(Files.exists(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+    }
+
+    @Test
+    void aRestoreThatFailsEveryAllowedStartIsDiscarded() throws Exception {
+        Path blockedKey = blockedKeyFile(newDir.resolve("blocker"));
+
+        for (int attempt = 1; attempt < PendingRestore.MAX_ATTEMPTS; attempt++) {
+            assertEquals(PendingRestore.Outcome.RETRYING, PendingRestore.applyIfPresent(newDir, blockedKey));
+        }
+        assertEquals(PendingRestore.Outcome.FAILED, PendingRestore.applyIfPresent(newDir, blockedKey));
+        assertFalse(Files.exists(newDir.resolve(AppDataArchive.PENDING_FOLDER)));
+        assertNoSafetyFolder(newDir);
+    }
+
+    /**
+     * Stages a restore carrying its key, and returns a key path that cannot be written: its folder is a file. The
+     * key is the last part swapped in, so every earlier move has to be undone.
+     */
+    private Path blockedKeyFile(Path blocker) throws Exception {
+        AppDataBackup.write(oldDir, oldKey, zip, PASSWORD, "1.2.0-test");
+        AppDataRestore.Staged staged = AppDataRestore.stage(zip, newDir);
+        assertTrue(staged.unlock(PASSWORD));
+        staged.commit(newKey);
+        Files.writeString(blocker, "not a folder");
+        return blocker.resolve("secret.key");
+    }
+
+    private static void assertNoSafetyFolder(Path dataDir) throws IOException {
+        try (Stream<Path> entries = Files.list(dataDir)) {
+            assertTrue(entries.noneMatch(p -> p.getFileName().toString().startsWith(AppDataArchive.SAFETY_FOLDER_PREFIX)));
+        }
+    }
+
+    @Test
+    void aChosenBindForgeBackupFolderThatIsNotHereIsForgotten() throws Exception {
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("UPDATE bindforge_settings SET backup_destination = ? WHERE id = 1", "D:\\ED Backups");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertNull(restored.createQuery("SELECT backup_destination FROM bindforge_settings WHERE id = 1")
+                    .mapTo(String.class).one());
+        }
+    }
+
+    @Test
+    void colourThemesAreBackedUpAndRestored() throws Exception {
+        Files.createDirectories(oldDir.resolve("themes"));
+        Files.writeString(oldDir.resolve("themes/Deep Space.json"), "{\"name\":\"Deep Space\"}");
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            live.execute("INSERT OR IGNORE INTO game_session (id) VALUES (1)");
+            live.execute("UPDATE game_session SET uiTheme = ? WHERE id = 1", "Deep Space.json");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        assertEquals("{\"name\":\"Deep Space\"}", Files.readString(newDir.resolve("themes/Deep Space.json")));
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertEquals("Deep Space.json",
+                    restored.createQuery("SELECT uiTheme FROM game_session WHERE id = 1").mapTo(String.class).one());
+        }
+    }
+
+    /**
+     * The storefront switch: set up on an Epic PC that had removed its Steam install, restored a month later onto a PC
+     * that runs Steam at that same default path. The old installations would make BindForge read only here (Epic is
+     * missing) and keep this PC's Steam install out (it was removed there), and the old flag would claim a first-time
+     * startup this PC never ran.
+     */
+    @Test
+    void bindForgeKeepsThisComputersInstallationsAndFirstTimeStartup() throws Exception {
+        Path steam = Files.createDirectories(root.resolve("Steam/steamapps/common/Elite Dangerous"));
+        try (Handle old = open(oldDir.resolve("db/database.db"))) {
+            recordInstallation(old, "EPIC", "C:\\Program Files\\Epic Games\\EliteDangerous", false);
+            recordInstallation(old, "STEAM", steam.toString(), true);
+            old.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
+        }
+        Path newDatabase = Files.createDirectories(newDir.resolve("db")).resolve("database.db");
+        migrate(newDatabase, DatabaseMigrator.Tree.SHARED);
+        try (Handle here = open(newDatabase)) {
+            recordInstallation(here, "STEAM", steam.toString(), false);
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDatabase)) {
+            assertEquals(List.of("STEAM " + steam + " removed=0"), installations(restored));
+            assertFalse(firstTimeStartupComplete(restored), "first-time startup runs on this computer's files");
+        }
+    }
+
+    @Test
+    void aComputerThatNeverOpenedBindForgeGetsNoInstallationsFromTheBackup() throws Exception {
+        try (Handle old = open(oldDir.resolve("db/database.db"))) {
+            recordInstallation(old, "EPIC", "C:\\Program Files\\Epic Games\\EliteDangerous", false);
+            old.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        PendingRestore.applyIfPresent(newDir, newKey);
+
+        try (Handle restored = open(newDir.resolve("db/database.db"))) {
+            assertEquals(List.of(), installations(restored));
+            assertFalse(firstTimeStartupComplete(restored));
+        }
+    }
+
+    @Test
+    void theSameComputerKeepsItsBindForgeRecord() throws Exception {
+        Path epic = Files.createDirectories(root.resolve("Epic Games/EliteDangerous"));
+        try (Handle live = open(oldDir.resolve("db/database.db"))) {
+            recordInstallation(live, "EPIC", epic.toString(), false);
+            live.execute("UPDATE bindforge_activation SET activated_at = CURRENT_TIMESTAMP WHERE id = 1");
+        }
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, oldDir).commit(oldKey);
+        PendingRestore.applyIfPresent(oldDir, oldKey);
+
+        try (Handle restored = open(oldDir.resolve("db/database.db"))) {
+            assertEquals(List.of("EPIC " + epic + " removed=0"), installations(restored));
+            assertTrue(firstTimeStartupComplete(restored));
+        }
+    }
+
+    /**
+     * BindForge's backups go with the working copy a restore leaves alone, so this computer keeps its own - the first
+     * setup backup above all, kept forever - and the old computer's are added beside them for RESTORE.
+     */
+    @Test
+    void bindForgeBackupsAreAddedToThisComputersNotReplaced() throws Exception {
+        Path oldDaily = oldDir.resolve("playerbackups/Daily/2026-10-01_09-00-00.zip");
+        Files.createDirectories(oldDaily.getParent());
+        Files.writeString(oldDaily, "old computer");
+        Path sameName = oldDir.resolve("playerbackups/FirstSetup/2026-11-01_10-00-00.zip");
+        Files.createDirectories(sameName.getParent());
+        Files.writeString(sameName, "old computer");
+        Path newFirstSetup = newDir.resolve("playerbackups/FirstSetup/2026-11-01_10-00-00.zip");
+        Files.createDirectories(newFirstSetup.getParent());
+        Files.writeString(newFirstSetup, "this computer");
+        AppDataBackup.write(oldDir, oldKey, zip, null, "1.2.0-test");
+
+        AppDataRestore.stage(zip, newDir).commit(newKey);
+        assertEquals(PendingRestore.Outcome.RESTORED, PendingRestore.applyIfPresent(newDir, newKey));
+
+        assertEquals("this computer", Files.readString(newFirstSetup), "a backup here is never replaced");
+        assertEquals("old computer", Files.readString(newDir.resolve("playerbackups/Daily/2026-10-01_09-00-00.zip")));
+    }
+
+    private static void recordInstallation(Handle h, String storefront, String rootPath, boolean removed) {
+        h.execute("INSERT INTO bindforge_installations (storefront, root_path, is_removed) VALUES (?, ?, ?)",
+                storefront, rootPath, removed);
+    }
+
+    private static List<String> installations(Handle h) {
+        return h.createQuery("SELECT storefront || ' ' || root_path || ' removed=' || is_removed FROM bindforge_installations ORDER BY id")
+                .mapTo(String.class)
+                .list();
+    }
+
+    private static boolean firstTimeStartupComplete(Handle h) {
+        return h.createQuery("SELECT activated_at IS NOT NULL FROM bindforge_activation WHERE id = 1")
+                .mapTo(Boolean.class)
+                .one();
+    }
+
+    @Test
+    void aStartWithNothingWaitingChangesNothing() throws IOException {
+        assertEquals(PendingRestore.Outcome.NONE, PendingRestore.applyIfPresent(newDir, newKey));
+        assertArrayEquals(NEW_KEY, Files.readAllBytes(newKey));
+    }
+
+    private static void migrate(Path database, DatabaseMigrator.Tree tree) throws Exception {
+        try (Handle h = open(database)) {
+            DatabaseMigrator.migrate(h, tree);
+        }
+    }
+
+    private static Handle open(Path database) {
+        return Jdbi.create("jdbc:sqlite:" + database).open();
+    }
+
+    private static void setApiKey(Handle h, String encrypted) {
+        h.execute("INSERT OR IGNORE INTO game_session (id) VALUES (1)");
+        h.execute("UPDATE game_session SET encryptedLLMKey = ? WHERE id = 1", encrypted);
+    }
+
+    private static Optional<String> apiKey(Path dataDir) {
+        try (Handle h = open(dataDir.resolve("db/database.db"))) {
+            return Optional.ofNullable(h.createQuery("SELECT encryptedLLMKey FROM game_session WHERE id = 1")
+                    .mapTo(String.class)
+                    .one());
+        }
+    }
+
+    /**
+     * As {@code Cypher.encrypt}, under a key of the test's choosing.
+     */
+    private static String encrypt(byte[] key, String text) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
+        return Base64.getEncoder().encodeToString(cipher.doFinal(text.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static Path safetyFolder(Path dataDir) throws IOException {
+        try (Stream<Path> entries = Files.list(dataDir)) {
+            return entries.filter(p -> p.getFileName().toString().startsWith(AppDataArchive.SAFETY_FOLDER_PREFIX))
+                    .findFirst()
+                    .orElseThrow();
+        }
+    }
+
+    private static void writeZip(Path zip, String entryName) throws IOException {
+        try (OutputStream out = Files.newOutputStream(zip); ZipOutputStream zipOut = new ZipOutputStream(out)) {
+            zipOut.putNextEntry(new ZipEntry(entryName));
+            zipOut.write("x".getBytes(StandardCharsets.US_ASCII));
+            zipOut.closeEntry();
+        }
+    }
+}

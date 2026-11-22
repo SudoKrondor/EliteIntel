@@ -3,12 +3,14 @@ package elite.intel.ui.overlay;
 import elite.intel.db.dao.RouteMonetisationDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.managers.BountyManager;
+import elite.intel.db.managers.CombatBondManager;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.gameapi.missions.MassacreKill;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -39,6 +41,7 @@ class ObjectiveSourceCardTest {
 
     private final MissionManager missions = MissionManager.getInstance();
     private final BountyManager bounties = BountyManager.getInstance();
+    private final CombatBondManager bonds = CombatBondManager.getInstance();
     private final MonetizeRouteManager monetized = MonetizeRouteManager.getInstance();
     private final ShipRouteManager shipRoute = ShipRouteManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -50,6 +53,7 @@ class ObjectiveSourceCardTest {
     void clean() {
         missions.clear();
         bounties.clear();
+        bonds.clear();
         monetized.clear();
         // The massacre card now reads the plotted route, so a route left behind by another class
         // would decide whether this one's cards appear.
@@ -60,6 +64,7 @@ class ObjectiveSourceCardTest {
     void tidy() {
         savedMissions.forEach(missions::remove);
         savedBounties.forEach(bounties::remove);
+        bonds.clear();
         monetized.clear();
     }
 
@@ -213,6 +218,50 @@ class ObjectiveSourceCardTest {
         HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
 
         assertTrue(labels(card).stream().noneMatch("MISSIONS"::equals), labels(card).toString());
+    }
+
+    /**
+     * The 2026-11-13 report: a civil-war massacre is paid in combat bonds, and a bar that counted only bounties
+     * sat at zero for the whole fight. Its targets are a faction's warships, so the bar does not call them pirates.
+     */
+    @Test
+    void aWarMassacreCountsItsCombatBonds() {
+        saveMission(warMassacreJson(30, 24, "Fire Lotus Coalition"));
+        saveBonds("Fire Lotus Coalition", 3);
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        HudRow bar = rowOf(card, "KILLS (EST)");
+        assertEquals(3, bar.current());
+        assertEquals(24, bar.max());
+        assertEquals("FIRE LOTUS COALITION", card.subtitle());
+    }
+
+    @Test
+    void aConfirmedWarMassacreDropsTheEstimateMarker() {
+        saveMission(warMassacreJson(31, 6, "Fire Lotus Coalition").replaceFirst("}$",
+                ",\"redirectedAt\":\"%s\"}".formatted(Instant.now().minusSeconds(300).toString())));
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertTrue(labels(card).contains("KILLS"), labels(card).toString());
+        assertEquals(HudRow.State.GOOD, rowOf(card, "KILLS").state());
+    }
+
+    /**
+     * A war and a pirate hunt never share a target, so they never share a bar - and the war is the one being
+     * fought, since it is over within days.
+     */
+    @Test
+    void aWarStackTakesTheCardOverAPirateOne() {
+        saveMission(massacreJson(32, 12));
+        saveMission(warMassacreJson(33, 24, "Fire Lotus Coalition"));
+        saveBounties(4);
+
+        HudObjective card = new MassacreObjectiveSource().currentObjective().orElseThrow();
+
+        assertEquals("FIRE LOTUS COALITION", card.subtitle());
+        assertEquals(0, rowOf(card, "KILLS (EST)").current(), "a pirate's bounty is no kill in the war");
     }
 
     @Test
@@ -465,7 +514,9 @@ class ObjectiveSourceCardTest {
      * The card as it renders for a given plotted route, through the source's own seam.
      */
     private Optional<HudObjective> massacreCard(String plottedRoute) {
-        return new MassacreObjectiveSource(missions, playerSession, () -> plottedRoute).currentObjective();
+        return new MassacreObjectiveSource(missions,
+                () -> MassacreKill.of(playerSession.getBounties(), bonds.kills()),
+                () -> plottedRoute).currentObjective();
     }
 
     private String massacreAt(long id, int kills, String destinationSystem) {
@@ -494,6 +545,23 @@ class ObjectiveSourceCardTest {
                 .formatted(id, provider)
                 + "\"acceptedAt\":\"%s\",".formatted(Instant.now().minusSeconds(7200).toString())
                 + "\"killCount\":%d,\"missionTargetFaction\":\"%s\",\"reward\":1000000}".formatted(kills, TARGET);
+    }
+
+    private String warMassacreJson(long id, int kills, String target) {
+        return "{\"missionId\":%d,\"missionType\":\"MISSION_MASSACRE_CONFLICT\",\"faction\":\"%s\","
+                .formatted(id, PROVIDER)
+                + "\"acceptedAt\":\"%s\",".formatted(Instant.now().minusSeconds(7200).toString())
+                + "\"killCount\":%d,\"missionTargetFaction\":\"%s\",\"reward\":1000000}".formatted(kills, target);
+    }
+
+    /**
+     * Combat bonds earned after acceptance, one per kill, as FactionKillBondSubscriber records them.
+     */
+    private void saveBonds(String victimFaction, int count) {
+        Instant base = Instant.now().minusSeconds(600);
+        for (int i = 0; i < count; i++) {
+            bonds.record(1L, PROVIDER, victimFaction, 25_000 + i, base.plusSeconds(i).toString());
+        }
     }
 
     /**

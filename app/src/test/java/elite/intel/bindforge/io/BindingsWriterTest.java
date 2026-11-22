@@ -11,12 +11,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * The writer's keyboard path, and the keyboard availability check beside it where a test pairs the two. The writer
+ * edits a binds file's bytes in memory (Storage S5); a temporary file stands in for the edits that hold them, and the
+ * file-stamp tests went with the file the writer used to write. The availability check alone is tested in
+ * {@code KeyboardKeyAvailabilityServiceTest} (Storage S6R2).
+ */
 class BindingsWriterTest {
     @TempDir
     Path tempDir;
@@ -24,67 +28,9 @@ class BindingsWriterTest {
     private final KeyboardKeyAvailabilityService availabilityService = new KeyboardKeyAvailabilityService();
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
 
-    @Test
-    void occupiedKeysAreCollectedFromEntireFileIncludingUnusedActions() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <GalaxyMapOpen>
-                        <Primary Device="{NoDevice}" Key="" />
-                        <Secondary Device="{NoDevice}" Key="" />
-                    </GalaxyMapOpen>
-                    <UnusedByEliteIntel>
-                        <Primary Device="Keyboard" Key="Key_L" />
-                    </UnusedByEliteIntel>
-                </Root>
-                """);
-
-        Set<String> occupied = availabilityService.occupiedKeyboardKeys(file);
-        List<String> available = availabilityService.availableKeys(file, "GalaxyMapOpen", BindingSlotType.PRIMARY);
-
-        assertTrue(occupied.contains("Key_L"));
-        assertFalse(available.contains("Key_L"));
-    }
-
-    @Test
-    void joystickHotasMouseAssignmentsDoNotOccupyKeyboardKeys() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <JoystickAction>
-                        <Primary Device="044F0404" Key="Key_L" />
-                        <Secondary Device="Mouse" Key="Key_M" />
-                    </JoystickAction>
-                </Root>
-                """);
-
-        Set<String> occupied = availabilityService.occupiedKeyboardKeys(file);
-        List<String> available = availabilityService.availableKeys(file);
-
-        assertFalse(occupied.contains("Key_L"));
-        assertFalse(occupied.contains("Key_M"));
-        assertTrue(available.contains("Key_L"));
-        assertTrue(available.contains("Key_M"));
-    }
-
-    @Test
-    void noDeviceBlankAndKeyPlaceholderDoNotOccupyKeys() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <EmptyAction>
-                        <Primary Device="{NoDevice}" Key="Key_L" />
-                        <Secondary Device="Keyboard" Key="" />
-                    </EmptyAction>
-                    <PlaceholderAction>
-                        <Primary Device="Keyboard" Key="Key_" />
-                        <Secondary Device="Keyboard" Key="{NoDevice}" />
-                    </PlaceholderAction>
-                </Root>
-                """);
-
-        Set<String> occupied = availabilityService.occupiedKeyboardKeys(file);
-
-        assertFalse(occupied.contains("Key_L"));
-        assertFalse(occupied.contains("Key_"));
-        assertFalse(occupied.contains("{NoDevice}"));
+    /** Whether the chord is used by another binding, as the edits hold the file - its bytes. */
+    private boolean occupied(Path file, String bindingId, String key, List<BindingModifier> modifiers) throws Exception {
+        return availabilityService.isKeyOccupiedByOtherSlot(Files.readAllBytes(file), bindingId, key, modifiers);
     }
 
     @Test
@@ -101,11 +47,10 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_L"));
 
         assertEquals(BindingSaveResult.KEY_OCCUPIED, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -127,18 +72,14 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        List<String> available = availabilityService.availableKeys(
-                file,
-                "GalaxyMapOpen",
-                BindingSlotType.PRIMARY,
-                new BindingModifier("Keyboard", "Key_LeftControl")
-        );
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+        boolean taken = occupied(file, "GalaxyMapOpen", "Key_J",
+                List.of(new BindingModifier("Keyboard", "Key_LeftControl")));
+        BindingSaveResult result = assignKeyboardKeyWithModifier(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J"),
                 new BindingModifier("Keyboard", "Key_LeftControl")
         );
 
-        assertTrue(available.contains("Key_J"));
+        assertFalse(taken);
         assertEquals(BindingSaveResult.SAVED, result);
     }
 
@@ -158,70 +99,25 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        List<String> available = availabilityService.availableKeys(
-                file,
-                "GalaxyMapOpen",
-                BindingSlotType.PRIMARY,
-                new BindingModifier("Keyboard", "Key_LeftControl")
-        );
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+        boolean taken = occupied(file, "GalaxyMapOpen", "Key_J",
+                List.of(new BindingModifier("Keyboard", "Key_LeftControl")));
+        BindingSaveResult result = assignKeyboardKeyWithModifier(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J"),
                 new BindingModifier("Keyboard", "Key_LeftControl")
         );
 
-        assertFalse(available.contains("Key_J"));
+        assertTrue(taken);
         assertEquals(BindingSaveResult.KEY_OCCUPIED, result);
-    }
-
-    @Test
-    void sameMainKeyConflictsOnlyWhenTheFullModifierSetMatches() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <GalaxyMapOpen>
-                        <Primary Device="{NoDevice}" Key="" />
-                        <Secondary Device="{NoDevice}" Key="" />
-                    </GalaxyMapOpen>
-                    <CtrlShiftAction>
-                        <Primary Device="Keyboard" Key="Key_J">
-                            <Modifier Device="Keyboard" Key="Key_LeftControl" />
-                            <Modifier Device="Keyboard" Key="Key_LeftShift" />
-                        </Primary>
-                    </CtrlShiftAction>
-                </Root>
-                """);
-
-        List<BindingModifier> ctrlShift = List.of(
-                new BindingModifier("Keyboard", "Key_LeftControl"),
-                new BindingModifier("Keyboard", "Key_LeftShift")
-        );
-        List<BindingModifier> ctrlOnly = List.of(new BindingModifier("Keyboard", "Key_LeftControl"));
-
-        // Order within the set must not matter.
-        List<BindingModifier> shiftCtrl = List.of(
-                new BindingModifier("Keyboard", "Key_LeftShift"),
-                new BindingModifier("Keyboard", "Key_LeftControl")
-        );
-
-        assertTrue(availabilityService.isKeyOccupiedByOtherSlot(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J", shiftCtrl));
-        assertFalse(availabilityService.isKeyOccupiedByOtherSlot(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_J", ctrlOnly));
-
-        assertFalse(availabilityService.availableKeys(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, ctrlShift).contains("Key_J"));
-        assertTrue(availabilityService.availableKeys(
-                file, "GalaxyMapOpen", BindingSlotType.PRIMARY, ctrlOnly).contains("Key_J"));
     }
 
     @Test
     void assigningUnknownKeyReturnsUnknownKey() throws Exception {
         Path file = writeBinds(minimalBinds());
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_NotReal"));
 
         assertEquals(BindingSaveResult.UNKNOWN_KEY, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -230,63 +126,20 @@ class BindingsWriterTest {
         // apart (an auto-assigned Shift+Key_9 Hyperspace opened the Friends menu on Shift+Key_1).
         Path file = writeBinds(minimalBinds().replace("<Root>", "<Root>\n    <KeyboardLayout>fr-FR</KeyboardLayout>"));
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_9"));
 
         assertEquals(BindingSaveResult.UNKNOWN_KEY, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
     void anAzertyFileStillTakesAKeyItNames() throws Exception {
         Path file = writeBinds(minimalBinds().replace("<Root>", "<Root>\n    <KeyboardLayout>fr-FR</KeyboardLayout>"));
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_K"));
 
         assertEquals(BindingSaveResult.SAVED, result);
-    }
-
-    @Test
-    void staleTimestampOrSizeReturnsStaleFile() throws Exception {
-        Path file = writeBinds(minimalBinds());
-        KeyboardBindingEdit staleEdit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M");
-        Files.writeString(file, minimalBinds() + "\n<!-- changed by game -->", StandardCharsets.UTF_8);
-
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(staleEdit);
-
-        assertEquals(BindingSaveResult.STALE_FILE, result);
-        assertEquals(0, backups(file).size());
-    }
-
-    @Test
-    void staleSizeMismatchReturnsStaleFile() throws Exception {
-        Path file = writeBinds(minimalBinds());
-        KeyboardBindingEdit edit = new KeyboardBindingEdit(
-                file,
-                "GalaxyMapOpen",
-                BindingSlotType.PRIMARY,
-                "Key_M",
-                Files.getLastModifiedTime(file),
-                Files.size(file) + 1
-        );
-
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(edit);
-
-        assertEquals(BindingSaveResult.STALE_FILE, result);
-        assertEquals(0, backups(file).size());
-    }
-
-    @Test
-    void staleTimestampMismatchReturnsStaleFile() throws Exception {
-        Path file = writeBinds(minimalBinds());
-        KeyboardBindingEdit edit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M");
-        Files.setLastModifiedTime(file, FileTime.fromMillis(edit.expectedLastModified().toMillis() + 5_000));
-
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(edit);
-
-        assertEquals(BindingSaveResult.STALE_FILE, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -307,7 +160,7 @@ class BindingsWriterTest {
                 """;
         Path file = writeBinds(original);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -335,7 +188,7 @@ class BindingsWriterTest {
                 "<Primary Device=\"{NoDevice}\" Key=\"\" />",
                 "<Primary Device=\"Keyboard\" Key=\"Key_M\" />");
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.SAVED, result);
@@ -352,7 +205,7 @@ class BindingsWriterTest {
         System.arraycopy(content, 0, withBom, bom.length, content.length);
         Files.write(file, withBom);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         byte[] updatedPrefix = new byte[3];
@@ -374,13 +227,12 @@ class BindingsWriterTest {
                 """);
         String before = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_M"));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
         assertEquals(before, updated);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -394,7 +246,7 @@ class BindingsWriterTest {
                     <Unrelated value="kept" />
                 </Root>
                 """);
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, null));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -417,7 +269,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, null));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -439,13 +291,12 @@ class BindingsWriterTest {
                 """);
         String before = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.SECONDARY, null));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
         assertEquals(before, updated);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -551,7 +402,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+        BindingSaveResult result = assignKeyboardKeyWithModifier(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_I"),
                 new BindingModifier("Keyboard", "Key_LeftControl"));
 
@@ -578,7 +429,7 @@ class BindingsWriterTest {
                 """;
         Path file = writeBinds(original);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_M"));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -598,7 +449,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifiers(
+        BindingSaveResult result = assignKeyboardKeyWithModifiers(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_I"),
                 List.of(
                         new BindingModifier("Keyboard", "Key_LeftControl"),
@@ -629,7 +480,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -649,7 +500,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifiers(
+        BindingSaveResult result = assignKeyboardKeyWithModifiers(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_I"),
                 List.of(
                         new BindingModifier("Keyboard", "Key_LeftControl"),
@@ -673,12 +524,11 @@ class BindingsWriterTest {
                 """;
         Path file = writeBinds(original);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
         assertEquals(original, Files.readString(file, StandardCharsets.UTF_8));
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -693,38 +543,15 @@ class BindingsWriterTest {
                 """);
         String before = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, null));
 
         assertEquals(BindingSaveResult.NO_CHANGE, result);
         assertEquals(before, Files.readString(file, StandardCharsets.UTF_8));
-        assertEquals(0, backups(file).size());
     }
 
     @Test
-    void staleClearReturnsStaleFileWithoutBackupOrWrite() throws Exception {
-        Path file = writeBinds("""
-                <Root>
-                    <GalaxyMapOpen>
-                        <Primary Device="Keyboard" Key="Key_G" />
-                        <Secondary Device="{NoDevice}" Key="" />
-                    </GalaxyMapOpen>
-                </Root>
-                """);
-        KeyboardBindingEdit staleEdit = edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, null);
-        Files.writeString(file, Files.readString(file, StandardCharsets.UTF_8) + "\n<!-- changed by game -->", StandardCharsets.UTF_8);
-
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(staleEdit);
-
-        String updated = Files.readString(file, StandardCharsets.UTF_8);
-        assertEquals(BindingSaveResult.STALE_FILE, result);
-        assertTrue(updated.contains("<Primary Device=\"Keyboard\" Key=\"Key_G\" />"));
-        assertTrue(updated.contains("changed by game"));
-        assertEquals(0, backups(file).size());
-    }
-
-    @Test
-    void noChangeDoesNotCreateBackupOrWrite() throws Exception {
+    void noChangeLeavesTheFileAsItWas() throws Exception {
         Path file = writeBinds("""
                 <Root>
                     <GalaxyMapOpen>
@@ -735,23 +562,21 @@ class BindingsWriterTest {
                 """);
         String before = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.NO_CHANGE, result);
         assertEquals(before, Files.readString(file, StandardCharsets.UTF_8));
-        assertEquals(0, backups(file).size());
     }
 
     @Test
     void missingBindingReturnsBindingNotFound() throws Exception {
         Path file = writeBinds(minimalBinds());
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "DoesNotExist", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.BINDING_NOT_FOUND, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -769,11 +594,10 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -786,11 +610,10 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.SECONDARY, "Key_M"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -805,11 +628,10 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -823,11 +645,10 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -843,11 +664,10 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "GalaxyMapOpen", BindingSlotType.PRIMARY, "Key_M"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
-        assertEquals(0, backups(file).size());
     }
 
     @Test
@@ -865,7 +685,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "HumanoidSwitchWeapon", BindingSlotType.PRIMARY, "Key_M"));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -890,7 +710,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+        BindingSaveResult result = assignKeyboardKeyWithModifier(
                 edit(file, "OrderHoldFire", BindingSlotType.PRIMARY, "Key_M"),
                 new BindingModifier("Keyboard", "Key_LeftControl"));
 
@@ -918,7 +738,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "OrderHoldFire", BindingSlotType.PRIMARY, "Key_M"));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -940,7 +760,7 @@ class BindingsWriterTest {
                 </Root>
                 """);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "EjectAllCargo", BindingSlotType.SECONDARY, null));
 
         String updated = Files.readString(file, StandardCharsets.UTF_8);
@@ -955,10 +775,10 @@ class BindingsWriterTest {
         Path file = writeBinds(controllerOnlyBinds());
         String original = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult secondary = new BindingsWriter().assignKeyboardKeyWithModifier(
+        BindingSaveResult secondary = assignKeyboardKeyWithModifier(
                 edit(file, "UpThrustButton", BindingSlotType.SECONDARY, "Key_E"),
                 new BindingModifier("Keyboard", "Key_LeftControl"));
-        BindingSaveResult primary = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult primary = assignKeyboardKey(
                 edit(file, "UpThrustButton", BindingSlotType.PRIMARY, "Key_E"));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, secondary);
@@ -972,7 +792,7 @@ class BindingsWriterTest {
         Path file = writeBinds(controllerOnlyBinds());
         String original = Files.readString(file, StandardCharsets.UTF_8);
 
-        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+        BindingSaveResult result = assignKeyboardKey(
                 edit(file, "UpThrustButton", BindingSlotType.SECONDARY, null));
 
         assertEquals(BindingSaveResult.UNSUPPORTED_XML, result);
@@ -992,20 +812,37 @@ class BindingsWriterTest {
                 """;
     }
 
-    private KeyboardBindingEdit edit(
-            Path file,
-            String bindingId,
-            BindingSlotType slotType,
-            String key
-    ) throws IOException {
-        return new KeyboardBindingEdit(
-                file,
-                bindingId,
-                slotType,
-                key,
-                Files.getLastModifiedTime(file),
-                Files.size(file)
-        );
+    /** An edit, and the file standing in for the edits that hold the binds file. */
+    private record OnFile(Path file, KeyboardBindingEdit edit) {
+    }
+
+    private OnFile edit(Path file, String bindingId, BindingSlotType slotType, String key) {
+        return new OnFile(file, new KeyboardBindingEdit(bindingId, slotType, key));
+    }
+
+    private BindingSaveResult assignKeyboardKey(OnFile edit) throws IOException {
+        return kept(edit.file(), new BindingsWriter().assignKeyboardKey(Files.readAllBytes(edit.file()), edit.edit()));
+    }
+
+    private BindingSaveResult assignKeyboardKeyWithModifier(OnFile edit, BindingModifier modifier) throws IOException {
+        return kept(edit.file(), new BindingsWriter().assignKeyboardKeyWithModifier(
+                Files.readAllBytes(edit.file()), edit.edit(), modifier));
+    }
+
+    private BindingSaveResult assignKeyboardKeyWithModifiers(OnFile edit, List<BindingModifier> modifiers)
+            throws IOException {
+        return kept(edit.file(), new BindingsWriter().assignKeyboardKeyWithModifiers(
+                Files.readAllBytes(edit.file()), edit.edit(), modifiers));
+    }
+
+    /** The edit's bytes put back in the file when they changed; otherwise the writer must hand back what it was given. */
+    private static BindingSaveResult kept(Path file, EditedBinds edited) throws IOException {
+        if (edited.changed()) {
+            Files.write(file, edited.content());
+        } else {
+            assertArrayEquals(Files.readAllBytes(file), edited.content(), "an edit not made changes nothing");
+        }
+        return edited.result();
     }
 
     private Path writeBinds(String xml) throws IOException {
@@ -1024,13 +861,4 @@ class BindingsWriterTest {
                 </Root>
                 """;
     }
-
-    private List<Path> backups(Path bindsFile) throws IOException {
-        try (var files = Files.list(bindsFile.getParent())) {
-            return files
-                    .filter(path -> path.getFileName().toString().endsWith(".bak"))
-                    .toList();
-        }
-    }
-
 }

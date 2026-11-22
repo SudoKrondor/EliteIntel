@@ -59,8 +59,21 @@ public final class HudForms {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        // Dim-aware field label: follows its enabled state (section 0.6) so a disabled row's
-        // label greys out together with its field, centrally for every form.
+        JLabel label = makeFieldLabel(text);
+        if (labelWidth > 0) {
+            sizeFieldLabel(label, labelWidth);
+        }
+        panel.add(label, gbc);
+        return label;
+    }
+
+    /**
+     * A dim-aware field label (section 5.1) sized to its text, for a form that places its own columns - a
+     * second field on the same row, say, where {@link #addLabel} and its column 0 cannot go.
+     */
+    public static JLabel makeFieldLabel(String text) {
+        // Follows its enabled state (section 0.6) so a disabled row's label greys out together with its
+        // field, centrally for every form.
         JLabel label = new JLabel(text.toUpperCase()) {
             @Override public void setEnabled(boolean enabled) {
                 super.setEnabled(enabled);
@@ -68,10 +81,6 @@ public final class HudForms {
             }
         };
         AppTheme.styleFieldLabel(label); // shared section 5.1 field-label styling (HUD_COLOR_ROLE_SECONDARY_TEXT, XS caps, locked)
-        if (labelWidth > 0) {
-            sizeFieldLabel(label, labelWidth);
-        }
-        panel.add(label, gbc);
         return label;
     }
 
@@ -81,13 +90,6 @@ public final class HudForms {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         comp.setPreferredSize(new Dimension(0, comp.getPreferredSize().height));
         panel.add(comp, gbc);
-    }
-
-    public static void addCheck(JPanel panel, JCheckBox check, GridBagConstraints gbc) {
-        gbc.gridx = 2;
-        gbc.weightx = 0.2;
-        gbc.fill = GridBagConstraints.NONE;
-        panel.add(check, gbc);
     }
 
     /**

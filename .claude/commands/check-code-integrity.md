@@ -8,6 +8,8 @@ Change set to review: $ARGUMENTS
 Review the code for integrity and compliance with `@CODING_STANDARD.md`. The hard architectural constraints in
 `@CLAUDE.md` take precedence where they overlap.
 
+For PR checks also see `@DEVELOPERS.md`
+
 # 1. Determine the change set and scope
 
 **Base branch (read this first).** This project does NOT use `master` as trunk.

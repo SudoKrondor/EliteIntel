@@ -91,6 +91,10 @@ class RadioReflexTest {
             "PT, liga o rádio, true",
             "PTBZ, desliga o rádio, false",
             "PTBZ, liga o rádio, true",
+            "RU, выключи радио, false",
+            "RU, включи радио, true",
+            "UK, вимкни радіо, false",
+            "UK, увімкни радіо, true",
     })
     void everyLocaleCanSwitchTheRadioWithoutQualifyingIt(Language language, String utterance, String expectedState) {
         SystemSession.getInstance().setLanguage(language);

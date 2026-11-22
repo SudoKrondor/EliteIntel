@@ -58,13 +58,15 @@ public class LoadoutSubscriber {
                     ship.setCommanderName(commanderName);
                 }
                 shipManager.saveShip(ship);
+                // Flying it proves it is the commander's, whatever an earlier sale mark said.
+                shipManager.inFleet(event.getShipId());
                 UiBus.publish(new ShipProfileChangedEvent());
             }
 
             UiBus.publish(new ActiveShipChangedEvent(shipName));
 
             if (Status.getInstance().isOkToAnnounceLoadout()) {
-                EventNarrator.critical(StringUtls.shipIntroduction(playerSession.getPlayerName(), shipName));
+                EventNarrator.critical(StringUtls.shipIntroduction(shipName));
             }
         });
     }

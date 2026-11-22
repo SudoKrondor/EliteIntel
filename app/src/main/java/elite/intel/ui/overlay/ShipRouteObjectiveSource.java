@@ -4,6 +4,7 @@ import elite.intel.db.dao.DestinationReminderDao.Reminder;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.ReminderContact;
+import elite.intel.gameapi.StarKind;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 
 import java.util.ArrayList;
@@ -118,6 +119,7 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
             case VISTA_GENOMICS -> HudText.get("overlay.card.title.vistaGenomics");
             case REFUEL -> HudText.get("overlay.card.title.refuel");
             case OUTFITTING -> HudText.get("overlay.card.title.outfitting");
+            case SHIPYARD -> HudText.get("overlay.card.title.shipyard");
         };
     }
 
@@ -133,7 +135,7 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
             case MATERIAL_TRADER_ENCODED -> Optional.of(HudText.get("overlay.card.value.materialEncoded"));
             case TECHNOLOGY_BROKER_HUMAN -> Optional.of(HudText.get("overlay.card.value.brokerHuman"));
             case TECHNOLOGY_BROKER_GUARDIAN -> Optional.of(HudText.get("overlay.card.value.brokerGuardian"));
-            case INTERSTELLAR_FACTORS, VISTA_GENOMICS, REFUEL, OUTFITTING -> Optional.empty();
+            case INTERSTELLAR_FACTORS, VISTA_GENOMICS, REFUEL, OUTFITTING, SHIPYARD -> Optional.empty();
         };
     }
 
@@ -150,14 +152,24 @@ public class ShipRouteObjectiveSource implements HudObjectiveSource {
 
     /**
      * The next stars along the route, nearest first, each green where it can be scooped and red where it
-     * cannot. The scoopable flag is the one stored when the route was plotted, the same one the voice reads
-     * from, so the card never calls a star a fuel star the commander was told is not one.
+     * cannot, except that a neutron star is blue and a white dwarf white: neither has fuel, but both are a
+     * jet-cone boost rather than a dead end. The scoopable flag is the one stored when the route was plotted,
+     * the same one the voice reads from, so the card never calls a star a fuel star the commander was told is
+     * not one.
      */
     static List<HudRow.State> fuelStops(List<NavRouteDto> legs) {
         return legs.stream()
                 .limit(HudRow.MAX_TRACK)
-                .map(leg -> leg.isScoopable() ? HudRow.State.GOOD : HudRow.State.CRITICAL)
+                .map(ShipRouteObjectiveSource::stop)
                 .toList();
+    }
+
+    private static HudRow.State stop(NavRouteDto leg) {
+        return switch (StarKind.of(leg.getStarClass())) {
+            case NEUTRON -> HudRow.State.BLUE;
+            case WHITE_DWARF -> HudRow.State.WHITE;
+            case WOLF_RAYET, RARE, ORDINARY -> leg.isScoopable() ? HudRow.State.GOOD : HudRow.State.CRITICAL;
+        };
     }
 
     private static String trimToNull(String value) {

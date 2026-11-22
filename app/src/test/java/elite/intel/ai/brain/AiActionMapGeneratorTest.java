@@ -49,7 +49,7 @@ class AiActionMapGeneratorTest {
      * changes.
      * <p>
      * This snapshot previously excluded transfer_power_to_ship_systems, described as "intentionally
-     * absent on EN (translated alias only, no EN bundle key)". That was not intentional: the generator only
+     * absent on EN (RU-only alias, no EN bundle key)". That was not intentional: the generator only
      * emits actions that have aliases in the active language, so the command was unreachable for every
      * English-speaking commander. The English aliases now exist and it belongs in the set.
      */
@@ -119,10 +119,11 @@ class AiActionMapGeneratorTest {
             "fighter_fire_at_will",
             "fighter_hold_fire",
             "fighter_return_to_ship",
-            "find_brain_trees",
+            "find_where_to_collect_raw_material",
             "find_commodity",
             "find_where_to_sell_commodity",
             "find_fuel_station",
+            "find_shipyard_selling_ship",
             "find_mission_commodity",
             "find_construction_site_commodity",
             "navigate_to_construction_site",
@@ -134,6 +135,7 @@ class AiActionMapGeneratorTest {
             "find_guardian_technology_broker",
             "find_bounty_hunting_ground",
             "find_conflict_zone_for_combat_bonds",
+            "find_powerplay_conflict_zone_for_merits",
             "find_pirate_massacre_missions",
             "find_human_technology_broker",
             "find_interstellar_factor",
@@ -181,7 +183,6 @@ class AiActionMapGeneratorTest {
             "query_geo_signals",
             "query_last_scan",
             "query_local_outfitting",
-            "query_local_shipyard",
             "query_markets",
             "query_material_inventory",
             "query_missions_and_rewards",

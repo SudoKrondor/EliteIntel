@@ -47,7 +47,8 @@ final class HuntingGroundSpeech {
 
     /**
      * The whole finding for one provider and its hunting ground: who is issuing, where, against what,
-     * how far, what waits at the far end and which boards to walk.
+     * how far, what waits at the far end and which boards to walk - and, for a set other commanders
+     * reported, that it is their word and not the commander's own flying.
      */
     static String pair(MassacrePair pair) {
         StringBuilder spoken = new StringBuilder(StringUtls.localizedResponse(
@@ -64,6 +65,9 @@ final class HuntingGroundSpeech {
         if (!pair.stations().isEmpty()) {
             spoken.append(" ").append(StringUtls.localizedResponse(
                     "handler.pirate.pairStations", join(pair.stations())));
+        }
+        if (pair.reportedByOthers()) {
+            spoken.append(" ").append(StringUtls.localizedResponse("handler.pirate.pairReportedByOthers"));
         }
         return spoken.toString();
     }

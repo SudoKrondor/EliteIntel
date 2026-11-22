@@ -4,10 +4,22 @@ BindForge owns the game's `.binds` file and the rules about what is in it. The k
 
 | Package | Holds |
 |---|---|
-| `bindforge.io` | Finding, parsing, watching, editing, applying and backing up `.binds` files (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`, `BindingsWorkingCopyRepository`, `BindingsApplyService`, `PlayerBackupService`) and their request/result types. The generic file mechanics they share (atomic replace, timestamped backups) live in `elite.intel.io`, outside BindForge |
+| `bindforge.io` | Finding, parsing, watching and editing `.binds` bytes (`BindingsLoader`, `KeyBindingsParser`, `BindingsMonitor`, `BindingsWriter`) and their request/result types - `BindingsLoader` asks `bindforge.install` for the reachable installations' `ControlSchemes`, so the two packages depend on each other (Storage S13c, 2026-11-08); `SafeXml`, the one hardened XML parser setup every BindForge reader uses (Storage S8R2, 2026-10-31). `FileNames`, the file-name rules - "a file name, not a path", which names are binds and preset files, and whether two names are one file, ignoring case (moved from `bindforge.storage` in Storage S13a, 2026-11-07). Nothing here writes a game file: the edits are held and applied by `bindforge.storage` |
 | `bindforge.model` | The shared vocabulary: modifiers, slot types, the game's control sections and row labels (`BindingDisplayNames`), the assignable key list (`EliteKeyboardKeys`) |
 | `bindforge.rules` | Judging a file: conflict detection and its context rules, reserved chords, key availability, the missing-binding auto-assigner and its safe key pool, and the startup check that speaks the results (`KeyBindCheck`) |
-| `bindforge.devices`, `bindforge.install` | V1.2: device mappings and game installations |
+| `bindforge.devicefiles` | V1.2: reading and making `DeviceMappings.xml` and `.buttonMap` files as bytes - reading (`DeviceMappingsParser`, `ButtonMapReader`, `ButtonMapAudit`), Frontier's shipped list (`FrontierStockDevices`, `FrontierStockButtonMaps`), what the binds files name (`BindsDeviceReferences`), and changing them (`DeviceMappingsMerge`, `ButtonMapWriter`, `ButtonMapLabels`). Also first setup's decision (`FirstSetupPlan`, `FirstSetupReader`, `LabelMerge` - the flow itself is `bindforge.storage.FirstTimeStartup`). Nothing here writes a game file: every write is `bindforge.storage`'s |
+| `bindforge.devices` | V1.2: the user's controllers as BindForge lists them - live hardware from `elite.intel.devices` matched to the entries in those files (`MyDeviceList`, `MyDevice`, `DeviceIdentities`, `BuiltInDeviceList`); naming one (`DeviceNames`, `Onboarding`); the Device Editor's rules (`DeviceEditorInputs`, `DeviceEditorMiddle`, `DeviceEditorLights`); and the missing-controller warning (`MissingControllers`, `MissingControllerWarning`) |
+| `bindforge.storage` | V1.2: back up, edit, apply ([storage.md](../../../../../../../docs/02-features/bindforge/storage.md)) - the one backup system (`Backups`, `Backup`, `BackupSources`, `BackupDestination`, `StartupBackup`), the working copy and the one write path (`WorkingCopy`, `LiveCopies`, `WritePath`, `ConfigurationFiles`, `WriteReport`, `Written`, and `ReadOnlyFlag`, which keeps a protected live file protected), first-time startup (`FirstTimeStartup`, `FirstSetupReading`, `InstallationFiles`, `FirstSetupFiles`), RESTORE (`Restore`, `BackupContents`), the edits not applied and what each Alias Designer action does to them (`Edits`, `DeviceEdits`, `BindsFiles`), what the Bind Editor and the Preset Editor do to them (`BindsEdits`, `PresetEdits`), the controllers' names and labels as the Bind Editor reads them (`EditedDeviceLabels`), and APPLY (`Apply`, refusing first a preset file that names no binds file it can find - `PresetRefusedException` - and leaving alone an installation that differs - `DeviceFilesComparison`), the check of what changed outside BindForge, which also moves what does not belong in the bindings folder to Leftover User Files, a plain binds file judged first (`BindingsCheck`, `Leftovers`, `PlainBinds`; Storage S13b-S13e), and read only while an installation is missing (`ReadOnlyMode`, worked out once a run; `Edits` refuses every change and write while it holds) |
+| `bindforge.install` | V1.2: finding game installations (`InstallationRegistry`, `GameInstallationProvider` and its `forThisPlatform`: `WindowsGameInstallationProvider`, `LinuxGameInstallationProvider`, both reading Steam's index through `SteamLibraries`); the Windows user folder an installation's bindings and journal folders hang off (`GameUserFolder`, also inside a hand-added installation's Wine prefix); and the installation being played - the choices, choosing one, and the service that follows the game to whichever installation it starts in (`PlayedInstallation`, `PlayedInstallationFollower`; [linux-several-installations.md](../../../../../../../docs/02-features/bindforge/linux-several-installations.md)) |
+| `bindforge.preseteditor` | V1.2: the preset file, `StartPreset.4.start` - the BindNames a line of it can hold, read from the binds files in the set APPLY writes and each installation's `ControlSchemes` (`BindNameCatalog`, `BindNameList`, `BindNameEntry`, `BindName`, `BindsFileOrigin`), and the check of what is in a file with a `.binds` name (`BindsContent`, `NotOfferedFile`, `NotOfferedReason`). Editing and writing the preset file is `bindforge.storage`'s (`PresetEdits`, since Storage S6) |
+
+**Three packages with "device" in the name, three different things:**
+
+| Package | Is about |
+|---|---|
+| `elite.intel.devices` | the hardware, live - polling, push-to-talk, the Device Service |
+| `bindforge.devices` | the user's controllers, as the My Devices list shows them |
+| `bindforge.devicefiles` | the device files inside each game installation |
 
 ---
 
@@ -23,10 +35,11 @@ BindingsMonitor (background thread, WatchService)
     ├─ checkForMissingBindingsAndPersist() → DB (KeyBindingManager)
     └─ checkForConflictsAndPersist()       → DB (BindingConflictManager)
 
-UI edit flow (Bindings tab):
-    [BindingsWorkingCopyRepository] → import / track draft
-    [BindingsWriter]                → surgical XML text edit (in-place, atomic)
-    [BindingsApplyService]          → validate XML → backup → atomic write to game dir
+UI edit flow (Bind Editor, since Storage S5):
+    [bindforge.storage.Edits]  → holds the edits not applied (the working copy, changed)
+    [BindsEdits]               → one SAVE, all or none
+    [BindingsWriter]           → surgical XML text edit of the bytes, in memory
+    [bindforge.storage.Apply]  → the one APPLY: check, back up, write the working copy to the game
 ```
 
 ---
@@ -35,17 +48,19 @@ UI edit flow (Bindings tab):
 
 ### File Discovery (`BindingsLoader`)
 
-Reads `StartPreset.*.start` in the game's bindings directory to find the active preset name, then locates
-`<presetName>.<version>.binds`. Falls back to the most recently modified
-`.binds` file if the preset file is absent or the name cannot be resolved.
+Reads `StartPreset.*.start` in the game's bindings directory and takes its lines in order, General first. Each line
+resolves to its preset's true binds file, `<presetName>.<major>.<minor>.binds` in the bindings folder (the highest
+version when a hand rename left two), else to that preset's factory `<presetName>.binds` in the `ControlSchemes` of
+the first reachable installation that holds it. A line resolving to neither passes to the next, and with none left
+nothing is read. A plain `<name>.binds` in the bindings folder never counts, and no file is read because it is the
+newest - that fallback went in Storage S13c (storage.md, *Settled with Storage S13a's sources*, D6).
+`sectionsNotIn` follows the same rule.
 
-That one name is the first non-empty line, which is the right answer for the assistant. `readStartPresetSections`
-reads all four lines (General, Ship, SRV and On Foot) into a `StartPresetSections`, for a caller that needs
-each section's preset, such as a split preset with General on a different file. It reads the file the live game
-uses (`findLiveStartPresetFile`: the highest `StartPreset.N.start`, else `StartPreset.start`), and the
-pre-Odyssey single-line form counts as one preset for all four sections. In a folder holding both generations,
-`findStartPresetFile` (and so the assistant's single name) can still pick the other file, because it takes
-whichever the listing yields first; it is left that way for its V1.1 callers.
+The active preset name (`getActivePresetName`) is the first non-empty line. In a folder holding both
+generations, `findStartPresetFile` (and so that name and the lines above) can pick either, because it takes whichever
+the listing yields first; it is left that way for its V1.1 callers. BindForge reads all four lines (General, Ship, SRV
+and On Foot) as a `StartPresetSections`, from the working copy's highest `StartPreset.N.start`
+(`bindforge.storage.PresetEdits`, Storage S6).
 
 ### `BindingsMonitor` (singleton)
 
@@ -86,49 +101,36 @@ for a HOTAS axis) so the UI can display HOTAS/mouse/gamepad assignments without 
 
 ### Bindings Edit Pipeline
 
-The editor never writes directly to the game's live
-`.binds` file until the user explicitly applies. All edits go through three layers:
+The editor never writes a file (Storage S5). Its changes are edits not applied, held by `bindforge.storage.Edits`
+with every other tab's, and the one APPLY above BindForge's tabs writes them through the write path
+([storage.md](../../../../../../../docs/02-features/bindforge/storage.md) rules 6-7). `bindforge.storage.BindsEdits`
+makes one SAVE all or none; `BindingsWriter` changes the bytes.
 
-**1. `BindingsWorkingCopyRepository`**
-
-Maintains a per-preset working copy in `elite-intel/bindings/`. Tracks a SHA-256 baseline hash (stored in
-`<filename>.elite-intel.base.sha256`) to distinguish three states:
-
-| State | Working hash vs baseline | Game hash vs baseline | Meaning |
-|---|---|---|---|
-| Clean | Equal | Equal | No pending draft |
-| Auto-refresh | Equal | Different | Game changed; WC silently updated to match |
-| Pending draft | Different | Equal | EI has changes not yet applied |
-| Conflict | Different | Different | Both EI and game changed; apply blocked |
-
-`hasUnappliedDraft()` returns true only when the working copy diverges from the baseline.
-`gameFileMatchesBaseline()` must return true before `BindingsApplyService` will proceed.
-
-**2. `BindingsWriter`**
+**`BindingsWriter`**
 
 Surgical regex-based XML text editor - does not use a DOM Transformer so unrelated XML bytes are preserved byte-for-byte.
+Each method takes a binds file's bytes and returns an `EditedBinds`: the result, and the changed bytes. A UTF-8
+byte-order mark is kept.
 
-Write sequence for a single slot assignment:
+Sequence for a single slot assignment:
 
-1. Stale-file guard (mtime + size must match `KeyboardBindingEdit.expectedLastModified/expectedFileSize`).
-2. Locate the action element by tag name in raw XML text.
-3. Locate the slot (`Primary` or `Secondary`) inside the action body.
-4. Inspect the slot: reject if it has unexpected attributes, unexpected child elements, or any non-keyboard / unsupported modifier (
+1. Locate the action element by tag name in raw XML text.
+2. Locate the slot (`Primary` or `Secondary`) inside the action body.
+3. Inspect the slot: reject if it has unexpected attributes, unexpected child elements, or any non-keyboard / unsupported modifier (
    `UNSUPPORTED_XML`). Any number of supported keyboard modifiers is accepted.
-5. Key availability check: reject if the chosen key + full modifier set is already used by another slot in the same file (
+4. Key availability check: reject if the chosen key + full modifier set is already used by another slot in the same file (
    `KEY_OCCUPIED`). Modifier order is not significant - the set is compared.
-6. Second stale-file guard (between read and write).
-7. Atomic write through `elite.intel.io.AtomicFiles` (unique temp file, flushed, renamed over the target, non-atomic fallback).
 
 `assignKeyboardKey()` - plain key, no modifier.
 `assignKeyboardKeyWithModifier()` - key + one supported keyboard modifier (thin wrapper).
 `assignKeyboardKeyWithModifiers()` - key + a chord of one or more supported keyboard modifiers (e.g. Left Ctrl + Left Shift), written as repeated `<Modifier>` nodes. Clearing a slot writes
 `Device="{NoDevice}" Key=""`.
 
-`BindingSaveResult` values: `SAVED`, `NO_CHANGE`, `STALE_FILE`, `UNKNOWN_KEY`,
-`BINDING_NOT_FOUND`, `UNSUPPORTED_XML`, `KEY_OCCUPIED`, `WRITE_FAILED`.
+`BindingSaveResult` values: `SAVED`, `NO_CHANGE`, `UNKNOWN_KEY`, `KEY_OCCUPIED`, `BINDING_NOT_FOUND`,
+`UNSUPPORTED_XML`. Every one but `SAVED` leaves the bytes as they were; a failure of the edits themselves is an
+exception, not a result.
 
-**The user-edit path** - `assignSlot(SlotAssignment)` and `assignAxis(AxisAssignment)` - is for an edit the user
+**The user-edit path** - `assignSlot(byte[], SlotAssignment)` and `assignAxis(byte[], AxisAssignment)` - is for an edit the user
 made on purpose in the bindings editor, and nothing automatic calls it. It may write any device: a button slot
 takes a key, mouse button or wheel direction, or a controller's button, hat or axis direction, with up to three
 modifiers on any device and the slot's Hold flag; an axis takes a controller's whole axis (`Joy_XAxis`-`Joy_VAxis`)
@@ -141,32 +143,11 @@ controller's name in another case. Hold is written as the `<Hold Value="1" />` c
 slot already carries it as an attribute. `ToggleOn` is never touched, and `KeyBindingsParser` is not widened:
 writing a controller binding never makes one executable.
 
-**The device rewrite** - `rewriteDeviceReferences(List<Path>, DeviceReferenceRewrite, Path)` - moves every
-`Device="..."` naming one device to a new name across several `.binds` files (the game's, drafts, saved copies),
-all or nothing: every file read first (a file named twice, under any spelling, counts once; one whose text cannot be
-rewritten whole stops it as `UNSUPPORTED_XML`), each changed file backed up, re-read before its write, and put back
-if a later one fails or was saved meanwhile - unless the game saved it again after the rewrite, which is left as the
-game wrote it (`DeviceRewriteResult.notRestored`). `DeviceReferenceRewrite` builds the three cases:
+**The device rewrite** - `rewriteDeviceReferences(String, DeviceReferenceRewrite)` - moves every `Device="..."`
+naming one device to a new name in one binds file's text, and returns a `RewrittenXml`. It is pure; `bindforge.storage.BindsFiles`
+runs it over every binds file in the set. `DeviceReferenceRewrite` builds the three cases:
 `hardwareIdToName` (VID then PID, the order the game writes; a caller that found the reverse uses the constructor), `rename`, and `nameToHardwareId` (VID then PID, upper case). Matching
-ignores case. The text-only form, `rewriteDeviceReferences(String, DeviceReferenceRewrite)`, is pure and returns a
-`RewrittenXml`. Files are written in the order given, and the game's file goes last: writing it makes the monitor's reload refresh a working copy that holds no draft, which a later working copy would read as changed. Rewriting a working copy with its game file moves both off the baseline, so the caller then calls
-`BindingsWorkingCopyRepository.recordGameFileBaseline` for that preset; without it the next apply refuses the draft.
-
-**3. `BindingsApplyService`**
-
-Pushes the approved working copy to the game directory:
-
-1. Read working copy bytes.
-2. Round-trip XML validation (strips BOM before parse).
-3. Conflict check: reject if game file changed since the draft was created.
-4. Backup current game file to `elite-intel/bindings/backups/` via `elite.intel.io.TimestampedBackups`.
-5. Atomic write to game directory (`AtomicFiles`).
-6. `workingCopyRepo.markApplied()` updates the baseline hash to the newly written content.
-
-`applyFrom(source, gameFile)` pushes a file that is not the working copy - BindForge's saved copy, on a revert -
-through steps 1, 2, 4 and 5, leaving the working copy and its baseline alone. A game file already identical to the
-source is not rewritten. A draft kept across it needs its baseline moved the same way, with
-`recordGameFileBaseline`.
+ignores case.
 
 ### Conflict & Missing Binding Detection
 
@@ -195,7 +176,7 @@ Classifies a binding ID into a
 **`KeyBindCheck.check()`
 ** - triggers missing/conflict detection and publishes the voice announcements. Missing bindings are announced as a count pointing at the Bindings tab (the names go to the log at INFO, for the support bundle); ordinary conflicts are announced as counts; a
 **blocking** conflict instead names the chords in collision (via
-`BindingChordSpeech`), because the commander has to know which keys to move, and Frontier's W/A/S/D default is not necessarily theirs.
+`BindingChordSpeech`), because the commander has to know which keys to move, and Frontier's W/A/S/D default is not necessarily theirs. It also warns on every start when a section of the game's controls is on another preset than the one file read (`BindingsLoader.sectionsNotIn`), because the checks then cannot see that section's keys.
 
 **`EliteKeyboardKeys`
 ** - static allow-list of keyboard token strings the MVP editor can assign. Kept static so the UI dropdown can show keys that are not yet in the active file.
@@ -209,9 +190,7 @@ Classifies a binding ID into a
 | `KeyBindingsParser` | Parses `.binds` XML → executable and read-only binding models |
 | `BindingsLoader` | Finds the active `.binds` file via `StartPreset.*.start` |
 | `BindingsMonitor` | Watches for `.binds` changes; holds the live bindings map |
-| `BindingsWorkingCopyRepository` | Per-preset draft management with SHA-256 baseline tracking |
-| `BindingsWriter` | Surgical text-based XML slot editor; atomic write |
-| `BindingsApplyService` | Validate → backup → atomic apply to game directory |
+| `BindingsWriter` | Surgical text-based XML slot editor, on bytes in memory |
 | `BindingConflictRules` | Safe-overlap logic and curated dangerous-pair descriptions |
 | `BindingChordSpeech` | Renders a chord as speakable words ("Left Control plus W") for the spoken warnings |
 | `BindingGroupClassifier` | Classifies binding IDs into display groups |

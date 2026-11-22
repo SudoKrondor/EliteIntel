@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The client language decides which engine voices radio transmissions and in what language, so the two ways
@@ -27,16 +28,10 @@ class GameLanguageTest {
                 + " \"language\":\"" + language + "\", \"Odyssey\":true, \"gameversion\":\"4.4.0.3\", \"build\":\"r330683/r0 \" }";
     }
 
-    /**
-     * Russian is a client language but not one of ours: it has no {@link Language}, and is still named, because
-     * its radio chatter needs the engine that reads Cyrillic.
-     */
     @Test
     void aRussianClientIsReadOffTheNewestJournal(@TempDir Path dir) throws IOException {
         writeJournal(dir, "Journal.2026-07-25T054956.01.log", RUSSIAN_HEADER);
-        GameLanguage language = new GameLanguage(() -> dir);
-        assertTrue(language.isRussian());
-        assertTrue(language.language().isEmpty(), "Russian is not an app language");
+        assertEquals(Optional.of(Language.RU), new GameLanguage(() -> dir).language());
     }
 
     @Test
@@ -47,10 +42,10 @@ class GameLanguageTest {
 
     /**
      * Frontier ships the client in six languages, spelled {@code <Name>/<REGION>} in the header; the name is
-     * what identifies it, and the only Portuguese client is the Brazilian one. Every one but Russian is ours.
+     * what identifies it, and the only Portuguese client is the Brazilian one.
      */
     @Test
-    void everyClientLanguageFrontierShipsButRussianMapsToOneOfOurs(@TempDir Path dir) {
+    void everyClientLanguageFrontierShipsMapsToOneOfOurs(@TempDir Path dir) {
         GameLanguage language = new GameLanguage(() -> dir);
         language.onGameSessionStarted("English/UK");
         assertEquals(Optional.of(Language.EN), language.language());
@@ -62,10 +57,8 @@ class GameLanguageTest {
         assertEquals(Optional.of(Language.ES), language.language());
         language.onGameSessionStarted("Portuguese/BR");
         assertEquals(Optional.of(Language.PTBZ), language.language());
-        assertFalse(language.isRussian());
         language.onGameSessionStarted("Russian/RU");
-        assertTrue(language.language().isEmpty());
-        assertTrue(language.isRussian());
+        assertEquals(Optional.of(Language.RU), language.language());
     }
 
     /**
@@ -77,14 +70,11 @@ class GameLanguageTest {
         GameLanguage language = new GameLanguage(() -> dir);
         assertTrue(language.language().isEmpty());
 
-        assertFalse(language.isRussian());
-
         language.onGameSessionStarted("Russian/RU");
-        assertTrue(language.isRussian());
+        assertEquals(Optional.of(Language.RU), language.language());
 
         language.onGameSessionStarted("English/UK");
-        assertFalse(language.isRussian(), "relaunching in English must move the radio back");
-        assertEquals(Optional.of(Language.EN), language.language());
+        assertEquals(Optional.of(Language.EN), language.language(), "relaunching in English must move the radio back");
     }
 
     /**
@@ -102,7 +92,6 @@ class GameLanguageTest {
         GameLanguage language = new GameLanguage(() -> dir);
         language.onGameSessionStarted("Klingon/QO");
         assertTrue(language.language().isEmpty(), "a client language this app does not ship");
-        assertFalse(language.isRussian());
     }
 
     /**
@@ -116,7 +105,7 @@ class GameLanguageTest {
         Files.setLastModifiedTime(older, java.nio.file.attribute.FileTime.fromMillis(1_000_000));
         Files.setLastModifiedTime(newer, java.nio.file.attribute.FileTime.fromMillis(2_000_000));
 
-        assertTrue(new GameLanguage(() -> dir).isRussian());
+        assertEquals(Optional.of(Language.RU), new GameLanguage(() -> dir).language());
     }
 
     private static Path writeJournal(Path dir, String name, String header) throws IOException {

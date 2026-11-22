@@ -6,7 +6,6 @@ import elite.intel.ai.mouth.RadioVoicing;
 import elite.intel.ai.mouth.TtsProvider;
 import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
@@ -16,11 +15,14 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.gameapi.carrier.OurCarriers;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.JournalImportDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
@@ -30,7 +32,10 @@ import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
+import elite.intel.util.AppPaths;
 import elite.intel.util.StringUtls;
+import elite.intel.ui.screen.colorthemes.ColorThemesTabPanel;
+import org.apache.logging.log4j.LogManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -39,6 +44,8 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,6 +72,7 @@ public class CommanderTabPanel extends JPanel {
     private static final int COL_VOICE = 2;
     private static final int COL_PERSONALITY = 3;
     private static final int COL_GEAR = 4;
+    private static final int COMMANDER_NAME_COLUMNS = 24;
 
     /**
      * i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor.
@@ -80,7 +88,7 @@ public class CommanderTabPanel extends JPanel {
 
     /**
      * Maps a stored voice enum name to a readable label, resolved against the active TTS provider's voices.
-     * Google/Kokoro show "DisplayName - accent · quality": the accent disambiguates voices that share a display
+     * Google shows "DisplayName - accent · quality": the accent disambiguates voices that share a display
      * name (e.g. Spanish vs Portuguese "Dora"), and the quality tier (HD vs Standard) shows what the selected
      * language actually delivers.
      * Falls back to the raw name when the stored voice is not valid for the active provider (for example after
@@ -91,7 +99,7 @@ public class CommanderTabPanel extends JPanel {
         try {
             TtsProvider provider = SystemSession.getInstance().getTtsProvider();
             if (provider.isLocal()) {
-                return localVoiceLabel(provider, enumName);
+                return localVoiceLabel(enumName);
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
             String base = v.getDisplayName() + " - " + googleVoiceDescriptor(v);
@@ -119,8 +127,8 @@ public class CommanderTabPanel extends JPanel {
      * Recomputes each Google voice's quality tier (HD vs Standard) for the current language off the EDT, since
      * resolving a voice may query the TTS provider (a listVoices round-trip on first use), then repaints the
      * fleet grid so the labels show the tier. Shown only for a non-English cloud voice once the TTS engine has
-     * wired its voice lookup: English is uniformly HD (no tier needed), the local (Kokoro) engine already has
-     * accurate accent labels, and before the lookup is wired resolution is optimistic (so no tier is shown).
+     * wired its voice lookup: English is uniformly HD (no tier needed), the local engine's labels carry no
+     * tier, and before the lookup is wired resolution is optimistic (so no tier is shown).
      */
     private void refreshVoiceQualityLabels() {
         voiceQualityLabels.clear();
@@ -150,9 +158,13 @@ public class CommanderTabPanel extends JPanel {
 
     private JTextField playerAltNameField;
     private JCheckBox addressMeBox;
+    private JTextField journalDirField;
     private ToggleTreePanel shipSettingsPanel;
+    /** Global Ship Settings' FSD toggle, kept so a declined warning can untick its box. */
+    private SettingToggle fsdToggle;
     private ToggleTreePanel announcementsPanel;
     private ExoMasteryTabPanel exoMasteryPanel;
+    private MassacreSetsTabPanel massacreSetsPanel;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /**
@@ -204,10 +216,14 @@ public class CommanderTabPanel extends JPanel {
         JPanel profile = profileSection.body();
         GridBagConstraints gbc = baseGbc();
 
-        addLabel(profile, getText("player.commanderName"), gbc);
+        addLabel(profile, getText("player.commanderName"), gbc, 0);
         playerAltNameField = makeTextField();
         playerAltNameField.setToolTipText(getText("player.commanderName.tooltip"));
-        addField(profile, playerAltNameField, gbc, 1, 1.0);
+        // Wide enough for a name and no wider: the journal folder on this row is the one that needs the room.
+        playerAltNameField.setColumns(COMMANDER_NAME_COLUMNS);
+        playerAltNameField.setMinimumSize(playerAltNameField.getPreferredSize());
+        gbc.gridx = 1;
+        profile.add(playerAltNameField, gbc);
         playerAltNameField.addActionListener(e -> saveCommanderName());
         playerAltNameField.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusLost(java.awt.event.FocusEvent e) { saveCommanderName(); }
@@ -218,7 +234,31 @@ public class CommanderTabPanel extends JPanel {
         addressMeBox = toggle("player.addressMe",
                 playerSession.isAddressMeOn(), playerSession::setAddressMeOn);
         addressMeBox.setToolTipText(getText("player.addressMe.tooltip"));
-        addCheck(profile, addressMeBox, gbc);
+        gbc.gridx = 2;
+        profile.add(addressMeBox, gbc);
+
+        gbc.gridx = 3;
+        profile.add(makeFieldLabel(getText("player.journalDirectory")), gbc);
+
+        journalDirField = makeTextField();
+        journalDirField.setEditable(false);
+        addField(profile, journalDirField, gbc, 4, 1.0);
+
+        JButton selectJournalDirButton = makeFieldButton(HudGlyphs.verticalEllipsisIcon(HUD_FIELD_HEIGHT), HUD_FIELD_HEIGHT);
+        selectJournalDirButton.setToolTipText(getText("button.select"));
+        selectJournalDirButton.addActionListener(e -> chooseJournalDir());
+        // Compact square picker - fixed size, do not stretch like a field.
+        gbc.gridx = 5;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        profile.add(selectJournalDirButton, gbc);
+
+        // On the commander's own row: what an import teaches - their contracts, discoveries, samples - is theirs.
+        JButton importJournalsButton = AppTheme.makeButtonSubtle(getText("player.importJournals"));
+        importJournalsButton.setToolTipText(getText("player.importJournals.tooltip"));
+        importJournalsButton.addActionListener(e -> JournalImportDialog.open(this));
+        gbc.gridx = 6;
+        profile.add(importJournalsButton, gbc);
 
         fleetTableModel = new FleetTableModel(playerSession);
         // Carrier rows share the grid but not its editors: their voices come from the radio engine's roster,
@@ -273,8 +313,11 @@ public class CommanderTabPanel extends JPanel {
         tabs.addTab(getText("player.tab.announcements"), HudScrollingPage.scrollPane(buildAnnouncementsPanel()));
         exoMasteryPanel = new ExoMasteryTabPanel();
         tabs.addTab(getText("player.tab.exoMastery"), HudScrollingPage.scrollPane(exoMasteryPanel));
+        massacreSetsPanel = new MassacreSetsTabPanel();
+        tabs.addTab(getText("player.tab.massacreSets"), HudScrollingPage.scrollPane(massacreSetsPanel));
         // Like the fleet grid, a table that grows with the window: no scrolling page around it.
         tabs.addTab(getText("player.tab.bookmarks"), new LocationBookmarksTabPanel());
+        colorThemesTab().ifPresent(tab -> tabs.addTab(getText("player.tab.colorThemes"), tab));
 
         JPanel tabsHolder = transparentPanel(new BorderLayout());
         tabsHolder.setBorder(new EmptyBorder(HUD_GAP, 0, 0, 0));
@@ -302,6 +345,7 @@ public class CommanderTabPanel extends JPanel {
      */
     private ToggleTreePanel buildShipSettingsPanel() {
         GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
+        fsdToggle = SettingToggle.of("automation.useFsdToggle", mgr::getUseFsdToggle, this::writeFsdToggle);
         shipSettingsPanel = new ToggleTreePanel(List.of(
                 SettingToggle.of("automation.autoSpeedUpForFtl", mgr::getAutoSpeedUpForFtl, mgr::setAutoSpeedUpForFtl),
                 SettingToggle.of("automation.autoLightsOffForFtl", mgr::getAutoLightsForFtl, mgr::setAutoLightsForFtl),
@@ -311,8 +355,25 @@ public class CommanderTabPanel extends JPanel {
                 SettingToggle.of("automation.autoCargoScoopRetractForFtl", mgr::getAutoCargoScoopRetractForFtl, mgr::setAutoCargoScoopRetractForFtl),
                 SettingToggle.of("automation.autoGearUpOnTakeOff", mgr::getAutoGearUpOnTakeOff, mgr::setAutoGearUpOnTakeOff),
                 SettingToggle.of("automation.autoLightsOffForSrvDeployment", mgr::getAutoLightsOffForSrvDeployment, mgr::setAutoLightsOffForSrvDeployment),
-                SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump)));
+                SettingToggle.of("automation.autoPlotNextNeutronJump", mgr::getAutoPlotNextNeutronJump, mgr::setAutoPlotNextNeutronJump),
+                fsdToggle));
         return shipSettingsPanel;
+    }
+
+    /**
+     * Turns the FSD toggle on only once the commander has read what it does: with it on the game, not the app, decides
+     * whether "supercruise" or "jump" ends in supercruise or hyperspace, which catches out anyone who has not met the
+     * game's Toggle Frame Shift Drive. Turning it off needs no warning. Declined, the box goes back to off.
+     */
+    private void writeFsdToggle(boolean on) {
+        GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
+        if (on && !HudConfirmDialog.confirm(this, getText("automation.useFsdToggle.warning.title"),
+                getText("automation.useFsdToggle.warning.message"),
+                getText("automation.useFsdToggle.warning.confirm"), getText("button.cancel"))) {
+            shipSettingsPanel.checkBox(fsdToggle).setSelected(false);
+            return;
+        }
+        mgr.setUseFsdToggle(on);
     }
 
     /**
@@ -344,7 +405,11 @@ public class CommanderTabPanel extends JPanel {
                 SettingToggle.of("announcements.navigation",
                         playerSession::isNavigationAnnouncementOn, playerSession::setNavigationAnnouncementOn),
                 SettingToggle.of("announcements.radioTransmissions",
-                        playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn),
+                        playerSession::isRadioTransmissionOn, playerSession::setRadioTransmissionOn,
+                        SettingToggle.of("announcements.aiRespondsToPirateScan",
+                                mgr::getAiRespondsToPirateScan, mgr::setAiRespondsToPirateScan)),
+                SettingToggle.of("announcements.aiBountyKillGloat",
+                        mgr::getAiBountyKillGloat, mgr::setAiBountyKillGloat),
                 SettingToggle.of("announcements.route",
                         playerSession::isRouteAnnouncementOn, playerSession::setRouteAnnouncementOn,
                         SettingToggle.of("automation.announceJumpRoute", mgr::getAnnounceJumpRoute, mgr::setAnnounceJumpRoute),
@@ -360,11 +425,13 @@ public class CommanderTabPanel extends JPanel {
         playerAltNameField.setText(
                 playerSession.getAlternativeName() != null ? playerSession.getAlternativeName() : "");
         addressMeBox.setSelected(playerSession.isAddressMeOn());
+        showJournalDir();
 
         // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
         shipSettingsPanel.refresh();
         announcementsPanel.refresh();
         exoMasteryPanel.initData();
+        massacreSetsPanel.initData();
 
         String commanderName = playerSession.getInGameName();
         List<ShipDao.Ship> ships = (commanderName != null && !commanderName.isBlank())
@@ -388,7 +455,8 @@ public class CommanderTabPanel extends JPanel {
         // Voice options depend on current TTS provider; rebuild editor on every call. Every voice the active
         // engine has is offered, male and female alike - the picked voice also decides how VEGA
         // speaks of itself (see SystemSession.getVoiceGender()).
-        String[] voiceOptions = SystemSession.getInstance().getTtsProvider().voiceRoster().toArray(String[]::new);
+        TtsProvider provider = SystemSession.getInstance().getTtsProvider();
+        String[] voiceOptions = byGenderThenName(provider, provider.voiceRoster()).toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -414,22 +482,18 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * A local engine's voice as "DisplayName - description"; both local casts label themselves the same way.
+     * A Supertonic voice as a label: "DisplayName - gender", with the gender in the app language. Every voice
+     * speaks every language, so an accent would mislead.
      */
-    private static String localVoiceLabel(TtsProvider provider, String enumName) {
-        if (provider == TtsProvider.SUPERTONIC) {
-            SupertonicVoices v = SupertonicVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + v.getDescription();
-        }
-        KokoroVoices v = KokoroVoices.valueOf(enumName);
-        return v.getDisplayName() + " - " + v.getDescription();
+    private static String localVoiceLabel(String enumName) {
+        SupertonicVoices v = SupertonicVoices.valueOf(enumName);
+        return v.getDisplayName() + " - " + getText(v.isMale() ? "player.fleet.voice.male" : "player.fleet.voice.female");
     }
 
     /**
      * The voices a carrier's traffic control can be given: the radio engine's roster, not the main mouth's.
-     * A transmission is voiced by whichever engine {@code RadioVoicing} names for the game client's language
-     * - Kokoro almost everywhere, Supertonic for a Russian client - so a Google voice picked here would name
-     * a speaker the engine that has to say the line has never heard of.
+     * A transmission is voiced by the engine {@code RadioVoicing} names - Supertonic - so a Google voice
+     * picked here would name a speaker the engine that has to say the line has never heard of.
      */
     private static String[] radioVoiceOptions() {
         return Stream.concat(Stream.of(RANDOM_VOICE), radioVoiceRoster()).toArray(String[]::new);
@@ -439,7 +503,24 @@ public class CommanderTabPanel extends JPanel {
      * Every voice the engine that speaks radio may transmit in, by enum name - its ship-only voices left out.
      */
     private static Stream<String> radioVoiceRoster() {
-        return RadioVoicing.engine().radioVoiceRoster();
+        TtsProvider engine = RadioVoicing.engine();
+        return byGenderThenName(engine, engine.radioVoiceRoster());
+    }
+
+    /**
+     * A roster in the order a voice dropdown lists it: female voices, then male, each alphabetical by the name
+     * the commander reads. The engines declare their voices in no order a person can scan.
+     */
+    private static Stream<String> byGenderThenName(TtsProvider engine, Stream<String> roster) {
+        return roster.sorted(Comparator.comparing(engine::voiceGender)
+                .thenComparing(voice -> voiceDisplayName(engine, voice), String.CASE_INSENSITIVE_ORDER));
+    }
+
+    private static String voiceDisplayName(TtsProvider engine, String voice) {
+        return switch (engine) {
+            case SUPERTONIC -> SupertonicVoices.valueOf(voice).getDisplayName();
+            case GOOGLE -> GoogleVoices.valueOf(voice).getDisplayName();
+        };
     }
 
     /**
@@ -448,9 +529,9 @@ public class CommanderTabPanel extends JPanel {
      * than the active provider's.
      * <p>
      * No voice stored means the commander never picked one, which is shown as {@code RANDOM_VOICE} and draws a
-     * stranger per transmission. A voice the radio engine no longer carries is a different thing: the Kokoro
-     * cast is curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a
-     * name that is no longer offered. That is shown as the engine's default, because that is what
+     * stranger per transmission. A voice the radio engine no longer carries is a different thing: a cast is
+     * curated by hand and a voice that breaks immersion is removed from it, so a carrier can hold a name that
+     * is no longer offered. That is shown as the engine's default, because that is what
      * {@code SherpaOnnxTTS.resolveVoiceName} will actually speak it in - the grid must not promise a voice the
      * channel will not use.
      * <p>
@@ -475,7 +556,7 @@ public class CommanderTabPanel extends JPanel {
     private String radioVoiceLabel(String enumName) {
         if (enumName == null || enumName.isEmpty()) return getText("player.fleet.voice.random");
         try {
-            return localVoiceLabel(RadioVoicing.engine(), enumName);
+            return localVoiceLabel(enumName);
         } catch (IllegalArgumentException e) {
             return enumName;
         }
@@ -501,6 +582,38 @@ public class CommanderTabPanel extends JPanel {
         UiBus.publish(new AppLogEvent("Commander name saved"));
     }
 
+    /**
+     * The field shares its row with the rest of the profile and is read-only, so a long path can be clipped with
+     * no way to scroll it: the tooltip carries the whole of it.
+     */
+    private void showJournalDir() {
+        String path = playerSession.getJournalPath().toString();
+        journalDirField.setText(path);
+        journalDirField.setToolTipText(path + " - " + getText("player.journalDirectory.tooltip"));
+    }
+
+    private void chooseJournalDir() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setDialogTitle(getText("player.journalDirectory.dialog"));
+        String current = playerSession.getJournalPath().toString();
+        if (!current.isBlank()) chooser.setCurrentDirectory(new File(current).getParentFile());
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            String path = chooser.getSelectedFile().getAbsolutePath();
+            // A quoted path pasted into the chooser's file-name box comes back appended to the folder on
+            // show, quotes and all. Storing that made every later read throw and the window stop opening,
+            // so a choice that cannot be used is refused here rather than saved.
+            if (!playerSession.setJournalPath(path)) {
+                UiBus.publish(new AppLogEvent(getText("player.journalDirectory.unusable")));
+                DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.JOURNAL);
+                return;
+            }
+            showJournalDir();
+            UiBus.publish(new AppLogEvent("Journal directory updated"));
+            DataDirectoryValidator.validateAndWarn(playerSession.getJournalPath(), DataDirectoryValidator.DirectoryKind.JOURNAL);
+        }
+    }
+
     // -------------------------------------------------------------------------
 
     /**
@@ -521,7 +634,7 @@ public class CommanderTabPanel extends JPanel {
         /**
          * Stores the picked voice and returns the line to audition it with.
          */
-        String applyVoice(String voiceName, String commanderName);
+        String applyVoice(String voiceName);
 
         default boolean isCarrier() {
             return false;
@@ -549,11 +662,11 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override
-        public String applyVoice(String voiceName, String commanderName) {
+        public String applyVoice(String voiceName) {
             ship.setVoice(voiceName);
             ShipManager.getInstance().saveShip(ship);
             String speakerName = trimToNull(name());
-            return StringUtls.shipIntroduction(commanderName, speakerName == null ? voiceName : speakerName);
+            return StringUtls.shipIntroduction(speakerName == null ? voiceName : speakerName);
         }
     }
 
@@ -585,12 +698,12 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override
-        public String applyVoice(String voiceName, String commanderName) {
+        public String applyVoice(String voiceName) {
             boolean random = RANDOM_VOICE.equals(voiceName);
             carrier.update(data -> data.setVoice(random ? null : voiceName));
             return random
                     ? null
-                    : StringUtls.carrierTrafficControl(commanderName, carrier.data().getCarrierName());
+                    : StringUtls.carrierTrafficControl(carrier.data().getCarrierName());
         }
 
         @Override
@@ -663,7 +776,7 @@ public class CommanderTabPanel extends JPanel {
             switch (col) {
                 case COL_VOICE -> {
                     String voiceName = (String) value;
-                    String audition = fleetRow.applyVoice(voiceName, playerSession.getConfiguredPlayerName());
+                    String audition = fleetRow.applyVoice(voiceName);
                     // A carrier is auditioned over the radio, because that is the only way it is ever heard.
                     if (audition != null) {
                         GameEventBus.publish(new AiVoxDemoEvent(audition, voiceName, fleetRow.isCarrier()));
@@ -750,7 +863,7 @@ public class CommanderTabPanel extends JPanel {
         final JPanel panel = new JPanel(new BorderLayout());
         final JButton gear = new JButton();
         private final ImageIcon gearBase =
-                HudGlyphs.scaledIcon(CommanderTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
+                HudGlyphs.scaledIcon(CommanderTabPanel.class, "/images/setting.png", HUD_ICON_TABLE);
         private ImageIcon gearOrange;
         private ImageIcon gearDark;
 
@@ -776,7 +889,7 @@ public class CommanderTabPanel extends JPanel {
 
         /** Applies the cell appearance for the current selection state and returns the ready panel. */
         JPanel apply(boolean isSelected) {
-            panel.setBackground(isSelected ? HUD_COLOR_ROLE_PRIMARY_ACTION : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            panel.setBackground(isSelected ? HUD_COLOR_ROLE_ACCENT_FILL : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             panel.setOpaque(true);
             gear.setIcon(gearIcon(isSelected));
             return panel;
@@ -831,6 +944,19 @@ public class CommanderTabPanel extends JPanel {
             // Defer the click so editCellAt completes before the popup opens and editing stops.
             SwingUtilities.invokeLater(cell.gear::doClick);
             return panel;
+        }
+    }
+
+    /**
+     * The Color Themes tab, or none when the themes folder cannot be made: the rest of the Commander screen must not
+     * depend on it.
+     */
+    private static Optional<JComponent> colorThemesTab() {
+        try {
+            return Optional.of(new ColorThemesTabPanel(AppPaths.getThemesDir()));
+        } catch (IOException e) {
+            LogManager.getLogger(CommanderTabPanel.class).error("Could not open the colour themes folder", e);
+            return Optional.empty();
         }
     }
 }

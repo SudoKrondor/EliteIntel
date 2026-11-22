@@ -1,5 +1,6 @@
 package elite.intel.ui.support;
 
+import elite.intel.util.NvidiaSmi;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import oshi.SystemInfo;
@@ -10,14 +11,12 @@ import oshi.hardware.HardwareAbstractionLayer;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * The machine the app is running on, for the support bundle manifest.
@@ -44,7 +43,6 @@ final class HardwareReport {
 
     private static final long MIB = 1024L * 1024L;
     private static final long GIB = 1024L * MIB;
-    private static final Duration NVIDIA_SMI_TIMEOUT = Duration.ofSeconds(5);
 
     private HardwareReport() {
     }
@@ -162,62 +160,20 @@ final class HardwareReport {
      * fit and is spilling to system RAM, the second is somewhere else entirely. The figure is a snapshot
      * taken while the game, the LLM and the speech engines are all resident, which is the moment asked about.
      * <p>
-     * Bounded: a wedged driver can hang the tool, and this is a courtesy line in a bundle, so it gets a few
-     * seconds and is then killed. Whatever the tool prints is passed through as-is, one line per card.
-     * <p>
-     * The output goes to a temporary file rather than a pipe. WHY: the tool is waited on before its output
-     * is read, and a pipe holds only a few kilobytes before the writer blocks - a tool that printed more
-     * than that would never exit, and the timeout would call a healthy driver hung. A file has no such
-     * ceiling, so the query can grow without anyone having to remember this.
+     * Bounded and run through {@link NvidiaSmi}, which kills a wedged driver's tool after a few seconds: this is a
+     * courtesy line in a bundle. Whatever the tool prints is passed through as-is, one line per card.
      */
     private static String nvidiaSmi() {
-        Path output;
-        try {
-            output = Files.createTempFile("nvidia-smi", ".txt");
-        } catch (IOException e) {
-            return "GPU (nvidia-smi): could not be read (" + e + ")";
-        }
-        try {
-            return nvidiaSmi(output);
-        } finally {
-            try {
-                Files.deleteIfExists(output);
-            } catch (IOException e) {
-                log.debug("Could not delete {}", output, e);
-            }
-        }
-    }
-
-    private static String nvidiaSmi(Path output) {
-        Process process;
-        try {
-            process = new ProcessBuilder("nvidia-smi", "--query-gpu=name,memory.total,memory.used", "--format=csv,noheader")
-                    .redirectErrorStream(true)
-                    .redirectOutput(output.toFile())
-                    .start();
-        } catch (IOException notInstalled) {
-            return "";
-        }
-        try {
-            if (!process.waitFor(NVIDIA_SMI_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
-                process.destroyForcibly();
-                return "GPU (nvidia-smi): no answer within " + NVIDIA_SMI_TIMEOUT.toSeconds() + "s";
-            }
-            String printed = Files.readString(output, StandardCharsets.UTF_8);
-            if (process.exitValue() != 0 || printed.isBlank()) return "";
-            StringBuilder text = new StringBuilder();
-            for (String line : printed.strip().split("\\R")) {
-                if (!text.isEmpty()) text.append('\n');
-                text.append("GPU (nvidia-smi): ").append(line.strip());
-            }
-            return text.toString();
-        } catch (IOException e) {
-            return "GPU (nvidia-smi): could not be read (" + e + ")";
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            process.destroyForcibly();
-            return "";
-        }
+        return switch (NvidiaSmi.query("--query-gpu=name,memory.total,memory.used", "--format=csv,noheader")) {
+            case NvidiaSmi.Answer.Lines(List<String> lines) -> lines.stream()
+                    .map(line -> "GPU (nvidia-smi): " + line)
+                    .collect(Collectors.joining("\n"));
+            case NvidiaSmi.Answer.Nothing() -> "";
+            case NvidiaSmi.Answer.NoAnswer() ->
+                    "GPU (nvidia-smi): no answer within " + NvidiaSmi.TIMEOUT.toSeconds() + "s";
+            case NvidiaSmi.Answer.Unreadable(IOException cause) ->
+                    "GPU (nvidia-smi): could not be read (" + cause + ")";
+        };
     }
 
     private static String disk(Path volume) {
@@ -225,7 +181,7 @@ final class HardwareReport {
         try {
             FileStore store = Files.getFileStore(volume);
             return "Disk " + volume + ": " + gib(store.getUsableSpace()) + " free of " + gib(store.getTotalSpace());
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             return "Disk " + volume + ": could not be queried (" + e + ")";
         }
     }

@@ -11,6 +11,7 @@ import elite.intel.ui.widget.StatusBadge;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.function.Consumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -26,23 +27,37 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT;
  * binding to clear, keeps the dialog open; once nothing keyboard-bound remains, the dialog closes.
  * The actual XML edit and file reload live in the caller's {@link SlotClearer}; this dialog only
  * drives the choice and reflects the result.
+ * <p>
+ * The caller answers later, on the EDT: a clear is a change to the edits not applied, which runs off the EDT
+ * (Storage S5). Both buttons stay dimmed until it does.
  */
 public class ClearKeyboardBindingDialog extends JDialog {
 
     /**
-     * Clears one slot's keyboard binding and reports the row's state after the attempt.
+     * Clears one slot's keyboard binding and reports the row's state after the attempt, by calling {@code done} on
+     * the EDT once - whether or not the clear worked.
      */
     public interface SlotClearer {
-        ClearOutcome clearSlot(BindingSlotType slotType);
+        void clearSlot(BindingSlotType slotType, Consumer<ClearOutcome> done);
+    }
+
+    /** What became of a clear (Storage S6R, 2026-10-29). */
+    public enum Cleared {
+        /** The slot was cleared, or already held nothing. */
+        CLEARED,
+        /** The writer refused it; the dialog says so. */
+        REFUSED,
+        /** It failed, and the caller has already told the user - the dialog says nothing more. */
+        ALREADY_REPORTED
     }
 
     /**
-     * Whether the clear succeeded, plus the row's slots as they stand after the attempt.
+     * What became of the clear, plus the row's slots as they stand after the attempt.
      */
-    public record ClearOutcome(boolean success, KeyBindingsParser.ReadOnlyBindingSlots slots) {
+    public record ClearOutcome(Cleared cleared, KeyBindingsParser.ReadOnlyBindingSlots slots) {
     }
 
-    private final BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
+    private final BindingSlotDisplayFormatter slotFormatter;
     private final String bindingId;
     private final SlotClearer clearer;
 
@@ -55,12 +70,15 @@ public class ClearKeyboardBindingDialog extends JDialog {
             Component parent,
             String bindingId,
             KeyBindingsParser.ReadOnlyBindingSlots slots,
+            BindingSlotDisplayFormatter slotFormatter,
             SlotClearer clearer
     ) {
         super(SwingUtilities.getWindowAncestor(parent),
                 getText("bindings.clear.dialogTitle"), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
         this.bindingId = bindingId;
+        // WHY the caller's: it read the names and labels off the EDT, with the file (Storage S5).
+        this.slotFormatter = slotFormatter;
         this.clearer = clearer;
         this.clearPrimaryButton = makeButton(getText("bindings.clear.primary"));
         this.clearSecondaryButton = makeButton(getText("bindings.clear.secondary"));
@@ -131,13 +149,15 @@ public class ClearKeyboardBindingDialog extends JDialog {
     }
 
     private void onClear(BindingSlotType slotType) {
-        ClearOutcome outcome = clearer.clearSlot(slotType);
-        if (!outcome.success()) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("bindings.clear.failed"),
-                    getText("bindings.clear.dialogTitle"),
-                    JOptionPane.ERROR_MESSAGE);
+        clearPrimaryButton.setEnabled(false);
+        clearSecondaryButton.setEnabled(false);
+        clearer.clearSlot(slotType, this::onCleared);
+    }
+
+    private void onCleared(ClearOutcome outcome) {
+        if (outcome.cleared() == Cleared.REFUSED) {
+            HudConfirmDialog.info(this, getText("bindings.clear.dialogTitle"),
+                    getText("bindings.clear.failed"), getText("button.close"));
         }
         updateState(outcome.slots());
         if (!clearPrimaryButton.isEnabled() && !clearSecondaryButton.isEnabled()) {

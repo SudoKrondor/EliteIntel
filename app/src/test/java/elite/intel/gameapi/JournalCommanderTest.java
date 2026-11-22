@@ -78,6 +78,20 @@ class JournalCommanderTest {
         assertEquals(List.of(), JournalCommander.newestOwnedBy(dir, "F9999999", 2));
     }
 
+    @Test
+    void theBackfillReadsTheCommandersJournalsFromTheBookmarkOnWithNoCap() throws IOException {
+        journal("Journal.2026-09-17T100000.01.log", commander("F1111111", "Alpha"));
+        Files.writeString(dir.resolve("Journal.2026-09-17T100000.02.log"), HEADER + "\n");
+        journal("Journal.2026-09-18T100000.01.log", commander("F2222222", "Bravo"));
+        journal("Journal.2026-09-19T100000.01.log", commander("F1111111", "Alpha"));
+        List<Path> all = JournalFiles.listOldestFirst(dir);
+
+        assertEquals(List.of(dir.resolve("Journal.2026-09-17T100000.02.log"), dir.resolve("Journal.2026-09-19T100000.01.log")),
+                JournalCommander.ownedBy(all, 1, "F1111111"),
+                "starting on a continuation part still finds its owner in the part before the start");
+        assertEquals(List.of(), JournalCommander.ownedBy(all, 3, "F2222222"));
+    }
+
     private void journal(String name, String commanderLine) throws IOException {
         Files.writeString(dir.resolve(name), HEADER + "\n" + commanderLine + "\n");
     }

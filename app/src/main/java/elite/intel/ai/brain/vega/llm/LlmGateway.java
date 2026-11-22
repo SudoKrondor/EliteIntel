@@ -4,6 +4,7 @@ import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmResult;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 /**
  * The single door to the language models for VEGA. Queues {@code LlmRequest}s (never
@@ -39,6 +40,18 @@ public interface LlmGateway extends AutoCloseable {
      *         the same queued/in-flight behavior as {@link #submit(LlmRequest)}
      */
     CompletableFuture<String> completePlainText(LlmRequest request);
+
+    /**
+     * Whether a {@link #submit} failure is the request's deadline running out - a {@link TimeoutException} anywhere in
+     * its cause chain - rather than a failure of the provider client or the caller. The one test for it, shared by the
+     * gateway that sets the deadline and the thought that reports it.
+     */
+    static boolean isTimeout(Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current instanceof TimeoutException) return true;
+        }
+        return false;
+    }
 
     /**
      * Releases any resources the gateway owns (e.g. an executor). No-op by default.

@@ -15,7 +15,8 @@ import java.util.regex.Pattern;
  * {@code .binds} names a device by its {@code DeviceMappings.xml} element when one matches, and by its VID and PID
  * in hex when none does, so naming, renaming and clearing a device each move its references:
  * {@link #hardwareIdToName}, {@link #rename} and {@link #nameToHardwareId}. Matching ignores case - the comparison
- * that decides whether a device is referenced at all. {@code Keyboard}, {@code Mouse} and {@code {NoDevice}} are
+ * that decides whether a device is referenced at all - except that a reference already spelled exactly as the new
+ * name is left alone, so a case-only change ({@code lvwap} to {@code LVWAP}) rewrites the other spellings only. {@code Keyboard}, {@code Mouse} and {@code {NoDevice}} are
  * the game's own literals and are never rewritten, from or to.
  */
 public record DeviceReferenceRewrite(Set<String> from, String to) {
@@ -32,7 +33,10 @@ public record DeviceReferenceRewrite(Set<String> from, String to) {
             requireDeviceName(name, "from");
         }
         requireDeviceName(to, "to");
-        if (from.stream().anyMatch(to::equalsIgnoreCase)) {
+        // WHY: exact, not ignoring case - a case-only change is a real rewrite. In .binds LVWAP and lvwap are not the
+        // same name, and a file spelling one device two ways is rejected, so every spelling becomes the one chosen
+        // (format section 4.3; Storage S2b, Alan, 2026-10-25).
+        if (from.contains(to)) {
             throw new IllegalArgumentException("A device rewrite cannot rewrite " + to + " to itself");
         }
         from = Set.copyOf(from);
@@ -64,9 +68,12 @@ public record DeviceReferenceRewrite(Set<String> from, String to) {
                 hexHalf(vid, "vid") + hexHalf(pid, "pid"));
     }
 
-    /** True when {@code device} is one of the names this rewrite replaces, ignoring case. */
+    /**
+     * True when {@code device} is one of the names this rewrite replaces, ignoring case - and is not already spelled
+     * exactly as {@link #to()}, which a case-only change leaves as it is and does not count as moved.
+     */
     public boolean matches(String device) {
-        return device != null && from.stream().anyMatch(device::equalsIgnoreCase);
+        return device != null && !device.equals(to) && from.stream().anyMatch(device::equalsIgnoreCase);
     }
 
     private static void requireDeviceName(String name, String role) {

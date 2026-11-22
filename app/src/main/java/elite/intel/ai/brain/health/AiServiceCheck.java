@@ -5,6 +5,7 @@ import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient.ModelListing;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSetupState;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.llm.VegaLlmGatewayFactory;
 import elite.intel.ai.brain.vega.model.llm.LlmMessage;
@@ -94,18 +95,23 @@ public final class AiServiceCheck {
             return new AiServiceVerdict.NotConfigured();
         }
         if (config.local()) {
-            return checkLocal(config.localModel());
+            return checkLocal(config.localModel(), config.localSetupUnfinished());
         }
         return config.cloudProvider()
                 .map(provider -> probe(spokenName(provider), false))
                 .orElseGet(AiServiceVerdict.NoProvider::new);
     }
 
-    private AiServiceVerdict checkLocal(String model) {
+    private AiServiceVerdict checkLocal(String model, boolean setupUnfinished) {
         if (model.isBlank()) {
             // WHY: LM Studio answers an empty model name with whatever it has loaded, so probing now would report
             // a connection to a model the commander never chose.
             return new AiServiceVerdict.NotConfigured();
+        }
+        if (setupUnfinished) {
+            // WHY before any request: mid-setup the model may be loading or reloading, and a test request then
+            // only competes with the load - or gets a reply that says nothing about whether VEGA works.
+            return new AiServiceVerdict.LocalSetupUnfinished();
         }
         ModelListing listing = localModels.get();
         if (listing instanceof ModelListing.NotAnswering) {
@@ -198,9 +204,11 @@ public final class AiServiceCheck {
      * @param local             the command model runs in LM Studio
      * @param localModel        the LM Studio model name, blank when none
      * @param cloudProvider     the chosen cloud provider, empty when none
+     * @param localSetupUnfinished the LM Studio the Address names is being set up, or is the app's own install with
+     *                             its setup unfinished ({@link LmStudioSetupState})
      */
     record Configuration(boolean nothingConfigured, boolean local, String localModel,
-                         Optional<ProviderEnum> cloudProvider) {
+                         Optional<ProviderEnum> cloudProvider, boolean localSetupUnfinished) {
 
         Configuration {
             localModel = localModel == null ? "" : localModel.strip();
@@ -209,8 +217,10 @@ public final class AiServiceCheck {
 
         static Configuration current() {
             SystemSession session = SystemSession.getInstance();
-            return new Configuration(SetupCheck.isLlmUnconfigured(), session.useLocalCommandLlm(),
-                    session.getLmStudioCommandModel(), LlmProviderResolver.cloudProvider());
+            boolean local = session.useLocalCommandLlm();
+            return new Configuration(SetupCheck.isLlmUnconfigured(), local, session.getLmStudioCommandModel(),
+                    LlmProviderResolver.cloudProvider(),
+                    local && LmStudioSetupState.isUnfinished(session.getLmStudioAddress()));
         }
     }
 }

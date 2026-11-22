@@ -1,5 +1,6 @@
 package elite.intel.ai.ears;
 
+import elite.intel.ai.brain.VegaIdentity;
 import elite.intel.ai.brain.i18n.AiActionAliasProvider;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import org.jspecify.annotations.Nullable;
@@ -11,7 +12,7 @@ import java.util.*;
  * <p>
  * Two shapes get past a closed Sleep/Wake gate, and nothing else does:
  * <ul>
- *   <li>a <b>pure wake phrase</b> — "wake up", "écoute" — passed through whole, so the model routes it to
+ *   <li>a <b>pure wake phrase</b> — "wake up", "слушай" — passed through whole, so the model routes it to
  *       WAKEUP and the gate reopens;</li>
  *   <li>a <b>listen-prefixed order</b> — "listen, open the galaxy map" — passed through with the prefix
  *       removed, because that is an order to open the map, not an order to listen.</li>
@@ -19,6 +20,9 @@ import java.util.*;
  * The prefix must be at the start and must be followed by real content. That is what stops "do not listen,
  * open the map" from talking its way past a gate the commander deliberately closed: the phrase contains a
  * listen word, but it does not begin with one.
+ * <p>
+ * VEGA's own name is a listen prefix in every language - "Vega, open the galaxy map" - because a name is not
+ * translated. It is a prefix only: a bare "Vega" is not a wake phrase, since nothing routes it to WAKEUP.
  * <p>
  * Longest prefix first, so "listen up open galaxy map" is not first reduced by the shorter "listen" and left
  * with a stray "up".
@@ -36,7 +40,7 @@ public final class WakeBypass {
     }
 
     public WakeBypass(AiActionAliasProvider provider) {
-        this(provider.wakeBypassPhrases(), provider.listenBypassPrefixes());
+        this(provider.wakeBypassPhrases(), withVegaName(provider.listenBypassPrefixes()));
     }
 
     /**
@@ -44,7 +48,13 @@ public final class WakeBypass {
      */
     public static WakeBypass forCurrentLanguage() {
         return new WakeBypass(AiActionLocalizations.wakeBypassPhrases(),
-                AiActionLocalizations.listenBypassPrefixes());
+                withVegaName(AiActionLocalizations.listenBypassPrefixes()));
+    }
+
+    private static Set<String> withVegaName(Collection<String> languagePrefixes) {
+        Set<String> prefixes = new LinkedHashSet<>(languagePrefixes);
+        prefixes.add(VegaIdentity.name());
+        return prefixes;
     }
 
     /**

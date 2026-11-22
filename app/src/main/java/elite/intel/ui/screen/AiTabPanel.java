@@ -2,37 +2,38 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
-import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSupport;
 import elite.intel.ai.brain.vega.diag.VegaMemoryDump;
-import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.ears.MicDiagnosticsReport;
+import elite.intel.bindforge.storage.BackupDestination;
+import elite.intel.bindforge.storage.BindForgeSupport;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
+import elite.intel.ui.dialog.BugReportDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.overlay.HudOverlayPresence;
 import elite.intel.ui.overlay.HudOverlaySettingsDialog;
 import elite.intel.ui.support.AiSetupReport;
 import elite.intel.ui.support.SupportBundle;
+import elite.intel.ui.support.SupportReportUpload;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
 import elite.intel.util.AppPaths;
+import elite.intel.util.OsDetector;
 import elite.intel.util.SleepNoThrow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -72,6 +73,8 @@ public class AiTabPanel extends JPanel {
     private HudUpdateButton updateAppButton;
     private HudCommanderBlock commanderBlock;
     private final AtomicBoolean isServiceRunning = new AtomicBoolean(false);
+    // EDT only.
+    private boolean audioCalibrationRunning = false;
 
     private HudLogArea chatPanel;
     private HudLogArea systemPanel;
@@ -82,7 +85,6 @@ public class AiTabPanel extends JPanel {
     private HudStatusReadout ttsBadge;
     private HudStatusReadout bindingsBadge;
     private HudStatusReadout commandsBadge;
-    private HudStatusReadout keymapBadge;
     /**
      * Whether the push-to-talk gate is armed, so the STT badge can say what opens the microphone.
      */
@@ -163,11 +165,16 @@ public class AiTabPanel extends JPanel {
         hudOverlaySettingsButton = makeButtonSubtle(getText("ai.hudOverlay.settings"));
         hudOverlaySettingsButton.setToolTipText(getText("ai.hudOverlay.settings.tooltip"));
         hudOverlaySettingsButton.addActionListener(e ->
-                SwingUtilities.invokeLater(() -> new HudOverlaySettingsDialog(hudOverlay.overlay()).setVisible(true)));
+                SwingUtilities.invokeLater(() -> HudOverlaySettingsDialog.open(AiTabPanel.this, hudOverlay.overlay())));
 
         recalibrateAudioButton = makeButtonSubtle(getText("button.calibrateAudio"));
         recalibrateAudioButton.setEnabled(false);
-        recalibrateAudioButton.addActionListener(e -> UiBus.publish(new RecalibrateAudioEvent()));
+        recalibrateAudioButton.addActionListener(e -> {
+            // Disabled here, on the click itself, so a second click cannot get in before the run reports back.
+            audioCalibrationRunning = true;
+            recalibrateAudioButton.setEnabled(false);
+            UiBus.publish(new RecalibrateAudioEvent());
+        });
 
         audioDevicesButton = makeButtonSubtle(getText("button.audioDevices"));
         audioDevicesButton.addActionListener(e ->
@@ -189,7 +196,7 @@ public class AiTabPanel extends JPanel {
         copyLogButton.setEnabled(false);
         systemPanel.addPropertyChangeListener(HudLogArea.SELECTION_PROPERTY,
                 event -> copyLogButton.setEnabled(systemPanel.hasSelectedText()));
-        systemSection.setHeaderActions(copyLogButton, buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
+        systemSection.setHeaderActions(copyLogButton, buildReportBugButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 chatSection,
@@ -313,60 +320,81 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Builds the SYSTEM LOG header action: a save-glyph button that writes the diagnostics bundle to a zip.
+     * Builds the SYSTEM LOG header action: a bug-glyph button that files a bug report with the diagnostics bundle.
      */
-    private HudGlyphButton buildSaveLogButton() {
-        return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
+    private HudGlyphButton buildReportBugButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudBugGlyph,
                 HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.save.tooltip"), this::saveSupportBundle,
+                getText("ai.section.systemMessages.report.tooltip"), this::reportBug,
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /**
-     * Builds the SYSTEM LOG header action: a memory-glyph button that dumps VEGA's memory to a JSON file.
+     * Asks what went wrong, then sends the report with its diagnostics bundle to the team, or saves the bundle to a
+     * file when the commander would rather post it themselves.
      */
-    private HudGlyphButton buildDumpMemoryButton() {
-        return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
-                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.dump.tooltip"), this::dumpVegaMemory,
-                HudPalette.HUD_ICON_HEADER_ACTION);
+    private void reportBug() {
+        switch (BugReportDialog.show(this)) {
+            case BugReportDialog.Choice.Send send -> sendBugReport(send.description(), send.email());
+            case BugReportDialog.Choice.SaveToFile ignored -> saveSupportBundle();
+            case BugReportDialog.Choice.Cancelled ignored -> {
+            }
+        }
     }
 
     /**
-     * Writes a full JSON snapshot of VEGA's session memory to a user-chosen {@code .json} file. Runs on
-     * the EDT (button click). When VEGA subsystem is not running its memory is unreachable, so the button
-     * reports that as a SYSTEM LOG line instead of failing; every outcome (dumped file, not running, or write
-     * error) is reported the same way, keeping feedback inside the HUD instead of a native popup.
+     * Builds the diagnostics bundle in the temp folder and uploads it with the commander's words. Both run off the
+     * EDT, for the reason {@link #saveSupportBundle()} gives, and every outcome is a SYSTEM LOG line.
      */
-    private void dumpVegaMemory() {
-        MemoryGateway memory;
-        try {
-            memory = VegaRuntime.memory();
-        } catch (IllegalStateException notRunning) {
-            // WHY: only the not-installed case degrades to "nothing to dump" here (VegaRuntime getters throw
-            // when the subsystem is stopped). Snapshot and serialization run outside this guard so any real failure
-            // there surfaces as a write error rather than being mislabelled "not running".
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.empty")));
-            return;
+    private void sendBugReport(String description, String email) {
+        SupportBundle.Sources sources = bundleSources();
+        String version = sources.appVersion();
+        String os = OsDetector.getOs().getOs();
+        UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.report.sending")));
+        Thread.ofVirtual().name("bug-report").start(() -> {
+            Path bundle = Path.of(System.getProperty("java.io.tmpdir"), defaultBundleFileName());
+            try {
+                SupportBundle.writeTo(bundle, sources);
+                SupportReportUpload.Report report = new SupportReportUpload.Report(description, email, os, version, bundle);
+                reportUploadOutcome(new SupportReportUpload().send(report), bundle);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                reportUploadFailure(bundle, e.toString());
+            } catch (IOException | RuntimeException e) {
+                // WHY: the broad catch is this thread's boundary, as in writeBundle: anything escaping it dies in
+                // silence, and the commander would never learn that the report did not go.
+                log.warn("Bug report failed: {}", bundle, e);
+                reportUploadFailure(bundle, String.valueOf(e.getMessage()));
+            }
+        });
+    }
+
+    /**
+     * Says how the upload went. A sent report's bundle is deleted; any other outcome keeps it and names where it is,
+     * so the commander can still post it by hand.
+     */
+    private static void reportUploadOutcome(SupportReportUpload.Outcome outcome, Path bundle) throws IOException {
+        switch (outcome) {
+            case SupportReportUpload.Outcome.Sent sent -> {
+                Files.deleteIfExists(bundle);
+                UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.report.sent", sent.reportId())));
+            }
+            case SupportReportUpload.Outcome.TooLarge ignored -> UiBus.publish(new AppLogEvent(
+                    getText("ai.section.systemMessages.report.tooLarge", bundle.toString())));
+            case SupportReportUpload.Outcome.RateLimited ignored -> UiBus.publish(new AppLogEvent(
+                    getText("ai.section.systemMessages.report.rateLimited", bundle.toString())));
+            case SupportReportUpload.Outcome.Refused refused -> {
+                log.warn("Bug report refused by the relay: HTTP {} {}", refused.status(), refused.error());
+                reportUploadFailure(bundle, "HTTP " + refused.status() + " " + refused.error());
+            }
         }
-        String content = VegaMemoryDump.toJson(memory.snapshot());
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle(getText("ai.section.systemMessages.dump.title"));
-        chooser.setSelectedFile(new File(defaultMemoryDumpFileName()));
-        chooser.setFileFilter(new FileNameExtensionFilter("JSON (*.json)", "json"));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-        File file = chooser.getSelectedFile();
-        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".json")) {
-            file = new File(file.getAbsolutePath() + ".json");
-        }
-        try {
-            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.success", file.getName())));
-        } catch (IOException e) {
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.error", String.valueOf(e.getMessage()))));
-        }
+    }
+
+    private static void reportUploadFailure(Path bundle, String reason) {
+        String message = Files.exists(bundle)
+                ? getText("ai.section.systemMessages.report.failedKept", reason.strip(), bundle.toString())
+                : getText("ai.section.systemMessages.report.failed", reason.strip());
+        UiBus.publish(new AppLogEvent(message));
     }
 
     /**
@@ -389,9 +417,16 @@ public class AiTabPanel extends JPanel {
             chosen = new File(chosen.getAbsolutePath() + ".zip");
         }
         File target = chosen;
+        SupportBundle.Sources sources = bundleSources();
+        Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
+    }
 
-        // Read the transcript on the EDT: it is Swing state, and the worker must not touch it.
-        SupportBundle.Sources sources = new SupportBundle.Sources(
+    /**
+     * What goes into a diagnostics bundle. Call it on the EDT: it reads the SYSTEM LOG transcript, which is Swing
+     * state the bundle worker must not touch.
+     */
+    private SupportBundle.Sources bundleSources() {
+        return new SupportBundle.Sources(
                 SystemSession.getInstance().readVersionFromResources(),
                 systemPanel.exportText(),
                 APP_LOG_FILE,
@@ -402,9 +437,11 @@ public class AiTabPanel extends JPanel {
                 MicDiagnosticsReport::render,
                 customCommandsFile(),
                 AiSetupReport::render,
-                bindingsBackupDir());
-
-        Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
+                bindingsBackupDir(),
+                BindForgeSupport::collect,
+                LmStudioSupport::render,
+                // Taken by the bundle worker, so the memory is what VEGA held when the bundle was written.
+                VegaMemoryDump::render);
     }
 
     /**
@@ -424,12 +461,12 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Where the copies of the game's bindings taken before each apply are kept, or null if that cannot be worked
-     * out - on the same reasoning as {@link #customCommandsFile()}.
+     * BindForge's backup folder, whose before-changes backups hold the game's bindings as they were before each
+     * write, or null if that cannot be worked out - on the same reasoning as {@link #customCommandsFile()}.
      */
     private static Path bindingsBackupDir() {
         try {
-            return AppPaths.getBindingsBackupDir();
+            return BackupDestination.stored().resolve();
         } catch (IOException | RuntimeException e) {
             log.warn("Diagnostics bundle: could not resolve the bindings backup folder", e);
             return null;
@@ -469,12 +506,6 @@ public class AiTabPanel extends JPanel {
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
     }
 
-    /** Timestamped default file name, e.g. {@code vega_memory_dump_20260704_132155.json}. */
-    private static String defaultMemoryDumpFileName() {
-        return "vega_memory_dump_"
-                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
-    }
-
     public void initData(boolean sleepingModeOn, ServicesStateEvent.State serviceState) {
         this.sleeping = sleepingModeOn;
         sleepWakeButton.setText(sleepWakeText());
@@ -507,6 +538,14 @@ public class AiTabPanel extends JPanel {
     }
 
     @Subscribe
+    public void onAudioCalibrationFinished(AudioCalibrationFinishedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            audioCalibrationRunning = false;
+            recalibrateAudioButton.setEnabled(isServiceRunning.get());
+        });
+    }
+
+    @Subscribe
     public void onStatsChanged(LlmSessionStatsChangedEvent event) {
         SwingUtilities.invokeLater(() -> refreshSummary(event.snapshot()));
     }
@@ -521,7 +560,7 @@ public class AiTabPanel extends JPanel {
         isServiceRunning.set(running);
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(!transitioning);
-        recalibrateAudioButton.setEnabled(running);
+        recalibrateAudioButton.setEnabled(running && !audioCalibrationRunning);
         // Sleep/Wake gates the hands-free microphone. Under push-to-talk the mapped button already does that,
         // so there is nothing left for it to gate and it is offered as disabled rather than as a lie.
         sleepWakeButton.setEnabled(running && !pttModeActive);
@@ -641,7 +680,6 @@ public class AiTabPanel extends JPanel {
         bindingsBadge = new HudStatusReadout(getText("hud.bindings"), "—", StatusBadge.State.STANDBY);
         commandsBadge = new HudStatusReadout(getText("hud.commands"),
                 getText("hud.commands.summary", initCmdCount), StatusBadge.State.INFO);
-        keymapBadge   = new HudStatusReadout(getText("hud.keymap"), "—", StatusBadge.State.STANDBY);
 
         JPanel panel = transparentPanel(null);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -654,8 +692,6 @@ public class AiTabPanel extends JPanel {
         panel.add(bindingsBadge);
         panel.add(Box.createRigidArea(new Dimension(0, 3)));
         panel.add(commandsBadge);
-        panel.add(Box.createRigidArea(new Dimension(0, 3)));
-        panel.add(keymapBadge);
         return panel;
     }
 
@@ -742,15 +778,6 @@ public class AiTabPanel extends JPanel {
                 commandsBadge.setValue(getText("hud.commands.summary", event.count()), StatusBadge.State.INFO));
     }
 
-    @Subscribe
-    public void onKeymapSyncStateChanged(KeymapSyncStateChangedEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            StatusBadge.State state = event.inSync() ? StatusBadge.State.OK : StatusBadge.State.STANDBY;
-            String text = event.inSync() ? getText("hud.keymap.inSync") : getText("hud.keymap.modified");
-            keymapBadge.setValue(text, state);
-        });
-    }
-
     private String sleepWakeText() {
         // sleeping -> offer to wake up; listening -> offer to sleep
         return getText(sleeping ? "ai.action.wake" : "ai.action.sleep");
@@ -782,35 +809,11 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Loads a telemetry PNG via ImageIO into a decoded BufferedImage, then scales
-     * to {@link HudTelemetryBlock#ICON_SIZE} with high-quality Graphics2D hints if the
-     * source size differs. Returns {@code null} on failure so the block falls back to
-     * its diamond marker. Result is constructed once and cached by the caller.
+     * Loads a telemetry PNG reduced to {@link HudTelemetryBlock#ICON_SIZE}, or {@code null} when it is missing so
+     * the block falls back to its diamond marker.
      */
     private static ImageIcon tryLoadIcon(String resource) {
-        try {
-            var url = AiTabPanel.class.getResource(resource);
-            if (url == null) return null;
-            BufferedImage src = ImageIO.read(url);
-            if (src == null) return null;
-            int target = HudTelemetryBlock.ICON_SIZE;
-            if (src.getWidth() == target && src.getHeight() == target) {
-                return new ImageIcon(src);
-            }
-            // High-quality one-time scale; not needed for current 32x32 PNGs but kept as a safety net.
-            BufferedImage scaled = new BufferedImage(target, target, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = scaled.createGraphics();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                g2.setRenderingHint(RenderingHints.KEY_RENDERING,     RenderingHints.VALUE_RENDER_QUALITY);
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,  RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.drawImage(src, 0, 0, target, target, null);
-            } finally {
-                g2.dispose();
-            }
-            return new ImageIcon(scaled);
-        } catch (Exception e) {
-            return null;
-        }
+        if (AiTabPanel.class.getResource(resource) == null) return null;
+        return HudGlyphs.scaledIcon(AiTabPanel.class, resource, HudTelemetryBlock.ICON_SIZE);
     }
 }

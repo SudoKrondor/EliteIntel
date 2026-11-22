@@ -20,7 +20,7 @@ class AppControllerServicesTest {
     @Test
     void audioServicesAreAlwaysRegistered() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
-            Set<ServiceType> types = AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet();
+            Set<ServiceType> types = AppController.buildServices(mainMouth, TtsProvider.SUPERTONIC).keySet();
             assertTrue(types.contains(ServiceType.MOUTH), "MOUTH (TTS) must be registered, mouth=" + mainMouth);
             assertTrue(types.contains(ServiceType.EARS), "EARS (STT) must be registered, mouth=" + mainMouth);
         }
@@ -28,24 +28,31 @@ class AppControllerServicesTest {
 
     @Test
     void radioMouthOnlyRegisteredWhenTheMainMouthIsNotTheRadioEngine() {
-        // Cloud main mouth, Latin-script language: radio is voiced by a dedicated always-on Kokoro engine.
-        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
-                .containsKey(ServiceType.RADIO_MOUTH));
-        // Kokoro main mouth, Russian client: Kokoro cannot pronounce Cyrillic, so Supertonic runs alongside for radio.
-        assertTrue(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.SUPERTONIC)
+        // Cloud main mouth: radio is voiced by a dedicated always-on Supertonic engine.
+        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.RADIO_MOUTH));
         // The main mouth IS the radio engine: it voices radio through its own queue, no extra engine. A second
         // holder would hand the same singleton the RADIO role and silence all narration.
-        assertFalse(AppController.buildServices(TtsProvider.KOKORO, TtsProvider.KOKORO)
-                .containsKey(ServiceType.RADIO_MOUTH));
         assertFalse(AppController.buildServices(TtsProvider.SUPERTONIC, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.RADIO_MOUTH));
     }
 
     @Test
     void vegaSubsystemIsRegistered() {
-        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO)
+        assertTrue(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC)
                 .containsKey(ServiceType.VEGA));
+    }
+
+    /**
+     * The app's own LM Studio must be answering before the brain starts, so its connection check finds it, and it
+     * must go after the brain on the way down (docs/LM_STUDIO_INSTALL_ASSISTANCE.md, "Starting and stopping").
+     */
+    @Test
+    void theAppsOwnLmStudioComesUpBeforeVega() {
+        List<ServiceType> order =
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC).keySet());
+        assertTrue(order.indexOf(ServiceType.LOCAL_LLM_HOST) >= 0);
+        assertEquals(order.indexOf(ServiceType.VEGA) - 1, order.indexOf(ServiceType.LOCAL_LLM_HOST));
     }
 
     /**
@@ -57,7 +64,7 @@ class AppControllerServicesTest {
     void pushToTalkComesUpAfterTheDevicesAndTheMicrophone() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
             List<ServiceType> order =
-                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
+                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.SUPERTONIC).keySet());
             assertTrue(order.contains(ServiceType.PUSH_TO_TALK),
                     "the controller button must work without opening settings, mouth=" + mainMouth);
             assertTrue(order.indexOf(ServiceType.DEVICE) < order.indexOf(ServiceType.PUSH_TO_TALK));
@@ -65,10 +72,31 @@ class AppControllerServicesTest {
         }
     }
 
+    /** Storage S2b (Alan, 2026-10-25): nothing writes a .buttonMap at startup any more - APPLY does, from S4. */
+    @Test
+    void noServiceWritesButtonMapsAtStartup() {
+        List<String> names = AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC).keySet().stream()
+                .map(Enum::name).toList();
+        assertFalse(names.contains("BUTTON_MAP_STARTUP"));
+    }
+
+    /**
+     * BindForge does not watch the device files, nor announce an installation that missed a write: the check runs at
+     * three moments instead, and APPLY leaves an installation that differs for it (Storage S4a; overview.md,
+     * <em>External change detection</em>).
+     */
+    @Test
+    void noServiceWatchesTheDeviceFilesOrAnnouncesAMissedWrite() {
+        List<String> names = AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC).keySet().stream()
+                .map(Enum::name).toList();
+        assertFalse(names.contains("DEVICE_FILES_MONITOR"));
+        assertFalse(names.contains("CATCH_UP_ANNOUNCEMENT"));
+    }
+
     @Test
     void audioComesUpBeforeVegaAndJournal() {
         List<ServiceType> order =
-                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.KOKORO).keySet());
+                List.copyOf(AppController.buildServices(TtsProvider.GOOGLE, TtsProvider.SUPERTONIC).keySet());
         // c5651efb intent: start Mouth and Ears before the journal/aux monitors and the LLM subsystem.
         assertTrue(order.indexOf(ServiceType.MOUTH) < order.indexOf(ServiceType.JOURNAL_PARSER));
         assertTrue(order.indexOf(ServiceType.EARS) < order.indexOf(ServiceType.JOURNAL_PARSER));
@@ -79,7 +107,7 @@ class AppControllerServicesTest {
     void liveGameFileMonitorsStartAfterVegaAndEventConsumers() {
         for (TtsProvider mainMouth : TtsProvider.values()) {
             List<ServiceType> order =
-                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.KOKORO).keySet());
+                    List.copyOf(AppController.buildServices(mainMouth, TtsProvider.SUPERTONIC).keySet());
             assertTrue(order.indexOf(ServiceType.VEGA) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.WEB_SOCKET) < order.indexOf(ServiceType.JOURNAL_PARSER));
             assertTrue(order.indexOf(ServiceType.MISSING_MISSION_MONITOR) < order.indexOf(ServiceType.JOURNAL_PARSER));
@@ -87,6 +115,31 @@ class AppControllerServicesTest {
                     List.of(ServiceType.JOURNAL_PARSER, ServiceType.AUXILIARY_FILES_MONITOR),
                     order.subList(order.size() - 2, order.size()));
         }
+    }
+
+    /**
+     * The brain restart asks this to decide whether the app's own LM Studio must be started or stopped, and a creator
+     * that declines - no LM Studio of the app's own - leaves nothing running.
+     */
+    @Test
+    void serviceHolderSaysWhetherAServiceIsRunning() {
+        AppController.ServiceHolder declined = new AppController.ServiceHolder(() -> null);
+        declined.start();
+        assertFalse(declined.isStarted());
+
+        AppController.ServiceHolder holder = new AppController.ServiceHolder(() -> new ManagedService() {
+            @Override
+            public void start() {
+            }
+
+            @Override
+            public void stop() {
+            }
+        });
+        holder.start();
+        assertTrue(holder.isStarted());
+        holder.stop();
+        assertFalse(holder.isStarted());
     }
 
     @Test

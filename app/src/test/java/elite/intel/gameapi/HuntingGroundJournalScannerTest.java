@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,6 +34,9 @@ class HuntingGroundJournalScannerTest {
     private static final String HAZARDOUS = "$MULTIPLAYER_SCENARIO79_TITLE;";
     private static final String HIGH = "$MULTIPLAYER_SCENARIO78_TITLE;";
     private static final String LOW = "$MULTIPLAYER_SCENARIO77_TITLE;";
+
+    private static final String ALPHA = "F1111111";
+    private static final String BRAVO = "F2222222";
 
     private final HuntingGroundManager ledger = HuntingGroundManager.getInstance();
 
@@ -56,7 +60,7 @@ class HuntingGroundJournalScannerTest {
     void theArchiveTeachesGroundsPairsAndTheStationsTheContractsCameFrom() throws IOException {
         writeArchive();
 
-        HuntingGroundJournalScanner.Result result = new HuntingGroundJournalScanner().scan(journals);
+        HuntingGroundJournalScanner.Result result = scanAs(ALPHA);
 
         assertEquals(2, result.journalsRead());
         assertEquals(new ResourceSiteProfile(0, 3, 1, 2), ledger.sitesIn("Scan Ground One"));
@@ -78,7 +82,7 @@ class HuntingGroundJournalScannerTest {
     void aSignalIsCreditedToTheSystemThatReportedItAndNotToWhereTheScanThoughtItWas() throws IOException {
         writeArchive();
 
-        new HuntingGroundJournalScanner().scan(journals);
+        scanAs(ALPHA);
 
         assertNull(ledger.sitesIn("Scan Barren One"),
                 "the low site announced while the ship sat in Scan Barren One carries Scan Ground One's "
@@ -93,7 +97,7 @@ class HuntingGroundJournalScannerTest {
     void aContractAgainstASystemWithNoRingsIsRecordedButNeverOffered() throws IOException {
         writeArchive();
 
-        new HuntingGroundJournalScanner().scan(journals);
+        scanAs(ALPHA);
 
         assertTrue(ledger.bestPairs(at("Scan Barren One", 500), 1).isEmpty());
     }
@@ -101,9 +105,9 @@ class HuntingGroundJournalScannerTest {
     @Test
     void aSecondRunReadsOnlyWhatIsNewAndLearnsNothingTwice() throws IOException {
         writeArchive();
-        new HuntingGroundJournalScanner().scan(journals);
+        scanAs(ALPHA);
 
-        HuntingGroundJournalScanner.Result again = new HuntingGroundJournalScanner().scan(journals);
+        HuntingGroundJournalScanner.Result again = scanAs(ALPHA);
 
         assertEquals(1, again.journalsRead(),
                 "the bookmarked journal is re-read because the game may still have been writing it, "
@@ -115,15 +119,40 @@ class HuntingGroundJournalScannerTest {
                 "MissionID is the key, so a contract read again is the same contract");
     }
 
+    @Test
+    void anotherCommandersJournalsAreNeitherReadNorBookmarked() throws IOException {
+        writeArchive();
+        writeJournal("Journal.2026-09-03T100000.01.log", 3_000_000L, List.of(
+                commander("2026-09-03T09:59:00Z", BRAVO, "Bravo"),
+                arrival("2026-09-03T10:00:00Z", "Bravo Provider", 444, 900),
+                accepted("2026-09-03T10:05:00Z", "Bravo Union", "Mission_Massacre",
+                        "$MissionUtil_FactionTag_Pirate;", "One Cartel", "Scan Ground One", 8001)
+        ));
+
+        HuntingGroundJournalScanner.Result result = scanAs(ALPHA);
+
+        assertEquals(2, result.journalsRead(), "Alpha's two journals, and not Bravo's");
+        assertTrue(ledger.bestPairs(at("Bravo Provider", 900), 1).isEmpty(),
+                "Bravo's contract belongs in Bravo's file, not in the one open for Alpha");
+        assertEquals(1, scanAs(ALPHA).journalsRead(),
+                "the bookmark names Alpha's last journal, not the newest file in the folder, so the next "
+                        + "run re-reads only that one");
+    }
+
     // ---------------------------------------------------------------- fixtures
 
+    private HuntingGroundJournalScanner.Result scanAs(String fid) {
+        return new HuntingGroundJournalScanner(ledger, () -> Optional.of(fid)).scan(journals);
+    }
+
     /**
-     * Two journals: a night spent finding a ring system and taking work against it, and a later one
+     * Two of Alpha's journals: a night spent finding a ring system and taking work against it, and a later one
      * that visits a system with no rings at all - and, in the middle of that visit, reports one more
      * of the first system's sites.
      */
     private void writeArchive() throws IOException {
         writeJournal("Journal.2026-09-01T100000.01.log", 1_000_000L, List.of(
+                commander("2026-09-01T09:59:00Z", ALPHA, "Alpha"),
                 arrival("2026-09-01T10:00:00Z", "Scan Ground One", 111, 100),
                 signal("2026-09-01T10:00:05Z", 111, HAZARDOUS),
                 signal("2026-09-01T10:00:05Z", 111, HAZARDOUS),
@@ -142,6 +171,7 @@ class HuntingGroundJournalScannerTest {
         ));
 
         writeJournal("Journal.2026-09-02T100000.01.log", 2_000_000L, List.of(
+                commander("2026-09-02T09:59:00Z", ALPHA, "Alpha"),
                 arrival("2026-09-02T10:00:00Z", "Scan Barren One", 333, 500),
                 signal("2026-09-02T10:01:00Z", 111, LOW),
                 accepted("2026-09-02T10:05:00Z", "Barren Union", "Mission_Massacre",
@@ -154,6 +184,11 @@ class HuntingGroundJournalScannerTest {
         Path file = journals.resolve(name);
         Files.write(file, String.join("\n", lines).getBytes(StandardCharsets.UTF_8));
         assertTrue(file.toFile().setLastModified(lastModified), "the scan reads journals oldest first");
+    }
+
+    private static String commander(String timestamp, String fid, String name) {
+        return "{ \"timestamp\":\"%s\", \"event\":\"Commander\", \"FID\":\"%s\", \"Name\":\"%s\" }"
+                .formatted(timestamp, fid, name);
     }
 
     private static String arrival(String timestamp, String starSystem, long address, double x) {

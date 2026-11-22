@@ -31,7 +31,11 @@ public interface GlobalSettingsDao {
                                                                 announceJumpDeaths,
                                                                 announceRemainingJumps,
                                                                 announceFuelAvailable,
-                                                                announceArrival)
+                                                                announceArrival,
+                                                                aiRespondsToPirateScan,
+                                                                aiBountyKillGloat,
+                                                                shareMassacreSets,
+                                                                useFsdToggle)
                     VALUES (1, :autoSpeedUpForFtl,
                                 :autoLightsForFtl,
                                 :autoNightVisionOff,
@@ -46,7 +50,11 @@ public interface GlobalSettingsDao {
                                 :announceJumpDeaths,
                                 :announceRemainingJumps,
                                 :announceFuelAvailable,
-                                :announceArrival)
+                                :announceArrival,
+                                :aiRespondsToPirateScan,
+                                :aiBountyKillGloat,
+                                :shareMassacreSets,
+                                :useFsdToggle)
             """)
     void save(@BindBean GlobalSettings settings);
 
@@ -70,6 +78,10 @@ public interface GlobalSettingsDao {
             entity.setAnnounceRemainingJumps(rs.getBoolean("announceRemainingJumps"));
             entity.setAnnounceFuelAvailable(rs.getBoolean("announceFuelAvailable"));
             entity.setAnnounceArrival(rs.getBoolean("announceArrival"));
+            entity.setAiRespondsToPirateScan(rs.getBoolean("aiRespondsToPirateScan"));
+            entity.setAiBountyKillGloat(rs.getBoolean("aiBountyKillGloat"));
+            entity.setShareMassacreSets(rs.getBoolean("shareMassacreSets"));
+            entity.setUseFsdToggle(rs.getBoolean("useFsdToggle"));
             return entity;
         }
     }
@@ -91,6 +103,10 @@ public interface GlobalSettingsDao {
         boolean announceRemainingJumps;
         boolean announceFuelAvailable;
         boolean announceArrival;
+        boolean aiRespondsToPirateScan;
+        boolean aiBountyKillGloat;
+        boolean shareMassacreSets;
+        boolean useFsdToggle;
 
         public boolean isAutoSpeedUpForFtl() {
             return autoSpeedUpForFtl;
@@ -210,6 +226,38 @@ public interface GlobalSettingsDao {
 
         public void setAnnounceArrival(boolean announceArrival) {
             this.announceArrival = announceArrival;
+        }
+
+        public boolean isAiRespondsToPirateScan() {
+            return aiRespondsToPirateScan;
+        }
+
+        public void setAiRespondsToPirateScan(boolean aiRespondsToPirateScan) {
+            this.aiRespondsToPirateScan = aiRespondsToPirateScan;
+        }
+
+        public boolean isAiBountyKillGloat() {
+            return aiBountyKillGloat;
+        }
+
+        public void setAiBountyKillGloat(boolean aiBountyKillGloat) {
+            this.aiBountyKillGloat = aiBountyKillGloat;
+        }
+
+        public boolean isShareMassacreSets() {
+            return shareMassacreSets;
+        }
+
+        public void setShareMassacreSets(boolean shareMassacreSets) {
+            this.shareMassacreSets = shareMassacreSets;
+        }
+
+        public boolean isUseFsdToggle() {
+            return useFsdToggle;
+        }
+
+        public void setUseFsdToggle(boolean useFsdToggle) {
+            this.useFsdToggle = useFsdToggle;
         }
     }
 }

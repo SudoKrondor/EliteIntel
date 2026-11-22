@@ -85,6 +85,9 @@ public class Bindings {
         BINDING_EXIT_SUPERCRUISE("Supercruise", DRIVEN),
         BINDING_JUMP_TO_HYPERSPACE("Hyperspace", DRIVEN),
         BINDING_ENTER_SUPERCRUISE("Supercruise", DRIVEN),
+        /// The game's "Toggle Frame Shift Drive": supercruise or hyperspace, whichever the FSD target calls for.
+        /// Pressed instead of the two above only while the commander has chosen it - see FsdControls.
+        BINDING_TOGGLE_FSD("HyperSuperCombination", DRIVEN),
 
 
         //TODO: convert to custom
@@ -298,7 +301,7 @@ public class Bindings {
         BINDING_HUMANOID_SWITCH_TO_SUIT_TOOL("HumanoidSwitchToSuitTool"),
         BINDING_HUMANOID_SWITCH_WEAPON("HumanoidSwitchWeapon"),
         BINDING_HUMANOID_THROW_GRENADE_BUTTON("HumanoidThrowGrenadeButton"),
-        BINDING_HUMANOID_FLASHLIGHT_BUTTON("HumanoidToggleFlashlightButton"),
+        BINDING_HUMANOID_FLASHLIGHT_BUTTON("HumanoidToggleFlashlightButton", DRIVEN),
         BINDING_HUMANOID_MISSION_HELP_PANEL_BUTTON("HumanoidToggleMissionHelpPanelButton"),
         BINDING_HUMANOID_NIGHT_VISION_BUTTON("HumanoidToggleNightVisionButton", DRIVEN),
         BINDING_HUMANOID_SHIELDS_BUTTON("HumanoidToggleShieldsButton"),

@@ -1,5 +1,4 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
@@ -105,14 +104,23 @@ public class HudComboBox<E> extends JComboBox<E> {
         return d;
     }
 
+    /**
+     * Repaints the corner marks over the children: the ▼ cell and a picker's editor reach the frame and cover them.
+     */
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        AppTheme.paintHudFieldCornerMarks(this, g);
+    }
+
     // -- Renderer -------------------------------------------------------------
 
     /**
      * HUD dropdown cell renderer.
      *
      * <ul>
-     *   <li>Selected: {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION} background, {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
-     *   <li>Non-selected: {@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND} background;
+     *   <li>Selected: {@link HudPalette#HUD_COLOR_ROLE_ACCENT_FILL} background, {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
+     *   <li>Non-selected: the list's own background (see {@link HudComboBoxUI});
      *       {@link HudPalette#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}.</li>
      *   <li>Font: {@link HudPalette#HUD_FONT_FIELD_VALUE}.</li>
      *   <li>Border: {@link HudPalette#HUD_COMBO_ITEM_INSET_V} / {@link HudPalette#HUD_COMBO_ITEM_INSET_H}.</li>
@@ -146,16 +154,16 @@ public class HudComboBox<E> extends JComboBox<E> {
             label.setText(text);
 
             if (isSelected) {
-                label.setBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_ACCENT_FILL);
                 label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else {
-                label.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+                label.setBackground(list.getBackground());
                 boolean muted = false;
                 if (mutedWhen != null && value != null) {
                     @SuppressWarnings("unchecked") E item = (E) value;
                     muted = mutedWhen.test(item);
                 }
-                label.setForeground(muted ? HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT : HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(muted ? HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT : HudPalette.HUD_COLOR_ROLE_VALUE_TEXT);
             }
 
             label.setBorder(new EmptyBorder(

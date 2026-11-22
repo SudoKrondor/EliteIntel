@@ -128,7 +128,7 @@ public class ParakeetSTTImpl implements EarsInterface {
 
         Double high = systemSession.getRmsThresholdHigh();
         Double low = systemSession.getRmsThresholdLow();
-        boolean calibrationWasStored = high != 0 && low != 0;
+        boolean calibrationWasStored = AudioCalibrator.isCalibrated(high);
         if (!calibrationWasStored) {
             RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(format, inputMixerInfo);
             this.RMS_THRESHOLD_HIGH = cal.getRmsHigh();
@@ -161,7 +161,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         processingThread = new Thread(this::captureLoop);
         processingThread.start();
 
-        if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
+        if (!AudioCalibrator.isCalibrated(RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse("speech.audioCalibrationRequired")));
         } else if (!AudioCalibrator.gateClearsNoiseFloor(NOISE_FLOOR, RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
@@ -193,7 +193,10 @@ public class ParakeetSTTImpl implements EarsInterface {
         }
         MicLevelRecorder.getInstance().captureStopped();
         isStopping.set(false);
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputDisabled")));
+        // WHY written, not spoken: stop() is nearly always half of a restart (recalibration, a push-to-talk or
+        // device change), and start() writes its "enabled" line rather than speaking it. Spoken, this was the
+        // only half the commander heard, so a routine restart sounded like the microphone had been cut off.
+        UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("speech.voiceInputDisabled")));
     }
 
     private OfflineRecognizer buildRecognizer() {
@@ -697,28 +700,38 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     /**
-     * Strips leading 10ms frames whose RMS is below noiseFloor * LEADING_TRIM_THRESHOLD_FACTOR, but keeps
-     * {@link #LEAD_IN_MS} of them in front of the first frame that crosses the threshold.
+     * Leaves exactly {@link #LEAD_IN_MS} of quiet in front of the first 10ms frame whose RMS reaches
+     * noiseFloor * LEADING_TRIM_THRESHOLD_FACTOR: a longer quiet start is cut down to it, a shorter one is
+     * topped up with silence.
      * <p>
      * The lead-in is what makes this safe. Cut exactly at the onset, the waveform starts on the first syllable
      * and Parakeet decodes it to nothing about a quarter of the time - the "half my push-to-talk orders vanish"
      * report, where a clear capture came back empty and the same words worked when repeated. The threshold
      * frame is also already inside the word, so the cut took the soft start of its first consonant with it.
+     * <p>
+     * The top-up is for push-to-talk, which has no pre-roll: a commander who starts talking as the button goes
+     * down hands over a capture that is loud from its first frame, and five such captures in a row came back
+     * empty in one support bundle. Silence added in front costs the decoder nothing.
      */
     static byte[] trimLeadingLowEnergy(byte[] pcm, double noiseFloor) {
         final int FRAME_BYTES = 320; // 160 samples = 10ms at 16kHz, 16-bit mono
         final double threshold = noiseFloor * LEADING_TRIM_THRESHOLD_FACTOR;
-        int offset = 0;
-        while (offset + FRAME_BYTES <= pcm.length) {
-            if (calculateRMS(pcm, offset, FRAME_BYTES) >= threshold) break;
-            offset += FRAME_BYTES;
+        int onset = 0;
+        while (onset + FRAME_BYTES <= pcm.length) {
+            if (calculateRMS(pcm, onset, FRAME_BYTES) >= threshold) break;
+            onset += FRAME_BYTES;
         }
-        offset = Math.max(0, offset - LEAD_IN_BYTES);
-        if (offset == 0) return pcm;
-        byte[] trimmed = new byte[pcm.length - offset];
-        System.arraycopy(pcm, offset, trimmed, 0, trimmed.length);
-        log.debug("Leading trim: removed {}ms of low-energy audio", offset * 1000 / (SAMPLE_RATE * 2));
-        return trimmed;
+        int shift = onset - LEAD_IN_BYTES; // > 0: cut that much, < 0: add that much silence
+        if (shift == 0) return pcm;
+        byte[] conditioned = new byte[pcm.length - shift];
+        if (shift > 0) {
+            System.arraycopy(pcm, shift, conditioned, 0, conditioned.length);
+            log.debug("Leading trim: removed {}ms of low-energy audio", durationMs(shift));
+        } else {
+            System.arraycopy(pcm, 0, conditioned, -shift, pcm.length);
+            log.debug("Leading trim: added {}ms of silence before the first word", durationMs(-shift));
+        }
+        return conditioned;
     }
 
     /**
@@ -762,6 +775,8 @@ public class ParakeetSTTImpl implements EarsInterface {
             case FR -> "fr";
             case DE -> "de";
             case ES -> "es";
+            case RU -> "ru";
+            case UK -> "uk";
             case IT -> "it";
             // Parakeet takes ISO 639-1 only: both Portuguese variants transcribe as "pt".
             case PT, PTBZ -> "pt";

@@ -1,0 +1,432 @@
+package elite.intel.ai.brain.inference.lmstudio.install;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioServer.DownloadStart;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioServer.DownloadStatus;
+import elite.intel.util.OsDetector;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+
+/**
+ * The real {@link LmStudioMachine}: LM Studio's own script and {@code lms}, its server on this PC, and
+ * the graphics memory readings ({@link GpuMemory}).
+ */
+final class LocalLmStudioMachine implements LmStudioMachine {
+
+    /**
+     * LM Studio's official install scripts, downloaded and run as they are served.
+     * <p>
+     * WHY not pinned to a checksum: this is the one place the app runs code from the network, and it does so on
+     * purpose. The scripts are LM Studio's own, served over HTTPS from their site, and they change with every LM
+     * Studio release. A pinned hash would break the install button each time LM Studio ships until we release
+     * again. Trusting lmstudio.ai here is the same trust as the commander installing LM Studio by hand. Do not copy
+     * this pattern for any other download.
+     */
+    private static final URI WINDOWS_SCRIPT = URI.create("https://lmstudio.ai/install.ps1");
+    private static final URI LINUX_SCRIPT = URI.create("https://lmstudio.ai/install.sh");
+
+    /**
+     * The context window VEGA runs on, exactly. Found by trial against the V1.0 brain and tested again on Linux and
+     * Windows for V1.1: a smaller window makes the model hallucinate, a larger one makes each turn too slow.
+     */
+    static final int CONTEXT_LENGTH = 8192;
+
+    private static final String LLMSTER = "llmster.exe";
+    /**
+     * Where the llmster the app starts on Windows writes its output, in the LM Studio home.
+     */
+    static final String LLMSTER_LOG = "elite-intel-llmster.log";
+
+    private static final Duration SCRIPT = Duration.ofMinutes(30);
+    private static final Duration COMMAND = Duration.ofMinutes(2);
+    /**
+     * How long {@code lms load} may go without reporting progress, and how long it may take in all. WHY not one fixed
+     * limit: a Windows tester's first load on a new install crawled through its last few percent and ran past 5 minutes,
+     * while every load after it took 5 seconds (2026-11-10). Each percent took longest just before the end (97 to 98 took
+     * 71 s), so the quiet limit leaves a wide margin over that.
+     */
+    private static final Duration LOAD_QUIET = Duration.ofMinutes(5);
+    private static final Duration LOAD = Duration.ofMinutes(30);
+    private static final Duration SERVER_STARTUP = Duration.ofSeconds(60);
+    /**
+     * How long the install script's download may take to connect, and in all. WHY: without them a stalled connection
+     * (a captive portal, a dropped Wi-Fi link) blocks the install step forever with nothing said. The script is a few
+     * kilobytes, so two minutes is a wide margin even on a slow link.
+     */
+    private static final Duration SCRIPT_CONNECT = Duration.ofSeconds(30);
+    private static final Duration SCRIPT_DOWNLOAD = Duration.ofMinutes(2);
+
+    private final ProcessRunner runner;
+    private final Consumer<String> log;
+    private final LmStudioServer server = new LmStudioServer();
+    /** Asked after a load the command gave up on - the server's {@code isLoaded} but in a test. */
+    private final LoadedCheck loadedCheck;
+
+    /** Whether the server has a model loaded; throws when the server does not answer. */
+    @FunctionalInterface
+    interface LoadedCheck {
+        boolean isLoaded(String model) throws InstallException;
+    }
+
+    LocalLmStudioMachine(Consumer<String> log) {
+        this.runner = new ProcessRunner(log);
+        this.log = log;
+        this.loadedCheck = server::isLoaded;
+    }
+
+    /**
+     * @param loadedCheck what a load the command gave up on asks - a stand-in for the server in a test
+     */
+    LocalLmStudioMachine(Consumer<String> log, LoadedCheck loadedCheck) {
+        this.runner = new ProcessRunner(log);
+        this.log = log;
+        this.loadedCheck = loadedCheck;
+    }
+
+    /**
+     * Runs an {@code lms} command.
+     */
+    private void runLms(Path lms, Duration timeout, String... arguments) throws InstallException {
+        runLms(lms, timeout, timeout, arguments);
+    }
+
+    /**
+     * As {@link #runLms(Path, Duration, String...)}, stopping the command when it goes {@code quietLimit} without
+     * output or runs past {@code limit} in all.
+     */
+    private void runLms(Path lms, Duration quietLimit, Duration limit, String... arguments) throws InstallException {
+        List<String> command = new ArrayList<>();
+        command.add(lms.toString());
+        command.addAll(List.of(arguments));
+        runner.run(command, quietLimit, limit);
+    }
+
+    /**
+     * The LM Studio home an {@code lms} belongs to: it lives in {@code <home>/bin}.
+     */
+    private static Path homeOf(Path lms) {
+        Path bin = lms.toAbsolutePath().getParent();
+        return bin.getParent() == null ? bin : bin.getParent();
+    }
+
+    @Override
+    public void writePointer(Path home) throws InstallException {
+        try {
+            LmStudioHome.writePointer(home);
+        } catch (IOException e) {
+            throw new InstallException("Could not point LM Studio at " + home + ": " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void runInstallScript() throws InstallException {
+        boolean windows = OsDetector.getOs() == OsDetector.OS.WINDOWS;
+        Path script = download(windows ? WINDOWS_SCRIPT : LINUX_SCRIPT, windows ? ".ps1" : ".sh");
+        try {
+            // WHY -ExecutionPolicy Bypass: Windows' default policy refuses any unsigned downloaded script, which
+            // would stop the install before it starts. Bypass applies to this one process only and changes no setting.
+            runner.run(windows
+                    ? List.of("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script.toString())
+                    : List.of("bash", script.toString()), SCRIPT);
+        } finally {
+            deleteQuietly(script);
+        }
+    }
+
+    /**
+     * Starts LM Studio's daemon. On Windows the app starts {@code llmster.exe} itself rather than through
+     * {@code lms daemon up}. WHY: llmster started by {@code lms} has no console, so every console program it starts
+     * - LM Studio's own {@code node.exe} helpers - opens a console window of its own: several flash up and two stay
+     * open, which looks like a virus to a commander. Started by us it has our hidden console, its helpers share it,
+     * and no window opens (a Windows tester ran llmster directly and saw none, 2026-11-11).
+     */
+    @Override
+    public void daemonUp(Path lms) throws InstallException {
+        if (!isWindows()) {
+            runLms(lms, COMMAND, "daemon", "up");
+            return;
+        }
+        if (daemonPid(lms).isPresent()) {
+            log.accept("llmster is already running");
+            return;
+        }
+        Optional<Path> llmster = new LmStudioHome(homeOf(lms)).installedPrograms().stream()
+                .filter(program -> program.getFileName().toString().equalsIgnoreCase(LLMSTER))
+                .findFirst();
+        if (llmster.isEmpty()) {
+            log.accept("LM Studio names no " + LLMSTER + ", so lms starts it");
+            runLms(lms, COMMAND, "daemon", "up");
+            return;
+        }
+        startLlmster(lms, llmster.get());
+    }
+
+    private void startLlmster(Path lms, Path llmster) throws InstallException {
+        Path output = homeOf(lms).resolve(LLMSTER_LOG);
+        ProcessBuilder builder = new ProcessBuilder(llmster.toString())
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.to(output.toFile()))
+                .directory(Path.of(System.getProperty("user.home")).toFile());
+        builder.environment().put("LMS_NO_MODIFY_PATH", "1");
+        log.accept("> " + llmster + " (its output goes to " + output + ")");
+        Process process;
+        try {
+            process = builder.start();
+        } catch (IOException e) {
+            throw new InstallException("Could not start " + llmster + ": " + e.getMessage(), e);
+        }
+        Instant deadline = Instant.now().plus(COMMAND);
+        while (true) {
+            OptionalLong pid = daemonPid(lms);
+            if (pid.isPresent()) {
+                log.accept("llmster started (PID: " + pid.getAsLong() + ").");
+                return;
+            }
+            if (!process.isAlive()) {
+                throw new InstallException(llmster + " stopped with exit code " + process.exitValue()
+                        + " before it was running (its output is in " + output + ")");
+            }
+            if (Instant.now().isAfter(deadline)) {
+                process.destroy();
+                throw new InstallException(llmster + " was not running within " + COMMAND.toMinutes() + " min");
+            }
+            pause(Duration.ofSeconds(1));
+        }
+    }
+
+    /**
+     * Stops LM Studio's daemon. On Windows an llmster {@code lms daemon down} leaves running - one the app started
+     * itself may not count as LM Studio's daemon to {@code lms} - is stopped with everything it started.
+     */
+    @Override
+    public void daemonDown(Path lms) throws InstallException {
+        if (!isWindows()) {
+            runLms(lms, COMMAND, "daemon", "down");
+            return;
+        }
+        InstallException refused = null;
+        try {
+            runLms(lms, COMMAND, "daemon", "down");
+        } catch (InstallException e) {
+            refused = e;
+        }
+        OptionalLong pid = daemonPid(lms);
+        if (pid.isEmpty()) return;
+        Optional<ProcessHandle> llmster = ProcessHandle.of(pid.getAsLong());
+        if (llmster.isEmpty()) return;
+        log.accept("lms daemon down left llmster (PID: " + pid.getAsLong() + ") running, so it is stopped directly");
+        llmster.get().descendants().forEach(ProcessHandle::destroy);
+        llmster.get().destroy();
+        try {
+            llmster.get().onExit().get(30, TimeUnit.SECONDS);
+        } catch (TimeoutException | ExecutionException | InterruptedException notStopped) {
+            if (notStopped instanceof InterruptedException) Thread.currentThread().interrupt();
+            // WHY the cause kept either way: "did not stop" alone does not tell a support bundle whether llmster
+            // ignored the request, the wait was interrupted, or the wait itself failed.
+            if (refused == null) {
+                throw new InstallException("llmster (PID: " + pid.getAsLong() + ") did not stop: " + notStopped, notStopped);
+            }
+            refused.addSuppressed(notStopped);
+            throw refused;
+        }
+    }
+
+    /**
+     * The PID of the running llmster, from {@code lms daemon status --json}; empty when none runs.
+     */
+    private OptionalLong daemonPid(Path lms) throws InstallException {
+        List<String> output = runner.run(List.of(lms.toString(), "daemon", "status", "--json"), COMMAND);
+        return runningPid(String.join("\n", output));
+    }
+
+    /**
+     * Reads {@code lms daemon status --json}: {@code {"status": "running", "pid": 12345, ...}} or
+     * {@code {"status": "not-running"}}. Anything else counts as not running.
+     */
+    static OptionalLong runningPid(String output) {
+        int start = output.indexOf('{');
+        int end = output.lastIndexOf('}');
+        if (start < 0 || end < start) return OptionalLong.empty();
+        try {
+            JsonObject status = JsonParser.parseString(output.substring(start, end + 1)).getAsJsonObject();
+            if (!status.has("status") || !"running".equals(status.get("status").getAsString())) return OptionalLong.empty();
+            return status.has("pid") ? OptionalLong.of(status.get("pid").getAsLong()) : OptionalLong.empty();
+        } catch (RuntimeException unreadable) {
+            return OptionalLong.empty();
+        }
+    }
+
+    private static boolean isWindows() {
+        return OsDetector.getOs() == OsDetector.OS.WINDOWS;
+    }
+
+    @Override
+    public void startServer(Path lms) throws InstallException {
+        runLms(lms, COMMAND, "server", "start", "--port", String.valueOf(LmStudioDefaults.PORT), "--bind", "127.0.0.1");
+        Instant deadline = Instant.now().plus(SERVER_STARTUP);
+        while (!server.isAnswering()) {
+            if (runner.isCancelled()) throw new InstallException("Cancelled");
+            if (Instant.now().isAfter(deadline)) {
+                throw new InstallException("LM Studio's server did not answer within " + SERVER_STARTUP.toSeconds() + " s");
+            }
+            pause(Duration.ofSeconds(1));
+        }
+    }
+
+    @Override
+    public boolean isServerAnswering() {
+        return server.isAnswering();
+    }
+
+    @Override
+    public void stopServer(Path lms) throws InstallException {
+        runLms(lms, COMMAND, "server", "stop");
+    }
+
+    @Override
+    public DownloadStart startDownload(String model) throws InstallException {
+        return server.startDownload(model);
+    }
+
+    @Override
+    public DownloadStatus downloadStatus(String jobId) throws InstallException {
+        return server.downloadStatus(jobId);
+    }
+
+    @Override
+    public boolean isListed(String model) throws InstallException {
+        return server.isListed(model);
+    }
+
+    @Override
+    public boolean isLoaded(String model) throws InstallException {
+        return server.isLoaded(model);
+    }
+
+    @Override
+    public OptionalInt loadedContextLength(String model) throws InstallException {
+        return server.loadedContextLength(model);
+    }
+
+    /**
+     * With the flags the website guides have always used. The CLI rather than REST, because REST has no GPU-offload
+     * setting.
+     * <p>
+     * A load the command gave up on still counts when the server has the model loaded. WHY: {@code lms} only asks the
+     * daemon to load it, and the daemon goes on after {@code lms} is stopped - the Windows tester's model was loaded
+     * moments after the load step had given up on it (2026-11-10).
+     */
+    @Override
+    public void load(Path lms, String model) throws InstallException {
+        try {
+            runLms(lms, LOAD_QUIET, LOAD, "load", model, "--context-length", String.valueOf(CONTEXT_LENGTH),
+                    "--gpu", "max", "--yes");
+        } catch (InstallException failed) {
+            if (runner.isCancelled() || !loadedAfterAll(model)) throw failed;
+        }
+    }
+
+    private boolean loadedAfterAll(String model) {
+        try {
+            return loadedCheck.isLoaded(model);
+        } catch (InstallException notAnswering) {
+            return false;
+        }
+    }
+
+    @Override
+    public void unload(Path lms, String model) throws InstallException {
+        runLms(lms, COMMAND, "unload", model);
+    }
+
+    @Override
+    public void unloadAll(Path lms) throws InstallException {
+        runLms(lms, COMMAND, "unload", "--all");
+    }
+
+    @Override
+    public OptionalLong gpuMemoryUsedMib() {
+        return GpuMemory.usedMib();
+    }
+
+    @Override
+    public boolean answersWithToolCall(String model) throws InstallException {
+        return server.answersWithToolCall(model);
+    }
+
+    @Override
+    public void cancel() {
+        runner.cancel();
+    }
+
+    private static Path download(URI script, String extension) throws InstallException {
+        Path file;
+        try {
+            file = Files.createTempFile("lmstudio-install", extension);
+        } catch (IOException e) {
+            throw new InstallException("Could not make a file for LM Studio's installer: " + e.getMessage(), e);
+        }
+        boolean downloaded = false;
+        try {
+            HttpClient http = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .connectTimeout(SCRIPT_CONNECT)
+                    .build();
+            HttpResponse<Path> response = http.send(HttpRequest.newBuilder(script).timeout(SCRIPT_DOWNLOAD).GET().build(),
+                    HttpResponse.BodyHandlers.ofFile(file));
+            if (response.statusCode() != 200) {
+                throw new InstallException("Could not download LM Studio's installer from " + script
+                        + ": HTTP " + response.statusCode());
+            }
+            downloaded = true;
+            return file;
+        } catch (IOException e) {
+            throw new InstallException("Could not download LM Studio's installer from " + script + ": " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InstallException("Interrupted while downloading LM Studio's installer", e);
+        } finally {
+            if (!downloaded) deleteQuietly(file);
+        }
+    }
+
+    /**
+     * Removes the downloaded script. WHY quietly: by then the download failed or the script has run, and either is
+     * already reported; a temp file left behind is only clutter, so it goes at exit instead.
+     */
+    private static void deleteQuietly(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            file.toFile().deleteOnExit();
+        }
+    }
+
+    private static void pause(Duration duration) throws InstallException {
+        try {
+            Thread.sleep(duration);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InstallException("Interrupted", e);
+        }
+    }
+}

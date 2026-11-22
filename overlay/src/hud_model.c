@@ -71,6 +71,8 @@ static State parse_state(const char *s) {
     if (!strcmp(s, "good"))     return ST_GOOD;
     if (!strcmp(s, "warn"))     return ST_WARN;
     if (!strcmp(s, "critical")) return ST_CRITICAL;
+    if (!strcmp(s, "blue"))     return ST_BLUE;
+    if (!strcmp(s, "white"))    return ST_WHITE;
     return ST_NORMAL;
 }
 

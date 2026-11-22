@@ -1,130 +1,123 @@
 package elite.intel.ui.screen.bindings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.bindforge.io.*;
-import elite.intel.bindforge.model.*;
-import elite.intel.bindforge.rules.BindingConflictScanner;
-import elite.intel.bindforge.rules.KeyboardKeyAvailabilityService;
-import elite.intel.bindforge.rules.MissingBindingAutoAssigner;
+import elite.intel.bindforge.io.BindingsMonitor;
+import elite.intel.bindforge.io.BindsValues;
+import elite.intel.bindforge.io.KeyBindingsParser;
+import elite.intel.bindforge.model.GameKeyboardLayout;
+import elite.intel.bindforge.storage.BindsEdits;
+import elite.intel.bindforge.storage.ConfigurationFiles;
+import elite.intel.bindforge.storage.EditedDeviceLabels;
+import elite.intel.bindforge.storage.Edits;
+import elite.intel.bindforge.storage.WorkingCopy;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.DataDirectoryValidator;
-import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
-import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
+import elite.intel.ui.event.BindForgeEditsChangedEvent;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
-import elite.intel.ui.event.KeymapSyncStateChangedEvent;
-import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.*;
+import elite.intel.ui.widget.HudBanner;
+import elite.intel.ui.widget.HudSearchToolbar;
+import elite.intel.ui.widget.HudSlider;
+import elite.intel.ui.widget.StatusBadge;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.io.File;
+import java.awt.event.HierarchyEvent;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-import java.util.*;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
+import java.util.Objects;
 
+import static elite.intel.ui.dialog.HudConfirmDialog.info;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudForms.sizeFieldLabel;
-import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
- * The "Binding Profile" sub-tab of BIND FORGE: bindings directory/profile/file fields, the
- * Used/Missing Bindings tables, conflict detection, hover callouts, and the Auto-Assign VEGA Required Binds/Revert/Apply
- * footer. Extracted from the former monolithic {@code BindingsTabPanel}.
+ * The "Binding Profile" sub-tab of BIND FORGE - the Bind Editor's shell: the EDITING line naming the binds file shown,
+ * the search field and the modes under it. The file is chosen in File Manager (Storage S15). Extracted from the former
+ * monolithic {@code BindingsTabPanel}. One tab row holds the modes: the game's sections ({@link GameModePanel}, All to
+ * On-Foot), Anomalies (its view of the rows in conflict) and Dead Zones &amp; Sensitivity ({@link SettingsModePanel}).
+ * <p>
+ * <strong>It shows and changes the edits not applied</strong> (Storage S5, 2026-10-28): any binds file in the working
+ * copy loads, and capture SAVE, CLEAR and Auto-Assign are edits that light the one APPLY / DISCARD bar above
+ * BindForge's tabs. Nothing here writes a file (storage.md rule 6). Reading and changing the edits touch the disk, so
+ * both run off the EDT.
  */
 public class BindingProfilePanel extends JPanel {
+    private static final Logger log = LogManager.getLogger(BindingProfilePanel.class);
 
-    private static final int SCROLL_UNIT_ROWS = 2;
     /**
      * Pacing slider granularity: 10ms notches between the FAST and SLOW ends.
      */
     private static final int KEY_INPUT_PACING_STEP_MS = 10;
 
-    private final BindingsLoader loader = new BindingsLoader();
+    /** Room above the hint and pacing row, and between it and the search, so neither crowds the grid. */
+    private static final int BOTTOM_GAP = 8;
+
     private final KeyBindingsParser parser = KeyBindingsParser.getInstance();
     private final BindingsMonitor monitor = BindingsMonitor.getInstance();
-    private final PlayerSession playerSession = PlayerSession.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
-    private final KeyboardKeyAvailabilityService availabilityService = new KeyboardKeyAvailabilityService();
-    private final BindingsWriter bindingsWriter = new BindingsWriter();
-    private final BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
-    private final BindingsSelectionController selectionController;
-    private final BindingsGroupTableFactory tableFactory;
-    private final BindingsWorkingCopyRepository workingCopyRepo = new BindingsWorkingCopyRepository();
-    private final BindingsApplyService applyService = new BindingsApplyService();
-    private final MissingBindingAutoAssigner autoAssigner = new MissingBindingAutoAssigner();
+    private final RefreshCoalescer refreshes = new RefreshCoalescer();
 
-    private JTextField profileField;
-    private JTextField filePathField;
-    private JTextField bindingsDirField;
+    /** The binds file shown, on the EDITING line. */
+    private JLabel editingValue;
     private JPanel keyboardOnlyBanner;
-    private BindingSaveResultPresenter saveResultPresenter;
-    private BindingApplyResultPresenter applyResultPresenter;
-    private JPanel usedBindingsPanel;
-    private JPanel missingBindingsPanel;
-    private JScrollPane usedBindingsScrollPane;
-    private JScrollPane missingBindingsScrollPane;
-    private JTabbedPane tabs;
-    private StatusBadge syncStatusBadge;
-    private JButton applyButton;
-    private JButton revertButton;
-    private JButton fixAllButton;
-    private JCheckBox conflictsOnlyCheck;
     private JTextField bindingSearchField;
+    private final GameModePanel gameMode;
+    private final SettingsModePanel settingsMode;
+    private final TogglesModePanel togglesMode;
+    private JTabbedPane modeTabs;
+    /**
+     * Where the Anomalies tab sits in {@link #modeTabs}, after the section tabs.
+     */
+    private int anomaliesTab;
+    private static final String CARD_SECTIONS = "sections";
+    private static final String CARD_ANOMALIES = "anomalies";
+    private static final String CARD_SETTINGS = "settings";
+    private static final String CARD_TOGGLES = "toggles";
 
-    private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
-    private GameKeyboardLayout currentKeyboardLayout = GameKeyboardLayout.OTHER;
+    /** The binds file shown, by file name - {@code null} when none could be read. */
+    private volatile String loadedFile;
+    /** The file LOAD asked for, shown at the next read if the edits still hold it. */
+    private volatile String wantedFile;
     /**
-     * Every conflict in the loaded file, indexed for the two things this panel asks: whether a row
-     * is in conflict (RED coloring) and what to say in its hover callout. Recomputed on each load.
-     * <p>
-     * Grouped by chord rather than flattened because one binding can be in conflict on both its
-     * slots at once, against different partners. Telling the commander about only one of them
-     * leaves the other to be discovered in the cockpit.
+     * A change to the edits is running - SAVE, CLEAR or Auto-Assign; a second waits for it.
      */
-    private ConflictIndex conflicts = ConflictIndex.empty();
-    /**
-     * Each binding id mapped to its ship/SRV twin id(s) bound to a different key. Drives the CYAN
-     * row tint and the soft "use the same key" callout - a recommendation, never a conflict.
-     * Recomputed on each load.
-     */
-    private Map<String, Set<String>> recommendationsByBinding = Map.of();
-    /** Working copy file currently loaded in the editor - used for stale checks. */
-    private File activeBindingsFile;
-    private FileTime activeBindingsLastModified;
-    private long activeBindingsFileSize = -1;
-    /** The actual game binds file - source for Apply and for the file-path display field. */
-    private File gameBindingsFile;
-    /** The preset file name (e.g. {@code Custom.3.0.binds}) - key for the working copy. */
-    private String activePresetFileName;
-    private boolean assignDialogOpen;
-    private boolean autoFixInProgress;
+    private boolean changeRunning;
 
     public BindingProfilePanel() {
-        selectionController = new BindingsSelectionController();
-        tableFactory = new BindingsGroupTableFactory(
-                selectionController, this::openAssignKeyboardBindingDialog, this::autoFixSingleBinding,
-                this::openClearKeyboardBindingDialog,
-                // Lambda (not a bound method ref) so it reads the field live: the map is
-                // reassigned on each load, and a bound method ref would pin the initial empty map.
-                id -> conflicts.contains(id),
-                id -> recommendationsByBinding.containsKey(id),
-                this::buildRowCalloutContent);
+        GameModePanel.EditRunner runner = new GameModePanel.EditRunner() {
+            @Override
+            public boolean running() {
+                return changeRunning;
+            }
+
+            @Override
+            public void run(String title, GameModePanel.Change change, Runnable onEdt, Runnable afterFailure) {
+                offEdt(title, change, onEdt, afterFailure);
+            }
+        };
+        gameMode = new GameModePanel(this, runner, count -> {
+            if (modeTabs != null) modeTabs.setTitleAt(anomaliesTab, getText("bindings.mode.anomalies", count));
+        });
+        settingsMode = new SettingsModePanel(runner);
+        togglesMode = new TogglesModePanel(runner);
         buildUi();
-        saveResultPresenter = new BindingSaveResultPresenter(this);
-        applyResultPresenter = new BindingApplyResultPresenter(this);
+        // WHY: what the grid shows also comes from outside the binds file - which controls custom commands tap - and
+        // nothing announces a change to it. Coming back to this tab is when the commander looks, so that is when it
+        // is read again.
+        addHierarchyListener(event -> {
+            if ((event.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0 || !isShowing()) return;
+            initData();
+        });
         UiBus.register(this);
     }
 
@@ -132,61 +125,41 @@ public class BindingProfilePanel extends JPanel {
         UiBus.unregister(this);
     }
 
+    /**
+     * The one way to open the capture dialog for a control, for whichever mode names one. On the EDT.
+     */
+    void openCapture(String bindingId) {
+        gameMode.openCapture(bindingId);
+    }
+
+    /**
+     * The edits changed - an edit here or in the Alias Designer, DISCARD, APPLY, RESTORE or first-time startup - so the
+     * binds file shown may have.
+     */
     @Subscribe
-    public void onBindingsUpdated(BindingsUpdatedEvent event) {
+    public void onEditsChanged(BindForgeEditsChangedEvent event) {
         SwingUtilities.invokeLater(this::initData);
     }
 
     /**
-     * Returns {@code true} if a draft working copy exists that differs from the
-     * current game file. Used by the parent window to decide whether to show a
-     * close confirmation dialog.
+     * BindForge went read only, or stopped being: Game Mode, Anomalies, Settings and Toggles follow (Storage S14b).
      */
-    public boolean hasUnappliedChanges() {
-        if (activePresetFileName == null || gameBindingsFile == null) {
-            return false;
-        }
-        try {
-            return workingCopyRepo.hasUnappliedDraft(activePresetFileName, gameBindingsFile.toPath());
-        } catch (Exception e) {
-            return true;
-        }
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            gameMode.readOnlyChanged();
+            settingsMode.readOnlyChanged();
+            togglesMode.readOnlyChanged();
+        });
     }
 
     /**
-     * Shows a modal dialog when the user closes the application with an unapplied
-     * draft. Offers Apply, Keep Draft, or Discard. Blocks until the user responds.
-     * Must be called on the EDT.
+     * The live bindings changed - {@code BindingsMonitor} saw the bindings folder change. Only the AI tab's counts
+     * read them; the grid shows the edits.
      */
-    public void promptCloseWithDraft() {
-        if (!hasUnappliedChanges()) {
-            return;
-        }
-        Object[] options = {
-                getText("bindings.close.draft.apply"),
-                getText("bindings.close.draft.keep"),
-                getText("bindings.close.draft.discard")
-        };
-        int choice = JOptionPane.showOptionDialog(
-                this,
-                getText("bindings.close.draft.text"),
-                getText("bindings.close.draft.title"),
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                options,
-                options[1]
-        );
-        if (choice == 0) {
-            // Apply
-            performApply();
-        } else if (choice == 2) {
-            // Discard
-            if (activePresetFileName != null) {
-                workingCopyRepo.delete(activePresetFileName);
-            }
-        }
-        // choice == 1 (Keep Draft) or dialog closed: do nothing, draft is already on disk
+    @Subscribe
+    public void onBindingsUpdated(BindingsUpdatedEvent event) {
+        new Thread(this::publishLiveSummary, "BindForge-BindingsSummary").start();
     }
 
     private void buildUi() {
@@ -194,459 +167,197 @@ public class BindingProfilePanel extends JPanel {
         setBorder(hudSubtabContentBorder());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        JPanel details = compactProfilePanel();
-        JPanel header = transparentPanel(new BorderLayout(0, 2));
-        header.add(bindingProfileCard(details), BorderLayout.NORTH);
-        header.add(keyInputPacingRow(), BorderLayout.CENTER);
-        add(header, BorderLayout.NORTH);
+        add(compactProfilePanel(), BorderLayout.NORTH);
+        add(modeArea(), BorderLayout.CENTER);
 
-        usedBindingsPanel = groupedTablesPanel();
-        missingBindingsPanel = groupedTablesPanel();
-        usedBindingsScrollPane = groupedTablesScrollPane(usedBindingsPanel);
-        missingBindingsScrollPane = groupedTablesScrollPane(missingBindingsPanel);
-
-        tabs = AppTheme.makeCompactTabs();
-        tabs.addTab(getText("bindings.usedBindings"), nestedTabContent(usedBindingsScrollPane));
-        tabs.addTab(getText("bindings.missingBindings"), nestedTabContent(missingBindingsScrollPane));
-        tabs.addChangeListener(e -> selectionController.clearSelection());
-
-        JPanel tablesArea = transparentPanel(new BorderLayout(0, 2));
-        tablesArea.add(bindingSearchRow(), BorderLayout.NORTH);
-        tablesArea.add(tabs, BorderLayout.CENTER);
-        add(tablesArea, BorderLayout.CENTER);
-
-        add(buildFooter(), BorderLayout.SOUTH);
+        // WHY at the foot: the hint and the pacing are VEGA's, not the binds file's, so they sit with the other
+        // controls under the grid and the tab row comes straight after the file's name (Alan, 2026-11-10).
+        JPanel bottom = transparentPanel(new BorderLayout(0, BOTTOM_GAP));
+        bottom.add(hintAndPacingRow(), BorderLayout.NORTH);
+        bottom.add(footer(), BorderLayout.SOUTH);
+        add(bottom, BorderLayout.SOUTH);
     }
 
+    /**
+     * The one tab row - the sections, then Anomalies, Dead Zones &amp; Sensitivity and Toggles - over what the chosen tab
+     * shows.
+     * <p>
+     * WHY the tabs are empty and a card panel holds the views: a component sits on one tab only, and all five section
+     * tabs show the same tables, narrowed.
+     */
+    private JPanel modeArea() {
+        modeTabs = AppTheme.makeSectionTabs();
+        // Larger than the app's other section tabs, to sit with the grid's larger type (Alan, 2026-11-22).
+        modeTabs.setFont(modeTabs.getFont().deriveFont(Font.PLAIN, HUD_FONT_BIND_GRID_TAB));
+        gameMode.addSectionTabs(modeTabs);
+        anomaliesTab = modeTabs.getTabCount();
+        modeTabs.addTab(getText("bindings.mode.anomalies", 0), transparentPanel(null));
+        modeTabs.addTab(getText("bindings.mode.settings"), transparentPanel(null));
+        int togglesTab = modeTabs.getTabCount();
+        modeTabs.addTab(getText("bindings.mode.toggles"), transparentPanel(null));
+
+        CardLayout cards = new CardLayout();
+        JPanel views = transparentPanel(cards);
+        views.add(gameMode, CARD_SECTIONS);
+        views.add(gameMode.anomaliesView(), CARD_ANOMALIES);
+        views.add(settingsMode, CARD_SETTINGS);
+        views.add(togglesMode, CARD_TOGGLES);
+        modeTabs.addChangeListener(e -> {
+            int tab = modeTabs.getSelectedIndex();
+            cards.show(views, sectionTabChosen() ? CARD_SECTIONS
+                    : tab == anomaliesTab ? CARD_ANOMALIES
+                    : tab == togglesTab ? CARD_TOGGLES : CARD_SETTINGS);
+        });
+
+        JPanel area = transparentPanel(new BorderLayout());
+        area.add(modeTabs, BorderLayout.NORTH);
+        area.add(views, BorderLayout.CENTER);
+        return area;
+    }
+
+    /**
+     * The section tabs come first in the row, so everything before Anomalies is one.
+     */
+    private boolean sectionTabChosen() {
+        return modeTabs.getSelectedIndex() < anomaliesTab;
+    }
+
+    /**
+     * The search, then what the mode on screen adds to it.
+     * <p>
+     * WHY the shell's and not Game Mode's: every mode is searched, and only Game Mode has filters. In Game Mode's own
+     * footer the search would vanish with it on the other tabs.
+     */
+    private JPanel footer() {
+        JComponent controls = gameMode.footerControls();
+        HudSearchToolbar footer = HudSearchToolbar.tableFilter(
+                getText("bindings.search.placeholder"),
+                getText("actions.commands.search.clearTooltip"),
+                controls);
+        footer.setBorder(hudFooterBorder());
+        wireSearch(footer.textField());
+        modeTabs.addChangeListener(e -> controls.setVisible(sectionTabChosen()));
+        return footer;
+    }
+
+    /**
+     * The one read-only line naming the binds file shown: {@code EDITING  DualVirpilDawnTreader.4.2.binds}. Choosing
+     * another is File Manager's Bindings File section and its LOAD - the folder and the dropdown moved there, because
+     * only File Manager shows folders and files (principle 12; Storage S15, Alan, 2026-11-04).
+     */
     private JPanel compactProfilePanel() {
-        JPanel profileCardBody = transparentPanel(new BorderLayout(0, 0));
-        JPanel details = transparentPanel(new GridBagLayout());
-        details.setBorder(BorderFactory.createEmptyBorder(2, 0, 6, 0));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridy = 0;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        // Single-column grid: [label | field | affordance]. All three rows share the label
-        // column width and the field right edge; vertical-ellipsis and the in-field "i" line up on the right.
-        // Row 0 - Bindings Directory + picker
-        addProfileLabel(details, getText("player.bindingsDirectory"), gbc, 0, LABEL_COL_WIDTH);
-        bindingsDirField = readOnlyField();
-        bindingsDirField.setToolTipText(getText("player.bindingsDirectory.tooltip"));
-        addProfileField(details, bindingsDirField, gbc, 1, 1, 1.0);
-
-        JButton selectBindingsDirButton = compactDirectoryChooserButton();
-        selectBindingsDirButton.addActionListener(e -> selectBindingsDirectory());
-        gbc.gridx = 2;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        details.add(selectBindingsDirButton, gbc);
-
-        // Row 1 - Profile (field spans the picker column so its right edge aligns)
-        gbc.gridy = 1;
-        addProfileLabel(details, getText("bindings.profileName"), gbc, 0, LABEL_COL_WIDTH);
-        profileField = readOnlyInfoField("bindings.profileName.info");
-        addProfileField(details, profileField, gbc, 1, 2, 1.0);
-
-        // Row 2 - File
-        gbc.gridy = 2;
-        addProfileLabel(details, getText("bindings.filePath"), gbc, 0, LABEL_COL_WIDTH);
-        filePathField = readOnlyInfoField("bindings.filePath.info");
-        addProfileField(details, filePathField, gbc, 1, 2, 1.0);
-
-        profileCardBody.add(details, BorderLayout.CENTER);
-        return profileCardBody;
+        JPanel details = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        details.setBorder(BorderFactory.createEmptyBorder(HUD_PADDING_SMALL, HUD_PADDING_SMALL, 6, HUD_PADDING_SMALL));
+        details.add(hudReadoutLabel(getText("bindings.editing")));
+        details.add(Box.createHorizontalStrut(7));
+        editingValue = hudReadoutValue(getText("bindings.editing.none"), HUD_COLOR_ROLE_PRIMARY_TEXT);
+        details.add(editingValue);
+        return details;
     }
 
-    private JComponent bindingProfileCard(JPanel body) {
-        // Working zone of the tab -> FLAT section (HUD section 9), not a framed accent box.
-        HudSection card = new HudSection(
-                getText("bindings.section.profile"),
-                new BorderLayout(),
-                HudPanel.Variant.FLAT,
-                6);
-        card.body().add(body, BorderLayout.CENTER);
-        card.setFooter(keyboardOnlyWarningStrip(), HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND);
-
-        JPanel wrapper = transparentPanel(new BorderLayout());
-        wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        wrapper.add(card, BorderLayout.CENTER);
-        return wrapper;
-    }
-
-    private JPanel buildFooter() {
-        syncStatusBadge = new StatusBadge("", StatusBadge.State.INFO);
-
-        revertButton = makeButtonSubtle(getText("bindings.button.revert.short"));
-        revertButton.setToolTipText(getText("bindings.button.revert.tooltip"));
-        revertButton.addActionListener(e -> revertFromGame());
-
-        applyButton = makeButton(getText("bindings.button.apply.short"));
-        applyButton.setToolTipText(getText("bindings.button.apply.tooltip"));
-        applyButton.addActionListener(e -> performApply());
-
-        fixAllButton = makeButtonSubtle(getText("bindings.button.fixAll.short"));
-        fixAllButton.setToolTipText(getText("bindings.button.fixAll.tooltip"));
-        fixAllButton.addActionListener(e -> fixAllMissing());
-
-        conflictsOnlyCheck = makeCheckBox(getText("bindings.filter.conflictsOnly"), false);
-        conflictsOnlyCheck.addActionListener(e -> renderBindingTables());
-
-        // Non-modal footer: sync status on the left, then the conflicts-only filter, AUTO-ASSIGN VEGA REQUIRED BINDS,
-        // REVERT and APPLY (primary) on the right, no BACK.
-        return HudFooter.build(false, null, syncStatusBadge,
-                List.of(conflictsOnlyCheck, fixAllButton, revertButton, applyButton));
-    }
-
+    /**
+     * Reads the edits and the binds file to show, off the EDT, then shows them - the file LOAD asked for, else the one
+     * shown, else the one the preset file's General line names, else the first.
+     * <p>
+     * A read already in flight is left to finish, and one more follows it - see {@link RefreshCoalescer}.
+     */
     public void initData() {
-        selectionController.resetTables();
-        bindingsDirField.setText(playerSession.getBindingsDir().toString());
+        if (!refreshes.tryStart()) return;
+        String wanted = wantedFile != null ? wantedFile : loadedFile;
+        // WHY: the grid shows nothing when the read fails. A file the read could not use is logged as a warning - a
+        // damaged working copy is offered a restore on the BindForge tab. Before first-time startup there is none to
+        // read, which is no failure: the grid shows nothing and nothing is logged. A bug is logged as an error
+        // (Krondor's branch review, 2026-10-31). Neither is a dialog: a read runs at every refresh.
+        // WHY: the AI tab's counts read the live bindings, not the edits, so they run on their own thread - a read
+        // that fails does not skip them, and a failure in them does not blank a read that worked (Storage S8R3).
+        new Thread(this::publishLiveSummary, "BindForge-BindingsSummary").start();
+        FlowSteps.inBackground("BindForge-BindEditorRead", log, "The Bind Editor's read", () -> {
+                    Loaded read = read(wanted);
+                    return () -> shown(read);
+                }, reason -> () -> shown(Loaded.nothing(wanted)), reason -> () -> shown(Loaded.nothing(wanted)),
+                FlowSteps.NOTHING);
+    }
+
+    /** {@link #show} what a read found, then the read asked for while it ran, if any. On the EDT. */
+    private void shown(Loaded read) {
+        show(read);
+        if (refreshes.finish()) initData();
+    }
+
+    /**
+     * File Manager's LOAD, or a rename there of the file shown: shows {@code file} at the next read, if the edits still
+     * hold it. On the EDT.
+     */
+    public void load(String file) {
+        wantedFile = file;
+        initData();
+    }
+
+    /** The binds file shown, by file name - {@code null} when none could be read. */
+    public String shownFile() {
+        return loadedFile;
+    }
+
+    /**
+     * What one read found. {@code file} is {@code null} when nothing could be shown - the log says why.
+     *
+     * @param asked the file this read was asked for, LOAD's or the one shown - {@code null} for neither
+     */
+    private record Loaded(String asked, String file, byte[] content,
+                          Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots, GameKeyboardLayout layout,
+                          EditedDeviceLabels labels, BindsValues values) {
+        static Loaded nothing(String asked) {
+            return new Loaded(asked, null, null, Map.of(), GameKeyboardLayout.OTHER, EditedDeviceLabels.NONE, BindsValues.NONE);
+        }
+    }
+
+    /**
+     * Reads the edits and parses the file to show. Off the EDT.
+     *
+     * @throws IOException if the edits, the file or the device files cannot be read - none when there is no working
+     *                     copy yet, which shows nothing
+     */
+    private Loaded read(String asked) throws IOException {
+        ConfigurationFiles current;
         try {
-            File resolvedGameFile = resolveGameBindsFile();
-            String presetFileName = resolvedGameFile.getName();
+            current = Edits.stored().snapshot().current();
+        } catch (WorkingCopy.NoWorkingCopyException e) {
+            return Loaded.nothing(asked);
+        }
+        List<String> files = BindsEdits.bindsFiles(current);
+        if (files.isEmpty()) return Loaded.nothing(asked);
+        String file = asked != null && files.contains(asked)
+                ? asked
+                : BindsEdits.generalFile(current).orElse(files.getFirst());
+        byte[] content = current.bindings().get(file);
+        return new Loaded(asked, file, content, parser.parseReadOnlyBindingSlots(content),
+                parser.parseKeyboardLayout(content), EditedDeviceLabels.of(current), BindsValues.of(content));
+    }
 
-            Path workingCopyPath = workingCopyRepo.loadOrImportFromGame(
-                    presetFileName, resolvedGameFile.toPath());
+    /** Shows what {@link #read} found. On the EDT. */
+    private void show(Loaded read) {
+        editingValue.setText(read.file() != null ? read.file() : getText("bindings.editing.none"));
+        // WHY only when this read was LOAD's: a LOAD pressed while an older read ran is read next, not forgotten.
+        if (Objects.equals(wantedFile, read.asked())) wantedFile = null;
+        loadedFile = read.file();
+        gameMode.show(new GameModePanel.Shown(read.file(), read.content(), read.slots(), read.layout(), read.labels(), read.values()));
+        settingsMode.show(read.file(), read.values());
+        togglesMode.show(read.file(), read.values());
+    }
 
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
-                    parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
-            Map<String, KeyBindingsParser.BindingSlots> parsedSlots = parser.toExecutableSlots(slots);
-            conflicts = computeConflicts(slots);
-            recommendationsByBinding = computeRecommendations(parsedSlots);
-
-            currentSlots = slots;
-            currentKeyboardLayout = parser.parseKeyboardLayout(workingCopyPath.toFile());
-            activeBindingsFile = workingCopyPath.toFile();
-            activeBindingsLastModified = Files.getLastModifiedTime(workingCopyPath);
-            activeBindingsFileSize = Files.size(workingCopyPath);
-            gameBindingsFile = resolvedGameFile;
-            activePresetFileName = presetFileName;
-
-            profileField.setText(activeProfileName(resolvedGameFile));
-            filePathField.setText(resolvedGameFile.getAbsolutePath());
-
-            renderBindingTables();
-
-            // The AiTab badge reflects only the controls EliteIntel itself drives, so it reads the
-            // collapsed execution view - the one slot we would press - not both slots.
-            Map<String, KeyBindingsParser.KeyBinding> executable = parser.toExecutableBindings(parsedSlots);
-            UiBus.publish(new BindingsSummaryChangedEvent(
-                    monitor.findMissingGameBindings(executable).size(),
-                    monitor.findFoundGameBindings(executable).size()));
-        } catch (Exception e) {
+    /**
+     * The AI tab's counts, from the live bindings {@code BindingsMonitor} reads - what Vega presses, not what is on
+     * screen (Alan, 2026-10-28, Storage S5). Only the slot EliteIntel would press counts, not both slots.
+     */
+    private void publishLiveSummary() {
+        Map<String, KeyBindingsParser.KeyBinding> live = monitor.getBindings();
+        if (live == null) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
-            conflicts = ConflictIndex.empty();
-            recommendationsByBinding = Map.of();
-            clearLoadedBindingsSnapshot();
-            profileField.setText(getText("bindings.notAvailable"));
-            filePathField.setText(getText("bindings.notAvailable"));
-            renderGroupedTables(usedBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
-            renderGroupedTables(missingBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
-            tabs.setTitleAt(0, getText("bindings.usedBindings", 0));
-            tabs.setTitleAt(1, getText("bindings.missingBindings", 0));
-            fixAllButton.setEnabled(false);
-        }
-        updateSyncStatus();
-    }
-
-    private void updateSyncStatus() {
-        if (applyButton == null || syncStatusBadge == null) {
             return;
         }
-        boolean hasDraft = hasUnappliedChanges();
-
-        syncStatusBadge.setStatus(
-                hasDraft ? getText("bindings.status.draft.badge") : getText("bindings.status.synced.badge"),
-                hasDraft ? StatusBadge.State.STANDBY : StatusBadge.State.OK);
-        syncStatusBadge.setToolTipText(hasDraft ? getText("bindings.status.draft") : getText("bindings.status.synced"));
-
-        applyButton.setEnabled(hasDraft && activePresetFileName != null);
-        revertButton.setEnabled(activePresetFileName != null && workingCopyRepo.exists(activePresetFileName));
-
-        UiBus.publish(new KeymapSyncStateChangedEvent(!hasDraft));
-    }
-
-    private void performApply() {
-        if (activePresetFileName == null || gameBindingsFile == null) {
-            return;
-        }
-        try {
-            Path backupPath = applyService.apply(activePresetFileName, gameBindingsFile.toPath());
-            applyResultPresenter.showSuccess(backupPath);
-            updateSyncStatus();
-        } catch (BindingsApplyException e) {
-            applyResultPresenter.showError(e);
-        }
-    }
-
-    private void fixAllMissing() {
-        if (activeBindingsFile == null || currentSlots.isEmpty() || autoFixInProgress) {
-            return;
-        }
-        int choice = JOptionPane.showConfirmDialog(
-                this,
-                getText("bindings.autofix.confirm.text"),
-                getText("bindings.autofix.confirm.title"),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        if (choice != JOptionPane.OK_OPTION) {
-            return;
-        }
-
-        MissingBindingAutoAssigner.Plan plan = autoAssigner.planAll(currentSlots, BindingsMonitor.requiredControls(), currentKeyboardLayout);
-        applyPlanInBackground(plan, outcome -> showBatchSummary(outcome, plan));
-    }
-
-    private void autoFixSingleBinding(String bindingId) {
-        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || autoFixInProgress) {
-            return;
-        }
-        MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots, currentKeyboardLayout);
-        if (plan.edits().isEmpty() && plan.skipped().isEmpty()) {
-            return; // already bound or unknown - nothing to do
-        }
-        applyPlanInBackground(plan, outcome -> showSingleResult(bindingId, outcome, plan));
-    }
-
-    /**
-     * Writes a plan off the EDT. Each edit re-reads and rewrites the binds file
-     * (and re-parses it for conflict checks), so a large batch would freeze the
-     * UI if run on the dispatch thread. The file path is captured up front so the
-     * worker never touches mutable UI state; the result dialog and reload are
-     * marshalled back onto the EDT.
-     */
-    private void applyPlanInBackground(MissingBindingAutoAssigner.Plan plan, Consumer<ApplyOutcome> onComplete) {
-        if (plan.edits().isEmpty()) {
-            // Nothing to write (every target was skipped); report without touching the file.
-            onComplete.accept(new ApplyOutcome(0, 0));
-            return;
-        }
-        Path file = activeBindingsFile.toPath();
-        setAutoFixBusy(true);
-        new Thread(() -> {
-            ApplyOutcome outcome = applyPlan(file, plan);
-            SwingUtilities.invokeLater(() -> {
-                setAutoFixBusy(false);
-                initData();
-                onComplete.accept(outcome);
-            });
-        }, "BindingsAutoFix-Thread").start();
-    }
-
-    private void setAutoFixBusy(boolean busy) {
-        autoFixInProgress = busy;
-        setCursor(busy ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
-        if (busy) {
-            fixAllButton.setEnabled(false);
-        }
-        // When clearing busy, initData() recomputes the button's enabled state.
-    }
-
-    /**
-     * Writes each planned edit to the working copy via {@link BindingsWriter}.
-     * The file's timestamp and size change after every successful write, so the
-     * stale-check snapshot is refreshed before each edit.
-     */
-    private ApplyOutcome applyPlan(Path file, MissingBindingAutoAssigner.Plan plan) {
-        int saved = 0;
-        int failed = 0;
-        for (MissingBindingAutoAssigner.PlannedEdit edit : plan.edits()) {
-            FileTime lastModified;
-            long size;
-            try {
-                lastModified = Files.getLastModifiedTime(file);
-                size = Files.size(file);
-            } catch (IOException e) {
-                // The working copy became unreadable mid-batch: count every
-                // remaining edit as failed so the summary total stays honest.
-                failed = plan.edits().size() - saved;
-                break;
-            }
-            KeyboardBindingEdit kbe = new KeyboardBindingEdit(
-                    file, edit.bindingId(), edit.slotType(), edit.key(), lastModified, size);
-            BindingSaveResult result = edit.modifier() == null
-                    ? bindingsWriter.assignKeyboardKey(kbe)
-                    : bindingsWriter.assignKeyboardKeyWithModifier(kbe, edit.modifier());
-            if (result == BindingSaveResult.SAVED) {
-                saved++;
-            } else {
-                failed++;
-            }
-        }
-        return new ApplyOutcome(saved, failed);
-    }
-
-    private void showBatchSummary(ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
-        StringBuilder sb = new StringBuilder(getText("bindings.autofix.summary", outcome.saved()));
-        if (outcome.failed() > 0) {
-            sb.append('\n').append(getText("bindings.autofix.failed", outcome.failed()));
-        }
-        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.BOTH_SLOTS_OCCUPIED, "bindings.autofix.skipped.bothSlots");
-        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.NO_FREE_KEY, "bindings.autofix.skipped.noFreeKey");
-        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.NO_EDITABLE_SLOT, "bindings.autofix.skipped.notEditable");
-        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.GAME_MENU_LEFT_UNBOUND, "bindings.autofix.skipped.gameMenu");
-        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.LEFT_UNBOUND_ON_PURPOSE, "bindings.autofix.skipped.onPurpose");
-
-        JOptionPane.showMessageDialog(
-                this, sb.toString(), getText("bindings.autofix.result.title"), JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private void appendReason(
-            StringBuilder sb,
-            MissingBindingAutoAssigner.Plan plan,
-            MissingBindingAutoAssigner.SkipReason reason,
-            String messageKey
-    ) {
-        long count = plan.skipped().stream().filter(s -> s.reason() == reason).count();
-        if (count > 0) {
-            sb.append('\n').append(getText(messageKey, count));
-        }
-    }
-
-    private void showSingleResult(String bindingId, ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
-        if (outcome.saved() > 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("bindings.autofix.single.success", BindingDisplayNames.label(bindingId)),
-                    getText("bindings.autofix.result.title"),
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
-        }
-        if (outcome.failed() > 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("bindings.assign.writeFailed"),
-                    getText("bindings.autofix.result.title"),
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        if (plan.skipped().isEmpty()) {
-            return;
-        }
-        String messageKey = switch (plan.skipped().get(0).reason()) {
-            case BOTH_SLOTS_OCCUPIED -> "bindings.autofix.single.skipped.bothSlots";
-            case NO_FREE_KEY -> "bindings.autofix.single.skipped.noFreeKey";
-            case NO_EDITABLE_SLOT -> "bindings.autofix.single.skipped.notEditable";
-            case GAME_MENU_LEFT_UNBOUND -> "bindings.autofix.single.skipped.gameMenu";
-            case LEFT_UNBOUND_ON_PURPOSE -> "bindings.autofix.single.skipped.onPurpose";
-        };
-        JOptionPane.showMessageDialog(
-                this, getText(messageKey), getText("bindings.autofix.result.title"), JOptionPane.WARNING_MESSAGE);
-    }
-
-    private record ApplyOutcome(int saved, int failed) {
-    }
-
-    private void revertFromGame() {
-        if (activePresetFileName == null || gameBindingsFile == null) {
-            return;
-        }
-        int response = JOptionPane.showConfirmDialog(
-                this,
-                getText("bindings.revert.confirm.text"),
-                getText("bindings.revert.confirm.title"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE);
-        if (response == JOptionPane.YES_OPTION) {
-            workingCopyRepo.delete(activePresetFileName);
-            initData();
-        }
-    }
-
-    private void selectBindingsDirectory() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setDialogTitle(getText("player.bindingsDirectory.dialog"));
-        String current = playerSession.getBindingsDir().toString();
-        if (!current.isBlank())
-            chooser.setCurrentDirectory(new File(current).getParentFile());
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            String path = chooser.getSelectedFile().getAbsolutePath();
-            if (!playerSession.setBindingsDir(path)) {
-                DataDirectoryValidator.warnUnusable(DataDirectoryValidator.DirectoryKind.BINDINGS);
-                return;
-            }
-            bindingsDirField.setText(playerSession.getBindingsDir().toString());
-            DataDirectoryValidator.validateAndWarn(playerSession.getBindingsDir(), DataDirectoryValidator.DirectoryKind.BINDINGS);
-            initData();
-        }
-    }
-
-    private File resolveGameBindsFile() throws IOException {
-        return monitor.resolveActiveBindsFile();
-    }
-
-    private String activeProfileName(File bindingsFile) {
-        String presetName = loader.getActivePresetName();
-        if (presetName != null && !presetName.isBlank())
-            return presetName;
-
-        String fileName = bindingsFile.getName();
-        int profileEnd = fileName.indexOf('.');
-        return profileEnd > 0 ? fileName.substring(0, profileEnd) : fileName;
-    }
-
-    private void addProfileLabel(JPanel panel, String text, GridBagConstraints gbc, int column, int width) {
-        gbc.gridx = column;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        JLabel label = hudReadoutLabel(text);
-        sizeFieldLabel(label, width);
-        panel.add(label, gbc);
-    }
-
-    private void addProfileField(
-            JPanel panel,
-            JComponent component,
-            GridBagConstraints gbc,
-            int column,
-            int gridWidth,
-            double weightX
-    ) {
-        gbc.gridx = column;
-        gbc.gridwidth = gridWidth;
-        gbc.weightx = weightX;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        component.setPreferredSize(new Dimension(0, component.getPreferredSize().height));
-        panel.add(component, gbc);
-    }
-
-    /** Shared width of the left label column so all rows align (fits the longest label). */
-    private static final int LABEL_COL_WIDTH = 180;
-
-    private JTextField readOnlyField() {
-        JTextField field = makeTextField();
-        field.setEditable(false);
-        return field;
-    }
-
-    /**
-     * Creates a read-only value field carrying an in-field info-"i" (HUD section 5.1) that opens the
-     * help text for {@code infoKey} on click - replaces the former external Unicode info button.
-     */
-    private JTextField readOnlyInfoField(String infoKey) {
-        HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
-        field.setEditable(false);
-        return field;
-    }
-
-    private void showFieldInfo(String messageKey) {
-        JOptionPane.showMessageDialog(
-                this,
-                getText(messageKey),
-                getText("bindings.info.title"),
-                JOptionPane.INFORMATION_MESSAGE);
-    }
-
-    private JButton compactDirectoryChooserButton() {
-        JButton button = makeFieldButton(verticalEllipsisIcon(HUD_FIELD_HEIGHT), HUD_FIELD_HEIGHT);
-        button.setToolTipText(getText("player.bindingsDirectory.select.tooltip"));
-        return button;
+        UiBus.publish(new BindingsSummaryChangedEvent(
+                monitor.findMissingGameBindings(live).size(),
+                monitor.findFoundGameBindings(live).size()));
     }
 
     private JPanel keyboardOnlyWarningStrip() {
@@ -657,28 +368,32 @@ public class BindingProfilePanel extends JPanel {
     }
 
     /**
-     * Pacing of the keystrokes this app sends to the game, sitting directly under the keyboard-only
-     * banner because it governs exactly what that banner describes.
+     * The row above the search: what VEGA presses with, and how fast - the pacing governs exactly what the hint
+     * describes.
      * <p>
-     * The slider sets the floor of the pause held after each keystroke of a sequence; the executor
-     * adds its own randomised spread on top. FAST is the pacing every build so far has used and stays
-     * the default - SLOW is for machines where the game drops keystrokes out of a sequence it cannot
-     * keep up with.
+     * Pacing of the keystrokes this app sends to the game. The slider sets the floor of the pause held after each
+     * keystroke of a sequence; the executor adds its own randomised spread on top. FAST is the pacing every build so
+     * far has used and stays the default - SLOW is for machines where the game drops keystrokes out of a sequence it
+     * cannot keep up with.
      */
-    private JPanel keyInputPacingRow() {
+    private JPanel hintAndPacingRow() {
         JPanel row = transparentPanel(new GridBagLayout());
-        row.setBorder(new EmptyBorder(0, 6, 0, 6));
+        row.setBorder(new EmptyBorder(BOTTOM_GAP, 6, 0, 6));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 0, 0, 7);
+        gbc.anchor = GridBagConstraints.SOUTH;
+        gbc.insets = new Insets(0, 0, 0, 16);
 
         gbc.gridx = 0;
-        row.add(sliderRowLabel(getText("bindings.keyInputPacing"), LABEL_COL_WIDTH), gbc);
+        row.add(keyboardOnlyWarningStrip(), gbc);
 
         gbc.gridx = 1;
-        row.add(sliderRowLabel(getText("bindings.keyInputPacing.fast"), 0), gbc);
+        gbc.insets = new Insets(0, 0, 0, 7);
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing")), gbc);
+
+        gbc.gridx = 2;
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing.fast")), gbc);
 
         HudSlider slider = new HudSlider(
                 SystemSession.KEY_INPUT_DELAY_MIN_MS,
@@ -687,598 +402,95 @@ public class BindingProfilePanel extends JPanel {
                 systemSession.getKeyInputDelayMs());
         slider.setToolTipText(getText("bindings.keyInputPacing.tooltip"));
         slider.addChangeListener(e -> systemSession.setKeyInputDelayMs(slider.getValue()));
-        gbc.gridx = 2;
+        gbc.gridx = 3;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         row.add(slider, gbc);
 
-        gbc.gridx = 3;
+        gbc.gridx = 4;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(0, 0, 0, 0);
-        row.add(sliderRowLabel(getText("bindings.keyInputPacing.slow"), 0), gbc);
+        row.add(sliderRowLabel(getText("bindings.keyInputPacing.slow")), gbc);
 
         return row;
     }
 
     /**
-     * Label for the pacing row, dropped by the slider's value area so it sits level with the track
-     * rather than with the value printed above the thumb. A {@code width} of 0 leaves the label at
-     * its natural width.
+     * A label on the pacing row, dropped by the slider's value area so it sits level with the track rather
+     * than with the value printed above the thumb.
      */
-    private static JLabel sliderRowLabel(String text, int width) {
+    private static JLabel sliderRowLabel(String text) {
         JLabel label = hudReadoutLabel(text);
         label.setBorder(new EmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
-        if (width > 0) {
-            sizeFieldLabel(label, width);
-        }
         return label;
     }
 
     /**
-     * Search-as-you-type over both tables, sitting directly above them because it narrows exactly
-     * what they show. Every keystroke re-renders; the tables are rebuilt from an in-memory map, so
-     * there is nothing to debounce.
+     * Search-as-you-type over what the modes show. Every keystroke re-renders; the tables are rebuilt from an in-memory
+     * map, so there is nothing to debounce.
      */
-    private JPanel bindingSearchRow() {
-        JPanel row = transparentPanel(new GridBagLayout());
-        row.setBorder(new EmptyBorder(0, 6, 2, 6));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 0, 0, 7);
-
-        JLabel searchLabel = hudReadoutLabel(getText("bindings.search.label"));
-        sizeFieldLabel(searchLabel, LABEL_COL_WIDTH);
-        gbc.gridx = 0;
-        row.add(searchLabel, gbc);
-
-        bindingSearchField = makeTextField();
+    private void wireSearch(JTextField field) {
+        bindingSearchField = field;
         bindingSearchField.setToolTipText(getText("bindings.search.tooltip"));
         bindingSearchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                renderBindingTables();
+                searchModes();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                renderBindingTables();
+                searchModes();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                renderBindingTables();
+                searchModes();
             }
         });
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        row.add(bindingSearchField, gbc);
-
-        return row;
     }
 
-    private JPanel groupedTablesPanel() {
-        JPanel panel = transparentPanel(null);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(new EmptyBorder(2, 0, 2, 0));
-        return panel;
-    }
-
-    private JScrollPane groupedTablesScrollPane(JPanel panel) {
-        JScrollPane scrollPane = hudScrollPane(panel);
-        scrollPane.getViewport().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(BindingsGroupTableFactory.TABLE_ROW_HEIGHT * SCROLL_UNIT_ROWS);
-        scrollPane.setBorder(hudDataPlaneBorder());
-        scrollPane.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
-        return scrollPane;
-    }
-
-    private JPanel nestedTabContent(JComponent content) {
-        JPanel panel = transparentPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(0, 0, 0, 0));
-        panel.add(content, BorderLayout.CENTER);
-        return panel;
+    private void searchModes() {
+        gameMode.search(bindingSearchField.getText());
+        settingsMode.search(bindingSearchField.getText());
+        togglesMode.search(bindingSearchField.getText());
     }
 
     /**
-     * Buckets the given controls under the game's own section headings, each bucket in the order
-     * the game lists its rows (see {@link BindingDisplayNames}), so a commander can read this
-     * table and their control screen side by side.
+     * Changes the edits off the EDT, one change at a time, then runs {@code onEdt} on it. A failure is shown under
+     * {@code title}, not only logged - the user pressed a button and must be told - and {@code afterFailure} runs
+     * instead. A file the change could not use is {@code bindings.change.failed}; a bug is logged as an error and said
+     * to have stopped unexpectedly (Krondor's branch review, 2026-10-31). The screen reads the edits again either way.
      */
-    private Map<BindingSection, List<Object[]>> groupedBindings(
-            List<String> bindingIds,
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots,
-            BindingsGroupTableFactory.RowAction rowAction
-    ) {
-        Map<BindingSection, List<Object[]>> grouped = groupedRows();
-        for (String bindingId : inGameOrder(bindingIds)) {
-            KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
-            String primary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.primary());
-            String secondary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.secondary());
-            Object[] row = switch (rowAction) {
-                case AUTO_FIX -> new Object[]{bindingId, primary, secondary, getText("bindings.column.autofix.action")};
-                case CLEAR -> new Object[]{bindingId, primary, secondary, getText("bindings.column.clear.action")};
-                case NONE -> new Object[]{bindingId, primary, secondary};
-            };
-            grouped.get(BindingDisplayNames.lookup(bindingId).section()).add(row);
-        }
-        return grouped;
+    private void offEdt(String title, GameModePanel.Change change, Runnable onEdt, Runnable afterFailure) {
+        changeRunning = true;
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        gameMode.changeStarted();
+        FlowSteps.inBackground("BindForge-BindEditorChange", log, title, () -> {
+                    try {
+                        change.run();
+                    } catch (Edits.RefusedException e) {
+                        // WHY: refused - a write running, or read only - said in the user's language.
+                        log.info("{} not done: {}", title, e.getMessage());
+                        return () -> changed(title, getText(e.messageKey()), onEdt, afterFailure);
+                    }
+                    return () -> changed(title, null, onEdt, afterFailure);
+                }, reason -> () -> changed(title, getText("bindings.change.failed"), onEdt, afterFailure),
+                reason -> () -> changed(title, getText("bindings.change.stopped", reason), onEdt, afterFailure),
+                FlowSteps.NOTHING);
     }
 
-    /**
-     * Orders controls the way the game's control screen lists them, falling back to the label for
-     * the unmapped tail so those stay in a stable, readable order rather than an arbitrary one.
-     */
-    private static List<String> inGameOrder(List<String> bindingIds) {
-        return bindingIds.stream()
-                .sorted(Comparator
-                        .comparingInt((String id) -> BindingDisplayNames.lookup(id).order())
-                        .thenComparing(BindingDisplayNames::label, String.CASE_INSENSITIVE_ORDER))
-                .toList();
-    }
-
-    /**
-     * Splits all keyboard-capable controls into those that already have a usable
-     * keyboard binding and those that do not, using the same definition of "bound"
-     * the auto-assigner uses. The Missing tab lists every such control; Auto-Assign VEGA Required Binds fills
-     * only the ones in {@link BindingsMonitor#requiredControls()}, and each row can still be filled on its own.
-     */
-    private BindingPartition partitionByKeyboardBinding(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
-        List<String> used = new ArrayList<>();
-        List<String> missing = new ArrayList<>();
-        for (Map.Entry<String, KeyBindingsParser.ReadOnlyBindingSlots> entry : slots.entrySet()) {
-            if (autoAssigner.isKeyboardBound(entry.getValue())) {
-                used.add(entry.getKey());
-            } else {
-                missing.add(entry.getKey());
-            }
-        }
-        // Left unsorted on purpose: groupedBindings puts them in the game's own row order, and the
-        // counts these lists also feed do not care about order.
-        return new BindingPartition(used, missing);
-    }
-
-    private record BindingPartition(List<String> used, List<String> missing) {
-    }
-
-    /**
-     * Maps every conflicting binding id to the partners it collides with, grouped by the chord each
-     * collision happens on. The {@code keySet} drives the RED/green row coloring; the grouped
-     * partner lists feed the hover callout. Every slot the file holds is scanned, a modifier held on a
-     * controller included ({@link BindingConflictScanner#scanReadOnlySlots}).
-     */
-    private ConflictIndex computeConflicts(
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> bindings) {
-        Map<String, Map<Set<String>, Set<String>>> byChord = new HashMap<>();
-        for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scanReadOnlySlots(bindings)) {
-            indexConflict(byChord, conflict.actionA(), conflict.actionB(), conflict.chordA());
-            indexConflict(byChord, conflict.actionB(), conflict.actionA(), conflict.chordB());
-        }
-        return new ConflictIndex(byChord);
-    }
-
-    /**
-     * Which partners each conflicting binding collides with, grouped by the chord the collision
-     * happens on. Named rather than passed around as its raw map type, which says nothing about
-     * which nesting level means what.
-     */
-    private record ConflictIndex(Map<String, Map<Set<String>, Set<String>>> byBinding) {
-
-        static ConflictIndex empty() {
-            return new ConflictIndex(Map.of());
-        }
-
-        boolean contains(String bindingId) {
-            return byBinding.containsKey(bindingId);
-        }
-
-        /** The chords this binding is in conflict on, each with the partners it collides with there. */
-        Map<Set<String>, Set<String>> partnersByChord(String bindingId) {
-            return byBinding.getOrDefault(bindingId, Map.of());
-        }
-    }
-
-    /**
-     * Records one direction of one conflict: {@code partner} collides with {@code binding} on
-     * {@code chord}, which is {@code binding}'s own chord - for a modifier shadow the partner's differs. The scan reports each pair once per shared chord, so a binding in conflict on
-     * both its slots accumulates an entry per chord rather than keeping only the first.
-     */
-    private static void indexConflict(
-            Map<String, Map<Set<String>, Set<String>>> byChord,
-            String binding, String partner, Set<String> chord) {
-        byChord.computeIfAbsent(binding, k -> new LinkedHashMap<>())
-                .computeIfAbsent(chord, k -> new TreeSet<>())
-                .add(partner);
-    }
-
-    /**
-     * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. Tab
-     * counts and the Auto-Assign VEGA Required Binds enabled state always reflect the full (unfiltered) data, so the
-     * filter is a pure view toggle. Called on load and whenever the filter checkbox changes.
-     */
-    private void renderBindingTables() {
-        // Drop any open conflict callout before the tables (and their hover listeners) are rebuilt.
-        tableFactory.hideConflictPopup();
-
-        // Tables show every keyboard-capable control (custom commands can target any of them),
-        // split by whether it currently has a usable keyboard binding.
-        BindingPartition partition = partitionByKeyboardBinding(currentSlots);
-        List<String> usedBindings = partition.used();
-        List<String> missingBindings = partition.missing();
-
-        renderGroupedTables(
-                usedBindingsPanel,
-                groupedBindings(filterRows(usedBindings), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR),
-                BindingsGroupTableFactory.RowAction.CLEAR,
-                getText("bindings.column.action"),
-                getText("bindings.column.primary"),
-                getText("bindings.column.secondary"),
-                getText("bindings.column.clear"));
-        tabs.setTitleAt(0, getText("bindings.usedBindings", usedBindings.size()));
-
-        renderGroupedTables(
-                missingBindingsPanel,
-                groupedBindings(filterRows(missingBindings), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX),
-                BindingsGroupTableFactory.RowAction.AUTO_FIX,
-                getText("bindings.column.action"),
-                getText("bindings.column.primary"),
-                getText("bindings.column.secondary"),
-                getText("bindings.column.autofix"));
-        tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
-        // Enabled only when a control VEGA presses is missing: the button fills those and nothing else, so with
-        // only emotes and the like left in the Missing tab a click could do nothing.
-        Set<String> required = BindingsMonitor.requiredControls();
-        fixAllButton.setEnabled(missingBindings.stream().anyMatch(required::contains));
-    }
-
-    /**
-     * Maps every binding that has a ship/SRV twin bound to a different key to that twin id (both
-     * directions). The {@code keySet} drives the CYAN tint; the partner lists feed the soft callout.
-     */
-    private Map<String, Set<String>> computeRecommendations(
-            Map<String, KeyBindingsParser.BindingSlots> bindings) {
-        Map<String, Set<String>> recommendations = new HashMap<>();
-        for (BindingConflictScanner.Recommendation r : BindingConflictScanner.recommendVehicleTwinsFromSlots(bindings)) {
-            recommendations.computeIfAbsent(r.shipAction(), k -> new TreeSet<>()).add(r.buggyAction());
-            recommendations.computeIfAbsent(r.buggyAction(), k -> new TreeSet<>()).add(r.shipAction());
-        }
-        return recommendations;
-    }
-
-    /**
-     * Builds the hover-callout for a row: the RED conflict callout if the binding is in a conflict,
-     * else the CYAN ship/SRV-twin recommendation callout, else {@code null}. A conflict outranks a
-     * recommendation so the more urgent message wins when a binding has both.
-     */
-    private JComponent buildRowCalloutContent(String bindingId) {
-        JComponent conflict = buildConflictPopupContent(bindingId);
-        return conflict != null ? conflict : buildRecommendationPopupContent(bindingId);
-    }
-
-    /**
-     * Builds the soft ship/SRV-twin callout: a non-warning (cyan) suggestion to bind this control to
-     * the same key as its counterpart in the other vehicle, or {@code null} if it has no such twin.
-     * It is a recommendation, not a rule - different keys are perfectly valid.
-     */
-    private JComponent buildRecommendationPopupContent(String bindingId) {
-        Set<String> partners = recommendationsByBinding.get(bindingId);
-        if (partners == null || partners.isEmpty()) {
-            return null;
-        }
-        return buildCalloutCard(HUD_COLOR_ROLE_INFORMATION,
-                List.of(new CalloutSection(getText("bindings.recommendation.popup.title"), partners)));
-    }
-
-    /**
-     * When the filter is on, narrows the ids to those that participate in a conflict; otherwise a no-op.
-     */
-    /**
-     * Both view filters, in one place so the two tables always narrow the same way: the
-     * conflicts-only checkbox and the search field. Purely a view concern - the tab counts and the
-     * Auto-Assign VEGA Required Binds enabled state are computed from the unfiltered lists.
-     */
-    private List<String> filterRows(List<String> bindingIds) {
-        return filterBySearch(filterConflictsOnly(bindingIds));
-    }
-
-    private List<String> filterConflictsOnly(List<String> bindingIds) {
-        if (conflictsOnlyCheck == null || !conflictsOnlyCheck.isSelected()) {
-            return bindingIds;
-        }
-        return bindingIds.stream().filter(conflicts::contains).toList();
-    }
-
-    /**
-     * Narrows the ids to those whose in-game section, group, name or raw XML tag contain what has
-     * been typed. Literal, case-insensitive substring matching - what is typed is what is looked
-     * for - and the tag is in the haystack so a commander who arrived here from a forum post
-     * naming {@code ExplorationSAANextGenus} can still find the row.
-     */
-    private List<String> filterBySearch(List<String> bindingIds) {
-        if (bindingSearchField == null) {
-            return bindingIds;
-        }
-        String query = bindingSearchField.getText().trim().toLowerCase();
-        if (query.isEmpty()) {
-            return bindingIds;
-        }
-        return bindingIds.stream()
-                .filter(id -> BindingDisplayNames.searchText(id, sectionLabelFor(id)).contains(query))
-                .toList();
-    }
-
-    private static String sectionLabelFor(String bindingId) {
-        return getText(BindingDisplayNames.lookup(bindingId).section().getLabelKey());
-    }
-
-    /**
-     * Builds the themed hover-callout content for a conflicting binding, or {@code null} if it has no
-     * conflict. One titled group per chord it collides on, each naming that chord and listing,
-     * humanized, the bindings it collides with there - a binding in conflict on both slots has two.
-     */
-    private JComponent buildConflictPopupContent(String bindingId) {
-        Map<Set<String>, Set<String>> byChord = conflicts.partnersByChord(bindingId);
-        if (byChord.isEmpty()) {
-            return null;
-        }
-        List<CalloutSection> sections = new ArrayList<>();
-        for (Map.Entry<Set<String>, Set<String>> e : byChord.entrySet()) {
-            sections.add(new CalloutSection(
-                    getText("bindings.conflict.popup.title", chordText(bindingId, e.getKey())),
-                    e.getValue()));
-        }
-        return buildCalloutCard(HUD_COLOR_ROLE_DANGER, sections);
-    }
-
-    /**
-     * One titled group inside a hover callout.
-     * <p>
-     * A list of these rather than a title-keyed map: the title is rendered text, and two chords that
-     * happen to render the same way - both empty, if a slot cannot be matched - would silently
-     * collapse into one and take a partner list with them.
-     */
-    private record CalloutSection(String title, Set<String> partners) {
-    }
-
-    /**
-     * Shared structure for conflict and recommendation hover callouts: one accented title per
-     * section, each over a humanized bullet list of partner binding names, framed in the given
-     * accent color.
-     */
-    private JComponent buildCalloutCard(Color accent, List<CalloutSection> sections) {
-        HudPanel card = new HudPanel(new BorderLayout(), accent, HudPanel.Variant.FRAMED);
-        JPanel body = transparentPanel(null);
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-        body.setBorder(new EmptyBorder(6, 10, 6, 10));
-
-        for (CalloutSection section : sections) {
-            JLabel titleLabel = new JLabel(section.title());
-            titleLabel.setForeground(accent);
-            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
-            titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            body.add(titleLabel);
-
-            for (String partner : section.partners()) {
-                JLabel item = new JLabel("• " + BindingDisplayNames.label(partner));
-                item.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
-                item.setAlignmentX(Component.LEFT_ALIGNMENT);
-                body.add(item);
-            }
-        }
-
-        card.add(body, BorderLayout.CENTER);
-        return card;
-    }
-
-    /**
-     * The formatted chord (e.g. "Left Ctrl + A") as the commander sees it on the row.
-     * <p>
-     * WHY it formats the matching slot rather than the raw chord: the scan reads both slots, so a
-     * binding can be in conflict on its Secondary while its Primary holds a different chord
-     * entirely. The slot that actually carries {@code chord} is the one to name - pointing at the
-     * Primary there sends the commander to rebind a key that is not in collision.
-     */
-    private String chordText(String bindingId, Set<String> chord) {
-        KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
-        if (slots == null || chord == null || chord.isEmpty()) {
-            return "";
-        }
-        KeyBindingsParser.ReadOnlyBindingSlot slot = matchesChord(slots.primary(), chord)
-                ? slots.primary()
-                : matchesChord(slots.secondary(), chord) ? slots.secondary() : null;
-        return slot == null ? "" : slotFormatter.formatChord(slot.bindingModifiers(), slot.key());
-    }
-
-    /**
-     * WHY no keyboard-usable test: the scan reads a slot whose modifier is held on a controller (FN-6), and
-     * {@link BindingConflictScanner#chordOf} already gives an empty chord for a slot with no keyboard main key.
-     */
-    private boolean matchesChord(KeyBindingsParser.ReadOnlyBindingSlot slot, Set<String> chord) {
-        return chord.equals(BindingConflictScanner.chordOf(slot));
-    }
-
-    private Map<BindingSection, List<Object[]>> groupedRows() {
-        Map<BindingSection, List<Object[]>> grouped = new EnumMap<>(BindingSection.class);
-        for (BindingSection section : BindingSection.values()) {
-            grouped.put(section, new ArrayList<>());
-        }
-        return grouped;
-    }
-
-    private void renderGroupedTables(JPanel targetPanel, Map<BindingSection, List<Object[]>> grouped,
-                                     BindingsGroupTableFactory.RowAction rowAction, String... columnNames) {
-        targetPanel.removeAll();
-        for (BindingSection section : BindingSection.values()) {
-            // Already in the game's own row order - groupedBindings sorted them, so leave them alone.
-            List<Object[]> rows = grouped.getOrDefault(section, List.of());
-            if (rows.isEmpty())
-                continue;
-
-            targetPanel.add(sectionHeader(section));
-            targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), rowAction, columnNames));
-            targetPanel.add(Box.createVerticalStrut(6));
-        }
-        targetPanel.add(Box.createVerticalGlue());
-        targetPanel.revalidate();
-        targetPanel.repaint();
-    }
-
-    private JComponent sectionHeader(BindingSection section) {
-        JLabel label = hudGroupLabel(getText(section.getLabelKey()).toUpperCase());
-        label.setAlignmentX(Component.LEFT_ALIGNMENT);
-        label.setBorder(new EmptyBorder(10, 8, 10, 0));
-        return label;
-    }
-
-    private JScrollPane outerScrollPaneFor(JPanel targetPanel) {
-        return targetPanel == usedBindingsPanel ? usedBindingsScrollPane : missingBindingsScrollPane;
-    }
-
-    private void openAssignKeyboardBindingDialog(String bindingId, BindingSlotType slotType) {
-        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || assignDialogOpen) {
+    /** After {@link #offEdt}: {@code failure} shown, or {@code onEdt} run. On the EDT. */
+    private void changed(String title, String failure, Runnable onEdt, Runnable afterFailure) {
+        changeRunning = false;
+        setCursor(Cursor.getDefaultCursor());
+        initData();
+        if (failure != null) {
+            info(this, title, failure, getText("button.close"));
+            afterFailure.run();
             return;
         }
-        // Opening the dialog comes from a row click, so no mouseExited fires to dismiss the hover
-        // callout - drop it explicitly so it does not float over the modal.
-        tableFactory.hideConflictPopup();
-
-        KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
-        KeyBindingsParser.ReadOnlyBindingSlot slot = slotType == BindingSlotType.PRIMARY
-                ? (slots == null ? null : slots.primary())
-                : (slots == null ? null : slots.secondary());
-        if (!isBasicEditableSlot(slot)) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("bindings.assign.unsupportedReadOnlyMessage"),
-                    getText("bindings.assign.dialogTitle"),
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-            return;
-        }
-        // The dialog edits this one slot, so it reports this slot's collision - not whichever of the
-        // binding's chords happened to be indexed first. A null slot is the ordinary Missing-Bindings
-        // case (the control is absent from the file), and nothing unbound can be in conflict.
-        Set<String> chordPartners = slot == null
-                ? null
-                : conflicts.partnersByChord(bindingId).get(BindingConflictScanner.chordOf(slot));
-        AssignKeyboardBindingDialog dialog = new AssignKeyboardBindingDialog(
-                this,
-                activeBindingsFile.toPath(),
-                bindingId,
-                slotType,
-                slot,
-                availabilityService,
-                parser.toExecutableSlots(currentSlots),
-                chordPartners,
-                chordPartners == null ? "" : slotFormatter.formatChord(slot.bindingModifiers(), slot.key())
-        );
-
-        assignDialogOpen = true;
-        try {
-            AppTheme.runWithModalScrim(
-                    SwingUtilities.getWindowAncestor(this),
-                    () -> dialog.showDialog().ifPresent(selection -> saveKeyboardBinding(bindingId, selection)));
-        } finally {
-            assignDialogOpen = false;
-        }
-    }
-
-    private void saveKeyboardBinding(String bindingId, AssignKeyboardBindingSelection selection) {
-        if (activeBindingsFile == null || activeBindingsLastModified == null || activeBindingsFileSize < 0) {
-            saveResultPresenter.showWriteFailed();
-            return;
-        }
-
-        Path file = activeBindingsFile.toPath();
-        KeyboardBindingEdit edit = new KeyboardBindingEdit(
-                file,
-                bindingId,
-                selection.slotType(),
-                selection.key(),
-                activeBindingsLastModified,
-                activeBindingsFileSize
-        );
-        BindingSaveResult result = saveKeyboardBinding(edit, selection.modifiers());
-        saveResultPresenter.show(result);
-
-        if (result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE || result == BindingSaveResult.STALE_FILE) {
-            initData();
-        }
-    }
-
-    private BindingSaveResult saveKeyboardBinding(KeyboardBindingEdit edit, List<BindingModifier> modifiers) {
-        return modifiers == null || modifiers.isEmpty()
-                ? bindingsWriter.assignKeyboardKey(edit)
-                : bindingsWriter.assignKeyboardKeyWithModifiers(edit, modifiers);
-    }
-
-    /**
-     * Opens the per-row "clear keyboard binding" dialog for the Used view. The dialog offers to clear
-     * the Primary and/or Secondary <em>keyboard</em> slot while leaving any Controller/HOTAS binding in
-     * the other slot untouched. The actual edit + reload is delegated back via {@link #clearKeyboardSlot}.
-     */
-    private void openClearKeyboardBindingDialog(String bindingId) {
-        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null) {
-            return;
-        }
-        // Opened from a row click - no mouseExited fires, so drop the hover callout explicitly.
-        tableFactory.hideConflictPopup();
-
-        KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
-        if (slots == null) {
-            return;
-        }
-        ClearKeyboardBindingDialog dialog = new ClearKeyboardBindingDialog(
-                this, bindingId, slots, slotType -> clearKeyboardSlot(bindingId, slotType));
-        AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(this), dialog::showDialog);
-    }
-
-    /**
-     * Clears one slot's keyboard binding in the working copy, reloads, and returns the row's refreshed
-     * slots so the dialog can re-evaluate what is left to clear. Clearing writes Elite's empty-slot
-     * marker for that slot only; the other slot (and any HOTAS binding on it) is not touched.
-     */
-    private ClearKeyboardBindingDialog.ClearOutcome clearKeyboardSlot(String bindingId, BindingSlotType slotType) {
-        if (activeBindingsFile == null || activeBindingsLastModified == null || activeBindingsFileSize < 0) {
-            return new ClearKeyboardBindingDialog.ClearOutcome(false, currentSlots.get(bindingId));
-        }
-        KeyboardBindingEdit edit = new KeyboardBindingEdit(
-                activeBindingsFile.toPath(),
-                bindingId,
-                slotType,
-                null, // null key clears the slot
-                activeBindingsLastModified,
-                activeBindingsFileSize
-        );
-        BindingSaveResult result = bindingsWriter.assignKeyboardKey(edit);
-        boolean success = result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE;
-        if (success || result == BindingSaveResult.STALE_FILE) {
-            // Reload so the tables and snapshot re-sync; a stale file also needs a reload before retry.
-            initData();
-        }
-        return new ClearKeyboardBindingDialog.ClearOutcome(success, currentSlots.get(bindingId));
-    }
-
-    private boolean isBasicEditableSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return slot == null || slot.editable() || isClearedSlot(slot);
-    }
-
-    private boolean isClearedSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return "{NoDevice}".equals(slot.device())
-                && (slot.key() == null || slot.key().isBlank());
-    }
-
-    private void clearLoadedBindingsSnapshot() {
-        currentSlots = Map.of();
-        currentKeyboardLayout = GameKeyboardLayout.OTHER;
-        activeBindingsFile = null;
-        activeBindingsLastModified = null;
-        activeBindingsFileSize = -1;
-        gameBindingsFile = null;
-        activePresetFileName = null;
+        onEdt.run();
     }
 }

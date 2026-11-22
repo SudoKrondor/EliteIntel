@@ -1,0 +1,796 @@
+package elite.intel.ui.screen.services;
+
+import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
+import elite.intel.ai.brain.inference.lmstudio.install.InstallException;
+import elite.intel.ai.brain.inference.lmstudio.install.GpuRequirement;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioSetupOffer;
+import elite.intel.ai.brain.inference.lmstudio.install.LmStudioUninstaller;
+import elite.intel.ai.mouth.TtsProvider;
+import elite.intel.db.managers.LmStudioInstallManager;
+import elite.intel.db.managers.ShipManager;
+import elite.intel.eventbus.UiBus;
+import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.dialog.LmStudioInstallDialog;
+import elite.intel.ui.dialog.SupertonicVoiceTuningDialog;
+import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.RestartBrainEvent;
+import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.event.StopLocalLlmHostEvent;
+import elite.intel.ui.event.TTSProviderChangedEvent;
+import elite.intel.ui.i18n.LocalizedNumbers;
+import elite.intel.ui.widget.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.JTextComponent;
+import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudPalette.*;
+
+/**
+ * Unified AI services tab: routes the language model (LLM) and speech (TTS) each between a
+ * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
+ * configuration highlighted and the unused one dimmed (section 0.6). Speech has one engine for each
+ * slot: LOCAL is Supertonic, and CLOUD is Google (API key).
+ * <p>
+ * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
+ * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
+ * that fires {@link RestartBrainEvent}/{@link RestartMouthEvent}). This removes the previous
+ * cross-panel "Use" checkbox synchronisation and the risk of half-saved, inconsistent state.
+ */
+public class AiServicesPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(AiServicesPanel.class);
+
+    /**
+     * Google's pace on the slider's scale: 1 + 30/100 times its own.
+     */
+    private static final int DEFAULT_GOOGLE_SPEECH_SPEED = 30;
+
+    private static final int SRC_LOCAL = 0;
+    private static final int SRC_CLOUD = 1;
+
+    private final SystemSession systemSession = SystemSession.getInstance();
+
+    // -- Controls --------------------------------------------------------------
+    private HudSegmentedControl llmSourceControl;
+    private JTextField addressField;
+    private JTextField commandModelField;
+    /**
+     * Installs or sets up LM Studio for this PC. Hidden unless {@link LmStudioSetupOffer#forThisPc()} offers
+     * something: a PC that cannot run the game and the model together never sees it.
+     */
+    private JButton lmStudioSetupButton;
+    /**
+     * What {@link #lmStudioSetupButton} does when pressed: the offer it was last shown for.
+     */
+    private LmStudioSetupOffer lmStudioSetupOffer = LmStudioSetupOffer.NONE;
+    /**
+     * Whether {@link #lmStudioSetupOffer} stands on an AMD card, which the install dialog warns is a beta.
+     */
+    private boolean lmStudioOnAmd;
+    private HudComboBox<ProviderOption> providerCombo;
+    private JPasswordField apiKeyField;
+    /**
+     * Why SAVE is greyed out while the cloud setup is half-filled: no provider picked, or no key for it.
+     */
+    private HudBanner cloudIncompleteHint;
+    private JCheckBox llmLockCheck;
+
+    private HudSegmentedControl ttsSourceControl;
+    private JLabel ttsKeyLabel;
+    private JPasswordField ttsKeyField;
+    private JCheckBox ttsLockCheck;
+    /**
+     * Google WaveNet is the only engine that reads a pitch, so the slider lives in Google's segment alone.
+     */
+    private JLabel googleWaveNetPitchLabel;
+    private HudSlider googleWaveNetPitchSlider;
+    /**
+     * Google's pace. Each Supertonic voice keeps its own (see {@link SupertonicVoiceTuningDialog}).
+     */
+    private JLabel googleSpeechSpeedLabel;
+    private HudSlider googleSpeechSpeedSlider;
+
+    private JPanel localCol;
+    private JPanel rightCol;
+    private HudBanner ttsSupertonicHint;
+    private HudBanner ttsGoogleHint;
+    private JButton saveButton;
+    /**
+     * Puts the last saved values back. A cleared key can leave SAVE greyed out with no other way off the edit.
+     */
+    private JButton cancelButton;
+    private JLabel unsavedLabel;
+
+    // -- Working copy (in memory, committed only by save) ----------------------
+    private String lmAddress = "", lmCommand = "";
+
+    // Snapshot of the last saved state; the dirty flag tracks whether edits differ from it,
+    // so reverting values back to saved clears the "unsaved changes" banner.
+    private boolean savedLlmLocal;
+    private String savedLmAddress = "", savedLmCommand = "";
+    private String savedAiKey = "", savedTtsKey = "";
+    /**
+     * The stored provider, {@code null} for none.
+     */
+    private ProviderEnum savedProvider;
+    private TtsProvider savedTtsProvider = TtsProvider.SUPERTONIC;
+    private int savedGoogleWaveNetPitch;
+    private int savedGoogleSpeechSpeed;
+
+    /**
+     * Suppresses dirty-marking while controls are populated programmatically.
+     */
+    private boolean loading = false;
+    private boolean dirty = false;
+
+    public AiServicesPanel() {
+        buildUi();
+        wireListeners();
+    }
+
+    // -------------------------------------------------------------------------
+    // UI
+    // -------------------------------------------------------------------------
+
+    private void buildUi() {
+        setLayout(new BorderLayout());
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+
+        // ----- Section: LANGUAGE MODEL (flat working zone, section 9) -----
+        HudSection llmSection = HudSection.flat(getText("settings.ai.section.llm"), new BorderLayout(0, HUD_GAP));
+        JPanel llm = llmSection.body();
+
+        // Full-width source switch, no label: the segment captions name each setup.
+        llmSourceControl = new HudSegmentedControl(
+                new String[]{getText("settings.ai.localSetup"), getText("settings.ai.cloudSetup")}, SRC_LOCAL);
+        llm.add(llmSourceControl, BorderLayout.NORTH);
+
+        // Left column - LOCAL SETUP (LM Studio: address + served model).
+        localCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints gc = baseGbc();
+        addressField = makeTextField();
+        addLabel(localCol, getText("settings.ai.address"), gc, 0);
+        addField(localCol, addressField, gc, 1, 1.0);
+
+        commandModelField = makeTextField();
+        nextRow(gc);
+        addLabel(localCol, getText("settings.ai.model"), gc, 0);
+        addField(localCol, commandModelField, gc, 1, 1.0);
+
+        // Under the fields, at its natural width; its caption and visibility come from refreshLmStudioSetupOffer.
+        lmStudioSetupButton = makeButton("");
+        lmStudioSetupButton.setVisible(false);
+        lmStudioSetupButton.addActionListener(e -> openLmStudioSetup());
+        JPanel lmStudioSetupRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        lmStudioSetupRow.add(lmStudioSetupButton);
+        nextRow(gc);
+        addSpanComponent(localCol, lmStudioSetupRow, gc);
+
+        // Right column - CLOUD SETUP.
+        rightCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints rgc = baseGbc();
+        providerCombo = new HudComboBox<>(providerOptions(),
+                option -> option.provider() == null
+                        ? getText("settings.ai.provider.select")
+                        : option.provider().displayName(),
+                option -> option.provider() == null);
+        addLabel(rightCol, getText("settings.ai.provider"), rgc, 0);
+        addField(rightCol, providerCombo, rgc, 1, 1.0);
+
+        nextRow(rgc);
+        apiKeyField = makePasswordField();
+        llmLockCheck = makeLockCheckBox(true);
+        // Field + lock in one BorderLayout cell: EAST reserves the checkbox's full width
+        // regardless of GridBag column sizing; field takes the rest.
+        JPanel apiKeyRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
+        apiKeyRow.add(apiKeyField, BorderLayout.CENTER);
+        apiKeyRow.add(llmLockCheck, BorderLayout.EAST);
+        addLabel(rightCol, getText("settings.ai.apiKey"), rgc, 0);
+        addField(rightCol, apiKeyRow, rgc, 1, 1.0);
+
+        nextRow(rgc);
+        cloudIncompleteHint = HudBanner.multiline(getText("settings.ai.provider.incomplete"), StatusBadge.State.STANDBY);
+        addSpanComponent(rightCol, cloudIncompleteHint, rgc);
+
+        nextRow(rgc);
+        // The dropdown lists the supported providers; what it cannot say is that the model follows from the choice.
+        HudBanner modelAutoSelected = HudBanner.multiline(getText("settings.cloud.modelAutoSelected"), StatusBadge.State.INFO);
+        addSpanComponent(rightCol, modelAutoSelected, rgc);
+
+        JPanel llmLeftWrap = transparentPanel(new BorderLayout());
+        llmLeftWrap.add(localCol, BorderLayout.NORTH);
+        JPanel llmRightWrap = transparentPanel(new BorderLayout());
+        llmRightWrap.add(rightCol, BorderLayout.NORTH);
+        llm.add(new HudTwoColumns(llmLeftWrap, llmRightWrap), BorderLayout.CENTER);
+
+        // ----- Section: SPEECH (TTS) (flat working zone, section 9) -----
+        HudSection speechSection = HudSection.flat(getText("settings.ai.section.speech"), new BorderLayout(0, HUD_GAP));
+        JPanel tts = speechSection.body();
+
+        // Full-width source switch, no label.
+        ttsSourceControl = new HudSegmentedControl(
+                new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
+        tts.add(ttsSourceControl, BorderLayout.NORTH);
+
+        // Left column - LOCAL: Supertonic, which speaks on this machine: its banner and the voice tuning button.
+        // Right column - CLOUD: Google, the one cloud engine - its key row, WaveNet pitch and speed above its banner.
+        JPanel ttsLeftCol = transparentPanel(new BorderLayout(0, HUD_GAP));
+        ttsSupertonicHint = HudBanner.multiline(getText("settings.ai.voice.supertonic.hint"), StatusBadge.State.INFO);
+        ttsLeftCol.add(ttsSupertonicHint, BorderLayout.NORTH);
+        // WHY never dimmed with the LOCAL segment: Supertonic voices the radio for a Google commander too, so its
+        // voices are worth tuning whichever engine speaks for VEGA.
+        JButton voiceTuningButton = makeButtonSubtle(getText("settings.ai.voice.tuning.button"));
+        voiceTuningButton.addActionListener(e -> SupertonicVoiceTuningDialog.open(this));
+        JPanel voiceTuningRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        voiceTuningRow.add(voiceTuningButton);
+        ttsLeftCol.add(voiceTuningRow, BorderLayout.CENTER);
+
+        JPanel ttsRightCol = transparentPanel(new BorderLayout(0, HUD_GAP));
+        JPanel ttsKeyForm = transparentPanel(new GridBagLayout());
+        GridBagConstraints tgc = baseGbc();
+        ttsKeyField = makePasswordField();
+        ttsLockCheck = makeLockCheckBox(true);
+        JPanel ttsKeyRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
+        ttsKeyRow.add(ttsKeyField, BorderLayout.CENTER);
+        ttsKeyRow.add(ttsLockCheck, BorderLayout.EAST);
+        ttsKeyLabel = addLabel(ttsKeyForm, getText("settings.ai.googleTtsKey"), tgc, 0);
+        addField(ttsKeyForm, ttsKeyRow, tgc, 1, 1.0);
+        nextRow(tgc);
+        googleWaveNetPitchSlider = new HudSlider(
+                SystemSession.GOOGLE_WAVENET_PITCH_MIN, SystemSession.GOOGLE_WAVENET_PITCH_MAX, 1,
+                SystemSession.GOOGLE_WAVENET_PITCH_MIN);
+        googleWaveNetPitchLabel = addLabel(ttsKeyForm, getText("settings.ai.googleWaveNetPitch"), tgc, 0);
+        // Drop the label from the row top to the track, the slider's own layout being value above, track below.
+        googleWaveNetPitchLabel.setPreferredSize(
+                new Dimension(googleWaveNetPitchLabel.getPreferredSize().width, HUD_SLIDER_HEIGHT));
+        googleWaveNetPitchLabel.setBorder(BorderFactory.createEmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        addField(ttsKeyForm, googleWaveNetPitchSlider, tgc, 1, 1.0);
+        nextRow(tgc);
+        googleSpeechSpeedSlider = new HudSlider(0, 100, 1, DEFAULT_GOOGLE_SPEECH_SPEED);
+        googleSpeechSpeedLabel = addLabel(ttsKeyForm, getText("settings.ai.googleSpeechSpeed"), tgc, 0);
+        googleSpeechSpeedLabel.setPreferredSize(
+                new Dimension(googleSpeechSpeedLabel.getPreferredSize().width, HUD_SLIDER_HEIGHT));
+        googleSpeechSpeedLabel.setBorder(BorderFactory.createEmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        addField(ttsKeyForm, googleSpeechSpeedSlider, tgc, 1, 1.0);
+        ttsGoogleHint = HudBanner.multiline(getText("settings.ai.voice.google.hint"), StatusBadge.State.INFO);
+        ttsRightCol.add(ttsKeyForm, BorderLayout.NORTH);
+        ttsRightCol.add(ttsGoogleHint, BorderLayout.CENTER);
+
+        tts.add(new HudTwoColumns(ttsLeftCol, ttsRightCol), BorderLayout.CENTER);
+
+        // ----- Footer controls -----
+        saveButton = makeButton(getText("button.save"));
+        saveButton.addActionListener(e -> save());
+        saveButton.setEnabled(false); // nothing to save until something changes
+        cancelButton = makeButtonSubtle(getText("button.cancel"));
+        cancelButton.addActionListener(e -> reload());
+        cancelButton.setEnabled(false); // nothing to cancel until something changes
+        JButton restoreButton = makeButtonSubtle(getText("button.restoreDefaults"));
+        restoreButton.addActionListener(e -> SwingUtilities.invokeLater(this::restoreDefaults));
+
+        // Unsaved-changes hint as a footer status (section 10): shared HudUnsavedHint, just left of SAVE.
+        unsavedLabel = new HudUnsavedHint();
+
+        // Restore on the left; the status + Cancel + Save (primary) grouped at the right edge (section 10).
+        JPanel rightGroup = transparentPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
+        rightGroup.add(unsavedLabel);
+        rightGroup.add(cancelButton);
+        rightGroup.add(saveButton);
+        JPanel buttons = transparentPanel(new BorderLayout());
+        buttons.add(restoreButton, BorderLayout.WEST);
+        buttons.add(rightGroup, BorderLayout.EAST);
+        // Footer buttons anchor to the bottom of the tab, just above the ServicesTabPanel footer rail,
+        // with the standard padding: HUD_PADDING sides (aligns with content) + a gap above the rail.
+        buttons.setBorder(BorderFactory.createEmptyBorder(0, HUD_PADDING, HUD_PADDING, HUD_PADDING));
+
+        JPanel content = transparentPanel(null);
+        content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
+        content.setBorder(BorderFactory.createEmptyBorder(HUD_PADDING, HUD_PADDING, HUD_PADDING, HUD_PADDING));
+        content.add(llmSection);
+        content.add(Box.createVerticalStrut(HUD_GAP));
+        content.add(speechSection);
+
+        add(content, BorderLayout.NORTH);
+        add(buttons, BorderLayout.SOUTH);
+    }
+
+    private void wireListeners() {
+        llmSourceControl.addChangeListener(e -> {
+            recomputeDirty();
+            updateEnablement();
+        });
+        ttsSourceControl.addChangeListener(e -> {
+            recomputeDirty();
+            updateEnablement();
+        });
+        llmLockCheck.addItemListener(e -> updateEnablement());
+        providerCombo.addActionListener(e -> onProviderPicked());
+        ttsLockCheck.addItemListener(e -> updateEnablement());
+        googleWaveNetPitchSlider.addChangeListener(e -> recomputeDirty());
+        googleSpeechSpeedSlider.addChangeListener(e -> recomputeDirty());
+
+        onTextChange(addressField);
+        onTextChange(commandModelField);
+        onTextChange(apiKeyField);
+        onTextChange(ttsKeyField);
+    }
+
+    private void onTextChange(JTextComponent c) {
+        c.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
+                recomputeDirty();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                recomputeDirty();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                recomputeDirty();
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // State
+    // -------------------------------------------------------------------------
+
+    /**
+     * Re-seeds the working copy and all controls from the session, clearing the dirty flag.
+     */
+    public void initData() {
+        loading = true;
+        try {
+            boolean local = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
+            llmSourceControl.setSelectedIndex(local ? SRC_LOCAL : SRC_CLOUD);
+
+            lmAddress = nz(systemSession.getLmStudioAddress(), LmStudioDefaults.ADDRESS);
+            lmCommand = nz(systemSession.getLmStudioCommandModel(), "");
+            loadFields();
+
+            savedProvider = systemSession.getLlmProvider().orElse(null);
+            selectProvider(savedProvider);
+            apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
+            String storedTtsKey = nz(systemSession.getTtsApiKey(), "");
+            ttsKeyField.setText(storedTtsKey);
+            int storedPitch = systemSession.getGoogleWaveNetPitch();
+            googleWaveNetPitchSlider.setValue(storedPitch);
+            int storedSpeed = Math.round(systemSession.getGoogleSpeechSpeed() * 100);
+            googleSpeechSpeedSlider.setValue(storedSpeed);
+            TtsProvider ttsProvider = systemSession.getTtsProvider();
+            ttsSourceControl.setSelectedIndex(ttsProvider.isLocal() ? SRC_LOCAL : SRC_CLOUD);
+
+            savedLlmLocal = local;
+            savedLmAddress = lmAddress;
+            savedLmCommand = lmCommand;
+            savedAiKey = nz(systemSession.getAiApiKey(), "");
+            savedTtsKey = storedTtsKey;
+            savedTtsProvider = ttsProvider;
+            savedGoogleWaveNetPitch = storedPitch;
+            savedGoogleSpeechSpeed = storedSpeed;
+
+            updateEnablement();
+        } finally {
+            loading = false;
+        }
+        clearDirty();
+        refreshLmStudioSetupOffer();
+    }
+
+    /**
+     * Works out, off the event thread, what the LM Studio setup button should offer for this PC, then shows it or
+     * hides it. Reads the saved settings, so it follows a save rather than each keystroke.
+     */
+    private void refreshLmStudioSetupOffer() {
+        Thread.ofVirtual().name("lm-studio-setup-offer").start(() -> {
+            LmStudioSetupOffer offer;
+            boolean onAmd;
+            try {
+                offer = LmStudioSetupOffer.forThisPc();
+                // WHY asked here and not in the dialog: the first reading of the cards can take seconds.
+                onAmd = offer != LmStudioSetupOffer.NONE && offer != LmStudioSetupOffer.UNINSTALL
+                        && GpuRequirement.forThisPc() == GpuRequirement.Verdict.MET_BY_AMD;
+            } catch (RuntimeException e) {
+                // WHY: broad catch at the worker-thread boundary - the button is a convenience, so a failed check
+                // leaves it hidden and the manual guides still work, rather than dying unseen on a virtual thread.
+                log.error("Could not work out what to offer for LM Studio setup", e);
+                offer = LmStudioSetupOffer.NONE;
+                onAmd = false;
+            }
+            LmStudioSetupOffer shown = offer;
+            boolean shownOnAmd = onAmd;
+            SwingUtilities.invokeLater(() -> showLmStudioSetupOffer(shown, shownOnAmd));
+        });
+    }
+
+    private void showLmStudioSetupOffer(LmStudioSetupOffer offer, boolean onAmd) {
+        lmStudioSetupOffer = offer;
+        lmStudioOnAmd = onAmd;
+        offer.captionKey().ifPresent(key -> lmStudioSetupButton.setText(getText(key)));
+        lmStudioSetupButton.setVisible(offer.captionKey().isPresent());
+        localCol.revalidate();
+        localCol.repaint();
+    }
+
+    private void openLmStudioSetup() {
+        switch (lmStudioSetupOffer) {
+            case INSTALL, SET_UP_EXISTING, CONTINUE_SETUP -> {
+                LmStudioInstallDialog.open(this, lmStudioSetupOffer, lmStudioOnAmd, this::saveLmStudioSetup);
+                refreshLmStudioSetupOffer();
+            }
+            case UNINSTALL -> LmStudioSetupOffer.ownedInstall().ifPresent(this::uninstallLmStudio);
+            case NONE -> {
+                // WHY nothing: the button is hidden for NONE, so a press can only come from a stale offer.
+            }
+        }
+    }
+
+    /**
+     * Lists what will be deleted and asks first, then uninstalls off the event thread with the button showing it is
+     * busy, and says how it ended.
+     */
+    private void uninstallLmStudio(LmStudioInstallManager.Install owned) {
+        boolean confirmed = HudConfirmDialog.confirm(this,
+                getText("lmStudioUninstall.confirm.title"),
+                getText("lmStudioUninstall.confirm.message", owned.homeDir().toString(), modelList(owned)),
+                getText("lmStudioUninstall.confirm.button"),
+                getText("button.cancel"));
+        if (!confirmed) return;
+        lmStudioSetupButton.setEnabled(false);
+        lmStudioSetupButton.setText(getText("lmStudioUninstall.working"));
+        LmStudioUninstaller uninstaller = new LmStudioUninstaller(
+                () -> UiBus.publish(new StopLocalLlmHostEvent()),
+                this::saveLmStudioSetup,
+                line -> UiBus.publish(new AppLogEvent("LM Studio uninstall: " + line)));
+        Thread.ofVirtual().name("lm-studio-uninstall").start(() -> {
+            LmStudioUninstaller.Outcome outcome = uninstaller.uninstall(owned);
+            SwingUtilities.invokeLater(() -> {
+                lmStudioSetupButton.setEnabled(llmSourceControl.getSelectedIndex() == SRC_LOCAL);
+                String message = switch (outcome) {
+                    case LmStudioUninstaller.Outcome.Uninstalled() -> getText("lmStudioUninstall.done.message");
+                    case LmStudioUninstaller.Outcome.Failed(String reason) ->
+                            getText("lmStudioUninstall.failed.message", reason);
+                };
+                HudConfirmDialog.info(this, getText("lmStudioUninstall.confirm.title"), message, getText("button.close"));
+                refreshLmStudioSetupOffer();
+            });
+        });
+    }
+
+    private static String modelList(LmStudioInstallManager.Install owned) {
+        List<LmStudioUninstaller.ModelFile> models = LmStudioUninstaller.modelsIn(owned);
+        if (models.isEmpty()) return getText("lmStudioUninstall.confirm.noModels");
+        StringBuilder list = new StringBuilder();
+        for (LmStudioUninstaller.ModelFile model : models) {
+            if (!list.isEmpty()) list.append('\n');
+            list.append("• ").append(model.name()).append("  ")
+                    .append(String.format(LocalizedNumbers.locale(), "%.1f GB", model.bytes() / (1024.0 * 1024 * 1024)));
+        }
+        return list.toString();
+    }
+
+    /**
+     * The install's last step: fills in Address and Model on the LMStudio Setup side and saves through
+     * {@link #save()}, so the brain restarts as it would for the commander's own edit. Called on the install's thread.
+     *
+     * @throws InstallException when the save was refused or could not be made
+     */
+    private void saveLmStudioSetup(String address, String model) throws InstallException {
+        AtomicBoolean saved = new AtomicBoolean();
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                llmSourceControl.setSelectedIndex(SRC_LOCAL);
+                addressField.setText(address);
+                commandModelField.setText(model);
+                saved.set(save());
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new InstallException("Interrupted while saving Address and Model", e);
+        } catch (InvocationTargetException e) {
+            throw new InstallException("Address and Model could not be saved: " + e.getCause().getMessage(), e.getCause());
+        }
+        if (!saved.get()) {
+            throw new InstallException("The AI Services settings were not saved");
+        }
+    }
+
+    /**
+     * Discards unsaved edits by reloading from the session, and locks both key fields again so the slip that
+     * started this cannot repeat on the restored key.
+     */
+    public void reload() {
+        llmLockCheck.setSelected(true);
+        ttsLockCheck.setSelected(true);
+        initData();
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    private void captureFields() {
+        lmAddress = addressField.getText();
+        lmCommand = commandModelField.getText();
+    }
+
+    private void loadFields() {
+        addressField.setText(lmAddress);
+        commandModelField.setText(lmCommand);
+    }
+
+    /**
+     * Enables the active source's controls and dims the unused source (section 0.6).
+     */
+    private void updateEnablement() {
+        // Whole left column dims together (labels and fields) via each control's own
+        // section 0.6 disabled rendering.
+        boolean local = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
+        for (Component c : localCol.getComponents()) {
+            c.setEnabled(local);
+        }
+        // Nested in its own row panel, which the loop above enables without reaching the button inside.
+        lmStudioSetupButton.setEnabled(local);
+
+        // Right column: dim its labels and the info banner; the API-key field also respects the lock.
+        boolean cloud = !local;
+        for (Component c : rightCol.getComponents()) {
+            if (c instanceof JLabel || c instanceof HudBanner) c.setEnabled(cloud);
+        }
+        providerCombo.setEnabled(cloud);
+        apiKeyField.setEnabled(cloud && !llmLockCheck.isSelected());
+        cloudIncompleteHint.setVisible(isCloudSetupIncomplete());
+        llmLockCheck.setEnabled(cloud);
+
+        // Each TTS column lives or dies with the source switch.
+        boolean ttsCloud = ttsSourceControl.getSelectedIndex() == SRC_CLOUD;
+        ttsSupertonicHint.setEnabled(!ttsCloud);
+        ttsGoogleHint.setEnabled(ttsCloud);
+        ttsKeyLabel.setEnabled(ttsCloud);
+        ttsKeyField.setEnabled(ttsCloud && !ttsLockCheck.isSelected());
+        ttsLockCheck.setEnabled(ttsCloud);
+        googleWaveNetPitchLabel.setEnabled(ttsCloud);
+        googleWaveNetPitchSlider.setEnabled(ttsCloud);
+        googleSpeechSpeedLabel.setEnabled(ttsCloud);
+        googleSpeechSpeedSlider.setEnabled(ttsCloud);
+    }
+
+    /**
+     * Re-evaluates whether the working copy differs from the last saved snapshot.
+     */
+    private void recomputeDirty() {
+        if (loading) return;
+        setDirty(isModified());
+        updateSaveEnablement();
+        cloudIncompleteHint.setVisible(isCloudSetupIncomplete());
+    }
+
+    private boolean isModified() {
+        captureFields();
+        boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
+        String newAiKey = new String(apiKeyField.getPassword());
+        String newTtsKey = new String(ttsKeyField.getPassword());
+        return newLocal != savedLlmLocal
+                || selectedProvider() != savedProvider
+                || selectedTtsProvider() != savedTtsProvider
+                || googleWaveNetPitchSlider.getValue() != savedGoogleWaveNetPitch
+                || googleSpeechSpeedSlider.getValue() != savedGoogleSpeechSpeed
+                || !Objects.equals(newAiKey, savedAiKey)
+                || !Objects.equals(newTtsKey, savedTtsKey)
+                || !Objects.equals(lmAddress, savedLmAddress)
+                || !Objects.equals(lmCommand, savedLmCommand);
+    }
+
+    private void setDirty(boolean modified) {
+        if (dirty == modified) return;
+        dirty = modified;
+        unsavedLabel.setVisible(modified);
+        cancelButton.setEnabled(modified);
+        updateSaveEnablement();
+        revalidate();
+        repaint();
+    }
+
+    private void clearDirty() {
+        setDirty(false);
+    }
+
+    /**
+     * SAVE is only meaningful when there are unsaved edits, and only possible when they are complete.
+     */
+    private void updateSaveEnablement() {
+        saveButton.setEnabled(dirty && !isCloudSetupIncomplete());
+    }
+
+    /**
+     * True while the cloud source is selected without a provider or without a key: a setup that could not
+     * answer the commander, so it is not saved. The local source does not need either.
+     */
+    private boolean isCloudSetupIncomplete() {
+        return llmSourceControl.getSelectedIndex() == SRC_CLOUD
+                && (selectedProvider() == null || apiKeyField.getPassword().length == 0);
+    }
+
+    // -------------------------------------------------------------------------
+    // Commit
+    // -------------------------------------------------------------------------
+
+    /**
+     * Atomically persists the whole working copy. If the TTS engine changed, a confirmation
+     * dialog (voice reset) is shown first; declining it aborts the entire save and leaves the
+     * panel in its edited state.
+     *
+     * @return {@code true} if the configuration was saved, {@code false} if the user aborted
+     */
+    public boolean save() {
+        captureFields();
+
+        if (isCloudSetupIncomplete()) {
+            return false; // SAVE is greyed out for this; the tab-switch prompt can still ask
+        }
+        boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
+        ProviderEnum newProvider = selectedProvider();
+        TtsProvider newTtsProvider = selectedTtsProvider();
+        String newAiKey = new String(apiKeyField.getPassword());
+        String newTtsKey = new String(ttsKeyField.getPassword());
+        int newPitch = googleWaveNetPitchSlider.getValue();
+        int newSpeed = googleSpeechSpeedSlider.getValue();
+
+        // Every engine names its voices differently, so any engine change - not just local/cloud - invalidates
+        // the fleet's stored voices.
+        TtsProvider oldTtsProvider = systemSession.getTtsProvider();
+        if (newTtsProvider != oldTtsProvider) {
+            boolean confirmed = HudConfirmDialog.confirm(
+                    this,
+                    getText("settings.audio.switchTts.title"),
+                    getText("settings.audio.switchTts.message"),
+                    getText("button.continue"),
+                    getText("button.cancel"));
+            if (!confirmed) {
+                return false; // abort entire save, stay in editing state
+            }
+            ShipManager.getInstance().resetAllVoicesToDefault(newTtsProvider.defaultVoiceName());
+        }
+
+        // Restart side-effects fire only when the relevant config actually changed.
+        boolean oldLocal = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
+        String oldAiKey = systemSession.getAiApiKey();
+        String oldTtsKey = systemSession.getTtsApiKey();
+        boolean localCfgChanged =
+                !Objects.equals(systemSession.getLmStudioAddress(), lmAddress)
+                        || !Objects.equals(systemSession.getLmStudioCommandModel(), lmCommand);
+        boolean brainChanged = newLocal != oldLocal
+                || localCfgChanged || !Objects.equals(oldAiKey, newAiKey)
+                || newProvider != systemSession.getLlmProvider().orElse(null);
+        boolean mouthChanged = newTtsProvider != oldTtsProvider || !Objects.equals(oldTtsKey, newTtsKey);
+
+        systemSession.setLmStudioSettings(lmAddress, lmCommand);
+        systemSession.setUseLocalCommandLlm(newLocal);
+        systemSession.setUseLocalQueryLlm(newLocal);
+        systemSession.setAiApiKey(newAiKey);
+        systemSession.setLlmProvider(newProvider);
+        systemSession.setTtsProvider(newTtsProvider);
+        systemSession.setTtsApiKey(newTtsKey);
+        // Google reads the pitch and speed per request, so a new value needs no restart - just the save.
+        systemSession.setGoogleWaveNetPitch(newPitch);
+        systemSession.setGoogleSpeechSpeed(newSpeed / 100f);
+
+        UiBus.publish(new AppLogEvent("AI services config saved"));
+        if (brainChanged) UiBus.publish(new RestartBrainEvent());
+        if (mouthChanged) {
+            UiBus.publish(new TTSProviderChangedEvent());
+            UiBus.publish(new RestartMouthEvent());
+        }
+
+        savedLlmLocal = newLocal;
+        savedLmAddress = lmAddress;
+        savedLmCommand = lmCommand;
+        savedAiKey = newAiKey;
+        savedProvider = newProvider;
+        savedTtsKey = newTtsKey;
+        savedTtsProvider = newTtsProvider;
+        savedGoogleWaveNetPitch = newPitch;
+        savedGoogleSpeechSpeed = newSpeed;
+
+        clearDirty();
+        refreshLmStudioSetupOffer();
+        return true;
+    }
+
+    /**
+     * Resets the LLM configuration to defaults and commits immediately.
+     */
+    private void restoreDefaults() {
+        loading = true;
+        try {
+            lmAddress = LmStudioDefaults.ADDRESS;
+            lmCommand = LmStudioDefaults.MODEL;
+            llmSourceControl.setSelectedIndex(SRC_LOCAL);
+            loadFields();
+            updateEnablement();
+        } finally {
+            loading = false;
+        }
+        save();
+    }
+
+    /**
+     * The engine the controls currently describe: LOCAL is Supertonic and CLOUD is Google.
+     */
+    private TtsProvider selectedTtsProvider() {
+        return ttsSourceControl.getSelectedIndex() == SRC_LOCAL ? TtsProvider.SUPERTONIC : TtsProvider.GOOGLE;
+    }
+
+    /**
+     * A key belongs to one provider, so picking a different one than the stored provider empties the key field
+     * (and unlocks it) for that provider's key, and picking the stored one back restores its key: an accidental
+     * pick costs nothing. An install with a key but no stored provider - one whose key format named none - keeps
+     * its key, because picking the provider is all it needs.
+     */
+    private void onProviderPicked() {
+        if (loading) return;
+        if (savedProvider != null) {
+            boolean backToSaved = selectedProvider() == savedProvider;
+            apiKeyField.setText(backToSaved ? savedAiKey : "");
+            if (!backToSaved) {
+                llmLockCheck.setSelected(false);
+            }
+        }
+        recomputeDirty();
+        updateEnablement();
+    }
+
+    /**
+     * The provider the dropdown shows, {@code null} while it shows the "select a provider" placeholder.
+     */
+    private ProviderEnum selectedProvider() {
+        ProviderOption option = (ProviderOption) providerCombo.getSelectedItem();
+        return option == null ? null : option.provider();
+    }
+
+    private void selectProvider(ProviderEnum provider) {
+        for (int i = 0; i < providerCombo.getItemCount(); i++) {
+            if (providerCombo.getItemAt(i).provider() == provider) {
+                providerCombo.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
+    /**
+     * The placeholder (no provider) first, then every provider.
+     */
+    private static ProviderOption[] providerOptions() {
+        ProviderEnum[] providers = ProviderEnum.values();
+        ProviderOption[] options = new ProviderOption[providers.length + 1];
+        options[0] = new ProviderOption(null);
+        for (int i = 0; i < providers.length; i++) {
+            options[i + 1] = new ProviderOption(providers[i]);
+        }
+        return options;
+    }
+
+    /**
+     * One dropdown entry; {@code provider} is {@code null} for the "select a provider" placeholder.
+     */
+    private record ProviderOption(ProviderEnum provider) {
+    }
+
+    private static String nz(String value, String fallback) {
+        return value != null && !value.isEmpty() ? value : fallback;
+    }
+}

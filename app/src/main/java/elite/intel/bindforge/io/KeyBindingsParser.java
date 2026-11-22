@@ -10,10 +10,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -187,8 +189,12 @@ public class KeyBindingsParser {
      * The layout the game names this file's keys by - its {@code <KeyboardLayout>} element, e.g.
      * {@code fr-FR}. A file without one reads as {@link GameKeyboardLayout#OTHER}.
      */
-    public GameKeyboardLayout parseKeyboardLayout(File file) throws Exception {
-        return keyboardLayout(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file));
+    public GameKeyboardLayout parseKeyboardLayout(byte[] binds) throws IOException {
+        try {
+            return keyboardLayout(SafeXml.documentBuilder().parse(new ByteArrayInputStream(binds)));
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException("The binds file could not be parsed: " + e.getMessage(), e);
+        }
     }
 
     private static GameKeyboardLayout keyboardLayout(Document doc) {
@@ -205,10 +211,28 @@ public class KeyBindingsParser {
      * executable.
      */
     public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(File file) throws Exception {
+        return readOnlyBindingSlots(SafeXml.documentBuilder().parse(file), file.getName());
+    }
+
+    /**
+     * {@link #parseReadOnlyBindingSlots(File)} for a binds file held in memory - the Bind Editor reads the edits not
+     * applied (Storage S5). It reads exactly what the file version reads: nothing here widens what is executable.
+     *
+     * @param binds the binds file's bytes
+     * @throws IOException if the bytes are not a binds file that can be parsed - the file's fault, not a bug, so the
+     *                     Bind Editor can tell the two apart (Krondor's branch review, 2026-10-31)
+     */
+    public Map<String, ReadOnlyBindingSlots> parseReadOnlyBindingSlots(byte[] binds) throws IOException {
+        try {
+            return readOnlyBindingSlots(SafeXml.documentBuilder().parse(new ByteArrayInputStream(binds)),
+                    "the edits not applied");
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new IOException("The binds file could not be parsed: " + e.getMessage(), e);
+        }
+    }
+
+    private Map<String, ReadOnlyBindingSlots> readOnlyBindingSlots(Document doc, String source) {
         Map<String, ReadOnlyBindingSlots> bindings = new HashMap<>();
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(file);
         doc.getDocumentElement().normalize();
         GameKeyboardLayout layout = keyboardLayout(doc);
 
@@ -245,7 +269,7 @@ public class KeyBindingsParser {
                 }
             }
         }
-        log.info("Parsed {} read-only binding slots from file: {}", bindings.size(), file.getName());
+        log.info("Parsed {} read-only binding slots from {}", bindings.size(), source);
         return bindings;
     }
 
@@ -270,7 +294,7 @@ public class KeyBindingsParser {
     /**
      * True when the commander has assigned this action somewhere, but nothing EliteIntel can press.
      */
-    static boolean isBoundToNonKeyboardDeviceOnly(ReadOnlyBindingSlot primary, ReadOnlyBindingSlot secondary) {
+    public static boolean isBoundToNonKeyboardDeviceOnly(ReadOnlyBindingSlot primary, ReadOnlyBindingSlot secondary) {
         if (isKeyboardUsable(primary) || isKeyboardUsable(secondary)) {
             return false;
         }
@@ -281,7 +305,10 @@ public class KeyBindingsParser {
         return slot != null && slot.keyboardUsable();
     }
 
-    private static boolean isAssigned(ReadOnlyBindingSlot slot) {
+    /**
+     * True when the slot holds an input on some device - keyboard, mouse or controller.
+     */
+    public static boolean isAssigned(ReadOnlyBindingSlot slot) {
         return slot != null
                 && slot.device() != null && !slot.device().isBlank() && !"{NoDevice}".equals(slot.device())
                 && slot.key() != null && !slot.key().isBlank();

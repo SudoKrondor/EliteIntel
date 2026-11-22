@@ -1,0 +1,417 @@
+package elite.intel.ui.screen.services;
+
+import com.google.common.eventbus.Subscribe;
+import elite.intel.eventbus.UiBus;
+import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
+import elite.intel.ui.event.*;
+import elite.intel.ui.support.AudioDeviceCombo;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.*;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.HierarchyEvent;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudForms.baseGbc;
+import static elite.intel.ui.theme.HudPalette.*;
+
+public class AudioServicesPanel extends JPanel {
+
+    private final SystemSession systemSession = SystemSession.getInstance();
+    private final PlayerSession playerSession = PlayerSession.getInstance();
+
+    /**
+     * Shared left label-column width so device and level controls start at the same x (fits the longest label).
+     */
+    private static final int LABEL_COL_WIDTH = 170;
+
+    private HudSlider voiceVolumeSlider;
+    /**
+     * Dead while the radio is off (see {@link #updateRadioVolumeEnablement()}): a level for nothing is a puzzle.
+     */
+    private HudSlider radioVolumeSlider;
+    private HudSlider toneVolumeSlider;
+    private HudSlider beepVolumeSlider;
+    private HudSlider sttThreadsSlider;
+    private HudComboBox<String> inputCombo;
+    private HudComboBox<String> outputCombo;
+    /**
+     * Guards the combo listeners from persisting while we programmatically re-sync the selection.
+     */
+    private boolean syncingDevices;
+
+    private JCheckBox noiseReductionCheck;
+    private HudSegmentedControl noiseStrengthControl;
+
+    private static final int STRENGTH_LOW = 0;
+    private static final int STRENGTH_MEDIUM = 1;
+    private static final int STRENGTH_HIGH = 2;
+
+    public AudioServicesPanel() {
+        buildUi();
+        UiBus.register(this);
+    }
+
+    /**
+     * The radio switch moved - by the Commander tab's checkbox or the spoken toggle command, which runs off
+     * the Swing thread - so the slider follows it while this panel is showing, not only on the next show.
+     */
+    @Subscribe
+    public void onRadioTransmissionStateChanged(RadioTransmissionStateChangedEvent event) {
+        SwingUtilities.invokeLater(() -> radioVolumeSlider.setEnabled(event.on()));
+    }
+
+    private void buildUi() {
+        setLayout(new BorderLayout());
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+
+        JPanel columns = transparentPanel(new GridBagLayout());
+        columns.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        GridBagConstraints cc = new GridBagConstraints();
+        cc.gridy = 0;
+        cc.weighty = 1.0;
+        cc.fill = GridBagConstraints.BOTH;
+        cc.anchor = GridBagConstraints.NORTHWEST;
+
+        // Left: settings column takes all the slack.
+        cc.gridx = 0;
+        cc.weightx = 1.0;
+        cc.insets = new Insets(0, 0, 0, HUD_GAP);
+        columns.add(buildSettingsColumn(), cc);
+
+        // Right: microphone monitor stays at its natural (narrow) width - no horizontal stretch.
+        cc.gridx = 1;
+        cc.weightx = 0;
+        cc.insets = new Insets(0, 0, 0, 0);
+        columns.add(buildMicColumn(), cc);
+
+        add(columns, BorderLayout.CENTER);
+
+        // Device selection lives in SystemSession and can be changed elsewhere (the AI-tab dialog),
+        // so re-sync the pickers whenever this long-lived panel becomes visible again.
+        addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && isShowing()) {
+                syncDevices();
+                updateRadioVolumeEnablement();
+            }
+        });
+    }
+
+    /**
+     * Left column: AUDIO DEVICES (with inline noise reduction) over a pair of tabs, AUDIO LEVELS and
+     * TRANSMISSION AUDIO. All FLAT (section 9). The two sections are tabs rather than a stack because
+     * together they are taller than the app window.
+     */
+    private JComponent buildSettingsColumn() {
+        JPanel column = transparentPanel(null);
+        column.setLayout(new BoxLayout(column, BoxLayout.PAGE_AXIS));
+
+        HudSection devices = buildDevicesSection();
+        devices.setAlignmentX(Component.LEFT_ALIGNMENT);
+        column.add(devices);
+
+        column.add(Box.createVerticalStrut(HUD_GAP));
+
+        JTabbedPane tabs = makeCompactTabs();
+        tabs.addTab(getText("settings.audio.section.levels"), tabPage(buildLevelsSection()));
+        tabs.addTab(getText("settings.audio.section.transmission"), tabPage(buildTransmissionSection()));
+        tabs.setAlignmentX(Component.LEFT_ALIGNMENT);
+        column.add(tabs);
+
+        column.add(Box.createVerticalGlue());
+        return column;
+    }
+
+    /**
+     * 4-column layout:
+     * Row 0 — Mic [dropdown]   Speaker [dropdown]
+     * Row 1 — [☑ Enable Noise Reduction]   [Low][Medium][High]
+     * <p>
+     * There is no "changes take effect on next service start" banner: picking a device now restarts the
+     * one service that reads it (see {@link #onInputDeviceSelected()}). The banner sat under the whole
+     * section and read as if it governed the volume sliders below it too, which take effect immediately.
+     */
+    private HudSection buildDevicesSection() {
+        HudSection section = HudSection.flat(getText("audio.devices.section.devices"), new GridBagLayout());
+        JPanel form = section.body();
+
+        inputCombo = AudioDeviceCombo.input(systemSession.getAudioInputDevice());
+        outputCombo = AudioDeviceCombo.output(systemSession.getAudioOutputDevice());
+        inputCombo.addActionListener(e -> onInputDeviceSelected());
+        outputCombo.addActionListener(e -> onOutputDeviceSelected());
+
+        // Cols: 0=Mic label  1=input combo  2=Speaker label  3=output combo
+        // Cols 1 and 3 share available width equally; cols 0 and 2 are natural-width labels.
+        GridBagConstraints g = baseGbc();
+
+        // Row 0 — device pickers
+        g.gridy = 0;
+        g.gridx = 0;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        form.add(hudReadoutLabel(getText("audio.devices.input.short")), g);
+
+        g.gridx = 1;
+        g.weightx = 0.5;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        form.add(inputCombo, g);
+
+        g.gridx = 2;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        g.insets = new Insets(6, HUD_GAP * 2, 6, 6);
+        form.add(hudReadoutLabel(getText("audio.devices.output.short")), g);
+
+        g.gridx = 3;
+        g.weightx = 0.5;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.insets = new Insets(6, 6, 6, 6);
+        form.add(outputCombo, g);
+
+        // Row 1 — noise reduction: checkbox spans left pair, segmented control spans right pair
+        g.gridy = 1;
+        noiseReductionCheck = makeCheckBox(getText("settings.audio.noiseReduction.enable"), false);
+        noiseReductionCheck.addActionListener(e -> {
+            boolean enabled = noiseReductionCheck.isSelected();
+            systemSession.setNoiseReductionEnabled(enabled);
+            noiseStrengthControl.setEnabled(enabled);
+        });
+        g.gridx = 0;
+        g.gridwidth = 2;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        g.anchor = GridBagConstraints.WEST;
+        form.add(noiseReductionCheck, g);
+
+        noiseStrengthControl = new HudSegmentedControl(new String[]{
+                getText("settings.audio.noiseReduction.strength.low"),
+                getText("settings.audio.noiseReduction.strength.medium"),
+                getText("settings.audio.noiseReduction.strength.high")
+        }, STRENGTH_MEDIUM);
+        noiseStrengthControl.addChangeListener(e ->
+                systemSession.setNoiseReductionStrength(noiseStrengthControl.getSelectedIndex()));
+        g.gridx = 2;
+        g.gridwidth = 2;
+        g.weightx = 1;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.anchor = GridBagConstraints.CENTER;
+        g.insets = new Insets(6, HUD_GAP * 2, 6, 6);
+        form.add(noiseStrengthControl, g);
+
+        return section;
+    }
+
+    /**
+     * Pins a tab's form to the top of the page: the pages share the height of the tallest one, and a bare
+     * GridBagLayout would float the shorter form in the middle of it.
+     */
+    private static JComponent tabPage(JComponent form) {
+        JPanel page = transparentPanel(new BorderLayout());
+        page.setBorder(BorderFactory.createEmptyBorder(HUD_GAP, 0, 0, 0));
+        page.add(form, BorderLayout.NORTH);
+        return page;
+    }
+
+    /**
+     * AUDIO LEVELS: four full-width HUD sliders stacked in one column. The tab names it, so no heading.
+     */
+    private JPanel buildLevelsSection() {
+        JPanel grid = transparentPanel(new GridBagLayout());
+        GridBagConstraints ag = baseGbc();
+
+        voiceVolumeSlider = makeSlider(0, 100, systemSession.getVoiceVolume());
+        voiceVolumeSlider.addChangeListener(e -> UiBus.publish(new SttVolumeChangedEvent(voiceVolumeSlider.getValue())));
+        addLevelRow(grid, ag, 0, getText("settings.audio.speechVolume"), voiceVolumeSlider);
+
+        radioVolumeSlider = makeSlider(0, 100, systemSession.getRadioVolume());
+        radioVolumeSlider.addChangeListener(e -> UiBus.publish(new RadioVolumeChangedEvent(radioVolumeSlider.getValue())));
+        addLevelRow(grid, ag, 1, getText("settings.audio.radioVolume"), radioVolumeSlider);
+
+        beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
+        beepVolumeSlider.addChangeListener(e -> UiBus.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
+        addLevelRow(grid, ag, 2, getText("settings.audio.beepVolume"), beepVolumeSlider);
+
+        sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads());
+        sttThreadsSlider.addChangeListener(e -> UiBus.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
+        addLevelRow(grid, ag, 3, getText("settings.audio.sttThreads"), sttThreadsSlider);
+
+        return grid;
+    }
+
+    /**
+     * TRANSMISSION AUDIO: the tab names it, so no heading.
+     */
+    private JPanel buildTransmissionSection() {
+        JPanel grid = transparentPanel(new GridBagLayout());
+        GridBagConstraints row = baseGbc();
+        row.gridx = 0;
+        row.anchor = GridBagConstraints.WEST;
+        row.fill = GridBagConstraints.HORIZONTAL;
+        row.weightx = 0;
+        row.insets = new Insets(3, 6, 3, 6);
+
+        JCheckBox tones = makeCheckBox(getText("settings.audio.transmission.tones"),
+                systemSession.isTransmissionTones());
+        row.gridy = 0;
+        grid.add(tones, row);
+        toneVolumeSlider = makeSlider(0, 100, systemSession.getTransmissionToneVolume());
+        toneVolumeSlider.setEnabled(tones.isSelected());
+        toneVolumeSlider.addChangeListener(e -> {
+            if (!toneVolumeSlider.isAdjusting()) {
+                systemSession.setTransmissionToneVolume(toneVolumeSlider.getValue());
+            }
+        });
+        tones.addActionListener(e -> {
+            systemSession.setTransmissionTones(tones.isSelected());
+            toneVolumeSlider.setEnabled(tones.isSelected());
+        });
+        row.gridx = 1;
+        row.weightx = 1;
+        grid.add(toneVolumeSlider, row);
+
+        row.gridx = 0;
+        row.gridwidth = 2;
+        addAudioCheck(grid, row, 1, "settings.audio.transmission.degradation",
+                systemSession.isEnhancedRadioEffect(), systemSession::setEnhancedRadioEffect);
+        JCheckBox radioScope = addAudioCheck(grid, row, 2, "settings.audio.transmission.radio",
+                systemSession.isEffectsOnRadio(), systemSession::setEffectsOnRadio);
+        radioScope.setToolTipText(getText("settings.audio.transmission.radio.help"));
+        addAudioCheck(grid, row, 3, "settings.audio.transmission.vegaAway",
+                systemSession.isEffectsOnVegaAway(), systemSession::setEffectsOnVegaAway);
+
+        return grid;
+    }
+
+    private static JCheckBox addAudioCheck(JPanel grid, GridBagConstraints row, int index, String label,
+                                           boolean selected, Consumer<Boolean> save) {
+        JCheckBox check = makeCheckBox(getText(label), selected);
+        check.addActionListener(e -> save.accept(check.isSelected()));
+        row.gridy = index;
+        grid.add(check, row);
+        return check;
+    }
+
+    /**
+     * Right column: MICROPHONE MONITOR - a FRAMED accent card holding the full-height level meter, with
+     * the meter's verdict in words beneath it ({@link HudMicHealthHint}) for the commander who does not
+     * read meters.
+     */
+    private JComponent buildMicColumn() {
+        HudSection section = new HudSection(getText("settings.audio.section.microphoneMonitor"), new BorderLayout(0, HUD_GAP));
+        section.body().add(new HudMicMeter(), BorderLayout.CENTER);
+        section.body().add(new HudMicHealthHint(), BorderLayout.SOUTH);
+        return section;
+    }
+
+    public void initData() {
+        syncDevices();
+        boolean nrEnabled = systemSession.isNoiseReductionEnabled();
+        noiseReductionCheck.setSelected(nrEnabled);
+        noiseStrengthControl.setSelectedIndex(systemSession.getNoiseReductionStrength());
+        noiseStrengthControl.setEnabled(nrEnabled);
+        updateRadioVolumeEnablement();
+    }
+
+    /**
+     * Applies a newly picked microphone by restarting STT, which is where the input device is resolved
+     * ({@code ParakeetSTTImpl} reads it when it starts, not per utterance).
+     * <p>
+     * WHY this cannot fire on app start, when the services are being started for the first time: the
+     * combo is populated with its saved selection BEFORE this listener is attached; {@link #syncDevices()}
+     * - called by {@link #initData()} and whenever the panel is shown again - sets {@code syncingDevices}
+     * across its programmatic re-selection; and a pick that lands on the device already stored returns
+     * here before publishing, since a JComboBox fires on every pick, not only on a change. Below all
+     * three, {@code AppController} ignores a restart request while services are stopped, so nothing on
+     * this path can start a service that was not already running.
+     */
+    private void onInputDeviceSelected() {
+        if (syncingDevices) return;
+        String selected = AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem());
+        if (Objects.equals(selected, systemSession.getAudioInputDevice())) return;
+
+        systemSession.setAudioInputDevice(selected);
+        UiBus.publish(new RestartEarsEvent());
+    }
+
+    /**
+     * Applies a newly picked speaker by restarting TTS. Every engine holds a PERSISTENT output line -
+     * Supertonic and Google open theirs once and keep it - so a new speaker is not picked up by simply
+     * speaking again. Same three guards as {@link #onInputDeviceSelected()}.
+     */
+    private void onOutputDeviceSelected() {
+        if (syncingDevices) return;
+        String selected = AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem());
+        if (Objects.equals(selected, systemSession.getAudioOutputDevice())) return;
+
+        systemSession.setAudioOutputDevice(selected);
+        UiBus.publish(new RestartMouthEvent());
+    }
+
+    /**
+     * Re-reads the persisted device selection into the pickers without re-triggering a save.
+     */
+    private void syncDevices() {
+        syncingDevices = true;
+        try {
+            selectDevice(inputCombo, systemSession.getAudioInputDevice());
+            selectDevice(outputCombo, systemSession.getAudioOutputDevice());
+        } finally {
+            syncingDevices = false;
+        }
+    }
+
+    /**
+     * The radio level is live only while the radio is on (section 0.6). Re-read on every show: the switch
+     * may have moved while this panel was hidden, and the event that also tracks it is not replayed.
+     */
+    private void updateRadioVolumeEnablement() {
+        radioVolumeSlider.setEnabled(Boolean.TRUE.equals(playerSession.isRadioTransmissionOn()));
+    }
+
+    private static void selectDevice(HudComboBox<String> combo, String savedName) {
+        combo.setSelectedItem(savedName == null || savedName.isBlank()
+                ? AudioDeviceCombo.SYSTEM_DEFAULT_LABEL : savedName);
+    }
+
+    /**
+     * Adds one full-width level row: label in the shared column + slider stretched to panel width.
+     */
+    private static void addLevelRow(JPanel grid, GridBagConstraints ag, int row, String label, HudSlider slider) {
+        ag.gridy = row;
+        ag.gridx = 0;
+        ag.gridwidth = 1;
+        ag.weightx = 0;
+        ag.fill = GridBagConstraints.NONE;
+        ag.insets = new Insets(6, 6, 6, 6);
+        grid.add(sliderLabel(label, LABEL_COL_WIDTH), ag);
+        ag.gridx = 1;
+        ag.weightx = 1.0;
+        ag.fill = GridBagConstraints.HORIZONTAL;
+        grid.add(slider, ag);
+    }
+
+    /**
+     * Creates a HUD slider snapping to integer steps; the value is shown above the thumb.
+     */
+    private static HudSlider makeSlider(int min, int max, int value) {
+        return new HudSlider(min, max, 1, value);
+    }
+
+    /**
+     * Builds a slider-row key label aligned to the slider track. The top inset of
+     * {@link HudPalette#HUD_SLIDER_VALUE_AREA} drops the text from the row top to the track level,
+     * matching the slider's internal layout (value above, track below).
+     */
+    private static JLabel sliderLabel(String text, int width) {
+        JLabel lbl = hudReadoutLabel(text);
+        lbl.setPreferredSize(new Dimension(width, HUD_SLIDER_HEIGHT));
+        lbl.setBorder(BorderFactory.createEmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        return lbl;
+    }
+}

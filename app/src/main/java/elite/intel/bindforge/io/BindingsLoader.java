@@ -1,28 +1,87 @@
 package elite.intel.bindforge.io;
 
+import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.model.BindingSection;
 import elite.intel.session.PlayerSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
- * The BindingsLoader class is responsible for loading binding files from the bindings directory,
- * specifically identifying and retrieving the correct ".binds" file for the active preset.
- * This is useful for applications or systems that leverage the binding configurations from
- * the Elite Dangerous game by Frontier Developments.
+ * Which binds file Elite-Intel's assistant reads its keys from: the one {@code StartPreset.4.start} names (storage.md,
+ * <em>Settled with Storage S13a's sources</em>, D6 and its 2026-11-08 amendment; Storage S13c).
+ * <p>
+ * The lines are taken in order, General first. Each resolves to its preset's true binds file -
+ * {@code <name>.<major>.<minor>.binds} - in the bindings folder, else to that preset's factory binds file in the
+ * {@code ControlSchemes} of the first reachable installation that holds it; a line resolving to neither passes to the
+ * next. <strong>A plain {@code <name>.binds} in the bindings folder never counts</strong>, and no file is ever read
+ * because it is the newest.
+ * <p>
+ * <strong>When the lines name different binds files</strong>, the file the user chose this run ({@link SplitPresetChoice})
+ * is read instead, while it is still one of the lines (Storage S13f): {@link #splitChoices} lists what they are offered.
  */
 public class BindingsLoader {
     private static final Logger log = LogManager.getLogger(BindingsLoader.class);
 
-    public File getLatestBindsFile() throws IOException {
-        return getLatestBindsFile(PlayerSession.getInstance().getBindingsDir());
+    /**
+     * A preset's true binds files, the one read first: the highest version in the file name, then name order (Alan,
+     * 2026-11-08, Storage S13c - the game upgrades a file in place, so two versions are a hand rename, which gets no
+     * guard of its own; principle 13).
+     */
+    private static final Comparator<Path> HIGHEST_VERSION_FIRST =
+            Comparator.comparingLong((Path file) -> FileNames.version(nameOf(file))).reversed()
+                    .thenComparing(BindingsLoader::nameOf);
+
+    /** The sections the preset file has a line for, in the file's order. */
+    private static final List<BindingSection> SECTIONS =
+            List.of(BindingSection.GENERAL, BindingSection.SHIP, BindingSection.SRV, BindingSection.ON_FOOT);
+
+    private final Supplier<List<Path>> factoryFolders;
+    private final Supplier<Optional<String>> chosen;
+
+    /**
+     * One BindName the preset file's lines name, with the sections that name it, in the file's order (Storage S13f).
+     *
+     * @param bindName as the first line naming it spells it
+     */
+    public record SplitChoice(String bindName, List<BindingSection> sections) {
+        public SplitChoice {
+            Objects.requireNonNull(bindName, "bindName");
+            sections = List.copyOf(sections);
+        }
+    }
+
+    /** Factory binds files from the stored list's reachable installations. */
+    public BindingsLoader() {
+        this(InstallationRegistry::reachableControlSchemes);
+    }
+
+    /**
+     * @param factoryFolders the {@code ControlSchemes} folders to look in for a factory binds file, in the order they
+     *                       are tried - asked only when a line's preset has no true binds file
+     */
+    public BindingsLoader(Supplier<List<Path>> factoryFolders) {
+        this(factoryFolders, SplitPresetChoice::chosen);
+    }
+
+    /**
+     * @param chosen the BindName the user chose for a split preset file, if any - {@link SplitPresetChoice#chosen}
+     */
+    BindingsLoader(Supplier<List<Path>> factoryFolders, Supplier<Optional<String>> chosen) {
+        this.factoryFolders = Objects.requireNonNull(factoryFolders, "factoryFolders");
+        this.chosen = Objects.requireNonNull(chosen, "chosen");
+    }
+
+    public File bindsFileToRead() throws IOException {
+        return bindsFileToRead(PlayerSession.getInstance().getBindingsDir());
     }
 
     /**
@@ -30,166 +89,247 @@ public class BindingsLoader {
      * which cannot lean on the session singleton). Which {@code .binds} the app decided to read is not
      * reproducible from the directory alone - the active preset drives it - so anything that needs to name
      * that file must come through here rather than re-deriving it.
+     *
+     * @throws BindsFileNotFoundException when no line resolves to a file - nothing is read - with the reason
+     * @throws IOException                 when the bindings folder cannot be listed
      */
-    public File getLatestBindsFile(Path bindingsDir) throws IOException {
-        String presetName = findActivePresetName(bindingsDir);
-        if (!presetName.isEmpty()) {
-            Optional<Path> matched;
-            try (var stream = Files.list(bindingsDir)) {
-                matched = stream
-                        .filter(p -> {
-                            String name = p.getFileName().toString();
-                            return name.startsWith(presetName + ".") && name.endsWith(".binds");
-                        })
-                        .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
-            }
-
-            if (matched.isPresent()) {
-                log.info("Selected bindings file for preset '{}': {}", presetName, matched.get().getFileName());
-                return matched.get().toFile();
-            }
-            log.warn("No .binds file found for preset '{}', falling back to most recently modified", presetName);
+    public File bindsFileToRead(Path bindingsDir) throws IOException {
+        List<String> presetNames = presetNamesInFileOrder(bindingsDir);
+        if (presetNames.isEmpty()) {
+            throw new BindsFileNotFoundException(BindsFileNotFoundException.Reason.NO_PRESET_FILE,
+                    "No StartPreset file naming a preset in " + bindingsDir);
         }
-
-        // Fallback: most recently modified .binds file
-        Path latestFilePath = listAllBindsFiles(bindingsDir).stream()
-                .max(Comparator.comparingLong(p -> p.toFile().lastModified()))
-                .orElseThrow(() -> new IOException("No .binds file found in " + bindingsDir));
-
-        log.info("Selected latest bindings file (fallback): {}", latestFilePath.getFileName());
-        return latestFilePath.toFile();
+        Resolver resolver = new Resolver(bindingsDir);
+        // WHY first: the user chose this file for a split preset file (Storage S13f). Only while a line still names it -
+        // a choice the lines no longer hold is no answer to the question, so General-first applies again.
+        Optional<String> chosenLine = chosen.get()
+                .flatMap(name -> presetNames.stream().filter(line -> FileNames.sameFile(line, name)).findFirst());
+        if (chosenLine.isPresent()) {
+            Optional<Path> file = resolver.resolve(chosenLine.get());
+            if (file.isPresent()) {
+                log.info("Selected the bindings file chosen for a split preset file: {}", file.get());
+                return file.get().toFile();
+            }
+        }
+        for (String presetName : presetNames) {
+            Optional<Path> file = resolver.resolve(presetName);
+            if (file.isPresent()) {
+                log.info("Selected bindings file for preset '{}': {}", presetName, file.get());
+                return file.get().toFile();
+            }
+            log.warn("No binds file for preset '{}' in the bindings folder or any reachable installation", presetName);
+        }
+        // WHY two reasons: with no installation known, a stock preset simply cannot be read from here - nothing is
+        // missing. With installations reachable, the preset's file is genuinely gone.
+        boolean noInstallation = resolver.controlSchemes().isEmpty();
+        throw new BindsFileNotFoundException(
+                noInstallation ? BindsFileNotFoundException.Reason.NO_INSTALLATION
+                        : BindsFileNotFoundException.Reason.PRESET_FILE_MISSING,
+                "No preset in the StartPreset file in " + bindingsDir + " has a binds file in the bindings folder"
+                        + (noInstallation ? ", and no installation is reachable" : " or a reachable installation"));
     }
 
     /**
-     * Lists every {@code .binds} file in {@code bindingsDir}, not just the active preset's.
-     * Shared by the active-preset fallback above and by anything else (e.g. player backups)
-     * that needs the full set rather than just the currently-selected file.
+     * What the user is asked to choose from when the preset file's lines name different binds files (Storage S13f): each
+     * BindName the lines name that resolves to a file - its true binds file, else its factory one - with the sections
+     * naming it, in the file's order. Names that differ only in case are one (storage.md, the case rule). <strong>Empty
+     * unless at least two resolve</strong>: with one, there is nothing to choose.
+     *
+     * @throws IOException when the preset file or the bindings folder cannot be read
      */
-    public List<Path> listAllBindsFiles(Path bindingsDir) throws IOException {
-        try (var stream = Files.list(bindingsDir)) {
-            return stream.filter(p -> p.toString().endsWith(".binds")).toList();
+    public List<SplitChoice> splitChoices(Path bindingsDir) throws IOException {
+        Optional<Path> startPresetFile = findStartPresetFile(bindingsDir);
+        if (startPresetFile.isEmpty()) return List.of();
+        StartPresetSections sections = StartPresetSections.parse(Files.readString(startPresetFile.get()));
+        Map<String, List<BindingSection>> byName = new LinkedHashMap<>();
+        for (BindingSection section : SECTIONS) {
+            String line = sections.forSection(section);
+            if (line.isEmpty()) continue;
+            String name = byName.keySet().stream().filter(known -> FileNames.sameFile(known, line)).findFirst()
+                    .orElse(line);
+            byName.computeIfAbsent(name, ignored -> new ArrayList<>()).add(section);
         }
+        if (byName.size() < 2) return List.of();
+        Resolver resolver = new Resolver(bindingsDir);
+        List<SplitChoice> choices = new ArrayList<>();
+        for (Map.Entry<String, List<BindingSection>> entry : byName.entrySet()) {
+            if (resolver.resolve(entry.getKey()).isPresent()) {
+                choices.add(new SplitChoice(entry.getKey(), entry.getValue()));
+            }
+        }
+        return choices.size() < 2 ? List.of() : List.copyOf(choices);
+    }
+
+    /** A line's file: its preset's true binds file, else its factory one; the installations listed once, when needed. */
+    private final class Resolver {
+        private final Path bindingsDir;
+        private List<Path> controlSchemes;
+
+        Resolver(Path bindingsDir) {
+            this.bindingsDir = bindingsDir;
+        }
+
+        Optional<Path> resolve(String presetName) throws IOException {
+            Optional<Path> own = trueBindsFileOf(bindingsDir, presetName);
+            if (own.isPresent()) return own;
+            return factoryBindsFileOf(controlSchemes(), presetName);
+        }
+
+        List<Path> controlSchemes() {
+            if (controlSchemes == null) controlSchemes = factoryFolders.get();
+            return controlSchemes;
+        }
+    }
+
+    private static Optional<Path> trueBindsFileOf(Path bindingsDir, String presetName) throws IOException {
+        try (var stream = Files.list(bindingsDir)) {
+            return stream
+                    .filter(file -> isFileOfPreset(nameOf(file), presetName))
+                    .min(HIGHEST_VERSION_FIRST);
+        }
+    }
+
+    /**
+     * The first {@code ControlSchemes} folder's factory binds file named for {@code presetName}, ignoring case - found
+     * by file name, since Frontier's own files always carry their name as {@code PresetName}.
+     */
+    private static Optional<Path> factoryBindsFileOf(List<Path> controlSchemesFolders, String presetName) {
+        for (Path controlSchemes : controlSchemesFolders) {
+            try (var stream = Files.list(controlSchemes)) {
+                Optional<Path> found = stream
+                        .filter(Files::isRegularFile)
+                        .filter(file -> bindNameOf(nameOf(file))
+                                .filter(name -> FileNames.sameFile(name, presetName)).isPresent())
+                        .min(Comparator.comparing(BindingsLoader::nameOf));
+                if (found.isPresent()) return found;
+            } catch (IOException | UncheckedIOException e) {
+                // WHY: one installation that cannot be listed must not hide the factory file another one holds.
+                log.warn("Could not list the factory binds files in {}: {}", controlSchemes, e.getMessage());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The BindName a file of either folder answers to: a true binds file's, or {@code <name>.binds}'s - the form
+     * Frontier's factory files are named in. Empty for any other name.
+     */
+    private static Optional<String> bindNameOf(String fileName) {
+        return FileNames.bindName(fileName).or(() -> FileNames.plainBindName(fileName));
+    }
+
+    private static String nameOf(Path file) {
+        return file.getFileName().toString();
+    }
+
+    /**
+     * The sections of the game's controls whose preset {@code readFile} is not, each with the preset it names, in the
+     * file's order. A blank line is left out. Empty when every section matches, or the folder has no readable
+     * {@code StartPreset}.
+     * <p>
+     * Only one file is read, so a split preset always leaves a section whose keys the app cannot see, and a clean
+     * conflict check on the file read proves nothing about them (support bundle 2026-11-06: map panning moved off
+     * W/A/S/D in Custom while General stayed on KeyboardMouseOnly, no warning, and route plotting failed every time).
+     * <p>
+     * A section counts as read when its preset is the one {@code readFile} is a file of, from the bindings folder or
+     * from {@code ControlSchemes} (Storage S13c).
+     *
+     * @param readFile the file {@link #bindsFileToRead(Path)} returned
+     */
+    public Map<BindingSection, String> sectionsNotIn(Path bindingsDir, File readFile) {
+        try {
+            Optional<Path> startPresetFile = findStartPresetFile(bindingsDir);
+            if (startPresetFile.isEmpty()) {
+                return Map.of();
+            }
+            StartPresetSections sections = StartPresetSections.parse(Files.readString(startPresetFile.get()));
+            Map<BindingSection, String> notRead = new EnumMap<>(BindingSection.class);
+            for (BindingSection section : SECTIONS) {
+                String preset = sections.forSection(section);
+                // WHY bindNameOf, not isFileOfPreset: the file read may be a factory one, named <name>.binds. The
+                // loader never returns a plain file from the bindings folder, so the wider rule cannot let one in.
+                boolean read = bindNameOf(readFile.getName()).filter(name -> FileNames.sameFile(name, preset))
+                        .isPresent();
+                if (!preset.isEmpty() && !read) {
+                    notRead.put(section, preset);
+                }
+            }
+            return notRead;
+        } catch (IOException | UncheckedIOException e) {
+            // WHY: this only decides whether to add a warning, and it runs inside service startup.
+            log.warn("Could not compare the StartPreset sections with {}: {}", readFile.getName(), e.getMessage());
+            return Map.of();
+        }
+    }
+
+    /**
+     * Which file in the bindings folder is a preset's true binds file. The preset's
+     * name is matched ignoring case, as the game matches it (Alan, 2026-11-07, Storage S13a D6), against the file's
+     * BindName as the rest of BindForge reads it ({@link FileNames#bindName}): {@code Custom.Old.4.2.binds} is BindName
+     * {@code Custom.Old}, not a file of preset {@code Custom}, and a name that is not {@code <name>.<major>.<minor>.binds}
+     * is no preset's file (Storage S13aR, D7).
+     */
+    private static boolean isFileOfPreset(String fileName, String presetName) {
+        return FileNames.bindName(fileName).filter(name -> FileNames.sameFile(name, presetName)).isPresent();
     }
 
     /**
      * Locates the {@code StartPreset.*.start} file (e.g. {@code StartPreset.4.start}) in {@code bindingsDir}, if present.
      * <p>
      * When the folder holds both {@code StartPreset.start} and a numbered one, which it returns depends on listing
-     * order. It is kept as it is for its existing callers; code that needs the file the game reads uses
-     * {@link #findLiveStartPresetFile(Path)}, which can name a different file in that folder.
+     * order. It is kept as it is for its existing callers; BindForge picks the preset file from the working copy
+     * ({@code bindforge.storage.PresetEdits}).
      */
     public Optional<Path> findStartPresetFile(Path bindingsDir) throws IOException {
         try (var stream = Files.list(bindingsDir)) {
-            return stream
-                    .filter(p -> {
-                        String name = p.getFileName().toString();
-                        return name.startsWith("StartPreset.") && name.endsWith(".start");
-                    })
-                    .findFirst();
+            return stream.filter(p -> isStartPresetFileName(nameOf(p))).findFirst();
         }
     }
 
     /**
-     * Locates the {@code StartPreset} file the live game reads, when a folder holds more than one generation of it:
-     * the highest-numbered {@code StartPreset.N.start}, else the pre-Odyssey {@code StartPreset.start}. Unlike
-     * {@link #findStartPresetFile(Path)}, which returns whichever the listing yields first, the choice does not
-     * depend on listing order. A {@code StartPreset.*.start} whose middle is not a version number is not a
-     * generation the game writes, and is passed over.
+     * Whether {@code fileName} is the game's preset file, {@code StartPreset.start} or {@code StartPreset.<n>.start}.
+     * The game writes it the first time it runs, customised controls or not, so it - not a {@code .binds} - is what
+     * marks a folder as the game's bindings folder.
      */
-    public Optional<Path> findLiveStartPresetFile(Path bindingsDir) throws IOException {
-        List<Path> candidates;
-        try (var stream = Files.list(bindingsDir)) {
-            candidates = stream.filter(p -> isStartPresetName(p.getFileName().toString())).toList();
-        }
-
-        Path live = null;
-        int liveGeneration = -1;
-        for (Path candidate : candidates) {
-            String name = candidate.getFileName().toString();
-            int generation = startPresetGeneration(name);
-            if (generation < 0) {
-                log.debug("Passing over {}: not a StartPreset generation the game writes", name);
-                continue;
-            }
-            // Equal generations (StartPreset.4 and StartPreset.04) are broken by name, so the answer never depends
-            // on listing order.
-            if (generation > liveGeneration
-                    || (generation == liveGeneration && name.compareTo(live.getFileName().toString()) > 0)) {
-                live = candidate;
-                liveGeneration = generation;
-            }
-        }
-        return Optional.ofNullable(live);
-    }
-
-    /**
-     * Reads all four sections of the live {@code StartPreset} file - General, Ship, SRV and On Foot - for callers
-     * that need each section's preset rather than {@link #getActivePresetName()}'s single answer. Empty when the
-     * folder has no {@code StartPreset}; how the lines are read is {@link StartPresetSections#parse(String)}.
-     *
-     * @throws IOException when the folder cannot be listed or the file cannot be read
-     */
-    public Optional<StartPresetSections> readStartPresetSections(Path bindingsDir) throws IOException {
-        Optional<Path> startPresetFile = findLiveStartPresetFile(bindingsDir);
-        if (startPresetFile.isEmpty()) {
-            log.debug("No StartPreset file in {}", bindingsDir);
-            return Optional.empty();
-        }
-        StartPresetSections sections = StartPresetSections.parse(Files.readString(startPresetFile.get()));
-        log.debug("StartPreset sections from {}: {}", startPresetFile.get().getFileName(), sections);
-        return Optional.of(sections);
+    public static boolean isStartPresetFileName(String fileName) {
+        return fileName.startsWith("StartPreset.") && fileName.endsWith(".start");
     }
 
     public String getActivePresetName() {
         return findActivePresetName(PlayerSession.getInstance().getBindingsDir());
     }
 
-    // Reads the active preset name from StartPreset.*.start (e.g. StartPreset.4.start).
-    // The file repeats the preset name on multiple lines; we take the first non-empty one.
+    // The active preset is the first name in StartPreset.*.start (e.g. StartPreset.4.start), or "" when it has none.
     private String findActivePresetName(Path bindingsDir) {
+        return presetNamesInFileOrder(bindingsDir).stream().findFirst().orElse("");
+    }
+
+    // The names StartPreset.*.start holds, in its own order - General, Ship, SRV, On Foot - blanks and repeats left out.
+    private List<String> presetNamesInFileOrder(Path bindingsDir) {
         try {
             Optional<Path> startPresetFile = findStartPresetFile(bindingsDir);
 
             if (startPresetFile.isEmpty()) {
                 log.warn("No StartPreset.*.start file found in {}", bindingsDir);
-                return "";
+                return List.of();
             }
 
-            List<String> lines = Files.readAllLines(startPresetFile.get());
-            String presetName = lines.stream()
-                    .map(String::trim)
-                    .filter(l -> !l.isEmpty())
-                    .findFirst()
-                    .orElse("");
+            StartPresetSections sections = StartPresetSections.parse(Files.readString(startPresetFile.get()));
+            List<String> names = Stream.of(sections.general(), sections.ship(), sections.srv(), sections.onFoot())
+                    .filter(name -> !name.isEmpty())
+                    .distinct()
+                    .toList();
 
-            if (presetName.isEmpty()) {
+            if (names.isEmpty()) {
                 log.warn("StartPreset file {} was empty", startPresetFile.get().getFileName());
             } else {
-                log.info("Active preset from {}: '{}'", startPresetFile.get().getFileName(), presetName);
+                log.info("Presets from {}: {}", startPresetFile.get().getFileName(), names);
             }
-            return presetName;
+            return names;
 
         } catch (IOException e) {
             log.warn("Could not read StartPreset file: {}", e.getMessage());
-            return "";
+            return List.of();
         }
-    }
-
-    private static boolean isStartPresetName(String fileName) {
-        return fileName.startsWith("StartPreset.") && fileName.endsWith(".start");
-    }
-
-    // StartPreset.start is generation 0 (pre-Odyssey) and StartPreset.N.start is N + 1, so any numbered file
-    // outranks the unnumbered one. -1 when the middle is not a version number. Nine digits at most keeps N + 1
-    // inside an int.
-    private static int startPresetGeneration(String fileName) {
-        if (fileName.equals("StartPreset.start")) {
-            return 0;
-        }
-        String version = fileName.substring("StartPreset.".length(), fileName.length() - ".start".length());
-        if (version.isEmpty() || version.length() > 9 || !version.chars().allMatch(c -> c >= '0' && c <= '9')) {
-            return -1;
-        }
-        return Integer.parseInt(version) + 1;
     }
 }

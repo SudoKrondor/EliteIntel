@@ -4,7 +4,7 @@ public class AudioDeClicker {
 
     /**
      * Scales every PCM-16 LE sample in {@code pcm} by {@code gain}.
-     * {@code gain} should be in the range [0.0, 1.0] where 1.0 is full volume.
+     * {@code gain} 1.0 leaves the level as it is; a voice's own trim can take it up to 1.5.
      * Samples are clamped to the signed 16-bit range after scaling.
      */
     public static void applyVolume(byte[] pcm, float gain) {

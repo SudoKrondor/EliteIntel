@@ -1,0 +1,506 @@
+package elite.intel.ui.screen.bindings;
+
+import com.google.common.eventbus.Subscribe;
+import elite.intel.bindforge.devicefiles.ButtonMapAudit;
+import elite.intel.bindforge.devicefiles.DeviceEntry;
+import elite.intel.bindforge.devicefiles.DeviceMappingsParser;
+import elite.intel.bindforge.install.GameInstallation;
+import elite.intel.bindforge.install.GameInstallationProvider;
+import elite.intel.bindforge.install.InstallationRegistry;
+import elite.intel.bindforge.storage.*;
+import elite.intel.db.dao.BindForgeInstallationsDao.InstallationRow;
+import elite.intel.eventbus.UiBus;
+import elite.intel.session.PlayerSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
+import elite.intel.ui.event.BindForgeReadOnlyChangedEvent;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudFooter;
+import elite.intel.ui.widget.HudPanel;
+import elite.intel.ui.widget.HudSection;
+import elite.intel.ui.widget.HudTable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
+
+/**
+ * Where BindForge looks for the files it manages.
+ * <p>
+ * The folder and the installations are shown apart rather than as one list, because the file domains do not live in
+ * comparable places: the
+ * {@code .binds} files sit in <strong>one folder shared by every installation</strong>, while
+ * {@code DeviceMappings.xml} and the {@code .buttonMap} files are <strong>duplicated per
+ * installation</strong>. Presenting them as one flat list of "locations" would imply otherwise, and that is
+ * the thing people get wrong.
+ * <p>
+ * <strong>The Bindings File section</strong> moved here from the Bind Editor in Storage S15 (Alan, 2026-11-04): only
+ * File Manager shows folders and files (principle 12). LOAD there opens the chosen binds file in the Bind Editor
+ * ({@link BindsFileSection}). <em>The bindings folder's row and its ⋮ moved up to the {@link ApplyBar}
+ * ({@link BindingsFolderField}; Alan, 2026-11-08), above every BindForge tab.</em>
+ * <p>
+ * Backup, restore and apply all work from this list, so when detection is wrong every one of them is wrong -
+ * which is why the list is editable rather than merely displayed: <strong>Add Missing</strong> and
+ * <strong>Remove</strong>, the same list and buttons as first-time startup (storage.md rule 1). A removed installation
+ * stays removed. <em>Rescan and Relocate were removed in Storage S2b (Alan, 2026-10-24): detection runs at every
+ * start, and moving the game is Remove, then Add Missing.</em>
+ * <p>
+ * <strong>Each installation's Status says whether its device files match the working copy</strong> - <em>Matches</em>,
+ * <em>Differs</em> or <em>Not found</em>, as text colour - from the check's own comparison ({@link DeviceCheck}; Storage
+ * S9a, Alan, 2026-10-31). Before first-time startup, or while the working copy cannot be read, there is nothing to
+ * compare with, and it says <em>Found</em> or <em>Missing</em>.
+ * <p>
+ * <strong>Run First-Time Startup Again</strong> sets BindForge up again from the game's files, for every user, and runs
+ * first-time startup as soon as it is confirmed (Alan, 2026-11-11, Storage S19; until then it was for testing and to be
+ * removed before V1.2 shipped, and first-time startup waited for the next click on the BindForge tab).
+ */
+public class GameInstallLocationsPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(GameInstallLocationsPanel.class);
+
+    /** Wide enough for a real install path, narrow enough that one cannot crowd out the other columns. */
+    private static final int MAX_COLUMN_WIDTH = 420;
+
+    private final InstallationRegistry registry;
+
+    private DefaultTableModel tableModel;
+    private JTable table;
+    private final BindsFileSection bindsFileSection = new BindsFileSection();
+    private List<InstallationRow> currentRows = List.of();
+    private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    private Long pendingSelection;
+
+    private JButton removeButton;
+    private JButton runAgainButton;
+    /** First-time startup run again, at once - wired by the BindForge tab, which owns the flow. */
+    private Runnable runAgain;
+    /** Told when an installation is added or removed - wired by the BindForge tab, for the Playing: selector. */
+    private Runnable listChanged = () -> { };
+
+    public GameInstallLocationsPanel() {
+        this(new InstallationRegistry(
+                GameInstallationProvider.forThisPlatform(PlayerSession.getInstance().getBindingsDir())));
+    }
+
+    GameInstallLocationsPanel(InstallationRegistry registry) {
+        this.registry = registry;
+        buildUi();
+        UiBus.register(this);
+        // WHY after registering: read only may have been worked out before this screen existed.
+        showReadOnly();
+    }
+
+    private void buildUi() {
+        setLayout(new BorderLayout());
+        setBorder(hudSubtabContentBorder());
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+
+        // WHY above the table, not under it: the table takes the height left over, which put the section at the foot
+        // of the screen (Alan, 2026-11-04).
+        add(bindsFileSection, BorderLayout.NORTH);
+        add(buildInstallationsSection(), BorderLayout.CENTER);
+        add(buildFooter(), BorderLayout.SOUTH);
+    }
+
+    /** Wired by the BindForge tab: the Bind Editor LOAD opens a file in. */
+    public void setBindEditor(BindsFileSection.BindEditor bindEditor) {
+        bindsFileSection.setBindEditor(bindEditor);
+    }
+
+    /**
+     * Wired by the BindForge tab: what a confirmed Run First-Time Startup Again runs - first-time startup, straight away
+     * (Storage S19).
+     */
+    public void setRunAgain(Runnable runAgain) {
+        this.runAgain = runAgain;
+    }
+
+    /**
+     * Wired by the BindForge tab: run after an installation is added or removed (linux-several-installations.md,
+     * rule 4).
+     */
+    public void setListChanged(Runnable listChanged) {
+        this.listChanged = Objects.requireNonNull(listChanged, "listChanged");
+    }
+
+    /** CREATE greyed the editors, or brought them back - the Bindings File section follows them (D3). On the EDT. */
+    public void setEditorsUsable(boolean usable) {
+        bindsFileSection.setEditorsUsable(usable);
+    }
+
+    /** Run first-time startup again is off while BindForge is read only, since first-time startup is (S14a, Q5). */
+    @Subscribe
+    public void onReadOnlyChanged(BindForgeReadOnlyChangedEvent event) {
+        SwingUtilities.invokeLater(this::showReadOnly);
+    }
+
+    private void showReadOnly() {
+        boolean readOnly = ReadOnlyMode.stored().activeIfKnown();
+        runAgainButton.setEnabled(!readOnly);
+        runAgainButton.setToolTipText(readOnly ? getText("bindings.readOnly.tooltip") : null);
+    }
+
+    public void dispose() {
+        UiBus.unregister(this);
+        bindsFileSection.dispose();
+    }
+
+    private JPanel buildInstallationsSection() {
+        tableModel = new ReadOnlyTableModel(columnNames(), 0);
+        table = new JTable(tableModel);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.getSelectionModel().addListSelectionListener(e -> updateSelectionActionsEnabled());
+        HudTable.style(table);
+        // WHY: state is the text's colour, never a pill or a fill - the HUD canon.
+        table.setDefaultRenderer(Object.class, new StatusRenderer());
+        table.putClientProperty(HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
+
+        HudSection section = new HudSection(
+                getText("bindings.installLocations.section.installations"),
+                new BorderLayout(),
+                HudPanel.Variant.FLAT,
+                6);
+        section.body().add(HudTable.dataPlaneScrollPane(table), BorderLayout.CENTER);
+        return section;
+    }
+
+    private JPanel buildFooter() {
+        JButton addButton = makeButton(getText("bindings.installLocations.button.addMissing"));
+        addButton.addActionListener(e -> performAdd());
+
+        removeButton = makeButtonSubtle(getText("bindings.installLocations.button.remove"));
+        removeButton.setEnabled(false);
+        removeButton.addActionListener(e -> performRemove());
+
+        // WHY: kept for every user - setting BindForge up again from the game's files (Alan, 2026-11-11, Storage S19).
+        runAgainButton = makeButtonSubtle(getText("bindings.installLocations.button.runFirstTimeStartupAgain"));
+        runAgainButton.addActionListener(e -> performRunAgain());
+
+        return HudFooter.build(false, null, null, List.of(addButton, removeButton, runAgainButton));
+    }
+
+    /**
+     * Reads the installations and their device files off the EDT, same as
+     * {@code BindingManagementPanel.performBackup()}: each row's Device Files summary parses that
+     * installation's {@code DeviceMappings.xml} and lists its button maps, and an installation on a
+     * disconnected drive takes as long as the filesystem needs to say so.
+     * <p>
+     * A refresh already in flight is left to finish. This is called again on every ship-profile change, and
+     * nothing here depends on the ship.
+     */
+    public void initData() {
+        loadInBackground(registry::currentWithStartupScan);
+    }
+
+    private void loadInBackground(Supplier<List<InstallationRow>> source) {
+        if (!refreshInProgress.compareAndSet(false, true)) return;
+        // WHY: a list that cannot be read shows empty rather than as it was, with the log saying why.
+        Function<String, Runnable> empty = reason -> () -> loaded(List.of(), List.of());
+        FlowSteps.inBackground("BindForge-Installations", log, "Refreshing the installation list", () -> {
+            List<InstallationRow> rows = source.get();
+            Optional<Map<Long, DeviceCheck.State>> states = matchStates();
+            List<Object[]> cells = rows.stream().map(row -> cellsOf(row,
+                    states.map(stateById -> statusOf(row, stateById)).orElseGet(() -> listedStatus(row)))).toList();
+            return () -> loaded(rows, cells);
+        }, empty, empty, FlowSteps.NOTHING);
+    }
+
+    /** Shows what {@link #loadInBackground} read, then the row asked to be selected. On the EDT. */
+    private void loaded(List<InstallationRow> rows, List<Object[]> cells) {
+        showRows(rows, cells);
+        if (pendingSelection != null) {
+            selectRow(pendingSelection);
+            pendingSelection = null;
+        }
+        refreshInProgress.set(false);
+    }
+
+    private void performAdd() {
+        Path chosen = chooseFolder(getText("bindings.installLocations.add.chooserTitle"));
+        if (chosen == null) return;
+        InstallationRow added;
+        try {
+            added = registry.addByHand(chosen);
+        } catch (IllegalArgumentException e) {
+            // WHY: the folder is the user's choice and rejecting it is an ordinary outcome, not a fault. They
+            // are told which folder and what was expected, so the next attempt can be a better one.
+            HudConfirmDialog.info(this,
+                    getText("bindings.installLocations.add.rejected.title"),
+                    getText("bindings.installLocations.add.rejected.text", chosen.toString()),
+                    getText("button.ok"));
+            return;
+        }
+        if (registry.asksForWinePrefix()) askForWinePrefix(added);
+        // WHY: remembered rather than selected here. The list reloads off the EDT, so the row does not exist
+        // in the table yet - the selection happens when it does.
+        pendingSelection = added.id();
+        initData();
+        listChanged.run();
+    }
+
+    /**
+     * On Linux, the installation's Wine prefix, where its own bindings and journal folders are
+     * (linux-several-installations.md, rule 6). Cancelling keeps it without one: its device files are still written.
+     */
+    private void askForWinePrefix(InstallationRow added) {
+        Path prefix = chooseFolder(getText("bindings.installLocations.add.prefixChooserTitle"));
+        if (prefix == null) return;
+        try {
+            registry.setWinePrefix(added.id(), prefix);
+        } catch (IllegalArgumentException e) {
+            // WHY: the user's choice, refused as an ordinary outcome - told what was expected, and Add Missing on the same
+            // folder asks again.
+            HudConfirmDialog.info(this,
+                    getText("bindings.installLocations.add.prefixRejected.title"),
+                    getText("bindings.installLocations.add.prefixRejected.text", prefix.toString()),
+                    getText("button.ok"));
+        }
+    }
+
+    private void performRemove() {
+        InstallationRow row = selectedRow();
+        if (row == null) return;
+        // WHY: confirmed, and saying what it costs - a removed installation is neither backed up nor written from
+        // then on (Alan, 2026-10-25).
+        boolean confirmed = HudConfirmDialog.confirm(this,
+                getText("bindings.installLocations.remove.confirm.title"),
+                getText("bindings.installLocations.remove.confirm.text", row.storefront(), row.rootPath()),
+                getText("bindings.installLocations.button.remove"),
+                getText("button.cancel"));
+        if (!confirmed) return;
+        registry.remove(row.id());
+        // WHY: a missing installation the user removes no longer holds BindForge read only - read only ends when none
+        // is left (Alan, 2026-11-05, S14a Q4). Plugging a drive back in waits for the next start.
+        ReadOnlyMode.stored().removed(row.id());
+        initData();
+        listChanged.run();
+    }
+
+    /**
+     * Asks first, then runs first-time startup straight away, from the live copies, with its backup first - the flag
+     * cleared and nothing else until its summary is confirmed (file-manager.md, <em>Game Install Locations</em>;
+     * Storage S19). Edits not applied are thrown away by its write, so the confirmation says so when there are any (Q1).
+     */
+    private void performRunAgain() {
+        if (runAgain == null) {
+            log.error("Run First-Time Startup Again pressed before the BindForge tab wired it");
+            return;
+        }
+        boolean confirmed = HudConfirmDialog.confirm(this,
+                getText("bindings.installLocations.runAgain.confirm.title"),
+                runAgainText(Edits.stored().hasEdits()),
+                getText("bindings.installLocations.runAgain.confirm.do"),
+                getText("button.cancel"));
+        if (confirmed) runAgain.run();
+    }
+
+    /**
+     * Run First-Time Startup Again's confirmation: that it runs now and, when there are edits not applied, that its
+     * write throws them away (Storage S19, Q1).
+     */
+    static String runAgainText(boolean hasEdits) {
+        String text = getText("bindings.installLocations.runAgain.confirm.text");
+        return hasEdits ? text + "\n\n" + getText("bindings.installLocations.runAgain.confirm.edits") : text;
+    }
+
+    /**
+     * How each reachable installation's device files stand against the working copy, by id - empty when there is
+     * nothing to compare with: before first-time startup, or a working copy that cannot be read. Off the EDT.
+     * <p>
+     * <em>Read twice:</em> {@link #describeDeviceFiles} reads each installation's files again for its own cell. Few
+     * installations and off the EDT, so it costs nothing today; it is two readers of the same files (Storage S9R,
+     * D7 - left as it is).
+     */
+    private static Optional<Map<Long, DeviceCheck.State>> matchStates() {
+        try {
+            if (FirstTimeStartup.stored().needed()) return Optional.empty();
+            ConfigurationFiles workingCopy = WorkingCopy.stored().read();
+            Map<Long, DeviceCheck.State> states = new HashMap<>();
+            DeviceCheck.stored().find(workingCopy).installations()
+                    .forEach(judged -> states.put(judged.row().id(), judged.state()));
+            return Optional.of(states);
+        } catch (IOException e) {
+            // WHY: the screen still lists the installations; the first BindForge click says the working copy cannot be
+            // read, and offers the newest backup.
+            log.warn("Could not compare the installations with the working copy", e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Everything one row displays. Built off the EDT, because the Device Files cell reads files.
+     *
+     * @param status its Status cell - worked out by the caller, which knows whether there is a working copy
+     */
+    private Object[] cellsOf(InstallationRow row, Status status) {
+        return new Object[]{
+                row.storefront(),
+                row.rootPath(),
+                getText(row.addedByHand()
+                        ? "bindings.installLocations.source.addedByHand"
+                        : "bindings.installLocations.source.detected"),
+                describeDeviceFiles(row),
+                status
+        };
+    }
+
+    /**
+     * The Status cell with nothing to compare with - before first-time startup, or a working copy that cannot be read:
+     * the stored list's Found or Missing (file-manager.md, <em>Game Install Locations</em>).
+     */
+    static Status listedStatus(InstallationRow row) {
+        return row.missing()
+                ? new Status(getText("bindings.installLocations.state.missing"), HudPalette.HUD_COLOR_ROLE_WARNING)
+                : new Status(getText("bindings.installLocations.state.found"), null);
+    }
+
+    /**
+     * The Status cell against the working copy (file-manager.md, <em>Game Install Locations</em>): Matches, Differs, or
+     * Not found for one the check did not reach.
+     *
+     * @param states each reachable installation's state, by id
+     */
+    static Status statusOf(InstallationRow row, Map<Long, DeviceCheck.State> states) {
+        DeviceCheck.State state = states.get(row.id());
+        if (state == null) {
+            return new Status(getText("bindings.installLocations.state.notFound"), HudPalette.HUD_COLOR_ROLE_WARNING);
+        }
+        if (state == DeviceCheck.State.MATCHES) {
+            return new Status(getText("bindings.installLocations.state.matches"), HudPalette.HUD_COLOR_ROLE_SUCCESS);
+        }
+        return new Status(getText("bindings.installLocations.state.differs"), HudPalette.HUD_COLOR_ROLE_DANGER);
+    }
+
+    /**
+     * The Status cell: its words, and the text colour that is its state - {@code null} for the table's own.
+     */
+    record Status(String text, Color colour) {
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+
+    /** Status in its colour; a selected row keeps the selection colour. */
+    private static final class StatusRenderer extends HudTable.CellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean selected,
+                                                       boolean focused, int row, int column) {
+            Component cell = super.getTableCellRendererComponent(table, value, selected, focused, row, column);
+            if (!selected && value instanceof Status status && status.colour() != null) {
+                cell.setForeground(status.colour());
+            }
+            return cell;
+        }
+    }
+
+    private void showRows(List<InstallationRow> rows, List<Object[]> cells) {
+        currentRows = rows;
+        tableModel.setRowCount(0);
+        cells.forEach(tableModel::addRow);
+        // WHY: after the rows, not with the columns. The widths are measured from what is actually in the
+        // table, and an install path is only known once it is there.
+        HudTable.fitColumnsToContent(table, MAX_COLUMN_WIDTH);
+        updateSelectionActionsEnabled();
+    }
+
+    /**
+     * What was actually found in this installation's {@code ControlSchemes} folder.
+     * <p>
+     * Reports the device entries, the button maps, and <strong>how many of those button maps resolve to
+     * nothing</strong>. An orphan is a file the game never reads: it is named for a device entry that is not
+     * there, so its labels are never shown. An entry with no button map is the opposite - the normal case,
+     * and not counted as a problem, because Frontier ships button maps for only a couple of devices.
+     */
+    private String describeDeviceFiles(InstallationRow row) {
+        Path controlSchemes = GameInstallation.controlSchemesUnder(Path.of(row.rootPath()));
+        if (!Files.isDirectory(controlSchemes)) {
+            return getText("bindings.installLocations.deviceFiles.none");
+        }
+        Path deviceMappings = GameInstallation.deviceMappingsIn(controlSchemes);
+        if (!Files.isRegularFile(deviceMappings)) {
+            return getText("bindings.installLocations.deviceFiles.noMappings");
+        }
+        try {
+            List<DeviceEntry> entries = DeviceMappingsParser.parse(deviceMappings);
+            ButtonMapAudit.Result audit =
+                    ButtonMapAudit.audit(entries, GameInstallation.deviceButtonMapsIn(controlSchemes));
+            int maps = audit.attached().size() + audit.orphaned().size();
+            return audit.isClean()
+                    ? getText("bindings.installLocations.deviceFiles.summary",
+                            entries.size(), maps)
+                    : getText("bindings.installLocations.deviceFiles.summaryWithOrphans",
+                            entries.size(), maps, audit.orphaned().size());
+        } catch (IOException e) {
+            // WHY: a file that is there but cannot be read is a different state from one that is absent, and
+            // the user can act on it - so it is reported rather than folded into "nothing found".
+            log.warn("Could not read device files in {}: {}", controlSchemes, e.getMessage());
+            return getText("bindings.installLocations.deviceFiles.unreadable");
+        }
+    }
+
+    private Path chooseFolder(String title) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(title);
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return null;
+        return chooser.getSelectedFile().toPath();
+    }
+
+    /** Puts the cursor on a row the user just acted on, so the result of their action is visible. */
+    private void selectRow(long id) {
+        for (int index = 0; index < currentRows.size(); index++) {
+            if (currentRows.get(index).id() == id) {
+                table.setRowSelectionInterval(index, index);
+                return;
+            }
+        }
+    }
+
+    private InstallationRow selectedRow() {
+        int index = table.getSelectedRow();
+        if (index < 0 || index >= currentRows.size()) return null;
+        return currentRows.get(index);
+    }
+
+    private void updateSelectionActionsEnabled() {
+        removeButton.setEnabled(selectedRow() != null);
+    }
+
+    private String[] columnNames() {
+        return new String[]{
+                getText("bindings.installLocations.column.storefront"),
+                getText("bindings.installLocations.column.location"),
+                getText("bindings.installLocations.column.source"),
+                getText("bindings.installLocations.column.deviceFiles"),
+                getText("bindings.installLocations.column.status")
+        };
+    }
+
+    private static final class ReadOnlyTableModel extends DefaultTableModel {
+        private ReadOnlyTableModel(Object[] columnNames, int rowCount) {
+            super(columnNames, rowCount);
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    }
+}

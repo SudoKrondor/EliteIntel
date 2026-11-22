@@ -1,0 +1,638 @@
+{
+  "version": "1.0",
+  "generatedDate": "2026-05-10",
+  "source": "ED:Bindings by ghorsey (https://github.com/ghorsey/EdBindings) supplemented by in-game screenshots (Elite Dangerous: Odyssey, live build as of 2026-05-10)",
+  "credit": "Action catalog data derived from ED:Bindings by ghorsey. License status to be confirmed at https://github.com/ghorsey/EdBindings before shipping. Credit must be given wherever this catalog data is used or distributed in BindForge.",
+  "notes": [
+    "xmlElement values are derived by stripping the 'ed' prefix from the VoiceAttack/BindED variable in the source CSV.",
+    "Rows with no Area/Category in the source CSV have been assigned categories based on context and in-game UI screenshots. These entries are marked with 'source: inferred'.",
+    "Categories 'System Colonisation Facility Placement' (General Controls), 'On Foot Emotes' (On Foot Controls), and 'On Foot Miscellaneous' (On Foot Controls) were absent from the CSV and are sourced entirely from in-game screenshots. These entries are marked with 'source: screenshot'.",
+    "Typos in the source CSV have been corrected in the 'name' field. The original CSV text is preserved in a 'csvName' field where it differs.",
+    "Section order matches the StartPreset.4.start file line order: General Controls (line 1), Ship Controls (line 2), SRV Controls (line 3), On Foot Controls (line 4)."
+  ],
+  "sections": [
+    {
+      "area": "General Controls",
+      "categories": [
+        {
+          "category": "Interface Mode",
+          "actions": [
+            { "name": "UI Panel Up", "xmlElement": "UI_Up" },
+            { "name": "UI Panel Down", "xmlElement": "UI_Down" },
+            { "name": "UI Panel Left", "xmlElement": "UI_Left" },
+            { "name": "UI Panel Right", "xmlElement": "UI_Right" },
+            { "name": "UI Panel Select", "xmlElement": "UI_Select" },
+            { "name": "UI Panel Back", "xmlElement": "UI_Back" },
+            { "name": "UI Nested Toggle", "xmlElement": "UI_Toggle" },
+            { "name": "Next Panel Tab", "xmlElement": "CycleNextPanel" },
+            { "name": "Previous Panel Tab", "xmlElement": "CyclePreviousPanel" },
+            { "name": "Next Page", "xmlElement": "CycleNextPage" },
+            { "name": "Previous Page", "xmlElement": "CyclePreviousPage" }
+          ]
+        },
+        {
+          "category": "Galaxy Map",
+          "actions": [
+            { "name": "Galaxy Cam Pitch Axis", "xmlElement": "CamPitchAxis" },
+            { "name": "Galaxy Cam Pitch Up", "xmlElement": "CamPitchUp" },
+            { "name": "Galaxy Cam Pitch Down", "xmlElement": "CamPitchDown" },
+            { "name": "Galaxy Cam Yaw Axis", "xmlElement": "CamYawAxis" },
+            { "name": "Galaxy Cam Yaw Left", "xmlElement": "CamYawLeft" },
+            { "name": "Galaxy Cam Yaw Right", "xmlElement": "CamYawRight" },
+            { "name": "Galaxy Cam Translate Y-Axis", "xmlElement": "CamTranslateYAxis" },
+            { "name": "Galaxy Cam Translate Forward", "xmlElement": "CamTranslateForward" },
+            { "name": "Galaxy Cam Translate Backward", "xmlElement": "CamTranslateBackward" },
+            { "name": "Galaxy Cam Translate X-Axis", "xmlElement": "CamTranslateXAxis" },
+            { "name": "Galaxy Cam Translate Left", "xmlElement": "CamTranslateLeft" },
+            { "name": "Galaxy Cam Translate Right", "xmlElement": "CamTranslateRight" },
+            { "name": "Galaxy Cam Translate Z-Axis", "xmlElement": "CamTranslateZAxis" },
+            { "name": "Galaxy Cam Translate Up", "xmlElement": "CamTranslateUp" },
+            { "name": "Galaxy Cam Translate Down", "xmlElement": "CamTranslateDown" },
+            { "name": "Galaxy Cam Zoom Axis", "xmlElement": "CamZoomAxis" },
+            { "name": "Galaxy Cam Zoom In", "xmlElement": "CamZoomIn" },
+            { "name": "Galaxy Cam Zoom Out", "xmlElement": "CamZoomOut" },
+            { "name": "Galaxy Cam Set Y-Axis to Z-Axis", "xmlElement": "CamTranslateZHold" },
+            { "name": "Galaxy Cam Select Current System", "xmlElement": "GalaxyMapHome" }
+          ]
+        },
+        {
+          "category": "Camera Suite",
+          "actions": [
+            { "name": "Ship - Toggle Camera Suite", "xmlElement": "PhotoCameraToggle" },
+            { "name": "SRV - Toggle Camera Suite", "xmlElement": "PhotoCameraToggle_Buggy" },
+            { "name": "Command - Toggle Camera Suite", "xmlElement": "PhotoCameraToggle_Humanoid" },
+            { "name": "Previous Camera", "xmlElement": "VanityCameraScrollLeft" },
+            { "name": "Next Camera", "xmlElement": "VanityCameraScrollRight" },
+            { "name": "Enter Free Camera", "xmlElement": "ToggleFreeCam" },
+            { "name": "Camera - Cockpit Front", "xmlElement": "VanityCameraOne" },
+            { "name": "Camera - Cockpit Back", "xmlElement": "VanityCameraTwo" },
+            { "name": "Camera - CMDR 1", "xmlElement": "VanityCameraThree" },
+            { "name": "Camera - CMDR 2", "xmlElement": "VanityCameraFour" },
+            { "name": "Camera - Co-Pilot 1", "xmlElement": "VanityCameraFive" },
+            { "name": "Camera - Co-Pilot 2", "xmlElement": "VanityCameraSix" },
+            { "name": "Camera - Front", "xmlElement": "VanityCameraSeven" },
+            { "name": "Camera - Back", "xmlElement": "VanityCameraEight" },
+            { "name": "Camera - Low", "xmlElement": "VanityCameraNine" },
+            { "name": "Camera - Position 10", "xmlElement": "VanityCameraTen", "source": "inferred", "note": "No display name in source CSV; name is an approximation" }
+          ]
+        },
+        {
+          "category": "Free Camera",
+          "actions": [
+            { "name": "Toggle HUD", "xmlElement": "FreeCamToggleHUD" },
+            { "name": "Increase Speed", "xmlElement": "FreeCamSpeedInc" },
+            { "name": "Decrease Speed", "xmlElement": "FreeCamSpeedDec" },
+            { "name": "Forward Axis", "xmlElement": "MoveFreeCamY" },
+            { "name": "Forward Only Throttle Reverse", "xmlElement": "ToggleReverseThrottleInputFreeCam" },
+            { "name": "Move Forward", "xmlElement": "MoveFreeCamForward" },
+            { "name": "Move Backward", "xmlElement": "MoveFreeCamBackwards" },
+            { "name": "Lateral Axis", "xmlElement": "MoveFreeCamX" },
+            { "name": "Move Right", "xmlElement": "MoveFreeCamRight" },
+            { "name": "Move Left", "xmlElement": "MoveFreeCamLeft" },
+            { "name": "Lift Axis", "xmlElement": "MoveFreeCamZ" },
+            { "name": "Move Up (Analogue)", "xmlElement": "MoveFreeCamUpAxis" },
+            { "name": "Move Down (Analogue)", "xmlElement": "MoveFreeCamDownAxis" },
+            { "name": "Move Up", "xmlElement": "MoveFreeCamUp" },
+            { "name": "Move Down", "xmlElement": "MoveFreeCamDown" },
+            { "name": "Pitch Axis", "xmlElement": "PitchCamera" },
+            { "name": "Pitch Up", "xmlElement": "PitchCameraUp" },
+            { "name": "Pitch Down", "xmlElement": "PitchCameraDown" },
+            { "name": "Yaw Axis", "xmlElement": "YawCamera" },
+            { "name": "Yaw Left", "xmlElement": "YawCameraLeft" },
+            { "name": "Yaw Right", "xmlElement": "YawCameraRight" },
+            { "name": "Roll Axis", "xmlElement": "RollCamera" },
+            { "name": "Roll Left", "xmlElement": "RollCameraLeft" },
+            { "name": "Roll Right", "xmlElement": "RollCameraRight" },
+            { "name": "Stabiliser On/Off Toggle", "xmlElement": "ToggleRotationLock" },
+            { "name": "Camera / Ship Controls Toggle", "xmlElement": "FixCameraRelativeToggle" },
+            { "name": "Attach / Detach Camera", "xmlElement": "FixCameraWorldToggle" },
+            { "name": "Exit Free Camera", "xmlElement": "QuitCamera" },
+            { "name": "Zoom / Blur Toggle", "xmlElement": "ToggleAdvanceMode" },
+            { "name": "Increase Zoom/Focus", "xmlElement": "FreeCamZoomIn" },
+            { "name": "Decrease Zoom/Focus", "xmlElement": "FreeCamZoomOut" },
+            { "name": "Decrease Blur", "xmlElement": "FStopDec" },
+            { "name": "Increase Blur", "xmlElement": "FStopInc" }
+          ]
+        },
+        {
+          "category": "Holo-Me",
+          "actions": [
+            { "name": "Undo", "xmlElement": "CommanderCreator_Undo" },
+            { "name": "Redo", "xmlElement": "CommanderCreator_Redo" },
+            { "name": "Toggle Mouse Rotation", "xmlElement": "CommanderCreator_Rotation_MouseToggle" },
+            { "name": "Rotate Camera", "xmlElement": "CommanderCreator_Rotation" }
+          ]
+        },
+        {
+          "category": "Playlist",
+          "actions": [
+            { "name": "Play / Pause", "xmlElement": "GalnetAudio_Play_Pause" },
+            { "name": "Skip Forward", "xmlElement": "GalnetAudio_SkipForward" },
+            { "name": "Skip Backward", "xmlElement": "GalnetAudio_SkipBackward" },
+            { "name": "Clear Queue", "xmlElement": "GalnetAudio_ClearQueue" }
+          ]
+        },
+        {
+          "category": "Store Camera",
+          "actions": [
+            { "name": "Hold to Rotate", "xmlElement": "StoreEnableRotation" },
+            { "name": "Pitch Axis", "xmlElement": "StorePitchCamera" },
+            { "name": "Yaw Axis", "xmlElement": "StoreYawCamera" },
+            { "name": "Store Camera Zoom In", "xmlElement": "StoreCamZoomIn" },
+            { "name": "Store Camera Zoom Out", "xmlElement": "StoreCamZoomOut" },
+            { "name": "Store Toggle", "xmlElement": "StoreToggle" }
+          ]
+        },
+        {
+          "category": "System Colonisation Facility Placement",
+          "source": "screenshot",
+          "note": "This category was not present in the ED:Bindings CSV. Action names and xmlElement values are derived from the .binds XML and in-game screenshots.",
+          "actions": [
+            { "name": "Place Settlement", "xmlElement": "PlaceSettlement" },
+            { "name": "Change Construction Option", "xmlElement": "ChangeConstructionOption" },
+            { "name": "Rotate Settlement", "xmlElement": "RotateSettlement" },
+            { "name": "Rotate Settlement Left", "xmlElement": "RotateSettlementLeft" },
+            { "name": "Rotate Settlement Right", "xmlElement": "RotateSettlementRight" },
+            { "name": "Exit Placement Camera", "xmlElement": "ExitSettlementPlacementCamera" },
+            { "name": "Move Cam Forward/Backward Axis", "xmlElement": "MovePlacementCamY" },
+            { "name": "Move Cam Forward", "xmlElement": "MovePlacementCamForward" },
+            { "name": "Move Cam Backward", "xmlElement": "MovePlacementCamBackwards" },
+            { "name": "Move Cam Left/Right Axis", "xmlElement": "MovePlacementCamX" },
+            { "name": "Move Cam Right", "xmlElement": "MovePlacementCamRight" },
+            { "name": "Move Cam Left", "xmlElement": "MovePlacementCamLeft" },
+            { "name": "Move Cam Up/Down Axis", "xmlElement": "MovePlacementCamZ" },
+            { "name": "Move Cam Up", "xmlElement": "MovePlacementCamUp" },
+            { "name": "Move Cam Down", "xmlElement": "MovePlacementCamDown" },
+            { "name": "Move Cam Up Axis", "xmlElement": "MovePlacementCamUpAxis" },
+            { "name": "Move Cam Down Axis", "xmlElement": "MovePlacementCamDownAxis" },
+            { "name": "Pitch Camera", "xmlElement": "PitchPlacementCamera" },
+            { "name": "Pitch Camera Up", "xmlElement": "PitchPlacementCameraUp" },
+            { "name": "Pitch Camera Down", "xmlElement": "PitchPlacementCameraDown" },
+            { "name": "Yaw Camera", "xmlElement": "YawPlacementCamera" },
+            { "name": "Yaw Camera Right", "xmlElement": "YawPlacementCameraRight" },
+            { "name": "Yaw Camera Left", "xmlElement": "YawPlacementCameraLeft" },
+            { "name": "Increase Camera Speed", "xmlElement": "PlacementCamSpeedInc" },
+            { "name": "Decrease Camera Speed", "xmlElement": "PlacementCamSpeedDec" }
+          ]
+        }
+      ]
+    },
+    {
+      "area": "Ship Controls",
+      "categories": [
+        {
+          "category": "Mouse Controls",
+          "actions": [
+            { "name": "Reset Mouse", "xmlElement": "MouseReset" },
+            { "name": "Block Mouse Decay", "xmlElement": "BlockMouseDecay", "source": "inferred", "note": "No Area/Category in source CSV; assigned from context (follows Mouse Controls block)" }
+          ]
+        },
+        {
+          "category": "Flight Rotation",
+          "actions": [
+            { "name": "Yaw Axis", "xmlElement": "YawAxisRaw" },
+            { "name": "Yaw Left", "xmlElement": "YawLeftButton" },
+            { "name": "Yaw Right", "xmlElement": "YawRightButton" },
+            { "name": "Yaw Roll Button", "xmlElement": "YawToRollButton" },
+            { "name": "Roll Axis", "xmlElement": "RollAxisRaw" },
+            { "name": "Roll Left", "xmlElement": "RollLeftButton" },
+            { "name": "Roll Right", "xmlElement": "RollRightButton" },
+            { "name": "Pitch Axis", "xmlElement": "PitchAxisRaw" },
+            { "name": "Pitch Up", "xmlElement": "PitchUpButton" },
+            { "name": "Pitch Down", "xmlElement": "PitchDownButton" }
+          ]
+        },
+        {
+          "category": "Flight Thrust",
+          "actions": [
+            { "name": "Lateral Thrust Axis", "xmlElement": "LateralThrustRaw" },
+            { "name": "Thrust Left", "xmlElement": "LeftThrustButton" },
+            { "name": "Thrust Right", "xmlElement": "RightThrustButton" },
+            { "name": "Vertical Thrust Axis", "xmlElement": "VerticalThrustRaw" },
+            { "name": "Thrust Up", "xmlElement": "UpThrustButton" },
+            { "name": "Thrust Down", "xmlElement": "DownThrustButton" },
+            { "name": "Thrust Forward and Backward Axis", "xmlElement": "AheadThrust" },
+            { "name": "Thrust Forward", "xmlElement": "ForwardThrustButton" },
+            { "name": "Thrust Backward", "xmlElement": "BackwardThrustButton" }
+          ]
+        },
+        {
+          "category": "Alternate Flight Controls",
+          "actions": [
+            { "name": "Alternate Controls Toggle", "xmlElement": "UseAlternateFlightValuesToggle" },
+            { "name": "Yaw Axis", "xmlElement": "YawAxisAlternate" },
+            { "name": "Roll Axis", "xmlElement": "RollAxisAlternate" },
+            { "name": "Pitch Axis", "xmlElement": "PitchAxisAlternate" },
+            { "name": "Lateral Thrust Axis", "xmlElement": "LateralThrustAlternate" },
+            { "name": "Vertical Thrust Axis", "xmlElement": "VerticalThrustAlternate" }
+          ]
+        },
+        {
+          "category": "Flight Throttle",
+          "actions": [
+            { "name": "Throttle Axis", "xmlElement": "ThrottleAxis" },
+            { "name": "Forward Only Throttle Reverse", "xmlElement": "ToggleReverseThrottleInput" },
+            { "name": "Increase Throttle", "xmlElement": "ForwardKey" },
+            { "name": "Decrease Throttle", "xmlElement": "BackwardKey" },
+            { "name": "Set Speed to -100%", "xmlElement": "SetSpeedMinus100" },
+            { "name": "Set Speed to -75%", "xmlElement": "SetSpeedMinus75" },
+            { "name": "Set Speed to -50%", "xmlElement": "SetSpeedMinus50" },
+            { "name": "Set Speed to -25%", "xmlElement": "SetSpeedMinus25" },
+            { "name": "Set Speed to 0%", "xmlElement": "SetSpeedZero" },
+            { "name": "Set Speed to 25%", "xmlElement": "SetSpeed25" },
+            { "name": "Set Speed to 50%", "xmlElement": "SetSpeed50" },
+            { "name": "Set Speed to 75%", "xmlElement": "SetSpeed75" },
+            { "name": "Set Speed to 100%", "xmlElement": "SetSpeed100" }
+          ]
+        },
+        {
+          "category": "Flight Landing Overrides",
+          "actions": [
+            { "name": "Yaw Axis", "xmlElement": "YawAxis_Landing" },
+            { "name": "Yaw Left", "xmlElement": "YawLeftButton_Landing" },
+            { "name": "Yaw Right", "xmlElement": "YawRightButton_Landing", "csvName": "Yar Right", "note": "Typo in source CSV corrected" },
+            { "name": "Pitch Axis", "xmlElement": "PitchAxis_Landing" },
+            { "name": "Pitch Up", "xmlElement": "PitchUpButton_Landing" },
+            { "name": "Pitch Down", "xmlElement": "PitchDownButton_Landing" },
+            { "name": "Roll Axis", "xmlElement": "RollAxis_Landing" },
+            { "name": "Roll Left", "xmlElement": "RollLeftButton_Landing" },
+            { "name": "Roll Right", "xmlElement": "RollRightButton_Landing" },
+            { "name": "Lateral Thrust Axis", "xmlElement": "LateralThrust_Landing" },
+            { "name": "Thrust Left", "xmlElement": "LeftThrustButton_Landing" },
+            { "name": "Thrust Right", "xmlElement": "RightThrustButton_Landing" },
+            { "name": "Vertical Thrust Axis", "xmlElement": "VerticalThrust_Landing", "csvName": "Verticle Thrust Axis", "note": "Typo in source CSV corrected" },
+            { "name": "Thrust Up", "xmlElement": "UpThrustButton_Landing" },
+            { "name": "Thrust Down", "xmlElement": "DownThrustButton_Landing" },
+            { "name": "Thrust Forward and Backward Axis", "xmlElement": "AheadThrust_Landing" },
+            { "name": "Thrust Forward", "xmlElement": "ForwardThrustButton_Landing" },
+            { "name": "Thrust Backward", "xmlElement": "BackwardThrustButton_Landing" }
+          ]
+        },
+        {
+          "category": "Flight Miscellaneous",
+          "actions": [
+            { "name": "Toggle Flight Assist", "xmlElement": "ToggleFlightAssist" },
+            { "name": "Engine Boost", "xmlElement": "UseBoostJuice" },
+            { "name": "Toggle Frame Shift Drive", "xmlElement": "HyperSuperCombination" },
+            { "name": "Supercruise", "xmlElement": "Supercruise" },
+            { "name": "Hyperspace Jump", "xmlElement": "Hyperspace" },
+            { "name": "Rotational Correction", "xmlElement": "DisableRotationCorrectToggle" },
+            { "name": "Toggle Orbit Lines", "xmlElement": "OrbitLinesToggle" }
+          ]
+        },
+        {
+          "category": "Targeting",
+          "actions": [
+            { "name": "Select Target Ahead", "xmlElement": "SelectTarget" },
+            { "name": "Cycle Next Target", "xmlElement": "CycleNextTarget" },
+            { "name": "Cycle Previous Ship", "xmlElement": "CyclePreviousTarget" },
+            { "name": "Select Highest Threat", "xmlElement": "SelectHighestThreat" },
+            { "name": "Cycle Next Hostile Target", "xmlElement": "CycleNextHostileTarget" },
+            { "name": "Cycle Previous Hostile Ship", "xmlElement": "CyclePreviousHostileTarget" },
+            { "name": "Select Teammate 1", "xmlElement": "TargetWingman0" },
+            { "name": "Select Teammate 2", "xmlElement": "TargetWingman1" },
+            { "name": "Select Teammate 3", "xmlElement": "TargetWingman2" },
+            { "name": "Select Teammate's Target", "xmlElement": "SelectTargetsTarget" },
+            { "name": "Teammate Nav-Lock", "xmlElement": "WingNavLock" },
+            { "name": "Cycle Next Subsystem", "xmlElement": "CycleNextSubsystem" },
+            { "name": "Cycle Previous Subsystem", "xmlElement": "CyclePreviousSubsystem" },
+            { "name": "Target Next System In Route", "xmlElement": "TargetNextRouteSystem" }
+          ]
+        },
+        {
+          "category": "Weapons",
+          "actions": [
+            { "name": "Primary Fire", "xmlElement": "PrimaryFire" },
+            { "name": "Secondary Fire", "xmlElement": "SecondaryFire" },
+            { "name": "Cycle Next Fire Group", "xmlElement": "CycleFireGroupNext" },
+            { "name": "Cycle Previous Fire Group", "xmlElement": "CycleFireGroupPrevious" },
+            { "name": "Deploy Hardpoints", "xmlElement": "DeployHardpointToggle" }
+          ]
+        },
+        {
+          "category": "Cooling",
+          "actions": [
+            { "name": "Silent Running", "xmlElement": "ToggleButtonUpInput" },
+            { "name": "Deploy Heatsink", "xmlElement": "DeployHeatSink" }
+          ]
+        },
+        {
+          "category": "Miscellaneous",
+          "actions": [
+            { "name": "Ship Lights", "xmlElement": "ShipSpotLightToggle" },
+            { "name": "Sensor Zoom Axis", "xmlElement": "RadarRangeAxis" },
+            { "name": "Increase Sensor Zoom", "xmlElement": "RadarIncreaseRange" },
+            { "name": "Decrease Sensor Zoom", "xmlElement": "RadarDecreaseRange" },
+            { "name": "Divert Power to Engines", "xmlElement": "IncreaseEnginesPower" },
+            { "name": "Divert Power to Weapons", "xmlElement": "IncreaseWeaponsPower" },
+            { "name": "Divert Power to System", "xmlElement": "IncreaseSystemsPower" },
+            { "name": "Balance Power Distribution", "xmlElement": "ResetPowerDistribution" },
+            { "name": "Reset HMD Orientation", "xmlElement": "HMDReset" },
+            { "name": "Cargo Scoop", "xmlElement": "ToggleCargoScoop" },
+            { "name": "Jettison All Cargo", "xmlElement": "EjectAllCargo" },
+            { "name": "Landing Gear", "xmlElement": "LandingGearToggle" },
+            { "name": "Microphone Mute", "xmlElement": "MicrophoneMute" },
+            { "name": "Use Shield Cell", "xmlElement": "UseShieldCell" },
+            { "name": "Use Chaff Launcher", "xmlElement": "FireChaffLauncher" },
+            { "name": "Trigger Field Neutraliser", "xmlElement": "TriggerFieldNeutraliser", "source": "inferred", "note": "No Area/Category in source CSV; assigned from context (follows Miscellaneous block)" },
+            { "name": "Charge ECM", "xmlElement": "ChargeECM" },
+            { "name": "Weapon Color", "xmlElement": "WeaponColourToggle" },
+            { "name": "Engine Color", "xmlElement": "EngineColourToggle" },
+            { "name": "Night Vision", "xmlElement": "NightVisionToggle" },
+            { "name": "Trigger Colonisation Module", "xmlElement": "TriggerColonisationModule", "source": "inferred", "note": "No Area/Category in source CSV; assigned from context (follows Miscellaneous block)" }
+          ]
+        },
+        {
+          "category": "Mode Switches",
+          "actions": [
+            { "name": "UI Focus", "xmlElement": "UIFocus" },
+            { "name": "External Panel", "xmlElement": "FocusLeftPanel" },
+            { "name": "Comms Panel", "xmlElement": "FocusCommsPanel" },
+            { "name": "Quick Comms", "xmlElement": "QuickCommsPanel" },
+            { "name": "Role Panel", "xmlElement": "FocusRadarPanel" },
+            { "name": "Internal Panel", "xmlElement": "FocusRightPanel" },
+            { "name": "Open Galaxy Map", "xmlElement": "GalaxyMapOpen" },
+            { "name": "Open System Map", "xmlElement": "SystemMapOpen" },
+            { "name": "Show CQC Score Screen", "xmlElement": "ShowPGScoreSummaryInput" },
+            { "name": "Headlook", "xmlElement": "HeadLookToggle" },
+            { "name": "Game Menu", "xmlElement": "Pause" },
+            { "name": "Friends Menu", "xmlElement": "FriendsMenu" },
+            { "name": "Open Discovery", "xmlElement": "OpenCodexGoToDiscovery" },
+            { "name": "Switch Cockpit Mode", "xmlElement": "PlayerHUDModeToggle" },
+            { "name": "Enter FSS Mode", "xmlElement": "ExplorationFSSEnter" }
+          ]
+        },
+        {
+          "category": "Headlook Mode",
+          "actions": [
+            { "name": "Reset Headlook", "xmlElement": "HeadLookReset" },
+            { "name": "Look Up", "xmlElement": "HeadLookPitchUp" },
+            { "name": "Look Down", "xmlElement": "HeadLookPitchDown" },
+            { "name": "Look Up and Down Axis", "xmlElement": "HeadLookPitchAxisRaw" },
+            { "name": "Look Left", "xmlElement": "HeadLookYawLeft" },
+            { "name": "Look Right", "xmlElement": "HeadLookYawRight" },
+            { "name": "Look Left and Right Axis", "xmlElement": "HeadLookYawAxis" }
+          ]
+        },
+        {
+          "category": "Multi-crew",
+          "actions": [
+            { "name": "Mode Toggle", "xmlElement": "MultiCrewToggleMode" },
+            { "name": "Primary Fire", "xmlElement": "MultiCrewPrimaryFire" },
+            { "name": "Secondary Fire", "xmlElement": "MultiCrewSecondaryFire" },
+            { "name": "Primary Utility Fire", "xmlElement": "MultiCrewPrimaryUtilityFire" },
+            { "name": "Secondary Utility Fire", "xmlElement": "MultiCrewSecondaryUtilityFire" },
+            { "name": "Third-Person Yaw Axis", "xmlElement": "MultiCrewThirdPersonYawAxisRaw" },
+            { "name": "Third-Person Yaw Left", "xmlElement": "MultiCrewThirdPersonYawLeftButton" },
+            { "name": "Third-Person Yaw Right", "xmlElement": "MultiCrewThirdPersonYawRightButton" },
+            { "name": "Third-Person Pitch Axis", "xmlElement": "MultiCrewThirdPersonPitchAxisRaw" },
+            { "name": "Third-Person Pitch Up", "xmlElement": "MultiCrewThirdPersonPitchUpButton" },
+            { "name": "Third-Person Pitch Down", "xmlElement": "MultiCrewThirdPersonPitchDownButton" },
+            { "name": "Third-Person Field of View Axis", "xmlElement": "MultiCrewThirdPersonFovAxisRaw" },
+            { "name": "Third-Person Field of View Out", "xmlElement": "MultiCrewThirdPersonFovOutButton" },
+            { "name": "Third-Person Field of View In", "xmlElement": "MultiCrewThirdPersonFovInButton" },
+            { "name": "Cycle Cockpit UI Forwards", "xmlElement": "MultiCrewCockpitUICycleForward" },
+            { "name": "Cycle Cockpit UI Backwards", "xmlElement": "MultiCrewCockpitUICycleBackward" }
+          ]
+        },
+        {
+          "category": "Fighter Orders",
+          "actions": [
+            { "name": "Recall Fighter", "xmlElement": "OrderRequestDock" },
+            { "name": "Defend", "xmlElement": "OrderDefensiveBehaviour" },
+            { "name": "Engage at Will", "xmlElement": "OrderAggressiveBehaviour" },
+            { "name": "Attack Target", "xmlElement": "OrderFocusTarget" },
+            { "name": "Maintain Formation", "xmlElement": "OrderHoldFire" },
+            { "name": "Hold Position", "xmlElement": "OrderHoldPosition" },
+            { "name": "Follow Me", "xmlElement": "OrderFollow" },
+            { "name": "Open Orders", "xmlElement": "OpenOrders" }
+          ]
+        },
+        {
+          "category": "Full Spectrum System Scanner",
+          "actions": [
+            { "name": "Camera Pitch", "xmlElement": "ExplorationFSSCameraPitch" },
+            { "name": "Camera Pitch Increase", "xmlElement": "ExplorationFSSCameraPitchIncreaseButton" },
+            { "name": "Camera Pitch Decrease", "xmlElement": "ExplorationFSSCameraPitchDecreaseButton" },
+            { "name": "Camera Yaw", "xmlElement": "ExplorationFSSCameraYaw", "csvName": "Cameray Yaw", "note": "Typo in source CSV corrected" },
+            { "name": "Camera Yaw Increase", "xmlElement": "ExplorationFSSCameraYawIncreaseButton" },
+            { "name": "Camera Yaw Decrease", "xmlElement": "ExplorationFSSCameraYawDecreaseButton" },
+            { "name": "Zoom in to Target", "xmlElement": "ExplorationFSSZoomIn" },
+            { "name": "Zoom Out", "xmlElement": "ExplorationFSSZoomOut" },
+            { "name": "Stepped Zoom In", "xmlElement": "ExplorationFSSMiniZoomIn" },
+            { "name": "Stepped Zoom Out", "xmlElement": "ExplorationFSSMiniZoomOut" },
+            { "name": "Tuning", "xmlElement": "ExplorationFSSRadioTuningX_Raw" },
+            { "name": "Tuning Right", "xmlElement": "ExplorationFSSRadioTuningX_Increase" },
+            { "name": "Tuning Left", "xmlElement": "ExplorationFSSRadioTuningX_Decrease" },
+            { "name": "Absolute Tuning", "xmlElement": "ExplorationFSSRadioTuningAbsoluteX" },
+            { "name": "Discovery Scan", "xmlElement": "ExplorationFSSDiscoveryScan" },
+            { "name": "Leave FSS", "xmlElement": "ExplorationFSSQuit" },
+            { "name": "Target Current Signal", "xmlElement": "ExplorationFSSTarget" },
+            { "name": "Show Help", "xmlElement": "ExplorationFSSShowHelp" }
+          ]
+        },
+        {
+          "category": "Detailed Surface Scanner",
+          "actions": [
+            { "name": "Toggle Front/Back View", "xmlElement": "ExplorationSAAChangeScannedAreaViewToggle" },
+            { "name": "Exit Mode", "xmlElement": "ExplorationSAAExitThirdPerson" },
+            { "name": "Next Filter", "xmlElement": "ExplorationSAANextGenus" },
+            { "name": "Previous Filter", "xmlElement": "ExplorationSAAPreviousGenus" },
+            { "name": "Third-Person Yaw Axis", "xmlElement": "SAAThirdPersonYawAxisRaw" },
+            { "name": "Third-Person Yaw Left", "xmlElement": "SAAThirdPersonYawLeftButton" },
+            { "name": "Third-Person Yaw Right", "xmlElement": "SAAThirdPersonYawRightButton" },
+            { "name": "Third-Person Pitch Axis", "xmlElement": "SAAThirdPersonPitchAxisRaw" },
+            { "name": "Third-Person Pitch Up", "xmlElement": "SAAThirdPersonPitchUpButton" },
+            { "name": "Third-Person Pitch Down", "xmlElement": "SAAThirdPersonPitchDownButton" },
+            { "name": "Third-Person Field of View Axis", "xmlElement": "SAAThirdPersonFovAxisRaw" },
+            { "name": "Third-Person Field of View Out", "xmlElement": "SAAThirdPersonFovOutButton" },
+            { "name": "Third-Person Field of View In", "xmlElement": "SAAThirdPersonFovInButton" }
+          ]
+        }
+      ]
+    },
+    {
+      "area": "SRV Controls",
+      "categories": [
+        {
+          "category": "Driving",
+          "actions": [
+            { "name": "Drive Assist", "xmlElement": "ToggleDriveAssist" },
+            { "name": "Steering Axis", "xmlElement": "SteeringAxis" },
+            { "name": "Steering Left Button", "xmlElement": "SteerLeftButton" },
+            { "name": "Steering Right Button", "xmlElement": "SteerRightButton" },
+            { "name": "Roll Axis", "xmlElement": "BuggyRollAxisRaw" },
+            { "name": "Roll Left Button", "xmlElement": "BuggyRollLeftButton" },
+            { "name": "Roll Right Button", "xmlElement": "BuggyRollRightButton" },
+            { "name": "Pitch Axis", "xmlElement": "BuggyPitchAxis" },
+            { "name": "Pitch Up Button", "xmlElement": "BuggyPitchUpButton" },
+            { "name": "Pitch Down Button", "xmlElement": "BuggyPitchDownButton" },
+            { "name": "Vertical Thrusters", "xmlElement": "VerticalThrustersButton" },
+            { "name": "SRV Primary Fire", "xmlElement": "BuggyPrimaryFireButton" },
+            { "name": "SRV Secondary Fire", "xmlElement": "BuggySecondaryFireButton" },
+            { "name": "Handbrake", "xmlElement": "AutoBreakBuggyButton" },
+            { "name": "Headlights", "xmlElement": "HeadlightsBuggyButton" },
+            { "name": "Toggle SRV Turret", "xmlElement": "ToggleBuggyTurretButton" },
+            { "name": "Cycle Next Fire Group", "xmlElement": "BuggyCycleFireGroupNext" },
+            { "name": "Cycle Previous Fire Group", "xmlElement": "BuggyCycleFireGroupPrevious" }
+          ]
+        },
+        {
+          "category": "Driving Targeting",
+          "actions": [
+            { "name": "Select Target Ahead", "xmlElement": "SelectTarget_Buggy" }
+          ]
+        },
+        {
+          "category": "Driving Turret Controls",
+          "actions": [
+            { "name": "SRV Turret Yaw Axis", "xmlElement": "BuggyTurretYawAxisRaw" },
+            { "name": "SRV Turret Yaw Left", "xmlElement": "BuggyTurretYawLeftButton" },
+            { "name": "SRV Turret Yaw Right", "xmlElement": "BuggyTurretYawRightButton" },
+            { "name": "SRV Turret Pitch Axis", "xmlElement": "BuggyTurretPitchAxisRaw" },
+            { "name": "SRV Turret Pitch Up", "xmlElement": "BuggyTurretPitchUpButton" },
+            { "name": "SRV Turret Pitch Down", "xmlElement": "BuggyTurretPitchDownButton" }
+          ]
+        },
+        {
+          "category": "Drive Throttle",
+          "actions": [
+            { "name": "Drive Speed Axis", "xmlElement": "DriveSpeedAxis" },
+            { "name": "Forward Only Throttle Reverse", "xmlElement": "BuggyToggleReverseThrottleInput" },
+            { "name": "Accelerate Button", "xmlElement": "IncreaseSpeedButtonMax" },
+            { "name": "Decelerate Button", "xmlElement": "DecreaseSpeedButtonMax" },
+            { "name": "Accelerate Axis", "xmlElement": "IncreaseSpeedButtonPartial" },
+            { "name": "Decelerate Axis", "xmlElement": "DecreaseSpeedButtonPartial" }
+          ]
+        },
+        {
+          "category": "Driving Miscellaneous",
+          "actions": [
+            { "name": "Divert Power to Engines", "xmlElement": "IncreaseEnginesPower_Buggy" },
+            { "name": "Divert Power to Weapons", "xmlElement": "IncreaseWeaponsPower_Buggy" },
+            { "name": "Divert Power to System", "xmlElement": "IncreaseSystemsPower_Buggy" },
+            { "name": "Balance Power Distribution", "xmlElement": "ResetPowerDistribution_Buggy" },
+            { "name": "Cargo Scoop", "xmlElement": "ToggleCargoScoop_Buggy" },
+            { "name": "Jettison All Cargo", "xmlElement": "EjectAllCargo_Buggy" },
+            { "name": "Recall/Dismiss Ship", "xmlElement": "RecallDismissShip" }
+          ]
+        },
+        {
+          "category": "Driving Mode Switches",
+          "actions": [
+            { "name": "UI Focus", "xmlElement": "UIFocus_Buggy" },
+            { "name": "External Panel", "xmlElement": "FocusLeftPanel_Buggy" },
+            { "name": "Comms Panel", "xmlElement": "FocusCommsPanel_Buggy" },
+            { "name": "Quick Comms", "xmlElement": "QuickCommsPanel_Buggy" },
+            { "name": "Role Panel", "xmlElement": "FocusRadarPanel_Buggy" },
+            { "name": "Internal Panel", "xmlElement": "FocusRightPanel_Buggy" },
+            { "name": "Open Galaxy Map", "xmlElement": "GalaxyMapOpen_Buggy" },
+            { "name": "Open System Map", "xmlElement": "SystemMapOpen_Buggy" },
+            { "name": "Open Discovery", "xmlElement": "OpenCodexGoToDiscovery_Buggy" },
+            { "name": "Switch Cockpit Mode", "xmlElement": "PlayerHUDModeToggle_Buggy" },
+            { "name": "Headlook", "xmlElement": "HeadLookToggle_Buggy" }
+          ]
+        }
+      ]
+    },
+    {
+      "area": "On Foot Controls",
+      "categories": [
+        {
+          "category": "On Foot",
+          "actions": [
+            { "name": "Forward Axis", "xmlElement": "HumanoidForwardAxis" },
+            { "name": "Move Forward", "xmlElement": "HumanoidForwardButton" },
+            { "name": "Move Backward", "xmlElement": "HumanoidBackwardButton" },
+            { "name": "Strafe Axis", "xmlElement": "HumanoidStrafeAxis" },
+            { "name": "Strafe Left", "xmlElement": "HumanoidStrafeLeftButton" },
+            { "name": "Strafe Right", "xmlElement": "HumanoidStrafeRightButton" },
+            { "name": "Rotate Axis", "xmlElement": "HumanoidRotateAxis" },
+            { "name": "Turn Left", "xmlElement": "HumanoidRotateLeftButton" },
+            { "name": "Turn Right", "xmlElement": "HumanoidRotateRightButton" },
+            { "name": "Pitch Axis", "xmlElement": "HumanoidPitchAxis" },
+            { "name": "Look Up", "xmlElement": "HumanoidPitchUpButton" },
+            { "name": "Look Down", "xmlElement": "HumanoidPitchDownButton" },
+            { "name": "Sprint", "xmlElement": "HumanoidSprintButton" },
+            { "name": "Walk", "xmlElement": "HumanoidWalkButton" },
+            { "name": "Crouch", "xmlElement": "HumanoidCrouchButton" },
+            { "name": "Jump", "xmlElement": "HumanoidJumpButton" },
+            { "name": "Interact", "xmlElement": "HumanoidPrimaryInteractButton" },
+            { "name": "Secondary Interact", "xmlElement": "HumanoidSecondaryInteractButton" },
+            { "name": "Open Item Wheel", "xmlElement": "HumanoidItemWheelButton" },
+            { "name": "Item Wheel Horizontal", "xmlElement": "HumanoidItemWheelButton_XAxis" },
+            { "name": "Item Wheel Left", "xmlElement": "HumanoidItemWheelButton_XLeft" },
+            { "name": "Item Wheel Right", "xmlElement": "HumanoidItemWheelButton_XRight" },
+            { "name": "Item Wheel Vertical", "xmlElement": "HumanoidItemWheelButton_YAxis" },
+            { "name": "Item Wheel Up", "xmlElement": "HumanoidItemWheelButton_YUp" },
+            { "name": "Item Wheel Down", "xmlElement": "HumanoidItemWheelButton_YDown" },
+            { "name": "Fire Weapon / Use Tool", "xmlElement": "HumanoidPrimaryFireButton" },
+            { "name": "Aim Down Sights", "xmlElement": "HumanoidZoomButton" },
+            { "name": "Throw Grenade", "xmlElement": "HumanoidThrowGrenadeButton" },
+            { "name": "Melee Attack", "xmlElement": "HumanoidMeleeButton" },
+            { "name": "Reload", "xmlElement": "HumanoidReloadButton" },
+            { "name": "Switch Weapon", "xmlElement": "HumanoidSwitchWeapon" },
+            { "name": "Select Primary Weapon", "xmlElement": "HumanoidSelectPrimaryWeaponButton" },
+            { "name": "Select Secondary Weapon", "xmlElement": "HumanoidSelectSecondaryWeaponButton" },
+            { "name": "Select Tool", "xmlElement": "HumanoidSelectUtilityWeaponButton" },
+            { "name": "Select Next Weapon", "xmlElement": "HumanoidSelectNextWeaponButton" },
+            { "name": "Select Previous Weapon", "xmlElement": "HumanoidSelectPreviousWeaponButton" },
+            { "name": "Holster Weapon", "xmlElement": "HumanoidHideWeaponButton" },
+            { "name": "Select Next Grenade Type", "xmlElement": "HumanoidSelectNextGrenadeTypeButton" },
+            { "name": "Select Previous Grenade Type", "xmlElement": "HumanoidSelectPreviousGrenadeTypeButton" },
+            { "name": "Toggle Flashlight", "xmlElement": "HumanoidToggleFlashlightButton" },
+            { "name": "Toggle Night Vision", "xmlElement": "HumanoidToggleNightVisionButton" },
+            { "name": "Toggle Shields", "xmlElement": "HumanoidToggleShieldsButton" },
+            { "name": "Clear Authority Level", "xmlElement": "HumanoidClearAuthorityLevel" },
+            { "name": "Use Health Pack", "xmlElement": "HumanoidHealthPack" },
+            { "name": "Use Energy Cell", "xmlElement": "HumanoidBattery", "csvName": "Use Engergy Cell", "note": "Typo in source CSV corrected" },
+            { "name": "Select Frag Grenade", "xmlElement": "HumanoidSelectFragGrenade" },
+            { "name": "Select EMP Grenade", "xmlElement": "HumanoidSelectEMPGrenade" },
+            { "name": "Select Shield Grenade", "xmlElement": "HumanoidSelectShieldGrenade" },
+            { "name": "Select Energylink", "xmlElement": "HumanoidSwitchToRechargeTool" },
+            { "name": "Select Profile Analyser", "xmlElement": "HumanoidSwitchToCompAnalyser" },
+            { "name": "Select Suit Specific Tool", "xmlElement": "HumanoidSwitchToSuitTool" },
+            { "name": "Toggle Tool Mode", "xmlElement": "HumanoidToggleToolModeButton" },
+            { "name": "Toggle Help", "xmlElement": "HumanoidToggleMissionHelpPanelButton" }
+          ]
+        },
+        {
+          "category": "On Foot Mode Switches",
+          "actions": [
+            { "name": "Open Galaxy Map", "xmlElement": "GalaxyMapOpen_Humanoid" },
+            { "name": "Open System Map", "xmlElement": "SystemMapOpen_Humanoid" },
+            { "name": "Comms Panel", "xmlElement": "FocusCommsPanel_Humanoid" },
+            { "name": "Quick Comms", "xmlElement": "QuickCommsPanel_Humanoid" },
+            { "name": "Open Insight Hub", "xmlElement": "HumanoidOpenAccessPanelButton" },
+            { "name": "Open Conflict Zone Battle Stats", "xmlElement": "HumanoidConflictContextualUIButton" }
+          ]
+        },
+        {
+          "category": "On Foot Emotes",
+          "source": "screenshot",
+          "note": "This category was not present in the ED:Bindings CSV. Action names and xmlElement values are derived from the .binds XML and in-game screenshots.",
+          "actions": [
+            { "name": "Emote Slot 1", "xmlElement": "HumanoidEmoteSlot1" },
+            { "name": "Emote Slot 2", "xmlElement": "HumanoidEmoteSlot2" },
+            { "name": "Emote Slot 3", "xmlElement": "HumanoidEmoteSlot3" },
+            { "name": "Emote Slot 4", "xmlElement": "HumanoidEmoteSlot4" },
+            { "name": "Emote Slot 5", "xmlElement": "HumanoidEmoteSlot5" },
+            { "name": "Emote Slot 6", "xmlElement": "HumanoidEmoteSlot6" },
+            { "name": "Emote Slot 7", "xmlElement": "HumanoidEmoteSlot7" },
+            { "name": "Emote Slot 8", "xmlElement": "HumanoidEmoteSlot8" }
+          ]
+        },
+        {
+          "category": "On Foot Miscellaneous",
+          "source": "screenshot",
+          "note": "Category confirmed from in-game screenshots. The three actions below appeared in the source CSV with no Area/Category; they have been assigned here based on category structure observed in-game.",
+          "actions": [
+            { "name": "Emote Wheel", "xmlElement": "HumanoidEmoteWheelButton", "source": "inferred" },
+            { "name": "Utility Wheel Cycle Mode", "xmlElement": "HumanoidUtilityWheelCycleMode", "source": "inferred" },
+            { "name": "Ping", "xmlElement": "HumanoidPing", "source": "inferred" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -17,7 +17,6 @@ class TransmissionAudioSettingsTest {
         settings.setEffectsOnRadio(false);
         settings.setEffectsOnVegaAway(false);
         settings.setTransmissionToneVolume(35);
-        settings.setSupertonicBoostPercent(0);
     }
 
     @Test
@@ -27,7 +26,6 @@ class TransmissionAudioSettingsTest {
         settings.setEffectsOnRadio(true);
         settings.setEffectsOnVegaAway(true);
         settings.setTransmissionToneVolume(24);
-        settings.setSupertonicBoostPercent(100);
         settings.setRadioVolume(settings.getRadioVolume());
 
         assertTrue(settings.isTransmissionTones());
@@ -35,6 +33,5 @@ class TransmissionAudioSettingsTest {
         assertTrue(settings.isEffectsOnRadio());
         assertTrue(settings.isEffectsOnVegaAway());
         assertEquals(24, settings.getTransmissionToneVolume());
-        assertEquals(100, settings.getSupertonicBoostPercent());
     }
 }

@@ -52,7 +52,15 @@ public record HudRow(String label, String value, int current, int max, State sta
         /**
          * Failing or expired - red.
          */
-        CRITICAL
+        CRITICAL,
+        /**
+         * Bright blue, kept clear of cyan so it never reads as green. A fixed colour outside the palette.
+         */
+        BLUE,
+        /**
+         * White. A fixed colour outside the palette.
+         */
+        WHITE
     }
 
     /**

@@ -77,11 +77,12 @@ public class HudMicHealthHint extends JPanel {
     }
 
     /**
-     * Mirrors the STT startup check: no thresholds means calibration has never run, and a gate that
-     * cannot clear the floor means the calibration it did run found nothing usable.
+     * Mirrors the STT startup check: no gate means calibration has never run, and a gate that cannot
+     * clear the floor means the calibration it did run found nothing usable. A floor of zero is a
+     * measurement, not a missing one: see {@link AudioCalibrator#isCalibrated}.
      */
     static Verdict judge(double noiseFloor, double gateOpen) {
-        if (noiseFloor == 0 || gateOpen == 0) return Verdict.UNCALIBRATED;
+        if (!AudioCalibrator.isCalibrated(gateOpen)) return Verdict.UNCALIBRATED;
         if (!AudioCalibrator.gateClearsNoiseFloor(noiseFloor, gateOpen)) return Verdict.QUIET;
         return Verdict.HEALTHY;
     }

@@ -102,6 +102,24 @@ class ShipRouteCardTest {
         assertEquals(List.of(HudRow.State.GOOD, HudRow.State.CRITICAL, HudRow.State.GOOD), jumps.track());
     }
 
+    /**
+     * Neither has fuel, but both are a jet-cone boost: blue for a neutron star, white for a white dwarf, in place
+     * of the red every other star with no fuel gets.
+     */
+    @Test
+    void neutronStarsAndWhiteDwarfsHaveTheirOwnDots() {
+        List<NavRouteDto> route = legs("A", "B", "C", "D", "E");
+        route.get(0).setStarClass("N");
+        route.get(1).setStarClass("DAV");
+        route.get(2).setStarClass("H");
+        route.get(3).setStarClass("WN");
+        route.get(4).setStarClass("K");
+        route.get(4).setScoopable(true);
+
+        assertEquals(List.of(HudRow.State.BLUE, HudRow.State.WHITE, HudRow.State.CRITICAL, HudRow.State.CRITICAL,
+                HudRow.State.GOOD), ShipRouteObjectiveSource.fuelStops(route));
+    }
+
     @Test
     void theTrackShowsOnlyTheNearestStars() {
         List<NavRouteDto> route = legs("A", "B", "C", "D", "E", "F", "G", "H", "I", "J");

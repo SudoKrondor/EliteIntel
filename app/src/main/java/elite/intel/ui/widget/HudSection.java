@@ -21,6 +21,7 @@ public class HudSection extends HudPanel {
     private final JLabel headerLabel;
     private final JPanel header;
     private JComponent headerAction;
+    private JLabel headerNote;
     private JComponent footer;
     private Color headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
     private Color headerDividerColor;
@@ -214,6 +215,26 @@ public class HudSection extends HudPanel {
             strip.setMaximumSize(pinned);
             headerAction = strip;
             header.add(strip, BorderLayout.EAST);
+        }
+        header.revalidate();
+        header.repaint();
+    }
+
+    /**
+     * Sets a short note right after the title, in the title's font and colour but in its own case, in parentheses:
+     * a one-line hint about the section that would otherwise take a row of the body. Replaces any previous note;
+     * {@code null} or blank removes it.
+     */
+    public void setHeaderNote(String note) {
+        if (headerNote != null) {
+            header.remove(headerNote);
+            headerNote = null;
+        }
+        if (note != null && !note.isBlank()) {
+            headerNote = AppTheme.hudSectionLabel("(" + note.strip() + ")");
+            headerNote.setFont(headerNote.getFont().deriveFont(Font.PLAIN));
+            headerNote.setBorder(BorderFactory.createEmptyBorder(0, HudPalette.HUD_GAP, 0, 0));
+            header.add(headerNote, BorderLayout.CENTER);
         }
         header.revalidate();
         header.repaint();

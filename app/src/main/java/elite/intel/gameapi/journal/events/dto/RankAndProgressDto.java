@@ -24,7 +24,18 @@ public class RankAndProgressDto implements ToJsonConvertible {
      */
     private int highestCareerRank = -1;
 
-    private String pledgedToPower = "unknown";
+    /**
+     * What {@link #pledgedToPower} holds before any game load has been read, so nobody knows yet.
+     */
+    public static final String PLEDGE_UNKNOWN = "unknown";
+
+    /**
+     * What {@link #pledgedToPower} holds once a game load came and went without a Powerplay event, or
+     * the commander left their power. Distinct from {@link #PLEDGE_UNKNOWN}: this one is known.
+     */
+    public static final String NOT_PLEDGED = "none";
+
+    private String pledgedToPower = PLEDGE_UNKNOWN;
     private String allegiance = "unknown";
     private int powerRank = 0;
     private int merrits = 0;
@@ -186,6 +197,15 @@ public class RankAndProgressDto implements ToJsonConvertible {
 
     public void setPledgedToPower(String pledgedToPower) {
         this.pledgedToPower = pledgedToPower;
+    }
+
+    /**
+     * True when the journal has said which power the commander is pledged to, false when it said none or
+     * has said nothing yet.
+     */
+    public boolean isPledged() {
+        return pledgedToPower != null && !pledgedToPower.isBlank()
+                && !PLEDGE_UNKNOWN.equalsIgnoreCase(pledgedToPower) && !NOT_PLEDGED.equalsIgnoreCase(pledgedToPower);
     }
 
     public String getAllegiance() {

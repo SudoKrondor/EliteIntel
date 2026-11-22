@@ -67,10 +67,10 @@ class CorruptJournalFolderStartupTest {
     }
 
     @Test
-    void theSettingsPanelCanStillReadTheFolderToShowIt() {
+    void theTabsCanStillReadTheFoldersToShowThem() {
         store(CORRUPT, CORRUPT);
 
-        // The settings panel builds its fields from exactly these two calls. They ran on the Swing thread,
+        // The tabs that show these folders build their fields from exactly these two calls. They ran on the Swing thread,
         // so throwing here is what stopped the window opening at all.
         assertDoesNotThrow(() -> {
             PlayerSession.getInstance().getJournalPath().toString();

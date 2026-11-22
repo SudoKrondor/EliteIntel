@@ -290,6 +290,13 @@ public class StellarObjectSearchResultDto extends BaseJsonDto implements ToJsonC
             return Math.round(distance * 100.0) / 100.0;
         }
 
+        /**
+         * The body's surface materials by English name, with their share in percent. Empty when Spansh sent none.
+         */
+        public List<Material> getMaterials() {
+            return materials == null ? List.of() : materials;
+        }
+
         public double getDistanceToArrival() {
             return distanceToArrival;
         }

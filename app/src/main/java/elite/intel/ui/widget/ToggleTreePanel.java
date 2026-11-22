@@ -22,8 +22,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_GAP;
  * <p>
  * Standalone toggles share one grid of {@value #COLUMN_COUNT} columns, filled top to bottom so reading down
  * a column follows the order they were given. A toggle with dependents is a group below that grid: its own
- * checkbox on top and its dependents indented beneath it along a spine, laid out in the same columns - and
- * a dependent with dependents of its own repeats the shape, so the nesting goes as deep as the settings do.
+ * checkbox on top and its dependents indented beneath it along a spine - and a dependent with dependents of
+ * its own repeats the shape, so the nesting goes as deep as the settings do. Every level shares the page's
+ * columns: only a grid's first column gives way to the indent, the others line up down the whole page.
  * <p>
  * The dependency is shown by enabling, never by value: while a parent is off every toggle under it is
  * greyed out with its tick still visible, and comes back as it was when the parent is turned on again.
@@ -34,7 +35,8 @@ public class ToggleTreePanel extends JPanel {
     /**
      * How far a dependent block sits in from its parent's checkbox, spine included.
      */
-    private static final int DEPENDENT_INDENT = 18;
+    private static final int DEPENDENT_INDENT = 19;
+    private static final int SPINE_WIDTH = 1;
     /**
      * Around every grid cell, and so around every checkbox on the page.
      */
@@ -51,7 +53,7 @@ public class ToggleTreePanel extends JPanel {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
 
-        add(page(this.roots, true), BorderLayout.NORTH);
+        add(page(this.roots, 0), BorderLayout.NORTH);
         refresh();
     }
 
@@ -102,11 +104,13 @@ public class ToggleTreePanel extends JPanel {
      * tall as its subtree, and one in a grid cell would push its whole row down, splitting the plain
      * checkboxes beside it apart.
      *
-     * @param ruled whether a rule separates the grid from the groups. The top of the page gets one, so the
-     *              switches that stand alone read as a different kind of thing from the trees below; a nested
-     *              page does not, its spine already frames it
+     * <p>
+     * A rule separates the grid from the groups at the top of the page only, so the switches that stand alone
+     * read as a different kind of thing from the trees below; a nested page's spine already frames it.
+     *
+     * @param indent how far right of the page's left edge this page starts
      */
-    private JPanel page(List<SettingToggle> nodes, boolean ruled) {
+    private JPanel page(List<SettingToggle> nodes, int indent) {
         JPanel page = transparentPanel(null);
         page.setLayout(new BoxLayout(page, BoxLayout.Y_AXIS));
 
@@ -114,12 +118,12 @@ public class ToggleTreePanel extends JPanel {
         for (SettingToggle node : nodes) {
             if (!node.hasDependents()) standalone.add(checkBoxFor(node));
         }
-        if (!standalone.isEmpty()) page.add(columnGrid(standalone));
+        if (!standalone.isEmpty()) page.add(columnGrid(standalone, indent));
 
         for (SettingToggle node : nodes) {
             if (node.hasDependents()) {
-                if (page.getComponentCount() > 0) page.add(ruled ? rule() : Box.createVerticalStrut(HUD_GAP));
-                page.add(group(node));
+                if (page.getComponentCount() > 0) page.add(indent == 0 ? rule() : Box.createVerticalStrut(HUD_GAP));
+                page.add(group(node, indent));
             }
         }
         return page;
@@ -140,48 +144,105 @@ public class ToggleTreePanel extends JPanel {
     /**
      * A toggle over its dependents: the checkbox, then the dependents' own page indented along a spine.
      */
-    private JComponent group(SettingToggle node) {
+    private JComponent group(SettingToggle node, int indent) {
         JPanel block = transparentPanel(new BorderLayout());
         // The head is a one-cell grid so it is exactly as wide as the first column beneath it.
-        block.add(columnGrid(List.of(checkBoxFor(node))), BorderLayout.NORTH);
+        block.add(columnGrid(List.of(checkBoxFor(node)), indent), BorderLayout.NORTH);
 
-        JPanel dependents = page(node.dependents(), false);
+        int gap = (DEPENDENT_INDENT - SPINE_WIDTH) / 2;
+        JPanel dependents = page(node.dependents(), indent + DEPENDENT_INDENT);
         dependents.setBorder(new CompoundBorder(
-                new EmptyBorder(0, DEPENDENT_INDENT / 2, 0, 0),
+                new EmptyBorder(0, gap, 0, 0),
                 new CompoundBorder(
-                        new MatteBorder(0, 1, 0, 0, HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION),
-                        new EmptyBorder(0, DEPENDENT_INDENT / 2, 0, 0))));
+                        new MatteBorder(0, SPINE_WIDTH, 0, 0, HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION),
+                        new EmptyBorder(0, gap, 0, 0))));
         block.add(dependents, BorderLayout.CENTER);
         return block;
     }
 
-    /**
-     * Lays the cells out in {@value #COLUMN_COUNT} equal columns, filled top to bottom. The placement is
-     * computed from the list so a toggle added or moved never has to be hand-numbered into a column.
-     */
-    private static JPanel columnGrid(List<JComponent> cells) {
-        JPanel grid = transparentPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.weightx = 1.0;
-        gbc.insets = CELL_INSETS;
-
-        int rows = (cells.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
-        for (int i = 0; i < cells.size(); i++) {
-            gbc.gridx = i / rows;
-            gbc.gridy = i % rows;
-            grid.add(cells.get(i), gbc);
-        }
-
-        // Every column is claimed even when the cells do not reach it, plus one of slack on the right, so
-        // a grid of two cells has the same column widths as one of six: the nested grids line up under the
-        // page's, and none stretches its few toggles across the full width.
-        gbc.gridy = rows;
-        for (int column = 0; column <= COLUMN_COUNT; column++) {
-            gbc.gridx = column;
-            grid.add(Box.createHorizontalGlue(), gbc);
-        }
+    private static JPanel columnGrid(List<JComponent> cells, int indent) {
+        JPanel grid = transparentPanel(new PageColumnsLayout(indent));
+        cells.forEach(grid::add);
         return grid;
+    }
+
+    /**
+     * Lays cells out in {@value #COLUMN_COUNT} equal columns, filled top to bottom. The placement is computed
+     * from the list so a toggle added or moved never has to be hand-numbered into a column.
+     * <p>
+     * WHY not a GridBagLayout: its columns are sized from their own cells, so grids on one page disagree about
+     * where a column starts. Here the column width comes from the page, whatever the cells or the depth, which
+     * leaves a grid of two cells on the same columns as one of six.
+     */
+    private static final class PageColumnsLayout implements LayoutManager {
+
+        private final int indent;
+
+        PageColumnsLayout(int indent) {
+            this.indent = indent;
+        }
+
+        @Override
+        public void layoutContainer(Container grid) {
+            int count = grid.getComponentCount();
+            int rows = rows(count);
+            int columnWidth = Math.max((grid.getWidth() + indent) / COLUMN_COUNT, narrowestColumn(grid));
+            int cellHeight = cellHeight(grid);
+            int rowPitch = cellHeight + CELL_INSETS.top + CELL_INSETS.bottom;
+            for (int i = 0; i < count; i++) {
+                int column = i / rows;
+                int columnX = column == 0 ? 0 : column * columnWidth - indent;
+                int width = column == 0 ? columnWidth - indent : columnWidth;
+                grid.getComponent(i).setBounds(
+                        columnX + CELL_INSETS.left,
+                        (i % rows) * rowPitch + CELL_INSETS.top,
+                        width - CELL_INSETS.left - CELL_INSETS.right,
+                        cellHeight);
+            }
+        }
+
+        @Override
+        public Dimension preferredLayoutSize(Container grid) {
+            int rowPitch = cellHeight(grid) + CELL_INSETS.top + CELL_INSETS.bottom;
+            // One more set of cell insets below the last row: the air that sets a grid apart from what follows it.
+            int height = rows(grid.getComponentCount()) * rowPitch + CELL_INSETS.top + CELL_INSETS.bottom;
+            return new Dimension(COLUMN_COUNT * narrowestColumn(grid) - indent, height);
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container grid) {
+            return preferredLayoutSize(grid);
+        }
+
+        @Override
+        public void addLayoutComponent(String name, Component component) {
+        }
+
+        @Override
+        public void removeLayoutComponent(Component component) {
+        }
+
+        private static int rows(int count) {
+            return (count + COLUMN_COUNT - 1) / COLUMN_COUNT;
+        }
+
+        /**
+         * The page column width at which this grid's widest cell still fits, even in the indented first column.
+         */
+        private int narrowestColumn(Container grid) {
+            int widest = 0;
+            for (Component cell : grid.getComponents()) {
+                widest = Math.max(widest, cell.getPreferredSize().width);
+            }
+            return widest + CELL_INSETS.left + CELL_INSETS.right + indent;
+        }
+
+        private static int cellHeight(Container grid) {
+            int tallest = 0;
+            for (Component cell : grid.getComponents()) {
+                tallest = Math.max(tallest, cell.getPreferredSize().height);
+            }
+            return tallest;
+        }
     }
 }

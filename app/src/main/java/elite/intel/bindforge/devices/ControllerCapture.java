@@ -1,0 +1,314 @@
+package elite.intel.bindforge.devices;
+
+import elite.intel.bindforge.devicefiles.ButtonMapLabels;
+import elite.intel.bindforge.io.SlotAssignment;
+import elite.intel.bindforge.model.BindingInput;
+import elite.intel.devices.events.DeviceHatEvent;
+import elite.intel.devices.model.GameAxis;
+
+import java.util.*;
+
+/**
+ * Turns controller presses into what the capture dialog assigns - an input and the modifiers held for it.
+ * <p>
+ * <strong>Capture is a single motion, as in the game</strong> (bind-editor.md, <em>Modifiers, Hold, Inverted,
+ * Deadzone</em>): whatever is held when the completing input arrives becomes the modifier set, up to three, and the
+ * completing input is the slot's value. Held inputs count on any controller, in the order they were pressed.
+ * <p>
+ * <strong>A button or hat is picked when it is let go, not when it is pressed</strong> (E8, Krondor, 2026-11-10), so
+ * a chord is never picked first as the bare button held for it. A release picks when something was pressed since the
+ * last pick: the input pressed last, with every other input still held as its modifiers. Holding a shift button and
+ * pressing two buttons in turn picks twice; letting go of the shift button afterwards picks nothing. <strong>An axis
+ * direction or a trigger is still picked the moment it moves</strong>: a throttle pushed from one end may never come
+ * back, so it would never be let go.
+ * <p>
+ * A hat direction is an input like a button. A diagonal on an 8-way hat pushes two directions in one report:
+ * the first in the spec's order (up, right, down, left) is the input, and the other counts as held.
+ * <p>
+ * Pure and not thread-safe: the dialog feeds it on the EDT.
+ */
+public final class ControllerCapture {
+
+    /**
+     * An input to assign and the modifiers held for it, in the {@code .binds} vocabulary.
+     */
+    public record Captured(BindingInput input, List<BindingInput> modifiers) {
+        public Captured {
+            modifiers = List.copyOf(modifiers);
+        }
+    }
+
+    private static final int[] HAT_BITS = {DeviceHatEvent.UP, DeviceHatEvent.RIGHT, DeviceHatEvent.DOWN, DeviceHatEvent.LEFT};
+    private static final float AXIS_ACTIVATION_THRESHOLD = 0.25f;
+
+    /** Elite's tokens for the GamePad's triggers; SDL reports them as the Z and RZ axes. */
+    public static final String GAMEPAD_LEFT_TRIGGER = "Pos_GamePad_LTrigger";
+    public static final String GAMEPAD_RIGHT_TRIGGER = "Pos_GamePad_RTrigger";
+    private static final Map<GameAxis, String> GAMEPAD_TRIGGERS =
+            Map.of(GameAxis.Z, GAMEPAD_LEFT_TRIGGER, GameAxis.RZ, GAMEPAD_RIGHT_TRIGGER);
+
+    /** In the order of {@link #HAT_BITS}. */
+    private static final List<String> GAMEPAD_DPAD_TOKENS =
+            List.of("GamePad_DPadUp", "GamePad_DPadRight", "GamePad_DPadDown", "GamePad_DPadLeft");
+
+    private final Set<BindingInput> held = new LinkedHashSet<>();
+    /** The button or hat direction pressed last - what a release picks. */
+    private BindingInput lastPressed;
+    /** Whether a button or hat direction was pressed since the last pick, so a release picks. */
+    private boolean pressedSincePick;
+    private final Map<String, Integer> hatDirections = new HashMap<>();
+    private final Map<String, Integer> axisDirections = new HashMap<>();
+    /** Where each axis rests - the first value seen for it. */
+    private final Map<String, Float> rests = new HashMap<>();
+
+    /**
+     * @param device  the controller's {@code .binds} name
+     * @param token   the button's token, from {@link #buttonToken}
+     * @return what to assign when this release picks; empty on a press, and on a release with nothing pressed since
+     * the last pick
+     */
+    public Optional<Captured> button(String device, String token, boolean pressed) {
+        BindingInput input = new BindingInput(device, token);
+        if (pressed) {
+            pressed(input);
+            return Optional.empty();
+        }
+        return released(input);
+    }
+
+    /**
+     * @param sdlIndex SDL's button index, from 0
+     * @return the token the game writes for this button; empty for a gamepad's Start and Guide, which the game
+     * does not let a binding use
+     */
+    public static Optional<String> buttonToken(boolean gamepad, int sdlIndex) {
+        return gamepad ? gamepadButtonToken(sdlIndex) : Optional.of(ButtonMapLabels.buttonToken(sdlIndex + 1));
+    }
+
+    /**
+     * SDL's button order for an Xbox-style pad, written with Elite's GamePad tokens.
+     */
+    static Optional<String> gamepadButtonToken(int sdlIndex) {
+        return switch (sdlIndex) {
+            case 0 -> Optional.of("GamePad_FaceDown");
+            case 1 -> Optional.of("GamePad_FaceRight");
+            case 2 -> Optional.of("GamePad_FaceLeft");
+            case 3 -> Optional.of("GamePad_FaceUp");
+            case 4 -> Optional.of("GamePad_LBumper");
+            case 5 -> Optional.of("GamePad_RBumper");
+            case 6 -> Optional.of("GamePad_Back");
+            case 7, 10 -> Optional.empty();
+            case 8 -> Optional.of("GamePad_LThumb");
+            case 9 -> Optional.of("GamePad_RThumb");
+            // WHY: a pad's extra buttons (paddles, share) have no GamePad token in Elite, so they bind as plain buttons.
+            default -> Optional.of(ButtonMapLabels.buttonToken(sdlIndex + 1));
+        };
+    }
+
+    /**
+     * @param sdlIndex   SDL's hat index, from 0
+     * @param directions the directions pushed now, as SDL's bits
+     * @return what to assign when a direction was newly pushed; empty when one was only let go
+     */
+    public Optional<Captured> hat(String device, int sdlIndex, int directions) {
+        return hat(device, sdlIndex, directions, DeviceEditorInputs.hatTokens(sdlIndex + 1));
+    }
+
+    /**
+     * Captures a gamepad D-pad using Elite's GamePad tokens instead of the generic POV vocabulary.
+     */
+    public Optional<Captured> gamepadHat(String device, int sdlIndex, int directions) {
+        return hat(device, sdlIndex, directions, GAMEPAD_DPAD_TOKENS);
+    }
+
+    public static List<String> gamepadDPadTokens() {
+        return GAMEPAD_DPAD_TOKENS;
+    }
+
+    private Optional<Captured> hat(String device, int sdlIndex, int directions, List<String> tokens) {
+        String key = device + "#" + sdlIndex;
+        int before = hatDirections.getOrDefault(key, 0);
+        hatDirections.put(key, directions);
+        // WHY releases first: a report can let one direction go and push another as the hat rolls, and the release
+        // picks what was held before this report.
+        Optional<Captured> picked = Optional.empty();
+        List<BindingInput> pushed = new ArrayList<>();
+        for (int i = 0; i < HAT_BITS.length; i++) {
+            BindingInput input = new BindingInput(device, tokens.get(i));
+            boolean was = (before & HAT_BITS[i]) != 0;
+            boolean is = (directions & HAT_BITS[i]) != 0;
+            if (was && !is) {
+                Optional<Captured> release = released(input);
+                if (picked.isEmpty()) picked = release;
+            }
+            if (!was && is) pushed.add(input);
+        }
+        if (!pushed.isEmpty()) {
+            // WHY: of a diagonal, the first direction in the spec's order is the input, and the other is only held.
+            pressed(pushed.getFirst());
+            held.addAll(pushed.subList(1, pushed.size()));
+        }
+        return picked;
+    }
+
+    /**
+     * <strong>Measured from where the axis rests, not from centre</strong> (Krondor's review, 2026-10-27): a throttle,
+     * slider or toe brake parked at one end would otherwise be captured the moment it jitters. Where it rests is read
+     * from the device when capture begins ({@link #rest}); for an axis with none given, the first value reported after
+     * capture began.
+     *
+     * @param axis the game's axis slot behind the SDL axis
+     * @param value the current normalized value
+     * @return what to assign when the axis moves far enough from rest; empty while at rest or held in the same
+     * direction
+     */
+    public Optional<Captured> axis(String device, GameAxis axis, float value) {
+        Objects.requireNonNull(axis, "axis");
+        String key = device + "#" + axis.token();
+        float travel = value - rests.computeIfAbsent(key, k -> value);
+        int direction = Math.abs(travel) < AXIS_ACTIVATION_THRESHOLD ? 0 : travel < 0 ? -1 : 1;
+        int before = axisDirections.getOrDefault(key, 0);
+        axisDirections.put(key, direction);
+        if (direction == before) return Optional.empty();
+        BindingInput negative = new BindingInput(device, "Neg_" + axis.token());
+        BindingInput positive = new BindingInput(device, "Pos_" + axis.token());
+        forget(negative);
+        forget(positive);
+        if (direction == 0) return Optional.empty();
+        return Optional.of(press(direction < 0 ? negative : positive));
+    }
+
+    /**
+     * Where an axis rests, read from the device when capture begins (Krondor, 2026-11-10). A still stick reports nothing,
+     * so without this the first value seen - already part-way through a push - is taken as the rest, and the spring
+     * taking the stick back to centre is captured as a push the other way. With none given, the first value seen is
+     * the rest, as before.
+     */
+    public void rest(String device, GameAxis axis, float value) {
+        Objects.requireNonNull(axis, "axis");
+        rests.put(device + "#" + axis.token(), value);
+    }
+
+    /**
+     * A whole axis, for an axis row: the same movement from rest as {@link #axis}, with no direction and no modifiers,
+     * since an axis binding can take none (bind-editor.md, <em>Modifiers, Hold, Inverted, Deadzone</em>).
+     *
+     * @return what to assign when the axis has moved far enough from rest; empty until it comes back and moves again
+     */
+    public Optional<Captured> wholeAxis(String device, GameAxis axis, float value) {
+        Objects.requireNonNull(axis, "axis");
+        String key = device + "#" + axis.token();
+        boolean moved = Math.abs(value - rests.computeIfAbsent(key, k -> value)) >= AXIS_ACTIVATION_THRESHOLD;
+        boolean before = axisDirections.getOrDefault(key, 0) != 0;
+        axisDirections.put(key, moved ? 1 : 0);
+        return moved && !before
+                ? Optional.of(new Captured(new BindingInput(device, axis.token()), List.of()))
+                : Optional.empty();
+    }
+
+    /**
+     * A GamePad's axes: its triggers are captured under their own tokens, one direction each. <strong>Its sticks are
+     * not captured</strong> (Alan, 2026-10-27, from Krondor's review): a pad never uses {@code Joy_} tokens, and which
+     * of its own the game writes for a stick pushed one way is not measured yet (testing item 27) - so nothing is
+     * guessed into a binds file.
+     *
+     * @return the trigger pulled; always empty for a stick
+     */
+    public Optional<Captured> gamepadAxis(String device, GameAxis axis, float value) {
+        Optional<String> trigger = gamepadTriggerToken(axis);
+        return trigger.isPresent() ? trigger(device, trigger.get(), value) : Optional.empty();
+    }
+
+    /** @return Elite's token for the GamePad trigger that SDL reports as this axis; empty for any other axis */
+    public static Optional<String> gamepadTriggerToken(GameAxis axis) {
+        return Optional.ofNullable(GAMEPAD_TRIGGERS.get(axis));
+    }
+
+    /** @return the SDL axis behind a GamePad trigger token; empty for any other token */
+    public static Optional<GameAxis> gamepadTriggerAxis(String token) {
+        return GAMEPAD_TRIGGERS.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(token))
+                .map(Map.Entry::getKey)
+                .findFirst();
+    }
+
+    private Optional<Captured> trigger(String device, String token, float value) {
+        String key = device + "#" + token;
+        // WHY: a trigger rests at -1 and is pulled towards +1, so only the positive side counts as pressed.
+        boolean pressed = value >= AXIS_ACTIVATION_THRESHOLD;
+        boolean before = axisDirections.getOrDefault(key, 0) != 0;
+        axisDirections.put(key, pressed ? 1 : 0);
+        if (pressed == before) return Optional.empty();
+        BindingInput input = new BindingInput(device, token);
+        forget(input);
+        return pressed ? Optional.of(press(input)) : Optional.empty();
+    }
+
+    private void forget(BindingInput target) {
+        held.removeIf(input -> input.sameInputAs(target));
+    }
+
+    /**
+     * Forgets what one controller holds - it was unplugged, so no release will come - and where its axes rest.
+     */
+    public void release(String device) {
+        held.removeIf(input -> input.device().equals(device));
+        if (lastPressed != null && lastPressed.device().equals(device)) {
+            lastPressed = null;
+            pressedSincePick = false;
+        }
+        hatDirections.keySet().removeIf(key -> key.startsWith(device + "#"));
+        axisDirections.keySet().removeIf(key -> key.startsWith(device + "#"));
+        rests.keySet().removeIf(key -> key.startsWith(device + "#"));
+    }
+
+    /**
+     * An axis direction or a trigger, picked the moment it moves. A button held with it, let go afterwards, picks
+     * nothing: the axis was the pick.
+     */
+    private Captured press(BindingInput input) {
+        List<BindingInput> modifiers = modifiersOf(input);
+        held.add(input);
+        pressedSincePick = false;
+        return new Captured(input, modifiers);
+    }
+
+    /** A button or hat direction pressed: held, and what the next release picks. */
+    private void pressed(BindingInput input) {
+        held.add(input);
+        lastPressed = input;
+        pressedSincePick = true;
+    }
+
+    /**
+     * A button or hat direction let go: the input pressed last, with every other one still held as its modifiers, when
+     * something was pressed since the last pick.
+     */
+    private Optional<Captured> released(BindingInput input) {
+        Optional<Captured> picked = Optional.empty();
+        if (pressedSincePick && lastPressed != null && held.contains(lastPressed)) {
+            picked = Optional.of(new Captured(lastPressed, modifiersOf(lastPressed)));
+            pressedSincePick = false;
+        }
+        held.remove(input);
+        return picked;
+    }
+
+    /** Every other input held, in the order pressed, up to the game's three; an axis held is never a modifier. */
+    private List<BindingInput> modifiersOf(BindingInput input) {
+        List<BindingInput> modifiers = new ArrayList<>();
+        for (BindingInput other : held) {
+            if (modifiers.size() == SlotAssignment.MAX_MODIFIERS) break;
+            if (isAxisInput(other)) continue;
+            if (!other.sameInputAs(input)) modifiers.add(other);
+        }
+        return modifiers;
+    }
+
+    private static boolean isAxisInput(BindingInput input) {
+        String key = input.key();
+        return key.startsWith("Pos_Joy_") && key.endsWith("Axis")
+                || key.startsWith("Neg_Joy_") && key.endsWith("Axis")
+                || GAMEPAD_TRIGGERS.containsValue(key);
+    }
+}

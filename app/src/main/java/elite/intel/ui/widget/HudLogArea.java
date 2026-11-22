@@ -438,6 +438,26 @@ public class HudLogArea extends JPanel implements Scrollable {
         if (selectable) clearSelection();
         transcript.addLast(transcriptText);
         while (transcript.size() > MAX_TRANSCRIPT) transcript.removeFirst();
+        completeAllMessages();
+        Message msg = new Message(text, prefixLen, msgStyle, align, timestamp);
+        messages.add(msg);
+        while (messages.size() > MAX_MESSAGES) messages.remove(0);
+        startTypewriter(msg);
+        revalidate();
+        repaint();
+        scrollToBottom();
+    }
+
+    /**
+     * Shows every message in full at once, as if each had finished typing: for a still picture of the log, such as
+     * the colour theme preview, which is painted before any typewriter timer could run.
+     */
+    public void finishTyping() {
+        completeAllMessages();
+        repaint();
+    }
+
+    private void completeAllMessages() {
         if (activeCardTimer != null) activeCardTimer.stop();
         for (Message m : messages) {
             m.complete = true;
@@ -446,13 +466,6 @@ public class HudLogArea extends JPanel implements Scrollable {
         }
         typewriterTimer.stop();
         removeAllTimerListeners();
-        Message msg = new Message(text, prefixLen, msgStyle, align, timestamp);
-        messages.add(msg);
-        while (messages.size() > MAX_MESSAGES) messages.remove(0);
-        startTypewriter(msg);
-        revalidate();
-        repaint();
-        scrollToBottom();
     }
 
     /**

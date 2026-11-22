@@ -58,7 +58,7 @@ class CurrentSituationFactSourceTest {
 
     @Test
     void usesEnglishFactRegardlessOfCommanderLanguage() {
-        SystemSession.getInstance().setLanguage(Language.DE);
+        SystemSession.getInstance().setLanguage(Language.RU);
         long[] flags = StatusFlags.flagsForSituation(PlayerSituation.IN_SHIP_SUPERCRUISE);
         setStatus(flags[0], flags[1]);
 

@@ -1,53 +1,58 @@
 package elite.intel.ui.screen;
 
+import com.formdev.flatlaf.FlatClientProperties;
+import com.formdev.flatlaf.FlatLaf;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.AiTabController;
 import elite.intel.ui.event.*;
 import elite.intel.ui.inputmonitor.InputMonitorTabPanel;
+import elite.intel.ui.screen.bindings.LeavePrompt;
 import elite.intel.ui.support.GameClockWarning;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudLookAndFeel;
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudWindowButtons;
 import elite.intel.ui.widget.TopStatusBar;
+import elite.intel.util.AppRelauncher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import javax.swing.plaf.BorderUIResource;
-import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
-import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class AppView extends JFrame implements AppViewInterface {
 
     private static final Logger log = LoggerFactory.getLogger(AppView.class);
-    private static final String UI_FONT_FAMILY = Font.SANS_SERIF;
     private static final String ICON_AI = "/images/ai.png";
-    private static final String ICON_PLAYER = "/images/controller.png";
-    private static final String ICON_ACTIONS = "/images/keys-binding.png";
+    private static final String ICON_PLAYER = "/images/commander.png";
+    private static final String ICON_ACTIONS = "/images/actions.png";
     private static final String ICON_BINDINGS = "/images/keyboard.png";
-    private static final String ICON_SETTINGS = "/images/settings.png";
+    private static final String ICON_SERVICES = "/images/services.png";
     private static final String ICON_JUKEBOX = "/images/speaker.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
 
     private final SystemSession systemSession = SystemSession.getInstance();
+    /** Big enough to show the Color Themes tab's editor whole, preview included. */
+    private static final Dimension DEFAULT_SIZE = new Dimension(1720, 1080);
+    private static final Dimension MINIMUM_SIZE = new Dimension(1280, 720);
+
     private Font monoFont;
     private AiUiState uiState;
     private AiTabPanel aiTabPanel;
     private CommanderTabPanel commanderTabPanel;
     private ActionsTabPanel actionsTabPanel;
     private BindingsTabPanel bindingsTabPanel;
-    private SettingsTabPanel settingsTabPanel;
+    private ServicesTabPanel servicesTabPanel;
     private JukeboxTabPanel jukeboxTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
@@ -55,52 +60,142 @@ public class AppView extends JFrame implements AppViewInterface {
     private AiTabController aiTabController;
     private TopStatusBar topStatusBar;
     private volatile ServicesStateEvent.State servicesState = ServicesStateEvent.State.STOPPED;
+    /** An update is out; touched on the event thread only. */
+    private boolean updateAvailable;
+    /** The content pane, which carries the shell inset (and the frame, with native decorations); set by buildUi. */
+    private JPanel shellRoot;
 
-    public AppView() {
+    /**
+     * @param monoFont the app's monospace font, as {@link HudLookAndFeel#install()} loaded it; the look and feel
+     *                 must be installed before the window is built
+     */
+    public AppView(Font monoFont) {
         super("--");
-        monoFont = loadCustomFont();
-        installDarkDefaults();
+        this.monoFont = monoFont;
         UiBus.register(this);
 
         AppTheme.applyAppIcon(this);
+        installWindowChrome();
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (bindingsTabPanel != null) {
-                    bindingsTabPanel.promptCloseWithDraft();
-                }
-                System.exit(0);
+                requestClose();
             }
         });
-        setMinimumSize(new Dimension(600, 500));
-        setSize(new Dimension(1200, 980));
-        setLocationRelativeTo(null);
+        setMinimumSize(MINIMUM_SIZE);
+        placeOnScreen();
 
         buildUi();
         initData();
+        // WHY after buildUi: applyFrame dresses the content pane buildUi makes.
+        addWindowStateListener(e -> applyFrame());
+    }
+
+    /**
+     * The one close path, for the header's close button and for every close request from outside (Alt+F4, the
+     * taskbar). WHY: closing with BindForge's edits not applied asks first; Go back cancels the close (storage.md
+     * rule 9, Storage S7).
+     */
+    private void requestClose() {
+        bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> System.exit(0));
+    }
+
+    /**
+     * Takes away the operating system's title bar and lets the app header ({@link TopStatusBar}) be the title bar,
+     * with our own window buttons in it (ED_HUD_REFERENCE §11.1). WHY FlatLaf's full-window-content mode rather than
+     * {@code setUndecorated} as the dialogs do: the window stays a real system window underneath, so dragging the
+     * header, double-clicking it, edge resizing and Windows Snap all keep working. FlatLaf's own title-bar buttons are
+     * hidden; the header's {@link HudWindowButtons} replace them. Where FlatLaf cannot use the native decorations (Linux),
+     * it draws the window frame itself, which it only does for an undecorated frame.
+     */
+    private void installWindowChrome() {
+        if (!usesNativeDecorations()) {
+            setUndecorated(true);
+            getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+        }
+        JRootPane rootPane = getRootPane();
+        rootPane.putClientProperty(FlatClientProperties.FULL_WINDOW_CONTENT, true);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICON, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_TITLE, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICONIFFY, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_MAXIMIZE, false);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_CLOSE, false);
+    }
+
+    /**
+     * Whether Windows draws the window, through FlatLaf's native decorations (Windows 10 and later). WHY not
+     * {@code FlatLaf.isUseNativeWindowDecorations()} alone: that only reads the {@code TitlePane.useWindowDecorations}
+     * setting, which is true on Linux too, so on Linux the window kept the window manager's title bar and frame and
+     * FlatLaf never took over moving, resizing or double-click (found on KDE, 2026-11-15).
+     */
+    private static boolean usesNativeDecorations() {
+        return FlatLaf.supportsNativeWindowDecorations() && FlatLaf.isUseNativeWindowDecorations();
+    }
+
+    /**
+     * Draws the dialogs' window frame round the main window (§10.1), except when maximized, where a frame would only
+     * sit against the screen edge; and tells FlatLaf how tall the title bar is - the frame, the shell inset and the
+     * header - so that a drag or double-click anywhere on the header acts on the window.
+     * <p>
+     * Where FlatLaf draws the frame itself (Linux), our frame takes the place of FlatLaf's own window border on the
+     * root pane rather than sitting inside it, so the window has one frame, not two (review, 2026-11-14). FlatLaf's
+     * title bar then starts inside that border, so the frame is not part of its height. Edge resizing does not depend
+     * on the border: FlatLaf's resizer handles it on its own.
+     */
+    private void applyFrame() {
+        boolean maximized = (getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH;
+        int frame = maximized ? 0 : HudPalette.HUD_BORDER_THICKNESS_ACCENT;
+        int inset = HudPalette.SHELL_GAP / 2;
+        Border frameBorder = BorderFactory.createMatteBorder(
+                frame, frame, frame, frame, HudPalette.HUD_COLOR_ROLE_DIALOG_FRAME_BORDER);
+        Border shellInset = new EmptyBorder(inset, inset, inset, inset);
+        int titleBarHeight = inset + HudPalette.HUD_TOP_BAR_HEIGHT;
+        if (usesNativeDecorations()) {
+            shellRoot.setBorder(BorderFactory.createCompoundBorder(frameBorder, shellInset));
+            titleBarHeight += frame;
+        } else {
+            getRootPane().setBorder(frameBorder);
+            shellRoot.setBorder(shellInset);
+        }
+        getRootPane().putClientProperty(FlatClientProperties.TITLE_BAR_HEIGHT, titleBarHeight);
+        getRootPane().revalidate();
+        getRootPane().repaint();
+    }
+
+    /**
+     * Opens at {@link #DEFAULT_SIZE}, centred - or maximized when the screen's usable area (the screen less its
+     * taskbars and panels) is smaller than that, as on a 1920x1080 screen. WHY the size is clamped as well:
+     * un-maximizing returns the window to its own size, which must then fit the screen rather than reach past it.
+     */
+    private void placeOnScreen() {
+        Rectangle usable = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        boolean fits = DEFAULT_SIZE.width <= usable.width && DEFAULT_SIZE.height <= usable.height;
+        setSize(Math.min(DEFAULT_SIZE.width, usable.width), Math.min(DEFAULT_SIZE.height, usable.height));
+        setLocationRelativeTo(null);
+        if (!fits) setExtendedState(getExtendedState() | MAXIMIZED_BOTH);
     }
 
     private void buildUi() {
-        setTitle(getText("app.title", systemSession.readVersionFromResources()));
+        // WHY the flag: the title shows on the taskbar and in Alt+Tab, and a language change rebuilds through here.
+        setTitle(updateAvailable
+                ? getText("app.updateAvailable.title")
+                : getText("app.title", systemSession.readVersionFromResources()));
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBorder(new EmptyBorder(
-                HudPalette.SHELL_GAP / 2,
-                HudPalette.SHELL_GAP / 2,
-                HudPalette.SHELL_GAP / 2,
-                HudPalette.SHELL_GAP / 2
-        ));
+        shellRoot = root;
         root.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setContentPane(root);
+        applyFrame();
 
         JTabbedPane tabs = AppTheme.makeMainNavTabs();
+        tabs.setModel(new LeavingBindForge(tabs));
 
         ImageIcon aiIcon = scaledIcon(ICON_AI);
         ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
         ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
         ImageIcon bindingsIcon = scaledIcon(ICON_BINDINGS);
-        ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
+        ImageIcon servicesIcon = scaledIcon(ICON_SERVICES);
         ImageIcon jukeboxIcon = scaledIcon(ICON_JUKEBOX);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
@@ -111,7 +206,7 @@ public class AppView extends JFrame implements AppViewInterface {
         commanderTabPanel = new CommanderTabPanel();
         actionsTabPanel = new ActionsTabPanel();
         bindingsTabPanel = new BindingsTabPanel();
-        settingsTabPanel = new SettingsTabPanel();
+        servicesTabPanel = new ServicesTabPanel();
         jukeboxTabPanel = new JukeboxTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
@@ -121,20 +216,50 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.commander"), commanderIcon, commanderTabPanel);
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
         tabs.addTab(getText("tab.bindings"), bindingsIcon, bindingsTabPanel);
-        tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
+        tabs.addTab(getText("tab.services"), servicesIcon, servicesTabPanel);
         tabs.addTab(getText("tab.jukebox"), jukeboxIcon, jukeboxTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 
         topStatusBar = new TopStatusBar(
                 getText("app.name"),
-                systemSession.readVersionFromResources()
+                systemSession.readVersionFromResources(),
+                this,
+                this::requestClose
         );
+        if (updateAvailable) topStatusBar.showUpdateAvailable();
         root.add(buildTopShell(topStatusBar), BorderLayout.NORTH);
         root.add(tabs, BorderLayout.CENTER);
         AppTheme.applyDarkPalette(getContentPane());
 
         aiTabController = new AiTabController(aiTabPanel);
+    }
+
+    /**
+     * The main tabs' selection, asking before it leaves the BindForge tab with edits not applied (storage.md rule 9,
+     * Storage S7). A switch the user turns down is not made; one agreed to later - after Apply - is made then.
+     */
+    private final class LeavingBindForge extends DefaultSingleSelectionModel {
+
+        private final JTabbedPane tabs;
+
+        LeavingBindForge(JTabbedPane tabs) {
+            this.tabs = tabs;
+        }
+
+        @Override
+        public void setSelectedIndex(int index) {
+            int from = getSelectedIndex();
+            if (from == index || from < 0 || bindingsTabPanel == null
+                    || from != tabs.indexOfComponent(bindingsTabPanel)) {
+                super.setSelectedIndex(index);
+                return;
+            }
+            bindingsTabPanel.leave(LeavePrompt.Leaving.TAB, () -> {
+                // WHY: Apply ran in between - the tab asked for must still be there.
+                if (index < tabs.getTabCount()) super.setSelectedIndex(index);
+            });
+        }
     }
 
     private JComponent buildTopShell(TopStatusBar statusBar) {
@@ -151,7 +276,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     @Override
     public void initData() {
-        settingsTabPanel.initData();
+        servicesTabPanel.initData();
         commanderTabPanel.initData();
         actionsTabPanel.initData();
         bindingsTabPanel.initData();
@@ -182,7 +307,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (aiTabController != null) aiTabController.dispose();
         if (aiTabPanel != null) aiTabPanel.dispose();
         if (bindingsTabPanel != null) bindingsTabPanel.dispose();
-        if (settingsTabPanel != null) settingsTabPanel.dispose();
+        if (servicesTabPanel != null) servicesTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
         if (inputMonitorTabPanel != null) inputMonitorTabPanel.dispose();
         if (actionsTabPanel != null) actionsTabPanel.dispose();
@@ -199,7 +324,12 @@ public class AppView extends JFrame implements AppViewInterface {
 
     @Subscribe
     public void onUpdateAvailableEvent(UpdateAvailableEvent event) {
-        SwingUtilities.invokeLater(() -> setTitle(getText("app.updateAvailable.title")));
+        SwingUtilities.invokeLater(() -> {
+            // WHY the flag: the event comes once, and a language change rebuilds the header.
+            updateAvailable = true;
+            setTitle(getText("app.updateAvailable.title"));
+            topStatusBar.showUpdateAvailable();
+        });
     }
 
     @Subscribe
@@ -208,107 +338,22 @@ public class AppView extends JFrame implements AppViewInterface {
     }
 
     @Subscribe
+    public void onRelaunchRequested(RelaunchRequestedEvent event) {
+        SwingUtilities.invokeLater(() -> bindingsTabPanel.leave(LeavePrompt.Leaving.CLOSE, () -> {
+            if (!AppRelauncher.relaunch()) {
+                event.relaunchFailed().run();
+                return;
+            }
+            setVisible(false);
+            System.exit(0);
+        }));
+    }
+
+    @Subscribe
     public void onSystemShutdownEvent(SystemShutDownEvent event) {
         SwingUtilities.invokeLater(() -> {
             setVisible(false);
             System.exit(0);
         });
-    }
-
-    private Font loadCustomFont() {
-        Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_MONO_BASE);
-        // Use platform sans-serif for UI labels because the previous custom font did not cover every glyph reliably.
-        UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_UI_DEFAULT)));
-        try {
-            mono = Font.createFont(Font.TRUETYPE_FONT,
-                            Objects.requireNonNull(getClass().getResourceAsStream("/fonts/UbuntuSansMono-Regular.ttf")))
-                    .deriveFont(HudPalette.HUD_FONT_MONO_BASE);
-            GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(mono);
-            UIManager.put("monospaceFont", new FontUIResource(mono));
-            SwingUtilities.updateComponentTreeUI(this);
-        } catch (FontFormatException | IOException e) {
-            log.error("Failed to load custom font: {}", e.getMessage());
-        }
-        return mono;
-    }
-
-    private void installDarkDefaults() {
-        UIManager.put("Panel.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("OptionPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("TabbedPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("TabbedPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("TabbedPane.contentAreaColor", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        // The selected tab of a STOCK JTabbedPane - the ones inside dialogs the JDK builds for us, such
-        // as JColorChooser. FlatLaf paints the selected tab in TabbedPane.focusColor, a pale blue, and
-        // leaves selectedForeground unset so the label falls back to the near-white foreground above:
-        // white on white, and the tab a commander is looking at is the one they cannot read. The app's
-        // own tabs never hit this - HudTabbedPane installs a UI that paints its tabs itself - which is
-        // why it stayed invisible until a colour picker put a stock tab strip on screen.
-        UIManager.put("TabbedPane.focusColor", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
-        UIManager.put("TabbedPane.hoverColor", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
-        UIManager.put("TabbedPane.selectedForeground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("TabbedPane.underlineColor", HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE);
-        UIManager.put("TabbedPane.disabledForeground", HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("TabbedPane.disabledUnderlineColor", HudPalette.HUD_COLOR_ROLE_DISABLED);
-        // Same story one control along: a TitledBorder built by the JDK - the "Preview" frame inside
-        // JColorChooser is the only one in the app - takes its title from TitledBorder.titleColor, which
-        // the light look-and-feel leaves black, on our dark background. The app draws its own titled
-        // frames with HudTitledCard and never builds one of these, so this only ever dresses a dialog we
-        // did not lay out ourselves.
-        UIManager.put("TitledBorder.titleColor", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("TitledBorder.border", new BorderUIResource(
-                new LineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS)));
-        UIManager.put("Label.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("CheckBox.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("RadioButton.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("Button.foreground", HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT);
-        UIManager.put("Button.background", HudPalette.HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND);
-        UIManager.put("Button.disabledText",       HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("Button.disabledForeground", HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("ScrollPane.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("Viewport.background", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
-        UIManager.put("TextField.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("PasswordField.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("TextArea.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("EditorPane.background", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("TextField.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("PasswordField.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("TextArea.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("EditorPane.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("TextField.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("PasswordField.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("TextArea.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("EditorPane.inactiveForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        UIManager.put("Table.background", HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
-        UIManager.put("Table.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("Table.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("Table.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-        UIManager.put("ComboBox.background",              HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("ComboBox.foreground",              HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        UIManager.put("ComboBox.disabledBackground",       HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("ComboBox.disabledForeground",       HudPalette.HUD_COLOR_ROLE_DISABLED);
-        UIManager.put("ComboBox.buttonDisabledBackground", HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        UIManager.put("ComboBox.maximumRowCount",          8);
-        // Width=0 suppresses the vertical separator between value and arrow button.
-        // FlatLaf re-installs buttonSeparatorColor from the theme after per-instance nulling,
-        // so zeroing the width is the only reliable suppression (update() skips it when width <= 0).
-        UIManager.put("ComboBox.buttonSeparatorWidth",     0);
-        // Editable combo editor calls selectAll() on setSelectedItem; override FlatLaf's
-        // cold-blue theme default so selection follows the warm HUD palette.
-        UIManager.put("ComboBox.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
-        UIManager.put("ComboBox.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
-
-        // Tooltips: a flat HUD-dark chip with a warm 1px rail instead of the pale LAF default, so every
-        // setToolTipText across the app matches the cockpit look (canon §13). The popup drop shadow is killed
-        // app-wide (tooltips, menus, combo popups) because the HUD is shadowless by design.
-        UIManager.put("ToolTip.background", HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
-        UIManager.put("ToolTip.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-        // Explicit small tooltip font: without this the tooltip inherits the 18px UI defaultFont and reads oversized.
-        UIManager.put("ToolTip.font", new FontUIResource(
-                new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_TOOLTIP)));
-        UIManager.put("ToolTip.border", BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
-        UIManager.put("Popup.dropShadowPainted", Boolean.FALSE);
     }
 }

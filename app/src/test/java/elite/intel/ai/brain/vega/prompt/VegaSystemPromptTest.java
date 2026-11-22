@@ -4,7 +4,7 @@ import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.brain.VegaIdentity;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.mouth.TtsProvider;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.ai.mouth.supertonic.SupertonicVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipLoadoutManager;
 import elite.intel.db.managers.ShipManager;
@@ -95,7 +95,6 @@ class VegaSystemPromptTest {
         String identity = VegaIdentity.identityClause();
         assertTrue(identity.contains("artificial intelligence"), "VEGA must be named as an AI, not merely 'the AI'");
         assertTrue(identity.contains(VegaIdentity.name()));
-        assertTrue(identity.contains("never pretend otherwise"));
 
         for (ThoughtSource source : ThoughtSource.values()) {
             String normalized = prompt.staticRules(source).replaceAll("\\s+", " ");
@@ -295,13 +294,13 @@ class VegaSystemPromptTest {
         SystemSession session = SystemSession.getInstance();
         TtsProvider previousProvider = session.getTtsProvider();
         try {
-            session.setTtsProvider(TtsProvider.KOKORO);
+            session.setTtsProvider(TtsProvider.SUPERTONIC);
 
-            flyShipWithVoice(901, KokoroVoices.NOVA.name());
+            flyShipWithVoice(901, SupertonicVoices.NOVA.name());
             assertTrue(prompt.staticRules(ThoughtSource.COMMANDER).contains("\"I\" and feminine forms"));
             assertTrue(prompt.staticRules(ThoughtSource.EVENT).contains("use feminine self-reference"));
 
-            flyShipWithVoice(902, KokoroVoices.GEORGE.name());
+            flyShipWithVoice(902, SupertonicVoices.GEORGE.name());
             assertTrue(prompt.staticRules(ThoughtSource.COMMANDER).contains("\"I\" and masculine forms"),
                     "a male ship voice must not be told to speak of itself in feminine forms");
             assertTrue(prompt.staticRules(ThoughtSource.EVENT).contains("use masculine self-reference"));
@@ -309,6 +308,23 @@ class VegaSystemPromptTest {
             ShipLoadoutManager.getInstance().clear();
             session.setTtsProvider(previousProvider);
         }
+    }
+
+    /**
+     * A line VEGA transmits to an NPC - the retort to a pirate scanning the hold - must not carry the commander's
+     * address clauses. Told only in its event instructions to answer the pirate, the model obeyed the persona and
+     * called the commander "Admiral", so the rules themselves are swapped, not contradicted.
+     */
+    @Test
+    void narrationToSomeoneElseDropsTheCommanderAddress() {
+        String normalized = prompt.narrationRulesTo("RayRay").replaceAll("\\s+", " ");
+        assertTrue(normalized.contains("speak directly to RayRay over comms"), normalized);
+        assertTrue(normalized.contains("Never address or name the commander."), normalized);
+        assertTrue(normalized.contains("Aim any mockery the personality calls for at RayRay."), normalized);
+        assertFalse(normalized.contains("address the commander directly"), normalized);
+        assertFalse(normalized.contains("When addressing the commander"), normalized);
+        assertTrue(prompt.staticRules(ThoughtSource.EVENT).replaceAll("\\s+", " ")
+                .contains("address the commander directly"), "the ordinary narration still speaks to the commander");
     }
 
     /**

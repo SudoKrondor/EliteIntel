@@ -78,7 +78,7 @@ public class MarkdownViewPanel extends JPanel {
 
         applyTransparentSurface();
 
-        // applyDarkPalette (run later in AppView) re-paints the JEditorPane white and gives it a
+        // applyDarkPalette (run later in AppView) re-paints the JEditorPane opaque and gives it a
         // warm field border + a lighter HUD_COLOR_ROLE_PANEL_BACKGROUND viewport. Re-assert the transparent surface
         // once that pass has completed so the document reads flush on the HUD background.
         SwingUtilities.invokeLater(this::applyTransparentSurface);
@@ -133,7 +133,7 @@ public class MarkdownViewPanel extends JPanel {
 
     /**
      * Inserts a {@code -<tag>} language suffix before the file extension, e.g.
-     * {@code ("credits.md", "de")} -> {@code "credits-de.md"}. The English base tag and a
+     * {@code ("credits.md", "ru")} -> {@code "credits-ru.md"}. The English base tag and a
      * blank tag return the base name unchanged.
      */
     private static String localizedName(String base, String tag) {

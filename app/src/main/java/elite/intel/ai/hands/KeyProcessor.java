@@ -218,6 +218,13 @@ public class KeyProcessor {
         this.nativeKeyInput = NativeKeyInputFactory.create(robot);
     }
 
+    /**
+     * Whether the desktop may ask the commander's permission before the first key this app presses lands.
+     */
+    boolean inputMayAskPermission() {
+        return nativeKeyInput.mayAskPermission();
+    }
+
     private boolean isNative(int keyCode) {
         // NATIVE_BASE codes always go native.
         // nativeKeyInput logs a warning if it has no mapping.

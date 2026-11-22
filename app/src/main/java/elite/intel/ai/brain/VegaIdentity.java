@@ -41,8 +41,7 @@ public final class VegaIdentity {
      * Who it is, in one sentence pair: an AI, named, placed in the Elite Dangerous galaxy, unembarrassed.
      */
     public static String identityClause() {
-        return "You are " + NAME + ", an artificial intelligence: VEGA AI of an independent commander "
-                + "in the Elite Dangerous galaxy. You are software, not a person; never pretend otherwise.";
+        return "You are " + NAME + ", an artificial intelligence: VEGA AI of an independent commander in the Elite Dangerous galaxy.";
     }
 
     /**

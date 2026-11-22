@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import elite.intel.db.dao.LocationDao.Coordinates;
 import elite.intel.db.managers.ConflictZoneManager;
 import elite.intel.db.managers.HuntingGroundManager;
+import elite.intel.db.managers.PowerConflictZoneManager;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.missions.ResourceSiteProfile;
 import elite.intel.gameapi.signals.*;
@@ -24,7 +25,8 @@ import java.util.List;
  * every signal it found, batched - and is exactly the burst the live journal subscriber counts,
  * so it is counted the same way and lands in the same ledgers. {@code journal/1} carries FSDJump
  * and Location, whose Conflicts block names the sides of a war or, by its absence, says the war
- * is over. Everything else on the relay is ignored before it is parsed.
+ * is over, and whose Powers list names the powers present for a power conflict zone. Everything
+ * else on the relay is ignored before it is parsed.
  * <p>
  * Nothing here is announced. The ledgers fill up quietly and are read back when the commander
  * asks for a hunting ground or a war zone.
@@ -41,16 +43,23 @@ final class EddnSightings implements EddnListener.EnvelopeHandler {
     private static final Type CONFLICTS = new TypeToken<List<FSDJumpEvent.Conflict>>() {
     }.getType();
 
+    private static final Type POWER_NAMES = new TypeToken<List<String>>() {
+    }.getType();
+
     private final HuntingGroundManager huntingGrounds;
     private final ConflictZoneManager conflictZones;
+    private final PowerConflictZoneManager powerConflictZones;
 
     EddnSightings() {
-        this(HuntingGroundManager.getInstance(), ConflictZoneManager.getInstance());
+        this(HuntingGroundManager.getInstance(), ConflictZoneManager.getInstance(), PowerConflictZoneManager.getInstance());
     }
 
-    EddnSightings(HuntingGroundManager huntingGrounds, ConflictZoneManager conflictZones) {
+    EddnSightings(HuntingGroundManager huntingGrounds,
+                  ConflictZoneManager conflictZones,
+                  PowerConflictZoneManager powerConflictZones) {
         this.huntingGrounds = huntingGrounds;
         this.conflictZones = conflictZones;
+        this.powerConflictZones = powerConflictZones;
     }
 
     /**
@@ -124,6 +133,7 @@ final class EddnSightings implements EddnListener.EnvelopeHandler {
         }
         if (zones != null) {
             conflictZones.recordZones(starSystem, systemAddress, coordinates, zones, zonesSeenAt);
+            powerConflictZones.recordZones(starSystem, systemAddress, coordinates, zones.powerplay(), zonesSeenAt);
         }
     }
 
@@ -149,6 +159,9 @@ final class EddnSightings implements EddnListener.EnvelopeHandler {
             conflictZones.recordWar(starSystem, longOrNull(message, "SystemAddress"), coordinates(starSystem, message),
                     war.warType(), war.faction1(), war.faction2(), timestamp);
         }
+        powerConflictZones.recordArrival(starSystem, longOrNull(message, "SystemAddress"), coordinates(starSystem, message),
+                text(message, "ControllingPower"), GsonFactory.getGson().fromJson(message.get("Powers"), POWER_NAMES),
+                text(message, "PowerplayState"), timestamp, false);
         return true;
     }
 

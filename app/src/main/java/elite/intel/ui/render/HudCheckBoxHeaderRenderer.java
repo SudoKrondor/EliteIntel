@@ -1,9 +1,7 @@
 package elite.intel.ui.render;
-import static elite.intel.ui.theme.HudPalette.*;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -14,7 +12,7 @@ import java.util.function.BooleanSupplier;
 /**
  * HUD table header renderer for Boolean selector columns.
  * Paints the standard HUD header background ({@link HudPalette#HUD_COLOR_ROLE_APPLICATION_BACKGROUND}) and a
- * {@link HudPalette#HUD_COLOR_ROLE_CONTROL_DECORATION} checkbox marker centred in the header cell.
+ * checkbox marker centred in the header cell: an outline, or an accent fill once every row is selected.
  * No bottom border is painted here - {@link HudTable#style} applies a
  * {@code MatteBorder(0,0,1,0, HUD_COLOR_ROLE_CONTROL_DECORATION)} on the entire {@link JTableHeader},
  * which already covers this column. Adding another border here would double the line.
@@ -48,7 +46,9 @@ public class HudCheckBoxHeaderRenderer extends JComponent implements TableCellRe
             int size = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
             int x = (w - size) / 2;
             int y = (h - size) / 2;
-            HudGlyphs.paintHudCheckMarker(g2, x, y, size, HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, filled);
+            HudGlyphs.paintHudCheckMarker(g2, x, y, size,
+                    filled ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION,
+                    HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT, filled);
         } finally {
             g2.dispose();
         }

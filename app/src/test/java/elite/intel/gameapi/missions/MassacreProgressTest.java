@@ -200,6 +200,52 @@ class MassacreProgressTest {
         assertEquals(4, progress.killsRemaining());
     }
 
+    // -- war massacres --------------------------------------------------------
+
+    /**
+     * A field report, 2026-11-13: a civil-war massacre (Mission_Massacre_Conflict_CivilWar, kill 24 Fire Lotus
+     * Coalition ships for Gallant Investment Brokers) whose bar never moved. A conflict zone pays every kill in
+     * combat bonds and never a bounty, and only bounties were counted. These are the contract and the three
+     * FactionKillBond events from that commander's journal, the bounties he had none of.
+     */
+    @Test
+    @DisplayName("a war massacre counts its combat bonds, as the 2026-11-13 civil-war journal paid them")
+    void aWarMassacreCountsItsCombatBonds() {
+        MissionDto contract = mission(1071218957, "Gallant Investment Brokers", "Fire Lotus Coalition", 24,
+                "2026-11-13T19:47:49Z");
+        List<MassacreKill> bonds = List.of(
+                new MassacreKill("Fire Lotus Coalition", "2026-11-13T19:50:27Z"),
+                new MassacreKill("Fire Lotus Coalition", "2026-11-13T19:52:10Z"),
+                new MassacreKill("Fire Lotus Coalition", "2026-11-13T19:54:40Z"));
+
+        MassacreProgress progress = MassacreProgress.fromKills(List.of(contract), bonds);
+
+        assertEquals(24, progress.killsRequired());
+        assertEquals(3, progress.killsDone());
+        assertEquals(21, progress.killsRemaining());
+    }
+
+    @Test
+    @DisplayName("bounties and bonds count side by side, each only against its own target")
+    void bountiesAndBondsCountOnlyAgainstTheirOwnTarget() {
+        MissionDto contract = mission(1, "Alpha", "Fire Lotus Coalition", 10, "2026-11-13T19:00:00Z");
+        List<MassacreKill> kills = MassacreKill.of(
+                bounties("Some Pirates", 4, "2026-11-13T19:10:00Z"),
+                List.of(new MassacreKill("Fire Lotus Coalition", "2026-11-13T19:20:00Z"),
+                        new MassacreKill("The Other Side", "2026-11-13T19:21:00Z")));
+
+        assertEquals(1, MassacreProgress.fromKills(List.of(contract), kills).killsDone());
+    }
+
+    @Test
+    @DisplayName("a bounty with no pilot is not a kill")
+    void aBountyWithNoPilotIsNotAKill() {
+        List<BountyDto> bounties = bounties("Pirates", 2, "2026-07-01T01:00:00Z");
+        bounties.getFirst().setPilotName(null);
+
+        assertEquals(1, MassacreKill.fromBounties(bounties).size());
+    }
+
     // -- what each provider still costs --------------------------------------
 
     /**

@@ -37,6 +37,20 @@ public final class HudFooter {
      */
     public static JPanel build(boolean modal, AbstractButton back, Component status,
                                List<? extends AbstractButton> trailing) {
+        return build(modal, back, status, List.of(), trailing);
+    }
+
+    /**
+     * As {@link #build(boolean, AbstractButton, Component, List)}, with a middle place: buttons centred between the
+     * left slot and the right-hand group, for a destructive action that must not sit beside either - the Device
+     * Editor's CLEAR (2026-10-10).
+     *
+     * @param middle   centred buttons, left to right; may be empty or null, as {@code trailing} may
+     * @param trailing right-aligned components in visual left-to-right order - the unsaved hint, then the actions
+     *                 with primary last; may be null
+     */
+    public static JPanel build(boolean modal, AbstractButton back, Component status,
+                               List<? extends AbstractButton> middle, List<? extends Component> trailing) {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setOpaque(false);
         footer.setBorder(AppTheme.hudFooterBorder());
@@ -51,13 +65,21 @@ public final class HudFooter {
         JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, HudPalette.HUD_GAP, 0));
         east.setOpaque(false);
         if (trailing != null) {
-            for (AbstractButton button : trailing) {
-                east.add(button);
+            for (Component component : trailing) {
+                east.add(component);
             }
         }
 
         footer.add(west, BorderLayout.WEST);
         footer.add(east, BorderLayout.EAST);
+        if (middle != null && !middle.isEmpty()) {
+            JPanel centre = new JPanel(new FlowLayout(FlowLayout.CENTER, HudPalette.HUD_GAP, 0));
+            centre.setOpaque(false);
+            for (AbstractButton button : middle) {
+                centre.add(button);
+            }
+            footer.add(centre, BorderLayout.CENTER);
+        }
         return footer;
     }
 }
