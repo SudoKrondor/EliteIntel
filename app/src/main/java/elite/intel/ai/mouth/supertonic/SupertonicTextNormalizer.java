@@ -1,15 +1,18 @@
 package elite.intel.ai.mouth.supertonic;
 
 import elite.intel.i18n.Language;
+import elite.intel.util.NumberWords;
 import elite.intel.util.SignedAndDecimalNumbers;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 /**
  * Makes text unambiguous for Supertonic's multilingual tokenizer.
@@ -22,6 +25,14 @@ final class SupertonicTextNormalizer {
     // "C'est", "A-rated"), and spelling it there breaks the word.
     private static final Pattern SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION =
             Pattern.compile("(?<![\\p{L}\\p{M}\\p{N}_])([A-Z])(?=[,.;:!?](?:\\s|$))");
+    // A body's moon letters after its planet number, "6 a" or "2 c a", read once the number is words. WHY only
+    // before a clause end: mid-sentence a lone letter after a number is as often a word ("cinque e mezzo",
+    // "five a side"), and Supertonic swallows a lower case "a" that ends a sentence.
+    private static final Pattern BODY_LETTERS_AFTER_NUMBER = Pattern.compile(
+            "(?<![\\p{L}\\p{M}\\p{N}_])([\\p{L}\\p{M}-]+)((?:\\s+[a-z])+)(?=[,.;:!?](?:\\s|$)|$)");
+    // Body numbers are small. The last word is the one that touches the letter ("vingt et un" ends in "un").
+    private static final int LARGEST_BODY_NUMBER = 99;
+    private static final Map<Language, Set<String>> NUMBER_WORDS = new ConcurrentHashMap<>();
     private static final String WORD_START = "(?<![\\p{L}\\p{M}\\p{N}_])";
     private static final String WORD_END = "(?![\\p{L}\\p{M}\\p{N}_])";
     private static final String ROMAN_II_TO_V = "III|IV|II|V";
@@ -119,7 +130,34 @@ final class SupertonicTextNormalizer {
         String withItalianFixes = language == Language.IT
                 ? italianSpokenFixes(italianClassLettersInWords(withAcronyms))
                 : withAcronyms;
-        return singleUppercaseLettersBeforePunctuation(withItalianFixes, language);
+        String withBodyLetters = bodyLettersAfterNumbers(withItalianFixes, language);
+        return singleUppercaseLettersBeforePunctuation(withBodyLetters, language);
+    }
+
+    private static String bodyLettersAfterNumbers(String text, Language language) {
+        Matcher matcher = BODY_LETTERS_AFTER_NUMBER.matcher(text);
+        StringBuffer result = new StringBuffer();
+        Set<String> numberWords = numberWords(language);
+        while (matcher.find()) {
+            if (!numberWords.contains(matcher.group(1).toLowerCase(Locale.ROOT))) {
+                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group()));
+                continue;
+            }
+            StringBuilder spoken = new StringBuilder(matcher.group(1));
+            for (String letter : matcher.group(2).trim().split("\\s+")) {
+                spoken.append(' ').append(letterName(Character.toUpperCase(letter.charAt(0)), language));
+            }
+            matcher.appendReplacement(result, Matcher.quoteReplacement(spoken.toString()));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static Set<String> numberWords(Language language) {
+        return NUMBER_WORDS.computeIfAbsent(language, lang -> LongStream.rangeClosed(0, LARGEST_BODY_NUMBER)
+                .mapToObj(n -> NumberWords.of(n, lang).toLowerCase(Locale.ROOT))
+                .map(spelled -> spelled.substring(spelled.lastIndexOf(' ') + 1))
+                .collect(Collectors.toUnmodifiableSet()));
     }
 
     private static String acronymsInWords(String text, Language language) {
