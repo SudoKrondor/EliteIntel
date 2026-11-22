@@ -10,6 +10,8 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -27,9 +29,19 @@ public class BindingsGroupTableFactory {
     public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     public static final String HOVER_ROW_PROPERTY = "elite.intel.bindings.hoverRow";
     /**
+     * Primary's Device and Input columns, then Secondary's: each slot is two columns, the device apart from the input on
+     * it (Alan, 2026-11-22).
+     */
+    private static final int PRIMARY_DEVICE_COLUMN = 1;
+    private static final int PRIMARY_INPUT_COLUMN = 2;
+    private static final int SECONDARY_DEVICE_COLUMN = 3;
+    private static final int SECONDARY_INPUT_COLUMN = 4;
+    /**
      * The AI ACCESS column, between Secondary and the row action.
      */
-    public static final int AI_ACCESS_COLUMN = 3;
+    public static final int AI_ACCESS_COLUMN = 5;
+    private static final int DEVICE_COLUMN_WIDTH = 110;
+    private static final int INPUT_COLUMN_WIDTH = 160;
     private static final Border TABLE_SECTION_BORDER = BorderFactory.createEmptyBorder(1, 0, 0, 0);
 
     /**
@@ -142,6 +154,105 @@ public class BindingsGroupTableFactory {
         scrollPane.setPreferredSize(new Dimension(0, height));
         scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
         return scrollPane;
+    }
+
+    /**
+     * The headings pinned above the grid: a table of no rows, built as the grid's tables are so its columns take the
+     * same widths, in one band of two lines (Alan, 2026-11-22). Binding, AI access and the action are centred in the
+     * band; {@code primary} and {@code secondary} sit in its upper half, each over its two columns with a rule under it,
+     * and the smaller Device and Input titles in its lower half.
+     */
+    public JComponent pinnedHeading(JScrollPane outerScrollPane, String primary, String secondary, String... columnNames) {
+        JScrollPane titles = groupTable(List.of(), outerScrollPane, true, columnNames);
+        JTable table = (JTable) titles.getViewport().getView();
+        JTableHeader plain = table.getTableHeader();
+        SpannedHeader header = new SpannedHeader(table.getColumnModel(), List.of(
+                new Span(primary, PRIMARY_DEVICE_COLUMN, PRIMARY_INPUT_COLUMN),
+                new Span(secondary, SECONDARY_DEVICE_COLUMN, SECONDARY_INPUT_COLUMN)));
+        header.setBackground(plain.getBackground());
+        header.setForeground(plain.getForeground());
+        header.setFont(plain.getFont());
+        header.setBorder(plain.getBorder());
+        header.setDefaultRenderer(plain.getDefaultRenderer());
+        header.setReorderingAllowed(false);
+        header.setResizingAllowed(false);
+        table.setTableHeader(header);
+        titles.setColumnHeaderView(header);
+        forwardMouseWheelToOuterScrollPane(header, outerScrollPane);
+
+        int height = header.getPreferredSize().height + 3;
+        titles.setPreferredSize(new Dimension(0, height));
+        titles.setMaximumSize(new Dimension(Integer.MAX_VALUE, height));
+        return titles;
+    }
+
+    /**
+     * A title over a run of columns, from {@code first} to {@code last}.
+     */
+    private record Span(String title, int first, int last) {
+    }
+
+    /**
+     * The pinned titles' header: two lines tall, with each span's title drawn in the upper half over its columns and a
+     * rule under it as wide as they are, so it reads as belonging to both. The cells' own titles are drawn first - the
+     * Device and Input ones in the lower half, the rest centred (see {@link GroupTableHeaderRenderer}).
+     */
+    private static final class SpannedHeader extends JTableHeader {
+        private static final int TOP_PADDING = 4;
+        private static final int RULE_GAP = 2;
+        private static final int RULE_INSET = 8;
+
+        private final List<Span> spans;
+
+        private SpannedHeader(TableColumnModel columns, List<Span> spans) {
+            super(columns);
+            this.spans = spans;
+        }
+
+        private Font spanFont() {
+            return getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BIND_GRID_SLOT_TITLE);
+        }
+
+        private Font subtitleFont() {
+            return getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BIND_GRID_SUBTITLE);
+        }
+
+        /**
+         * The span line, its rule, and the Device and Input line under it, with the cell's own bottom padding.
+         */
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension plain = super.getPreferredSize();
+            int band = TOP_PADDING + getFontMetrics(spanFont()).getHeight() + RULE_GAP + 1 + RULE_GAP
+                    + getFontMetrics(subtitleFont()).getHeight() + GroupTableHeaderRenderer.BOTTOM_PADDING;
+            return new Dimension(plain.width, Math.max(plain.height, band));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
+            Graphics2D g = (Graphics2D) graphics.create();
+            try {
+                g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g.setFont(spanFont());
+                FontMetrics metrics = g.getFontMetrics();
+                int ruleY = TOP_PADDING + metrics.getHeight() + RULE_GAP;
+                for (Span span : spans) {
+                    if (span.last() >= getColumnModel().getColumnCount())
+                        continue;
+                    int left = getHeaderRect(span.first()).x;
+                    Rectangle last = getHeaderRect(span.last());
+                    int right = last.x + last.width;
+                    int textX = left + (right - left - metrics.stringWidth(span.title())) / 2;
+                    g.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+                    g.drawString(span.title(), textX, TOP_PADDING + metrics.getAscent());
+                    g.setColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
+                    g.drawLine(left + RULE_INSET, ruleY, right - RULE_INSET, ruleY);
+                }
+            } finally {
+                g.dispose();
+            }
+        }
     }
 
     private void openDialogOnDataCellPress(JTable table) {
@@ -261,12 +372,22 @@ public class BindingsGroupTableFactory {
         return slotTypeForColumn(column) != null || (column >= 0 && actionAt(table, row, column) != RowAction.NONE);
     }
 
+    /**
+     * The slot a column belongs to: either half of Primary or Secondary opens that slot's capture.
+     */
     private BindingSlotType slotTypeForColumn(int column) {
         return switch (column) {
-            case 1 -> BindingSlotType.PRIMARY;
-            case 2 -> BindingSlotType.SECONDARY;
+            case PRIMARY_DEVICE_COLUMN, PRIMARY_INPUT_COLUMN -> BindingSlotType.PRIMARY;
+            case SECONDARY_DEVICE_COLUMN, SECONDARY_INPUT_COLUMN -> BindingSlotType.SECONDARY;
             default -> null;
         };
+    }
+
+    /**
+     * Whether a column is one of the slots' Device or Input columns, which read left to right like the Binding column.
+     */
+    public static boolean isSlotColumn(int column) {
+        return column >= PRIMARY_DEVICE_COLUMN && column <= SECONDARY_INPUT_COLUMN;
     }
 
     private void setHoveredRow(JTable table, int row) {
@@ -303,17 +424,22 @@ public class BindingsGroupTableFactory {
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
         // The compact style fixes the header's height for its small titles; these are larger, so it takes their height.
         table.getTableHeader().setPreferredSize(null);
+        // Fixed widths: the pinned titles and every group's table are separate tables, so a dragged heading moved only
+        // itself (Alan, 2026-11-22).
+        table.getTableHeader().setResizingAllowed(false);
         table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict, hasRecommendation));
     }
 
     private void configureColumnWidths(JTable table) {
-        if (table.getColumnCount() < 3)
+        if (table.getColumnCount() <= AI_ACCESS_COLUMN)
             return;
 
         table.getColumnModel().getColumn(0).setPreferredWidth(320);
-        table.getColumnModel().getColumn(1).setPreferredWidth(270);
-        table.getColumnModel().getColumn(2).setPreferredWidth(270);
-        for (int column = 3; column < table.getColumnCount(); column++) {
+        for (int column = PRIMARY_DEVICE_COLUMN; column <= SECONDARY_INPUT_COLUMN; column++) {
+            boolean device = column == PRIMARY_DEVICE_COLUMN || column == SECONDARY_DEVICE_COLUMN;
+            table.getColumnModel().getColumn(column).setPreferredWidth(device ? DEVICE_COLUMN_WIDTH : INPUT_COLUMN_WIDTH);
+        }
+        for (int column = AI_ACCESS_COLUMN; column < table.getColumnCount(); column++) {
             table.getColumnModel().getColumn(column).setPreferredWidth(column == AI_ACCESS_COLUMN ? 170 : 110);
         }
     }
@@ -342,7 +468,8 @@ public class BindingsGroupTableFactory {
     }
 
     private static class GroupTableHeaderRenderer extends HudTable.HeaderRenderer {
-        private static final Border HEADER_CELL_BORDER = new EmptyBorder(4, 8, 7, 8);
+        private static final int BOTTOM_PADDING = 7;
+        private static final Border HEADER_CELL_BORDER = new EmptyBorder(4, 8, BOTTOM_PADDING, 8);
 
         private GroupTableHeaderRenderer() {
             super(3);
@@ -366,9 +493,13 @@ public class BindingsGroupTableFactory {
                     row,
                     column);
             label.setBorder(HEADER_CELL_BORDER);
-            label.setFont(label.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BIND_GRID_COLUMN_TITLE));
-            // Binding left, over the names; the slot, AI access and action titles centred over their columns (Alan,
-            // 2026-11-22).
+            // Device and Input are smaller and sit at the foot of the band, under their slot's title; the rest are centred
+            // top to bottom (Alan, 2026-11-22).
+            boolean slot = isSlotColumn(column);
+            label.setFont(label.getFont().deriveFont(Font.BOLD,
+                    slot ? HudPalette.HUD_FONT_BIND_GRID_SUBTITLE : HudPalette.HUD_FONT_BIND_GRID_COLUMN_TITLE));
+            label.setVerticalAlignment(slot ? SwingConstants.BOTTOM : SwingConstants.CENTER);
+            // Binding left, over the names; the other titles centred over their columns.
             label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.CENTER);
             return label;
         }

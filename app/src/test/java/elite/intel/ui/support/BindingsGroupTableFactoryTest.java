@@ -19,13 +19,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class BindingsGroupTableFactoryTest {
 
     private static final String CONTROL = "ForwardKey";
-    /** The row action's column: after the control, its two slots and AI ACCESS. */
-    private static final int ACTION_COLUMN = 4;
+    /** The row action's column: after the control, a Device and an Input for each of its two slots, and AI ACCESS. */
+    private static final int ACTION_COLUMN = 6;
+    private static final int PRIMARY_INPUT_COLUMN = 2;
+    private static final int SECONDARY_DEVICE_COLUMN = 3;
 
     private final List<String> cleared = new ArrayList<>();
+    private final List<String> captured = new ArrayList<>();
     private final BindingsGroupTableFactory factory = new BindingsGroupTableFactory(
-            new BindingsSelectionController(), (id, slot) -> {
-    }, id -> {
+            new BindingsSelectionController(), (id, slot) -> captured.add(id + " " + slot), id -> {
     }, cleared::add, id -> false, id -> false, id -> null);
 
     @Test
@@ -56,20 +58,30 @@ class BindingsGroupTableFactoryTest {
         assertEquals("Off while BindForge is read only", off.tooltip());
     }
 
+    @Test
+    void eitherHalfOfASlotOpensThatSlotsCapture() {
+        JTable table = table(new BindingsGroupTableFactory.RowActionCell(BindingsGroupTableFactory.RowAction.NONE, ""));
+
+        click(table, PRIMARY_INPUT_COLUMN);
+        click(table, SECONDARY_DEVICE_COLUMN);
+
+        assertEquals(List.of(CONTROL + " PRIMARY", CONTROL + " SECONDARY"), captured);
+    }
+
     private JTable table(Object action) {
         List<Object[]> rows = new ArrayList<>();
-        rows.add(new Object[]{CONTROL, "W", "-", "", action});
+        rows.add(new Object[]{CONTROL, "Keyboard", "W", "", "-", "", action});
         JScrollPane pane = factory.groupTable(rows, new JScrollPane(), true,
-                "ACTION", "PRIMARY", "SECONDARY", "AI ACCESS", "CLEAR");
+                "ACTION", "DEVICE", "INPUT", "DEVICE", "INPUT", "AI ACCESS", "CLEAR");
         JTable table = (JTable) pane.getViewport().getView();
-        table.setSize(500, table.getRowHeight());
+        table.setSize(900, table.getRowHeight());
         table.doLayout();
         return table;
     }
 
-    /** The centre of the row's action cell, the table's last column. */
-    private static Point actionCell(JTable table) {
-        Rectangle cell = table.getCellRect(0, ACTION_COLUMN, true);
+    /** The centre of the row's cell in {@code column}. */
+    private static Point cellCentre(JTable table, int column) {
+        Rectangle cell = table.getCellRect(0, column, true);
         return new Point(cell.x + cell.width / 2, cell.y + cell.height / 2);
     }
 
@@ -82,7 +94,11 @@ class BindingsGroupTableFactoryTest {
     }
 
     private static void click(JTable table) {
-        Point at = actionCell(table);
+        click(table, ACTION_COLUMN);
+    }
+
+    private static void click(JTable table, int column) {
+        Point at = cellCentre(table, column);
         MouseEvent press = new MouseEvent(table, MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(),
                 MouseEvent.BUTTON1_DOWN_MASK, at.x, at.y, 1, false, MouseEvent.BUTTON1);
         for (MouseListener listener : table.getMouseListeners()) {
@@ -91,7 +107,7 @@ class BindingsGroupTableFactoryTest {
     }
 
     private static int cursorOver(JTable table) {
-        Point at = actionCell(table);
+        Point at = cellCentre(table, ACTION_COLUMN);
         MouseEvent move = new MouseEvent(table, MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, at.x, at.y,
                 0, false, MouseEvent.NOBUTTON);
         for (MouseMotionListener listener : table.getMouseMotionListeners()) {

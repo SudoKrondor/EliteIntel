@@ -63,7 +63,9 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
             int column
     ) {
         JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-        label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.RIGHT);
+        // The name and each slot's Device and Input read from the left; AI access and the action sit at the right.
+        label.setHorizontalAlignment(column == 0 || BindingsGroupTableFactory.isSlotColumn(column)
+                ? SwingConstants.LEFT : SwingConstants.RIGHT);
         if (column == 0) {
             String bindingId = String.valueOf(value);
             // The name alone: the grid shows the group as a sub-heading above the row (Alan, 2026-11-21).

@@ -242,7 +242,10 @@ public final class HudPalette {
     public static final float HUD_FONT_BIND_GRID_TAB          = HUD_FONT_LG;       // 16 - the tab row above the grid (ALL, GENERAL, ...)
     public static final float HUD_FONT_BIND_GRID_ROW          = HUD_FONT_MD;       // 14 - a binding's row
     public static final float HUD_FONT_BIND_GRID_GROUP        = HUD_FONT_LG;       // 16 - a group's sub-heading
-    public static final float HUD_FONT_BIND_GRID_COLUMN_TITLE = HUD_FONT_LG + 2f;  // 18 - the pinned column titles and the section headers
+    public static final float HUD_FONT_BIND_GRID_COLUMN_TITLE = HUD_FONT_LG + 2f;  // 18 - the pinned column titles
+    public static final float HUD_FONT_BIND_GRID_SLOT_TITLE   = HUD_FONT_LG;       // 16 - Primary and Secondary, over their two columns
+    public static final float HUD_FONT_BIND_GRID_SUBTITLE     = HUD_FONT_MD;       // 14 - Device and Input, under them
+    public static final float HUD_FONT_BIND_GRID_SECTION      = HUD_FONT_LG;       // 16 - a section's header (GENERAL CONTROLS)
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
     public static final float HUD_FONT_STAT_LG        = 16f;

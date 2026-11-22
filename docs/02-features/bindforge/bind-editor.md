@@ -110,17 +110,33 @@ header: the tab already names the one section the grid holds.
 **Group sub-headings (Alan, 2026-11-21).** On every tab with the grid, each group of a section (*Interface Mode*,
 *Flight Rotation*, *Mouse Controls*, ...) is a sub-heading above its rows, and the Binding column shows the control's
 own name (*UI Panel Up*), not *Interface Mode / UI Panel Up*, indented about ten characters so it reads as an item
-under its sub-heading. The column headings (*Binding*, *Primary*, *Secondary*,
-*AI access*, *Action*; *Clear* on ANOMALIES) are pinned above the grid, one row that stays put while the rows scroll
-under it - not repeated in the grid. *Binding* sits left over the names; the other titles are centred over their
-columns (2026-11-22).
+under its sub-heading. Search, the conflict callouts and the dialogs keep the full *group / name*, since names repeat
+across groups. A control with no group in the game's list sits under its section with no sub-heading.
+
+**The column headings (Alan, 2026-11-21 and 2026-11-22)** are pinned above the grid and stay put while the rows
+scroll under them; they are not repeated in the grid. One band, two lines tall:
+
+```
+                    |      Primary       |     Secondary      |
+ Binding            |--------------------|--------------------|  AI access   Action
+                    | Device     Input   | Device     Input   |
+```
+
+Each slot is **two columns, the device apart from the input on it**, so the device is plain at a glance: *Keyboard*
+and *UpArrow*, *RVWAP* and *RV Next Group*. A chord's modifiers stay with the input (*Right Shift + Period*), and an
+empty slot has no device and reads *Not defined* under Input. Either half of a slot opens that slot's capture. An
+axis row's Primary is its device and axis; its Secondary holds the axis's settings (*Normal · Dead zone 0.0%*) under
+Input with Device blank, since they are settings, not a device. *Binding* sits left and the other titles are centred
+over their columns. Binding, AI access and Action are centred top to bottom in the band; *Primary* and *Secondary*
+sit in its upper half, each over its two columns with a rule under it, and the smaller *Device* and *Input* in its
+lower half. The last column is *Action*, *Clear* on
+ANOMALIES. **The column widths are fixed** (Alan, 2026-11-22): a heading cannot be dragged wider, since the pinned
+titles and each group's rows are separate tables and only the dragged one would move.
 
 **Type sizes (Alan, 2026-11-22).** Larger than the compact tables elsewhere, largest at the top: the column titles
-and the section headers 18, the group sub-headings 16, the binding rows 14 (the `HUD_FONT_BIND_GRID_*` roles in
-`HudPalette`). The tab row above the grid (ALL, GENERAL, ...) is 16, larger than the app's other section tabs (14). Chosen to be tuned in the app; the rows were 12 and the titles 11 before.
-Search, the conflict callouts and the dialogs keep the full *group / name*, since names repeat across groups. A
-control with no group in the game's list sits under its section with no sub-heading. *To be judged in the app:* Alan
-is checking this is the layout he means.
+18, *Primary* and *Secondary* 16, *Device* and *Input* 14, the section headers (*GENERAL CONTROLS*) and the group
+sub-headings 16, the binding rows 14 (the `HUD_FONT_BIND_GRID_*` roles in `HudPalette`). The tab row above the grid (ALL, GENERAL, ...) is 16, larger than the app's other section tabs (14).
+Chosen to be tuned in the app; the rows were 12 and the titles 11 before.
 
 ### What Game Mode still needs
 

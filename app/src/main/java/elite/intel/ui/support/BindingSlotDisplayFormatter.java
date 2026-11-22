@@ -44,6 +44,21 @@ public class BindingSlotDisplayFormatter {
         return formatDevice(slot) + " | " + formatBinding(slot);
     }
 
+    /**
+     * The slot's device on its own, for the grid's Device column: blank on an empty slot, whose Input reads "Not
+     * defined".
+     */
+    public String formatSlotDevice(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return isEmptySlot(slot) ? "" : formatDevice(slot);
+    }
+
+    /**
+     * The slot's input on its own, for the grid's Input column: the chord with its modifiers, or "Not defined".
+     */
+    public String formatSlotInput(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        return isEmptySlot(slot) ? getText("bindings.status.notDefined") : formatBinding(slot);
+    }
+
     public String formatBindingToken(String token) {
         if (token.startsWith("Key_") && token.length() > "Key_".length()) {
             return formatKeyboardToken(token);
@@ -132,7 +147,10 @@ public class BindingSlotDisplayFormatter {
         return device + " | " + formatChord(device, modifiers, key);
     }
 
-    private String formatChord(String device, List<BindingModifier> modifiers, String key) {
+    /**
+     * One input on a device and its modifiers, without the device - {@code 1st Hat Up} - for the grid's Input column.
+     */
+    public String formatChord(String device, List<BindingModifier> modifiers, String key) {
         List<String> modifierLabels = modifiers.stream()
                 .filter(modifier -> modifier.key() != null && !modifier.key().isBlank() && !"Key_".equals(modifier.key()))
                 .map(this::formatModifier)

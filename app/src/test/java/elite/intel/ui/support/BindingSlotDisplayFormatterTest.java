@@ -49,6 +49,22 @@ class BindingSlotDisplayFormatterTest {
     }
 
     @Test
+    void theGridShowsTheDeviceApartFromTheInputOnIt() {
+        ReadOnlyBindingSlot slot = slot("Keyboard", "Key_G", List.of(new BindingModifier("VKB-Stick", "Joy_14")));
+
+        assertEquals("Keyboard", formatter.formatSlotDevice(slot));
+        assertEquals("VKB-Stick 2nd Hat Left + G", formatter.formatSlotInput(slot));
+    }
+
+    @Test
+    void anEmptySlotHasNoDeviceAndReadsNotDefined() {
+        ReadOnlyBindingSlot slot = slot("{NoDevice}", "", List.of());
+
+        assertEquals("", formatter.formatSlotDevice(slot));
+        assertEquals(formatter.formatSlot(slot), formatter.formatSlotInput(slot));
+    }
+
+    @Test
     void aNamedModifierReadsByItsNameToo() {
         ReadOnlyBindingSlot slot = slot("Keyboard", "Key_G", List.of(new BindingModifier("VKB-Stick", "Joy_14")));
 

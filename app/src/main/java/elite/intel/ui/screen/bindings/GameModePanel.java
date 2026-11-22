@@ -257,7 +257,7 @@ class GameModePanel extends JPanel {
         if (read.file() == null) {
             conflicts = ConflictIndex.empty();
             recommendationsByBinding = Map.of();
-            renderGroupedTables(bindingsPanel, Map.of(), true, getText("bindings.column.action"));
+            renderGroupedTables(bindingsPanel, Map.of(), true, gridColumnNames(getText("bindings.column.rowAction")));
             showSectionCounts(List.of());
             renderAnomalies(currentAiAccess());
             fixAllButton.setEnabled(false);
@@ -494,12 +494,13 @@ class GameModePanel extends JPanel {
         for (String bindingId : inGameOrder(bindingIds)) {
             KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
             BindsValues.Axis axis = currentValues.axes().get(bindingId);
-            SlotCell primary = axis != null ? axisInputCell(axis) : slotCell(bindingSlots == null ? null : bindingSlots.primary());
-            SlotCell secondary = axis != null ? axisSettingsCell(axis) : slotCell(bindingSlots == null ? null : bindingSlots.secondary());
+            SlotCells primary = axis != null ? axisInputCells(axis) : slotCells(bindingSlots == null ? null : bindingSlots.primary());
+            SlotCells secondary = axis != null ? axisSettingsCells(axis) : slotCells(bindingSlots == null ? null : bindingSlots.secondary());
             AiAccessCell ai = axis != null
                     ? aiAccessCell(AiAccess.State.NOT_USED, null)
                     : aiAccessCell(aiAccess.stateOf(bindingId, bindingSlots), bindingSlots);
-            Object[] row = {bindingId, primary, secondary, ai, actionCell(rowAction.apply(bindingId), readOnly)};
+            Object[] row = {bindingId, primary.device(), primary.input(), secondary.device(), secondary.input(), ai,
+                    actionCell(rowAction.apply(bindingId), readOnly)};
             grouped.get(BindingDisplayNames.lookup(bindingId).section()).add(row);
         }
         return grouped;
@@ -538,8 +539,17 @@ class GameModePanel extends JPanel {
                 : cell;
     }
 
-    private SlotCell slotCell(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        return new SlotCell(slotFormatter.formatSlot(slot), slotFormatter.rawTokens(slot));
+    /**
+     * A slot as the grid's two columns under Primary or Secondary show it: the device, and the input on it (Alan,
+     * 2026-11-22).
+     */
+    private record SlotCells(SlotCell device, SlotCell input) {
+    }
+
+    private SlotCells slotCells(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        String raw = slotFormatter.rawTokens(slot);
+        return new SlotCells(new SlotCell(slotFormatter.formatSlotDevice(slot), raw),
+                new SlotCell(slotFormatter.formatSlotInput(slot), raw));
     }
 
     private boolean isAxis(String bindingId) {
@@ -547,19 +557,28 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * An axis row's first cell: the axis it is on.
+     * An axis row's Primary: the device and the axis on it.
      */
-    private SlotCell axisInputCell(BindsValues.Axis axis) {
+    private SlotCells axisInputCells(BindsValues.Axis axis) {
         return axis.input()
-                .map(input -> new SlotCell(slotFormatter.formatInputs(input.device(), List.of(), input.key()),
-                        input.device() + " " + input.key()))
-                .orElseGet(() -> new SlotCell(getText("bindings.status.notDefined"), null));
+                .map(input -> {
+                    String raw = input.device() + " " + input.key();
+                    return new SlotCells(new SlotCell(input.device(), raw),
+                            new SlotCell(slotFormatter.formatChord(input.device(), List.of(), input.key()), raw));
+                })
+                .orElseGet(() -> new SlotCells(new SlotCell("", null),
+                        new SlotCell(getText("bindings.status.notDefined"), null)));
     }
 
     /**
-     * An axis row's second cell. An axis has one binding, not two slots, so this column carries what varies on it
-     * instead: Normal or Inverted, the dead zone and any throttle range. Blank while nothing is bound.
+     * An axis row's Secondary. An axis has one binding, not two slots, so this carries what varies on it instead:
+     * Normal or Inverted, the dead zone and any throttle range, in the Input column with Device blank - they are
+     * settings, not a device. Blank while nothing is bound.
      */
+    private SlotCells axisSettingsCells(BindsValues.Axis axis) {
+        return new SlotCells(new SlotCell("", null), axisSettingsCell(axis));
+    }
+
     private SlotCell axisSettingsCell(BindsValues.Axis axis) {
         if (!axis.bound()) return new SlotCell("", null);
         List<String> parts = new ArrayList<>();
@@ -707,11 +726,7 @@ class GameModePanel extends JPanel {
                 bindingsPanel,
                 groupedBindings(inSelectedSection(shown), currentSlots, id -> rowActionOf(id, required), aiAccess),
                 SECTION_TABS.get(selectedSection).section() == null,
-                getText("bindings.column.action"),
-                getText("bindings.column.primary"),
-                getText("bindings.column.secondary"),
-                getText("bindings.column.aiAccess"),
-                getText("bindings.column.rowAction"));
+                gridColumnNames(getText("bindings.column.rowAction")));
         // Enabled only when a control VEGA presses has no keyboard key: the button fills those and nothing else, so with
         // only emotes and the like left without one a click could do nothing.
         boolean readOnly = readOnly();
@@ -719,6 +734,17 @@ class GameModePanel extends JPanel {
                 && required.contains(entry.getKey()) && !autoAssigner.isKeyboardBound(entry.getValue())));
         fixAllButton.setToolTipText(getText(readOnly ? "bindings.readOnly.tooltip" : "bindings.button.fixAll.tooltip"));
         renderAnomalies(aiAccess);
+    }
+
+    /**
+     * The grid's columns, in the order {@link #groupedBindings} fills a row: Binding, a Device and an Input under each
+     * of Primary and Secondary, AI access, then the row's action ({@code Action}, or {@code Clear} on Anomalies).
+     */
+    private static String[] gridColumnNames(String lastColumn) {
+        String device = getText("bindings.column.device");
+        String input = getText("bindings.column.input");
+        return new String[]{getText("bindings.column.action"), device, input, device, input,
+                getText("bindings.column.aiAccess"), lastColumn};
     }
 
     /**
@@ -755,11 +781,7 @@ class GameModePanel extends JPanel {
                 anomaliesPanel,
                 groupedBindings(filterBySearch(inConflict), currentSlots, id -> clearCell(), aiAccess),
                 true,
-                getText("bindings.column.action"),
-                getText("bindings.column.primary"),
-                getText("bindings.column.secondary"),
-                getText("bindings.column.aiAccess"),
-                getText("bindings.column.clear"));
+                gridColumnNames(getText("bindings.column.clear")));
         if (inConflict.isEmpty()) {
             JLabel none = hudReadoutLabel(getText("bindings.anomalies.none"));
             none.setBorder(new EmptyBorder(10, 8, 10, 0));
@@ -1025,9 +1047,10 @@ class GameModePanel extends JPanel {
             targetPanel.add(Box.createVerticalStrut(6));
         }
         targetPanel.add(Box.createVerticalGlue());
-        // The headings sit in the scroll pane's column header, so they stay put while the rows scroll under them. A
-        // table of no rows, built as the grid's tables are, so its columns take the same widths.
-        outer.setColumnHeaderView(tableFactory.groupTable(List.of(), outer, true, columnNames));
+        // The headings sit in the scroll pane's column header, so they stay put while the rows scroll under them: one
+        // band, with Primary and Secondary over their Device and Input titles.
+        outer.setColumnHeaderView(tableFactory.pinnedHeading(outer, getText("bindings.column.primary"),
+                getText("bindings.column.secondary"), columnNames));
         outer.getColumnHeader().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         targetPanel.revalidate();
         targetPanel.repaint();
@@ -1053,8 +1076,8 @@ class GameModePanel extends JPanel {
 
     private JComponent sectionHeader(BindingSection section) {
         JLabel label = hudGroupLabel(getText(section.getLabelKey()).toUpperCase());
-        // As large as the column titles, so the section still reads above its groups' sub-headings.
-        label.setFont(label.getFont().deriveFont(Font.BOLD, HUD_FONT_BIND_GRID_COLUMN_TITLE));
+        // Capitals in the primary text colour keep it above its groups' sub-headings at the same size.
+        label.setFont(label.getFont().deriveFont(Font.BOLD, HUD_FONT_BIND_GRID_SECTION));
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         label.setBorder(new EmptyBorder(10, 8, 10, 0));
         return label;
