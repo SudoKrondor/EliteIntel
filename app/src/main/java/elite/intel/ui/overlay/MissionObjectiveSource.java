@@ -3,6 +3,7 @@ package elite.intel.ui.overlay;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.GameClock;
+import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.gameapi.missions.MissionCargo;
 import elite.intel.gameapi.missions.MissionSelection;
@@ -52,8 +53,20 @@ import java.util.function.Supplier;
  * its own: a source-and-return mission is filled by buying on the open market, so
  * the journal reports no progress for it at all and there is nothing for a
  * specialised card to read. See {@code addCargoProgressRow}.
+ * <p>
+ * Mining is the other: a featured mining mission turns the whole card into its
+ * stack's totals per mineral, because the stack is the job and the featured
+ * mission's own count is a fraction of it. It is a layout rather than a source of
+ * its own so the featured-mission rules above still decide when it shows. See
+ * {@code miningRows}.
  */
 public class MissionObjectiveSource implements HudObjectiveSource {
+
+    /**
+     * Rows the renderer keeps - {@code MAX_ROWS} in {@code hud.h}. Rows past the eighth are dropped
+     * where the protocol is parsed, so a card with a list in it has to do its own budgeting.
+     */
+    private static final int MAX_CARD_ROWS = 8;
 
     private final MissionManager missionManager;
     private final Supplier<String> routeDestination;
@@ -94,7 +107,13 @@ public class MissionObjectiveSource implements HudObjectiveSource {
                 .toList();
 
         return featured(missions, routeDestination.get())
-                .map(featured -> new HudObjective(
+                .map(featured -> isMiningStack(featured)
+                        ? new HudObjective(
+                        "mission:" + featured.getMissionId(),
+                        HudText.get("overlay.card.title.miningMissions"),
+                        subtitle(featured),
+                        miningRows(featured, missions))
+                        : new HudObjective(
                         "mission:" + featured.getMissionId(),
                         title(featured),
                         subtitle(featured),
@@ -134,6 +153,101 @@ public class MissionObjectiveSource implements HudObjectiveSource {
         expiryRow(featured).ifPresent(rows::add);
         return rows;
     }
+
+    // -- mining ----------------------------------------------------------------
+
+    /**
+     * Whether the featured mission gets the mining layout. A mission stored before its commodity symbol
+     * was recorded cannot be matched to the hold, and keeps the generic card.
+     */
+    private static boolean isMiningStack(MissionDto featured) {
+        return featured.getMissionType() == MissionType.MISSION_MINING
+                && featured.getCommoditySymbol() != null && !featured.getCommoditySymbol().isBlank();
+    }
+
+    /**
+     * The mining layout: one row per mineral, what is aboard against what the missions for it still
+     * want, then the mission count, the reward and the featured mission's expiry.
+     * <p>
+     * Mining missions stack at the board like massacre contracts but do not share progress the way
+     * kills do: every mission is handed its own tonnes at the depot, so five missions for 200 units
+     * of Bertrandite need 1,000 units, not 200. The featured mission's own "x200" said the opposite,
+     * so the rows here total each mineral over every mining mission held, less what has already been
+     * delivered against each one. Several minerals are split rather than summed, because a ton of Gold
+     * does nothing for a Bertrandite mission.
+     * <p>
+     * Counts rather than bars, like the massacre card's providers: a mineral's name is the game's and
+     * can run past the column where a bar starts.
+     */
+    private List<HudRow> miningRows(MissionDto featured, List<MissionDto> missions) {
+        List<MissionDto> stack = missions.stream()
+                .filter(mission -> mission.getMissionType() == MissionType.MISSION_MINING)
+                .filter(mission -> mission.getCommoditySymbol() != null && !mission.getCommoditySymbol().isBlank())
+                .sorted(MissionSelection.EXPIRY_ORDER)
+                .toList();
+
+        // The featured mission's mineral leads, the rest follow in expiry order. A mineral whose
+        // missions are all delivered still has its row - the missions are open until handed in.
+        Map<String, List<MissionDto>> byMineral = new LinkedHashMap<>();
+        byMineral.put(featured.getCommoditySymbol(), new ArrayList<>());
+        stack.forEach(mission -> byMineral.computeIfAbsent(mission.getCommoditySymbol(), symbol -> new ArrayList<>())
+                .add(mission));
+
+        long reward = stack.stream().mapToLong(MissionDto::getReward).sum();
+        Optional<HudRow> expiry = expiryRow(featured);
+
+        List<HudRow> rows = new ArrayList<>();
+        // The rows under the minerals are counted out first: the renderer drops rows past the eighth,
+        // so an over-long mineral list would silently cost the expiry line rather than its own tail.
+        int reserved = (stack.size() > 1 ? 1 : 0) + (reward > 0 ? 1 : 0) + (expiry.isPresent() ? 1 : 0);
+        addMineralRows(rows, byMineral.values(), MAX_CARD_ROWS - reserved);
+
+        if (stack.size() > 1) {
+            rows.add(HudRow.of(HudText.get("overlay.card.row.missions"), String.valueOf(stack.size())));
+        }
+        if (reward > 0) {
+            rows.add(HudRow.of(HudText.get(stack.size() > 1 ? "overlay.card.row.stackReward" : "overlay.card.row.reward"),
+                    HudText.credits(reward)));
+        }
+        expiry.ifPresent(rows::add);
+        return rows;
+    }
+
+    /**
+     * @param budget rows left for minerals once the rows under them are paid for
+     */
+    private void addMineralRows(List<HudRow> rows, Collection<List<MissionDto>> minerals, int budget) {
+        if (budget <= 0) return;
+        Map<String, Integer> held = heldBySymbol.get();
+        // An overflow row only pays for itself when it hides more than the one row it displaces.
+        int shown = minerals.size() <= budget ? minerals.size() : budget - 1;
+
+        int index = 0;
+        for (List<MissionDto> mineral : minerals) {
+            if (index++ == shown) break;
+            MissionDto first = mineral.getFirst();
+            long owed = mineral.stream().mapToLong(MissionDto::outstandingCount).sum();
+            long aboard = Math.min(owed, held.getOrDefault(first.getCommoditySymbol(), 0));
+            rows.add(HudRow.of(mineralLabel(first),
+                    HudText.count(aboard) + " / " + HudText.amount(owed, "overlay.card.unit.tonnes"),
+                    aboard >= owed ? HudRow.State.GOOD : HudRow.State.NORMAL));
+        }
+
+        int hidden = minerals.size() - shown;
+        if (hidden > 0) {
+            rows.add(HudRow.of(HudText.get("overlay.card.row.moreGoods"), "+" + hidden));
+        }
+    }
+
+    /**
+     * The mineral as the game names it, falling back to its symbol for a row learned without a name.
+     */
+    private static String mineralLabel(MissionDto mission) {
+        String name = mission.getCommodityName();
+        return MassacreObjectiveSource.providerLabel(name == null || name.isBlank() ? mission.getCommoditySymbol() : name);
+    }
+
+    // -- stack -----------------------------------------------------------------
 
     /**
      * What is still outstanding in the featured mission's own family, because

@@ -148,6 +148,35 @@ class MissionsPreScanAccumulatorTest {
         }
     }
 
+    /**
+     * A mining mission handed in a load at a time while the app was closed: the card must not ask for
+     * the tonnes the depot has already taken.
+     */
+    @Test
+    void depotDeliveriesWhileClosedAreRecorded() {
+        MissionsPreScanAccumulator acc = new MissionsPreScanAccumulator();
+
+        acc.onMissions(snapshot(LOAD));
+        acc.onMissionAccepted(accepted(T1, 11L, "Firdaus"));
+        acc.onCargoDepot(depot(T2, 11L, 40));
+        acc.onCargoDepot(depot(T3, 11L, 120));
+        acc.persist();
+
+        assertEquals(120, missions.getMission(11L).getItemsDelivered());
+    }
+
+    private static CargoDepotEvent depot(String timestamp, long id, int deliveredSoFar) {
+        JsonObject j = event("CargoDepot", timestamp);
+        j.addProperty("MissionID", id);
+        j.addProperty("UpdateType", "Deliver");
+        j.addProperty("CargoType", "Bertrandite");
+        j.addProperty("Count", 40);
+        j.addProperty("ItemsCollected", 0);
+        j.addProperty("ItemsDelivered", deliveredSoFar);
+        j.addProperty("TotalItemsToDeliver", 200);
+        return new CargoDepotEvent(j);
+    }
+
     private static MissionsEvent snapshot(String timestamp, long... activeIds) {
         JsonObject j = event("Missions", timestamp);
         JsonArray active = new JsonArray();

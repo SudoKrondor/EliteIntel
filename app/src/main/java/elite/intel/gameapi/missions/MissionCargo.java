@@ -45,13 +45,16 @@ public final class MissionCargo {
      * Haematite missions for 18 and 72 units needs 90 units between them, and 72 in the hold covers the
      * first and leaves the second still owing 18. Comparing each mission against the raw hold would call
      * both of them finished.
+     * <p>
+     * What a mission requires is what it still wants: a mining mission handed in a load at a time owes
+     * only the tonnes not yet delivered, and the hold is measured against those.
      */
     public static List<Outstanding> outstanding(Collection<MissionDto> missions, Map<String, Integer> heldBySymbol) {
         Map<String, Integer> pool = new HashMap<>(heldBySymbol == null ? Map.of() : heldBySymbol);
         List<Outstanding> result = new ArrayList<>();
         for (MissionDto mission : sortedCargoMissions(missions)) {
             String symbol = mission.getCommoditySymbol();
-            int required = (int) mission.getCount();
+            int required = (int) mission.outstandingCount();
             int available = pool.getOrDefault(symbol, 0);
             int claimed = Math.min(available, required);
             pool.put(symbol, available - claimed);
@@ -116,7 +119,7 @@ public final class MissionCargo {
         return missions.stream()
                 .filter(Objects::nonNull)
                 .filter(mission -> mission.getCommoditySymbol() != null && !mission.getCommoditySymbol().isBlank())
-                .filter(mission -> mission.getCount() > 0)
+                .filter(mission -> mission.outstandingCount() > 0)
                 .sorted(MissionSelection.EXPIRY_ORDER)
                 .toList();
     }

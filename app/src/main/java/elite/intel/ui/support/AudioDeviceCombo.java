@@ -35,21 +35,52 @@ public final class AudioDeviceCombo {
         return build(AudioDeviceEnumerator.getOutputDevices(), savedName);
     }
 
+    /**
+     * Re-enumerates the microphones into an existing picker and selects {@code savedName}. A long-lived
+     * picker must call this rather than only re-selecting: a device that appeared after the picker was
+     * built (a VR headset powered on after app start) is not in its list, and a non-editable combo
+     * silently ignores a selection of an item it does not hold - it would keep showing "(System Default)"
+     * while the saved setting names the device.
+     */
+    public static void refreshInput(HudComboBox<String> combo, String savedName) {
+        refresh(combo, AudioDeviceEnumerator.getInputDevices(), savedName);
+    }
+
+    /** Re-enumerates the speakers into an existing picker; see {@link #refreshInput}. */
+    public static void refreshOutput(HudComboBox<String> combo, String savedName) {
+        refresh(combo, AudioDeviceEnumerator.getOutputDevices(), savedName);
+    }
+
     /** Maps the "(System Default)" sentinel to {@code null} for persistence. */
     public static String normalize(String selected) {
         return SYSTEM_DEFAULT_LABEL.equals(selected) ? null : selected;
     }
 
     private static HudComboBox<String> build(List<Mixer.Info> devices, String savedName) {
+        return new HudComboBox<>(model(devices, savedName));
+    }
+
+    private static void refresh(HudComboBox<String> combo, List<Mixer.Info> devices, String savedName) {
+        combo.setModel(model(devices, savedName));
+    }
+
+    /**
+     * Sentinel first, then the enumerated devices, with the saved one selected. A saved device that is
+     * not connected right now is still listed, so the picker shows what is saved rather than pretending
+     * the setting is "(System Default)"; the engines fall back to the default on their own while it is
+     * absent and pick it up again on their next start.
+     */
+    private static DefaultComboBoxModel<String> model(List<Mixer.Info> devices, String savedName) {
         DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
         model.addElement(SYSTEM_DEFAULT_LABEL);
         for (Mixer.Info info : devices) {
             model.addElement(info.getName());
         }
-        HudComboBox<String> combo = new HudComboBox<>(model);
-        if (savedName != null && !savedName.isBlank()) {
-            combo.setSelectedItem(savedName);
+        boolean hasSaved = savedName != null && !savedName.isBlank();
+        if (hasSaved && model.getIndexOf(savedName) < 0) {
+            model.addElement(savedName);
         }
-        return combo;
+        model.setSelectedItem(hasSaved ? savedName : SYSTEM_DEFAULT_LABEL);
+        return model;
     }
 }
