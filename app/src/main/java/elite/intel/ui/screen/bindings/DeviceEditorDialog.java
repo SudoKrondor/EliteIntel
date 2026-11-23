@@ -544,6 +544,9 @@ final class DeviceEditorDialog extends JDialog {
         nameProblem.setVisible(refused != null);
         unsavedHint.setVisible(dirty);
         save.setEnabled(dirty && refused == null && !busy);
+        // WHY: the refusal line sits among the field's notes and reads as one; a greyed SAVE needs its own reason
+        // (Krondor, 2026-11-22: a name with a space left SAVE off with no visible cause).
+        if (!opening.readOnly()) save.setToolTipText(refused);
     }
 
     // ------------------------------------------------------------------ leaving

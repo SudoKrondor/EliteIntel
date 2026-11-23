@@ -1,13 +1,18 @@
 package elite.intel.ai.mouth.supertonic;
 
 import elite.intel.i18n.Language;
+import elite.intel.util.NumberWords;
 import elite.intel.util.SignedAndDecimalNumbers;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 /**
  * Makes text unambiguous for Supertonic's multilingual tokenizer.
@@ -16,6 +21,18 @@ final class SupertonicTextNormalizer {
 
     // Long uppercase words are emphasis, not acronyms: "RIATTIVA" must stay one word.
     private static final Pattern UPPERCASE_ACRONYM = Pattern.compile("(?<![\\p{L}])([A-Z]{2,4})(?![\\p{L}])");
+    // WHY only punctuation that ends a token: an apostrophe or hyphen joins the letter to a word ("I'm", "L'FSD",
+    // "C'est", "A-rated"), and spelling it there breaks the word.
+    private static final Pattern SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION =
+            Pattern.compile("(?<![\\p{L}\\p{M}\\p{N}_])([A-Z])(?=[,.;:!?](?:\\s|$))");
+    // A body's moon letters after its planet number, "6 a" or "2 c a", read once the number is words. WHY only
+    // before a clause end: mid-sentence a lone letter after a number is as often a word ("cinque e mezzo",
+    // "five a side"), and Supertonic swallows a lower case "a" that ends a sentence.
+    private static final Pattern BODY_LETTERS_AFTER_NUMBER = Pattern.compile(
+            "(?<![\\p{L}\\p{M}\\p{N}_])([\\p{L}\\p{M}-]+)((?:\\s+[a-z])+)(?=[,.;:!?](?:\\s|$)|$)");
+    // Body numbers are small. The last word is the one that touches the letter ("vingt et un" ends in "un").
+    private static final int LARGEST_BODY_NUMBER = 99;
+    private static final Map<Language, Set<String>> NUMBER_WORDS = new ConcurrentHashMap<>();
     private static final String WORD_START = "(?<![\\p{L}\\p{M}\\p{N}_])";
     private static final String WORD_END = "(?![\\p{L}\\p{M}\\p{N}_])";
     private static final String ROMAN_II_TO_V = "III|IV|II|V";
@@ -28,7 +45,30 @@ final class SupertonicTextNormalizer {
             WORD_START + "((?iu:elite|élite|элита|еліта)\\s+)"
                     + "(" + ROMAN_II_TO_V + "|I(?!\\s+\\p{Ll}))" + WORD_END);
     private static final Pattern ITALIAN_CLASS_LETTER =
-            Pattern.compile("(?i)(?<=\\bclasse\\s)([A-Z])(?![\\p{L}])");
+            Pattern.compile("(?<=\\b(?iu:classe)\\s)([A-Z])(?![\\p{L}])");
+    private static final Map<String, String> ITALIAN_SPOKEN_REPLACEMENTS = Map.ofEntries(
+            // WHY split: Supertonic misreads a verb with its pronoun attached. Apart, each keeps its own sound.
+            Map.entry("riattivati", "riattiva ti"),
+            Map.entry("svegliati", "sveglia ti"),
+            Map.entry("ascoltami", "ascolta mi"),
+            Map.entry("scegline", "scegli ne"),
+            Map.entry("prenderti", "prender ti"),
+            Map.entry("fermati", "ferma ti"),
+            Map.entry("attivala", "attiva la"),
+            // WHY the accent: it marks the stress, which Supertonic otherwise puts on the wrong syllable.
+            Map.entry("anomalie", "anomalìe"),
+            // WHY respelled: English words, which an Italian voice reads with Italian vowels.
+            Map.entry("binding", "bai nding"),
+            Map.entry("bindforge", "baindforge"));
+    // WHY: a wake word that ends the text gets a full stop, so it does not run into the next utterance. Inside a
+    // sentence one would cut it in two, since SupertonicTTS splits on sentence-ending punctuation.
+    private static final Set<String> ITALIAN_WAKE_WORDS = Set.of("riattivati", "svegliati", "ascoltami");
+    private static final Pattern ITALIAN_SPOKEN_FIXES = Pattern.compile(
+            "(?iu)(?<![\\p{L}\\p{M}])("
+                    + ITALIAN_SPOKEN_REPLACEMENTS.keySet().stream()
+                            .map(Pattern::quote)
+                            .collect(Collectors.joining("|"))
+                    + ")([,.!?;:]?)(?![\\p{L}\\p{M}])");
     private static final Pattern DECIMAL_WITH_UNIT = Pattern.compile(
             "(?<![\\p{L}\\p{N}])([-−]?\\d+[.,]\\d+)([A-Z])([,.;:!?])?(?![\\p{L}])");
     private static final Pattern COMMA_DECIMAL =
@@ -86,22 +126,90 @@ final class SupertonicTextNormalizer {
         String spoken = SignedAndDecimalNumbers.inWordsIncludingWholeNumbers(
                 commaDecimalsInWords(withDecimalUnits, language),
                 language);
-        Matcher matcher = UPPERCASE_ACRONYM.matcher(spoken);
+        String withAcronyms = acronymsInWords(spoken, language);
+        String withItalianFixes = language == Language.IT
+                ? italianSpokenFixes(italianClassLettersInWords(withAcronyms))
+                : withAcronyms;
+        String withBodyLetters = bodyLettersAfterNumbers(withItalianFixes, language);
+        return singleUppercaseLettersBeforePunctuation(withBodyLetters, language);
+    }
+
+    private static String bodyLettersAfterNumbers(String text, Language language) {
+        Matcher matcher = BODY_LETTERS_AFTER_NUMBER.matcher(text);
+        StringBuffer result = new StringBuffer();
+        Set<String> numberWords = numberWords(language);
+        while (matcher.find()) {
+            if (!numberWords.contains(matcher.group(1).toLowerCase(Locale.ROOT))) {
+                matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group()));
+                continue;
+            }
+            StringBuilder spoken = new StringBuilder(matcher.group(1));
+            for (String letter : matcher.group(2).trim().split("\\s+")) {
+                spoken.append(' ').append(letterName(Character.toUpperCase(letter.charAt(0)), language));
+            }
+            matcher.appendReplacement(result, Matcher.quoteReplacement(spoken.toString()));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static Set<String> numberWords(Language language) {
+        return NUMBER_WORDS.computeIfAbsent(language, lang -> LongStream.rangeClosed(0, LARGEST_BODY_NUMBER)
+                .mapToObj(n -> NumberWords.of(n, lang).toLowerCase(Locale.ROOT))
+                .map(spelled -> spelled.substring(spelled.lastIndexOf(' ') + 1))
+                .collect(Collectors.toUnmodifiableSet()));
+    }
+
+    private static String acronymsInWords(String text, Language language) {
+        Matcher matcher = UPPERCASE_ACRONYM.matcher(text);
         StringBuffer result = new StringBuffer();
         while (matcher.find()) {
             matcher.appendReplacement(result, Matcher.quoteReplacement(spokenLetters(matcher.group(1), language)));
         }
         matcher.appendTail(result);
-        if (language == Language.IT) {
-            Matcher classLetter = ITALIAN_CLASS_LETTER.matcher(result.toString());
-            StringBuffer withClassLetters = new StringBuffer();
-            while (classLetter.find()) {
-                classLetter.appendReplacement(withClassLetters, Matcher.quoteReplacement(
-                        letterName(classLetter.group(1).charAt(0), language)));
-            }
-            classLetter.appendTail(withClassLetters);
-            return withClassLetters.toString();
+        return result.toString();
+    }
+
+    private static String italianClassLettersInWords(String text) {
+        Matcher matcher = ITALIAN_CLASS_LETTER.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, Matcher.quoteReplacement(
+                    letterName(matcher.group(1).charAt(0), Language.IT)));
         }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String italianSpokenFixes(String text) {
+        Matcher matcher = ITALIAN_SPOKEN_FIXES.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String written = matcher.group(1);
+            String word = written.toLowerCase(Locale.ROOT);
+            String spelling = ITALIAN_SPOKEN_REPLACEMENTS.get(word);
+            if (Character.isUpperCase(written.charAt(0))) {
+                spelling = Character.toUpperCase(spelling.charAt(0)) + spelling.substring(1);
+            }
+            String punctuation = matcher.group(2);
+            boolean endsText = text.substring(matcher.end()).isBlank();
+            if (punctuation.isEmpty() && endsText && ITALIAN_WAKE_WORDS.contains(word)) {
+                punctuation = ".";
+            }
+            matcher.appendReplacement(result, Matcher.quoteReplacement(spelling + punctuation));
+        }
+        matcher.appendTail(result);
+        return result.toString();
+    }
+
+    private static String singleUppercaseLettersBeforePunctuation(String text, Language language) {
+        Matcher matcher = SINGLE_UPPERCASE_LETTER_BEFORE_PUNCTUATION.matcher(text);
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(result, Matcher.quoteReplacement(
+                    letterName(matcher.group(1).charAt(0), language)));
+        }
+        matcher.appendTail(result);
         return result.toString();
     }
 

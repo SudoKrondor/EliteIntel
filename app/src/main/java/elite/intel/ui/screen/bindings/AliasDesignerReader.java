@@ -48,9 +48,11 @@ final class AliasDesignerReader {
      * @param workingCopyRead whether the working copy was read. False before first-time startup, and after it when the
      *                  working copy is missing or cannot be read - the BindForge tab click then offers RESTORE or
      *                  first-time startup again, and onboarding's offer waits for it (Alan, 2026-11-14)
+     * @param twins     attached controllers sharing one VID/PID, which the game cannot tell apart
      */
     record Snapshot(List<MyDevice> myDevices, List<BuiltInDevice> builtIn, Boolean activated, Boolean running,
-                    boolean listed, IdentityQuestions.Reading identity, boolean workingCopyRead) {
+                    boolean listed, IdentityQuestions.Reading identity, boolean workingCopyRead,
+                    List<TwinControllers.Twin> twins) {
     }
 
     /**
@@ -82,6 +84,7 @@ final class AliasDesignerReader {
         boolean listed = false;
         IdentityQuestions.Reading identity = IdentityQuestions.Reading.NONE;
         boolean workingCopyRead = false;
+        List<TwinControllers.Twin> twins = List.of();
         try {
             boolean complete = BindForgeActivationManager.getInstance().isFirstTimeStartupComplete();
             activated = complete;
@@ -94,6 +97,7 @@ final class AliasDesignerReader {
             myDevices = MyDeviceList.build(attached.devices(), sets.editedElements(), sets.appliedElements(),
                     FrontierStockDevices.getInstance());
             builtIn = BuiltInDeviceList.build(FrontierStockDevices.getInstance(), attached.devices());
+            twins = TwinControllers.of(attached.devices());
             if (complete && listed && sets.edited() != null) identity = readIdentity(myDevices, sets);
             // WHY: last, so nothing it does can cost the screen what this refresh has already read.
             if (judgeMissing) {
@@ -104,7 +108,7 @@ final class AliasDesignerReader {
             // the thread silently and leave the table showing whatever it showed before, with no clue why.
             log.warn("Could not refresh the Alias Designer", e);
         }
-        return new Snapshot(myDevices, builtIn, activated, running, listed, identity, workingCopyRead);
+        return new Snapshot(myDevices, builtIn, activated, running, listed, identity, workingCopyRead, twins);
     }
 
     /** The edits and the working copy, or none when the working copy cannot be read - the tab click offers RESTORE. */

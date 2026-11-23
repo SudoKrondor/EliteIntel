@@ -37,6 +37,12 @@ one marker per installation, M / differs / not added / not found — were remove
 edited, and only File Manager's [Game Install Locations](file-manager.md#game-install-locations) cares where the
 files are, and shows whether each installation matches the working copy.*
 
+**Two attached controllers on one VID/PID are one row, and a warning says so** (2026-11-22, Krondor). Two sticks of
+the same model - a left/right pair that both report `231D:0200` - cannot be told apart by the game, which names a
+controller by VID/PID alone, so they cannot be told apart here either. A warning line above the list names the shared
+ID and tells the user to give one a different product ID in its maker's tool (VKBDevCfg for VKB). No name fixes it,
+so nothing else is offered (`TwinControllers`).
+
 ### Built-in Devices
 
 Frontier's shipped default entries. **The reference list is read-only**, and BindForge never changes an

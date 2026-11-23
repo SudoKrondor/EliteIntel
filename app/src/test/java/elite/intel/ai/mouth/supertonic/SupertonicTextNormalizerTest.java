@@ -2,6 +2,11 @@ package elite.intel.ai.mouth.supertonic;
 
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -208,9 +213,91 @@ class SupertonicTextNormalizerTest {
                 SupertonicTextNormalizer.normalize("A new ship", Language.EN));
     }
 
+    @ParameterizedTest
+    @MethodSource("singleLettersBeforePunctuation")
+    void spellsSingleUppercaseLettersBeforePunctuation(String written, Language language, String spoken) {
+        assertEquals(spoken, SupertonicTextNormalizer.normalize(written, language));
+    }
+
+    static Stream<Arguments> singleLettersBeforePunctuation() {
+        return Stream.of(
+                Arguments.of("W.", Language.EN, "double you."),
+                Arguments.of("Ready W. now", Language.EN, "Ready double you. now"),
+                Arguments.of("A, B! C?", Language.EN, "ay, bee! see?"),
+                Arguments.of("Y,", Language.IT, "ipsilon,"),
+                Arguments.of("w.", Language.EN, "w."));
+    }
+
+    @ParameterizedTest
+    @MethodSource("bodyLettersAfterNumbers")
+    void spellsBodyLettersAfterANumber(String written, Language language, String spoken) {
+        assertEquals(spoken, SupertonicTextNormalizer.normalize(written, language));
+    }
+
+    static Stream<Arguments> bodyLettersAfterNumbers() {
+        return Stream.of(
+                Arguments.of("near planet six a.", Language.EN, "near planet six ay."),
+                Arguments.of("near planet 6 a.", Language.EN, "near planet six ay."),
+                Arguments.of("orbiting 2 c a, landing", Language.EN, "orbiting two see ay, landing"),
+                Arguments.of("Body 4 b", Language.DE, "Body vier beh"),
+                Arguments.of("planète 21 a.", Language.FR, "planète vingt-et-un a."),
+                Arguments.of("five a side", Language.EN, "five a side"),
+                Arguments.of("cinque e mezzo", Language.IT, "cinque e mezzo"),
+                Arguments.of("de 5 a 10.", Language.ES, "de cinco a diez."),
+                Arguments.of("we have a.", Language.EN, "we have a."));
+    }
+
+    @ParameterizedTest
+    @MethodSource("singleLettersJoinedToAWord")
+    void leavesSingleUppercaseLettersJoinedToAWord(String written, Language language) {
+        assertEquals(written, SupertonicTextNormalizer.normalize(written, language));
+    }
+
+    static Stream<Arguments> singleLettersJoinedToAWord() {
+        return Stream.of(
+                Arguments.of("I'm plotting a route. I'll tell you.", Language.EN),
+                Arguments.of("A-rated", Language.EN),
+                Arguments.of("L'unico mercato. C'è un problema. D'accordo", Language.IT),
+                Arguments.of("L’astronave", Language.IT),
+                Arguments.of("C'est fait. J'ai trouvé l'équipage.", Language.FR));
+    }
+
     @Test
     void spellsItalianClassLettersWithItalianNames() {
         assertEquals("classe ipsilon",
                 SupertonicTextNormalizer.normalize("classe Y", Language.IT));
+        assertEquals("Classe ipsilon",
+                SupertonicTextNormalizer.normalize("Classe Y", Language.IT));
+        assertEquals("classe a",
+                SupertonicTextNormalizer.normalize("classe a", Language.IT));
+    }
+
+    @ParameterizedTest
+    @MethodSource("italianSpokenFixes")
+    void normalizesSelectedItalianWordsForSpeech(String written, String spoken) {
+        assertEquals(spoken, SupertonicTextNormalizer.normalize(written, Language.IT));
+    }
+
+    static Stream<Arguments> italianSpokenFixes() {
+        return Stream.of(
+                Arguments.of("riattivati svegliati ascoltami anomalie binding scegline prenderti fermati attivala",
+                        "riattiva ti sveglia ti ascolta mi anomalìe bai nding scegli ne prender ti ferma ti attiva la"),
+                Arguments.of("fermati,", "ferma ti,"),
+                Arguments.of("riattivati, anomalie.", "riattiva ti, anomalìe."),
+                Arguments.of("fermati!", "ferma ti!"),
+                Arguments.of("svegliati?", "sveglia ti?"),
+                Arguments.of("ascoltami;", "ascolta mi;"),
+                Arguments.of("riattivati:", "riattiva ti:"),
+                Arguments.of("Svegliati e vola.", "Sveglia ti e vola."),
+                Arguments.of("Apri BindForge.", "Apri Baindforge."),
+                Arguments.of("Di' \"svegliati\" quando vuoi", "Di' \"sveglia ti\" quando vuoi"),
+                Arguments.of("Di' svegliati", "Di' sveglia ti."),
+                Arguments.of("riattivatiX anomaliee", "riattivatiX anomaliee"));
+    }
+
+    @Test
+    void leavesItalianWordsAloneInOtherLanguages() {
+        String text = "riattivati anomalie binding BindForge scegline prenderti fermati attivala";
+        assertEquals(text, SupertonicTextNormalizer.normalize(text, Language.EN));
     }
 }
