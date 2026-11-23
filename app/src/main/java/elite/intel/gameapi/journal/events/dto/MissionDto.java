@@ -40,6 +40,7 @@ public class MissionDto extends BaseJsonDto {
     private String donation;
     private long donated;
     private String redirectedAt;
+    private long itemsDelivered;
 
     public MissionDto(MissionAcceptedEvent event) {
         if (event != null) {
@@ -216,6 +217,16 @@ public class MissionDto extends BaseJsonDto {
     public void setRedirectedAt(String redirectedAt) {
         this.redirectedAt = redirectedAt;
     }
+    /**
+     * Units already handed in at the mission's cargo depot, from the latest journal {@code CargoDepot}
+     * for this mission. A mining mission is delivered a load at a time, and each load counts against
+     * this mission alone - it is never shared with another mission for the same mineral.
+     * <p>
+     * Only ever raised: the journal's figure is a running total, so a lower one is an older event.
+     */
+    public void setItemsDelivered(long itemsDelivered) {
+        this.itemsDelivered = Math.max(this.itemsDelivered, itemsDelivered);
+    }
     /*
             GET Functions
      */
@@ -283,6 +294,23 @@ public class MissionDto extends BaseJsonDto {
 
     public long getCount() {
         return count;
+    }
+
+    /**
+     * @see #setItemsDelivered(long)
+     */
+    public long getItemsDelivered() {
+        return itemsDelivered;
+    }
+
+    /**
+     * Units the mission still wants: what it asked for, less what has already been handed in.
+     * <p>
+     * WHY not a getter: the YAML mapper hands every getter to the LLM, which already has the count and
+     * the deliveries to work it out from.
+     */
+    public long outstandingCount() {
+        return Math.max(0, count - itemsDelivered);
     }
 
     public String getDestinationStation() {

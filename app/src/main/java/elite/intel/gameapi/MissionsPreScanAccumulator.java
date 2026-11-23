@@ -53,6 +53,11 @@ public class MissionsPreScanAccumulator {
      * it is the objectives-complete signal.
      */
     private final Map<Long, MissionRedirectedEvent> redirects = new HashMap<>();
+    /**
+     * The latest replayed cargo depot update per mission: its running total is what a mining mission has
+     * already been handed.
+     */
+    private final Map<Long, CargoDepotEvent> depotUpdates = new HashMap<>();
 
     @Subscribe
     public void onMissions(MissionsEvent e) {
@@ -91,6 +96,11 @@ public class MissionsPreScanAccumulator {
         if (e.isReplay() && e.getMissionID() != null) redirects.put(e.getMissionID(), e);
     }
 
+    @Subscribe
+    public void onCargoDepot(CargoDepotEvent e) {
+        if (e.isReplay()) depotUpdates.put(e.getMissionID(), e);
+    }
+
     private void ended(long missionId) {
         acceptedSinceSnapshot.remove(missionId);
         endedSinceSnapshot.add(missionId);
@@ -124,8 +134,9 @@ public class MissionsPreScanAccumulator {
             MissionDto mission = stored.contains(id) ? missions.getMission(id) : fromAccept(id);
             if (mission == null) continue;
             boolean redirected = applyRedirect(mission);
+            boolean delivered = applyDeliveries(mission);
             if (!stored.contains(id)) restored++;
-            if (!stored.contains(id) || redirected) missions.save(mission);
+            if (!stored.contains(id) || redirected || delivered) missions.save(mission);
         }
         log.info("MissionsPreScan: restored {} mission(s) accepted while the app was closed, removed {} that ended",
                 restored, endedSinceSnapshot.size());
@@ -134,6 +145,19 @@ public class MissionsPreScanAccumulator {
     private MissionDto fromAccept(long id) {
         MissionAcceptedEvent accept = accepts.get(id);
         return accept == null ? null : new MissionDto(accept);
+    }
+
+    /**
+     * Applies the latest replayed cargo depot update the way {@code CargoDepotSubscriber} does live.
+     *
+     * @return whether the mission changed
+     */
+    private boolean applyDeliveries(MissionDto mission) {
+        CargoDepotEvent update = depotUpdates.get(mission.getMissionId());
+        if (update == null) return false;
+        long before = mission.getItemsDelivered();
+        mission.setItemsDelivered(update.getItemsDelivered());
+        return mission.getItemsDelivered() != before;
     }
 
     /**

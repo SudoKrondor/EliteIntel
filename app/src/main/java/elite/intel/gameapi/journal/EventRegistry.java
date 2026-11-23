@@ -72,6 +72,7 @@ public class EventRegistry {
         registerEvent("Bounty", BountyEvent.class);
         registerEvent("FactionKillBond", FactionKillBondEvent.class);
         registerEvent("Cargo", CargoEvent.class);
+        registerEvent("CargoDepot", CargoDepotEvent.class);
         registerEvent("CargoTransfer", CargoTransferEvent.class);
         registerEvent("CarrierJump", CarrierJumpEvent.class);
         registerEvent("CarrierJumpRequest", CarrierJumpRequestEvent.class);

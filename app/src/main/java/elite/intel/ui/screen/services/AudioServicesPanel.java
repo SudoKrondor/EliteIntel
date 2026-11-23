@@ -354,13 +354,16 @@ public class AudioServicesPanel extends JPanel {
     }
 
     /**
-     * Re-reads the persisted device selection into the pickers without re-triggering a save.
+     * Re-enumerates the devices and re-reads the persisted selection into the pickers without re-triggering
+     * a save. Re-enumerating is what keeps this panel level with the AI-tab dialog, which lists the devices
+     * fresh each time it opens: a device plugged in after app start is otherwise missing here, and its
+     * saved selection cannot be shown.
      */
     private void syncDevices() {
         syncingDevices = true;
         try {
-            selectDevice(inputCombo, systemSession.getAudioInputDevice());
-            selectDevice(outputCombo, systemSession.getAudioOutputDevice());
+            AudioDeviceCombo.refreshInput(inputCombo, systemSession.getAudioInputDevice());
+            AudioDeviceCombo.refreshOutput(outputCombo, systemSession.getAudioOutputDevice());
         } finally {
             syncingDevices = false;
         }
@@ -372,11 +375,6 @@ public class AudioServicesPanel extends JPanel {
      */
     private void updateRadioVolumeEnablement() {
         radioVolumeSlider.setEnabled(Boolean.TRUE.equals(playerSession.isRadioTransmissionOn()));
-    }
-
-    private static void selectDevice(HudComboBox<String> combo, String savedName) {
-        combo.setSelectedItem(savedName == null || savedName.isBlank()
-                ? AudioDeviceCombo.SYSTEM_DEFAULT_LABEL : savedName);
     }
 
     /**
