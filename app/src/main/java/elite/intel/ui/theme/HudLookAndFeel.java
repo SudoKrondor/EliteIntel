@@ -1,6 +1,7 @@
 package elite.intel.ui.theme;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import elite.intel.ui.widget.HudToolTipUI;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -169,5 +170,10 @@ public final class HudLookAndFeel {
                 BorderFactory.createLineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS),
                 BorderFactory.createEmptyBorder(4, 8, 4, 8)));
         UIManager.put("Popup.dropShadowPainted", Boolean.FALSE);
+        // Repaints a tooltip once it is on screen, or a tooltip in a window of its own can show as a blank box on Linux.
+        UIManager.put("ToolTipUI", HudToolTipUI.class.getName());
+        // A tooltip stays while the pointer rests on its control, like the binding grid's callout: Swing's 4 seconds
+        // took it away before a longer one could be read. Leaving the control, a click or a key still hides it.
+        ToolTipManager.sharedInstance().setDismissDelay(Integer.MAX_VALUE);
     }
 }
