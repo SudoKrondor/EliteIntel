@@ -5,6 +5,7 @@ import elite.intel.bindforge.devicefiles.FrontierStockDevices;
 import elite.intel.bindforge.devices.BuiltInDevice;
 import elite.intel.bindforge.devices.MissingControllerWarning;
 import elite.intel.bindforge.devices.MyDevice;
+import elite.intel.bindforge.devices.TwinControllers;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
@@ -93,6 +94,8 @@ public class AliasDesignerPanel extends JPanel {
     private boolean deviceServiceRunning;
     /** CHECK AGAIN: its one job is offering onboarding and the identity question, so it is off while read only. */
     private JButton rescanButton;
+    /** Says which attached controllers share a VID/PID; hidden while none do. */
+    private JLabel twinsWarning;
 
     public AliasDesignerPanel() {
         buildUi();
@@ -163,6 +166,11 @@ public class AliasDesignerPanel extends JPanel {
         rescanButton = makeButton(getText("bindings.aliasDesigner.button.recheck"));
         rescanButton.addActionListener(e -> controller.checkAgain());
 
+        twinsWarning = AppTheme.hudReadoutValue(" ", HUD_COLOR_ROLE_WARNING);
+        twinsWarning.setBorder(BorderFactory.createEmptyBorder(0, 0, HUD_GAP, 0));
+        twinsWarning.setVisible(false);
+
+        add(twinsWarning, BorderLayout.NORTH);
         add(myDevices, BorderLayout.CENTER);
         add(HudFooter.build(false, null, null, List.of(rescanButton)), BorderLayout.SOUTH);
     }
@@ -183,6 +191,30 @@ public class AliasDesignerPanel extends JPanel {
         deviceServiceRunning = Boolean.TRUE.equals(snapshot.running());
         showMyDevices(snapshot.myDevices());
         showBuiltIn(snapshot.builtIn());
+        showTwins(snapshot.twins());
+    }
+
+    /**
+     * Above both views, not in the table: twins are one row there, and the warning is about the one that is not shown.
+     */
+    private void showTwins(List<TwinControllers.Twin> twins) {
+        if (twins.isEmpty()) {
+            twinsWarning.setVisible(false);
+            return;
+        }
+        StringBuilder html = new StringBuilder("<html>");
+        for (int i = 0; i < twins.size(); i++) {
+            TwinControllers.Twin twin = twins.get(i);
+            if (i > 0) html.append("<br>");
+            html.append(escape(getText("bindings.aliasDesigner.twins", String.valueOf(twin.count()),
+                    twin.hardwareName(), pairText(twin.hardware()))));
+        }
+        twinsWarning.setText(html.append("</html>").toString());
+        twinsWarning.setVisible(true);
+    }
+
+    private static String escape(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     /** The columns describing the device, then the gear's. */

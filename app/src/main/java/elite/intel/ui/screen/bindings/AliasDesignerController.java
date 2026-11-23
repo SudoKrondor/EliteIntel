@@ -51,7 +51,7 @@ final class AliasDesignerController {
      * What the screen shows before its first refresh has finished.
      */
     private static final Snapshot NOTHING_YET = new Snapshot(List.of(), List.of(), false, false, false,
-            IdentityQuestions.Reading.NONE, false);
+            IdentityQuestions.Reading.NONE, false, List.of());
 
     private final AliasDesignerPanel view;
     private final AliasDesignerReader reader = new AliasDesignerReader();
@@ -260,7 +260,7 @@ final class AliasDesignerController {
         return new Snapshot(read.myDevices(), read.builtIn(),
                 read.activated() != null ? read.activated() : shown.activated(),
                 read.running() != null ? read.running() : shown.running(),
-                read.listed(), read.identity(), read.workingCopyRead());
+                read.listed(), read.identity(), read.workingCopyRead(), read.twins());
     }
 
     private boolean activated() {
