@@ -142,6 +142,49 @@ cualquier cosa que falte, pero conviene hacerlos de antemano:</p>
 </tr>
 </tbody></table>
 <hr>
+<h2>Lo que Elite Intel configura por ti</h2>
+<p>Tres cosas que conviene conocer antes de empezar con una instalación nueva.</p>
+<h3>LM Studio, instalado por ti</h3>
+<p>Si LM Studio es solo para Elite Intel, <strong>deja que Elite Intel lo instale. Es la forma recomendada.</strong>
+Pulsa <strong>Instalar LM Studio</strong> en <a href="UI-Settings-Tab.html">Servicios → Servicios de IA</a> → <strong>LMStudio</strong>. Elite
+Intel instala LM Studio, descarga y carga el modelo, lo prueba y rellena <strong>Dirección</strong> y <strong>Modelo</strong> por
+ti. A partir de ahí arranca LM Studio con sus servicios y lo detiene cuando los detienes o cierras la
+aplicación, así que el modelo usa la memoria de tu tarjeta gráfica solo mientras Elite Intel está en
+marcha. <strong>Desinstalar LM Studio</strong> lo quita de nuevo.</p>
+<p>El botón solo aparece cuando tus tarjetas gráficas pueden con el juego y el modelo a la vez: una
+NVIDIA RTX 3090 de 24 GB o superior, dos tarjetas NVIDIA recientes con unos 20 GB entre las dos, o
+tarjetas AMD con la misma memoria, en beta. La <a href="installing-local-llms.html">guía de LLM local</a> tiene los
+detalles. Si también usas LM Studio para otras cosas, instálalo tú: Elite Intel solo añade el modelo y
+rellena los campos, y nunca arranca, detiene ni quita tu LM Studio.</p>
+<h3>Tu HOTAS, joysticks y pedales</h3>
+<p>La primera vez que abres la <a href="UI-Bindings-Tab.html">pestaña BindForge</a>, hace copia de seguridad de tus
+archivos de controles, encuentra cada copia del juego en este PC y mira qué hay conectado. De serie, el
+juego conoce muchos mandos solo por un identificador de hardware. BindForge ofrece un nombre de verdad,
+como <em>Throttle</em> o <em>Pedals</em>, a cada mando que no lo tiene, y puedes <strong>Omitir</strong> este paso.</p>
+<p><img src="../images/ui-bindings-alias-designer.png" alt="Mandos con nombre en el Diseñador de alias"></p>
+<p>Después, en el <a href="UI-Bindings-Tab#alias-designer">Diseñador de alias</a>, pulsa el <strong>engranaje</strong> de un
+mando para etiquetar sus botones, ejes y hats. Pulsa un botón y su casilla se ilumina, así sabes cuál
+es cuál. Las etiquetas aparecen en la pantalla de Controles del juego y en el Editor de bindings.</p>
+<p><img src="../images/ui-bindings-device-editor.png" alt="Etiquetas de botones en el Editor de dispositivo"></p>
+<h3>El juego en más de una tienda</h3>
+<p>¿Tienes Elite Dangerous en Steam y en Epic? Todas las copias comparten un solo conjunto de controles,
+pero cada una guarda su propia lista de tus mandos y nombres de botones. Cuando las listas no
+coinciden, tus controles pueden funcionar en una copia y volver a teclado y ratón en otra. BindForge
+lo detecta la primera vez que lo abres y ofrece <strong>Igualar tus copias del juego</strong>:</p>
+<p><img src="../images/install-reconcile-welcome.png" alt="Igualar tus copias del juego"></p>
+<ol>
+<li><strong>Conectar</strong> — conecta los mandos con los que vuelas. Pulsa un botón y su fila se ilumina.</li>
+<li><strong>Elegir</strong> — responde unas preguntas cortas, como qué nombre conservar para un mando que cada copia
+llama de forma distinta. Tus controles siguen el nombre que elijas. ¿Demasiadas preguntas?
+<strong>Dejarlo todo como en una de mis copias...</strong> lo configura todo como en la copia que más juegas.</li>
+<li><strong>Revisar</strong> — mira exactamente lo que tendrá cada copia, y por qué, antes de que cambie nada.</li>
+</ol>
+<p><img src="../images/install-reconcile-check.png" alt="Revisar el resultado"></p>
+<p><strong>Nada cambia hasta el último paso, y antes se hace copia de seguridad de todo.</strong> <strong>Ahora no</strong> deja tus
+archivos como están. Si más adelante cambian los archivos de controles de una copia, por ejemplo tras
+una actualización del juego, BindForge solo pregunta <strong>¿Qué configuración es la actual?</strong> y ajusta las
+demás.</p>
+<hr>
 <h3>¿Nuevo en Elite Dangerous?</h3>
 <p>El juego crea sus archivos de controles solo cuando has cambiado algo, y sin ellos Elite Intel no puede manejar
 tu nave. Completa tu entrenamiento de comandante y luego, en <em>Opciones → Controles</em> del juego, pon el movimiento

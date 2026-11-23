@@ -142,6 +142,52 @@ informé de tout ce qui manque — mais autant le faire d&#39;emblée :</p>
 </tr>
 </tbody></table>
 <hr>
+<h2>Ce qu&#39;Elite Intel configure pour vous</h2>
+<p>Trois choses à connaître avant de commencer sur une nouvelle installation.</p>
+<h3>LM Studio, installé pour vous</h3>
+<p>Si LM Studio ne sert qu&#39;à Elite Intel, <strong>laissez Elite Intel l&#39;installer. C&#39;est la méthode
+recommandée.</strong> Appuyez sur <strong>Installer LM Studio</strong> dans <a href="UI-Settings-Tab.html">Services → Services IA</a> →
+<strong>LMStudio</strong>. Elite Intel installe LM Studio, télécharge et charge le modèle, le teste, puis remplit
+<strong>Adresse</strong> et <strong>Modèle</strong> pour vous. Ensuite, il démarre LM Studio avec ses services et l&#39;arrête quand
+vous les arrêtez ou fermez l&#39;application : le modèle n&#39;occupe la mémoire de votre carte graphique que
+pendant qu&#39;Elite Intel tourne. <strong>Désinstaller LM Studio</strong> le retire.</p>
+<p>Le bouton n&#39;apparaît que si vos cartes graphiques peuvent contenir le jeu et le modèle ensemble : une
+NVIDIA RTX 3090 de 24 Go ou mieux, deux cartes NVIDIA récentes totalisant environ 20 Go, ou des cartes
+AMD avec la même mémoire, en bêta. Le <a href="installing-local-llms.html">guide LLM local</a> donne les détails. Si
+vous utilisez LM Studio pour autre chose, installez-le vous-même : Elite Intel se contente alors
+d&#39;ajouter le modèle et de remplir les champs, et ne démarre, n&#39;arrête ni ne supprime jamais votre LM
+Studio.</p>
+<h3>Votre HOTAS, vos joysticks et vos palonniers</h3>
+<p>La première fois que vous ouvrez l&#39;<a href="UI-Bindings-Tab.html">onglet BindForge</a>, il sauvegarde vos fichiers de
+commandes, trouve chaque copie du jeu sur ce PC et regarde ce qui est branché. D&#39;origine, le jeu ne
+connaît beaucoup de contrôleurs que par un identifiant matériel. BindForge propose un vrai nom, comme
+<em>Throttle</em> ou <em>Pedals</em>, à chaque contrôleur qui n&#39;en a pas, et vous pouvez <strong>Passer</strong>.</p>
+<p><img src="../images/ui-bindings-alias-designer.png" alt="Contrôleurs nommés dans le Concepteur d'alias"></p>
+<p>Ensuite, dans le <a href="UI-Bindings-Tab#alias-designer">Concepteur d&#39;alias</a>, cliquez sur l&#39;<strong>engrenage</strong>
+d&#39;un contrôleur pour libeller ses boutons, axes et chapeaux. Appuyez sur un bouton et sa case
+s&#39;allume : vous savez lequel est lequel. Les libellés apparaissent dans l&#39;écran Commandes du jeu et
+dans l&#39;Éditeur de raccourcis.</p>
+<p><img src="../images/ui-bindings-device-editor.png" alt="Libellés des boutons dans l'Éditeur de périphérique"></p>
+<h3>Le jeu acheté sur plusieurs boutiques</h3>
+<p>Vous avez Elite Dangerous sur Steam et sur Epic ? Toutes les copies partagent un seul jeu de
+commandes, mais chacune garde sa propre liste de vos contrôleurs et des noms de boutons. Quand ces
+listes divergent, vos commandes peuvent marcher dans une copie et retomber sur clavier et souris dans
+l&#39;autre. BindForge le repère à la première ouverture et propose <strong>Accorder tes copies du jeu</strong> :</p>
+<p><img src="../images/install-reconcile-welcome.png" alt="Accorder tes copies du jeu"></p>
+<ol>
+<li><strong>Brancher</strong> — branchez les contrôleurs avec lesquels vous volez. Appuyez sur un bouton et sa
+ligne s&#39;allume.</li>
+<li><strong>Choisir</strong> — répondez à quelques questions courtes, par exemple quel nom garder pour un contrôleur
+que chaque copie appelle différemment. Vos commandes suivent le nom choisi. Trop de questions ?
+<strong>Tout faire comme dans une de mes copies...</strong> règle tout comme dans la copie où vous jouez le plus.</li>
+<li><strong>Vérifier</strong> — voyez exactement ce que chaque copie aura, et pourquoi, avant tout changement.</li>
+</ol>
+<p><img src="../images/install-reconcile-check.png" alt="Vérifier le résultat"></p>
+<p><strong>Rien ne change avant la dernière étape, et tout est sauvegardé d&#39;abord.</strong> <strong>Pas maintenant</strong> laisse
+vos fichiers tels quels. Si les fichiers de commandes d&#39;une copie changent plus tard, par exemple après
+une mise à jour du jeu, BindForge demande seulement <strong>Quelle configuration est actuelle ?</strong> et aligne
+les autres.</p>
+<hr>
 <h3>Nouveau dans Elite Dangerous ?</h3>
 <p>Le jeu ne crée ses fichiers de commandes qu&#39;une fois que vous avez modifié quelque chose, et sans eux Elite Intel ne peut
 pas piloter votre vaisseau. Terminez votre entraînement de commandant, puis dans <em>Options → Commandes</em> du jeu, réglez le

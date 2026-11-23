@@ -139,6 +139,7 @@ guarda al instante. Útiles para todos, y una verdadera ayuda para comandantes c
 | **Subir tren automáticamente al despegar** | Sube el tren tras despegar |
 | **Apagar luces automáticamente al desplegar SRV** | Apaga las luces al desplegar el SRV |
 | **Trazar la siguiente ruta de neutrones al impulsar en el cono** | En una [ruta de neutrones](AllCommands), traza el siguiente punto de neutrones en cuanto atraviesas el cono con el impulso |
+| **Usar el conmutador FSD del juego para supercrucero e hiperespacio** | Desactivado por defecto. Activado, tanto *supercrucero* como *salto* pulsan el control **Alternar FSD** del juego, y decide el juego: con un sistema fijado saltas; sin nada fijado entras en supercrucero. Asigna antes ese control. ¿Nuevo en Elite Dangerous? Déjalo desactivado |
 
 ---
 

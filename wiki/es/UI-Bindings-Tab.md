@@ -11,16 +11,18 @@ Tiene su propia pestaña, **BindForge**, con cuatro subpestañas y una barra enc
 | Parte | Para qué sirve |
 |-------|----------------|
 | **[Barra de Aplicar](#the-apply-bar)** | Tu carpeta de configuración del usuario, y el único **Aplicar** y **Descartar** para todo lo de esta pestaña |
-| **[Editor de bindings](#binding-profile)** | Todos los controles del juego, por sección, con las vistas **Anomalías** y **Zonas muertas y sensibilidad** |
-| **[Editor de presets](#preset-editor)** | Qué archivo de bindings carga el juego para los controles General, Nave, SRV y A pie |
-| **[Gestión de bindings](#binding-management)** | Tus instalaciones del juego, tus archivos de bindings y tus copias de seguridad |
 | **[Diseñador de alias](#alias-designer)** | Da nombres reales a tus mandos y etiqueta sus botones, ejes y hats |
+| **[Editor de bindings](#binding-profile)** | Todos los controles del juego, por sección, con las vistas **Anomalías**, **Zonas muertas y sensibilidad** e **Interruptores** |
+| **[Editor de presets](#preset-editor)** | Qué archivo de bindings carga el juego para los controles General, Nave, SRV y A pie |
+| **[Gestión de archivos binds](#binding-management)** | Tus instalaciones del juego, tus archivos de bindings y tus copias de seguridad |
 
 > **Vega sigue pulsando solo teclas del teclado.** Puedes asignar cualquier dispositivo a cualquier
 > ranura, pero un control necesita una tecla para que Vega pueda manejarlo. La columna **Acceso IA** te
 > muestra cuáles la tienen.
 
 ---
+
+<a id="the-first-time-you-open-it"></a>
 
 ## La primera vez que la abres
 
@@ -29,14 +31,41 @@ y esa copia se conserva para siempre.**
 
 1. **Confirma tus instalaciones.** BindForge muestra cada copia de Elite Dangerous que encontró en este
    PC. Corrige la lista con **Añadir que falta** o **Quitar** y pulsa **Confirmar**.
-2. **Concilia, si hace falta.** Si tus instalaciones tienen archivos de dispositivo distintos, usa los
-   de una instalación para todas, o pulsa **Combinar** y responde cada fila marcada como *elegir*.
+2. **Iguala tus copias del juego, si hace falta.** Si tienes el juego en más de una tienda y las copias
+   no coinciden en tus mandos, BindForge te guía para [igualarlas](#make-your-game-copies-match).
 3. **Crea tu copia de trabajo.** BindForge hace su propia copia de tus archivos de controles. Esa es la
    copia que editas, y los archivos del juego no se tocan hasta que pulses **Aplicar**.
 4. **Pon nombre a tus mandos.** A cada mando conectado sin nombre se le ofrece
    [un nombre](#naming-a-controller). Puedes **Omitir** este paso.
 
-Hasta que termines, la configuración inicial se vuelve a ofrecer cada vez que abres la pestaña.
+Hasta que termines, la configuración inicial se vuelve a ofrecer cada vez que abres la pestaña. Para
+repetirla más adelante, usa **Repetir la configuración inicial** en
+[Ubicaciones del juego](#game-install-locations).
+
+<a id="make-your-game-copies-match"></a>
+
+### Igualar tus copias del juego
+
+Todas las copias del juego comparten un solo conjunto de controles, pero cada una guarda su propia lista
+de tus mandos y nombres de botones. Cuando las listas no coinciden, tus controles pueden funcionar en una
+copia y volver a teclado y ratón en otra. **Igualar tus copias del juego** lo arregla en tres pasos:
+
+![Igualar tus copias del juego](images/install-reconcile-welcome.png)
+
+1. **Conectar** — conecta los mandos con los que vuelas. El juego solo carga tus controles si cada mando
+   que usan está conectado. Pulsa un botón y su fila se ilumina.
+2. **Elegir** — responde unas preguntas cortas: qué nombre conservar para un mando que cada copia llama
+   de forma distinta, a qué mando pertenece un nombre compartido y qué nombres de botones conservar. Tus
+   controles siguen los nombres que elijas. **Dejarlo todo como en una de mis copias...** se salta las
+   preguntas y lo configura todo como en una copia.
+3. **Revisar** — mira lo que tendrá cada copia, y por qué, y pulsa **Igualar las dos copias** (o
+   **Igualar todas las copias**).
+
+![Revisar el resultado](images/install-reconcile-check.png)
+
+Nada cambia hasta el último paso, y antes se hace copia de seguridad de todo. Un mando que solo conoce una
+copia se añade a las demás, y un viejo segundo nombre que el juego nunca usó se retira, con sus controles
+pasados al nombre que usa el juego. **Ahora no** deja tus archivos como están.
 
 ### ¿Nuevo en Elite Dangerous?
 
@@ -61,7 +90,7 @@ La barra sobre las subpestañas contiene la **Carpeta de configuración del usua
 
 **Carpeta de configuración del usuario** es donde están tus archivos `.binds` y el archivo de preset, y
 todas las instalaciones la comparten. Se detecta automáticamente. Usa el selector **⋮** si la tuya está en
-un lugar poco habitual.
+un lugar poco habitual. En Linux, mira [más abajo](#several-installations-on-linux).
 
 > **¿«No encuentra los bindings» con la carpeta correcta?** Elite Dangerous no escribe un archivo `.binds`
 > hasta que personalizas algo. Abre *Opciones → Controles* en el juego, cambia cualquier asignación, y
@@ -81,6 +110,25 @@ acumulando, y **Aplicar** y **Descartar** se iluminan en cuanto hay alguno.
 
 Si sales de la pestaña o cierras la app con cambios sin aplicar, se te pregunta si quieres **Aplicar**,
 **Descartar** o **Volver**.
+
+**No volver a mostrar.** La confirmación de Aplicar, su informe, el informe de la configuración inicial y
+el *Guardado.* del Editor de bindings tienen esta casilla. Un informe silenciado se muestra igualmente si
+trae un problema o una novedad. **Restablecer avisos**, en [Servicios → Push To Talk y otros
+ajustes](UI-Settings-Tab#warnings), los recupera todos.
+
+<a id="several-installations-on-linux"></a>
+
+### Varias instalaciones en Linux
+
+En Windows, todas las copias del juego leen sus controles de una sola carpeta. En Linux, cada copia corre
+en su propio prefijo de Wine o Proton y guarda los suyos. Con dos o más, aparece en la barra una lista
+**Jugando:**, a la izquierda de la carpeta de configuración del usuario. Indica la copia de la que Elite
+Intel lee tus controles y diarios, y sigue al juego: arranca el juego desde otra copia y Elite Intel
+cambia a ella. También puedes elegir una a mano.
+
+**Aplicar** escribe tus controles en cada copia. Una copia cuyos controles se cambiaron fuera de BindForge
+se deja como está, y el informe lo dice. Juega una vez en esa copia y BindForge te ofrece sus cambios la
+próxima vez que apliques.
 
 <a id="read-only"></a>
 
@@ -110,6 +158,12 @@ Aplicar. Si difieren, Vega te lo dice al arrancar, y la pestaña muestra qué ca
 Antes de cualquiera de estas escrituras se hace una copia de todo, y puedes cerrar el aviso para decidir
 más tarde. Cerrarlo durante un Aplicar lo cancela y conserva tus cambios.
 
+**Cuando cambian los mandos de una copia.** Si una copia del juego tiene ahora una configuración de
+mandos distinta de la que guardó BindForge, la ventana solo pregunta **¿Qué configuración es la actual?**
+Elige una de tus copias, o **Lo que guardé en BindForge**, y todas las copias y tus controles se ajustan a
+ella. Ves el resultado antes de que cambie nada. **Elegir mando por mando...** hace las
+[preguntas](#make-your-game-copies-match) una a una.
+
 **Una versión nueva de tu archivo de bindings.** A veces las actualizaciones guardan tu archivo con otro
 nombre y con controles nuevos. BindForge nunca escribe tu archivo antiguo encima. Si todos tus bindings
 pasaron, solo tienes que **Aprobar**. Si algunos difieren, **Conciliar...** conserva los controles nuevos
@@ -124,6 +178,75 @@ con ese nombre.
 
 ---
 
+<a id="alias-designer"></a>
+
+## Diseñador de alias
+
+![Diseñador de alias](images/ui-bindings-alias-designer.png)
+
+De fábrica, el juego conoce muchos mandos solo por un ID de hardware, y su pantalla de Controles muestra
+sus botones como números anónimos. El Diseñador de alias da a cada mando un nombre real, y a cada botón,
+eje y hat la etiqueta que elijas. Las etiquetas aparecen en la pantalla de Controles del juego y en el
+Editor de bindings.
+
+**Mis dispositivos** muestra tus mandos: **Dispositivo**, **VID / PID**, **Estado** (*Conectado* o
+*Ausente*) y **Alias**. **Dispositivos integrados** es una lista de solo lectura de los mandos que Frontier
+incluye en el juego. **Comprobar de nuevo** vuelve a leer lo que está conectado.
+
+**Dos mandos del mismo modelo**, como un VKB Gladiator izquierdo y uno derecho, pueden informar el mismo
+identificador de hardware. El juego no puede distinguirlos, así que solo se lista uno, y un aviso encima de
+la lista lo indica. Ningún nombre lo arregla: da a uno de ellos otro identificador de producto (PID) en la
+herramienta de su fabricante, como VKBDevCfg para VKB, y vuelve a conectarlo.
+
+<a id="naming-a-controller"></a>
+
+### Poner nombre a un mando
+
+Cuando un mando no tiene nombre, **Pon nombre a tus mandos** te guía. Se ejecuta tras la configuración
+inicial y con **Comprobar de nuevo**, y puedes iniciarlo para un solo mando desde su engranaje. **Omitir**
+usa el nombre predeterminado.
+
+Un nombre usa las letras de la A a la Z, dígitos, `-` y `_`, y empieza por una letra, sin espacios ni
+acentos. No puede parecerse demasiado a uno ya usado. Los bindings que conocen el mando solo por su ID de
+hardware pasan al nombre nuevo al aplicar.
+
+### El Editor de dispositivos
+
+Pulsa el **engranaje** en la fila de un dispositivo para abrirlo.
+
+![Editor de dispositivos](images/ui-bindings-device-editor.png)
+
+- **Dispositivo**: el nombre, VID, PID, nombre del hardware y estado. Cambia aquí el nombre, y **Aplicar**
+  lo renombra en cada instalación y mueve los bindings que lo usan. Pulsa antes **Guardar**.
+- **Ejes**, **Botones**, **Hats**: escribe una etiqueta para cada entrada. Las pestañas solo aparecen para
+  los tipos de entrada que tiene el mando. Usa una entrada y su casilla **se ilumina**, para que veas cuál
+  es cuál, y los ejes muestran un medidor en vivo.
+
+**Guardar** conserva tus cambios para **Aplicar**; hasta entonces nada llega al juego. Si **Guardar** está gris, pasa el ratón por encima para ver por qué, por ejemplo un nombre con un espacio.
+
+- **Borrar** quita la entrada y las etiquetas del dispositivo de tus archivos del juego al aplicar. Si tus
+  bindings usan el mando, no se pierden: pasan a su ID de hardware, así que siguen funcionando mientras
+  esté conectado, pero pierden el nombre que le diste. (En un mando integrado de Frontier que renombraste,
+  vuelven al nombre propio del juego.) La pregunta te dice cuántos bindings se mueven y adónde.
+  **Deshacer borrado** los devuelve.
+- **Restablecer etiquetas** devuelve las etiquetas predeterminadas.
+
+En un dispositivo integrado de Frontier puedes cambiar las etiquetas. Para usar un nombre propio, conéctalo
+y escribe el nombre en la casilla: tu entrada va delante de la de Frontier, y al escribir de nuevo el nombre
+de Frontier vuelves atrás.
+
+### Cuando cambia tu hardware
+
+Si falta un mando con nombre que usan tus bindings, Vega te lo dice: sus bindings no se cargarán hasta que
+esté conectado. Una actualización de firmware también puede cambiar el ID de producto de un mando, y uno de
+repuesto tiene otro nuevo. BindForge puede detectarlo, y **¿Es el mismo mando?** pregunta cuál de los
+conectados es. Responde, y sus bindings lo seguirán al aplicar.
+
+> Los bindings se refieren a los botones por número. Si el repuesto es de otro modelo, algunos pueden acabar
+> en botones inesperados. **Revisar en el Bind Editor** te lleva directamente a ellos.
+
+---
+
 <a id="binding-profile"></a>
 
 ## Editor de bindings
@@ -131,22 +254,22 @@ con ese nombre.
 ![Editor de bindings](images/ui-tab-bindings-profile.png)
 
 La línea **Editando** de arriba indica el archivo de bindings que estás viendo. Para abrir otro, usa
-[Archivo de bindings](#bindings-file) en *Gestión de bindings*.
+[Archivo de bindings](#bindings-file) en *Gestión de archivos binds*.
 
 **Ritmo de entrada de teclas** es un deslizador **Rápido ↔ Lento** para la pausa que Elite Intel hace
 tras cada pulsación que envía al juego. Si el juego pierde pulsaciones en equipos más lentos (una macro
-que se ejecuta a medias, un panel que se abre en la pestaña equivocada), muévelo hacia **Lento**.
+que se ejecuta a medias, un panel que se abre en la pestaña equivocada), muévelo hacia **Lento**. El control deslizante está al pie del editor.
 
 Una sola fila de pestañas recorre el editor: **Todo**, **General**, **Nave**, **SRV** y **A pie**, cada
 una con su recuento, y luego **[Anomalías](#anomalies)** y **[Zonas muertas y
 sensibilidad](#dead-zones-and-sensitivity)**. Las pestañas de sección muestran todos los controles,
 agrupados bajo los encabezados del propio juego y en el mismo orden que su pantalla de Controles, para que
-puedas leer ambas a la vez.
+puedas leer ambas a la vez. Después viene **[Interruptores](#toggles)**.
 
 | Columna | Significado |
 |---------|-------------|
 | **Binding** | El control |
-| **Primario** / **Secundario** | Las dos ranuras que Elite Dangerous da a cada control, con tus propios nombres de mandos y botones. En una fila de eje, Primario es el eje y Secundario su dirección y zona muerta |
+| **Primario** / **Secundario** | Las dos ranuras que Elite Dangerous da a cada control. Cada una tiene una columna **Dispositivo** (*Teclado*, *Ratón* o tu nombre para un mando) y una columna **Entrada** (la tecla, o tu etiqueta para el botón). Una ranura vacía dice *No definido*. En una fila de eje, Primario es el eje y Secundario su dirección y zona muerta |
 | **Acceso IA** | Si Vega puede manejar este control (ver abajo) |
 | **Acción** | **Borrar** quita la tecla (o el eje) y deja intactas las asignaciones de mando y HOTAS. **Corregir** aparece en un control que Vega necesita y que no tiene tecla, y le da una libre y segura |
 
@@ -201,6 +324,8 @@ como máximo tres modificadores, entre botones mantenidos y teclas.
 Una entrada que ya tiene otro control no se puede asignar. La tarjeta nombra ese control, y **Guardar**
 sigue atenuado hasta que la liberes allí. Si un cambio fuera a quitar la última tecla de un control que
 Vega usa, el diálogo te avisa. **Guardar** conserva tus cambios, listos para **Aplicar**.
+
+Cada vez que guardas aparece *Guardado.*: marca **No volver a mostrar** para dejar de verlo.
 
 > **Los gamepads solo tienen soporte parcial por ahora.** Las palancas del gamepad todavía no se pueden
 > asignar aquí.
@@ -267,6 +392,14 @@ pulsa Enter.
 El deslizador cubre el mismo rango que el del juego. El número es el valor exacto, y la única forma de
 pasar de los límites del deslizador. Un valor que ya esté fuera se queda como está hasta que lo muevas.
 
+<a id="toggles"></a>
+
+### Interruptores
+
+Todos los ajustes de sí/no de tu archivo de bindings, como las opciones de vista libre, agrupados como los
+agrupa el juego. Cada uno es un botón que dice **Activado** o **Desactivado**: púlsalo para cambiarlo. Como
+todo cambio aquí, es una edición hasta que pulses **Aplicar**.
+
 <a id="auto-assign-vega-required-binds"></a>
 
 ### Autoasignar bindings requeridos por VEGA
@@ -330,7 +463,7 @@ el juego.
 
 <a id="binding-management"></a>
 
-## Gestión de bindings
+## Gestión de archivos binds
 
 Tus archivos, con dos pestañas propias: **Ubicaciones del juego** y **Copias del jugador**.
 
@@ -360,6 +493,13 @@ archivos `DeviceMappings.xml` y `.buttonMap`, y BindForge los mantiene idéntico
 **Añadir que falta** añade una instalación que BindForge no detectó. **Quitar** hace que BindForge deje de
 copiar o escribir en ella. Si mueves el juego, pulsa **Quitar** y luego **Añadir que falta**.
 
+En Linux, **Añadir que falta** pide después el prefijo de Wine de la instalación, la carpeta que contiene
+`drive_c`, para que BindForge encuentre los controles y diarios de esa copia.
+
+**Repetir la configuración inicial** vuelve a hacer la [configuración inicial](#the-first-time-you-open-it)
+en el acto, a partir de los archivos de tus carpetas del juego, con una copia de seguridad antes. No se
+escribe nada en el juego hasta que confirmes su resumen, y las ediciones sin aplicar se descartan.
+
 <a id="player-backups"></a>
 
 ### Copias del jugador
@@ -387,75 +527,14 @@ La columna **Motivo** indica por qué existe cada copia, y de eso depende cuánt
 | **Buscar archivo de copia de seguridad** | Restaura una copia que no está en la lista, como una que traes de otro ordenador |
 | **Eliminar** | Elimina definitivamente una de tus copias de *Usuario* |
 
+Si la copia de seguridad tiene una configuración de mandos distinta para cada copia del juego, **Restaurar**
+hace primero unas [preguntas](#make-your-game-copies-match), para que todas las copias tengan la misma.
+
 > **Restaura solo tus propias copias.** La copia de otro jugador contiene sus mandos, no los tuyos.
 
 **Ajustes de copia de seguridad** define adónde van las copias (**Guardar copias en**, con **Examinar...**
 y **Usar predeterminada**) y las dos reglas de conservación. Una carpeta dentro de una instalación del
 juego se rechaza, porque una actualización borraría tus copias con ella.
-
----
-
-<a id="alias-designer"></a>
-
-## Diseñador de alias
-
-![Diseñador de alias](images/ui-bindings-alias-designer.png)
-
-De fábrica, el juego conoce muchos mandos solo por un ID de hardware, y su pantalla de Controles muestra
-sus botones como números anónimos. El Diseñador de alias da a cada mando un nombre real, y a cada botón,
-eje y hat la etiqueta que elijas. Las etiquetas aparecen en la pantalla de Controles del juego y en el
-Editor de bindings.
-
-**Mis dispositivos** muestra tus mandos: **Dispositivo**, **VID / PID**, **Estado** (*Conectado* o
-*Ausente*) y **Alias**. **Dispositivos integrados** es una lista de solo lectura de los mandos que Frontier
-incluye en el juego. **Comprobar de nuevo** vuelve a leer lo que está conectado.
-
-<a id="naming-a-controller"></a>
-
-### Poner nombre a un mando
-
-Cuando un mando no tiene nombre, **Pon nombre a tus mandos** te guía. Se ejecuta tras la configuración
-inicial y con **Comprobar de nuevo**, y puedes iniciarlo para un solo mando desde su engranaje. **Omitir**
-usa el nombre predeterminado.
-
-Un nombre usa las letras de la A a la Z, dígitos, `-` y `_`, y empieza por una letra, sin espacios ni
-acentos. No puede parecerse demasiado a uno ya usado. Los bindings que conocen el mando solo por su ID de
-hardware pasan al nombre nuevo al aplicar.
-
-### El Editor de dispositivos
-
-Pulsa el **engranaje** en la fila de un dispositivo para abrirlo.
-
-![Editor de dispositivos](images/ui-bindings-device-editor.png)
-
-- **Dispositivo**: el nombre, VID, PID, nombre del hardware y estado. Cambia aquí el nombre, y **Aplicar**
-  lo renombra en cada instalación y mueve los bindings que lo usan.
-- **Ejes**, **Botones**, **Hats**: escribe una etiqueta para cada entrada. Las pestañas solo aparecen para
-  los tipos de entrada que tiene el mando. Usa una entrada y su casilla **se ilumina**, para que veas cuál
-  es cuál, y los ejes muestran un medidor en vivo.
-
-**Guardar** conserva tus cambios para **Aplicar**; hasta entonces nada llega al juego.
-
-- **Borrar** quita la entrada y las etiquetas del dispositivo de tus archivos del juego al aplicar. Si tus
-  bindings usan el mando, no se pierden: pasan a su ID de hardware, así que siguen funcionando mientras
-  esté conectado, pero pierden el nombre que le diste. (En un mando integrado de Frontier que renombraste,
-  vuelven al nombre propio del juego.) La pregunta te dice cuántos bindings se mueven y adónde.
-  **Deshacer borrado** los devuelve.
-- **Restablecer etiquetas** devuelve las etiquetas predeterminadas.
-
-En un dispositivo integrado de Frontier puedes cambiar las etiquetas. Para usar un nombre propio, conéctalo
-y escribe el nombre en la casilla: tu entrada va delante de la de Frontier, y al escribir de nuevo el nombre
-de Frontier vuelves atrás.
-
-### Cuando cambia tu hardware
-
-Si falta un mando con nombre que usan tus bindings, Vega te lo dice: sus bindings no se cargarán hasta que
-esté conectado. Una actualización de firmware también puede cambiar el ID de producto de un mando, y uno de
-repuesto tiene otro nuevo. BindForge puede detectarlo, y **¿Es el mismo mando?** pregunta cuál de los
-conectados es. Responde, y sus bindings lo seguirán al aplicar.
-
-> Los bindings se refieren a los botones por número. Si el repuesto es de otro modelo, algunos pueden acabar
-> en botones inesperados. **Revisar en el Bind Editor** te lleva directamente a ellos.
 
 ---
 

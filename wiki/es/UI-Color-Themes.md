@@ -92,11 +92,11 @@ los incluye.
 
 ## Descargar más temas
 
-Nueve temas más para probar. Descarga uno y luego, en **Comandante → Temas de color**, haz clic en **Importar**,
+Diez temas más para probar. Descarga uno y luego, en **Comandante → Temas de color**, haz clic en **Importar**,
 elige el archivo y pulsa **Aplicar**. Están hechos por su aspecto: no están ajustados
 para el daltonismo. **Gazette**, **Salt Flat** y **Sunny** son temas claros.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Descargar los nueve (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Descargar los diez (zip)</a>
 
 Descomprímelo primero: **Importar** acepta un archivo de tema cada vez.
 
@@ -135,6 +135,12 @@ Tinta negra sobre papel blanco, como un periódico. <a href="themes/Gazette.json
 ![Tema Halloween](images/theme-halloween.png)
 
 Naranja calabaza sobre marrón oscuro. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Islands
+
+![Tema Islands](images/theme-islands.png)
+
+Azul acero sobre gris azulado oscuro. <a href="themes/Islands.json" download>⬇ Islands.json</a>
 
 ### Manjaro
 

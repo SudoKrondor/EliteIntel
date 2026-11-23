@@ -90,10 +90,10 @@ Made one you like? Share it on [**Matrix**](https://app.element.io/#/room/#krond
 
 ## Download more themes
 
-Nine more themes to try. Download one, then on **Commander → Color Themes** click **Import**, choose the file,
+Ten more themes to try. Download one, then on **Commander → Color Themes** click **Import**, choose the file,
 and **Apply**. These are made for looks: they are not tuned for color blindness. **Gazette**, **Salt Flat** and **Sunny** are light themes.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Download all nine (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Download all ten (zip)</a>
 
 Unzip it first: **Import** takes one theme file at a time.
 
@@ -132,6 +132,12 @@ Black ink on white paper, like a newspaper. <a href="themes/Gazette.json" downlo
 ![Halloween theme](images/theme-halloween.png)
 
 Pumpkin orange on dark brown. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Islands
+
+![Islands theme](images/theme-islands.png)
+
+Steel blue on dark blue-grey. <a href="themes/Islands.json" download>⬇ Islands.json</a>
 
 ### Manjaro
 

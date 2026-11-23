@@ -92,11 +92,11 @@
 
 ## Загрузить ещё темы
 
-Ещё девять тем на пробу. Загрузите одну, затем в **Командир → Цветовые темы** нажмите **Импорт**, выберите файл
+Ещё десять тем на пробу. Загрузите одну, затем в **Командир → Цветовые темы** нажмите **Импорт**, выберите файл
 и нажмите **Применить**. Эти темы сделаны ради внешнего вида: они не подобраны
 для нарушений цветового зрения. **Gazette**, **Salt Flat** и **Sunny** — светлые темы.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Загрузить все девять (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Загрузить все десять (zip)</a>
 
 Сначала распакуйте архив: **Импорт** принимает один файл темы за раз.
 
@@ -135,6 +135,12 @@
 ![Тема Halloween](images/theme-halloween.png)
 
 Тыквенно-оранжевый на тёмно-коричневом. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Islands
+
+![Тема Islands](images/theme-islands.png)
+
+Стальной синий на тёмном сине-сером. <a href="themes/Islands.json" download>⬇ Islands.json</a>
 
 ### Manjaro
 

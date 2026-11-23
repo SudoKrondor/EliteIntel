@@ -1,8 +1,7 @@
 # Pestaña Servicios
 
 <img src="images/services.png" class="inline" height="20" alt="Servicios"> La fontanería. El selector de
-**Idioma** vale para todo y está arriba, y después hay tres subpestañas: **Servicios de IA**, **Audio** y **Push To
-Talk**. El pie contiene [**Copia de ajustes y datos**](#backup-settings-and-data), **Restaurar...** y el botón de
+**Idioma** vale para todo y está arriba, y después hay tres subpestañas: **Servicios de IA**, **Audio** y **Push To Talk y otros ajustes**. El pie contiene [**Copia de ajustes y datos**](#backup-settings-and-data), **Restaurar...** y el botón de
 actualización — *La aplicación está actualizada* o *Actualización disponible*.
 
 ---
@@ -189,7 +188,7 @@ demasiado pequeña para trabajar.
 
 ---
 
-## Push To Talk
+## Push To Talk y otros ajustes
 
 ![Push to Talk](images/ui-tab-settings-push-to-talk.png)
 
@@ -209,6 +208,14 @@ tienes que esperar a que termine.
 Mientras Push to Talk está activo, el botón **DORMIR / DESPERTAR** de la pestaña Vega está
 desactivado — el botón es la puerta. Un cambio aquí surte efecto en la siguiente pulsación, y el
 botón funciona tanto si abres esta pestaña como si no.
+
+<a id="warnings"></a>
+
+### Avisos
+
+Algunos avisos, como la confirmación y el informe de Aplicar de BindForge, tienen una casilla **No volver a
+mostrar**. **Restablecer avisos** vuelve a mostrar todos los que ocultaste. Está en gris mientras no hay
+nada oculto.
 
 ---
 

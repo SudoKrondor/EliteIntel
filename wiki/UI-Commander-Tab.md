@@ -140,6 +140,7 @@ immediately. Useful for everyone, and genuinely enabling for commanders with dis
 | **Auto gear up on take off** | Raises gear after lifting off |
 | **Auto lights off for SRV deployment** | Kills lights when you deploy the SRV |
 | **Auto plot next neutron jump on cone boost** | On a [neutron route](AllCommands), plots the next neutron waypoint as soon as you have boosted through the cone |
+| **Use the game's FSD toggle for FTL** | Off by default. With it on, both *supercruise* and *jump* press the game's **Toggle Frame Shift Drive** control, so the game decides: with a system targeted you jump, with nothing targeted you enter supercruise. Bind that control first. New to Elite Dangerous? Leave this off |
 
 ---
 

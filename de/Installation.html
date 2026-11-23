@@ -142,6 +142,50 @@ was fehlt — es lohnt sich aber, das vorab zu erledigen:</p>
 </tr>
 </tbody></table>
 <hr>
+<h2>Was Elite Intel für dich einrichtet</h2>
+<p>Drei Dinge, die du bei einer frischen Installation vorab kennen solltest.</p>
+<h3>LM Studio, für dich installiert</h3>
+<p>Nutzt du LM Studio nur für Elite Intel, <strong>lass Elite Intel es installieren. Das ist der empfohlene
+Weg.</strong> Drücke <strong>LM Studio installieren</strong> unter <a href="UI-Settings-Tab.html">Dienste → KI-Dienste</a> →
+<strong>LMStudio</strong>. Elite Intel installiert LM Studio, lädt das Modell herunter und lädt es, testet es und
+trägt <strong>Adresse</strong> und <strong>Modell</strong> für dich ein. Danach startet es LM Studio mit seinen Diensten und
+beendet es, wenn du sie stoppst oder die App schließt – das Modell belegt den Speicher deiner
+Grafikkarte also nur, solange Elite Intel läuft. <strong>LM Studio deinstallieren</strong> entfernt es wieder.</p>
+<p>Die Schaltfläche erscheint nur, wenn deine Grafikkarten Spiel und Modell zusammen fassen: eine NVIDIA
+RTX 3090 mit 24 GB oder besser, zwei neuere NVIDIA-Karten mit zusammen etwa 20 GB oder AMD-Karten mit
+gleich viel Speicher, als Beta. Details stehen in der <a href="installing-local-llms.html">Lokale LLM-Anleitung</a>.
+Nutzt du LM Studio auch für anderes, installiere es selbst: Elite Intel fügt dann nur das Modell hinzu
+und füllt die Felder aus, und startet, stoppt oder entfernt dein LM Studio nie.</p>
+<h3>Dein HOTAS, deine Joysticks und Pedale</h3>
+<p>Wenn du den <a href="UI-Bindings-Tab.html">Reiter BindForge</a> zum ersten Mal öffnest, sichert er deine
+Steuerungsdateien, findet jede Kopie des Spiels auf diesem PC und schaut, was angeschlossen ist. Ab
+Werk kennt das Spiel viele Controller nur über eine Hardware-ID. BindForge bietet jedem Controller
+ohne Namen einen echten an, etwa <em>Throttle</em> oder <em>Pedals</em>, und du kannst das <strong>Überspringen</strong>.</p>
+<p><img src="../images/ui-bindings-alias-designer.png" alt="Benannte Controller im Alias-Designer"></p>
+<p>Später drückst du im <a href="UI-Bindings-Tab#alias-designer">Alias-Designer</a> das <strong>Zahnrad</strong> eines
+Controllers, um seine Tasten, Achsen und Hats zu beschriften. Drückst du eine Taste, leuchtet ihr Feld
+auf – so siehst du, welche welche ist. Die Beschriftungen erscheinen im Steuerungsbildschirm des Spiels
+und im Bindungseditor.</p>
+<p><img src="../images/ui-bindings-device-editor.png" alt="Tastenbeschriftungen im Geräte-Editor"></p>
+<h3>Das Spiel aus mehr als einem Shop</h3>
+<p>Du hast Elite Dangerous bei Steam und bei Epic? Alle Kopien teilen sich eine Steuerung, aber jede führt
+ihre eigene Liste deiner Controller und Tastennamen. Weichen die Listen voneinander ab, kann deine
+Steuerung in der einen Kopie funktionieren und in der anderen auf Tastatur und Maus zurückfallen.
+BindForge erkennt das beim ersten Öffnen und bietet <strong>Spielkopien angleichen</strong> an:</p>
+<p><img src="../images/install-reconcile-welcome.png" alt="Spielkopien angleichen"></p>
+<ol>
+<li><strong>Anschließen</strong> – schließe die Controller an, mit denen du fliegst. Drückst du eine Taste,
+leuchtet ihre Zeile auf.</li>
+<li><strong>Wählen</strong> – beantworte ein paar kurze Fragen, etwa welchen Namen ein Controller behalten soll, den
+jede Kopie anders nennt. Deine Steuerung folgt dem gewählten Namen. Zu viele Fragen? <strong>Alles wie in
+einer meiner Kopien einrichten...</strong> richtet alles so ein wie in der Kopie, die du am meisten spielst.</li>
+<li><strong>Prüfen</strong> – sieh genau, was jede Kopie bekommt und warum, bevor sich etwas ändert.</li>
+</ol>
+<p><img src="../images/install-reconcile-check.png" alt="Ergebnis prüfen"></p>
+<p><strong>Bis zum letzten Schritt ändert sich nichts, und vorher wird alles gesichert.</strong> <strong>Nicht jetzt</strong> lässt
+deine Dateien unangetastet. Ändern sich später die Steuerungsdateien einer Kopie, etwa nach einem
+Spiel-Update, fragt BindForge nur <strong>Welche Einrichtung ist aktuell?</strong> und gleicht die anderen an.</p>
+<hr>
 <h3>Neu in Elite Dangerous?</h3>
 <p>Das Spiel legt seine Steuerungsdateien erst an, wenn du etwas geändert hast, und ohne sie kann Elite Intel
 dein Schiff nicht bedienen. Schließe dein Kommandantentraining ab und stelle dann im Spiel unter <em>Optionen →

@@ -2,7 +2,7 @@
 
 <img src="images/services.png" class="inline" height="20" alt="Services"> The plumbing. The
 **Language** selector applies everywhere and sits at the top, then three sub-tabs: **AI Services**,
-**Audio**, and **Push To Talk**. The footer holds [**Backup Settings & Data**](#backup-settings-and-data),
+**Audio**, and **Push To Talk and Other Settings**. The footer holds [**Backup Settings & Data**](#backup-settings-and-data),
 **Restore...** and the update button — *App is Up to Date* or *Update Available*.
 
 ---
@@ -191,7 +191,7 @@ work with.
 
 ---
 
-## Push To Talk
+## Push To Talk and Other Settings
 
 ![Push to talk](images/ui-tab-settings-push-to-talk.png)
 
@@ -211,6 +211,13 @@ have to wait for her to finish.
 While push-to-talk is on, the **SLEEP / WAKE UP** button on the Vega tab is disabled — the
 button is the gate. A change here takes effect on the very next press, and the button works
 whether or not you ever open this tab.
+
+<a id="warnings"></a>
+
+### Warnings
+
+Some notices, such as BindForge's Apply confirmation and report, have a **Don't show this again**
+box. **Reset warnings** shows every one you hid again. It is greyed out while nothing is hidden.
 
 ---
 

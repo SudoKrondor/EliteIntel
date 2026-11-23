@@ -94,12 +94,12 @@ Vous en avez créé un qui vous plaît ? Partagez-le sur [**Matrix**](https://ap
 
 ## Télécharger d'autres thèmes
 
-Neuf thèmes de plus à essayer. Téléchargez-en un, puis dans **Commandant → Thèmes de couleur** cliquez sur
+Dix thèmes de plus à essayer. Téléchargez-en un, puis dans **Commandant → Thèmes de couleur** cliquez sur
 **Importer**, choisissez le fichier, puis **Appliquer**. Ils sont faits pour le style : ils ne sont pas
 réglés pour le daltonisme. **Gazette**, **Salt Flat** et **Sunny** sont des
 thèmes clairs.
 
-<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Télécharger les neuf (zip)</a>
+<a class="btn-secondary" href="themes/all-themes.zip" download>⬇ Télécharger les dix (zip)</a>
 
 Décompressez-le d'abord : **Importer** prend un fichier de thème à la fois.
 
@@ -138,6 +138,12 @@ De l'encre noire sur papier blanc, comme un journal. <a href="themes/Gazette.jso
 ![Thème Halloween](images/theme-halloween.png)
 
 Orange citrouille sur brun foncé. <a href="themes/Halloween.json" download>⬇ Halloween.json</a>
+
+### Islands
+
+![Thème Islands](images/theme-islands.png)
+
+Bleu acier sur gris-bleu foncé. <a href="themes/Islands.json" download>⬇ Islands.json</a>
 
 ### Manjaro
 

@@ -142,6 +142,52 @@ missing — but they are worth doing up front:</p>
 </tr>
 </tbody></table>
 <hr>
+<h2>What Elite Intel sets up for you</h2>
+<p>Three things on a fresh install are worth knowing about before you start.</p>
+<h3>LM Studio, installed for you</h3>
+<p>If LM Studio is only for Elite Intel and nothing else, <strong>let Elite Intel install it. This is the
+preferred way.</strong> Press <strong>Install LM Studio</strong> under <a href="UI-Settings-Tab.html">Services → AI Services</a> →
+<strong>LMStudio Setup</strong>. Elite Intel installs LM Studio, downloads and loads the model, tests it, and fills
+in <strong>Address</strong> and <strong>Model</strong> for you. From then on it starts LM Studio with its services and stops it
+when you stop them or close the app, so the model uses your graphics card&#39;s memory only while Elite
+Intel runs. <strong>Uninstall LM Studio</strong> removes it again.</p>
+<p>The button appears only when your graphics cards can hold the game and the model together: an
+NVIDIA RTX 3090 with 24 GB or better, two newer NVIDIA cards with about 20 GB between them, or AMD
+cards with the same memory, as a beta. The <a href="installing-local-llms.html">Local LLM guide</a> has the details.
+If you use LM Studio for other things as well, install it yourself; Elite Intel then only adds the
+model and fills in the fields, and never starts, stops or removes your LM Studio.</p>
+<h3>Your HOTAS, joysticks and pedals</h3>
+<p>The first time you open the <a href="UI-Bindings-Tab.html">BindForge tab</a>, it backs up your control files, finds
+every copy of the game on this PC, and looks at what is plugged in. Out of the box, the game knows
+many controllers only by a hardware ID. BindForge offers each controller without a name a real one,
+such as <em>Throttle</em> or <em>Pedals</em>, and you can <strong>Skip</strong> it. Your named controllers are listed in the
+<a href="UI-Bindings-Tab#alias-designer">Alias Designer</a>:</p>
+<p><img src="images/ui-bindings-alias-designer.png" alt="Named controllers in the Alias Designer"></p>
+<p>Press a controller&#39;s <strong>gear</strong> to label its buttons, axes and hats: <em>Fire Primary</em> instead of
+<code>JOY_1</code>, <em>Pinky Button</em> instead of <code>JOY_5</code>. Press a button and its box lights up, so you can tell
+which one is which.</p>
+<p><img src="images/ui-bindings-device-editor.png" alt="Button labels in the Device Editor"></p>
+<p>The labels show in the game&#39;s Controls screen and in the Bind Editor, so a binding reads
+<em>VKB-Stick · 1st Hat Up</em> rather than a hardware ID and a button number.</p>
+<h3>The game from more than one store</h3>
+<p>Own Elite Dangerous on both Steam and Epic? All copies share one set of controls, but each keeps its
+own list of your controllers and button names. When the lists disagree, your controls can work in
+one copy and fall back to keyboard and mouse in another. BindForge spots this the first time you
+open it and offers <strong>Make your game copies match</strong>:</p>
+<p><img src="images/install-reconcile-welcome.png" alt="Make your game copies match"></p>
+<ol>
+<li><strong>Plug in</strong> — plug in the controllers you fly with. Press a button and its row lights up.</li>
+<li><strong>Choose</strong> — answer a few short questions, such as which name to keep for a controller each copy
+calls something different. Your controls follow whichever name you pick. Too many questions?
+<strong>Make everything like one of my copies...</strong> sets everything up the way the copy you play most
+has it.</li>
+<li><strong>Check</strong> — see exactly what every copy will have, and why, before anything changes.</li>
+</ol>
+<p><img src="images/install-reconcile-check.png" alt="Check the result"></p>
+<p><strong>Nothing changes until the last step, and everything is backed up first.</strong> <strong>Not now</strong> leaves your
+files alone. If one copy&#39;s control files change later, for example after a game update, BindForge
+asks only <strong>Which setup is current?</strong> and makes the others match.</p>
+<hr>
 <h3>New to Elite Dangerous?</h3>
 <p>The game creates its control files only after you have changed something, and Elite Intel cannot
 operate your ship without them. Complete your commander training, then in the game&#39;s <em>Options →

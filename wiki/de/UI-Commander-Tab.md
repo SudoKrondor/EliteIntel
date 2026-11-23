@@ -147,6 +147,7 @@ echte Erleichterung.
 | **Fahrwerk beim Start automatisch einfahren** | Fährt nach dem Abheben das Fahrwerk ein |
 | **Lichter beim SRV-Aussetzen automatisch ausschalten** | Schaltet die Lichter aus, wenn du den SRV aussetzt |
 | **Nächsten Neutronensprung beim Kegel-Boost automatisch plotten** | Auf einer [Neutronenroute](AllCommands) wird der nächste Neutronen-Wegpunkt geplottet, sobald du durch den Kegel geboostet hast |
+| **Das FSD-Umschalten des Spiels für Supercruise und Hyperraum verwenden** | Standardmäßig aus. Eingeschaltet drücken *Supercruise* und *Sprung* beide die Spielsteuerung **FSD umschalten**, und das Spiel entscheidet: Mit einem anvisierten System springst du, ohne Ziel gehst du in den Supercruise. Belege diese Steuerung zuerst. Neu in Elite Dangerous? Lass es aus |
 
 ---
 

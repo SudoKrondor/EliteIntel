@@ -116,20 +116,20 @@ label their buttons.</p>
 <td>Your User Configuration Folder, and the one <strong>Apply</strong> and <strong>Discard</strong> for everything on this tab</td>
 </tr>
 <tr>
+<td><strong><a href="#alias-designer">Alias Designer</a></strong></td>
+<td>Give your controllers real names and label their buttons, axes and hats</td>
+</tr>
+<tr>
 <td><strong><a href="#binding-profile">Bind Editor</a></strong></td>
-<td>Every control in the game, by section, with the <strong>Anomalies</strong> and <strong>Dead Zones &amp; Sensitivity</strong> views</td>
+<td>Every control in the game, by section, with the <strong>Anomalies</strong>, <strong>Dead Zones &amp; Sensitivity</strong> and <strong>Toggles</strong> views</td>
 </tr>
 <tr>
 <td><strong><a href="#preset-editor">Preset Editor</a></strong></td>
 <td>Which binds file the game loads for General, Ship, SRV and On-Foot controls</td>
 </tr>
 <tr>
-<td><strong><a href="#binding-management">Binding Management</a></strong></td>
+<td><strong><a href="#binding-management">Bind File Management</a></strong></td>
 <td>Your game installations, your binds files, and your backups</td>
-</tr>
-<tr>
-<td><strong><a href="#alias-designer">Alias Designer</a></strong></td>
-<td>Give your controllers real names and label their buttons, axes and hats</td>
 </tr>
 </tbody></table>
 <blockquote>
@@ -137,20 +137,44 @@ label their buttons.</p>
 needs a keyboard key for Vega to operate it. The <strong>AI access</strong> column shows you which ones do.</p>
 </blockquote>
 <hr>
+<p><a id="the-first-time-you-open-it"></a></p>
 <h2>The first time you open it</h2>
 <p>Before it changes anything, BindForge sets itself up once. <strong>Everything is backed up first, and that
 backup is kept forever.</strong></p>
 <ol>
 <li><strong>Confirm your installations.</strong> BindForge lists every copy of Elite Dangerous it found on this PC.
 Use <strong>Add Missing</strong> or <strong>Remove</strong> to correct the list, then <strong>Confirm</strong>.</li>
-<li><strong>Reconcile, if you need to.</strong> If your installations hold different device files, use one
-installation&#39;s files for all of them, or <strong>Merge</strong> and answer each row marked <em>choose</em>.</li>
+<li><strong>Make your game copies match, if you need to.</strong> If you have the game from more than one store
+and the copies disagree about your controllers, BindForge walks you through
+<a href="#make-your-game-copies-match">making them match</a>.</li>
 <li><strong>Create your working copy.</strong> BindForge makes its own copy of your control files. This is the copy
 you edit, and your game files stay untouched until you press <strong>Apply</strong>.</li>
 <li><strong>Name your controllers.</strong> Any attached controller without a name is offered
 <a href="#naming-a-controller">a name</a>. You can <strong>Skip</strong> this.</li>
 </ol>
-<p>Until you have finished, the first-time startup is offered again whenever you open the tab.</p>
+<p>Until you have finished, the first-time startup is offered again whenever you open the tab. To go
+through it again later, use <strong>Run First-Time Startup Again</strong> in
+<a href="#game-install-locations">Game Install Locations</a>.</p>
+<p><a id="make-your-game-copies-match"></a></p>
+<h3>Make your game copies match</h3>
+<p>All copies of the game share one set of controls, but each keeps its own list of your controllers and
+button names. When the lists disagree, your controls can work in one copy and fall back to keyboard
+and mouse in another. <strong>Make Your Game Copies Match</strong> fixes that in three steps:</p>
+<p><img src="images/install-reconcile-welcome.png" alt="Make your game copies match"></p>
+<ol>
+<li><strong>Plug in</strong> — plug in the controllers you fly with. The game loads your controls only when every
+controller they use is plugged in. Press a button and its row lights up.</li>
+<li><strong>Choose</strong> — answer a few short questions: which name to keep for a controller each copy calls
+something different, which controller a shared name belongs to, and whose button names to keep.
+Your controls follow the names you pick. <strong>Make everything like one of my copies...</strong> skips the
+questions and sets everything up the way one copy has it.</li>
+<li><strong>Check</strong> — see what every copy will have, and why, then press <strong>Make Both Copies Match</strong> (or
+<strong>Make All Copies Match</strong>).</li>
+</ol>
+<p><img src="images/install-reconcile-check.png" alt="Check the result"></p>
+<p>Nothing changes until the last step, and everything is backed up first. A controller that only one
+copy knows is added to the others, and an old second name the game never used is tidied away, with
+its controls moved to the name the game uses. <strong>Not now</strong> leaves your files as they are.</p>
 <h3>New to Elite Dangerous?</h3>
 <p>A brand new commander has no control files at all, and Vega tells you so. Complete your commander
 training, then in the game&#39;s <em>Options → Controls</em>, set the galaxy map UI movement to the arrow keys
@@ -164,8 +188,9 @@ restore a backup from <a href="#player-backups">Player Backups</a> instead.</p>
 <h2>The Apply bar</h2>
 <p>The bar above the sub-tabs holds the <strong>User Configuration Folder</strong> and the <strong>Discard</strong> and <strong>Apply</strong>
 buttons.</p>
-<p><strong>User Configuration Folder</strong> is where your <code>.binds</code> files and the preset file live, and every
-installation shares it. It is detected automatically. Use the <strong>⋮</strong> picker if yours is somewhere
+<p><strong>User Configuration Folder</strong> is where your <code>.binds</code> files and the preset file live, and on Windows
+every installation shares it (on Linux, see <a href="#several-installations-on-linux">below</a>). It is detected
+automatically. Use the <strong>⋮</strong> picker if yours is somewhere
 unusual.</p>
 <blockquote>
 <p><strong>&quot;Cannot find bindings&quot; with the right folder?</strong> Elite Dangerous does not write a <code>.binds</code> file
@@ -197,6 +222,20 @@ Controls screen after applying. Vega reminds you.</p>
 </blockquote>
 <p>If you leave the tab or close the app with edits not applied, you are asked to <strong>Apply</strong>,
 <strong>Discard</strong> or <strong>Go back</strong>.</p>
+<p><strong>Don&#39;t show this again.</strong> Apply&#39;s confirmation, Apply&#39;s report, first-time startup&#39;s report and the
+Bind Editor&#39;s <em>Saved.</em> each have this box. A report you have quieted still shows when it has a problem
+or news to tell you. <strong>Reset warnings</strong>, on <a href="UI-Settings-Tab#warnings">Services → Push To Talk and Other
+Settings</a>, brings them all back.</p>
+<p><a id="several-installations-on-linux"></a></p>
+<h3>Several installations on Linux</h3>
+<p>On Windows, every copy of the game reads its controls from one folder. On Linux, each copy runs in
+its own Wine or Proton prefix and keeps its own. With two or more of them, a <strong>Playing:</strong> list appears
+on the bar, left of the User Configuration Folder. It names the copy Elite Intel reads your controls
+and journals from, and it follows the game: start the game from another copy, and Elite Intel
+switches to it. You can also pick one by hand.</p>
+<p><strong>Apply</strong> writes your controls to every copy. A copy whose controls were changed outside BindForge
+is left as it is, and the report says so. Play that copy once, and BindForge offers its changes the
+next time you apply.</p>
 <p><a id="read-only"></a></p>
 <h3>Read only while an installation is missing</h3>
 <p>If one of your game installations cannot be found — usually because its drive is unplugged —
@@ -209,7 +248,9 @@ there, and when the missing one returns it is compared at the next start and you
 <h3>When the game changed your files</h3>
 <p>The game can change its own files, and a game update can reset them. BindForge compares them with its
 working copy the first time you open the tab in a session, and again at every Apply. If they differ,
-Vega tells you at startup, and the tab lists what changed and lets you choose:</p>
+Vega tells you at startup, and <strong>Your control files changed</strong> opens. It lists each file with what was
+found (<em>12 lines differ</em>, <em>Only in the game&#39;s folder</em>, <em>probably reset by a game update</em>) and what
+happens to it, and lets you choose:</p>
 <table>
 <thead>
 <tr>
@@ -230,8 +271,13 @@ Vega tells you at startup, and the tab lists what changed and lets you choose:</
 <td>The game&#39;s files replace your working copy</td>
 </tr>
 </tbody></table>
-<p>Everything is backed up before any of these writes, and you can close the warning to decide later.
+<p>Everything is backed up before any of these writes, and you can close the window to decide later.
 Closing it during an Apply cancels the Apply and keeps your edits.</p>
+<p><strong>When one copy&#39;s controllers changed.</strong> If one copy of the game now has a different controller setup
+from the one BindForge saved, the window asks only <strong>Which setup is current?</strong> Pick one of your copies,
+or <strong>What I saved in BindForge</strong>, and every copy and your controls are made to match it. You see the
+result before anything changes. <strong>Choose controller by controller...</strong> asks the
+<a href="#make-your-game-copies-match">questions</a> one at a time instead.</p>
 <p><strong>A new version of your binds file.</strong> Game updates sometimes save your binds file under a new name
 with new controls in it. BindForge never writes your old file over that one. If all your bindings
 carried over, you just <strong>Approve</strong> it. If some differ, <strong>Reconcile...</strong> keeps the new controls and
@@ -242,17 +288,72 @@ the check offers <strong>Tidy up</strong>. That moves them to <strong>Leftover U
 Nothing is deleted, and you can open that folder yourself. A binds file without a version is first
 copied into your files with a version in its name, unless you already have one by that name.</p>
 <hr>
+<p><a id="alias-designer"></a></p>
+<h2>Alias Designer</h2>
+<p><img src="images/ui-bindings-alias-designer.png" alt="Alias Designer"></p>
+<p>Out of the box, the game knows many controllers only by a hardware ID, and its Controls screen shows
+their buttons as anonymous numbers. The Alias Designer gives each controller a real name, and each
+button, axis and hat a label of your choice. The labels appear in the game&#39;s Controls screen and in
+the Bind Editor.</p>
+<p><strong>My Devices</strong> lists your controllers: <strong>Device</strong>, <strong>VID / PID</strong>, <strong>Status</strong> (<em>Attached</em> or
+<em>Missing</em>) and <strong>Alias</strong>. <strong>Built-in Devices</strong> is a read-only list of the controllers Frontier ships
+with the game. <strong>Check Again</strong> re-reads what is attached.</p>
+<p><strong>Two controllers of the same model</strong>, such as a left and a right VKB Gladiator, can report the same
+hardware ID. The game cannot tell them apart, so only one is listed, and a warning above the list
+says so. No name can fix this: give one of them a different product ID (PID) in its maker&#39;s tool,
+such as VKBDevCfg for VKB, and plug it in again.</p>
+<p><a id="naming-a-controller"></a></p>
+<h3>Naming a controller</h3>
+<p>When a controller has no name, <strong>Name your controllers</strong> walks you through naming it. It runs after
+first-time startup and on <strong>Check Again</strong>, and you can start it for a single controller from its
+gear icon. <strong>Skip</strong> takes the default name.</p>
+<p>A name uses the letters A to Z, digits, <code>-</code> and <code>_</code>, and must start with a letter, with no spaces or
+accents. It cannot be too close to a name already in use. Any bindings that know the controller only
+by its hardware ID move to the new name when you apply.</p>
+<h3>The Device Editor</h3>
+<p>Press the <strong>gear</strong> on a device&#39;s row to open it.</p>
+<p><img src="images/ui-bindings-device-editor.png" alt="Device Editor"></p>
+<ul>
+<li><strong>Device</strong> — the name, VID, PID, hardware name and status. Change the name here and <strong>Save</strong>;
+<strong>Apply</strong> then renames it in every installation and moves the bindings that use it.</li>
+<li><strong>Axes</strong>, <strong>Buttons</strong>, <strong>Hats</strong> — type a label for each input. Tabs appear only for the kinds of
+input the controller has. Use an input and its box <strong>lights up</strong>, so you can see which one is which,
+and axes show a live meter.</li>
+</ul>
+<p><strong>Save</strong> keeps your edits for <strong>Apply</strong>; nothing reaches the game until then. When <strong>Save</strong> is greyed
+out, hover over it to see why, such as a name with a space in it.</p>
+<ul>
+<li><strong>Clear</strong> removes the device&#39;s entry and labels from your game files when you apply. If your
+bindings use the controller, they are not lost: they move to its hardware ID, so they keep working
+while it is plugged in but lose your name for it. (On one of Frontier&#39;s built-in controllers that
+you renamed, they go back under the game&#39;s own name.) The question tells you how many bindings move
+and where. <strong>Undo Clear</strong> puts them back.</li>
+<li><strong>Reset Labels</strong> puts the default labels back.</li>
+</ul>
+<p>On one of Frontier&#39;s built-in devices you can change the labels. To use a name of your own, plug it
+in and type the name in the box: your entry goes ahead of Frontier&#39;s, and typing Frontier&#39;s name
+again goes back.</p>
+<h3>When your hardware changes</h3>
+<p>If a named controller your bindings use is missing, Vega tells you: its bindings will not load until
+it is connected. A firmware update can also change a controller&#39;s product ID, and
+a replacement has a new one. BindForge can spot this, and <strong>Is this the same controller?</strong> asks which
+attached controller it is. Answer, and its bindings follow it when you apply.</p>
+<blockquote>
+<p>Bindings refer to buttons by number. If the replacement is a different model, some bindings may end
+up on unexpected buttons. <strong>Review in Bind Editor</strong> takes you straight to them.</p>
+</blockquote>
+<hr>
 <p><a id="binding-profile"></a></p>
 <h2>Bind Editor</h2>
 <p><img src="images/ui-tab-bindings-profile.png" alt="Bind Editor"></p>
 <p>The <strong>Editing</strong> line at the top names the binds file you are looking at. To open a different one, use
-<a href="#bindings-file">Bindings File</a> under <em>Binding Management</em>.</p>
-<p><strong>Key Input Pacing</strong> is a <strong>Fast ↔ Slow</strong> slider for the pause Elite Intel holds after each keystroke
+<a href="#bindings-file">Bindings File</a> under <em>Bind File Management</em>.</p>
+<p><strong>Key Input Pacing</strong>, at the foot of the editor, is a <strong>Fast ↔ Slow</strong> slider for the pause Elite Intel holds after each keystroke
 it sends to the game. If the game drops keystrokes on slower hardware — a macro that only half-runs,
 a panel that opens on the wrong tab — move it towards <strong>Slow</strong>.</p>
 <p>One row of tabs runs across the editor: <strong>All</strong>, <strong>General</strong>, <strong>Ship</strong>, <strong>SRV</strong> and <strong>On-Foot</strong>, each
 with a count, then <strong><a href="#anomalies">Anomalies</a></strong> and <strong><a href="#dead-zones-and-sensitivity">Dead Zones &amp;
-Sensitivity</a></strong>. The section tabs show every control, grouped under the
+Sensitivity</a></strong> and <strong><a href="#toggles">Toggles</a></strong>. The section tabs show every control, grouped under the
 game&#39;s own headings and in the same order as its Controls screen, so you can read the two side by side.</p>
 <table>
 <thead>
@@ -267,7 +368,7 @@ game&#39;s own headings and in the same order as its Controls screen, so you can
 </tr>
 <tr>
 <td><strong>Primary</strong> / <strong>Secondary</strong></td>
-<td>The two slots Elite Dangerous gives every control, showing your own names for controllers and buttons. On an axis row, Primary is the axis and Secondary its direction and dead zone</td>
+<td>The two slots Elite Dangerous gives every control. Each has a <strong>Device</strong> column (<em>Keyboard</em>, <em>Mouse</em> or your name for a controller) and an <strong>Input</strong> column (the key, or your label for the button). An empty slot reads <em>Not defined</em>. On an axis row, Primary is the axis and Secondary its direction and dead zone</td>
 </tr>
 <tr>
 <td><strong>AI access</strong></td>
@@ -338,7 +439,8 @@ still be bound by clicking its inputs, and one you plug in while the dialog is o
 A slot holds at most three modifiers — held buttons and keys together.</p>
 <p>An input another control already holds cannot be assigned. The card names that control, and <strong>Save</strong>
 stays dimmed until you free it there. If a change would take away the last keyboard key on a control
-Vega uses, the dialog warns you. <strong>Save</strong> keeps your changes as edits, ready for <strong>Apply</strong>.</p>
+Vega uses, the dialog warns you. <strong>Save</strong> keeps your changes as edits, ready for <strong>Apply</strong>, and says
+<em>Saved.</em> — tick <strong>Don&#39;t show this again</strong> to stop that.</p>
 <blockquote>
 <p><strong>Gamepads are only partly supported so far.</strong> Gamepad sticks cannot be assigned here yet.</p>
 </blockquote>
@@ -386,6 +488,11 @@ closes the game or leaves your session.</li>
 them. Each has a slider and a number beside it. Drag the slider, or type a number and press Enter.</p>
 <p>The slider covers the same range as the game&#39;s own slider. The number is the exact value, and it is
 the only way past the slider&#39;s limits. A value already outside them stays as it is until you move it.</p>
+<p><a id="toggles"></a></p>
+<h3>Toggles</h3>
+<p>Every on/off setting your binds file holds, such as the game&#39;s toggle and headlook options, grouped
+the way the game groups them. Each is a button reading <strong>On</strong> or <strong>Off</strong>: press it to switch. Like
+every change here, it is an edit until you <strong>Apply</strong>.</p>
 <p><a id="auto-assign-vega-required-binds"></a></p>
 <h3>Auto-Assign VEGA Required Binds</h3>
 <p>One button that gives a safe, layout-friendly keyboard key to every control <strong>Vega presses</strong> that has
@@ -435,7 +542,7 @@ startup — route plotting is the usual casualty, because the galaxy map keys ma
 is using.</p>
 <hr>
 <p><a id="binding-management"></a></p>
-<h2>Binding Management</h2>
+<h2>Bind File Management</h2>
 <p>Your files, with two tabs of its own: <strong>Game Install Locations</strong> and <strong>Player Backups</strong>.</p>
 <p><a id="game-install-locations"></a></p>
 <h3>Game Install Locations</h3>
@@ -474,8 +581,13 @@ like any other, and it reaches the game when you press <strong>Apply</strong>.</
 <td><em>Matches</em> or <em>Differs</em> from your working copy, or <em>Not found</em></td>
 </tr>
 </tbody></table>
-<p><strong>Add Missing</strong> adds an installation BindForge did not detect. <strong>Remove</strong> stops BindForge backing up
-or writing to one. If you move the game, press <strong>Remove</strong>, then <strong>Add Missing</strong>.</p>
+<p><strong>Add Missing</strong> adds an installation BindForge did not detect. On Linux it then asks for the
+installation&#39;s Wine prefix, the folder holding <code>drive_c</code>, so BindForge can find that copy&#39;s controls
+and journals. <strong>Remove</strong> stops BindForge backing up or writing to one. If you move the game, press
+<strong>Remove</strong>, then <strong>Add Missing</strong>.</p>
+<p><strong>Run First-Time Startup Again</strong> goes through <a href="#the-first-time-you-open-it">first-time startup</a>
+again straight away, from the files in your game folders, with a backup first. Nothing is written to
+the game until you confirm its summary, and any edits not applied are thrown away.</p>
 <p><a id="player-backups"></a></p>
 <h3>Player Backups</h3>
 <p><img src="images/ui-tab-bindings-management.png" alt="Player backups"></p>
@@ -537,62 +649,14 @@ installation.</p>
 <td>Delete one of your own <em>User</em> backups permanently</td>
 </tr>
 </tbody></table>
+<p>If the backup holds a different controller setup for each copy of the game, <strong>Restore</strong> asks a few
+<a href="#make-your-game-copies-match">questions</a> first, so every copy gets the same one.</p>
 <blockquote>
 <p><strong>Only restore your own backups.</strong> A backup from another player holds their controllers, not yours.</p>
 </blockquote>
 <p><strong>Backup Settings</strong> sets where backups go (<strong>Backups go to</strong>, with <strong>Browse...</strong> and <strong>Use Default</strong>)
 and the two retention rules. A folder inside a game installation is refused, because a game update
 would delete your backups along with it.</p>
-<hr>
-<p><a id="alias-designer"></a></p>
-<h2>Alias Designer</h2>
-<p><img src="images/ui-bindings-alias-designer.png" alt="Alias Designer"></p>
-<p>Out of the box, the game knows many controllers only by a hardware ID, and its Controls screen shows
-their buttons as anonymous numbers. The Alias Designer gives each controller a real name, and each
-button, axis and hat a label of your choice. The labels appear in the game&#39;s Controls screen and in
-the Bind Editor.</p>
-<p><strong>My Devices</strong> lists your controllers: <strong>Device</strong>, <strong>VID / PID</strong>, <strong>Status</strong> (<em>Attached</em> or
-<em>Missing</em>) and <strong>Alias</strong>. <strong>Built-in Devices</strong> is a read-only list of the controllers Frontier ships
-with the game. <strong>Check Again</strong> re-reads what is attached.</p>
-<p><a id="naming-a-controller"></a></p>
-<h3>Naming a controller</h3>
-<p>When a controller has no name, <strong>Name your controllers</strong> walks you through naming it. It runs after
-first-time startup and on <strong>Check Again</strong>, and you can start it for a single controller from its
-gear icon. <strong>Skip</strong> takes the default name.</p>
-<p>A name uses the letters A to Z, digits, <code>-</code> and <code>_</code>, and must start with a letter, with no spaces or
-accents. It cannot be too close to a name already in use. Any bindings that know the controller only
-by its hardware ID move to the new name when you apply.</p>
-<h3>The Device Editor</h3>
-<p>Press the <strong>gear</strong> on a device&#39;s row to open it.</p>
-<p><img src="images/ui-bindings-device-editor.png" alt="Device Editor"></p>
-<ul>
-<li><strong>Device</strong> — the name, VID, PID, hardware name and status. Change the name here, and <strong>Apply</strong>
-renames it in every installation and moves the bindings that use it.</li>
-<li><strong>Axes</strong>, <strong>Buttons</strong>, <strong>Hats</strong> — type a label for each input. Tabs appear only for the kinds of
-input the controller has. Use an input and its box <strong>lights up</strong>, so you can see which one is which,
-and axes show a live meter.</li>
-</ul>
-<p><strong>Save</strong> keeps your edits for <strong>Apply</strong>; nothing reaches the game until then.</p>
-<ul>
-<li><strong>Clear</strong> removes the device&#39;s entry and labels from your game files when you apply. If your
-bindings use the controller, they are not lost: they move to its hardware ID, so they keep working
-while it is plugged in but lose your name for it. (On one of Frontier&#39;s built-in controllers that
-you renamed, they go back under the game&#39;s own name.) The question tells you how many bindings move
-and where. <strong>Undo Clear</strong> puts them back.</li>
-<li><strong>Reset Labels</strong> puts the default labels back.</li>
-</ul>
-<p>On one of Frontier&#39;s built-in devices you can change the labels. To use a name of your own, plug it
-in and type the name in the box: your entry goes ahead of Frontier&#39;s, and typing Frontier&#39;s name
-again goes back.</p>
-<h3>When your hardware changes</h3>
-<p>If a named controller your bindings use is missing, Vega tells you: its bindings will not load until
-it is connected. A firmware update can also change a controller&#39;s product ID, and
-a replacement has a new one. BindForge can spot this, and <strong>Is this the same controller?</strong> asks which
-attached controller it is. Answer, and its bindings follow it when you apply.</p>
-<blockquote>
-<p>Bindings refer to buttons by number. If the replacement is a different model, some bindings may end
-up on unexpected buttons. <strong>Review in Bind Editor</strong> takes you straight to them.</p>
-</blockquote>
 <hr>
 <p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

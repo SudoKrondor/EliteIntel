@@ -144,6 +144,7 @@ situation de handicap.
 | **Rentrer le train au décollage** | Rentre le train après le décollage |
 | **Éteindre les lumières au déploiement du SRV** | Éteint les lumières quand vous déployez le SRV |
 | **Tracer le prochain saut neutronique lors du boost dans le cône** | Sur une [route neutronique](AllCommands), trace le prochain point neutronique dès que vous avez traversé le cône en boost |
+| **Utiliser la bascule FSD du jeu pour la supercroisière et l'hyperespace** | Désactivé par défaut. Activé, *supercroisière* et *saut* appuient tous deux sur la commande **Basculer le FSD** du jeu, et c'est le jeu qui décide : avec un système ciblé, vous sautez ; sans cible, vous entrez en supercroisière. Assignez d'abord cette commande. Nouveau dans Elite Dangerous ? Laissez-le désactivé |
 
 ---
 

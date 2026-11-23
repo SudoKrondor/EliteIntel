@@ -1,8 +1,7 @@
 # Onglet Services
 
 <img src="images/services.png" class="inline" height="20" alt="Services"> La tuyauterie. Le sélecteur de **Langue**
-s'applique partout et se trouve en haut, puis viennent trois sous-onglets : **Services IA**, **Audio** et **Appuyer pour
-parler**. Le pied de page contient [**Sauvegarder paramètres et données**](#backup-settings-and-data), **Restaurer...** et
+s'applique partout et se trouve en haut, puis viennent trois sous-onglets : **Services IA**, **Audio** et **Appuyer pour parler et autres réglages**. Le pied de page contient [**Sauvegarder paramètres et données**](#backup-settings-and-data), **Restaurer...** et
 le bouton de mise à jour — *L'application est à jour* ou *Mise à jour disponible*.
 
 ---
@@ -190,7 +189,7 @@ faible pour travailler.
 
 ---
 
-## Push To Talk
+## Appuyer pour parler et autres réglages
 
 ![Push to Talk](images/ui-tab-settings-push-to-talk.png)
 
@@ -210,6 +209,14 @@ donc jamais à attendre qu'elle ait fini.
 Tant que le Push to Talk est actif, le bouton **DORMIR / SE RÉVEILLER** de l'onglet Vega est
 désactivé — le bouton est la porte. Un changement ici s'applique dès l'appui suivant, et le bouton
 fonctionne que vous ouvriez cet onglet ou non.
+
+<a id="warnings"></a>
+
+### Avertissements
+
+Certains avis, comme la confirmation et le rapport d'Appliquer de BindForge, ont une case **Ne plus
+afficher**. **Réinitialiser les avertissements** fait revenir tous ceux que vous avez masqués. Le bouton est
+grisé tant que rien n'est masqué.
 
 ---
 

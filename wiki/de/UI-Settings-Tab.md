@@ -2,7 +2,7 @@
 
 <img src="images/services.png" class="inline" height="20" alt="Dienste"> Der Unterbau. Die Auswahl
 **Sprache** gilt überall und sitzt ganz oben, dann folgen drei Unterreiter: **KI-Dienste**, **Audio** und
-**Push To Talk**. Die Fußzeile enthält [**Einstellungen & Daten sichern**](#backup-settings-and-data),
+**Push To Talk und weitere Einstellungen**. Die Fußzeile enthält [**Einstellungen & Daten sichern**](#backup-settings-and-data),
 **Wiederherstellen...** und den Update-Knopf — *App ist auf dem neuesten Stand* oder *Update verfügbar*.
 
 ---
@@ -193,7 +193,7 @@ klein ist, um damit zu arbeiten.
 
 ---
 
-## Push To Talk
+## Push To Talk und weitere Einstellungen
 
 ![Push to Talk](images/ui-tab-settings-push-to-talk.png)
 
@@ -213,6 +213,14 @@ also nie warten, bis sie fertig ist.
 Solange Push-to-Talk aktiv ist, ist der Knopf **SCHLAFEN / AUFWACHEN** im Vega-Reiter gesperrt —
 die Taste ist das Tor. Eine Änderung hier wirkt beim nächsten Druck, und die Taste funktioniert,
 ob du diesen Reiter je öffnest oder nicht.
+
+<a id="warnings"></a>
+
+### Warnungen
+
+Manche Hinweise, etwa die Bestätigung und der Bericht von Anwenden in BindForge, haben ein Kästchen
+**Nicht mehr anzeigen**. **Warnungen zurücksetzen** zeigt alle ausgeblendeten wieder an. Solange nichts
+ausgeblendet ist, ist die Schaltfläche ausgegraut.
 
 ---
 

@@ -116,20 +116,20 @@ deine Controller benennen und ihre Tasten beschriften.</p>
 <td>Dein Benutzerkonfigurationsordner und das eine <strong>Anwenden</strong> und <strong>Verwerfen</strong> für alles in diesem Reiter</td>
 </tr>
 <tr>
+<td><strong><a href="#alias-designer">Alias-Designer</a></strong></td>
+<td>Gib deinen Controllern echte Namen und beschrifte ihre Tasten, Achsen und Hats</td>
+</tr>
+<tr>
 <td><strong><a href="#binding-profile">Bindungseditor</a></strong></td>
-<td>Jede Steuerung des Spiels, nach Abschnitten, mit den Ansichten <strong>Anomalien</strong> und <strong>Totzonen &amp; Empfindlichkeit</strong></td>
+<td>Jede Steuerung des Spiels, nach Abschnitten, mit den Ansichten <strong>Anomalien</strong>, <strong>Totzonen &amp; Empfindlichkeit</strong> und <strong>Schalter</strong></td>
 </tr>
 <tr>
 <td><strong><a href="#preset-editor">Preset-Editor</a></strong></td>
 <td>Welche Belegungsdatei das Spiel für die Steuerung Allgemein, Schiff, SRV und Zu Fuß lädt</td>
 </tr>
 <tr>
-<td><strong><a href="#binding-management">Bindungsverwaltung</a></strong></td>
+<td><strong><a href="#binding-management">Bind-Dateiverwaltung</a></strong></td>
 <td>Deine Spielinstallationen, deine Belegungsdateien und deine Sicherungen</td>
-</tr>
-<tr>
-<td><strong><a href="#alias-designer">Alias-Designer</a></strong></td>
-<td>Gib deinen Controllern echte Namen und beschrifte ihre Tasten, Achsen und Hats</td>
 </tr>
 </tbody></table>
 <blockquote>
@@ -138,6 +138,7 @@ Vega eine Steuerung bedienen kann, braucht sie eine Tastaturtaste. Die Spalte <s
 dir, bei welchen das so ist.</p>
 </blockquote>
 <hr>
+<p><a id="the-first-time-you-open-it"></a></p>
 <h2>Beim ersten Öffnen</h2>
 <p>Bevor BindForge etwas ändert, richtet es sich einmal ein. <strong>Vorher wird alles gesichert, und diese
 Sicherung wird für immer aufbewahrt.</strong></p>
@@ -145,15 +146,38 @@ Sicherung wird für immer aufbewahrt.</strong></p>
 <li><strong>Installationen bestätigen.</strong> BindForge listet jede Kopie von Elite Dangerous auf, die es auf
 diesem PC gefunden hat. Korrigiere die Liste mit <strong>Fehlende hinzufügen</strong> oder <strong>Entfernen</strong> und
 drücke dann <strong>Bestätigen</strong>.</li>
-<li><strong>Abgleichen, falls nötig.</strong> Enthalten deine Installationen unterschiedliche Gerätedateien, nimm
-die Dateien einer Installation für alle, oder wähle <strong>Zusammenführen</strong> und beantworte jede Zeile,
-die mit <em>wählen</em> markiert ist.</li>
+<li><strong>Spielkopien angleichen, falls nötig.</strong> Hast du das Spiel aus mehr als einem Shop und sind sich die
+Kopien bei deinen Controllern uneinig, führt dich BindForge durch das
+<a href="#make-your-game-copies-match">Angleichen</a>.</li>
 <li><strong>Arbeitskopie erstellen.</strong> BindForge legt eine eigene Kopie deiner Steuerungsdateien an. Diese
 Kopie bearbeitest du, und die Dateien des Spiels bleiben unberührt, bis du <strong>Anwenden</strong> drückst.</li>
 <li><strong>Controller benennen.</strong> Jeder angeschlossene Controller ohne Namen bekommt das Angebot für
 <a href="#naming-a-controller">einen Namen</a>. Du kannst das <strong>Überspringen</strong>.</li>
 </ol>
-<p>Bis du fertig bist, wird die Ersteinrichtung bei jedem Öffnen des Reiters erneut angeboten.</p>
+<p>Bis du fertig bist, wird die Ersteinrichtung bei jedem Öffnen des Reiters erneut angeboten. Um sie
+später noch einmal zu durchlaufen, nutze <strong>Ersteinrichtung erneut ausführen</strong> unter
+<a href="#game-install-locations">Spielinstallationen</a>.</p>
+<p><a id="make-your-game-copies-match"></a></p>
+<h3>Spielkopien angleichen</h3>
+<p>Alle Kopien des Spiels teilen sich eine Steuerung, aber jede führt ihre eigene Liste deiner Controller und
+Tastennamen. Weichen die Listen ab, kann deine Steuerung in der einen Kopie funktionieren und in der
+anderen auf Tastatur und Maus zurückfallen. <strong>Spielkopien angleichen</strong> behebt das in drei Schritten:</p>
+<p><img src="../images/install-reconcile-welcome.png" alt="Spielkopien angleichen"></p>
+<ol>
+<li><strong>Anschließen</strong> – schließe die Controller an, mit denen du fliegst. Das Spiel lädt deine Steuerung nur,
+wenn jeder Controller, den sie nutzt, angeschlossen ist. Drückst du eine Taste, leuchtet ihre Zeile auf.</li>
+<li><strong>Wählen</strong> – beantworte ein paar kurze Fragen: welchen Namen ein Controller behält, den jede Kopie
+anders nennt, zu welchem Controller ein gemeinsamer Name gehört und wessen Tastennamen bleiben. Deine
+Steuerung folgt den gewählten Namen. <strong>Alles wie in einer meiner Kopien einrichten...</strong> überspringt die
+Fragen und richtet alles so ein wie in einer Kopie.</li>
+<li><strong>Prüfen</strong> – sieh, was jede Kopie bekommt und warum, und drücke dann <strong>Beide Kopien angleichen</strong> (oder
+<strong>Alle Kopien angleichen</strong>).</li>
+</ol>
+<p><img src="../images/install-reconcile-check.png" alt="Ergebnis prüfen"></p>
+<p>Bis zum letzten Schritt ändert sich nichts, und vorher wird alles gesichert. Ein Controller, den nur eine
+Kopie kennt, kommt zu den anderen dazu, und ein alter Zweitname, den das Spiel nie benutzt hat, wird
+entfernt – seine Steuerung wandert zum Namen, den das Spiel benutzt. <strong>Nicht jetzt</strong> lässt deine Dateien
+unangetastet.</p>
 <h3>Neu in Elite Dangerous?</h3>
 <p>Ein ganz neuer Kommandant hat noch gar keine Steuerungsdateien, und Vega sagt dir das. Schließe dein
 Kommandantentraining ab und stelle dann im Spiel unter <em>Optionen → Steuerung</em> die UI-Bewegung der
@@ -171,7 +195,7 @@ Bist du ein zurückkehrender Spieler, stelle stattdessen eine Sicherung aus den
 <strong>Verwerfen</strong> und <strong>Anwenden</strong>.</p>
 <p><strong>Benutzerkonfigurationsordner</strong> ist der Ort deiner <code>.binds</code>-Dateien und der Preset-Datei, und alle
 Installationen teilen ihn sich. Er wird automatisch erkannt. Nutze die Auswahl <strong>⋮</strong>, falls deiner an
-einem ungewöhnlichen Ort liegt.</p>
+einem ungewöhnlichen Ort liegt. Unter Linux siehe <a href="#several-installations-on-linux">weiter unten</a>.</p>
 <blockquote>
 <p><strong>„Belegungen nicht gefunden&quot; trotz richtigem Ordner?</strong> Elite Dangerous schreibt erst dann eine
 <code>.binds</code>-Datei, wenn du etwas angepasst hast. Öffne im Spiel <em>Optionen → Steuerung</em>, ändere eine
@@ -203,6 +227,20 @@ dich daran.</p>
 </blockquote>
 <p>Verlässt du den Reiter oder schließt die App mit nicht angewendeten Änderungen, wirst du gefragt:
 <strong>Anwenden</strong>, <strong>Verwerfen</strong> oder <strong>Zurück</strong>.</p>
+<p><strong>Nicht mehr anzeigen.</strong> Die Bestätigung von Anwenden, sein Bericht, der Bericht der Ersteinrichtung und
+das <em>Gespeichert.</em> des Bindungseditors haben dieses Kästchen. Ein ausgeblendeter Bericht erscheint trotzdem,
+wenn er ein Problem oder eine Neuigkeit meldet. <strong>Warnungen zurücksetzen</strong> unter <a href="UI-Settings-Tab#warnings">Dienste → Push To Talk und
+weitere Einstellungen</a> holt sie alle zurück.</p>
+<p><a id="several-installations-on-linux"></a></p>
+<h3>Mehrere Installationen unter Linux</h3>
+<p>Unter Windows lesen alle Kopien des Spiels ihre Steuerung aus einem Ordner. Unter Linux läuft jede Kopie in
+ihrem eigenen Wine- oder Proton-Prefix und hat ihre eigene. Ab zwei Kopien erscheint auf der Leiste eine
+Liste <strong>Gespielt:</strong>, links vom Benutzerkonfigurationsordner. Sie nennt die Kopie, aus der Elite Intel deine
+Steuerung und Journale liest, und folgt dem Spiel: Startest du das Spiel aus einer anderen Kopie, wechselt
+Elite Intel dorthin. Du kannst auch selbst eine wählen.</p>
+<p><strong>Anwenden</strong> schreibt deine Steuerung in jede Kopie. Eine Kopie, deren Steuerung außerhalb von BindForge
+geändert wurde, bleibt, wie sie ist, und der Bericht sagt es. Spiel diese Kopie einmal, und BindForge bietet
+ihre Änderungen beim nächsten Anwenden an.</p>
 <p><a id="read-only"></a></p>
 <h3>Schreibgeschützt, solange eine Installation fehlt</h3>
 <p>Kann eine deiner Spielinstallationen nicht gefunden werden — meist weil ihr Laufwerk abgesteckt ist —,
@@ -242,6 +280,11 @@ sich geändert hat, und lässt dich wählen:</p>
 <p>Vor jedem dieser Schreibvorgänge wird alles gesichert, und du kannst die Warnung schließen, um später
 zu entscheiden. Schließt du sie während eines Anwendens, wird es abgebrochen und deine Änderungen
 bleiben erhalten.</p>
+<p><strong>Wenn sich die Controller einer Kopie geändert haben.</strong> Hat eine Kopie des Spiels jetzt eine andere
+Controller-Einrichtung als die, die BindForge gespeichert hat, fragt das Fenster nur <strong>Welche Einrichtung ist
+aktuell?</strong> Wähle eine deiner Kopien oder <strong>Was ich in BindForge gespeichert habe</strong>, und jede Kopie und deine
+Steuerung werden daran angeglichen. Du siehst das Ergebnis, bevor sich etwas ändert. <strong>Controller für
+Controller wählen...</strong> stellt stattdessen die <a href="#make-your-game-copies-match">Fragen</a> einzeln.</p>
 <p><strong>Eine neue Version deiner Belegungsdatei.</strong> Spiel-Updates speichern deine Belegungsdatei manchmal
 unter neuem Namen mit neuen Steuerungen darin. BindForge schreibt deine alte Datei nie darüber. Wurden
 alle deine Belegungen übernommen, musst du nur <strong>Zustimmen</strong>. Weichen einige ab, behält <strong>Abgleichen...</strong>
@@ -253,20 +296,76 @@ Files</strong> im eigenen Ordner von Elite Intel. Nichts wird gelöscht, und du 
 Eine Belegungsdatei ohne Version wird zuerst mit Version im Namen zu deinen Dateien kopiert, es sei denn,
 du hast schon eine mit diesem Namen.</p>
 <hr>
+<p><a id="alias-designer"></a></p>
+<h2>Alias-Designer</h2>
+<p><img src="../images/ui-bindings-alias-designer.png" alt="Alias-Designer"></p>
+<p>Von Haus aus kennt das Spiel viele Controller nur über eine Hardware-ID, und sein Steuerungsbildschirm
+zeigt ihre Tasten als anonyme Nummern. Der Alias-Designer gibt jedem Controller einen echten Namen und
+jeder Taste, Achse und jedem Hat eine Beschriftung deiner Wahl. Die Beschriftungen erscheinen im
+Steuerungsbildschirm des Spiels und im Bindungseditor.</p>
+<p><strong>Meine Geräte</strong> listet deine Controller: <strong>Gerät</strong>, <strong>VID / PID</strong>, <strong>Status</strong> (<em>Angeschlossen</em> oder
+<em>Fehlt</em>) und <strong>Alias</strong>. <strong>Integrierte Geräte</strong> ist eine schreibgeschützte Liste der Controller, die
+Frontier mit dem Spiel ausliefert. <strong>Erneut prüfen</strong> liest neu, was angeschlossen ist.</p>
+<p><strong>Zwei Controller desselben Modells</strong>, etwa ein linker und ein rechter VKB Gladiator, können dieselbe
+Hardware-ID melden. Das Spiel kann sie nicht unterscheiden, daher wird nur einer gelistet, und eine Warnung
+über der Liste sagt das. Kein Name behebt das: Gib einem von beiden im Tool seines Herstellers eine andere
+Produkt-ID (PID), etwa mit VKBDevCfg bei VKB, und schließ ihn neu an.</p>
+<p><a id="naming-a-controller"></a></p>
+<h3>Einen Controller benennen</h3>
+<p>Hat ein Controller keinen Namen, führt dich <strong>Controller benennen</strong> hindurch. Das läuft nach der
+Ersteinrichtung und bei <strong>Erneut prüfen</strong>, und du kannst es für einen einzelnen Controller über sein
+Zahnrad starten. <strong>Überspringen</strong> nimmt den Standardnamen.</p>
+<p>Ein Name besteht aus den Buchstaben A bis Z, Ziffern, <code>-</code> und <code>_</code>, beginnt mit einem Buchstaben und hat
+keine Leerzeichen oder Akzente. Er darf einem schon verwendeten Namen nicht zu ähnlich sein. Belegungen,
+die den Controller nur über seine Hardware-ID kennen, wechseln beim Anwenden zum neuen Namen.</p>
+<h3>Der Geräte-Editor</h3>
+<p>Drücke das <strong>Zahnrad</strong> in der Zeile eines Geräts, um ihn zu öffnen.</p>
+<p><img src="../images/ui-bindings-device-editor.png" alt="Geräte-Editor"></p>
+<ul>
+<li><strong>Gerät</strong> — Name, VID, PID, Hardware-Name und Status. Ändere hier den Namen, und <strong>Anwenden</strong> benennt
+es in jeder Installation um und verschiebt die Belegungen, die es nutzen. Drücke vorher <strong>Speichern</strong>.</li>
+<li><strong>Achsen</strong>, <strong>Tasten</strong>, <strong>Hats</strong> — tippe für jede Eingabe eine Beschriftung. Reiter erscheinen nur für
+die Eingabearten, die der Controller hat. Betätige eine Eingabe, und ihr Feld <strong>leuchtet auf</strong>, sodass
+du siehst, welche welche ist; Achsen zeigen eine Live-Anzeige.</li>
+</ul>
+<p><strong>Speichern</strong> behält deine Änderungen für <strong>Anwenden</strong>; bis dahin erreicht nichts das Spiel. Ist <strong>Speichern</strong> ausgegraut, zeigt der Mauszeiger darüber den Grund, etwa ein Name mit Leerzeichen.</p>
+<ul>
+<li><strong>Leeren</strong> entfernt beim Anwenden den Eintrag und die Beschriftungen des Geräts aus deinen
+Spieldateien. Nutzen deine Belegungen den Controller, gehen sie nicht verloren: Sie wechseln auf seine
+Hardware-ID, funktionieren also weiter, solange er angeschlossen ist, verlieren aber deinen Namen für
+ihn. (Bei einem integrierten Controller von Frontier, den du umbenannt hast, kehren sie unter den
+eigenen Namen des Spiels zurück.) Die Frage nennt dir, wie viele Belegungen wohin wechseln. <strong>Leeren
+rückgängig</strong> holt sie zurück.</li>
+<li><strong>Beschriftungen zurücksetzen</strong> stellt die Standardbeschriftungen wieder her.</li>
+</ul>
+<p>Bei einem integrierten Gerät von Frontier kannst du die Beschriftungen ändern. Für einen eigenen Namen
+schließe es an und tippe den Namen ins Feld: Dein Eintrag kommt vor den von Frontier, und tippst du
+wieder Frontiers Namen, gehst du zurück.</p>
+<h3>Wenn sich deine Hardware ändert</h3>
+<p>Fehlt ein benannter Controller, den deine Belegungen nutzen, sagt Vega es dir: Seine Belegungen werden
+nicht geladen, bis er angeschlossen ist. Auch ein Firmware-Update kann die Produkt-ID eines Controllers
+ändern, und ein Ersatzgerät hat eine neue. BindForge kann das erkennen, und <strong>Ist das derselbe
+Controller?</strong> fragt, welcher angeschlossene Controller es ist. Antworte, und seine Belegungen folgen ihm
+beim Anwenden.</p>
+<blockquote>
+<p>Belegungen verweisen über die Nummer auf Tasten. Ist der Ersatz ein anderes Modell, landen manche
+Belegungen vielleicht auf unerwarteten Tasten. <strong>Im Bind Editor prüfen</strong> bringt dich direkt dorthin.</p>
+</blockquote>
+<hr>
 <p><a id="binding-profile"></a></p>
 <h2>Bindungseditor</h2>
 <p><img src="../images/ui-tab-bindings-profile.png" alt="Bindungseditor"></p>
 <p>Die Zeile <strong>Bearbeitet</strong> oben nennt die Belegungsdatei, die du gerade siehst. Um eine andere zu öffnen,
-nutze <a href="#bindings-file">Belegungsdatei</a> unter <em>Bindungsverwaltung</em>.</p>
+nutze <a href="#bindings-file">Belegungsdatei</a> unter <em>Bind-Dateiverwaltung</em>.</p>
 <p><strong>Tempo der Tastatureingabe</strong> ist ein Regler <strong>Schnell ↔ Langsam</strong> für die Pause, die Elite Intel nach
 jedem an das Spiel gesendeten Tastendruck hält. Verschluckt das Spiel auf langsamerer Hardware
 Tastendrücke — ein Makro läuft nur halb, ein Panel öffnet im falschen Reiter —, schiebe ihn Richtung
-<strong>Langsam</strong>.</p>
+<strong>Langsam</strong>. Der Regler sitzt am Fuß des Editors.</p>
 <p>Eine Reihe von Reitern läuft über den Editor: <strong>Alle</strong>, <strong>Allgemein</strong>, <strong>Schiff</strong>, <strong>SRV</strong> und <strong>Zu
 Fuß</strong>, jeweils mit Anzahl, dann <strong><a href="#anomalies">Anomalien</a></strong> und <strong><a href="#dead-zones-and-sensitivity">Totzonen &amp;
 Empfindlichkeit</a></strong>. Die Abschnittsreiter zeigen jede Steuerung, gruppiert
 unter den Überschriften des Spiels und in derselben Reihenfolge wie sein Steuerungsbildschirm, sodass du
-beide nebeneinander lesen kannst.</p>
+beide nebeneinander lesen kannst. Danach kommt <strong><a href="#toggles">Schalter</a></strong>.</p>
 <table>
 <thead>
 <tr>
@@ -280,7 +379,7 @@ beide nebeneinander lesen kannst.</p>
 </tr>
 <tr>
 <td><strong>Primär</strong> / <strong>Sekundär</strong></td>
-<td>Die zwei Slots, die Elite Dangerous jeder Steuerung gibt, mit deinen eigenen Namen für Controller und Tasten. In einer Achsenzeile ist Primär die Achse und Sekundär ihre Richtung und Totzone</td>
+<td>Die zwei Plätze, die Elite Dangerous jeder Steuerung gibt. Jeder hat eine Spalte <strong>Gerät</strong> (<em>Tastatur</em>, <em>Maus</em> oder dein Name für einen Controller) und eine Spalte <strong>Eingabe</strong> (die Taste oder deine Beschriftung für den Knopf). Ein leerer Platz zeigt <em>Nicht definiert</em>. In einer Achsenzeile ist Primär die Achse und Sekundär ihre Richtung und Totzone</td>
 </tr>
 <tr>
 <td><strong>KI-Zugriff</strong></td>
@@ -359,6 +458,7 @@ Modifikatoren — gehaltene Tasten und Tastaturtasten zusammen.</p>
 Steuerung, und <strong>Speichern</strong> bleibt gedimmt, bis du sie dort freigibst. Würde eine Änderung einer von
 Vega genutzten Steuerung die letzte Tastaturtaste nehmen, warnt dich der Dialog. <strong>Speichern</strong> behält
 deine Änderungen, bereit für <strong>Anwenden</strong>.</p>
+<p>Jedes Speichern zeigt <em>Gespeichert.</em> – setze den Haken bei <strong>Nicht mehr anzeigen</strong>, um es abzustellen.</p>
 <blockquote>
 <p><strong>Gamepads werden bisher nur teilweise unterstützt.</strong> Gamepad-Sticks lassen sich hier noch nicht
 zuweisen.</p>
@@ -410,6 +510,11 @@ Regler und daneben eine Zahl. Ziehe den Regler, oder tippe eine Zahl und drücke
 <p>Der Regler deckt denselben Bereich ab wie der Regler des Spiels. Die Zahl ist der genaue Wert und der
 einzige Weg über die Grenzen des Reglers hinaus. Ein Wert, der bereits außerhalb liegt, bleibt, bis du
 ihn bewegst.</p>
+<p><a id="toggles"></a></p>
+<h3>Schalter</h3>
+<p>Jede Ja/Nein-Einstellung deiner Belegungsdatei, etwa die Optionen für freien Blick, gruppiert wie im Spiel.
+Jede ist ein Knopf mit <strong>An</strong> oder <strong>Aus</strong>: Drücke ihn zum Umschalten. Wie jede Änderung hier ist das eine
+Bearbeitung, bis du <strong>Anwenden</strong> drückst.</p>
 <p><a id="auto-assign-vega-required-binds"></a></p>
 <h3>VEGA-Pflichtbelegungen automatisch zuweisen</h3>
 <p>Ein Knopf, der jeder Steuerung, die <strong>Vega drückt</strong> und die keine Taste hat, eine sichere,
@@ -462,7 +567,7 @@ beim Start — meist leidet die Routenplanung, weil die Tasten der Galaxiekarte 
 das Spiel nutzt.</p>
 <hr>
 <p><a id="binding-management"></a></p>
-<h2>Bindungsverwaltung</h2>
+<h2>Bind-Dateiverwaltung</h2>
 <p>Deine Dateien, mit zwei eigenen Reitern: <strong>Spielinstallationen</strong> und <strong>Spielersicherungen</strong>.</p>
 <p><a id="game-install-locations"></a></p>
 <h3>Spielinstallationen</h3>
@@ -505,6 +610,11 @@ Dateien <code>DeviceMappings.xml</code> und <code>.buttonMap</code>, und BindFor
 <p><strong>Fehlende hinzufügen</strong> ergänzt eine Installation, die BindForge nicht erkannt hat. <strong>Entfernen</strong> sorgt
 dafür, dass BindForge eine nicht mehr sichert oder beschreibt. Verschiebst du das Spiel, drücke
 <strong>Entfernen</strong> und dann <strong>Fehlende hinzufügen</strong>.</p>
+<p>Unter Linux fragt <strong>Fehlende hinzufügen</strong> danach nach dem Wine-Prefix der Installation, dem Ordner mit
+<code>drive_c</code>, damit BindForge die Steuerung und die Journale dieser Kopie findet.</p>
+<p><strong>Ersteinrichtung erneut ausführen</strong> durchläuft die <a href="#the-first-time-you-open-it">Ersteinrichtung</a> sofort
+noch einmal, aus den Dateien in deinen Spielordnern, mit einer Sicherung vorab. Nichts wird ins Spiel
+geschrieben, bevor du ihre Zusammenfassung bestätigst, und nicht angewendete Bearbeitungen werden verworfen.</p>
 <p><a id="player-backups"></a></p>
 <h3>Spielersicherungen</h3>
 <p><img src="../images/ui-tab-bindings-management.png" alt="Spielersicherungen"></p>
@@ -566,6 +676,8 @@ aus jeder Installation.</p>
 <td>Löscht eine deiner eigenen <em>Benutzer</em>-Sicherungen endgültig</td>
 </tr>
 </tbody></table>
+<p>Enthält die Sicherung für jede Kopie des Spiels eine andere Controller-Einrichtung, stellt
+<strong>Wiederherstellen</strong> zuerst ein paar <a href="#make-your-game-copies-match">Fragen</a>, damit jede Kopie dieselbe bekommt.</p>
 <blockquote>
 <p><strong>Stelle nur deine eigenen Sicherungen wieder her.</strong> Die Sicherung eines anderen Spielers enthält
 dessen Controller, nicht deine.</p>
@@ -573,58 +685,6 @@ dessen Controller, nicht deine.</p>
 <p><strong>Sicherungseinstellungen</strong> legt fest, wohin Sicherungen gehen (<strong>Sicherungen speichern in</strong>, mit
 <strong>Durchsuchen...</strong> und <strong>Standard verwenden</strong>), und die beiden Aufbewahrungsregeln. Ein Ordner innerhalb
 einer Spielinstallation wird abgelehnt, weil ein Spiel-Update deine Sicherungen mitlöschen würde.</p>
-<hr>
-<p><a id="alias-designer"></a></p>
-<h2>Alias-Designer</h2>
-<p><img src="../images/ui-bindings-alias-designer.png" alt="Alias-Designer"></p>
-<p>Von Haus aus kennt das Spiel viele Controller nur über eine Hardware-ID, und sein Steuerungsbildschirm
-zeigt ihre Tasten als anonyme Nummern. Der Alias-Designer gibt jedem Controller einen echten Namen und
-jeder Taste, Achse und jedem Hat eine Beschriftung deiner Wahl. Die Beschriftungen erscheinen im
-Steuerungsbildschirm des Spiels und im Bindungseditor.</p>
-<p><strong>Meine Geräte</strong> listet deine Controller: <strong>Gerät</strong>, <strong>VID / PID</strong>, <strong>Status</strong> (<em>Angeschlossen</em> oder
-<em>Fehlt</em>) und <strong>Alias</strong>. <strong>Integrierte Geräte</strong> ist eine schreibgeschützte Liste der Controller, die
-Frontier mit dem Spiel ausliefert. <strong>Erneut prüfen</strong> liest neu, was angeschlossen ist.</p>
-<p><a id="naming-a-controller"></a></p>
-<h3>Einen Controller benennen</h3>
-<p>Hat ein Controller keinen Namen, führt dich <strong>Controller benennen</strong> hindurch. Das läuft nach der
-Ersteinrichtung und bei <strong>Erneut prüfen</strong>, und du kannst es für einen einzelnen Controller über sein
-Zahnrad starten. <strong>Überspringen</strong> nimmt den Standardnamen.</p>
-<p>Ein Name besteht aus den Buchstaben A bis Z, Ziffern, <code>-</code> und <code>_</code>, beginnt mit einem Buchstaben und hat
-keine Leerzeichen oder Akzente. Er darf einem schon verwendeten Namen nicht zu ähnlich sein. Belegungen,
-die den Controller nur über seine Hardware-ID kennen, wechseln beim Anwenden zum neuen Namen.</p>
-<h3>Der Geräte-Editor</h3>
-<p>Drücke das <strong>Zahnrad</strong> in der Zeile eines Geräts, um ihn zu öffnen.</p>
-<p><img src="../images/ui-bindings-device-editor.png" alt="Geräte-Editor"></p>
-<ul>
-<li><strong>Gerät</strong> — Name, VID, PID, Hardware-Name und Status. Ändere hier den Namen, und <strong>Anwenden</strong> benennt
-es in jeder Installation um und verschiebt die Belegungen, die es nutzen.</li>
-<li><strong>Achsen</strong>, <strong>Tasten</strong>, <strong>Hats</strong> — tippe für jede Eingabe eine Beschriftung. Reiter erscheinen nur für
-die Eingabearten, die der Controller hat. Betätige eine Eingabe, und ihr Feld <strong>leuchtet auf</strong>, sodass
-du siehst, welche welche ist; Achsen zeigen eine Live-Anzeige.</li>
-</ul>
-<p><strong>Speichern</strong> behält deine Änderungen für <strong>Anwenden</strong>; bis dahin erreicht nichts das Spiel.</p>
-<ul>
-<li><strong>Leeren</strong> entfernt beim Anwenden den Eintrag und die Beschriftungen des Geräts aus deinen
-Spieldateien. Nutzen deine Belegungen den Controller, gehen sie nicht verloren: Sie wechseln auf seine
-Hardware-ID, funktionieren also weiter, solange er angeschlossen ist, verlieren aber deinen Namen für
-ihn. (Bei einem integrierten Controller von Frontier, den du umbenannt hast, kehren sie unter den
-eigenen Namen des Spiels zurück.) Die Frage nennt dir, wie viele Belegungen wohin wechseln. <strong>Leeren
-rückgängig</strong> holt sie zurück.</li>
-<li><strong>Beschriftungen zurücksetzen</strong> stellt die Standardbeschriftungen wieder her.</li>
-</ul>
-<p>Bei einem integrierten Gerät von Frontier kannst du die Beschriftungen ändern. Für einen eigenen Namen
-schließe es an und tippe den Namen ins Feld: Dein Eintrag kommt vor den von Frontier, und tippst du
-wieder Frontiers Namen, gehst du zurück.</p>
-<h3>Wenn sich deine Hardware ändert</h3>
-<p>Fehlt ein benannter Controller, den deine Belegungen nutzen, sagt Vega es dir: Seine Belegungen werden
-nicht geladen, bis er angeschlossen ist. Auch ein Firmware-Update kann die Produkt-ID eines Controllers
-ändern, und ein Ersatzgerät hat eine neue. BindForge kann das erkennen, und <strong>Ist das derselbe
-Controller?</strong> fragt, welcher angeschlossene Controller es ist. Antworte, und seine Belegungen folgen ihm
-beim Anwenden.</p>
-<blockquote>
-<p>Belegungen verweisen über die Nummer auf Tasten. Ist der Ersatz ein anderes Modell, landen manche
-Belegungen vielleicht auf unerwarteten Tasten. <strong>Im Bind Editor prüfen</strong> bringt dich direkt dorthin.</p>
-</blockquote>
 <hr>
 <p>Community 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

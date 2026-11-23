@@ -1,4 +1,4 @@
-# Elite Intel
+# Elite Intel i.II
 ## AI Voice Assistant for Elite Dangerous
 
 

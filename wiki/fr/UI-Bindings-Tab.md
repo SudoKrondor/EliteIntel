@@ -11,16 +11,18 @@ Il a son propre onglet, **BindForge**, avec quatre sous-onglets et une barre au-
 | Partie | À quoi elle sert |
 |--------|------------------|
 | **[Barre Appliquer](#the-apply-bar)** | Votre dossier de configuration utilisateur, et le seul **Appliquer** et **Abandonner** pour tout cet onglet |
-| **[Éditeur de raccourcis](#binding-profile)** | Toutes les commandes du jeu, par section, avec les vues **Anomalies** et **Zones mortes et sensibilité** |
-| **[Éditeur de presets](#preset-editor)** | Quel fichier de raccourcis le jeu charge pour les commandes Général, Vaisseau, SRV et À pied |
-| **[Gestion des raccourcis](#binding-management)** | Vos installations du jeu, vos fichiers de raccourcis et vos sauvegardes |
 | **[Concepteur d'alias](#alias-designer)** | Donnez de vrais noms à vos contrôleurs et libellez leurs boutons, axes et chapeaux |
+| **[Éditeur de raccourcis](#binding-profile)** | Toutes les commandes du jeu, par section, avec les vues **Anomalies**, **Zones mortes et sensibilité** et **Bascules** |
+| **[Éditeur de presets](#preset-editor)** | Quel fichier de raccourcis le jeu charge pour les commandes Général, Vaisseau, SRV et À pied |
+| **[Gestion des fichiers binds](#binding-management)** | Vos installations du jeu, vos fichiers de raccourcis et vos sauvegardes |
 
 > **Vega n'appuie toujours que sur des touches du clavier.** Vous pouvez assigner n'importe quel périphérique
 > à n'importe quel emplacement, mais une commande a besoin d'une touche clavier pour que Vega puisse
 > l'utiliser. La colonne **Accès IA** vous montre lesquelles en ont une.
 
 ---
+
+<a id="the-first-time-you-open-it"></a>
 
 ## À la première ouverture
 
@@ -29,15 +31,42 @@ sauvegarde est conservée pour toujours.**
 
 1. **Confirmez vos installations.** BindForge liste chaque copie d'Elite Dangerous trouvée sur ce PC.
    Corrigez la liste avec **Ajouter une manquante** ou **Supprimer**, puis cliquez sur **Confirmer**.
-2. **Rapprochez, si besoin.** Si vos installations contiennent des fichiers de périphérique différents,
-   utilisez ceux d'une installation pour toutes, ou cliquez sur **Fusionner** et répondez à chaque ligne
-   marquée *choisir*.
+2. **Accordez vos copies du jeu, si besoin.** Si vous avez le jeu sur plusieurs boutiques et que les
+   copies ne s'accordent pas sur vos contrôleurs, BindForge vous guide pour
+   [les accorder](#make-your-game-copies-match).
 3. **Créez votre copie de travail.** BindForge fait sa propre copie de vos fichiers de commandes. C'est cette
    copie que vous modifiez, et les fichiers du jeu restent intacts jusqu'à ce que vous cliquiez sur **Appliquer**.
 4. **Nommez vos contrôleurs.** Chaque contrôleur connecté sans nom se voit proposer
    [un nom](#naming-a-controller). Vous pouvez **Passer** cette étape.
 
 Tant que ce n'est pas terminé, la configuration initiale est reproposée à chaque ouverture de l'onglet.
+Pour la refaire plus tard, utilisez **Relancer la configuration initiale** dans
+[Emplacements du jeu](#game-install-locations).
+
+<a id="make-your-game-copies-match"></a>
+
+### Accorder vos copies du jeu
+
+Toutes les copies du jeu partagent un seul jeu de commandes, mais chacune garde sa propre liste de vos
+contrôleurs et des noms de boutons. Quand ces listes divergent, vos commandes peuvent marcher dans une copie
+et retomber sur clavier et souris dans l'autre. **Accorder tes copies du jeu** règle cela en trois étapes :
+
+![Accorder tes copies du jeu](images/install-reconcile-welcome.png)
+
+1. **Brancher** — branchez les contrôleurs avec lesquels vous volez. Le jeu ne charge vos commandes que si
+   chaque contrôleur qu'elles utilisent est branché. Appuyez sur un bouton et sa ligne s'allume.
+2. **Choisir** — répondez à quelques questions courtes : quel nom garder pour un contrôleur que chaque copie
+   appelle différemment, à quel contrôleur appartient un nom partagé, et quels noms de boutons garder. Vos
+   commandes suivent les noms choisis. **Tout faire comme dans une de mes copies...** saute les questions et
+   règle tout comme dans une copie.
+3. **Vérifier** — voyez ce que chaque copie aura, et pourquoi, puis cliquez sur **Accorder les deux copies**
+   (ou **Accorder toutes les copies**).
+
+![Vérifier le résultat](images/install-reconcile-check.png)
+
+Rien ne change avant la dernière étape, et tout est sauvegardé d'abord. Un contrôleur qu'une seule copie
+connaît est ajouté aux autres, et un ancien second nom que le jeu n'a jamais utilisé est retiré, ses commandes
+passant au nom que le jeu utilise. **Pas maintenant** laisse vos fichiers tels quels.
 
 ### Nouveau dans Elite Dangerous ?
 
@@ -61,7 +90,7 @@ La barre au-dessus des sous-onglets contient le **Dossier de configuration utili
 
 **Dossier de configuration utilisateur** est l'endroit où se trouvent vos fichiers `.binds` et le fichier de
 preset, et toutes les installations le partagent. Il est détecté automatiquement. Utilisez le sélecteur **⋮** si
-le vôtre est dans un endroit inhabituel.
+le vôtre est dans un endroit inhabituel. Sous Linux, voir [plus bas](#several-installations-on-linux).
 
 > **« Raccourcis introuvables » avec le bon dossier ?** Elite Dangerous n'écrit un fichier `.binds` qu'une fois
 > que vous avez personnalisé quelque chose. Ouvrez *Options → Commandes* dans le jeu, modifiez n'importe quel
@@ -81,6 +110,25 @@ modifications s'accumulent, et **Appliquer** et **Abandonner** s'allument dès q
 
 Si vous quittez l'onglet ou fermez l'application avec des modifications non appliquées, on vous demande de
 choisir entre **Appliquer**, **Abandonner** et **Revenir**.
+
+**Ne plus afficher.** La confirmation d'Appliquer, son rapport, le rapport de la configuration initiale et
+le *Enregistré.* de l'Éditeur de raccourcis ont cette case. Un rapport masqué s'affiche quand même s'il a un
+problème ou une nouvelle à signaler. **Réinitialiser les avertissements**, dans [Services → Appuyer pour parler
+et autres réglages](UI-Settings-Tab#warnings), les fait tous revenir.
+
+<a id="several-installations-on-linux"></a>
+
+### Plusieurs installations sous Linux
+
+Sous Windows, toutes les copies du jeu lisent leurs commandes dans un seul dossier. Sous Linux, chaque copie
+tourne dans son propre préfixe Wine ou Proton et garde les siennes. Avec deux copies ou plus, une liste
+**En jeu :** apparaît sur la barre, à gauche du dossier de configuration utilisateur. Elle nomme la copie dont
+Elite Intel lit vos commandes et vos journaux, et elle suit le jeu : lancez le jeu depuis une autre copie, et
+Elite Intel bascule dessus. Vous pouvez aussi en choisir une à la main.
+
+**Appliquer** écrit vos commandes dans chaque copie. Une copie dont les commandes ont été modifiées hors de
+BindForge est laissée telle quelle, et le rapport le signale. Jouez une fois sur cette copie, et BindForge
+propose ses changements au prochain Appliquer.
 
 <a id="read-only"></a>
 
@@ -112,6 +160,12 @@ diffèrent, Vega vous le dit au démarrage, et l'onglet liste ce qui a changé e
 Tout est sauvegardé avant chacune de ces écritures, et vous pouvez fermer l'avertissement pour décider plus
 tard. Le fermer pendant un Appliquer l'annule et conserve vos modifications.
 
+**Quand les contrôleurs d'une copie ont changé.** Si une copie du jeu a désormais une configuration de
+contrôleurs différente de celle que BindForge a enregistrée, la fenêtre demande seulement **Quelle configuration
+est actuelle ?** Choisissez une de vos copies, ou **Ce que j'ai enregistré dans BindForge**, et chaque copie
+ainsi que vos commandes s'y alignent. Vous voyez le résultat avant tout changement. **Choisir manette par
+manette...** pose plutôt les [questions](#make-your-game-copies-match) une à une.
+
 **Une nouvelle version de votre fichier de raccourcis.** Les mises à jour enregistrent parfois votre fichier
 sous un nouveau nom avec de nouvelles commandes. BindForge n'écrit jamais votre ancien fichier par-dessus. Si
 tous vos raccourcis ont été repris, il suffit de cliquer sur **Approuver**. Si certains diffèrent,
@@ -126,6 +180,76 @@ si vous en avez déjà un de ce nom.
 
 ---
 
+<a id="alias-designer"></a>
+
+## Concepteur d'alias
+
+![Concepteur d'alias](images/ui-bindings-alias-designer.png)
+
+D'origine, le jeu ne connaît beaucoup de contrôleurs que par un identifiant matériel, et son écran Commandes
+affiche leurs boutons sous forme de numéros anonymes. Le Concepteur d'alias donne à chaque contrôleur un vrai
+nom, et à chaque bouton, axe et chapeau un libellé de votre choix. Les libellés apparaissent dans l'écran
+Commandes du jeu et dans l'Éditeur de raccourcis.
+
+**Mes périphériques** liste vos contrôleurs : **Périphérique**, **VID / PID**, **État** (*Connecté* ou
+*Absent*) et **Alias**. **Périphériques intégrés** est une liste en lecture seule des contrôleurs fournis par
+Frontier avec le jeu. **Vérifier à nouveau** relit ce qui est connecté.
+
+**Deux contrôleurs du même modèle**, comme un VKB Gladiator gauche et un droit, peuvent signaler le même
+identifiant matériel. Le jeu ne peut pas les distinguer, un seul est donc listé, et un avertissement au-dessus
+de la liste le signale. Aucun nom n'y change rien : donnez à l'un d'eux un autre identifiant produit (PID) dans
+l'outil de son fabricant, comme VKBDevCfg pour VKB, puis rebranchez-le.
+
+<a id="naming-a-controller"></a>
+
+### Nommer un contrôleur
+
+Quand un contrôleur n'a pas de nom, **Nommez vos contrôleurs** vous guide. Cela se lance après la configuration
+initiale et avec **Vérifier à nouveau**, et vous pouvez le démarrer pour un seul contrôleur depuis son
+engrenage. **Passer** prend le nom par défaut.
+
+Un nom utilise les lettres de A à Z, des chiffres, `-` et `_`, et commence par une lettre, sans espaces ni
+accents. Il ne peut pas être trop proche d'un nom déjà utilisé. Les raccourcis qui ne connaissent le contrôleur
+que par son identifiant matériel passent au nouveau nom quand vous appliquez.
+
+### L'Éditeur de périphérique
+
+Cliquez sur l'**engrenage** de la ligne d'un périphérique pour l'ouvrir.
+
+![Éditeur de périphérique](images/ui-bindings-device-editor.png)
+
+- **Périphérique** : le nom, le VID, le PID, le nom matériel et l'état. Changez le nom ici, et **Appliquer** le
+  renomme dans chaque installation et déplace les raccourcis qui l'utilisent. Cliquez d'abord sur **Enregistrer**.
+- **Axes**, **Boutons**, **Chapeaux** : tapez un libellé pour chaque entrée. Les onglets n'apparaissent que pour
+  les types d'entrée du contrôleur. Utilisez une entrée et sa case **s'allume**, pour voir laquelle est
+  laquelle, et les axes affichent une jauge en direct.
+
+**Enregistrer** garde vos modifications pour **Appliquer** ; rien n'atteint le jeu avant cela. Quand **Enregistrer** est grisé, survolez-le pour voir pourquoi, par exemple un nom contenant une espace.
+
+- **Effacer** retire l'entrée et les libellés du périphérique de vos fichiers du jeu quand vous appliquez. Si
+  vos raccourcis utilisent ce contrôleur, ils ne sont pas perdus : ils passent à son identifiant matériel, donc
+  ils continuent de fonctionner tant qu'il est branché, mais perdent le nom que vous lui aviez donné. (Sur un
+  contrôleur intégré de Frontier que vous aviez renommé, ils reviennent sous le nom propre du jeu.) La question
+  vous dit combien de raccourcis sont déplacés et où. **Annuler l'effacement** les remet en place.
+- **Réinitialiser les libellés** remet les libellés par défaut.
+
+Sur un périphérique intégré de Frontier, vous pouvez changer les libellés. Pour utiliser un nom à vous,
+branchez-le et tapez le nom dans la case : votre entrée passe avant celle de Frontier, et retaper le nom de
+Frontier vous ramène en arrière.
+
+### Quand votre matériel change
+
+S'il manque un contrôleur nommé utilisé par vos raccourcis, Vega vous le dit : ses raccourcis ne seront pas
+chargés tant qu'il n'est pas connecté. Une mise à jour de firmware peut aussi changer l'identifiant produit d'un
+contrôleur, et un remplacement en a un nouveau. BindForge peut le repérer, et **Est-ce le même contrôleur ?**
+demande lequel des contrôleurs connectés c'est. Répondez, et ses raccourcis le suivront quand vous appliquerez.
+
+> Les raccourcis désignent les boutons par leur numéro. Si le remplacement est un autre modèle, certains
+> raccourcis peuvent se retrouver sur des boutons inattendus. **Vérifier dans le Bind Editor** vous y mène
+> directement.
+
+---
+
 <a id="binding-profile"></a>
 
 ## Éditeur de raccourcis
@@ -133,21 +257,21 @@ si vous en avez déjà un de ce nom.
 ![Éditeur de raccourcis](images/ui-tab-bindings-profile.png)
 
 La ligne **Modification** en haut indique le fichier de raccourcis affiché. Pour en ouvrir un autre, utilisez
-[Fichier de raccourcis](#bindings-file) dans *Gestion des raccourcis*.
+[Fichier de raccourcis](#bindings-file) dans *Gestion des fichiers binds*.
 
 **Cadence des saisies clavier** est un curseur **Rapide ↔ Lent** pour la pause qu'Elite Intel observe après
 chaque touche envoyée au jeu. Si le jeu perd des touches sur une machine plus lente (une macro à moitié
-exécutée, un panneau ouvert sur le mauvais onglet), déplacez-le vers **Lent**.
+exécutée, un panneau ouvert sur le mauvais onglet), déplacez-le vers **Lent**. Le curseur se trouve en bas de l'éditeur.
 
 Une seule rangée d'onglets parcourt l'éditeur : **Tout**, **Général**, **Vaisseau**, **SRV** et **À pied**,
 chacun avec son nombre, puis **[Anomalies](#anomalies)** et **[Zones mortes et
 sensibilité](#dead-zones-and-sensitivity)**. Les onglets de section montrent toutes les commandes, groupées sous
-les titres du jeu et dans le même ordre que son écran Commandes, pour lire les deux côte à côte.
+les titres du jeu et dans le même ordre que son écran Commandes, pour lire les deux côte à côte. Après elles vient **[Bascules](#toggles)**.
 
 | Colonne | Signification |
 |---------|---------------|
 | **Commande** | La commande |
-| **Primaire** / **Secondaire** | Les deux emplacements qu'Elite Dangerous donne à chaque commande, avec vos propres noms de contrôleurs et de boutons. Sur une ligne d'axe, Primaire est l'axe et Secondaire son sens et sa zone morte |
+| **Primaire** / **Secondaire** | Les deux emplacements qu'Elite Dangerous donne à chaque commande. Chacun a une colonne **Périphérique** (*Clavier*, *Souris* ou votre nom pour un contrôleur) et une colonne **Entrée** (la touche, ou votre libellé pour le bouton). Un emplacement vide affiche *Non définie*. Sur une ligne d'axe, Primaire est l'axe et Secondaire son sens et sa zone morte |
 | **Accès IA** | Si Vega peut utiliser cette commande (voir plus bas) |
 | **Action** | **Effacer** retire la touche clavier (ou l'axe) et laisse intacts les raccourcis du contrôleur et du HOTAS. **Corriger** apparaît sur une commande dont Vega a besoin et qui n'a pas de touche, et lui en donne une libre et sûre |
 
@@ -207,6 +331,8 @@ Une saisie détenue par une autre commande ne peut pas être assignée. La carte
 **Enregistrer** reste grisé tant que vous ne l'avez pas libérée. Si un changement retire la dernière touche
 d'une commande utilisée par Vega, la fenêtre vous avertit. **Enregistrer** garde vos modifications, prêtes pour
 **Appliquer**.
+
+Chaque enregistrement affiche *Enregistré.* : cochez **Ne plus afficher** pour ne plus le voir.
 
 > **Les manettes ne sont que partiellement prises en charge pour l'instant.** Leurs sticks ne peuvent pas encore
 > être assignés ici.
@@ -272,6 +398,14 @@ un curseur et un nombre à côté. Faites glisser le curseur, ou tapez un nombre
 Le curseur couvre la même plage que celui du jeu. Le nombre est la valeur exacte, et le seul moyen de dépasser
 les limites du curseur. Une valeur déjà en dehors reste telle quelle jusqu'à ce que vous la déplaciez.
 
+<a id="toggles"></a>
+
+### Bascules
+
+Tous les réglages oui/non de votre fichier de raccourcis, comme les options de vue libre, regroupés comme le
+jeu les regroupe. Chacun est un bouton qui affiche **Activé** ou **Désactivé** : cliquez pour basculer. Comme
+tout changement ici, c'est une modification jusqu'à **Appliquer**.
+
 <a id="auto-assign-vega-required-binds"></a>
 
 ### Attribuer automatiquement les raccourcis requis par VEGA
@@ -336,7 +470,7 @@ sont peut-être pas celles qu'utilise le jeu.
 
 <a id="binding-management"></a>
 
-## Gestion des raccourcis
+## Gestion des fichiers binds
 
 Vos fichiers, avec deux onglets à eux : **Emplacements du jeu** et **Sauvegardes du joueur**.
 
@@ -368,6 +502,14 @@ cliquez sur **Appliquer**.
 BindForge de la sauvegarder ou d'y écrire. Si vous déplacez le jeu, cliquez sur **Supprimer**, puis sur
 **Ajouter une manquante**.
 
+Sous Linux, **Ajouter une manquante** demande ensuite le préfixe Wine de l'installation, le dossier qui
+contient `drive_c`, pour que BindForge trouve les commandes et les journaux de cette copie.
+
+**Relancer la configuration initiale** refait tout de suite la [configuration
+initiale](#the-first-time-you-open-it), à partir des fichiers de vos dossiers du jeu, avec une sauvegarde
+d'abord. Rien n'est écrit dans le jeu avant que vous confirmiez son résumé, et les modifications non
+appliquées sont abandonnées.
+
 <a id="player-backups"></a>
 
 ### Sauvegardes du joueur
@@ -395,77 +537,15 @@ La colonne **Motif** indique pourquoi chaque sauvegarde existe, et cela détermi
 | **Parcourir pour un fichier de sauvegarde** | Restaure une sauvegarde absente de la liste, par exemple venue d'un autre ordinateur |
 | **Supprimer** | Supprime définitivement une de vos sauvegardes *Utilisateur* |
 
+Si la sauvegarde contient une configuration de contrôleurs différente pour chaque copie du jeu, **Restaurer**
+pose d'abord quelques [questions](#make-your-game-copies-match), pour que chaque copie ait la même.
+
 > **Ne restaurez que vos propres sauvegardes.** La sauvegarde d'un autre joueur contient ses contrôleurs, pas
 > les vôtres.
 
 **Paramètres de sauvegarde** définit où vont les sauvegardes (**Enregistrer les sauvegardes dans**, avec
 **Parcourir...** et **Utiliser le dossier par défaut**) et les deux règles de conservation. Un dossier situé dans
 une installation du jeu est refusé, car une mise à jour supprimerait vos sauvegardes avec lui.
-
----
-
-<a id="alias-designer"></a>
-
-## Concepteur d'alias
-
-![Concepteur d'alias](images/ui-bindings-alias-designer.png)
-
-D'origine, le jeu ne connaît beaucoup de contrôleurs que par un identifiant matériel, et son écran Commandes
-affiche leurs boutons sous forme de numéros anonymes. Le Concepteur d'alias donne à chaque contrôleur un vrai
-nom, et à chaque bouton, axe et chapeau un libellé de votre choix. Les libellés apparaissent dans l'écran
-Commandes du jeu et dans l'Éditeur de raccourcis.
-
-**Mes périphériques** liste vos contrôleurs : **Périphérique**, **VID / PID**, **État** (*Connecté* ou
-*Absent*) et **Alias**. **Périphériques intégrés** est une liste en lecture seule des contrôleurs fournis par
-Frontier avec le jeu. **Vérifier à nouveau** relit ce qui est connecté.
-
-<a id="naming-a-controller"></a>
-
-### Nommer un contrôleur
-
-Quand un contrôleur n'a pas de nom, **Nommez vos contrôleurs** vous guide. Cela se lance après la configuration
-initiale et avec **Vérifier à nouveau**, et vous pouvez le démarrer pour un seul contrôleur depuis son
-engrenage. **Passer** prend le nom par défaut.
-
-Un nom utilise les lettres de A à Z, des chiffres, `-` et `_`, et commence par une lettre, sans espaces ni
-accents. Il ne peut pas être trop proche d'un nom déjà utilisé. Les raccourcis qui ne connaissent le contrôleur
-que par son identifiant matériel passent au nouveau nom quand vous appliquez.
-
-### L'Éditeur de périphérique
-
-Cliquez sur l'**engrenage** de la ligne d'un périphérique pour l'ouvrir.
-
-![Éditeur de périphérique](images/ui-bindings-device-editor.png)
-
-- **Périphérique** : le nom, le VID, le PID, le nom matériel et l'état. Changez le nom ici, et **Appliquer** le
-  renomme dans chaque installation et déplace les raccourcis qui l'utilisent.
-- **Axes**, **Boutons**, **Chapeaux** : tapez un libellé pour chaque entrée. Les onglets n'apparaissent que pour
-  les types d'entrée du contrôleur. Utilisez une entrée et sa case **s'allume**, pour voir laquelle est
-  laquelle, et les axes affichent une jauge en direct.
-
-**Enregistrer** garde vos modifications pour **Appliquer** ; rien n'atteint le jeu avant cela.
-
-- **Effacer** retire l'entrée et les libellés du périphérique de vos fichiers du jeu quand vous appliquez. Si
-  vos raccourcis utilisent ce contrôleur, ils ne sont pas perdus : ils passent à son identifiant matériel, donc
-  ils continuent de fonctionner tant qu'il est branché, mais perdent le nom que vous lui aviez donné. (Sur un
-  contrôleur intégré de Frontier que vous aviez renommé, ils reviennent sous le nom propre du jeu.) La question
-  vous dit combien de raccourcis sont déplacés et où. **Annuler l'effacement** les remet en place.
-- **Réinitialiser les libellés** remet les libellés par défaut.
-
-Sur un périphérique intégré de Frontier, vous pouvez changer les libellés. Pour utiliser un nom à vous,
-branchez-le et tapez le nom dans la case : votre entrée passe avant celle de Frontier, et retaper le nom de
-Frontier vous ramène en arrière.
-
-### Quand votre matériel change
-
-S'il manque un contrôleur nommé utilisé par vos raccourcis, Vega vous le dit : ses raccourcis ne seront pas
-chargés tant qu'il n'est pas connecté. Une mise à jour de firmware peut aussi changer l'identifiant produit d'un
-contrôleur, et un remplacement en a un nouveau. BindForge peut le repérer, et **Est-ce le même contrôleur ?**
-demande lequel des contrôleurs connectés c'est. Répondez, et ses raccourcis le suivront quand vous appliquerez.
-
-> Les raccourcis désignent les boutons par leur numéro. Si le remplacement est un autre modèle, certains
-> raccourcis peuvent se retrouver sur des boutons inattendus. **Vérifier dans le Bind Editor** vous y mène
-> directement.
 
 ---
 
