@@ -88,7 +88,9 @@ makes them cheap to build when they come back — each mode's own section below 
   view that cannot be opened.
 - ~~A collapsible-group binding grid: left-click toggles one group; right-click opens Expand All / Collapse All, scoped to the currently visible groups.~~
   **Rejected for V1.2 (Krondor, 2026-11-10, GM1):** the grid's groups do not collapse; the section tabs and the
-  footer filters narrow it instead.
+  footer filters narrow it instead. **Asked again and left for now (Alan, 2026-11-24):** with the group sub-headings
+  of 2026-11-21 there is a place for a ▸ / ▾ toggle, on each group and on ALL's section headers, but V1.2 is heading for
+  a release candidate. If users ask for it, it is a V1.2 patch; if not, a V1.3 adjustment.
 - ~~A roughly 75/25 split between the binding grid and the Binding Editor panel.~~ **Not built:** a click on a row
   opens the capture dialog, or the axis dialog for an axis row; there is no side panel.
 
@@ -1144,8 +1146,11 @@ Toggle HUD             —           —           ON PURPOSE
 ```
 
 **Built 2026-10-15 as AI ACCESS, in plain words for users who read nothing else.** The header is *AI
-access*. The states read *Vega can't use* (CAN'T PRESS) and *Vega needs a
+access*. The states read *Vega can't use buttons* (CAN'T PRESS) and *Vega needs a
 key* (NOT BOUND), both in the warning colour, with hover text saying which slot to use and that the controller binding stays.
+*Until 2026-11-24 CAN'T PRESS read "Vega can't use", which read as "Vega has no use for this" - the opposite: Vega
+uses the control and needs a keyboard key on it, so it belongs in *Show required by Vega only*. AI access is 190 wide
+to hold the longer words, Binding 300 (Alan).*
 **A control Vega can press reads *Vega uses this*, dimmed, rather than
 blank**, so the column explains itself before anything goes wrong. The controls judged are the built-in commands' and every binding a custom command taps. ON PURPOSE is not built yet.
 
