@@ -19,6 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -47,6 +49,11 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
             Path.of("C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests");
     /** The new Epic launcher's ("eglv2") record, per user under {@code %LOCALAPPDATA%}; see {@link EpicInstallLog}. */
     private static final String EPIC_INSTALL_LOG = "com.epicgames.eglv2\\installations.jsonl";
+    /**
+     * The diagnostic lines already written this run. Detection runs on every BindForge read and a provider is built
+     * for each, so the set is static: without it, every read repeats the same lines into {@code bindforge.log}.
+     */
+    private static final Set<String> REPORTED_THIS_RUN = ConcurrentHashMap.newKeySet();
 
     private final Path bindingsFolder;
     private final List<Path> steamRoots;
@@ -137,7 +144,7 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
         if (!manifests && logs.isEmpty()) {
             // WHY: said out loud, so a support bundle shows that Epic was looked for and had no records,
             // rather than leaving a missing Epic install unexplained.
-            log.info("No Epic launcher records: neither {} nor {} exists", epicManifests, epicInstallLogs);
+            reportOnce("No Epic launcher records: neither %s nor %s exists".formatted(epicManifests, epicInstallLogs));
             return List.of();
         }
         List<Path> roots = new ArrayList<>();
@@ -170,9 +177,14 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
      */
     private boolean looksLikeAnEpicInstall(Path root) {
         if (GameInstallation.looksLikeAnInstall(root)) return true;
-        log.info("Epic records {}, which has no {} folder; not an installation BindForge can use",
-                root, GameInstallation.controlSchemesUnder(root));
+        reportOnce("Epic records %s, which has no %s folder; not an installation BindForge can use"
+                .formatted(root, GameInstallation.controlSchemesUnder(root)));
         return false;
+    }
+
+    /** Logs a diagnostic line the first time this run it is true, so repeated detections do not repeat it. */
+    private static void reportOnce(String line) {
+        if (REPORTED_THIS_RUN.add(line)) log.info("{}", line);
     }
 
     private Optional<Path> installRootFromManifest(Path manifest) {
@@ -228,7 +240,9 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
         try {
             return List.of(Path.of(localAppData).resolve(EPIC_INSTALL_LOG));
         } catch (InvalidPathException e) {
-            log.debug("LOCALAPPDATA is not a usable path: {}", e.toString());
+            // WHY: warn, not debug - this logger is at info, and this is one reason an Epic install goes unfound.
+            log.warn("LOCALAPPDATA is not a usable path, so the new Epic launcher's install log is not read: {}",
+                    e.toString());
             return List.of();
         }
     }
