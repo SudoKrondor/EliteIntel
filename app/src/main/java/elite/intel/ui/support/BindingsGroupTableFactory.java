@@ -41,13 +41,14 @@ public class BindingsGroupTableFactory {
      */
     public static final int AI_ACCESS_COLUMN = 5;
     /**
-     * Binding gives AI access 20 so "Vega can't use buttons", and its longer translations, fit at the row size (Alan,
-     * 2026-11-24). The names have room since their group moved to a sub-heading.
+     * AI access is sized to "Vega requires a keyboard bind", the widest of its labels in any language, at the row size
+     * (2026-11-24). Binding gave up 20 for it; the names have room since their group moved to a sub-heading.
      */
     private static final int BINDING_COLUMN_WIDTH = 300;
-    private static final int AI_ACCESS_COLUMN_WIDTH = 190;
+    private static final int AI_ACCESS_COLUMN_WIDTH = 230;
     private static final int DEVICE_COLUMN_WIDTH = 110;
     private static final int INPUT_COLUMN_WIDTH = 160;
+    private static final int ACTION_COLUMN_WIDTH = 110;
     private static final Border TABLE_SECTION_BORDER = BorderFactory.createEmptyBorder(1, 0, 0, 0);
 
     /**
@@ -446,7 +447,7 @@ public class BindingsGroupTableFactory {
             table.getColumnModel().getColumn(column).setPreferredWidth(device ? DEVICE_COLUMN_WIDTH : INPUT_COLUMN_WIDTH);
         }
         for (int column = AI_ACCESS_COLUMN; column < table.getColumnCount(); column++) {
-            table.getColumnModel().getColumn(column).setPreferredWidth(column == AI_ACCESS_COLUMN ? AI_ACCESS_COLUMN_WIDTH : 110);
+            table.getColumnModel().getColumn(column).setPreferredWidth(column == AI_ACCESS_COLUMN ? AI_ACCESS_COLUMN_WIDTH : ACTION_COLUMN_WIDTH);
         }
     }
 

@@ -1146,11 +1146,12 @@ Toggle HUD             —           —           ON PURPOSE
 ```
 
 **Built 2026-10-15 as AI ACCESS, in plain words for users who read nothing else.** The header is *AI
-access*. The states read *Vega can't use buttons* (CAN'T PRESS) and *Vega needs a
+access*. The states read *Vega requires a keyboard bind* (CAN'T PRESS) and *Vega needs a
 key* (NOT BOUND), both in the warning colour, with hover text saying which slot to use and that the controller binding stays.
 *Until 2026-11-24 CAN'T PRESS read "Vega can't use", which read as "Vega has no use for this" - the opposite: Vega
-uses the control and needs a keyboard key on it, so it belongs in *Show required by Vega only*. AI access is 190 wide
-to hold the longer words, Binding 300 (Alan).*
+uses the control and needs a keyboard key on it, so it belongs in *Show required by Vega only*. It now says what the
+control lacks. The translations say "Vega requires the keyboard", which keeps them short. AI access is 230 wide
+to hold the English, the longest, and Binding 300 (Alan, Krondor).*
 **A control Vega can press reads *Vega uses this*, dimmed, rather than
 blank**, so the column explains itself before anything goes wrong. The controls judged are the built-in commands' and every binding a custom command taps. ON PURPOSE is not built yet.
 
