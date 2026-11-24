@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -26,8 +29,9 @@ import java.util.stream.Stream;
  * Detection is not uniformly strong, and the difference is whether a storefront records where an installation
  * actually went:
  * <ul>
- *   <li><strong>Steam and Epic keep a manifest</strong> - {@code libraryfolders.vdf} and the {@code .item}
- *       files - so they are found wherever the user put them.</li>
+ *   <li><strong>Steam and Epic keep a manifest</strong> - {@code libraryfolders.vdf}, and for Epic the old
+ *       launcher's {@code .item} files or the new launcher's {@code installations.jsonl} - so they are found
+ *       wherever the user put them.</li>
  *   <li><strong>Frontier and Oculus record nothing</strong>, so they are found only at the locations their
  *       publishers document. One moved off those is undetectable here by construction, and reaches BindForge
  *       through the manual add instead.</li>
@@ -40,12 +44,21 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
     private static final Logger log = LogManager.getLogger(WindowsGameInstallationProvider.class);
 
     private static final String STEAM_REGISTRY_VALUE = "InstallPath";
+    /** The old Epic launcher's records: one {@code .item} per installed title, shared by every user. */
     private static final Path EPIC_MANIFESTS =
             Path.of("C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests");
+    /** The new Epic launcher's ("eglv2") record, per user under {@code %LOCALAPPDATA%}; see {@link EpicInstallLog}. */
+    private static final String EPIC_INSTALL_LOG = "com.epicgames.eglv2\\installations.jsonl";
+    /**
+     * The diagnostic lines already written this run. Detection runs on every BindForge read and a provider is built
+     * for each, so the set is static: without it, every read repeats the same lines into {@code bindforge.log}.
+     */
+    private static final Set<String> REPORTED_THIS_RUN = ConcurrentHashMap.newKeySet();
 
     private final Path bindingsFolder;
     private final List<Path> steamRoots;
     private final Path epicManifests;
+    private final List<Path> epicInstallLogs;
     private final List<Candidate> defaultRoots;
 
     /** A place an installation is published to live, used when nothing records where it actually went. */
@@ -56,15 +69,22 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
      * @param bindingsFolder the one shared {@code Options\Bindings} folder every Windows installation reads
      */
     public WindowsGameInstallationProvider(Path bindingsFolder) {
-        this(bindingsFolder, steamRootsFromRegistry(), EPIC_MANIFESTS, publishedDefaultRoots());
+        this(bindingsFolder, steamRootsFromRegistry(), EPIC_MANIFESTS, epicInstallLogsFromEnvironment(),
+                publishedDefaultRoots());
     }
 
-    /** Test seam: the same, with the storefronts' own locations supplied rather than read from this machine. */
+    /**
+     * Test seam: the same, with the storefronts' own locations supplied rather than read from this machine.
+     *
+     * @param epicInstallLogs the new Epic launcher's {@code installations.jsonl}; empty where there is no
+     *                        {@code %LOCALAPPDATA%} to find it under
+     */
     WindowsGameInstallationProvider(Path bindingsFolder, List<Path> steamRoots, Path epicManifests,
-                                    List<Candidate> defaultRoots) {
+                                    List<Path> epicInstallLogs, List<Candidate> defaultRoots) {
         this.bindingsFolder = bindingsFolder;
         this.steamRoots = steamRoots;
         this.epicManifests = epicManifests;
+        this.epicInstallLogs = epicInstallLogs;
         this.defaultRoots = defaultRoots;
     }
 
@@ -113,15 +133,37 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
         return installations;
     }
 
+    /**
+     * Epic installations from both launchers' records. The old launcher's {@code .item} files and the new
+     * launcher's install log are both read, because players on either launcher exist; a folder both name is one
+     * installation, which {@link #findInstallations} sees to.
+     */
     private List<GameInstallation> epicInstallations() {
-        if (!Files.isDirectory(epicManifests)) return List.of();
+        List<Path> logs = epicInstallLogs.stream().filter(Files::isRegularFile).toList();
+        boolean manifests = Files.isDirectory(epicManifests);
+        if (!manifests && logs.isEmpty()) {
+            // WHY: said out loud, so a support bundle shows that Epic was looked for and had no records,
+            // rather than leaving a missing Epic install unexplained.
+            reportOnce("No Epic launcher records: neither %s nor %s exists".formatted(epicManifests, epicInstallLogs));
+            return List.of();
+        }
+        List<Path> roots = new ArrayList<>();
+        if (manifests) roots.addAll(installRootsFromManifests());
+        for (Path installLog : logs) {
+            roots.addAll(EpicInstallLog.liveInstallFolders(installLog));
+        }
+        return roots.stream()
+                // WHY: judged by that folder, never by a title's name. Epic ships the soundtrack as its own
+                // title under a near-identical name, and it has no ControlSchemes.
+                .filter(this::looksLikeAnEpicInstall)
+                .map(root -> installationAt(Storefront.EPIC, root))
+                .toList();
+    }
+
+    private List<Path> installRootsFromManifests() {
         try (Stream<Path> items = Files.list(epicManifests)) {
             return items.filter(item -> item.getFileName().toString().endsWith(".item"))
-                    .map(this::installRootFromManifest)
-                    .filter(GameInstallation::looksLikeAnInstall)
-                    // WHY: judged by that folder, never by the manifest's DisplayName. Epic ships the
-                    // soundtrack as its own title under a near-identical name, and it has no ControlSchemes.
-                    .map(root -> installationAt(Storefront.EPIC, root))
+                    .flatMap(item -> installRootFromManifest(item).stream())
                     .toList();
         } catch (IOException e) {
             log.warn("Could not list Epic manifests in {}: {}", epicManifests, e.getMessage());
@@ -129,16 +171,30 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
         }
     }
 
-    private Path installRootFromManifest(Path manifest) {
+    /**
+     * Whether an Epic record's folder is an installation, logging the ones that are not, so a support bundle
+     * shows a record Epic kept for a folder BindForge cannot use.
+     */
+    private boolean looksLikeAnEpicInstall(Path root) {
+        if (GameInstallation.looksLikeAnInstall(root)) return true;
+        reportOnce("Epic records %s, which has no %s folder; not an installation BindForge can use"
+                .formatted(root, GameInstallation.controlSchemesUnder(root)));
+        return false;
+    }
+
+    /** Logs a diagnostic line the first time this run it is true, so repeated detections do not repeat it. */
+    private static void reportOnce(String line) {
+        if (REPORTED_THIS_RUN.add(line)) log.info("{}", line);
+    }
+
+    private Optional<Path> installRootFromManifest(Path manifest) {
         try {
             JsonObject json = JsonParser.parseString(Files.readString(manifest)).getAsJsonObject();
-            if (!json.has("InstallLocation")) return manifest;
-            return Path.of(json.get("InstallLocation").getAsString());
+            if (!json.has("InstallLocation")) return Optional.empty();
+            return Optional.of(Path.of(json.get("InstallLocation").getAsString()));
         } catch (IOException | JsonParseException | IllegalStateException | InvalidPathException e) {
             log.warn("Could not read Epic manifest {}: {}", manifest, e.getMessage());
-            // WHY: the manifest's own path can never look like an install, so returning it drops this entry
-            // without a null the caller has to filter for.
-            return manifest;
+            return Optional.empty();
         }
     }
 
@@ -176,6 +232,19 @@ public class WindowsGameInstallationProvider implements GameInstallationProvider
         roots.add(new Candidate(Storefront.OCULUS, Path.of(
                 "C:\\Program Files\\Oculus\\Software\\Software\\frontier-developments-plc-elite-dangerous")));
         return roots;
+    }
+
+    private static List<Path> epicInstallLogsFromEnvironment() {
+        String localAppData = System.getenv("LOCALAPPDATA");
+        if (localAppData == null || localAppData.isBlank()) return List.of();
+        try {
+            return List.of(Path.of(localAppData).resolve(EPIC_INSTALL_LOG));
+        } catch (InvalidPathException e) {
+            // WHY: warn, not debug - this logger is at info, and this is one reason an Epic install goes unfound.
+            log.warn("LOCALAPPDATA is not a usable path, so the new Epic launcher's install log is not read: {}",
+                    e.toString());
+            return List.of();
+        }
     }
 
     /**

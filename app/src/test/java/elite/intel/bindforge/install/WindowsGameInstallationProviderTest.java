@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -25,12 +27,14 @@ class WindowsGameInstallationProviderTest {
     private Path bindings;
     private Path steamRoot;
     private Path epicManifests;
+    private Path epicInstallLog;
 
     @BeforeEach
     void layOutTheMachine() throws IOException {
         bindings = Files.createDirectories(machine.resolve("AppData/Options/Bindings"));
         steamRoot = Files.createDirectories(machine.resolve("Program Files/Steam"));
         epicManifests = Files.createDirectories(machine.resolve("ProgramData/Epic/Manifests"));
+        epicInstallLog = machine.resolve("AppData/Local/com.epicgames.eglv2/installations.jsonl");
     }
 
     @Test
@@ -42,8 +46,8 @@ class WindowsGameInstallationProviderTest {
         List<GameInstallation> found = provider().findInstallations();
 
         assertEquals(1, found.size());
-        assertEquals(Storefront.STEAM, found.get(0).storefront());
-        assertEquals(root, found.get(0).root());
+        assertEquals(Storefront.STEAM, found.getFirst().storefront());
+        assertEquals(root, found.getFirst().root());
     }
 
     /**
@@ -77,8 +81,8 @@ class WindowsGameInstallationProviderTest {
         List<GameInstallation> found = provider().findInstallations();
 
         assertEquals(1, found.size());
-        assertEquals(Storefront.EPIC, found.get(0).storefront());
-        assertEquals(root, found.get(0).root());
+        assertEquals(Storefront.EPIC, found.getFirst().storefront());
+        assertEquals(root, found.getFirst().root());
     }
 
     /**
@@ -105,6 +109,98 @@ class WindowsGameInstallationProviderTest {
         writeEpicManifest("ed.item", "Elite Dangerous", root);
 
         assertTrue(provider().findInstallations().isEmpty());
+    }
+
+    /**
+     * The new Epic launcher keeps no {@code .item} files. Its per-user log is the only record, and on the machine
+     * this was found on, {@code C:\ProgramData\Epic} did not exist at all.
+     */
+    @Test
+    void findsAnEpicInstallFromTheNewLaunchersLogAlone() throws IOException {
+        Files.delete(epicManifests);
+        Path root = gameAt(machine.resolve("Users/Alan/Epic Games/EliteDangerous"));
+        writeEpicInstallLog(
+                logHeader(),
+                logEntry("14D2F9CD66D75F107066CC163BAC3CD2", root, false));
+
+        List<GameInstallation> found = provider().findInstallations();
+
+        assertEquals(1, found.size());
+        assertEquals(Storefront.EPIC, found.getFirst().storefront());
+        assertEquals(root, found.getFirst().root());
+    }
+
+    /**
+     * Epic lists the game and the small add-on it installs alongside as two installations with the same folder.
+     * That is still one installation.
+     */
+    @Test
+    void reportsOneInstallationForTheGameAndItsAddOnInTheSameFolder() throws IOException {
+        Path root = gameAt(machine.resolve("Users/Alan/Epic Games/EliteDangerous"));
+        writeEpicInstallLog(
+                logHeader(),
+                logEntry("14D2F9CD66D75F107066CC163BAC3CD2", root, false),
+                logEntry("7B9DB0E0CC3653D6EAA51F2068E56256", root, false));
+
+        assertEquals(1, provider().findInstallations().size());
+    }
+
+    /** An installation the log last marks deleted is dropped, even when its folder is still on disk. */
+    @Test
+    void dropsAnInstallTheNewLaunchersLogMarksDeleted() throws IOException {
+        Path removed = gameAt(machine.resolve("EpicGames/EliteDangerous"));
+        Path current = gameAt(machine.resolve("Users/Alan/Epic Games/EliteDangerous"));
+        writeEpicInstallLog(
+                logHeader(),
+                logEntry("0B38BBAEDE84E2843AC565EB4279A249", removed, false),
+                logEntry("0B38BBAEDE84E2843AC565EB4279A249", removed, true),
+                logEntry("14D2F9CD66D75F107066CC163BAC3CD2", current, false));
+
+        List<GameInstallation> found = provider().findInstallations();
+
+        assertEquals(List.of(current), found.stream().map(GameInstallation::root).toList());
+    }
+
+    /** A later line for the same installation replaces the earlier one: the log records a move by rewriting it. */
+    @Test
+    void takesTheLastLineForAnInstallationInTheNewLaunchersLog() throws IOException {
+        Path before = gameAt(machine.resolve("Old/EliteDangerous"));
+        Path after = gameAt(machine.resolve("New/EliteDangerous"));
+        writeEpicInstallLog(
+                logHeader(),
+                logEntry("14D2F9CD66D75F107066CC163BAC3CD2", before, false),
+                logEntry("14D2F9CD66D75F107066CC163BAC3CD2", after, false));
+
+        List<GameInstallation> found = provider().findInstallations();
+
+        assertEquals(List.of(after), found.stream().map(GameInstallation::root).toList());
+    }
+
+    @Test
+    void skipsAnUnreadableLineInTheNewLaunchersLog() throws IOException {
+        Path root = gameAt(machine.resolve("Users/Alan/Epic Games/EliteDangerous"));
+        writeEpicInstallLog(
+                logHeader(),
+                "{not json",
+                logEntry("14D2F9CD66D75F107066CC163BAC3CD2", root, false));
+
+        assertEquals(1, provider().findInstallations().size());
+    }
+
+    /** Players on either launcher exist, so both records are read; a folder both name is one installation. */
+    @Test
+    void readsBothEpicLaunchersRecords() throws IOException {
+        Path oldLauncher = gameAt(machine.resolve("EpicLibrary/EliteDangerous"));
+        Path newLauncher = gameAt(machine.resolve("Users/Alan/Epic Games/EliteDangerous"));
+        writeEpicManifest("ed.item", "Elite Dangerous", oldLauncher);
+        writeEpicManifest("again.item", "Elite Dangerous", newLauncher);
+        writeEpicInstallLog(logHeader(), logEntry("14D2F9CD66D75F107066CC163BAC3CD2", newLauncher, false));
+
+        List<GameInstallation> found = provider().findInstallations();
+
+        // WHY: a set, because the order Files.list gives the .item files in is the file system's, not ours.
+        assertEquals(2, found.size());
+        assertEquals(Set.of(oldLauncher, newLauncher), found.stream().map(GameInstallation::root).collect(Collectors.toSet()));
     }
 
     @Test
@@ -145,13 +241,13 @@ class WindowsGameInstallationProviderTest {
 
         List<GameInstallation> found = provider().findInstallations();
 
-        assertEquals(bindings, found.get(0).bindingsFolder());
+        assertEquals(bindings, found.getFirst().bindingsFolder());
         assertEquals(bindings, found.get(1).bindingsFolder());
         assertEquals(steamRootFolder.resolve("Products/elite-dangerous-odyssey-64/ControlSchemes/DeviceMappings.xml"),
-                found.get(0).deviceMappings());
+                found.getFirst().deviceMappings());
         assertEquals(steamRootFolder.resolve("Products/elite-dangerous-odyssey-64/ControlSchemes/DeviceButtonMaps"),
-                found.get(0).deviceButtonMaps());
-        assertNotEquals(found.get(0).deviceMappings(), found.get(1).deviceMappings(),
+                found.getFirst().deviceButtonMaps());
+        assertNotEquals(found.getFirst().deviceMappings(), found.get(1).deviceMappings(),
                 "the device files are per installation, not shared");
     }
 
@@ -167,7 +263,7 @@ class WindowsGameInstallationProviderTest {
                 provider(new WindowsGameInstallationProvider.Candidate(Storefront.FRONTIER, root)).findInstallations();
 
         assertEquals(1, found.size());
-        assertEquals(Storefront.FRONTIER, found.get(0).storefront());
+        assertEquals(Storefront.FRONTIER, found.getFirst().storefront());
     }
 
     /**
@@ -183,7 +279,7 @@ class WindowsGameInstallationProviderTest {
                 new WindowsGameInstallationProvider.Candidate(Storefront.FRONTIER, underscore)).findInstallations();
 
         assertEquals(1, found.size());
-        assertEquals(underscore, found.get(0).root());
+        assertEquals(underscore, found.getFirst().root());
     }
 
     /** Oculus really does double the folder; correcting it finds nothing. */
@@ -196,7 +292,7 @@ class WindowsGameInstallationProviderTest {
                 provider(new WindowsGameInstallationProvider.Candidate(Storefront.OCULUS, root)).findInstallations();
 
         assertEquals(1, found.size());
-        assertEquals(Storefront.OCULUS, found.get(0).storefront());
+        assertEquals(Storefront.OCULUS, found.getFirst().storefront());
     }
 
     @Test
@@ -213,7 +309,8 @@ class WindowsGameInstallationProviderTest {
     }
 
     private WindowsGameInstallationProvider provider(WindowsGameInstallationProvider.Candidate... defaults) {
-        return new WindowsGameInstallationProvider(bindings, List.of(steamRoot), epicManifests, List.of(defaults));
+        return new WindowsGameInstallationProvider(bindings, List.of(steamRoot), epicManifests,
+                List.of(epicInstallLog), List.of(defaults));
     }
 
     /** Creates the Live product's ControlSchemes folder, which is what makes a folder an installation. */
@@ -254,5 +351,26 @@ class WindowsGameInstallationProviderTest {
                   "LaunchExecutable": "EDLaunch.exe"
                 }
                 """.formatted(displayName, installLocation.toString().replace("\\", "\\\\")));
+    }
+
+    private void writeEpicInstallLog(String... lines) throws IOException {
+        Files.createDirectories(epicInstallLog.getParent());
+        Files.write(epicInstallLog, List.of(lines));
+    }
+
+    private static String logHeader() {
+        return "{\"version\":1,\"writtenAt\":\"2026-11-24T02:57:03Z\",\"entries\":3}";
+    }
+
+    /** One line in the shape the new launcher writes, cut to the fields detection reads plus a few around them. */
+    private static String logEntry(String installationId, Path dir, boolean deleted) {
+        if (deleted) {
+            return "{\"installationId\":\"%s\",\"deleted\":true,\"writtenAt\":\"2026-11-20T03:26:50Z\"}"
+                    .formatted(installationId);
+        }
+        return ("{\"installationId\":\"%s\",\"complete\":true,\"dir\":\"%s\",\"platform\":\"Windows\","
+                + "\"launchCommand\":\"/Epic\",\"launchExecutable\":\"EDLaunch.exe\","
+                + "\"writtenAt\":\"2026-11-20T03:53:28Z\"}")
+                .formatted(installationId, dir.toString().replace("\\", "\\\\"));
     }
 }

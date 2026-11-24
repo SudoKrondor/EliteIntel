@@ -303,7 +303,7 @@ system.
 
 | Implementation | How it finds installations |
 |---|---|
-| Windows | the storefront discovery in [InstallPaths](domain-knowledge/EliteDangerous-InstallPaths.md) - registry, `libraryfolders.vdf`, Epic manifests, the Frontier default locations |
+| Windows | the storefront discovery in [InstallPaths](domain-knowledge/EliteDangerous-InstallPaths.md) - registry, `libraryfolders.vdf`, Epic manifests and the new launcher's install log, the Frontier default locations |
 | Linux | enumerate the [four Steam roots](domain-knowledge/EliteDangerous-InstallPaths.md#5a-linux-has-several-steam-roots-not-one---confirmed-2026-09-26), resolving symlinks and de-duplicating by real path |
 
 **"Primary" on Linux is a narrow, local thing — and it is not a primary install.** Krondor's

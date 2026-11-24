@@ -246,12 +246,28 @@ C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests\*.item
 
 One `.item` file per installed game, plain JSON, with fields including `InstallLocation`, `DisplayName`, `AppName`/`CatalogItemId`, and `LaunchExecutable`. Discovery approach: enumerate all `*.item` files, parse each as JSON, match `DisplayName` (or `AppName`) against a known Elite Dangerous identifier, and read `InstallLocation` for the install path. This is a stable, documented mechanism used by several community relinking/migration tools — more reliable than any registry-based approach for Epic.
 
+### 3a. The new Epic launcher keeps a different record — confirmed 2026-11-23
+
+**That holds for the old launcher only.** The new one ("eglv2", installed per user under `%LOCALAPPDATA%\Epic Games\Launcher\`) writes no `.item` files, and on the machine it was found on `C:\ProgramData\Epic` did not exist at all. Its record is one per-user file:
+
+```
+%LOCALAPPDATA%\com.epicgames.eglv2\installations.jsonl
+```
+
+- **It is a log, not a table.** The first line is a header (`{"version":1,"writtenAt":..,"entries":14}`). Every line after it is a snapshot of one installation keyed by `installationId`, and a later line for an id replaces the earlier one.
+- **A removal is a line of its own**: `{"installationId":"..","deleted":true,"writtenAt":".."}`. The file is replayed in order and an installation it last marks deleted is dropped, **even when its folder is still on disk** (Alan, 2026-11-23). The machine it was found on held one: `C:\EpicGames\EliteDangerous`, added and then deleted on 2026-11-20.
+- **The folder is `dir`**, not `InstallLocation`. Other fields seen: `complete`, `platform`, `namespace`, `itemId`, `artifactId`, `version` / `pendingVersion`, `launchExecutable` (`EDLaunch.exe`), `parentInstallationId`.
+- **The game appears twice.** Epic installs a small add-on with it (`version` `blankbuild2508`, `launchExecutable` empty, `parentInstallationId` naming the game) under its own id and the **same `dir`**. Found by folder, that is one installation.
+- **The installation folder itself is unchanged**: `Products\elite-dangerous-odyssey-64\ControlSchemes` as in §1, with `.egstore\<installationId>.manifest` beside it. Only the record of where it went moved.
+
+BindForge reads both: the `.item` files for players still on the old launcher, and the log for the new one. A folder both name is one installation, and either way the folder is judged by its `ControlSchemes`, never by a title's name.
+
 ---
 
 ## 4. Why Registry Detection Isn't a Reliable Primary Source (Summary)
 
 - **Steam:** `HKLM\SOFTWARE\(Wow6432Node\)Valve\Steam\InstallPath` gives Steam's own client folder, not any game's install path. Legacy per-game `Uninstall` entries exist but are inconsistently populated across Steam versions. Use the registry only to bootstrap finding `steamapps\`; use `libraryfolders.vdf` (§2) for actual game paths.
-- **Epic:** no documented, stable per-game registry path exists at all. Use the `.item` manifest files (§3) instead.
+- **Epic:** no documented, stable per-game registry path exists at all. Use the `.item` manifest files (§3) and, for the new launcher, `installations.jsonl` (§3a) instead.
 - **Frontier launcher:** no separate manifest/registry database analogous to Steam's `libraryfolders.vdf` or Epic's `.item` manifests was found. **But there are two documented default locations to probe** before giving up and asking — see [§1b](#1b-installation-locations-by-store). A Frontier-launched install's data lands in the same per-product `Products\<name>\` structure described in §1 — there's no Frontier-specific discovery step needed beyond knowing the install folder itself (which, for a Frontier-launched install, is wherever the user pointed EDLaunch's configurable install path).
 
 ---
@@ -368,7 +384,7 @@ Two things decide whether an install can be found automatically: a **documented 
 | Storefront | Default path | Manifest | Non-default install findable? |
 |---|---|---|---|
 | Steam | yes | `libraryfolders.vdf` | **yes** |
-| Epic | yes | `.item` manifests | **yes** |
+| Epic | yes | `.item` manifests (old launcher), `installations.jsonl` (new launcher, §3a) | **yes** |
 | Frontier — standard | yes | **none** | **no** |
 | Frontier — alternative | yes | **none** | **no** |
 | Oculus Home | yes | unknown | unknown |
