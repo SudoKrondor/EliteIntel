@@ -4,7 +4,7 @@ The Bind Editor is where the player views and edits their actual key/button/axis
 
 **On screen in V1.2 (final, Krondor, 2026-11-10): one tab row - All, General, Ship, SRV, On-Foot, then Anomalies
 and Dead Zones & Sensitivity - over one grid.** The five section tabs are what this document calls
-[Game Mode](#game-mode), which has no tab of its own since 2026-11-06; [Anomalies](#anomalies) is the rows drawn red;
+[Game Mode](#game-mode), which has no tab of its own since 2026-11-06; [Anomalies](#anomalies) is the rows drawn red and the controls Vega has no keyboard key for;
 Dead Zones & Sensitivity is [Settings](#settings--settled-2026-09-19). The sub-tab is labelled **Bind Editor** since
 2026-11-10 (it was Binding Profile). **Rejected for V1.2 (2026-11-10):** settings rows, booleans and dropdowns in the
 grid (E6), and the grid shell of GM1 - collapsing groups, the section filter bar, Esc to clear the search and conflict
@@ -997,8 +997,13 @@ This is distinct from [Control Types](#control-types) below, which groups by inp
 
 **Scope for V1.2, settled 2026-11-03 (Krondor and Alan): the tab lists every row Game Mode draws red as a conflict,**
 laid out as Game Mode's
-*All*, and a click opens the same editor. There are no sub-tabs. The four kinds below, their severity order and the ON PURPOSE mark are the earlier, larger design:
-**not built, and not in the V1.2 plan unless raised again.**
+*All*, and a click opens the same editor. There are no sub-tabs. **Widened 2026-11-25 (Krondor):** it also lists every
+control Vega uses that has no keyboard key - shape two of [Missing](#missing-has-two-shapes--added-2026-09-12), plus a
+Vega control with nothing bound - which is exactly what the startup check counts as missing. A support bundle had the
+startup line say "1 binding is missing" while Anomalies said nothing was wrong. A conflict row keeps its Clear; a
+missing row offers Game Mode's Auto fix, and the last column is headed *Action*. Shape one (every unbound control,
+whoever presses it) stays out. The rest of the four kinds below, their severity order and the ON PURPOSE mark are the
+earlier, larger design: **not built, and not in the V1.2 plan unless raised again.**
 
 *(Named "Conflicts" until 2026-09-07. Renamed because the mode outgrew the word — see
 [Four kinds, one question](#four-kinds-one-question) below. "Conflict" remains exactly right for the kind
