@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * In memory only, and refilled by the pre-scan, which reads the last journals from the top.
  * <p>
- * The test is POSITIVE for the Nomad: nothing known, or any other symbol, answers "not a Nomad", which is
- * exactly how the app behaved before the Nomad was told apart. An unseen vehicle can only fall back to that.
+ * The tests are POSITIVE for the Nomad and the Rhino: nothing known, or any other symbol, answers "neither",
+ * which is plain wheeled-SRV behaviour. An unseen vehicle can only fall back to that.
  */
 public final class DeployedVehicle {
 
@@ -34,6 +34,11 @@ public final class DeployedVehicle {
      * The journal's symbol for the Nomad, spelled {@code lander01} by the launch events and {@code Lander01} by LoadGame.
      */
     static final String NOMAD_SYMBOL = "lander01";
+
+    /**
+     * The journal's symbol for the Rhino, from {@code LaunchSRV} and {@code DockSRV}.
+     */
+    static final String RHINO_SYMBOL = "mev_rhino";
 
     private static final DeployedVehicle INSTANCE = new DeployedVehicle();
 
@@ -109,5 +114,12 @@ public final class DeployedVehicle {
      */
     public boolean isNomad() {
         return NOMAD_SYMBOL.equalsIgnoreCase(symbol.get());
+    }
+
+    /**
+     * Whether the vehicle last recorded is the Rhino. Says nothing about whether the commander is in it.
+     */
+    public boolean isRhino() {
+        return RHINO_SYMBOL.equalsIgnoreCase(symbol.get());
     }
 }

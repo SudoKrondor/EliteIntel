@@ -174,6 +174,49 @@ class DeployedVehicleSubscriberTest {
     }
 
     @Test
+    void launchSrvNamesTheRhino() {
+        subscriber.onLaunchSRV(launchSrv("mev_rhino", "SRV Rhino"));
+        setFlags(IN_SCARAB_FLAGS);
+
+        assertTrue(Status.getInstance().isInRhino(), "the Rhino reports exactly like any other SRV");
+        assertFalse(Status.getInstance().isInNomad());
+    }
+
+    @Test
+    void aWheeledSrvIsNotTheRhino() {
+        subscriber.onLaunchSRV(launchSrv("testbuggy", "SRV Scarab"));
+        setFlags(IN_SCARAB_FLAGS);
+
+        assertFalse(Status.getInstance().isInRhino());
+    }
+
+    @Test
+    void theNomadIsNotTheRhino() {
+        subscriber.onLaunchVessel(launchVessel());
+        setFlags(IN_NOMAD_FLAGS);
+
+        assertFalse(Status.getInstance().isInRhino());
+    }
+
+    @Test
+    void theRhinoOnRecordIsNotTheRhinoOnceBackInTheShip() {
+        subscriber.onLaunchSRV(launchSrv("mev_rhino", "SRV Rhino"));
+        setFlags(IN_SHIP_FLAGS);
+
+        assertFalse(Status.getInstance().isInRhino(), "isInRhino is gated on the InSRV flag");
+    }
+
+    @Test
+    void onFootAndBackIntoTheRhinoKeepsIt() {
+        subscriber.onLaunchSRV(launchSrv("mev_rhino", "SRV Rhino", 35));
+        setFlags(ON_FOOT_FLAGS);
+        subscriber.onEmbark(embark(true, 35));
+        setFlags(IN_SCARAB_FLAGS);
+
+        assertTrue(Status.getInstance().isInRhino());
+    }
+
+    @Test
     void nothingKnownIsNotTheNomad() {
         setFlags(IN_NOMAD_FLAGS);
 
