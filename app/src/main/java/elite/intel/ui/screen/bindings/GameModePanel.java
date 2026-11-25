@@ -42,7 +42,8 @@ import static elite.intel.ui.theme.HudPalette.*;
  * edits not applied.
  * <p>
  * It also supplies the Anomalies mode's view ({@link #anomaliesView()}): the same rows and the same dialogs, narrowed to
- * the rows drawn red, so that a row can never be red in one place and missing from the other.
+ * the rows drawn red and the controls Vega has no keyboard key for, so that a row can never be red in one place and
+ * missing from the other.
  * <p>
  * Axis rows sit among the button rows, as the game lists them. VEGA never presses one and no keyboard key can go on one,
  * so they have no AI access, take no auto-fix, and open {@link AssignAxisDialog} rather than the button dialog.
@@ -133,7 +134,7 @@ class GameModePanel extends JPanel {
     private JPanel anomaliesPanel;
     private JScrollPane anomaliesScrollPane;
     /**
-     * Told how many rows are in conflict, for the Anomalies tab's title.
+     * Told how many rows are in conflict or missing for Vega, for the Anomalies tab's title.
      */
     private final IntConsumer anomalyCount;
     private JButton fixAllButton;
@@ -235,7 +236,7 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * The Anomalies mode: every row in conflict, whichever section it is in. It takes the same search and opens
+     * The Anomalies mode: every row in conflict or missing for Vega, whichever section it is in. It takes the same search and opens
      * the same dialogs, because it is a view of this panel's rows.
      */
     JComponent anomaliesView() {
@@ -738,7 +739,7 @@ class GameModePanel extends JPanel {
 
     /**
      * The grid's columns, in the order {@link #groupedBindings} fills a row: Binding, a Device and an Input under each
-     * of Primary and Secondary, AI access, then the row's action ({@code Action}, or {@code Clear} on Anomalies).
+     * of Primary and Secondary, AI access, then the row's action.
      */
     private static String[] gridColumnNames(String lastColumn) {
         String device = getText("bindings.column.device");
@@ -771,24 +772,45 @@ class GameModePanel extends JPanel {
     }
 
     /**
-     * Every row drawn red, by the same conflict index that draws it. Only the search narrows them: the section tab and
+     * Every row drawn red, by the same conflict index that draws it, and every control Vega uses that it has no keyboard
+     * key to press - the controls the startup check counts as missing. Only the search narrows them: the section tab and
      * the footer's filters belong to Game Mode.
+     * <p>
+     * WHY the missing ones are here (Krondor, 2026-11-25): the startup check said "1 binding is missing" while this tab
+     * said there was nothing wrong, and a commander told something is missing comes here to find it. A conflict row keeps
+     * its Clear; a missing one offers what Game Mode's row does, Auto fix where a key can go on it.
      */
     private void renderAnomalies(AiAccess aiAccess) {
-        List<String> inConflict = currentSlots.keySet().stream().filter(conflicts::contains).toList();
-        anomalyCount.accept(inConflict.size());
+        Set<String> required = BindingsMonitor.requiredControls();
+        List<String> anomalies = currentSlots.keySet().stream()
+                .filter(id -> conflicts.contains(id) || isMissingForVega(id, aiAccess))
+                .toList();
+        anomalyCount.accept(anomalies.size());
         renderGroupedTables(
                 anomaliesPanel,
-                groupedBindings(filterBySearch(inConflict), currentSlots, id -> clearCell(), aiAccess),
+                groupedBindings(filterBySearch(anomalies), currentSlots,
+                        id -> conflicts.contains(id) ? clearCell() : rowActionOf(id, required), aiAccess),
                 true,
-                gridColumnNames(getText("bindings.column.clear")));
-        if (inConflict.isEmpty()) {
+                gridColumnNames(getText("bindings.column.rowAction")));
+        if (anomalies.isEmpty()) {
             JLabel none = hudReadoutLabel(getText("bindings.anomalies.none"));
             none.setBorder(new EmptyBorder(10, 8, 10, 0));
             none.setAlignmentX(Component.LEFT_ALIGNMENT);
             anomaliesPanel.add(none, 0);
             anomaliesPanel.revalidate();
         }
+    }
+
+    /**
+     * A control Vega uses with no keyboard key on it - bound only to a controller, or not at all. The AI ACCESS column's
+     * judgement, so the row reads the same here as in Game Mode.
+     */
+    private boolean isMissingForVega(String bindingId, AiAccess aiAccess) {
+        if (isAxis(bindingId)) {
+            return false;
+        }
+        AiAccess.State state = aiAccess.stateOf(bindingId, currentSlots.get(bindingId));
+        return state == AiAccess.State.CANT_PRESS || state == AiAccess.State.NOT_BOUND;
     }
 
     /**

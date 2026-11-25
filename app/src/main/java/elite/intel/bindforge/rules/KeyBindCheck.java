@@ -82,11 +82,11 @@ public class KeyBindCheck {
             ));
             // The count and where to look, nothing more. Naming every control here - forty-nine of them
             // on a fresh keyboard layout - filled the system log with a wall of names nobody works from,
-            // and the earlier line per control was worse. The Bindings tab is where the list lives, with a
-            // row per control and the auto-fix beside it.
+            // and the earlier line per control was worse. The Bind Editor is where the list lives, with a
+            // row per control and the auto-fix beside it - the Bind Editor's Anomalies tab, which lists exactly these.
             UiBus.publish(new AppLogEvent(newMissing.size() == 1
-                    ? "1 binding is missing - see the Bindings tab"
-                    : newMissing.size() + " bindings are missing - see the Bindings tab"));
+                    ? "1 binding is missing - see Anomalies in the Bind Editor"
+                    : newMissing.size() + " bindings are missing - see Anomalies in the Bind Editor"));
             log.info("Missing bindings ({}): {}", newMissing.size(), String.join(", ", newMissing));
         }
 
