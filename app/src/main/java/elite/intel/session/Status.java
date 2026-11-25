@@ -358,6 +358,16 @@ public class Status extends StatusFlags {
         return isInSrv() && DeployedVehicle.getInstance().isNomad();
     }
 
+    /**
+     * In the Rhino. Status.json reports it exactly like any other SRV, so this narrows {@link #isInSrv()} by the
+     * vehicle the journal says was deployed - see {@link DeployedVehicle}. It drives on the SRV controls, but it
+     * hovers rather than rolls, so the ship has to come to a hover and open its bay to take it back: recovering it
+     * is a docking request, not the wheeled SRV's recall.
+     */
+    public boolean isInRhino() {
+        return isInSrv() && DeployedVehicle.getInstance().isRhino();
+    }
+
     public boolean isInMainShip() {
         return isInMainShip(getStatus().getFlags());
     }

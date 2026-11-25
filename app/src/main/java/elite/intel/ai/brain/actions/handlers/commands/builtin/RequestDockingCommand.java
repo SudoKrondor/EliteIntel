@@ -33,10 +33,10 @@ public final class RequestDockingCommand implements IntelCommand {
         return ID;
     }
 
-    /// Ship, Nomad or Fighter
+    /// Ship, Fighter, Nomad or Rhino - the ship hovers and opens its bay for the Rhino; a wheeled SRV cannot dock
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInFighter() || status.isInNomad(); /// a wheeled SRV cannot dock
+        return status.isInMainShip() || status.isInFighter() || status.isInNomad() || status.isInRhino();
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class RequestDockingCommand implements IntelCommand {
             navigator.closeAndRestore(StatusFlags.GuiFocus.EXTERNAL_PANEL);
         }
         else {
-            // The Nomad reports as an SRV, and its panels answer the SRV's keys, not the fighter's.
+            // The Nomad and the Rhino report as an SRV, and their panels answer the SRV's keys, not the fighter's.
             String rolePanel = status.isInSrv()
                     ? Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding()
                     : Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding();
