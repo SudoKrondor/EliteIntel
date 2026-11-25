@@ -156,7 +156,19 @@ public class BindingSlotDisplayFormatter {
      * a choice not yet written.
      */
     public String formatInputs(String device, List<BindingModifier> modifiers, String key) {
-        return formatDevice(device) + " | " + formatChord(device, modifiers, key);
+        return formatInputs(device, modifiers, key, false);
+    }
+
+    /**
+     * {@link #formatInputs(String, List, String)} for a slot that may be a long press, marked as Elite's own controls
+     * screen marks it: a tap and a hold on one key are two controls, and must not read alike.
+     */
+    public String formatInputs(String device, List<BindingModifier> modifiers, String key, boolean hold) {
+        return formatDevice(device) + " | " + withHold(formatChord(device, modifiers, key), hold);
+    }
+
+    private static String withHold(String chord, boolean hold) {
+        return hold ? chord + " " + getText("bindings.hold.suffix") : chord;
     }
 
     /**
@@ -178,7 +190,7 @@ public class BindingSlotDisplayFormatter {
         if (slot == null || slot.key() == null || slot.key().isBlank() || "Key_".equals(slot.key())) {
             return getText("bindings.status.notDefined");
         }
-        return formatChord(slot.device(), slot.bindingModifiers(), slot.key());
+        return withHold(formatChord(slot.device(), slot.bindingModifiers(), slot.key()), slot.hold());
     }
 
     /**

@@ -33,7 +33,6 @@ public class KeyboardAvailabilityView extends JPanel {
     private static final double UNITS_PER_ROW = 15;
 
     private final String bindingId;
-    private final BindingSlotType slotType;
     private final Map<String, KeyBindingsParser.BindingSlots> existingSlots;
     /**
      * The keys the commander has on the game menu, which no other control may use - read once, because
@@ -58,6 +57,11 @@ public class KeyboardAvailabilityView extends JPanel {
      * to what it had, whoever else shares that chord today.
      */
     private Set<Set<String>> ownChords = Set.of();
+    /**
+     * Whether the slot being filled is a long press. A tap and a hold on one key are two controls, so a key only
+     * another control's tap holds is free for a hold, and the other way round.
+     */
+    private boolean hold;
 
     private record Key(String token, String label, double width, boolean modifier) {
     }
@@ -65,8 +69,11 @@ public class KeyboardAvailabilityView extends JPanel {
     public KeyboardAvailabilityView(String bindingId, BindingSlotType slotType,
                                     Map<String, KeyBindingsParser.BindingSlots> existingSlots) {
         this.bindingId = bindingId;
-        this.slotType = slotType;
         this.existingSlots = existingSlots == null ? Map.of() : existingSlots;
+        KeyBindingsParser.BindingSlots own = this.existingSlots.get(bindingId);
+        KeyBindingsParser.KeyBinding opening = own == null ? null
+                : slotType == BindingSlotType.SECONDARY ? own.secondary() : own.primary();
+        this.hold = opening != null && opening.hold;
         this.gameMenuKeys = ReservedKeyChords.GAME_MENU_ACTION.equals(bindingId)
                 ? Set.of()
                 : ReservedKeyChords.gameMenuKeysFromExecutableSlots(this.existingSlots);
@@ -94,6 +101,16 @@ public class KeyboardAvailabilityView extends JPanel {
      */
     public void setHeldModifiers(Collection<String> modifiers) {
         this.heldModifiers = modifiers == null ? Set.of() : new HashSet<>(modifiers);
+        refresh();
+    }
+
+    /**
+     * Whether the slot being filled will be a long press after SAVE - the slot's own Hold, or the one the PRESS AND
+     * HOLD box chose - and recolours every key for it.
+     */
+    public void setHold(boolean hold) {
+        if (this.hold == hold) return;
+        this.hold = hold;
         refresh();
     }
 
@@ -364,7 +381,7 @@ public class KeyboardAvailabilityView extends JPanel {
             return HUD_COLOR_ROLE_SUCCESS;
         }
         boolean conflicts = BindingConflictScanner.candidateConflictInSlots(
-                bindingId, slotType, token, heldModifiers, existingSlots) != null;
+                bindingId, token, heldModifiers, hold, existingSlots) != null;
         return conflicts ? HUD_COLOR_ROLE_DANGER : HUD_COLOR_ROLE_SUCCESS;
     }
 }
