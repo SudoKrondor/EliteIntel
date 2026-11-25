@@ -111,6 +111,12 @@ public class AssignKeyboardBindingDialog extends JDialog {
         SlotContents swapped;
         /** Why the last pick for this slot was turned away, shown on its card until the next pick. */
         String rejected;
+        /**
+         * The PRESS AND HOLD box, once the commander has touched it; {@code null} keeps the Hold the slot carries -
+         * its own, or the one that came with a swapped input. Kept across picks, like a held modifier: ticked first,
+         * the next key goes in as a long press.
+         */
+        Boolean chosenHold;
 
         SlotEdit(BindingSlotType type, KeyBindingsParser.ReadOnlyBindingSlot original, ExistingConflict existingConflict) {
             this.type = type;
@@ -149,8 +155,24 @@ public class AssignKeyboardBindingDialog extends JDialog {
             return original != null && original.hold();
         }
 
-        boolean holdAfter() {
+        /** The Hold the slot carries before the box is touched: its own, or the swapped input's. */
+        private boolean carriedHold() {
             return kind == Kind.SWAPPED ? swapped.hold() : hold();
+        }
+
+        /** The Hold the next pick goes in with, and what the box shows - an empty slot included. */
+        boolean holdChoice() {
+            return chosenHold != null ? chosenHold : carriedHold();
+        }
+
+        /** The Hold written on SAVE; an empty slot has none. */
+        boolean holdAfter() {
+            return inputAfter() != null && holdChoice();
+        }
+
+        /** True when the box changed the Hold of what the slot carries, with nothing else picked. */
+        boolean holdRechosen() {
+            return inputAfter() != null && holdChoice() != carriedHold();
         }
 
         boolean originallyEmpty() {
@@ -205,7 +227,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
         }
 
         boolean changed() {
-            if (kind == Kind.UNCHANGED) return false;
+            // WHY not simply false: ticking PRESS AND HOLD on a bound slot is an edit on its own.
+            if (kind == Kind.UNCHANGED) return !originallyEmpty() && holdAfter() != hold();
             if (kind == Kind.CLEAR) return !originallyEmpty();
             if (originallyEmpty()) return true;
             BindingInput was = new BindingInput(original.device(), original.key());
@@ -223,16 +246,21 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 case CLEAR -> holdsController()
                         ? new AssignSlotSelection(type, null, List.of(), false)
                         : new AssignKeyboardBindingSelection(type, null, List.of());
-                case KEYBOARD -> holdsController()
+                case KEYBOARD -> holdsController() || holdAfter() != hold()
                         // WHY: the keyboard path never writes over a controller slot, so a key on one goes
                         // through the user-edit path - after every keyboard check, exactly as on any other slot.
+                        // Nor does it write a Hold: it keeps the slot's, so a changed one goes the same way.
                         ? new AssignSlotSelection(type, inputAfter(), modifiersAfter(), holdAfter())
                         : new AssignKeyboardBindingSelection(type, key, keyboardModifiers);
                 case CONTROLLER -> new AssignSlotSelection(type, control.input(), control.modifiers(), holdAfter());
                 // WHY the user-edit path even for two keys: the slots are written one after the other, and the
                 // keyboard path carries no Hold over.
                 case SWAPPED -> new AssignSlotSelection(type, swapped.input(), swapped.modifiers(), holdAfter());
-                case UNCHANGED -> throw new IllegalStateException("An unchanged slot has nothing to save");
+                // Only the Hold changed (see changed()): the same input, written back with it.
+                case UNCHANGED -> {
+                    if (!changed()) throw new IllegalStateException("An unchanged slot has nothing to save");
+                    yield new AssignSlotSelection(type, inputAfter(), modifiersAfter(), holdAfter());
+                }
             };
         }
 
@@ -246,6 +274,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             control = null;
             swapped = null;
             rejected = null;
+            chosenHold = null;
         }
 
         private static String identity(String device, String key) {
@@ -289,6 +318,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final HudBanner aiAccessBanner;
     private final JButton saveButton;
     private final JButton swapButton;
+    /**
+     * PRESS AND HOLD for the orange card: the slot's {@code <Hold Value="1" />}. Elite fires a held slot on a long
+     * press, and a tap on the same input is another control - so the box works like one more modifier.
+     */
+    private final JCheckBox holdBox;
     private final Set<String> dialogHeldModifiers = new LinkedHashSet<>();
     private KeyEventDispatcher modifierTracker;
     /**
@@ -356,8 +390,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.aiAccessBanner = HudBanner.multiline(getText("bindings.assign.aiAccessLoss"), StatusBadge.State.STANDBY);
         this.saveButton = makeButton(getText("button.save"));
         this.swapButton = makeSwapButton();
+        this.holdBox = makeHoldBox();
         buildUi();
-        keyboardView.setOwnChords(ownKeyboardChords());
         showSourceOf(edits.get(active));
         refresh(true);
     }
@@ -505,6 +539,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         cardRow.add(swapButton);
         cardRow.add(slotCard(BindingSlotType.SECONDARY));
         wide(content, gbc, cardRow, new Insets(10, 6, 3, 6));
+        wide(content, gbc, holdBox, null);
         wide(content, gbc, HudBanner.multiline(getText("bindings.assign.slotHint"), StatusBadge.State.INFO), null);
         aiAccessBanner.setVisible(false);
         wide(content, gbc, aiAccessBanner, null);
@@ -568,6 +603,15 @@ public class AssignKeyboardBindingDialog extends JDialog {
         SlotCard card = new SlotCard(edits.get(type));
         cards.put(type, card);
         return card;
+    }
+
+    private JCheckBox makeHoldBox() {
+        JCheckBox box = AppTheme.makeCheckBox(getText("bindings.assign.hold"), false);
+        box.setToolTipText(viewOnly ? getText("bindings.readOnly.tooltip") : getText("bindings.assign.hold.tooltip"));
+        box.setEnabled(!viewOnly);
+        // WHY an action listener: refresh's setSelected fires none.
+        box.addActionListener(e -> onHold(box.isSelected()));
+        return box;
     }
 
     /**
@@ -789,6 +833,26 @@ public class AssignKeyboardBindingDialog extends JDialog {
         refresh(false);
     }
 
+    /**
+     * PRESS AND HOLD ticked or cleared for the orange card. With an input in the slot it changes that input's Hold at
+     * once - refused, like any pick, when the other press of it is taken; on an empty slot it waits for the next pick.
+     */
+    private void onHold(boolean selected) {
+        if (viewOnly) return;
+        SlotEdit edit = edits.get(active);
+        Boolean was = edit.chosenHold;
+        edit.chosenHold = selected;
+        String reason = edit.inputAfter() == null ? null : blockingReason(edit);
+        if (reason == null) {
+            edit.rejected = null;
+        } else {
+            String picked = newText(edit);
+            edit.chosenHold = was;
+            edit.rejected = picked + " \u2014 " + reason;
+        }
+        refresh(false);
+    }
+
     private void onUndo(BindingSlotType type) {
         if (viewOnly) return;
         setActive(type);
@@ -914,9 +978,14 @@ public class AssignKeyboardBindingDialog extends JDialog {
         // WHY: a chord this control held when the dialog opened - in either slot - can always go back: it is what
         // the file says today, and putting it back adds no clash. Without this, clearing a slot and re-picking
         // its own key was refused whenever another control shared it.
-        boolean wasOwn = isOwnChord(edit.inputAfter(), edit.modifiersAfter());
+        boolean wasOwn = isOwnChord(edit.inputAfter(), edit.modifiersAfter(), edit.holdAfter());
         if (edit.kind == Kind.CONTROLLER) {
             return controllerReason(edit, edit.control.input(), edit.control.modifiers());
+        }
+        // WHY: an input kept or moved between this control's slots adds no clash - unless PRESS AND HOLD turned
+        // it into the other control: a tap and a long press on one input are two, and either may be taken.
+        if (edit.kind == Kind.UNCHANGED || edit.kind == Kind.SWAPPED) {
+            return edit.holdRechosen() ? controllerReason(edit, edit.inputAfter(), edit.modifiersAfter()) : null;
         }
         if (edit.kind != Kind.KEYBOARD) return null;
         if (!EliteKeyboardKeys.isAssignable(edit.key)) {
@@ -938,18 +1007,19 @@ public class AssignKeyboardBindingDialog extends JDialog {
             return getText("bindings.assign.alreadyInUse");
         }
         BindingConflictScanner.CandidateConflict conflict = BindingConflictScanner.candidateConflictInSlots(
-                bindingId, edit.type, edit.key, modifierKeys, existingSlots);
+                bindingId, edit.key, modifierKeys, edit.holdAfter(), existingSlots);
         return conflict == null ? null
                 : getText("bindings.assign.conflict", BindingDisplayNames.label(conflict.otherBinding()));
     }
 
     /**
-     * Why a controller or mouse input with these modifiers cannot go into the slot, or {@code null} when it can.
+     * Why a controller or mouse input with these modifiers cannot go into the slot, or {@code null} when it can - and,
+     * since it judges any device, a kept keyboard key whose Hold the box changed.
      */
     private String controllerReason(SlotEdit edit, BindingInput input, List<BindingInput> modifiers) {
         // WHY first: held buttons and ticked keys together can pass the game's three, which the writer refuses.
         if (modifiers.size() > SlotAssignment.MAX_MODIFIERS) return getText("bindings.assign.tooManyModifiers");
-        if (isOwnChord(input, modifiers)) return null;
+        if (isOwnChord(input, modifiers, edit.holdAfter())) return null;
         return holderOf(edit, input, modifiers)
                 .map(holder -> getText("bindings.assign.controller.inUse", BindingDisplayNames.label(holder)))
                 .orElse(null);
@@ -958,7 +1028,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private boolean isOccupied(SlotEdit edit) {
         try {
             return availabilityService.isKeyOccupiedByOtherSlot(binds, bindingId, edit.key,
-                    edit.keyboardModifiers);
+                    edit.keyboardModifiers, edit.holdAfter());
         } catch (Exception e) {
             // WHY: an unreadable/unparseable .binds must never be reported as free,
             // or we would offer a save that could silently clobber another binding.
@@ -969,12 +1039,14 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     /**
-     * The all-keyboard chords the slots held when the dialog opened, as key sets - green for this control.
+     * The all-keyboard chords the slots held when the dialog opened with this Hold, as key sets - green for this
+     * control. A key it taps is not its own for a long press: that is another control, and another may hold it.
      */
-    private List<Set<String>> ownKeyboardChords() {
+    private List<Set<String>> ownKeyboardChords(boolean hold) {
         List<Set<String>> chords = new ArrayList<>();
         for (SlotEdit edit : edits.values()) {
             if (edit.originallyEmpty() || !BindingInput.KEYBOARD.equals(edit.original.device())) continue;
+            if (edit.hold() != hold) continue;
             List<BindingInput> modifiers = originalModifiers(edit);
             if (modifiers.stream().anyMatch(m -> !BindingInput.KEYBOARD.equals(m.device()))) continue;
             Set<String> chord = new HashSet<>();
@@ -986,12 +1058,12 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     /**
-     * True when these inputs are exactly what one of the control's slots held when the dialog opened.
+     * True when these inputs, with this Hold, are exactly what one of the control's slots held when the dialog opened.
      */
-    private boolean isOwnChord(BindingInput input, List<BindingInput> modifiers) {
+    private boolean isOwnChord(BindingInput input, List<BindingInput> modifiers, boolean hold) {
         if (input == null) return false;
         String chord = chordIdentity(input, modifiers);
-        return edits.values().stream().anyMatch(e -> !e.originallyEmpty()
+        return edits.values().stream().anyMatch(e -> !e.originallyEmpty() && e.hold() == hold
                 && chordIdentity(new BindingInput(e.original.device(), e.original.key()), originalModifiers(e)).equals(chord));
     }
 
@@ -1013,7 +1085,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
      * are drawn with (D6).
      */
     private Optional<String> holderOf(SlotEdit edit, BindingInput input, List<BindingInput> modifiers) {
-        return BindingConflictScanner.holderOf(bindingId, input, modifiers, edit.hold(), readOnlySlots);
+        return BindingConflictScanner.holderOf(bindingId, input, modifiers, edit.holdChoice(), readOnlySlots);
     }
 
     /**
@@ -1049,6 +1121,9 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 ? getText("bindings.assign.capture.idle")
                 : slotFormatter.formatChord(keyboardModifiersAfter(activeEdit), activeKey));
         keyboardView.setCurrentKey(activeKey);
+        keyboardView.setHold(activeEdit.holdChoice());
+        keyboardView.setOwnChords(ownKeyboardChords(activeEdit.holdChoice()));
+        holdBox.setSelected(activeEdit.holdChoice());
         keyboardView.setAssigned(heldOn(BindingInput.KEYBOARD, false), heldOn(BindingInput.KEYBOARD, true));
 
         for (ControllerInputsPanel panel : panels) {
@@ -1143,7 +1218,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         if (after == null) return getText("bindings.status.notDefined");
         List<BindingModifier> modifiers = edit.modifiersAfter().stream()
                 .map(m -> new BindingModifier(m.device(), m.key())).toList();
-        return slotFormatter.formatInputs(after.device(), modifiers, after.key());
+        return slotFormatter.formatInputs(after.device(), modifiers, after.key(), edit.holdAfter());
     }
 
     private void save() {

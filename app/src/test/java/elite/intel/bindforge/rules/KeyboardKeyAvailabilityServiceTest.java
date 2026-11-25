@@ -144,4 +144,56 @@ class KeyboardKeyAvailabilityServiceTest {
         assertTrue(service.isKeyOccupiedByOtherSlot(file, "GalaxyMapOpen", "Key_J", shiftCtrl));
         assertFalse(service.isKeyOccupiedByOtherSlot(file, "GalaxyMapOpen", "Key_J", ctrlOnly));
     }
+
+    // A tap and a long press on one key are two controls in Elite (Krondor, 2026-11-25): the shape is the
+    // commander's own file, Turn Left on foot held on Numpad 1.
+    private static final byte[] HELD_NUMPAD_1 = binds("""
+            <Root>
+              <HumanoidRotateLeftButton>
+                <Primary Device="Keyboard" Key="Key_Numpad_1">
+                  <Hold Value="1" />
+                </Primary>
+                <Secondary Device="{NoDevice}" Key="" />
+              </HumanoidRotateLeftButton>
+              <HumanoidRotateRightButton><Primary Device="{NoDevice}" Key="" /><Secondary Device="{NoDevice}" Key="" /></HumanoidRotateRightButton>
+            </Root>
+            """);
+
+    @Test
+    void aTapIsFreeWhereAnotherControlHoldsTheKey() throws Exception {
+        assertFalse(service.isKeyOccupiedByOtherSlot(HELD_NUMPAD_1, "HumanoidRotateRightButton", "Key_Numpad_1",
+                List.of(), false));
+        assertFalse(service.isKeyOccupiedByOtherSlot(HELD_NUMPAD_1, "HumanoidRotateRightButton", "Key_Numpad_1",
+                List.of()));
+    }
+
+    @Test
+    void aHoldIsTakenWhereAnotherControlHoldsTheKey() throws Exception {
+        assertTrue(service.isKeyOccupiedByOtherSlot(HELD_NUMPAD_1, "HumanoidRotateRightButton", "Key_Numpad_1",
+                List.of(), true));
+    }
+
+    @Test
+    void aHoldIsFreeWhereAnotherControlTapsTheKey() throws Exception {
+        byte[] file = binds("""
+                <Root>
+                  <HumanoidRotateLeftButton><Primary Device="Keyboard" Key="Key_H" /><Secondary Device="{NoDevice}" Key="" /></HumanoidRotateLeftButton>
+                  <HumanoidRotateRightButton><Primary Device="{NoDevice}" Key="" /><Secondary Device="{NoDevice}" Key="" /></HumanoidRotateRightButton>
+                </Root>
+                """);
+        assertFalse(service.isKeyOccupiedByOtherSlot(file, "HumanoidRotateRightButton", "Key_H", List.of(), true));
+        assertTrue(service.isKeyOccupiedByOtherSlot(file, "HumanoidRotateRightButton", "Key_H", List.of(), false));
+    }
+
+    @Test
+    void aHoldWrittenAsAnAttributeIsAHold() throws Exception {
+        byte[] file = binds("""
+                <Root>
+                  <HumanoidRotateLeftButton><Primary Device="Keyboard" Key="Key_H" Hold="1" /><Secondary Device="{NoDevice}" Key="" /></HumanoidRotateLeftButton>
+                  <HumanoidRotateRightButton><Primary Device="{NoDevice}" Key="" /><Secondary Device="{NoDevice}" Key="" /></HumanoidRotateRightButton>
+                </Root>
+                """);
+        assertFalse(service.isKeyOccupiedByOtherSlot(file, "HumanoidRotateRightButton", "Key_H", List.of(), false));
+        assertTrue(service.isKeyOccupiedByOtherSlot(file, "HumanoidRotateRightButton", "Key_H", List.of(), true));
+    }
 }

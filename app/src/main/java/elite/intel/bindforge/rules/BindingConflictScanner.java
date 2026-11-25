@@ -375,8 +375,21 @@ public final class BindingConflictScanner {
     public static CandidateConflict candidateConflictInSlots(
             String bindingId, BindingSlotType slotType, String key, Collection<String> modifiers,
             Map<String, KeyBindingsParser.BindingSlots> existingSlots) {
-        return candidateConflictInSlotKeysets(bindingId, chordOf(key, modifiers),
-                isHoldSlot(existingSlots.get(bindingId), slotType), toSlotKeysets(existingSlots));
+        return candidateConflictInSlots(bindingId, key, modifiers,
+                isHoldSlot(existingSlots.get(bindingId), slotType), existingSlots);
+    }
+
+    /**
+     * {@link #candidateConflictInSlots(String, BindingSlotType, String, Collection, Map)} for a candidate whose Hold
+     * is chosen rather than the slot's own - the Bind Editor's PRESS AND HOLD box. A tap and a long press on one chord
+     * are two controls, so only a slot with the same Hold takes it.
+     *
+     * @param hold whether the slot will carry {@code <Hold Value="1" />} after SAVE
+     */
+    public static CandidateConflict candidateConflictInSlots(
+            String bindingId, String key, Collection<String> modifiers, boolean hold,
+            Map<String, KeyBindingsParser.BindingSlots> existingSlots) {
+        return candidateConflictInSlotKeysets(bindingId, chordOf(key, modifiers), hold, toSlotKeysets(existingSlots));
     }
 
     /**
@@ -402,7 +415,7 @@ public final class BindingConflictScanner {
      *
      * @param bindingId the control being edited - neither of its own slots counts
      * @param modifiers the inputs held with it, a controller input's ticked SHIFT, CTRL or ALT included (E5)
-     * @param hold      the Hold the slot will carry, which is the one it has now
+     * @param hold      the Hold the slot will carry after SAVE - its own, or the one the PRESS AND HOLD box chose
      * @param slots     every slot the file holds, as {@link KeyBindingsParser#parseReadOnlyBindingSlots} reads them
      * @return the first other control, by id, it clashes with; empty when the input is free
      */

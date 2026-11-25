@@ -845,6 +845,26 @@ class BindingConflictScannerTest {
     // --- press versus press-and-hold ---
 
     @Test
+    void aChosenHoldIsJudgedAsTheLongPressItWillBe() {
+        // The Bind Editor's PRESS AND HOLD box: Turn Right on foot is empty, Turn Left holds Numpad 1 (the
+        // commander's file, 2026-11-25), and Jump taps H.
+        Map<String, elite.intel.bindforge.io.KeyBindingsParser.BindingSlots> slots = Map.of(
+                "HumanoidRotateLeftButton", new elite.intel.bindforge.io.KeyBindingsParser.BindingSlots(
+                        elite.intel.bindforge.io.KeyBindingsParser.getInstance().new KeyBinding("Key_Numpad_1", new String[0], true), null),
+                "HumanoidJumpButton", new elite.intel.bindforge.io.KeyBindingsParser.BindingSlots(
+                        elite.intel.bindforge.io.KeyBindingsParser.getInstance().new KeyBinding("Key_H", new String[0], false), null));
+
+        assertNull(BindingConflictScanner.candidateConflictInSlots(
+                "HumanoidRotateRightButton", "Key_Numpad_1", List.of(), false, slots));
+        assertNotNull(BindingConflictScanner.candidateConflictInSlots(
+                "HumanoidRotateRightButton", "Key_Numpad_1", List.of(), true, slots));
+        assertNull(BindingConflictScanner.candidateConflictInSlots(
+                "HumanoidRotateRightButton", "Key_H", List.of(), true, slots));
+        assertNotNull(BindingConflictScanner.candidateConflictInSlots(
+                "HumanoidRotateRightButton", "Key_H", List.of(), false, slots));
+    }
+
+    @Test
     void aPressAndALongPressOnOneKeyAreTwoControls() {
         // The commander's on-foot layout, as Elite shows it: 1 selects the primary weapon, [1](HOLD) uses a
         // health pack; 2 and [2](HOLD) the same for the secondary weapon and an energy cell. J and [J](HOLD)

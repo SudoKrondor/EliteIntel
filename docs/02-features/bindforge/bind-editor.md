@@ -819,6 +819,13 @@ everything automatic, unchanged.
   whatever Hold the slot had. *Added in review:* a slot that already carries Hold as a `Hold="1"` attribute — a
   form the game does not write, but the keyboard reader accepts — keeps that form, so an untouched Hold never
   counts as a change.
+- **PRESS AND HOLD is a box under the two slot cards (Krondor, 2026-11-25)**, for the orange card, on any device. A
+  tap and a long press on one input are two controls (*"press and hold is just another modifier"*), so every check
+  (SAVE, the key map's colours, the controller and mouse pads) judges an input with the Hold it will have.
+  Ticked on an empty slot, it waits for the next pick, like a held modifier. Ticked on a bound slot, it changes that
+  slot's Hold on its own, and is refused like any other pick when the other press of the input is taken. A changed
+  Hold always goes through the user-edit path, since the keyboard path keeps the slot's own. The grid and the cards
+  mark a held slot *(hold)*.
 - **A keyboard token is any `Key_` name**, not only the keys `EliteKeyboardKeys` lists: a non-English layout writes
   the character itself (`Key_ß`, [format §5.5](domain-knowledge/EliteDangerous-BindsFileFormat.md#55-keyboard-codes)). The game's
   literals — `Keyboard`, `Mouse`, `{NoDevice}` — are taken in the game's spelling only, never as a controller's

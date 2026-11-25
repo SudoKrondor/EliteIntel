@@ -26,7 +26,8 @@ public class KeyboardKeyAvailabilityService {
     /**
      * Save-time conflict check for a keyboard chord with any number of supported keyboard modifiers, against a binds
      * file held in memory - the edits not applied (Storage S5). No slot is named: a binding never conflicts with
-     * itself, in either slot.
+     * itself, in either slot. Judged as a tap: {@link #isKeyOccupiedByOtherSlot(byte[], String, String, Collection,
+     * boolean)} for a slot that carries {@code <Hold Value="1" />}.
      *
      * @param binds the binds file's bytes
      */
@@ -36,14 +37,31 @@ public class KeyboardKeyAvailabilityService {
             String key,
             Collection<BindingModifier> modifiers
     ) throws Exception {
-        return isKeyOccupiedByOtherSlot(keyboardSlotAssignments(parse(binds)), bindingId, key, modifiers);
+        return isKeyOccupiedByOtherSlot(binds, bindingId, key, modifiers, false);
+    }
+
+    /**
+     * The same check, for a press or a long press. A tap and a hold on one chord are two controls in Elite - its own
+     * controls screen shows the hold as {@code [1](HOLD)} - so only a slot with the same Hold takes the chord.
+     *
+     * @param hold whether the slot being filled will carry {@code <Hold Value="1" />}
+     */
+    public boolean isKeyOccupiedByOtherSlot(
+            byte[] binds,
+            String bindingId,
+            String key,
+            Collection<BindingModifier> modifiers,
+            boolean hold
+    ) throws Exception {
+        return isKeyOccupiedByOtherSlot(keyboardSlotAssignments(parse(binds)), bindingId, key, modifiers, hold);
     }
 
     private boolean isKeyOccupiedByOtherSlot(
             List<SlotAssignment> assignments,
             String bindingId,
             String key,
-            Collection<BindingModifier> modifiers
+            Collection<BindingModifier> modifiers,
+            boolean hold
     ) {
         Set<BindingModifier> normalizedModifiers = normalizeModifiers(modifiers);
         for (SlotAssignment assignment : assignments) {
@@ -52,6 +70,9 @@ public class KeyboardKeyAvailabilityService {
             }
             if (!assignment.modifiers().equals(normalizedModifiers)) {
                 continue;
+            }
+            if (assignment.hold() != hold) {
+                continue; // a tap and a long press on one chord are two controls, not a clash
             }
             // A binding never conflicts with itself (either slot).
             if (assignment.bindingId().equals(bindingId)) {
@@ -103,7 +124,7 @@ public class KeyboardKeyAvailabilityService {
 
             Node parent = slot.getParentNode();
             String bindingId = parent instanceof Element action ? action.getTagName() : "";
-            assignments.add(new SlotAssignment(bindingId, key, modifiers.get()));
+            assignments.add(new SlotAssignment(bindingId, key, modifiers.get(), holds(slot)));
         }
     }
 
@@ -117,6 +138,22 @@ public class KeyboardKeyAvailabilityService {
             return Optional.of(Set.copyOf(modifiers));
         }
         return Optional.empty();
+    }
+
+    /**
+     * Whether the slot is a long press: Elite writes {@code <Hold Value="1" />} as a child, and a hand-edited file may
+     * carry {@code Hold="1"} on the slot itself - {@code KeyBindingsParser} reads both.
+     */
+    private static boolean holds(Element slot) {
+        if ("1".equals(slot.getAttribute("Hold"))) return true;
+        NodeList children = slot.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            if (children.item(i) instanceof Element child && "Hold".equals(child.getTagName())
+                    && "1".equals(child.getAttribute("Value"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<BindingModifier> directModifierChildren(Element slot) {
@@ -161,6 +198,6 @@ public class KeyboardKeyAvailabilityService {
         return doc;
     }
 
-    private record SlotAssignment(String bindingId, String key, Set<BindingModifier> modifiers) {
+    private record SlotAssignment(String bindingId, String key, Set<BindingModifier> modifiers, boolean hold) {
     }
 }

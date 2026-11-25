@@ -328,7 +328,10 @@ public class BindingsWriter {
                     binds,
                     edit.bindingId(),
                     edit.key(),
-                    rewriteModifier ? requestedModifiers : List.of()
+                    rewriteModifier ? requestedModifiers : List.of(),
+                    // WHY the slot's own Hold: the keyboard path writes it back, so the key is judged as the press
+                    // or the long press it will be - a tap elsewhere on it is another control.
+                    slotXml.holds()
             )) {
                 return EditedBinds.unchanged(BindingSaveResult.KEY_OCCUPIED, binds);
             }
@@ -699,7 +702,7 @@ public class BindingsWriter {
         return xml.substring(tagStart, tagEnd + 1);
     }
 
-    private String attributeValue(String startTag, String attributeName) {
+    private static String attributeValue(String startTag, String attributeName) {
         Pattern pattern = Pattern.compile("\\b" + Pattern.quote(attributeName) + "\\s*=\\s*([\"'])(.*?)\\1");
         Matcher matcher = pattern.matcher(startTag);
         return matcher.find() ? matcher.group(2) : "";
@@ -933,6 +936,12 @@ public class BindingsWriter {
             String holdAttr,
             boolean supportedForV1Edit
     ) {
+        /** Whether the slot is a long press, as the attribute or as the {@code <Hold Value="1" />} child. */
+        boolean holds() {
+            return "1".equals(holdAttr)
+                    || (holdChild != null && "1".equals(attributeValue(holdChild, "Value")));
+        }
+
         private static SlotXml unsupported() {
             return new SlotXml("", "", List.of(), null, "", false);
         }
