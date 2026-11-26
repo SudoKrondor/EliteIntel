@@ -3,7 +3,6 @@ package elite.intel.ai.brain.commons;
 import com.google.gson.*;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.Client;
-import elite.intel.tools.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,7 +33,6 @@ public abstract class AiEndPoint {
 
     public JsonObject processAiPrompt(String jsonString, Client client) throws IOException {
         log.debug("AI API call:\n{}", jsonString);
-        WebSocketBroadcaster.getInstance().broadcast(jsonString);
         return client.sendJsonRequest(jsonString);
     }
 

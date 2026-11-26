@@ -3,7 +3,6 @@ package elite.intel.gameapi.search.edsm;
 import com.google.gson.JsonSyntaxException;
 import elite.intel.gameapi.search.edsm.dto.*;
 import elite.intel.gameapi.search.edsm.dto.data.*;
-import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.util.SleepNoThrow;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
@@ -391,7 +390,6 @@ public class EdsmApiClient {
 
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            WebSocketBroadcaster.getInstance().broadcast(request);
             int status = response.statusCode();
 
             if (status == 429) {
@@ -419,7 +417,6 @@ public class EdsmApiClient {
             }
 
             String body = response.body();
-            WebSocketBroadcaster.getInstance().broadcast(body);
             log.debug("EDSM API response: {}", body);
             return body;
         } catch (Exception e) {

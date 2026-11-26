@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.eventbus.AudioBeepCueBus;
-import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.json.GsonFactory;
@@ -54,13 +53,11 @@ public class SpanshClient {
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(criteria))
                 .build();
-        WebSocketBroadcaster.getInstance().broadcast(post);
         HttpResponse<String> resp = httpClient.send(post, HttpResponse.BodyHandlers.ofString());
         if (resp.statusCode() != 200) {
             log.warn("POST failed: {}", resp.statusCode());
             return null;
         }
-        WebSocketBroadcaster.getInstance().broadcast(resp.body());
         JsonObject json = gson.fromJson(resp.body(), JsonObject.class);
         return json.has("search_reference") ? json.get("search_reference").getAsString() : null;
     }
@@ -87,7 +84,6 @@ public class SpanshClient {
                 .POST(HttpRequest.BodyPublishers.ofString(query))
                 .build();
 
-        WebSocketBroadcaster.getInstance().broadcast(post);
         HttpResponse<String> resp = httpClient.send(post, HttpResponse.BodyHandlers.ofString());
         String body = resp.body();
         if (resp.statusCode() == 400) {
@@ -107,7 +103,6 @@ public class SpanshClient {
             return null;
         }
 
-        WebSocketBroadcaster.getInstance().broadcast(body);
         JsonObject json = gson.fromJson(body, JsonObject.class);
         return json.has("job") ? json.get("job").getAsString() : null;
     }
@@ -146,7 +141,6 @@ public class SpanshClient {
 
     private JsonObject waitForResults(String searchRefId) throws IOException, InterruptedException {
         if (searchRefId == null) return null;
-        WebSocketBroadcaster.getInstance().broadcast(searchRefId);
         int attempt = 0;
         final int maxAttempts = 60;
         long delay = 4_000L;
@@ -181,7 +175,6 @@ public class SpanshClient {
                     continue;
                 }
                 log.info("Search {} completed after {} attempts", searchRefId, attempt);
-                WebSocketBroadcaster.getInstance().broadcast(body);
                 return gson.fromJson(body, JsonObject.class);
             }
 

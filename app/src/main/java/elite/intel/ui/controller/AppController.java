@@ -36,7 +36,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.setup.GameEditionCheck;
 import elite.intel.setup.SetupCheck;
-import elite.intel.tools.ws.WebSocketBroadcaster;
+import elite.intel.integration.IntegrationSocket;
 import elite.intel.ui.event.*;
 import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
@@ -638,7 +638,7 @@ public class AppController {
                 : VegaSubsystemGate::new));
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
-        services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
+        services.put(ServiceType.WEB_SOCKET, new ServiceHolder(IntegrationSocket::getInstance));
         // Diagnostics also stubs the live game-file monitors: AuxiliaryFilesMonitor re-reads the game's stale
         // Status.json every 120 ms and JournalParser tails the real journal, both of which would overwrite the
         // Status/session the harness sets via @visible/@status/@event - defeating deterministic context control

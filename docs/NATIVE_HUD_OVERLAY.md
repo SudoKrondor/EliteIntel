@@ -112,6 +112,10 @@ text* (alpha ~0.25), never a full-window rectangle. Both native renderers suppor
 
 ### Reuse vs. rebuild
 
+> **Update 2026-11-26:** the firehose described here is gone. Port 7497 is now the typed, loopback-only
+> integration socket (`elite.intel.integration.IntegrationSocket`) with an `Origin` check - see
+> [FRAMESHIFT_INTEGRATION.md](FRAMESHIFT_INTEGRATION.md). The rest of this section is kept as written.
+
 Today's WebSocket on port **7497** (`elite.intel.tools.ws.WebSocketBroadcaster`) is a
 **debug firehose
 **, not a protocol: it broadcasts raw journal lines, EDSM/Spansh request URLs + full response bodies, and LLM payloads, all as untyped strings.
@@ -208,8 +212,8 @@ The overlay is a **separate repo
 
 ## Appendix — key files touched/referenced today
 
-- `app/src/main/java/elite/intel/tools/ws/WebSocketBroadcaster.java` — the existing port-7497 firehose (untyped
-  `broadcast(String)`; no `Origin` check).
+- `app/src/main/java/elite/intel/tools/ws/WebSocketBroadcaster.java` — the port-7497 firehose as it was then (untyped
+  `broadcast(String)`; no `Origin` check). Removed 2026-11-26 for `elite.intel.integration.IntegrationSocket`.
 - Broadcast call sites: `JournalParser`, `EdsmApiClient` (incl. request headers),
   `SpanshClient`, `IntraClient`, `AiEndPoint`, `BaseQueryAnalyzer`.
 - Existing data model to project from: `db/managers/MissionManager`,

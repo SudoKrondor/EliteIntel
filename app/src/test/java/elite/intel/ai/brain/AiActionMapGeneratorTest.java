@@ -135,6 +135,8 @@ class AiActionMapGeneratorTest {
             "find_guardian_technology_broker",
             "find_bounty_hunting_ground",
             "find_conflict_zone_for_combat_bonds",
+            // FrameShift Command integration: in the map always, offered only while FrameShift is connected.
+            "frameshift_open_page",
             "find_powerplay_conflict_zone_for_merits",
             "find_pirate_massacre_missions",
             "find_human_technology_broker",

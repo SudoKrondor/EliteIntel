@@ -8,7 +8,6 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.session.PlayerSession;
-import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.util.json.GsonFactory;
@@ -68,7 +67,6 @@ public class JournalParser implements Runnable, ManagedService {
     private Path journalDir;
     private Thread processingThread;
     private volatile boolean isRunning;
-    private final WebSocketBroadcaster webSocketBroadcaster = WebSocketBroadcaster.getInstance();
 
     public JournalParser() {
     }
@@ -233,7 +231,6 @@ public class JournalParser implements Runnable, ManagedService {
                                     // the event that names them.
                                     CommanderSwitch.beforePublishing(event);
                                     GameEventBus.publish(event);
-                                    webSocketBroadcaster.broadcast(event.toJson());
                                     UiBus.publish(new AppLogDebugEvent("\tProcessing Event: " + eventType));
                                     // debug, not info: this fires per event, and the logger is at info so the
                                     // edge-triggered lines above (file chosen, file switched) reach a bundle.
