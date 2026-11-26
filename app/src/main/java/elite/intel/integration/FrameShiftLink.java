@@ -4,11 +4,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.eventbus.GameEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,17 +22,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
 
 /**
  * The FrameShift Command side of the {@link IntegrationSocket}: who is registered, which pages it offers, and the
- * page-opening calls waiting for its answer. Protocol in {@code docs/FRAMESHIFT_INTEGRATION.md}.
+ * page-opening calls waiting for its answer. Protocol in {@code docs/integration/FrameShiftIntegration.md}.
  * <p>
  * FrameShift connects, sends {@code integration.register} with its page list and is answered
  * {@code integration.registered}. {@link #openPage} then sends it a {@code tool_call} and blocks the caller - the
  * action lane, one virtual thread per command - until the matching {@code tool_result} arrives, the connection
  * drops, or {@link #DEFAULT_TIMEOUT} passes. Nothing is queued: with no FrameShift registered the call fails at
  * once. A second registration replaces the first.
+ * <p>
+ * The registered FrameShift may also send {@code announce}: a line Elite Intel speaks at once, in the active ship's
+ * voice, as system speech - no LLM, no rewording. It is answered {@code announce_result} when accepted (queued for
+ * speech, not yet heard). Length and rate are capped, so a misbehaving client cannot hold the speaker.
  * <p>
  * The page list reaches the LLM prompt, so it is held to plain ids and short plain labels and capped in size:
  * whatever registers is local, but it is still another program's text.
@@ -43,12 +53,17 @@ public final class FrameShiftLink {
     static final int MAX_PAGES = 32;
     static final int MAX_LABEL_LENGTH = 40;
     static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+    static final int MAX_ANNOUNCEMENT_LENGTH = 300;
+    static final int MAX_ANNOUNCEMENTS = 5;
+    static final Duration ANNOUNCEMENT_WINDOW = Duration.ofSeconds(10);
 
     private static final Pattern PAGE_ID = Pattern.compile("[A-Za-z0-9_-]{1,32}");
     private static final Pattern LABEL_UNSAFE = Pattern.compile("[^\\p{L}\\p{N} &'./()-]");
     private static final Pattern SPACES = Pattern.compile("\\s+");
+    private static final Pattern CONTROL = Pattern.compile("\\p{Cntrl}");
 
-    private static final FrameShiftLink INSTANCE = new FrameShiftLink(DEFAULT_TIMEOUT);
+    private static final FrameShiftLink INSTANCE = new FrameShiftLink(DEFAULT_TIMEOUT,
+            text -> GameEventBus.publish(new AiVoxResponseEvent(text)), System::nanoTime);
 
     /** One connected program, as the socket sees it: something to send text to. Identity is the connection. */
     public interface Peer {
@@ -88,11 +103,21 @@ public final class FrameShiftLink {
     }
 
     private final Duration timeout;
+    private final Consumer<String> announcer;
+    private final LongSupplier nanoClock;
     private final Map<String, Pending> pending = new ConcurrentHashMap<>();
+    /** When each recent accepted announcement arrived, oldest first; guarded by itself. */
+    private final Deque<Long> recentAnnouncements = new ArrayDeque<>();
     private volatile Registration registration;
 
-    FrameShiftLink(Duration timeout) {
+    /**
+     * @param announcer speaks an accepted announcement; the app's publishes it as system speech in the ship's voice
+     * @param nanoClock monotonic time for the announcement rate cap
+     */
+    FrameShiftLink(Duration timeout, Consumer<String> announcer, LongSupplier nanoClock) {
         this.timeout = timeout;
+        this.announcer = announcer;
+        this.nanoClock = nanoClock;
     }
 
     public static FrameShiftLink getInstance() {
@@ -153,6 +178,8 @@ public final class FrameShiftLink {
             register(peer, message);
         } else if ("tool_result".equals(type)) {
             toolResult(peer, message);
+        } else if ("announce".equals(type)) {
+            announce(peer, message);
         }
     }
 
@@ -185,6 +212,47 @@ public final class FrameShiftLink {
         registration = new Registration(peer, List.copyOf(pages));
         log.info("FrameShift Command registered {} pages", pages.size());
         peer.send(registered(true, null, null).toString());
+    }
+
+    private void announce(Peer peer, JsonObject message) {
+        String id = string(message, "id");
+        Registration reg = registration;
+        if (reg == null || reg.peer() != peer) {
+            peer.send(announceResult(id, "not_registered", "Register before sending announcements.").toString());
+            return;
+        }
+        String raw = string(message, "text");
+        String text = raw == null ? "" : SPACES.matcher(CONTROL.matcher(raw).replaceAll(" ")).replaceAll(" ").strip();
+        if (text.isEmpty()) {
+            peer.send(announceResult(id, "empty_text", "The text is empty.").toString());
+            return;
+        }
+        if (text.length() > MAX_ANNOUNCEMENT_LENGTH) {
+            peer.send(announceResult(id, "text_too_long",
+                    "At most " + MAX_ANNOUNCEMENT_LENGTH + " characters.").toString());
+            return;
+        }
+        if (!admitAnnouncement()) {
+            peer.send(announceResult(id, "rate_limited", "At most " + MAX_ANNOUNCEMENTS + " announcements every "
+                    + ANNOUNCEMENT_WINDOW.toSeconds() + " seconds.").toString());
+            return;
+        }
+        announcer.accept(text);
+        peer.send(announceResult(id, null, null).toString());
+    }
+
+    /** True, and counted, when fewer than the cap were accepted within the window. */
+    private boolean admitAnnouncement() {
+        long now = nanoClock.getAsLong();
+        long windowStart = now - ANNOUNCEMENT_WINDOW.toNanos();
+        synchronized (recentAnnouncements) {
+            while (!recentAnnouncements.isEmpty() && recentAnnouncements.peekFirst() - windowStart <= 0) {
+                recentAnnouncements.pollFirst();
+            }
+            if (recentAnnouncements.size() >= MAX_ANNOUNCEMENTS) return false;
+            recentAnnouncements.addLast(now);
+            return true;
+        }
     }
 
     private void toolResult(Peer peer, JsonObject message) {
@@ -238,6 +306,22 @@ public final class FrameShiftLink {
         arguments.addProperty("page", pageId);
         call.add("arguments", arguments);
         return call;
+    }
+
+    /** A refusal when {@code code} is set, otherwise acceptance. */
+    private static JsonObject announceResult(String id, String code, String text) {
+        JsonObject reply = new JsonObject();
+        reply.addProperty("version", PROTOCOL_VERSION);
+        reply.addProperty("type", "announce_result");
+        if (id != null) reply.addProperty("id", id);
+        reply.addProperty("ok", code == null);
+        if (code != null) {
+            JsonObject error = new JsonObject();
+            error.addProperty("code", code);
+            error.addProperty("message", text);
+            reply.add("error", error);
+        }
+        return reply;
     }
 
     private static JsonObject registered(boolean ok, String code, String text) {

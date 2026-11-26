@@ -9,6 +9,6 @@ public final class FrameShiftLinkAccess {
     }
 
     public static FrameShiftLink newLink() {
-        return new FrameShiftLink(Duration.ofMillis(200));
+        return new FrameShiftLink(Duration.ofMillis(200), text -> { }, System::nanoTime);
     }
 }

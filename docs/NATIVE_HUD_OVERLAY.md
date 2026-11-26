@@ -114,7 +114,7 @@ text* (alpha ~0.25), never a full-window rectangle. Both native renderers suppor
 
 > **Update 2026-11-26:** the firehose described here is gone. Port 7497 is now the typed, loopback-only
 > integration socket (`elite.intel.integration.IntegrationSocket`) with an `Origin` check - see
-> [FRAMESHIFT_INTEGRATION.md](FRAMESHIFT_INTEGRATION.md). The rest of this section is kept as written.
+> [FrameShiftIntegration.md](integration/FrameShiftIntegration.md). The rest of this section is kept as written.
 
 Today's WebSocket on port **7497** (`elite.intel.tools.ws.WebSocketBroadcaster`) is a
 **debug firehose

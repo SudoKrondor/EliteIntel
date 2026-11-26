@@ -4,8 +4,12 @@
 theirs: they open the connection from an optional setting on their own Settings page, and they own the code that
 opens the page. Elite Intel has no UI for this.
 
-The user says "open materials in FrameShift". VEGA calls one tool, `frameshift_open_page`. Elite Intel sends
-the call to FrameShift over a local WebSocket and waits for the answer. Then it says what happened.
+It works in two directions:
+
+- **Page opening.** The user says "open materials in FrameShift". VEGA calls one tool, `frameshift_open_page`.
+  Elite Intel sends the call to FrameShift over a local WebSocket and waits for the answer. Then it says what
+  happened.
+- **Announcements.** FrameShift sends a line of text, and Elite Intel speaks it at once in the active ship's voice.
 
 ---
 
@@ -80,7 +84,40 @@ or, if it failed:
 
 Replies are matched to calls by `id`. A reply counts only if it arrives on the connection the call was sent on.
 
-## What the user hears
+### FrameShift sends an announcement
+
+```json
+{"version": 1, "type": "announce", "id": "a-17", "source": "frameshift-command",
+ "text": "Materials restocked. You can craft the module now."}
+```
+
+Elite Intel speaks `text` word for word, in the active ship's voice, through the same path as its own system
+speech. No LLM sees it, and nothing rewords or translates it, so FrameShift sends it in the language the user
+should hear. It can be interrupted, like any of Elite Intel's system speech.
+
+The reply means the line was accepted and queued for speech, not that it has been heard:
+
+```json
+{"version": 1, "type": "announce_result", "id": "a-17", "ok": true}
+```
+
+`id` is optional, and is echoed when it is sent. The rules:
+
+- Control characters become spaces, runs of white space become one space, and the text is trimmed.
+- At most 300 characters after that. A longer line is refused, not cut.
+- At most 5 accepted announcements in any 10 seconds. A line past that is refused. Nothing is queued for
+  later.
+
+A refused line replies `"ok": false` with `"error": {"code", "message"}`:
+
+| code | when |
+|---|---|
+| `not_registered` | the connection has not registered, or another one has registered since |
+| `empty_text` | `text` is missing, or nothing is left after cleaning |
+| `text_too_long` | more than 300 characters |
+| `rate_limited` | 5 lines were already accepted in the last 10 seconds |
+
+## What the user hears after a tool call
 
 Elite Intel queues nothing. It speaks one line from `responses*.properties`, `handler.frameshift.*`:
 
@@ -91,6 +128,10 @@ Elite Intel queues nothing. It speaks one line from `responses*.properties`, `ha
 | `offline` | no FrameShift registered, or the connection dropped while the call waited |
 | `timedOut` | no reply within 5 seconds |
 | `unknownPage` | the page is not in the registered list |
+
+`FrameShiftLink` publishes an announcement as an `AiVoxResponseEvent`, with no voice named, so the Mouth uses
+the active ship's voice. The link takes the announcer and the clock as constructor arguments, so its tests can
+check what was spoken and step the rate window without a TTS engine or a wait.
 
 ## How the tool reaches the model
 

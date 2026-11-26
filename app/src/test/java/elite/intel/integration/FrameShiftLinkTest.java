@@ -45,7 +45,9 @@ class FrameShiftLinkTest {
         }
     }
 
-    private final FrameShiftLink link = new FrameShiftLink(Duration.ofSeconds(5));
+    private final List<String> spoken = new CopyOnWriteArrayList<>();
+    private volatile long now = 0;
+    private final FrameShiftLink link = new FrameShiftLink(Duration.ofSeconds(5), spoken::add, () -> now);
 
     @Test
     void registrationStoresThePagesAndIsAnswered() {
@@ -193,7 +195,7 @@ class FrameShiftLinkTest {
 
     @Test
     void aReplyFromAnotherConnectionIsIgnored() throws Exception {
-        FrameShiftLink quick = new FrameShiftLink(Duration.ofMillis(300));
+        FrameShiftLink quick = new FrameShiftLink(Duration.ofMillis(300), spoken::add, () -> now);
         FakePeer peer = new FakePeer();
         quick.onMessage(peer, REGISTER);
 
@@ -207,7 +209,7 @@ class FrameShiftLinkTest {
 
     @Test
     void noReplyTimesOut() {
-        FrameShiftLink quick = new FrameShiftLink(Duration.ofMillis(100));
+        FrameShiftLink quick = new FrameShiftLink(Duration.ofMillis(100), spoken::add, () -> now);
         quick.onMessage(new FakePeer(), REGISTER);
 
         assertInstanceOf(OpenResult.TimedOut.class, quick.openPage("materials"));
@@ -247,5 +249,79 @@ class FrameShiftLinkTest {
         assertEquals(1, link.pages().size());
         link.onClose(first);
         assertTrue(link.isConnected(), "the replaced connection closing must not drop the new one");
+    }
+
+    private static String announce(String id, String text) {
+        JsonObject o = new JsonObject();
+        o.addProperty("version", 1);
+        o.addProperty("type", "announce");
+        o.addProperty("id", id);
+        o.addProperty("source", "frameshift-command");
+        o.addProperty("text", text);
+        return o.toString();
+    }
+
+    @Test
+    void anAnnouncementIsSpokenAndAcknowledged() {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, REGISTER);
+        link.onMessage(peer, announce("a1", "  Materials\nrestocked  "));
+
+        assertEquals(List.of("Materials restocked"), spoken);
+        JsonObject reply = peer.last();
+        assertEquals("announce_result", reply.get("type").getAsString());
+        assertEquals("a1", reply.get("id").getAsString());
+        assertTrue(reply.get("ok").getAsBoolean());
+    }
+
+    @Test
+    void anAnnouncementBeforeRegisteringIsRefused() {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, announce("a1", "Hello"));
+
+        assertTrue(spoken.isEmpty());
+        assertEquals("not_registered", peer.last().getAsJsonObject("error").get("code").getAsString());
+    }
+
+    @Test
+    void anAnnouncementFromAnotherConnectionIsRefused() {
+        link.onMessage(new FakePeer(), REGISTER);
+        FakePeer stranger = new FakePeer();
+        link.onMessage(stranger, announce("a1", "Hello"));
+
+        assertTrue(spoken.isEmpty());
+        assertEquals("not_registered", stranger.last().getAsJsonObject("error").get("code").getAsString());
+    }
+
+    @Test
+    void emptyAndOverlongAnnouncementsAreRefused() {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, REGISTER);
+
+        link.onMessage(peer, announce("a1", " \t "));
+        assertEquals("empty_text", peer.last().getAsJsonObject("error").get("code").getAsString());
+
+        link.onMessage(peer, announce("a2", "x".repeat(FrameShiftLink.MAX_ANNOUNCEMENT_LENGTH + 1)));
+        assertEquals("text_too_long", peer.last().getAsJsonObject("error").get("code").getAsString());
+
+        assertTrue(spoken.isEmpty());
+    }
+
+    @Test
+    void announcementsAreRateCappedAndTheWindowSlides() {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, REGISTER);
+        for (int i = 0; i < FrameShiftLink.MAX_ANNOUNCEMENTS; i++) {
+            link.onMessage(peer, announce("a" + i, "Line " + i));
+        }
+        link.onMessage(peer, announce("over", "One too many"));
+
+        assertEquals(FrameShiftLink.MAX_ANNOUNCEMENTS, spoken.size());
+        assertEquals("rate_limited", peer.last().getAsJsonObject("error").get("code").getAsString());
+
+        now += FrameShiftLink.ANNOUNCEMENT_WINDOW.toNanos() + 1;
+        link.onMessage(peer, announce("later", "Back again"));
+        assertTrue(peer.last().get("ok").getAsBoolean());
+        assertEquals("Back again", spoken.getLast());
     }
 }

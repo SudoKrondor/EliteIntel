@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 /**
  * The local WebSocket other programs on this PC integrate through, on {@code ws://127.0.0.1:7497}. It carries
  * typed integration messages only - today FrameShift Command's ({@link FrameShiftLink}); it publishes nothing on
- * its own. Protocol in {@code docs/FRAMESHIFT_INTEGRATION.md}.
+ * its own. Protocol in {@code docs/integration/FrameShiftIntegration.md}.
  * <p>
  * It listens on loopback alone, so nothing on the network can reach it, and it refuses a handshake from a web page
  * served by any host but this one: a browser lets any site open a socket to localhost, and the {@code Origin}
