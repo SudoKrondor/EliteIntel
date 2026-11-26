@@ -1,7 +1,7 @@
 {
   "format": 1,
   "indexDate": "2026-03-02",
-  "contributors": 4,
+  "contributors": 5,
   "sets": [
     {
       "provider": {
@@ -514,6 +514,33 @@
         "hazardous": 3
       },
       "indexed": true
+    },
+    {
+      "provider": {
+        "system": "ICZ KC-V b2-1",
+        "factions": [
+          "Lavigny's Legion"
+        ],
+        "stations": [
+          "Arissa's Wall"
+        ]
+      },
+      "target": {
+        "system": "Kariara",
+        "factions": [
+          "Kariara Purple Mob"
+        ]
+      },
+      "stackDepth": 1,
+      "reporters": 1,
+      "lastSeen": "2026-11-25",
+      "resourceSites": {
+        "standard": 3,
+        "low": 1,
+        "high": 1,
+        "hazardous": 3
+      },
+      "indexed": false
     },
     {
       "provider": {
