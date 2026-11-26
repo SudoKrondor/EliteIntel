@@ -1,6 +1,6 @@
 # Actions Tab
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Actions"> Everything Elite
+<img src="images/actions.png" class="inline" height="20" alt="Actions"> Everything Elite
 Intel can do, and everything you have taught it to do. Two sub-tabs: **Built-in Commands** and
 **Custom Commands**.
 
@@ -58,8 +58,6 @@ tab is open — including a custom command you create while it is showing.
 
 Buttons:
 
-- **Run** — execute it right now from the app, without speaking. If the command takes
-  parameters, a small form appears first.
 - **Suggest a better translation** — opens a pre-filled GitHub issue with the command id, your
   language, the current phrases, and your suggested phrases, so you can propose better wording
   for your locale. This is how the non-English phrase sets get better; please use it.
@@ -79,8 +77,8 @@ Your own macros — a named sequence of steps, triggered by things you say (or t
 chat). Similar in spirit to VoiceAttack, but matched by meaning rather than by an exact phrase.
 
 The table lists each command's **Name** and its **Training phrases**, with a search box above
-it. **Click a row** to open its details, which show the step **Sequence** and offer **Run**,
-**Edit**, **Duplicate** and **Delete**.
+it. **Click a row** to open its details, which show the step **Sequence** and offer **Edit**,
+**Duplicate** and **Delete**.
 
 Along the top:
 
@@ -164,9 +162,9 @@ Tips:
 
 - **Phrases can be separated by commas** as well as by new lines.
 - **Delays depend on your PC.** If the map is not ready when the next step fires, raise the
-  delays — or move **Key Input Pacing** on the [Bindings tab](UI-Bindings-Tab) towards Slow.
+  delays — or move **Key Input Pacing** on the [BindForge tab](UI-Bindings-Tab) towards Slow.
 - **Every Binding step needs a keyboard binding** in the game. If a control is unbound, the
-  [Bindings tab](UI-Bindings-Tab) shows it under *Missing bindings*.
+  [BindForge tab](UI-Bindings-Tab) shows it as *Vega needs a key*.
 - Vega opens and reads the galaxy map the same way for her own route commands, so a command
   that starts from a **freshly opened** map is the reliable pattern — do not start from a map
   that is already open.

@@ -1,27 +1,23 @@
-# Onglet Paramètres
+# Onglet Services
 
-<img src="images/settings.png" class="inline" height="20" alt="Paramètres"> La tuyauterie. Une bande
-**Général** valable partout, puis trois sous-onglets : **Services IA**, **Audio** et **Push To
-Talk**. Le bouton de mise à jour est en pied de page — *L'application est à jour* ou *Mise à jour
-disponible*.
+<img src="images/services.png" class="inline" height="20" alt="Services"> La tuyauterie. Le sélecteur de **Langue**
+s'applique partout et se trouve en haut, puis viennent trois sous-onglets : **Services IA**, **Audio** et **Appuyer pour parler et autres réglages**. Le pied de page contient [**Sauvegarder paramètres et données**](#backup-settings-and-data), **Restaurer...** et
+le bouton de mise à jour — *L'application est à jour* ou *Mise à jour disponible*.
 
 ---
 
-## Général
+## Langue
 
-Affiché au-dessus des sous-onglets, parce qu'il s'applique à tous.
+La langue de vos commandes vocales et de l'interface de l'application. La changer redessine toute la fenêtre immédiatement,
+et Vega annonce le changement à voix haute.
 
-**Langue** — la langue de vos commandes vocales et de l'interface de l'application. La changer
-redessine toute la fenêtre immédiatement, et Vega annonce le changement à voix haute.
+Le sélecteur est **verrouillé** pour qu'un clic ou un défilement accidentel ne change pas votre langue. Décochez le cadenas
+à côté pour la changer ; il se reverrouille ensuite tout seul.
 
-Prises en charge : anglais, allemand, français, espagnol, italien, portugais,
-portugais du Brésil.
+Prises en charge : anglais, russe, ukrainien, allemand, français, espagnol, italien, portugais, portugais du Brésil.
 
-**Dossier du journal** — l'endroit où Elite Dangerous écrit ses fichiers de journal. Facultatif :
-laissé vide, l'emplacement standard de votre plateforme est utilisé. C'est ainsi qu'Elite Intel
-sait ce qui se passe autour de votre vaisseau ; s'il est faux, l'application est pratiquement
-aveugle et le dit au démarrage. Un dossier inutilisable est refusé et le réglage précédent est
-conservé.
+> Le **dossier du journal** se trouve désormais dans l'[onglet Commandant](UI-Commander-Tab), et le **dossier des raccourcis**
+> dans l'[onglet BindForge](UI-Bindings-Tab).
 
 ---
 
@@ -50,7 +46,23 @@ Basculez entre **LMStudio** (local) et **Configuration cloud**.
 Le modèle local pris en charge est **`google/gemma-4-e4b`**. Elite Intel vous prévient au démarrage
 si votre modèle local est différent ; d'autres modèles peuvent mal fonctionner, voire pas du tout.
 
-Guides : [LM Studio sous Linux](Install-LM-Studio-Linux) ·
+Si votre PC peut faire tourner le jeu et le modèle ensemble, un bouton sous ces champs configure LM Studio pour
+vous. Cela veut dire une carte NVIDIA de la série RTX 30 ou plus récente avec 24 Go (une RTX 3090 ou mieux), ou
+deux cartes de ce type ou plus totalisant environ 20 Go, chacune avec au moins 8 Go. Les cartes AMD avec la même
+mémoire reçoivent le bouton en **bêta**. Détails dans [Choisir votre LLM](installing-local-llms).
+
+| Bouton | Ce qu'il fait |
+|--------|---------------|
+| **Installer LM Studio** | Installe LM Studio, télécharge le modèle, le charge sur la carte graphique et remplit Adresse et Modèle |
+| **Configurer LM Studio** | Pour un LM Studio que vous avez déjà : ajoute le modèle et remplit les champs, rien de plus |
+| **Reprendre la configuration** | Reprend une installation interrompue |
+| **Désinstaller LM Studio** | Retire le LM Studio installé par Elite Intel, avec ses modèles, après les avoir listés |
+
+Un LM Studio installé ainsi démarre et s'arrête avec les services d'Elite Intel, et s'arrête à la fermeture
+de l'application même si sa configuration n'a pas abouti. Un LM Studio que vous avez installé vous-même n'est
+jamais démarré, arrêté ni supprimé.
+
+Guides pour LM Studio sur un second PC : [LM Studio sous Linux](Install-LM-Studio-Linux) ·
 [LM Studio sous Windows](Install-LM-Studio-Windows) ·
 [Série AMD RX](AMD-RX-7800XT-LLM-Setup) ·
 [Serveur Ubuntu headless](LM-Studio-Ubuntu-Server)
@@ -73,21 +85,37 @@ Comment obtenir une clé chez chaque fournisseur : [Options LLM cloud](cloud-llm
 
 ### Voix (TTS)
 
-Basculez entre **Local · Kokoro / Supertonic** et **Cloud · Google / Edge**. Chaque côté a un
-second sélecteur pour choisir le moteur.
+Basculez entre **Synthèse vocale locale** et **Cloud · Google**.
 
-| Moteur | Où il tourne | Remarques |
-|--------|---------------|-------|
-| **Kokoro** | Sur votre PC | Le moteur par défaut. Pas de clé, rien ne quitte votre PC. Ne sait pas prononcer le cyrillique — voir plus bas |
-| **Supertonic 3** | Sur votre PC | Dix voix, toutes les langues prises en charge. Pas de clé. Un curseur **Amplification Supertonic 3 (0–100 %)** relève son niveau |
-| **Google** | Serveurs de Google | Google Cloud Text-to-Speech. Nécessite une **Clé Google TTS** (avec la même case Verrouillé). Un curseur **Hauteur Google WaveNet** pour les voix WaveNet |
-| **Microsoft Edge** | Serveurs de Microsoft | Les voix de lecture à voix haute en ligne de Microsoft. Pas de clé |
+| Moteur | Où il tourne | Notes |
+|--------|--------------|-------|
+| **Supertonic 3** | Sur votre PC | Le moteur par défaut. 45 voix, et chaque voix parle toutes les langues de l'application et du jeu. Pas de clé, et rien ne quitte votre PC |
+| **Google** | Serveurs de Google | Google Cloud Text-to-Speech. Nécessite une **Clé Google TTS** (avec la même case Verrouillé). Un curseur **Hauteur Google WaveNet**, utilisé par les voix WaveNet, et un curseur **Vitesse de la voix Google** |
 
-**Kokoro et le cyrillique.** Quand votre *client de jeu* écrit les échanges radio en russe, le segment Kokoro est grisé, un
-bandeau explique pourquoi, et Supertonic 3 parle à sa place.
+Le trafic radio est toujours parlé par Supertonic 3, quel que soit le moteur choisi pour Vega.
 
-> Changer de moteur remet la voix de chaque vaisseau à la voix par défaut du nouveau moteur. Les
-> personnalités des vaisseaux sont conservées. Une confirmation vous est demandée avant.
+> Changer de moteur remet la voix de chaque vaisseau à celle par défaut du nouveau moteur. Les personnalités sont conservées.
+> Une confirmation vous est demandée avant.
+
+<a id="voice-tuning"></a>
+
+### Réglage des voix
+
+![Réglage des voix](images/ui-voice-tuning.png)
+
+Les voix diffèrent un peu en volume et en rythme, donc **Réglage des voix…** vous permet d'ajuster chacune séparément. La
+liste de gauche est groupée en **Voix féminines** et **Voix masculines** ; sélectionnez-en une pour voir ses réglages.
+
+| Contrôle | Ce qu'il fait |
+|----------|---------------|
+| **Vitesse** | La vitesse à laquelle cette voix parle |
+| **Volume** | Un ajustement de volume pour cette voix |
+| **Égaliseur** | Six bandes pour façonner le son de cette voix |
+| **Tester** | Joue une phrase avec les réglages actuels |
+| **Réinitialiser la voix** | Remet cette voix à ses valeurs par défaut |
+
+Il n'y a pas de bouton Enregistrer : un changement est enregistré dès que vous relâchez le curseur. Vous pouvez ouvrir le
+Réglage des voix quel que soit le moteur qui parle pour Vega, car Supertonic 3 fait de toute façon la voix de la radio.
 
 ### Pied de page
 
@@ -97,8 +125,7 @@ grisé tant que rien ne change vraiment, et la mention **Modifications non enreg
 à côté dès que c'est le cas.
 
 L'enregistrement ne redémarre que le nécessaire — changer le modèle ou la clé redémarre le
-cerveau, changer le moteur de voix ou sa clé redémarre la voix. Les curseurs de hauteur et
-d'amplification s'appliquent sans redémarrage.
+cerveau, changer le moteur de voix ou sa clé redémarre la voix.
 
 ---
 
@@ -124,12 +151,12 @@ Sous les périphériques se trouvent deux onglets.
 |--------|--------------|
 | **Volume de la voix** | Le volume de Vega |
 | **Volume de la radio** | Le volume des transmissions radio. Grisé tant que les transmissions radio sont désactivées |
-| **Vitesse TTS** | La vitesse à laquelle Vega parle |
 | **Volume des bips** | Le bip de confirmation — il retentit quand la reconnaissance vocale a fini et que le modèle de langage a votre demande |
 | **Threads STT** | Threads CPU pour la transcription (4–11). Un minimum demandé, pas une réservation : l'application en demande autant, utilise ce que le processeur lui donne et les libère une fois le travail fini |
 
-Le volume de la musique n'est pas ici — il est dans l'[onglet Jukebox](UI-Jukebox-Tab), pour ne
-jamais baisser le mauvais.
+La vitesse à laquelle Vega parle se règle par voix dans le [Réglage des voix](#voice-tuning), ou avec **Vitesse de la voix
+Google** pour une voix Google. Le volume de la musique est dans l'[onglet Jukebox](UI-Jukebox-Tab), pour ne jamais baisser le
+mauvais.
 
 ### Audio des transmissions
 
@@ -162,7 +189,7 @@ faible pour travailler.
 
 ---
 
-## Push To Talk
+## Appuyer pour parler et autres réglages
 
 ![Push to Talk](images/ui-tab-settings-push-to-talk.png)
 
@@ -173,7 +200,7 @@ capte sans le bouton enfoncé est jeté comme bruit ambiant.
 |---------|-------|
 | **Activer Push to Talk** | L'interrupteur principal |
 | **Contrôleur** | Toute manette ou HOTAS connecté. Votre contrôleur enregistré est resélectionné automatiquement à la reconnexion |
-| **Bouton** | Quel bouton dessus |
+| **Bouton** | Quel bouton dessus, avec le libellé que vous lui avez donné dans le [Concepteur d'alias](UI-Bindings-Tab) |
 | **Bouton de souris** | Un second déclencheur : *Bouton du milieu*, *Bouton 4 (précédent)* ou *Bouton 5 (suivant)*. Pratique à pied ou en SRV, quand le HOTAS est hors de portée. Les boutons gauche et droit ne sont pas proposés — ils tirent avec vos armes |
 
 Maintenez le bouton, parlez, relâchez. Appuyer **coupe aussi Vega en pleine phrase**, vous n'avez
@@ -182,6 +209,35 @@ donc jamais à attendre qu'elle ait fini.
 Tant que le Push to Talk est actif, le bouton **DORMIR / SE RÉVEILLER** de l'onglet Vega est
 désactivé — le bouton est la porte. Un changement ici s'applique dès l'appui suivant, et le bouton
 fonctionne que vous ouvriez cet onglet ou non.
+
+<a id="warnings"></a>
+
+### Avertissements
+
+Certains avis, comme la confirmation et le rapport d'Appliquer de BindForge, ont une case **Ne plus
+afficher**. **Réinitialiser les avertissements** fait revenir tous ceux que vous avez masqués. Le bouton est
+grisé tant que rien n'est masqué.
+
+---
+
+<a id="backup-settings-and-data"></a>
+
+## Sauvegarder paramètres et données
+
+Pour passer à un nouvel ordinateur, ou simplement par précaution. **Sauvegarder paramètres et données** écrit un `.zip`
+contenant vos réglages, bases de données, commandes personnalisées et les sauvegardes de BindForge.
+
+**Les clés API nécessitent un mot de passe.** Choisissez-en un et cliquez sur **Verrouiller les clés et enregistrer** pour
+inclure vos clés dans la sauvegarde. Il vous faudra ce mot de passe pour les restaurer. Si vous choisissez **Sans clés API**,
+la sauvegarde n'en contient aucune et vous les saisissez à nouveau après la restauration.
+
+**Restaurer...** remet une sauvegarde. Ce qu'elle remplace est gardé dans un dossier de sécurité dans le dossier de données de
+l'application, et Elite Intel redémarre pour terminer. Une sauvegarde faite par une version plus récente nécessite d'abord de
+mettre à jour l'application. Les dossiers qui n'existent pas sur le nouvel ordinateur sont réinitialisés ; vérifiez donc ensuite
+le dossier du journal dans l'onglet Commandant et celui des raccourcis dans l'onglet BindForge.
+
+> Ceci sauvegarde **Elite Intel**. Pour sauvegarder vos **fichiers de commandes du jeu**, utilisez les
+> [Sauvegardes du joueur](UI-Bindings-Tab) dans l'onglet BindForge.
 
 ---
 
@@ -192,9 +248,8 @@ Tous les réglages et données sont stockés sur votre PC :
 - **Linux :** `~/.local/share/elite-intel/` (ou `$XDG_DATA_HOME/elite-intel/`)
 - **Windows :** `%LOCALAPPDATA%\elite-intel\`
 
-La base de données est dans `db`, les commandes perso dans `custom-commands` (avec son propre
-`backups`), vos instantanés manuels de raccourcis dans `playerbackups`, et les copies automatiques
-faites avant Appliquer dans `bindings/backups`.
+La base de données est dans `db`, les commandes perso dans `custom-commands` (avec son propre `backups`), et les sauvegardes de
+vos fichiers de commandes dans `playerbackups`, sauf si vous avez choisi un autre dossier pour elles.
 
 ---
 

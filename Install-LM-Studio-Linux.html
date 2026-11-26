@@ -10,6 +10,8 @@
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Install-LM-Studio-Linux.html">
     <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Install-LM-Studio-Linux.html">
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Install-LM-Studio-Linux.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Install-LM-Studio-Linux.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-LM-Studio-Linux.html">
     <meta property="og:title" content="Add this to your ~/.bashrc  EliteIntel">
     <meta property="og:description" content="Running a local LLM keeps all data private and offline. There are no subscription fees. Hardware and electricity costs apply.">
     <meta property="og:url" content="https://www.elite-intel.org/Install-LM-Studio-Linux.html">
@@ -18,6 +20,8 @@
     <meta property="og:image:type" content="image/png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -35,7 +39,7 @@
         <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
         <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
-        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/Install-LM-Studio-Linux.html" class="locale-link">FR</a><a href="es/Install-LM-Studio-Linux.html" class="locale-link">ES</a><a href="de/Install-LM-Studio-Linux.html" class="locale-link">DE</a></div>
+        <div class="locale-switcher"><span class="locale-current">EN</span><a href="fr/Install-LM-Studio-Linux.html" class="locale-link">FR</a><a href="es/Install-LM-Studio-Linux.html" class="locale-link">ES</a><a href="de/Install-LM-Studio-Linux.html" class="locale-link">DE</a><a href="uk/Install-LM-Studio-Linux.html" class="locale-link">UK</a><a href="ru/Install-LM-Studio-Linux.html" class="locale-link">RU</a></div>
     </nav>
 </header>
 
@@ -52,10 +56,11 @@
             <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
             <a href="UI.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> User Interface</a>
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Vega Tab</a>
-            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/controller.png" class="inline" height="20" alt=""> Commander Tab</a>
-            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Actions Tab</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keys-binding.png" class="inline" height="20" alt=""> Bindings Tab</a>
-            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/settings.png" class="inline" height="20" alt=""> Settings Tab</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="images/commander.png" class="inline" height="20" alt=""> Commander Tab</a>
+            <a href="UI-Color-Themes.html" class="nav-link nav-sub"><img src="images/themes.png" class="inline" height="20" alt=""> Color Themes</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="images/actions.png" class="inline" height="20" alt=""> Actions Tab</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="images/keyboard.png" class="inline" height="20" alt=""> BindForge Tab</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="images/services.png" class="inline" height="20" alt=""> Services Tab</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="images/speaker.png" class="inline" height="20" alt=""> Jukebox Tab</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="images/stats.png" class="inline" height="20" alt=""> Stats Tab</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> HUD Overlay</a>
@@ -69,16 +74,16 @@
             <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Headless Ubuntu Server</a>
 
             <div class="nav-section">How Do I…?</div>
-            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
-            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
-            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
-            <a href="Custom-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
-            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
-            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
-            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
-            <a href="Colonisation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Colonisation</a>
-            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
-            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="General-Operation.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> All Commands &amp; Queries</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> System Commands</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Make Your Own Commands</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Discovery &amp; ExoBiology</a>
+            <a href="Colonisation.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Colonisation</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/journal.png" class="inline" height="20" alt=""> Pirate Missions</a>
 
             <div class="nav-section">Community</div>
             <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
@@ -96,11 +101,20 @@
 <p>Running a local LLM keeps all data private and offline. There are no subscription fees. Hardware and electricity costs apply.</p>
 <p>It requires <a href="https://lmstudio.ai">LM Studio</a> and a capable GPU.</p>
 <hr>
-<h3>Minimum Hardware</h3>
-<p>To run Elite Dangerous and the LLM on the <strong>same machine</strong>, a minimum of an <strong>NVIDIA RTX 3060 with 12 GB VRAM</strong> is required. Performance headroom is limited at this specification.</p>
+<h3>Who this guide is for</h3>
+<p>This guide sets LM Studio up by hand on a PC that <strong>runs only the model</strong>: a second PC on your network, while
+the game runs on your gaming PC, which then does no inference work at all.</p>
 <blockquote>
-<p><strong>Tip:</strong> Elite Intel can be pointed at an LM Studio instance running on a <strong>separate PC</strong> on your network. If a second machine with a capable GPU is available, the game PC carries no inference load in this configuration.</p>
+<p><strong>Game and model on one PC?</strong> You don&#39;t need this guide. If your gaming PC has an NVIDIA RTX 3090 (24 GB) or
+better, or two or more cards with about 20 GB between them, Elite Intel installs and sets up LM Studio for
+you: see <a href="installing-local-llms.html">Choose your LLM</a>.</p>
 </blockquote>
+<h3>Hardware for the LLM PC</h3>
+<ul>
+<li><strong>12 GB of video memory.</strong> The model takes about 6.3 GB, so this leaves headroom.</li>
+<li><strong>RTX 3080-class processing power or better.</strong> A slower card holds the model but answers too slowly to be
+useful.</li>
+</ul>
 <hr>
 <h3>Recommended Model</h3>
 <table>
@@ -159,11 +173,16 @@ pick one with the arrow keys and Enter.</p>
 <p>Load the model and start the inference server:</p>
 <pre><code class="language-shell">lms daemon up
 lms load google/gemma-4-e4b --context-length 8192 --gpu max
-lms server start
+lms server start --bind 0.0.0.0
 </code></pre>
-<p><code>--gpu max</code> offloads inference to the GPU for maximum performance. <code>lms daemon up</code> does nothing if the background server is already running, so it is safe to include every time.</p>
-<p>Verify it is running:</p>
-<pre><code class="language-shell">curl http://localhost:1234/v1/models
+<p><code>--gpu max</code> offloads inference to the GPU for maximum performance. <code>--bind 0.0.0.0</code> lets other PCs on your network reach the server, which by default answers only this one. <code>lms daemon up</code> does nothing if the background server is already running, so it is safe to include every time.</p>
+<p><strong>NOTE</strong>: <code>--context-length 8192</code> is required, and it must be exactly 8192: a smaller window makes the model hallucinate, and a larger one makes every answer too slow.</p>
+<blockquote>
+<p><strong>Let the gaming PC in.</strong> If a firewall runs on this PC, allow TCP port 1234 from your gaming PC. With <code>ufw</code>,
+for example: <code>sudo ufw allow from GAMING_PC_IP to any port 1234 proto tcp</code>.</p>
+</blockquote>
+<p>Verify it from the <strong>gaming PC</strong>, with the LLM PC&#39;s address in place of <code>LLM_PC_IP</code>:</p>
+<pre><code class="language-shell">curl http://LLM_PC_IP:1234/v1/models
 </code></pre>
 <p>You should receive a JSON list of loaded models. The model ID string in that response is what you will enter in Elite Intel&#39;s <strong>Model</strong> field.</p>
 <p>To stop the server:</p>
@@ -198,7 +217,7 @@ Environment=&quot;PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin
 Environment=&quot;XDG_RUNTIME_DIR=/run/user/YOUR_UID&quot;
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192 --gpu max
-ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 127.0.0.1 --port 1234
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
 
@@ -209,7 +228,7 @@ WantedBy=default.target
 <pre><code class="language-shell">id -u
 </code></pre>
 <blockquote>
-<p><strong>Game on another PC?</strong> <code>--bind 127.0.0.1</code> makes the server reachable only from this machine. If Elite Intel runs on a different PC, change it to <code>--bind 0.0.0.0</code> so other machines on your network can reach it.</p>
+<p><strong>Network:</strong> <code>--bind 0.0.0.0</code> lets your gaming PC reach the server. Allow TCP port 1234 through this PC&#39;s firewall, as in Step 3.</p>
 </blockquote>
 <blockquote>
 <p>⚠️ <strong>Why <code>XDG_RUNTIME_DIR</code>?</strong> User services run in a stripped-down environment that may not include session variables. LM Studio uses <code>XDG_RUNTIME_DIR</code> for IPC. Without it, the service can fail silently even when <code>lms</code> works correctly from the terminal. This is the most common cause of service failure when manual execution succeeds.</p>
@@ -265,10 +284,10 @@ systemctl --user enable --now lmstudio-restart.timer
 <p>The timer waits 2 minutes after boot, restarts the LM Studio service once, and then stays inactive. If you do not experience slow inference, this step is not needed.</p>
 <hr>
 <h3>Step 5 - Configure Elite Intel</h3>
-<p>In Elite Intel, open <strong>Settings → AI Services</strong>. Under <strong>Language Model (LLM)</strong>, select <strong>LMStudio Setup</strong>:</p>
+<p>On the <strong>gaming PC</strong>, in Elite Intel, open <strong>Services → AI Services</strong>. Under <strong>Language Model (LLM)</strong>, select <strong>LMStudio Setup</strong>:</p>
 <ul>
-<li><strong>Address</strong>: <code>http://localhost:1234/v1/chat/completions</code> (the default). If LM Studio is on another machine, replace <code>localhost</code> with that machine&#39;s IP.</li>
-<li><strong>Model</strong>: paste in the model ID string from <code>curl http://localhost:1234/v1/models</code>. One model serves both commands and queries.</li>
+<li><strong>Address</strong>: <code>http://LLM_PC_IP:1234/v1/chat/completions</code>, with <code>LLM_PC_IP</code> replaced by the LLM PC&#39;s address on your network (<code>ip addr</code> on the LLM PC shows it).</li>
+<li><strong>Model</strong>: paste in the model ID string from <code>http://LLM_PC_IP:1234/v1/models</code>. One model serves both commands and queries.</li>
 </ul>
 <p>No API key is needed for a local LLM.</p>
 <p>Click <strong>Save</strong>. Elite Intel restarts the language model on its own.</p>

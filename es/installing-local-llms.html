@@ -10,6 +10,8 @@
     <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/installing-local-llms.html">
     <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/installing-local-llms.html">
     <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/installing-local-llms.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/installing-local-llms.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/installing-local-llms.html">
     <meta property="og:title" content="Elegir tu LLM  EliteIntel">
     <meta property="og:description" content="Elite Intel necesita un modelo de lenguaje (LLM) para entender tus órdenes y responder a tus">
     <meta property="og:url" content="https://www.elite-intel.org/es/installing-local-llms.html">
@@ -18,6 +20,8 @@
     <meta property="og:image:type" content="image/png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
     <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
@@ -35,7 +39,7 @@
         <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
         <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
-        <div class="locale-switcher"><a href="../installing-local-llms.html" class="locale-link">EN</a><a href="../fr/installing-local-llms.html" class="locale-link">FR</a><span class="locale-current">ES</span><a href="../de/installing-local-llms.html" class="locale-link">DE</a></div>
+        <div class="locale-switcher"><a href="../installing-local-llms.html" class="locale-link">EN</a><a href="../fr/installing-local-llms.html" class="locale-link">FR</a><span class="locale-current">ES</span><a href="../de/installing-local-llms.html" class="locale-link">DE</a><a href="../uk/installing-local-llms.html" class="locale-link">UK</a><a href="../ru/installing-local-llms.html" class="locale-link">RU</a></div>
     </nav>
 </header>
 
@@ -52,10 +56,11 @@
             <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Instalación</a>
             <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Interfaz</a>
             <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Pestaña Vega</a>
-            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/controller.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
-            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
-            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keys-binding.png" class="inline" height="20" alt=""> Pestaña Bindings</a>
-            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/settings.png" class="inline" height="20" alt=""> Pestaña Ajustes</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Pestaña Comandante</a>
+            <a href="UI-Color-Themes.html" class="nav-link nav-sub"><img src="../images/themes.png" class="inline" height="20" alt=""> Temas de color</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Pestaña Acciones</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Pestaña Servicios</a>
             <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Pestaña Jukebox</a>
             <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Pestaña Estadísticas</a>
             <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Overlay HUD</a>
@@ -69,16 +74,16 @@
             <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Servidor Ubuntu headless</a>
 
             <div class="nav-section">¿Cómo hago...?</div>
-            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Operación general</a>
-            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Todos los comandos</a>
-            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comandos del sistema</a>
-            <a href="Custom-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Crear tus propios comandos</a>
-            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
-            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
-            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
-            <a href="Colonisation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Colonización</a>
-            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navegación</a>
-            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Misiones pirata</a>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Operación general</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Todos los comandos</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Comandos del sistema</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Crear tus propios comandos</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Comercio y beneficio</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Explorar la galaxia</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Exploración &amp; Exobiología</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Colonización</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Navegación</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Misiones pirata</a>
 
             <div class="nav-section">Comunidad</div>
             <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Chat Matrix ↗</a>
@@ -94,7 +99,7 @@
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Elegir tu LLM</h1>
 <p>Elite Intel necesita un modelo de lenguaje (LLM) para entender tus órdenes y responder a tus
-preguntas. Hay dos formas de conseguirlo, y las dos se configuran en <strong>Ajustes → Servicios de IA →
+preguntas. Hay dos formas de conseguirlo, y las dos se configuran en <strong>Servicios → Servicios de IA →
 Modelo de lenguaje (LLM)</strong>:</p>
 <table>
 <thead>
@@ -118,7 +123,7 @@ Modelo de lenguaje (LLM)</strong>:</p>
 <p><img src="../images/llm-setup.png" alt="Configuración del LLM"></p>
 <hr>
 <h2>Opción 1: Local (LM Studio)</h2>
-<p>El lado izquierdo del panel, <strong>LMSTudio</strong>:</p>
+<p>El lado izquierdo del panel, <strong>LMStudio</strong>:</p>
 <table>
 <thead>
 <tr>
@@ -136,19 +141,48 @@ Modelo de lenguaje (LLM)</strong>:</p>
 </tr>
 </tbody></table>
 <p>LM Studio es el único servidor de inferencia local que admite Elite Intel, y <code>google/gemma-4-e4b</code>
-es el único modelo local admitido.</p>
-<h3>Requisitos de GPU</h3>
-<p>El hardware que necesitas para ejecutar el juego y el LLM en la misma máquina:</p>
+es el único modelo local admitido. Hay dos formas de ejecutarlo.</p>
+<h3>En tu PC de juego: Elite Intel lo configura</h3>
+<p>Si tu PC puede ejecutar el juego y el modelo a la vez, aparece un botón bajo los campos de <strong>LMStudio</strong>.
+Pulsa <strong>Instalar LM Studio</strong> y Elite Intel:</p>
+<ol>
+<li>instala LM Studio, en la unidad que elijas,</li>
+<li>descarga <code>google/gemma-4-e4b</code> (unos 6 GB),</li>
+<li>lo carga en tu tarjeta gráfica y comprueba que de verdad ha ido allí,</li>
+<li>lo prueba y rellena <strong>Dirección</strong> y <strong>Modelo</strong> por ti.</li>
+</ol>
+<p>Cada paso se muestra mientras ocurre, con una barra de progreso para la descarga. Si un paso falla, el
+diálogo dice cuál y por qué, y al pulsar el botón de nuevo se sigue desde ahí. Cuenta con unos 10 GB de
+espacio en disco. LM Studio es software gratuito de Element Labs y no forma parte de Elite Intel.</p>
+<p>A partir de ahí, Elite Intel inicia LM Studio cuando inicias sus servicios y lo detiene cuando los detienes o
+cierras la aplicación, así que el modelo solo usa la memoria de tu tarjeta gráfica mientras Elite Intel está
+en marcha. Para quitarlo, pulsa <strong>Desinstalar LM Studio</strong>: muestra lo que va a borrar antes de borrar nada.</p>
+<p><strong>El botón solo aparece cuando tus tarjetas gráficas pueden con el juego y el modelo a la vez.</strong> El juego
+ocupa 8,5 GB de memoria de vídeo o más y el modelo unos 6 GB, y el navegador, OBS y Windows también usan
+algo, así que una tarjeta más pequeña no aguanta ambos con fiabilidad. El botón aparece con:</p>
 <ul>
-<li>RTX 3090 24 GB de VRAM</li>
-<li>AMD RX 7800 XT</li>
+<li><strong>Una tarjeta NVIDIA de 24 GB</strong>, de la serie RTX 30 o posterior: una RTX 3090 o superior.</li>
+<li><strong>Dos o más tarjetas NVIDIA con unos 20 GB entre todas</strong>, cada una de la serie RTX 30 o posterior y con
+al menos 8 GB; por ejemplo, una RTX 5070 de 12 GB con una RTX 3070 Ti de 8 GB.</li>
+<li><strong>Tarjetas AMD con la misma memoria, como beta.</strong> El diálogo de instalación te avisa de que AMD está en
+beta. Si no te funciona, la <a href="AMD-RX-7800XT-LLM-Setup.html">guía de AMD</a> lo configura a mano.</li>
 </ul>
-<p>La VRAM importa más que la velocidad de la GPU. Una tarjeta con solo 12 GB de VRAM no basta, por
-nueva que sea. Si tienes un segundo PC con una GPU potente, ejecuta LM Studio allí y apunta Elite
-Intel a él. Así el PC del juego no hace ningún trabajo de inferencia.</p>
+<p>Las tarjetas NVIDIA y AMD nunca se suman entre sí.</p>
+<p>¿Ya tienes LM Studio? Entonces el botón dice <strong>Configurar LM Studio</strong>. Añade el modelo y rellena los campos, y
+por lo demás deja tu LM Studio exactamente como está: Elite Intel nunca inicia, detiene ni quita un LM Studio
+que hayas instalado tú.</p>
+<h3>En un segundo PC: configúralo tú</h3>
+<p>Si tu PC de juego no puede con el juego y el modelo a la vez, ejecuta LM Studio en otro PC de tu red que no
+haga nada más que ejecutar el modelo, y pon su dirección en <strong>Dirección</strong>. Así el PC de juego no hace ningún
+trabajo de inferencia.</p>
+<p>El PC del LLM necesita:</p>
+<ul>
+<li><strong>12 GB de memoria de vídeo</strong>, que dejan margen para el modelo,</li>
+<li><strong>potencia de cálculo de la clase RTX 3080 o superior.</strong> Una tarjeta más lenta puede cargar el modelo, pero
+responde demasiado despacio para ser útil.</li>
+</ul>
 <p>Hay una tabla de referencia de GPU elaborada por <strong>Kevin Rank</strong> aquí:
 <a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">Guía de referencia de GPU</a></p>
-<h3>Guías de instalación</h3>
 <table>
 <thead>
 <tr>
@@ -158,19 +192,19 @@ Intel a él. Así el PC del juego no hace ningún trabajo de inferencia.</p>
 </thead>
 <tbody><tr>
 <td><a href="Install-LM-Studio-Linux.html">LM Studio - Linux</a></td>
-<td>Instalación de escritorio y cómo ejecutarlo como servidor</td>
+<td>Instalación por línea de comandos y ejecución como servicio desde el arranque</td>
 </tr>
 <tr>
 <td><a href="Install-LM-Studio-Windows.html">LM Studio - Windows</a></td>
-<td>Aplicación de escritorio con interfaz gráfica</td>
-</tr>
-<tr>
-<td><a href="AMD-RX-7800XT-LLM-Setup.html">LLMs en la serie AMD RX</a></td>
-<td>Configuración específica para AMD</td>
+<td>Instalación por línea de comandos e inicio al iniciar sesión</td>
 </tr>
 <tr>
 <td><a href="LM-Studio-Ubuntu-Server.html">LM Studio en Ubuntu Server</a></td>
 <td>Instalación headless en una máquina dedicada a la inferencia</td>
+</tr>
+<tr>
+<td><a href="AMD-RX-7800XT-LLM-Setup.html">LLMs en la serie AMD RX</a></td>
+<td>Configuración específica para AMD</td>
 </tr>
 </tbody></table>
 <h3>¿Por qué precisamente <code>google/gemma-4-e4b</code>?</h3>
@@ -236,12 +270,14 @@ El modelo no lo eliges: Elite Intel escoge el adecuado para tu proveedor.</p>
 <h2>¿Cuál debería usar?</h2>
 <p><strong>Ejecuta LM Studio en local si:</strong></p>
 <ul>
-<li>tienes una RTX 3090 24 GB o equivalente, o un segundo PC en tu red que la tenga</li>
+<li>tu PC de juego tiene 24 GB de memoria de vídeo en una tarjeta (una RTX 3090 o superior), o unos 20 GB
+entre dos o más: Elite Intel lo configura por ti</li>
+<li>o tienes un segundo PC en tu red con 12 GB de memoria de vídeo y potencia de la clase RTX 3080</li>
 <li>quieres que todo se quede en tu propio hardware</li>
 </ul>
 <p><strong>Usa un proveedor en la nube si:</strong></p>
 <ul>
-<li>tu GPU no tiene VRAM suficiente para ejecutar un modelo junto al juego</li>
+<li>tu GPU no puede ejecutar el modelo junto al juego y no tienes un segundo PC para ello</li>
 <li>prefieres no tener ningún servidor de inferencia</li>
 </ul>
 <p>¿No lo tienes claro? Puedes empezar con cualquiera de las dos opciones y cambiar cuando quieras sin reinstalar nada.</p>

@@ -1,54 +1,48 @@
 # Personnaliser Elite Intel
 
-Elite Intel fonctionne comme la voix et le cerveau IA du vaisseau. Avec Kokoro TTS comme moteur de synthèse vocale par défaut et la plupart des utilisateurs fonctionnant entièrement hors ligne (Kokoro TTS et un LLM local via LM Studio), ce guide explique comment personnaliser les paramètres de voix et de personnalité.
+Elite Intel fait office de voix et de cerveau IA du vaisseau. Ce guide explique comment personnaliser sa voix et sa personnalité. Chaque vaisseau de votre flotte peut avoir les siennes, réglées dans l'[onglet Commandant](UI-Commander-Tab).
 
 ## Voix
 
-Kokoro TTS est le moteur de synthèse vocale par défaut. Il fonctionne hors ligne sans dépendance au cloud. Voix disponibles :
+**Supertonic 3** est le moteur de voix intégré. Il tourne sur votre PC sans dépendre du cloud, et chaque voix parle toutes les langues prises en charge par Elite Intel. Il y a 45 voix, dont :
 
-- **Américaine féminine** : Heart, Bella, Nicole (chuchotement), Sky, Anna
-- **Américaine masculine** : Michael
-- **Britannique féminine** : Isabella, Emma
-- **Britannique masculine** : George, Jason, Daniel
+- **Féminines** : Lily (par défaut), Heart, Bella, Nicole, Sky, Emma, Isabella, Astra, Lyra
+- **Masculines** : George, Daniel, Michael, Lewis, Fable, Orion, Atlas, Draven
 
-Google TTS (cloud) est également disponible lorsqu'il est activé. Son ensemble de voix est distinct de celui de Kokoro TTS.
+Votre choix détermine aussi si Vega parle d'elle-même au masculin ou au féminin sur ce vaisseau.
 
-**Note** : À partir de la version 0351, la voix du vaisseau, la personnalité et la cadence ne peuvent être modifiées que dans l'interface, pas par commande vocale. L'IA sélectionne parmi le moteur actif (Kokoro TTS par défaut).
+Si une voix vous semble un peu trop faible, trop rapide ou trop brillante, ajustez-la avec le [Réglage des voix](UI-Settings-Tab) : vitesse, volume et un égaliseur à six bandes pour chaque voix.
+
+Google TTS (cloud) est aussi disponible si vous ajoutez une clé API. Il a ses propres voix.
+
+**Remarque** : la voix et la personnalité d'un vaisseau ne peuvent être changées que dans l'interface, pas par commande vocale.
 
 ## Identité du vaisseau
 
-L'IA parle en tant que vaisseau. Elle utilise "je", "mon" et "moi" pour se désigner elle-même.
+L'IA parle en tant que vaisseau. Elle utilise « je », « mon » et « me » pour parler d'elle-même.
 
 Exemples :
-- "Quelle est votre configuration ?" retourne les modules actuels du vaisseau.
-- "Quelle est votre portée de saut ?" retourne la portée actuelle chargée et déchargée.
-- "Combien de carburant ai-je ?" retourne le niveau de carburant du vaisseau.
+- « Quel est ton équipement ? » renvoie les modules actuels du vaisseau.
+- « Quelle est ta portée de saut ? » renvoie la portée actuelle à vide et en charge.
+- « Combien de carburant ai-je ? » renvoie le niveau de carburant du vaisseau.
 
-Pour interroger les informations du Fleet Carrier à la place, adressez-vous explicitement au carrier :
-- "Quelle est la portée du Fleet Carrier ?"
-- "Parlez-moi de la portée de saut du carrier."
+Pour interroger plutôt le porte-vaisseaux, adressez-vous à lui explicitement :
+- « Quelle est la portée du porte-vaisseaux ? »
+- « Donne-moi la portée de saut du porte-vaisseaux. »
 
 Sinon, l'IA suppose que la requête concerne le vaisseau.
 
-## Personnalités, profils et cadence
+## Personnalités
 
-**Mode hors ligne (Kokoro TTS + LLM local)** ne prend pas en charge les personnalités personnalisées, les profils de faction (Impérial/Fédéral/Alliance), ou les paramètres de cadence spéciaux. Le modèle local répond dans son style d'entraînement par défaut.
+Chaque vaisseau a une personnalité : Professionnel, Décontracté, Amical, Instable, Seven of Nine, F.R.I.D.A.Y., Mercenaire grande gueule, Ton ex-copain, Ton ex-copine ou Fripon. La créativité des réponses dépend de la personnalité choisie et des capacités de votre modèle de langage.
 
-**Utilisateurs de LLM cloud** (Claude, Grok, OpenAI, etc.) ont accès à l'ensemble des fonctionnalités :
-- Personnalités Professionnelle / Amicale / Déjantée / Rebelle
-- Profils Impérial / Fédéral / Alliance (affecte le ton et la formulation)
-- Contrôle de la température (bas = rapide et concis, haut = créatif et plus lent)
-
-**Note** : À partir de la version 0351, la personnalité et la cadence ne peuvent être modifiées que dans l'interface.
-
-Le mode hors ligne offre une faible latence sans coût API, avec des réponses simples. Les LLMs cloud offrent des options de personnalité supplémentaires.
+Un modèle local n'a aucun coût d'API et une faible latence. Un modèle cloud peut être payant, selon le fournisseur, et se montre généralement plus inventif.
 
 ## Conseils
 
-- Commencez avec les paramètres par défaut de Kokoro TTS. Essayez différentes voix pour trouver votre préférence. Les voix masculines britanniques (George, Jason, Daniel) s'accordent bien avec une esthétique impériale même sans prise en charge des profils.
-- Le mode hors ligne est rapide et gratuit. Le mode cloud offre des options de personnalité supplémentaires mais entraîne des coûts API.
-- Expérimenter avec les formulations peut améliorer l'expérience pour les requêtes en mode vaisseau-narrateur.
+- Essayez plusieurs voix dans l'onglet Commandant. Changer la voix d'un vaisseau joue aussitôt une phrase avec elle.
+- Essayer différentes formulations peut améliorer l'expérience des requêtes adressées au vaisseau.
 
 Signalez les problèmes, comportements inattendus ou suggestions sur Matrix.
 
-Communauté 👉 [**Matrix**](https://app.element.io/#/room/#krondor:matrix.org) 👈
+Community 👉 [**Matrix**](https://app.element.io/#/room/#krondor:matrix.org) 👈

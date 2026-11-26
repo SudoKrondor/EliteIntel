@@ -29,25 +29,26 @@ Four buttons sit in the section header:
 | Button | What it does |
 |--------|--------------|
 | **Copy** | Copies the text you have selected in the log to the clipboard. |
-| **Save support bundle** | Writes a timestamped `.zip` for a bug report: this log, the application log, your journal and the game's live status files, your bindings, your custom commands, a hardware summary, and a summary of microphone *levels* (never audio). Anything it could not collect is listed inside the bundle. **This is what to attach to a bug report.** |
+| **Report a bug** | Opens a short form: describe what went wrong (required) and, if you want a reply, leave an email (optional). **Send Report** sends your description with a support bundle straight to the Elite Intel team - no Matrix account needed - and the log shows a report ID you can quote if you talk to us later. The bundle holds this log, the application log, your journal and the game's live status files, your bindings, your custom commands, a hardware summary, and a summary of microphone *levels* (never audio). API keys and passwords are never included, and only the team sees the report. If it cannot be sent, the bundle is kept and the log says where, so you can post it on Matrix yourself. **Save to File Instead** writes the bundle to a `.zip` of your choice without sending anything. |
 | **Dump Vega's memory** | Writes a JSON snapshot of Vega's working memory for the current session. Only works while services are running. |
 | **Clear** | Empties the diagnostics log. |
+
+![Report a bug window](images/bug-report-window.png)
 
 ---
 
 ## Quick Status
 
-Six live readouts. Each shows a state and a colour, so a glance tells you whether the stack is
+Five live readouts. Each shows a state and a colour, so a glance tells you whether the stack is
 healthy.
 
 | Readout | States |
 |---------|--------|
 | **STT** | `Standby` (services stopped) · `Listening` · `Sleeping` (ignoring you) · `Push to talk` (only the mapped button opens the microphone) |
 | **LLM** | `Standby` · `Offline` (could not connect) · the name of the provider that actually answered, or `Active` |
-| **TTS** | `Standby` · `Local` (Kokoro / Supertonic) · `Cloud` (Google / Microsoft Edge) |
+| **TTS** | `Standby` · `Local` (Supertonic) · `Cloud` (Google) |
 | **Bindings** | `All OK`, or `N missing` |
 | **Commands** | How many custom commands are loaded |
-| **Keymap** | `In sync` with the game, or `Modified` — you have an unapplied bindings draft |
 
 The **LLM** readout is worth watching. It does not report what you *configured*, it reports
 which provider actually answered.
@@ -59,7 +60,7 @@ which provider actually answered.
 | Button | What it does |
 |--------|--------------|
 | **START / STOP SERVICES** | Toggles the whole AI stack. The button disables itself while starting or stopping so it cannot be double-fired. |
-| **SLEEP / WAKE UP** | Awake, Vega listens continuously. Asleep, she ignores everything except a wake phrase (`wake up`) or a `listen`-prefixed order — *"Listen up, gear down."* Disabled while push-to-talk is on: then the mapped button is the gate. |
+| **SLEEP / WAKE UP** | Awake, Vega listens continuously. Asleep, she ignores everything except a wake phrase (`wake up`) or a `listen`-prefixed order — *"Listen up, gear down."* Disabled while push-to-talk is on: then the mapped button is the gate. A new install starts asleep. |
 | **DISPLAY / HIDE OVERLAY** | Shows the always-on-top [HUD overlay](UI-HUD-Overlay). The app remembers which way you left it and restores it on the next launch. If the overlay binary is missing the toggle says so in the log rather than claiming an overlay that is not there. |
 | **OVERLAY SETUP** | Opens [HUD overlay settings](UI-HUD-Overlay) — transparency, text size, colours, and where it is drawn (monitor, VR headset, both, or a capture window). |
 | **Audio Devices** | Pick your microphone and speaker. A change takes effect straight away: only the speech recognition (microphone) or the voice (speaker) restarts. |

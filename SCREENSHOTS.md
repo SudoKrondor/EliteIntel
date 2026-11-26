@@ -1,75 +1,47 @@
-# V1.1 screenshot checklist
+# V1.2 screenshot checklist
 
 Drop each file into `images/` with **exactly** the filename below, then re-run `node build.js`.
-Until a file exists the page shows a broken-image placeholder, so the list doubles as a
-progress tracker.
+Until a **New** file exists its page shows a broken-image placeholder. A **Retake** file already
+exists but shows an older interface. Replacing a file updates the pages in every language together.
 
-**Status — 4 of 16 received (12 Aug).** ✅ = in `images/` and rendering. ⚠️ = present but
-needs a retake, reason noted in the row. Everything unmarked is still outstanding.
+Last checked against `images/` on 2026-11-17, after the 2026-11-17 retake pass.
 
 **General notes**
 
-- Window size: the app opens at 1200 x 920. Capture the **window only**, not the desktop.
-- Take them with **services running** and a game session loaded wherever the shot involves live
-  data — empty tables and `Standby` badges make the docs look broken.
-- PNG. Roughly 1200px wide is plenty; the site scales them down.
-- Blank or crop any API key that is visible.
+- Capture the **window only**, not the desktop. PNG; the 2026-11-17 set is 1720×1080, keep that size.
+- Use the V1.2 colour scheme, with **services running** and a game session loaded wherever the shot
+  involves live data. Empty tables and `Standby` badges make the docs look broken.
+- Blank or crop any API key.
+- Save the shots with the app in **English**.
+- BindForge's sub-tabs are now **Alias Designer · Bind Editor · Preset Editor · Bind File Management**,
+  and the Bind Editor has a **Toggles** tab after Dead Zones & Sensitivity.
 
 ---
 
-## Vega tab — `UI-Vega-Tab.md`
+## Missing (referenced by a page, no file in `images/`)
 
-| File | What to capture |
-|------|-----------------|
-| ✅ `ui-tab-vega.png` | The whole Vega tab, services **running**, with a few lines of real conversation in the log and the Quick Status badges green. This is the hero shot for the whole UI section. |
+| File | Page | What to capture |
+|------|------|-----------------|
+| `ui-tab-commander-massacre-sets.png` | `UI-Commander-Tab` | **Commander → Massacre Sets** with sharing **on**, after a sync, so both sections show numbers (Sets you share, Last shared, Sets from other commanders, Usable here, Last updated, Commanders contributing). |
+| `ui-bindings-preset-editor.png` | `UI-Bindings-Tab` | **BindForge → Preset Editor**: the four dropdowns (General, Ship, SRV, On-Foot) and **Set all to same**. Best with the four sections on different files so the "do not all load the same binds file" note shows. |
+| `rocm-smi-without-game-running-example.png` | `AMD-RX-7800XT-LLM-Setup` | Pre-existing gap: `rocm-smi` output with the game not running. |
+| `rocm-smi-with-game-and-Elite-Intel-running-example.png` | `AMD-RX-7800XT-LLM-Setup` | Pre-existing gap: `rocm-smi` output with the game and Elite Intel running. |
 
-## Commander tab — `UI-Commander-Tab.md`
+## Retake: not yet retaken
 
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-commander.png` | Whole tab with the **Ship Options** sub-tab selected, and at least 3–4 ships in the fleet grid. |
-| `ui-commander-announcements.png` | The **Announcements** sub-tab — just the toggle grid is enough. |
-| `ui-ship-settings.png` | The ⚙ ship settings popup, scrolled so both the honk section and some Trade Profile rows are visible. |
+| File | Page | What to capture |
+|------|------|-----------------|
+| `ui-bindings-assign.png` | `UI-Bindings-Tab` | Last changed 2026-11-05. **Assign control** open on a **controller tab**, so the new **Mouse** tab is visible in the tab row and **With Shift / With Ctrl / With Alt** show under the controller. One box ticked is ideal. |
+| `llm-setup.png` | `installing-local-llms` | Last changed 2026-11-04. The LMStudio Setup / Cloud Setup strip, cropped as now, with the **Install LM Studio** (or *Set up LM Studio*) button showing. |
+| `ui-overlay-ingame.png` | `UI-HUD-Overlay` | Still the V1.1 shot from August. **Use the full cockpit frame** (see below), with a plotted route card showing the **blue (neutron) and white (white dwarf) star dots**. |
 
-## Actions tab — `UI-Actions-Tab.md`
+## Retake: taken 2026-11-17 but not showing what the page needs
 
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-actions-builtin.png` | **Built-in Commands** sub-tab. Set the scope picker to a real situation (e.g. *In ship — supercruise*) so the Place field is populated and the list is a plausible length. |
-| `ui-tab-actions-custom.png` | **Custom Commands** sub-tab with 2–3 example commands defined. |
-| `ui-custom-command-editor.png` | The custom command editor with a filled-in example — a name, a couple of phrases, and 2–3 steps of different types. |
-
-> Optional extra, not currently referenced: the command details dialog (double-click a
-> built-in command). Say the word and I will add it to the page.
-
-## Bindings tab — `UI-Bindings-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-bindings-profile.png` | **Binding Profile** sub-tab showing the profile/file fields and both tables. Ideally with at least one missing binding and one conflict visible, so the colours mean something. |
-| ⚠️ `ui-bindings-assign.png` | **Retake.** The shot received has no modifier held, so every key renders neutral and the green/red map — the whole reason this image exists — is not visible. Re-capture with Ctrl (or Shift/Alt) held down. |
-| `ui-tab-bindings-management.png` | **Binding Management** sub-tab with a few backups listed. |
-
-## Settings tab — `UI-Settings-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-settings-ai.png` | **AI Services** sub-tab. Best shot: **Cloud Setup** selected for the LLM (key blanked or fake) so the dimmed Local column is visible — it shows the switch behaviour. Include the Common strip at the top. |
-| ✅ `ui-tab-settings-audio.png` | **Audio** sub-tab, **while speaking**, so the Microphone Monitor shows a live signal against the FLOOR/GATE rails. |
-| `ui-tab-settings-push-to-talk.png` | **Push To Talk** sub-tab with a controller connected and a button selected. |
-
-## Stats tab — `UI-Stats-Tab.md`
-
-| File | What to capture |
-|------|-----------------|
-| `ui-tab-stats.png` | After a session long enough to have real numbers (10+ minutes, so Tokens/Hour is populated rather than "collecting data"). A **cloud** provider is the better shot — it shows the cache lines a local model hides. |
-
-## HUD overlay — `UI-HUD-Overlay.md`
-
-| File | What to capture |
-|------|-----------------|
-| ⚠️ `ui-overlay-ingame.png` | **Re-crop, ideally with a second card.** The file currently in `images/` is a tight crop around the card alone. Use the **full cockpit frame** instead — see the note below on why. Still only one card (Plotted Route) where 2+ were asked for, so a frame with a trade or exobiology card alongside it would be better again. |
-| `ui-overlay-settings.png` | The OVERLAY SETUP dialog, with **VR headset** or **Monitor and headset** selected so the *Position in headset* control and its placement note are visible. |
+| File | Problem |
+|------|---------|
+| `ui-bindings-install-locations.png` | Still shows **Run First-Time Startup Again**. Retake once RA lands and that button is gone. |
+| `ui-bindings-anomalies.png` | Shows **No conflicts in this binds file**. The page describes conflicts; capture a file with a few, ideally one **controller button** conflict and a *Shares … with* hover. |
+| `ui-tab-bindings-profile.png` | Usable as is. Ideally with the Apply bar lit and one *Vega can't use* row. |
 
 ---
 
@@ -90,25 +62,18 @@ makes the shot legible, and it is what sells the feature.
 
 ---
 
-## Pre-existing gaps (not V1.1, but broken today)
+## Stray and superseded files
 
-`AMD-RX-7800XT-LLM-Setup.md` references two images that are not in `images/`:
+`images/ ui-bindings-anomalies.png` (with a **leading space** in the name) is a byte-identical stray
+copy of `ui-bindings-anomalies.png`. Nothing references it; delete it.
 
-- `rocm-smi-without-game-running-example.png`
-- `rocm-smi-with-game-and-Elite-Intel-running-example.png`
+No page references these. The first four were re-saved on 2026-11-17 as byte-identical copies or
+near-copies of the `ui-tab-*` shots, but that does not bring them back into use:
 
-They render as broken images on that page in all six locales.
+`tab-actions.png` · `tab-player.png` · `tab-settings-ai-services.png` · `tab-settings-audio.png` ·
+`v1.0.png` · `v1.1.png` · `tab-ai-buttons.png` · `tab-action-build-in-commands.png` ·
+`tab-actions-custom-commands.png` · `tab-settings-push-to-talk.png` · `tab-stats.png` ·
+`popup-ship-properties.png` · `popup-custom-action.png` · `select_audio_device.png` ·
+`calibrate-audio.png` · `mic-monitor.png` · `keys-binding.png` · `controller.png`
 
----
-
-## Superseded V1.0 images
-
-These are no longer referenced by any page and can be deleted once the new set is in:
-
-`tab-ai-buttons.png` · `tab-player.png` · `tab-actions.png` ·
-`tab-action-build-in-commands.png` · `tab-actions-custom-commands.png` ·
-`tab-settings-ai-services.png` · `tab-settings-audio.png` ·
-`tab-settings-push-to-talk.png` · `tab-stats.png` · `popup-ship-properties.png` ·
-`popup-custom-action.png` · `select_audio_device.png` · `calibrate-audio.png`
-
-They are still referenced by the **localized** pages, so hold off until those are translated.
+Check them against the localized pages before deleting them.

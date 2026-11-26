@@ -1,26 +1,25 @@
-# Reiter Einstellungen
+# Reiter Dienste
 
-<img src="images/settings.png" class="inline" height="20" alt="Einstellungen"> Der Unterbau. Ein
-Streifen **Allgemein**, der überall gilt, dann drei Unterreiter: **KI-Dienste**, **Audio** und
-**Push To Talk**. Der Update-Knopf sitzt in der Fußzeile — *App ist auf dem neuesten Stand* oder
-*Update verfügbar*.
+<img src="images/services.png" class="inline" height="20" alt="Dienste"> Der Unterbau. Die Auswahl
+**Sprache** gilt überall und sitzt ganz oben, dann folgen drei Unterreiter: **KI-Dienste**, **Audio** und
+**Push To Talk und weitere Einstellungen**. Die Fußzeile enthält [**Einstellungen & Daten sichern**](#backup-settings-and-data),
+**Wiederherstellen...** und den Update-Knopf — *App ist auf dem neuesten Stand* oder *Update verfügbar*.
 
 ---
 
-## Allgemein
+## Sprache
 
-Über den Unterreitern angezeigt, weil es für alle gilt.
+Die Sprache deiner Sprachbefehle und der App-Oberfläche. Eine Auswahl stellt das ganze Fenster sofort neu
+dar, und Vega sagt den Wechsel laut an.
 
-**Sprache** — die Sprache deiner Sprachbefehle und der App-Oberfläche. Eine Auswahl stellt das
-ganze Fenster sofort neu dar, und Vega sagt den Wechsel laut an.
+Die Auswahl ist **gesperrt**, damit ein versehentlicher Klick oder Scroll deine Sprache nicht ändert.
+Entferne den Haken am Schloss daneben, um sie zu ändern; danach sperrt sie sich wieder.
 
-Unterstützt: Englisch, Deutsch, Französisch, Spanisch, Italienisch,
-Portugiesisch (Portugal), Portugiesisch (Brasilien).
+Unterstützt: Englisch, Russisch, Ukrainisch, Deutsch, Französisch, Spanisch, Italienisch, Portugiesisch,
+brasilianisches Portugiesisch.
 
-**Journal-Ordner** — wo Elite Dangerous seine Journaldateien schreibt. Optional: leer gelassen
-wird der Standardort deiner Plattform verwendet. So weiß Elite Intel, was um dein Schiff herum
-passiert; ist er falsch, ist die App praktisch blind und sagt das beim Start. Ein unbrauchbarer
-Ordner wird abgelehnt und die vorherige Einstellung bleibt.
+> Der **Journal-Ordner** liegt jetzt im [Reiter Kommandant](UI-Commander-Tab), der **Belegungsordner** im
+> [Reiter BindForge](UI-Bindings-Tab).
 
 ---
 
@@ -37,9 +36,9 @@ bis du **Speichern** drückst, und wer mit offenen Änderungen den Reiter verlä
 
 ### Sprachmodell (LLM)
 
-Wechsle zwischen **LMSTudio** (lokal) und **Cloud-Einrichtung**.
+Wechsle zwischen **LMStudio** (lokal) und **Cloud-Einrichtung**.
 
-**LMSTudio**
+**LMStudio**
 
 | Feld | Hinweise |
 |-------|-------|
@@ -50,7 +49,23 @@ Das unterstützte lokale Modell ist **`google/gemma-4-e4b`**. Elite Intel warnt 
 dein lokales Modell ein anderes ist; andere Modelle funktionieren womöglich schlecht oder gar
 nicht.
 
-Einrichtungsanleitungen: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
+Kann dein PC Spiel und Modell zusammen halten, richtet eine Schaltfläche unter diesen Feldern LM Studio für
+dich ein. Das heißt: eine NVIDIA-Karte der RTX-30-Serie oder neuer mit 24 GB (eine RTX 3090 oder besser) oder
+zwei oder mehr solcher Karten mit zusammen etwa 20 GB, jede mit mindestens 8 GB. AMD-Karten mit demselben
+Speicher bekommen die Schaltfläche als **Beta**. Details unter [LLM auswählen](installing-local-llms).
+
+| Schaltfläche | Was sie tut |
+|--------------|-------------|
+| **LM Studio installieren** | Installiert LM Studio, lädt das Modell herunter und auf die Grafikkarte und trägt Adresse und Modell ein |
+| **LM Studio einrichten** | Für ein LM Studio, das du schon hast: fügt das Modell hinzu und füllt die Felder aus, sonst nichts |
+| **Einrichtung fortsetzen** | Setzt eine unterbrochene Installation fort |
+| **LM Studio deinstallieren** | Entfernt das von Elite Intel installierte LM Studio samt Modellen, nachdem es sie aufgelistet hat |
+
+Ein so installiertes LM Studio startet und stoppt mit den Diensten von Elite Intel und wird beim Schließen
+der App beendet, auch wenn seine Einrichtung nicht fertig wurde. Ein LM Studio, das du selbst installiert
+hast, wird nie gestartet, gestoppt oder entfernt.
+
+Anleitungen für LM Studio auf einem zweiten PC: [LM Studio unter Linux](Install-LM-Studio-Linux) ·
 [LM Studio unter Windows](Install-LM-Studio-Windows) ·
 [AMD-RX-Serie](AMD-RX-7800XT-LLM-Setup) ·
 [Headless-Ubuntu-Server](LM-Studio-Ubuntu-Server)
@@ -73,22 +88,38 @@ Wie du bei jedem Anbieter einen Schlüssel bekommst, steht unter [Cloud-LLM-Opti
 
 ### Sprache (TTS)
 
-Wechsle zwischen **Lokal · Kokoro / Supertonic** und **Cloud · Google / Edge**. Jede Seite hat
-einen zweiten Schalter zur Wahl der Engine.
+Wechsle zwischen **Lokale Sprachsynthese** und **Cloud · Google**.
 
 | Engine | Wo sie läuft | Hinweise |
-|--------|---------------|-------|
-| **Kokoro** | Auf deinem PC | Der Standard. Kein Schlüssel, nichts verlässt deinen PC. Kann kein Kyrillisch aussprechen — siehe unten |
-| **Supertonic 3** | Auf deinem PC | Zehn Stimmen, alle unterstützten Sprachen. Kein Schlüssel. Mit dem Regler **Supertonic-3-Verstärkung (0–100 %)** hebst du die Lautstärke an |
-| **Google** | Googles Server | Google Cloud Text-to-Speech. Braucht einen **Google-TTS-Schlüssel** (mit demselben Kästchen Gesperrt). Mit dem Regler **Google-WaveNet-Tonhöhe** für die WaveNet-Stimmen |
-| **Microsoft Edge** | Microsofts Server | Microsofts Online-Vorlesestimmen. Kein Schlüssel nötig |
+|--------|--------------|----------|
+| **Supertonic 3** | Auf deinem PC | Der Standard. 45 Stimmen, und jede Stimme spricht jede Sprache der App und des Spiels. Kein Schlüssel, nichts verlässt deinen PC |
+| **Google** | Googles Server | Google Cloud Text-to-Speech. Braucht einen **Google-TTS-Schlüssel** (mit demselben Kästchen Gesperrt). Mit dem Regler **Google-WaveNet-Tonhöhe**, den die WaveNet-Stimmen nutzen, und dem Regler **Google-Sprechgeschwindigkeit** |
 
-**Kokoro und Kyrillisch.** Schreibt dein *Spielclient* den Funkverkehr auf Russisch, ist das Kokoro-Segment ausgegraut, ein Banner
-erklärt den Grund, und Supertonic 3 spricht stattdessen.
+Funkverkehr spricht immer Supertonic 3, egal welche Engine du für Vega wählst.
 
-> Ein Engine-Wechsel setzt die Stimme jedes Schiffs auf die Standardstimme der neuen Engine
-> zurück. Die Persönlichkeiten der Schiffe bleiben erhalten. Du wirst vorher um Bestätigung
-> gebeten.
+> Ein Wechsel der Engine setzt die Stimme jedes Schiffs auf die Standardstimme der neuen Engine zurück.
+> Schiffspersönlichkeiten bleiben erhalten. Du wirst vorher um Bestätigung gebeten.
+
+<a id="voice-tuning"></a>
+
+### Stimmen abstimmen
+
+![Stimmen abstimmen](images/ui-voice-tuning.png)
+
+Die Stimmen unterscheiden sich etwas in Lautstärke und Tempo, daher kannst du mit **Stimmen abstimmen…** jede
+einzeln anpassen. Die Liste links ist in **Weibliche Stimmen** und **Männliche Stimmen** gegliedert; wähle eine,
+um ihre Einstellungen zu sehen.
+
+| Bedienelement | Was es tut |
+|---------------|------------|
+| **Geschwindigkeit** | Wie schnell diese Stimme spricht |
+| **Lautstärke** | Eine Lautstärkekorrektur für diese Stimme |
+| **Equalizer** | Sechs Bänder, um den Klang dieser Stimme zu formen |
+| **Testen** | Spielt einen Satz mit den aktuellen Einstellungen ab |
+| **Stimme zurücksetzen** | Setzt diese Stimme auf ihre Standardwerte zurück |
+
+Es gibt keinen Speichern-Knopf: Eine Änderung wird gespeichert, sobald du den Regler loslässt. Du kannst
+Stimmen abstimmen öffnen, egal welche Engine für Vega spricht, denn Supertonic 3 spricht in jedem Fall den Funk.
 
 ### Fußzeile
 
@@ -98,8 +129,7 @@ es ist ausgegraut, bis sich tatsächlich etwas ändert, und daneben erscheint da
 **Nicht gespeicherte Änderungen**.
 
 Beim Speichern startet nur neu, was nötig ist — ein neues Modell oder ein neuer Schlüssel
-startet das Gehirn neu, eine neue Sprachausgabe oder ihr Schlüssel die Stimme. Tonhöhe und
-Verstärkung wirken ohne Neustart.
+startet das Gehirn neu, eine neue Sprachausgabe oder ihr Schlüssel die Stimme.
 
 ---
 
@@ -125,12 +155,12 @@ Unter den Geräten liegen zwei Reiter.
 |--------|--------------|
 | **Sprachlautstärke** | Wie laut Vega spricht |
 | **Funklautstärke** | Wie laut Funkübertragungen sind. Ausgegraut, solange Funkübertragungen aus sind |
-| **TTS-Sprechgeschwindigkeit** | Wie schnell Vega spricht |
 | **Signaltonlautstärke** | Der Bestätigungston — er ertönt, wenn die Spracherkennung fertig ist und das Sprachmodell deine Eingabe hat |
 | **STT-Threads** | CPU-Threads für die Spracherkennung (4–11). Eine Mindestanforderung, keine Reservierung: die App fordert so viele an, nutzt, was der Prozessor hergibt, und gibt sie nach getaner Arbeit frei |
 
-Die Musiklautstärke ist nicht hier — sie liegt im [Reiter Jukebox](UI-Jukebox-Tab), damit du nie
-die falsche herunterdrehst.
+Wie schnell Vega spricht, stellst du je Stimme unter [Stimmen abstimmen](#voice-tuning) ein, bei einer
+Google-Stimme mit **Google-Sprechgeschwindigkeit**. Die Musiklautstärke liegt im
+[Reiter Jukebox](UI-Jukebox-Tab), damit du nie die falsche herunterdrehst.
 
 ### Funkübertragung
 
@@ -163,7 +193,7 @@ klein ist, um damit zu arbeiten.
 
 ---
 
-## Push To Talk
+## Push To Talk und weitere Einstellungen
 
 ![Push to Talk](images/ui-tab-settings-push-to-talk.png)
 
@@ -174,7 +204,7 @@ aufnimmt, wird als Raumgeräusch verworfen.
 |---------|-------|
 | **Push-to-Talk aktivieren** | Der Hauptschalter |
 | **Controller** | Jeder angeschlossene Gamecontroller oder HOTAS. Dein gespeicherter Controller wird beim erneuten Verbinden automatisch wieder gewählt |
-| **Taste** | Welche Taste darauf |
+| **Taste** | Welche Taste darauf, mit der Beschriftung aus dem [Alias-Designer](UI-Bindings-Tab) |
 | **Maustaste** | Ein zweiter Auslöser: *Mittlere Taste*, *Taste 4 (Zurück)* oder *Taste 5 (Vorwärts)*. Praktisch zu Fuß oder im SRV, wenn dein HOTAS außer Reichweite ist. Links und rechts werden nicht angeboten — damit feuerst du deine Waffen |
 
 Taste halten, sprechen, loslassen. Das Drücken **unterbricht Vega auch mitten im Satz**, du musst
@@ -183,6 +213,35 @@ also nie warten, bis sie fertig ist.
 Solange Push-to-Talk aktiv ist, ist der Knopf **SCHLAFEN / AUFWACHEN** im Vega-Reiter gesperrt —
 die Taste ist das Tor. Eine Änderung hier wirkt beim nächsten Druck, und die Taste funktioniert,
 ob du diesen Reiter je öffnest oder nicht.
+
+<a id="warnings"></a>
+
+### Warnungen
+
+Manche Hinweise, etwa die Bestätigung und der Bericht von Anwenden in BindForge, haben ein Kästchen
+**Nicht mehr anzeigen**. **Warnungen zurücksetzen** zeigt alle ausgeblendeten wieder an. Solange nichts
+ausgeblendet ist, ist die Schaltfläche ausgegraut.
+
+---
+
+<a id="backup-settings-and-data"></a>
+
+## Einstellungen & Daten sichern
+
+Für den Umzug auf einen neuen Rechner, oder einfach zur Vorsicht. **Einstellungen & Daten sichern** schreibt eine
+`.zip` mit deinen Einstellungen, Datenbanken, eigenen Befehlen und den Sicherungen von BindForge.
+
+**API-Schlüssel brauchen ein Passwort.** Wähle eines und drücke **Schlüssel sperren und speichern**, um deine
+Schlüssel in die Sicherung einzuschließen. Zum Wiederherstellen brauchst du das Passwort. Wählst du **Ohne
+API-Schlüssel**, enthält die Sicherung keine, und du gibst sie nach dem Wiederherstellen neu ein.
+
+**Wiederherstellen...** spielt eine Sicherung zurück. Was sie ersetzt, bleibt in einem Sicherheitsordner im
+App-Datenordner, und Elite Intel startet neu, um abzuschließen. Eine Sicherung aus einer neueren Version verlangt
+zuerst ein App-Update. Ordner, die es auf dem neuen Rechner nicht gibt, werden zurückgesetzt; prüfe danach also den
+Journal-Ordner im Reiter Kommandant und den Belegungsordner im Reiter BindForge.
+
+> Das sichert **Elite Intel**. Um deine **Steuerungsdateien des Spiels** zu sichern, nutze die
+> [Spielersicherungen](UI-Bindings-Tab) im Reiter BindForge.
 
 ---
 
@@ -193,9 +252,8 @@ Alle Einstellungen und Daten werden auf deinem PC gespeichert:
 - **Linux:** `~/.local/share/elite-intel/` (oder `$XDG_DATA_HOME/elite-intel/`)
 - **Windows:** `%LOCALAPPDATA%\elite-intel\`
 
-Die Datenbank liegt in `db`, eigene Befehle in `custom-commands` (mit eigenem `backups`), deine
-manuellen Belegungs-Schnappschüsse in `playerbackups` und die automatischen Kopien vor dem
-Anwenden in `bindings/backups`.
+Die Datenbank liegt in `db`, eigene Befehle in `custom-commands` (mit eigenem `backups`) und die Sicherungen
+deiner Steuerungsdateien in `playerbackups`, sofern du keinen anderen Ordner gewählt hast.
 
 ---
 

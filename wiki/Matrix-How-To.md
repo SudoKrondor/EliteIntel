@@ -14,6 +14,8 @@ Never used Matrix before? This guide walks you through joining the Elite Intel c
 
 The Elite Intel community lives in a Matrix room called **#krondor:matrix.org**. That's where you can ask questions, report bugs, share ideas and chat with other commanders and the developer.
 
+**Just want to report a bug?** You don't need a Matrix account for that: use **Report a bug** on the app's Vega tab. It sends your description and a support bundle straight to the team. Join the room when you want to talk with us.
+
 You can use Element in two ways:
 
 | | In your browser (Element Web) | Installed app (Element) |

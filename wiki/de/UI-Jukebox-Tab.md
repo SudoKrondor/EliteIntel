@@ -66,7 +66,7 @@ Eine Datei, die von der Festplatte verschwunden ist, wird als **fehlt** markiert
 - **Zurück · Abspielen/Pause · Stopp · Weiter** — die Transportknöpfe. **Stopp** spult den
   aktuellen Titel an den Anfang zurück; **Pause** behält die Stelle.
 - **Reihenfolge** — *Der Reihe nach* oder *Zufällig*.
-- **Lautstärke** — der eigene Pegel der Musik. Er ist hier und nicht bei den Audioeinstellungen,
+- **Lautstärke** — der eigene Pegel der Musik. Er ist hier und nicht im Unterreiter Audio der Dienste,
   damit du nie versehentlich Vega leiser drehst.
 
 Deine Stelle im Titel bleibt zwischen Sitzungen erhalten — praktisch für Hörbücher —, aber die

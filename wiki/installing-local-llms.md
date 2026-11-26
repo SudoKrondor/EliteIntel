@@ -1,7 +1,7 @@
 # Choose your LLM
 
 Elite Intel needs a language model (LLM) to understand your commands and answer your questions.
-There are two ways to get one, and both are set up in **Settings → AI Services → Language Model (LLM)**:
+There are two ways to get one, and both are set up in **Services → AI Services → Language Model (LLM)**:
 
 | Option | What you need | Cost |
 |--------|---------------|------|
@@ -22,29 +22,63 @@ The left side of the panel, **LMStudio Setup**:
 | **Model** | `google/gemma-4-e4b` |
 
 LM Studio is the only local inference server Elite Intel supports, and `google/gemma-4-e4b` is the
-only supported local model.
+only supported local model. There are two ways to run it.
 
-### GPU Requirements
-Hardware you need to run the game and the LLM on the same machine:
+### On your gaming PC: Elite Intel sets it up
 
-- RTX 3090 24GB VRAM
-- AMD RX 7800 XT
+If your PC can run the game and the model together, a button appears under the **LMStudio Setup** fields.
+Press **Install LM Studio**, and Elite Intel:
 
-VRAM matters more than GPU speed. A card with only 12 GB of VRAM is not enough, however new it is.
-If you have a second PC with a capable GPU, run LM Studio there and point Elite Intel at it. That
-way the game PC does no inference work.
+1. installs LM Studio, on the drive you choose,
+2. downloads `google/gemma-4-e4b` (about 6 GB),
+3. loads it onto your graphics card and checks that it really went there,
+4. tests it, and fills in **Address** and **Model** for you.
+
+Each step shows as it happens, with a progress bar for the download. If a step fails, the dialog says which
+one and why, and pressing the button again picks up where it stopped. Allow about 10 GB of disk space.
+LM Studio is free software from Element Labs, not part of Elite Intel.
+
+From then on, Elite Intel starts LM Studio when you start its services and stops it when you stop them or
+close the app, so the model uses your graphics card's memory only while Elite Intel is running. To remove it,
+press **Uninstall LM Studio**: it lists what will be deleted before it deletes anything.
+
+**The button appears only when your graphics cards can hold the game and the model together.** The game
+takes 8.5 GB or more of video memory and the model about 6 GB, and your browser, OBS and Windows use some
+too, so a smaller card does not hold both reliably. The button is offered on:
+
+- **One NVIDIA card with 24 GB**, RTX 30 series or newer: an RTX 3090 or better.
+- **Two or more NVIDIA cards with about 20 GB between them**, each RTX 30 series or newer with at least
+  8 GB — for example a 12 GB RTX 5070 with an 8 GB RTX 3070 Ti.
+- **AMD cards with the same memory, as a beta.** The install dialog warns you that AMD is a beta. If it
+  does not work for you, the [AMD guide](AMD-RX-7800XT-LLM-Setup) sets it up by hand.
+
+NVIDIA and AMD cards are never added together.
+
+Already have LM Studio? The button says **Set up LM Studio** instead. It adds the model and fills in the
+fields, and leaves your LM Studio otherwise exactly as it is: Elite Intel never starts, stops or removes an
+LM Studio you installed yourself.
+
+### On a second PC: set it up yourself
+
+If your gaming PC can't hold the game and the model together, run LM Studio on another PC on your network
+that runs nothing but the model, and put that PC's address in **Address**. The gaming PC then does no
+inference work.
+
+The LLM PC needs:
+
+- **12 GB of video memory**, which leaves headroom for the model,
+- **RTX 3080-class processing power or better.** A slower card holds the model but answers too slowly to be
+  useful.
 
 A GPU reference table provided by **Kevin Rank** is available here:
 [GPU Reference Guide](https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing)
 
-### Install Guides
-
 | Guide | |
 |-------|---|
-| [LM Studio - Linux](Install-LM-Studio-Linux) | Desktop install, plus how to run it as a server |
-| [LM Studio - Windows](Install-LM-Studio-Windows) | Desktop app with a GUI |
-| [LLMs on AMD RX series](AMD-RX-7800XT-LLM-Setup) | AMD-specific setup |
+| [LM Studio - Linux](Install-LM-Studio-Linux) | Command-line install, plus running it as a service from boot |
+| [LM Studio - Windows](Install-LM-Studio-Windows) | Command-line install, plus starting it at login |
 | [LM Studio on Ubuntu Server](LM-Studio-Ubuntu-Server) | Headless install on a dedicated inference machine |
+| [LLMs on AMD RX series](AMD-RX-7800XT-LLM-Setup) | AMD-specific setup |
 
 ### Why `google/gemma-4-e4b` specifically?
 
@@ -95,11 +129,13 @@ How to get a key from each provider: [Cloud LLM setup](cloud-llm-options).
 ## Which one should I use?
 
 **Run LM Studio locally if:**
-- You have an RTX 3090 24 GB or equivalent, or a second PC on your network with one
+- Your gaming PC has 24 GB of video memory on one card (an RTX 3090 or better), or about 20 GB across two
+  or more: Elite Intel sets it up for you
+- Or you have a second PC on your network with 12 GB of video memory and RTX 3080-class power
 - You want everything to stay on your own hardware
 
 **Use a cloud provider if:**
-- Your GPU doesn't have enough VRAM to run a model alongside the game
+- Your GPU can't run the model alongside the game, and you have no second PC for it
 - You'd rather not run an inference server at all
 
 Not sure? You can start with either one and switch any time without reinstalling.

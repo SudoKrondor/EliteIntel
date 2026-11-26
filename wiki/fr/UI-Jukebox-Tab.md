@@ -64,7 +64,7 @@ Un fichier disparu du disque est marqué **manquant**.
 - **Précédent · Lecture/Pause · Arrêt · Suivant** — les commandes de transport. **Arrêt** rembobine
   la piste au début ; **Pause** garde votre position.
 - **Ordre** — *Séquentiel* ou *Aléatoire*.
-- **Volume** — le niveau propre de la musique. Il est ici et non dans les paramètres Audio, pour ne
+- **Volume** — le niveau propre de la musique. Il est ici et non dans le sous-onglet Audio de Services, pour ne
   jamais baisser Vega par erreur.
 
 Votre position dans une piste est mémorisée d'une session à l'autre — pratique pour les livres

@@ -206,10 +206,23 @@ Speicher* oder — für einen Ort, den du oft anfliegst — einen
   [Reiter Kommandant](UI-Commander-Tab) erledigen).
 - *„Neutronensternroute löschen“*
 
+### Lesezeichen
+
+- *„Merke dir diesen Ort“* — speichert, wo du bist.
+- *„Lesezeichen anzeigen“* — die nummerierte Liste im [HUD-Overlay](UI-HUD-Overlay). *„Nächste Seite“* /
+  *„vorherige Seite“* · *„Lesezeichen schließen“*
+- *„Navigiere zu Lesezeichen 3“* · *„Lösche Lesezeichen 3“*
+
+Siehe [Reiter Kommandant → Lesezeichen](UI-Commander-Tab).
+
 ### Orte finden
 
 Jeder *Finde*-Befehl plottet eine Route zum Gefundenen und zeigt es im
 [HUD-Overlay](UI-HUD-Overlay).
+
+- *„Finde eine Werft“* / *„finde eine Werft, die eine Python verkauft“*
+- *„Finde eine Powerplay-Konfliktzone“* — Systeme mit Konfliktzonen für die Macht, der du dich
+  verpflichtet hast.
 
 - *„Rohmaterialhändler finden“* / *„Datenhändler finden“* / *„hergestellte Materialien Händler
   finden“*
@@ -218,7 +231,9 @@ Jeder *Finde*-Befehl plottet eine Route zum Gefundenen und zeigt es im
 - *„Nächsten Interstellar Factor finden“* / *„wo kann ich mein Kopfgeld abbezahlen“*
 - *„Tankstelle finden“* / *„ich brauche Treibstoff“*
 - *„Nächsten Fleet Carrier finden“*
-- *„Brain Trees innerhalb von 500 Lichtjahren finden“*
+- *„Wo finde ich Tellur?“* / *„wo kann ich Eisen innerhalb von 50 Lichtjahren farmen?“* — der nächste
+  Brain Tree oder, falls keiner, der beste Planet oder Mond für ein Rohmaterial
+- *„Brain Trees mit Selen finden“* — nur Brain-Tree-Orte
 - *„Wo kann ich Painit innerhalb von 200 Lichtjahren abbauen“* / *„Abbauort finden“*
 - *„Dieses System aus Suchen ausschließen“* (oder *„Zielsystem aus Suchen ausschließen“*) — wenn
   eine Suche dich immer wieder an einen Ort schickt, der nicht funktioniert. *„Dieses System
@@ -236,8 +251,7 @@ Jeder *Finde*-Befehl plottet eine Route zum Gefundenen und zeigt es im
 - *„Aktuelle Handelsroute“* / *„aktueller Handelsplan“*
 - *„Navigiere zum nächsten Handelsstopp“*
 - *„Handelsroute abbrechen“*
-- *„Lokale Märkte“* · *„Stationsdetails“* / *„welche Services hier“* · *„Outfitting“* · *„Werft“* /
-  *„Schiffe zum Verkauf“*
+- *„Lokale Märkte“* · *„Stationsdetails“* / *„welche Services hier“* · *„Outfitting“*
 - *„Was ist im Frachtraum?“*
 
 ### Handelsprofil

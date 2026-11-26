@@ -1,19 +1,21 @@
 # Customizing Elite Intel
 
-Elite Intel functions as the ship's voice and AI brain. With Kokoro as the built-in default TTS engine and most users running fully offline (Kokoro TTS and a local LLM via LM Studio), this guide explains how to customize voice and personality settings.
+Elite Intel functions as the ship's voice and AI brain. This guide explains how to customize its voice and personality. Each ship in your fleet can have its own, set on the [Commander tab](UI-Commander-Tab).
 
 ## Voices
 
-Kokoro is the default TTS engine. It runs offline with no cloud dependency. Available voices:
+**Supertonic 3** is the built-in voice engine. It runs on your PC with no cloud dependency, and every voice speaks every language Elite Intel supports. There are 45 voices, including:
 
-- **American female**: Heart, Bella, Nicole (whispering), Sky, Anna
-- **American male**: Michael
-- **British female**: Isabella, Emma
-- **British male**: George, Jason, Daniel
+- **Female**: Lily (the default), Heart, Bella, Nicole, Sky, Emma, Isabella, Astra, Lyra
+- **Male**: George, Daniel, Michael, Lewis, Fable, Orion, Atlas, Draven
 
-Google TTS (cloud) is also available when enabled. Its voice set is separate from Kokoro's.
+Your pick also decides whether Vega speaks of itself as *he* or *she* on that ship.
 
-**Note**: Starting with version 0351, ship voice, personality, and cadence can only be changed in the UI, not via voice command. The AI selects from the active engine (Kokoro by default).
+If a voice is a little too quiet, too fast, or too bright for your ear, adjust it with [Voice Tuning](UI-Settings-Tab): speed, volume and a six-band equalizer for each voice.
+
+Google TTS (cloud) is also available if you add an API key. Its voice set is separate.
+
+**Note**: Ship voice and personality can only be changed in the UI, not via voice command.
 
 ## Ship Identity
 
@@ -30,23 +32,15 @@ To query fleet carrier information instead, address the carrier explicitly:
 
 Otherwise, the AI assumes the query refers to the ship.
 
-## Personalities, Profiles, and Cadence
+## Personalities
 
-**Offline mode (Kokoro + local LLM)** does not support custom personalities, faction profiles (Imperial/Federation/Alliance), or special cadence settings. The local model responds in its default trained style.
+Each ship has a personality: Professional, Casual, Friendly, Unhinged, Seven of Nine, F.R.I.D.A.Y., Mouthy Merc, Your Ex-Boyfriend, Your Ex-Girlfriend or Rogue. How creative the replies are depends on the personality you pick and on the capabilities of your language model.
 
-**Cloud LLM users** (Claude, Grok, OpenAI, etc.) have access to the full feature set:
-- Professional / Friendly / Unhinged / Rogue personalities
-- Imperial / Federation / Alliance profiles (affects tone and phrasing)
-- Temperature control (low = fast and concise, high = creative and slower)
-
-**Note**: Starting with version 0351, personality and cadence can only be changed in the UI.
-
-Offline mode provides low latency at no API cost, with plain responses. Cloud LLMs provide additional personality options.
+A local model has no API cost and low latency. A cloud model can cost money, depending on the provider, and is usually more inventive.
 
 ## Tips
 
-- Start with Kokoro defaults. Try different voices to find a preferred option. British male voices (George, Jason, Daniel) complement an Imperial aesthetic even without profile support.
-- Offline mode is fast and free. Cloud mode offers additional personality options but incurs API costs.
+- Try several voices on the Commander tab. Changing a ship's voice plays a line in it straight away.
 - Experimenting with phrasing can improve the experience with ship-as-speaker queries.
 
 Report issues, unexpected behavior, or suggestions on Matrix.

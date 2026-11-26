@@ -15,9 +15,10 @@ Installation: Installation
 UI: Interface
 UI-Vega-Tab: Onglet Vega
 UI-Commander-Tab: Onglet Commandant
+UI-Color-Themes: Thèmes de couleur
 UI-Actions-Tab: Onglet Actions
-UI-Bindings-Tab: Onglet Bindings
-UI-Settings-Tab: Onglet Paramètres
+UI-Bindings-Tab: BindForge
+UI-Settings-Tab: Onglet Services
 UI-Jukebox-Tab: Onglet Jukebox
 UI-Stats-Tab: Onglet Statistiques
 UI-HUD-Overlay: Overlay HUD

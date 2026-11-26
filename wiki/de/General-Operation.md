@@ -27,14 +27,14 @@ Vega kann sich auch einfach unterhalten — Spiel-Lore, ein Schiffsbuild, alles 
 die Lore von Elite Dangerous kennt, hängt vom verwendeten Modell ab: manche kennen sie, andere
 erfinden eine Antwort.
 
-## Drei Wege, einen Befehl zu geben
+## Zwei Wege, einen Befehl zu geben
 
 - **Sprechen.** Freihändig oder mit [Push-to-Talk](UI-Settings-Tab) auf einer Controller- oder
   Maustaste.
 - **Im Spielchat tippen.** Beginne die Zeile mit `@Vega` — *„@Vega wo kann ich tritium kaufen“*.
   Am besten für Namen, die die Spracherkennung falsch versteht. Siehe [Alle Befehle](AllCommands).
-- **Anklicken.** Jeder Befehl lässt sich im [Reiter Aktionen](UI-Actions-Tab) ausführen, der auch
-  zeigt, was dort, wo du gerade bist, verfügbar ist.
+
+Der [Reiter Aktionen](UI-Actions-Tab) zeigt jeden Befehl und was dort, wo du gerade bist, verfügbar ist.
 
 Was du fragen kannst, steht unter [Alle Befehle](AllCommands); zu einzelnen Themen gibt es die
 anderen Seiten und YouTube-Videos auf dieser Website.

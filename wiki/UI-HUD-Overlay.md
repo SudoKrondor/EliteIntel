@@ -19,6 +19,12 @@ Turn it on with **DISPLAY OVERLAY** on the [Vega tab](UI-Vega-Tab), and configur
 **OVERLAY SETUP** next to it. The app remembers whether you left it on and restores it on the
 next launch.
 
+**You can also do this by voice.** Say *"show overlay"* or *"hide overlay"*, and move the card on your
+monitor with *"move the overlay to the top right"* — or by compass, *"move the overlay to the north
+east"*. The screen is cut into eight sections around the centre, and the card grows away from the
+screen edge. If you adjust the card's spot in a section, that spot is remembered for the next time you
+send it there.
+
 > If the overlay binary is missing from the distribution, the toggle says so in the diagnostics
 > log. It will not claim an overlay that is not there.
 
@@ -42,6 +48,7 @@ Work you committed to always beats work the app volunteered, in this order:
 | 2 | **CONSTRUCTION SITE** | You are hauling for a colonisation build — progress, what is outstanding, and what to load on the next run |
 | 2 | **COMMODITY FOUND** / **SHOPPING LIST** / **SELL CARGO** | A commodity search found a market and a route is plotted to it — what to buy (or sell), stock and price |
 | 3 | **MINING** | You have mining targets, a refinery fitted, and are not in supercruise — hold, limpets, targets |
+| 3 | **NEW DISCOVERY** | You are in a system with something nobody had discovered before you — FSS progress, then what the system's data and samples are estimated to sell for |
 | 3 | **EXOBIOLOGY** | Genuses are left to sample in this system — shown only while *Announce discoveries* is on |
 | 3 | **BOUNTY HUNTING** | You are in a resource extraction site — site type, bounties in the hold, kills |
 | 3 | **CONFLICT ZONE** | You are in a conflict zone — zone intensity, your side, combat bonds in hand |
@@ -49,11 +56,21 @@ Work you committed to always beats work the app volunteered, in this order:
 
 The **plotted route** card takes a more specific title when Vega worked out the destination for
 you and the route still goes there: **MATERIAL TRADER**, **TECHNOLOGY BROKER**, **INTERSTELLAR
-FACTORS**, **VISTA GENOMICS**, **REFUEL** or **OUTFITTING**, with the station and type added. A
+FACTORS**, **VISTA GENOMICS**, **REFUEL**, **OUTFITTING** or **SHIPYARD**, with the station and type added. A
 plot somewhere else clears that detail, so an old errand can never claim the card.
 
 The **mission** card features the mission whose destination is the end of your plotted route;
 otherwise the one that expires soonest.
+
+On the **plotted route** card, the track of upcoming stars is colour-coded: green where you can scoop
+fuel, red where you cannot, **blue for a neutron star** and **white for a white dwarf**, because both
+of those are a jet-cone boost rather than a dead end.
+
+### Cards you ask for
+
+Say *"show bookmarks"* and the **BOOKMARKS** card sits over the ranked card until you are done with
+it, showing your [bookmarks](UI-Commander-Tab) a page at a time. It closes when you say *"close
+bookmarks"*, or by itself after it has been left alone for a while, and the ranked card comes back.
 
 ### The conversation
 

@@ -30,25 +30,26 @@ Vier Knöpfe sitzen im Abschnittskopf:
 | Knopf | Was er tut |
 |--------|--------------|
 | **Kopieren** | Kopiert den im Protokoll markierten Text in die Zwischenablage. |
-| **Support-Paket speichern** | Schreibt ein `.zip` mit Zeitstempel für einen Fehlerbericht: dieses Protokoll, das Anwendungsprotokoll, dein Journal und die Live-Statusdateien des Spiels, deine Belegungen, deine eigenen Befehle, eine Hardware-Übersicht und eine Zusammenfassung der Mikrofon-*Pegel* (nie Audio). Was nicht gesammelt werden konnte, steht im Paket selbst. **Das hängst du an einen Fehlerbericht an.** |
+| **Fehler melden** | Öffnet ein kurzes Formular: Beschreibe, was schiefgelaufen ist (Pflichtfeld), und hinterlasse eine E-Mail, falls du eine Antwort möchtest (optional). **Bericht senden** schickt deine Beschreibung mit einem Support-Paket direkt an das Elite-Intel-Team - ganz ohne Matrix-Konto - und das Protokoll zeigt eine Berichtsnummer, die du nennen kannst, wenn du uns später schreibst. Das Paket enthält dieses Protokoll, das Anwendungsprotokoll, dein Journal und die Live-Statusdateien des Spiels, deine Belegungen, deine eigenen Befehle, eine Hardware-Übersicht und eine Zusammenfassung der Mikrofon-*Pegel* (nie Audio). API-Schlüssel und Passwörter sind nie enthalten, und nur das Team sieht den Bericht. Kann er nicht gesendet werden, bleibt das Paket erhalten und das Protokoll sagt, wo es liegt, damit du es selbst auf Matrix posten kannst. **Stattdessen als Datei speichern** schreibt das Paket in ein `.zip` deiner Wahl, ohne etwas zu senden. |
 | **Vega-Speicher ausgeben** | Schreibt einen JSON-Schnappschuss von Vegas Arbeitsgedächtnis der aktuellen Sitzung. Funktioniert nur bei laufenden Diensten. |
 | **Leeren** | Leert das Diagnoseprotokoll. |
+
+![Fenster Fehler melden](images/bug-report-window.png)
 
 ---
 
 ## Schnellstatus
 
-Sechs Live-Anzeigen. Jede zeigt einen Zustand und eine Farbe, sodass ein Blick genügt, um zu
+Fünf Live-Anzeigen. Jede zeigt einen Zustand und eine Farbe, sodass ein Blick genügt, um zu
 sehen, ob der Stack gesund ist.
 
 | Anzeige | Zustände |
 |---------|--------|
 | **STT** | `Bereit` (Dienste gestoppt) · `Höre zu` · `Schlafend` (ignoriert dich) · `Push-to-Talk` (nur die zugewiesene Taste öffnet das Mikrofon) |
 | **KI** | `Bereit` · `Offline` (keine Verbindung) · der Name des Anbieters, der tatsächlich geantwortet hat, oder `Aktiv` |
-| **TTS** | `Bereit` · `Lokal` (Kokoro / Supertonic) · `Cloud` (Google / Microsoft Edge) |
+| **TTS** | `Bereit` · `Lokal` (Supertonic) · `Cloud` (Google) |
 | **Belegungen** | `OK` oder `N fehlend` |
 | **Befehle** | Wie viele eigene Befehle geladen sind |
-| **Tasten** | `Synchron` mit dem Spiel oder `Geändert` — es gibt einen nicht angewendeten Belegungsentwurf |
 
 Die **KI**-Anzeige lohnt einen Blick. Sie meldet nicht, was du *eingestellt* hast, sondern
 welcher Anbieter tatsächlich geantwortet hat.

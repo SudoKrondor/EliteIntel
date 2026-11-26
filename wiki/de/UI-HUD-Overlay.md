@@ -20,6 +20,11 @@ Schalte es mit **OVERLAY ANZEIGEN** im [Vega-Reiter](UI-Vega-Tab) ein und richte
 **OVERLAY-EINSTELLUNGEN** daneben ein. Die App merkt sich, ob du es angelassen hast, und stellt
 es beim nächsten Start wieder her.
 
+**Das geht auch per Stimme.** Sag *„Overlay anzeigen“* oder *„Overlay ausblenden“*, und verschiebe die
+Karte auf deinem Monitor mit *„verschiebe das Overlay nach oben rechts“* — oder per Kompass: *„Overlay nach Nordosten“*.
+Der Bildschirm ist in acht Bereiche rund um die Mitte aufgeteilt, und die Karte wächst vom Bildschirmrand
+weg. Passt du die Position der Karte in einem Bereich an, wird sie fürs nächste Mal gemerkt.
+
 > Fehlt die Overlay-Datei in der Distribution, meldet der Schalter das im Diagnoseprotokoll. Er
 > täuscht kein Overlay vor, das es nicht gibt.
 
@@ -44,6 +49,7 @@ Reihenfolge:
 | 2 | **BAUSTELLE** | Du für einen Kolonisierungsbau lieferst — Fortschritt, Ausstehendes und was du beim nächsten Flug laden sollst |
 | 2 | **WARE GEFUNDEN** / **EINKAUFSLISTE** / **FRACHT VERKAUF** | Eine Warensuche einen Markt gefunden hat und eine Route dorthin geplottet ist — was zu kaufen (oder verkaufen) ist, Bestand und Preis |
 | 3 | **BERGBAU** | Du Abbauziele hast, eine Raffinerie eingebaut ist und du nicht im Supercruise bist — Laderaum, Drohnen, Ziele |
+| 3 | **NEUE ENTDECKUNG** | Du in einem System bist, in dem etwas vor dir niemand entdeckt hat — FSS-Fortschritt, dann der geschätzte Verkaufswert der Daten und Proben des Systems |
 | 3 | **EXOBIOLOGIE** | In diesem System noch Gattungen zu beproben sind — nur solange *Entdeckungen ansagen* an ist |
 | 3 | **KOPFGELDJAGD** | Du in einer Ressourcenabbaustätte bist — Art der Stätte, Kopfgelder im Laderaum, Abschüsse |
 | 3 | **KONFLIKTZONE** | Du in einer Konfliktzone bist — Intensität, deine Seite, Kampfanleihen in der Hand |
@@ -51,12 +57,22 @@ Reihenfolge:
 
 Die Karte **geplante Route** bekommt einen genaueren Titel, wenn Vega das Ziel für dich ermittelt
 hat und die Route noch dorthin führt: **MATERIALHÄNDLER**, **TECHNOLOGIEHÄNDLER**,
-**INTERSTELLARE FAKTOREN**, **VISTA GENOMICS**, **AUFTANKEN** oder **AUSRÜSTUNG**, ergänzt um
+**INTERSTELLARE FAKTOREN**, **VISTA GENOMICS**, **AUFTANKEN**, **AUSRÜSTUNG** oder **WERFT**, ergänzt um
 Station und Typ. Ein Plot woandershin löscht dieses Detail, sodass ein alter Auftrag die Karte nie
 an sich reißen kann.
 
 Die **Missions**-Karte hebt die Mission hervor, deren Ziel das Ende deiner geplotteten Route ist;
 sonst die, die am frühesten abläuft.
+
+Auf der Karte **geplante Route** ist die Spur der kommenden Sterne farbcodiert: grün, wo du Treibstoff
+schöpfen kannst, rot, wo nicht, **blau für einen Neutronenstern** und **weiß für einen Weißen Zwerg**,
+denn beide sind ein Jet-Kegel-Boost und keine Sackgasse.
+
+### Karten auf Anfrage
+
+Sag *„Lesezeichen anzeigen“*, und die Karte **LESEZEICHEN** liegt über der gerankten Karte, bis du fertig
+bist, und zeigt deine [Lesezeichen](UI-Commander-Tab) seitenweise. Sie schließt sich mit *„Lesezeichen
+schließen“* oder von selbst, wenn sie eine Weile unberührt bleibt, und die gerankte Karte kehrt zurück.
 
 ### Das Gespräch
 

@@ -64,7 +64,7 @@ Un archivo que ha desaparecido del disco se marca como **falta**.
 - **Anterior · Reproducir/Pausa · Detener · Siguiente** — los controles de transporte. **Detener**
   rebobina la pista actual al principio; **Pausa** conserva el punto.
 - **Orden** — *Secuencial* o *Aleatorio*.
-- **Volumen** — el nivel propio de la música. Está aquí y no en los ajustes de Audio para que
+- **Volumen** — el nivel propio de la música. Está aquí y no en la subpestaña Audio de Servicios para que
   nunca bajes a Vega por error.
 
 Tu punto dentro de una pista se recuerda entre sesiones — útil para audiolibros —, pero el

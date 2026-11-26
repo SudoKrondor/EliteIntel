@@ -30,25 +30,26 @@ Quatre boutons se trouvent dans l'en-tête de la section :
 | Bouton | Ce qu'il fait |
 |--------|--------------|
 | **Copier** | Copie dans le presse-papiers le texte sélectionné dans le journal. |
-| **Enregistrer le paquet d'assistance** | Écrit un `.zip` horodaté pour un rapport de bug : ce journal, le journal de l'application, votre journal de jeu et les fichiers d'état en direct du jeu, vos raccourcis, vos commandes personnalisées, un résumé du matériel et un résumé des *niveaux* du micro (jamais d'audio). Ce qui n'a pas pu être collecté est listé dans le paquet. **C'est ce qu'il faut joindre à un rapport de bug.** |
+| **Signaler un bug** | Ouvre un court formulaire : décrivez ce qui n'a pas fonctionné (obligatoire) et, si vous souhaitez une réponse, laissez un e-mail (facultatif). **Envoyer le rapport** transmet votre description avec un paquet d'assistance directement à l'équipe Elite Intel - sans compte Matrix - et le journal affiche un numéro de rapport à citer si vous nous écrivez plus tard. Le paquet contient ce journal, le journal de l'application, votre journal de jeu et les fichiers d'état en direct du jeu, vos raccourcis, vos commandes personnalisées, un résumé du matériel et un résumé des *niveaux* du micro (jamais d'audio). Les clés d'API et les mots de passe n'y figurent jamais, et seule l'équipe voit le rapport. S'il ne peut pas être envoyé, le paquet est conservé et le journal indique où, pour que vous puissiez le publier vous-même sur Matrix. **Enregistrer dans un fichier** écrit le paquet dans un `.zip` de votre choix sans rien envoyer. |
 | **Vider la mémoire de Vega** | Écrit un instantané JSON de la mémoire de travail de Vega pour la session en cours. Ne fonctionne que si les services tournent. |
 | **Effacer** | Vide le journal de diagnostics. |
+
+![Fenêtre Signaler un bug](images/bug-report-window.png)
 
 ---
 
 ## Statut rapide
 
-Six indicateurs en direct. Chacun affiche un état et une couleur, pour voir d'un coup d'œil si la
+Cinq indicateurs en direct. Chacun affiche un état et une couleur, pour voir d'un coup d'œil si la
 pile est en bonne santé.
 
 | Indicateur | États |
 |---------|--------|
 | **STT** | `Veille` (services arrêtés) · `Écoute` · `Endormi` (vous ignore) · `Push to Talk` (seul le bouton assigné ouvre le micro) |
 | **IA** | `Veille` · `Hors ligne` (connexion impossible) · le nom du fournisseur qui a réellement répondu, ou `Actif` |
-| **TTS** | `Veille` · `Local` (Kokoro / Supertonic) · `Cloud` (Google / Microsoft Edge) |
+| **TTS** | `Veille` · `Local` (Supertonic) · `Cloud` (Google) |
 | **Touches** | `OK`, ou `N manquant` |
 | **Commandes** | Combien de commandes personnalisées sont chargées |
-| **Mappage** | `Synchronisé` avec le jeu, ou `Modifié` — vous avez un brouillon de raccourcis non appliqué |
 
 L'indicateur **IA** mérite qu'on le surveille. Il n'indique pas ce que vous avez *configuré*, mais
 quel fournisseur a réellement répondu.

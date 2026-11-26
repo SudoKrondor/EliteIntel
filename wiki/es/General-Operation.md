@@ -25,15 +25,15 @@ Vega también puede simplemente conversar — lore del juego, una configuración
 otra cosa. Lo bien que conozca el lore de Elite Dangerous depende del modelo: algunos lo conocen,
 otros se inventan la respuesta.
 
-## Tres formas de dar una orden
+## Dos formas de dar una orden
 
 - **Hablando.** Manos libres, o con [push-to-talk](UI-Settings-Tab) en un botón del mando o del
   ratón.
 - **Escribiéndola en el chat del juego.** Empieza la línea con `@Vega` — *«@Vega dónde puedo
   comprar tritio»*. Lo mejor para nombres que el reconocimiento de voz entiende mal. Ver
   [Todos los comandos](AllCommands).
-- **Con un clic.** Cualquier orden se puede ejecutar desde la [pestaña Acciones](UI-Actions-Tab),
-  que además muestra lo que está disponible donde estás ahora mismo.
+
+La [pestaña Acciones](UI-Actions-Tab) muestra todas las órdenes y lo que está disponible donde estás ahora mismo.
 
 Consulta [Todos los comandos](AllCommands) para ver qué puedes pedir, y las demás páginas y vídeos
 de YouTube de este sitio para temas concretos.

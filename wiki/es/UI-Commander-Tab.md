@@ -1,13 +1,13 @@
 # Pestaña Comandante
 
-<img src="images/controller.png" class="inline" height="20" alt="Comandante"> Quién eres, con qué
+<img src="images/commander.png" class="inline" height="20" alt="Comandante"> Quién eres, con qué
 voz habla cada casco de tu flota, qué hace tu nave por ti automáticamente, qué te cuenta Vega sin
-que se lo pidas, y el catálogo de Exo-Maestría.
+que se lo pidas, el catálogo de Exo-Maestría, los conjuntos de masacre que compartes con otros comandantes los lugares que has guardado y los colores con los que se dibuja la app.
 
 ![Pestaña Comandante](images/ui-tab-commander.png)
 
-Arriba está la franja **Perfil del comandante**; debajo hay cuatro subpestañas: **Gestión de
-flota**, **Ajustes globales de nave**, **Anuncios** y **Exo-Maestría**.
+Arriba está la franja **Perfil del comandante**; debajo hay siete subpestañas: **Gestión de
+flota**, **Ajustes globales de nave**, **Anuncios**, **Exo-Maestría**, **Conjuntos de masacre**, **Marcadores** y **Temas de color**.
 
 ---
 
@@ -19,8 +19,32 @@ pulsar Enter o al hacer clic fuera.
 
 **Dirigirse a mí** — desactivado, Vega nunca se dirige a ti: ni nombre, ni rango, ni título.
 
-> La **carpeta del journal** está en [Ajustes → General](UI-Settings-Tab), y la **carpeta de
-> bindings** en la [pestaña Bindings](UI-Bindings-Tab).
+**Directorio de Journal** — donde Elite Dangerous escribe sus archivos de journal. Opcional: si lo dejas
+vacío se usa la ubicación estándar de tu plataforma. Así sabe Elite Intel qué ocurre alrededor de tu nave;
+si está mal, la app queda prácticamente ciega y lo dice al arrancar. Una carpeta inservible se rechaza y se
+mantiene el ajuste anterior.
+
+> La **carpeta de bindings** está en la [pestaña BindForge](UI-Bindings-Tab), en la barra sobre sus subpestañas.
+
+### Importar diarios antiguos
+
+![Importar diarios antiguos](images/ui-journal-import.png)
+
+Elite Intel aprende de tus diarios mientras vuelas: quién ofrece misiones de masacre de piratas, los sitios
+de extracción de recursos, los cuerpos que descubriste y cartografiaste, la exobiología que muestreaste y los
+nombres de materiales y mercancías nuevos. Si guardaste diarios antiguos en otro sitio, o acabas de instalar
+Elite Intel, **Importar diarios antiguos…** le enseña también con ellos.
+
+Pulsa **Añadir carpeta o archivo…**, añade tantos como quieras y pulsa **Importar**.
+
+- Se leen archivos zip, 7z y tar, sin comprimir o con gzip, bzip2 o xz. Los RAR no se pueden leer; vuelve a
+  empaquetarlos como zip o 7z.
+- Lo que no sea un diario se omite, y un archivo dañado se lee hasta el daño.
+- **Cada comandante encontrado se importa en sus propios registros.**
+- No cambia nada sobre dónde estás o qué llevas ahora, e importar los mismos diarios dos veces no hace daño.
+
+Al terminar, un resumen indica cuántos diarios se leyeron y qué se aprendió. Si cancelas, se conserva todo lo
+aprendido hasta entonces.
 
 ---
 
@@ -36,18 +60,18 @@ comandante cargado en el juego.
 | **Nave** | El nombre de tu nave (para una nave nodriza, su nombre e indicativo) |
 | **Modelo de nave** | El tipo de casco, o *Nave nodriza* / *Nave nodriza de escuadrón* |
 | **Voz** | Haz clic para elegir. Al cambiarla se reproduce enseguida una frase con esa voz para que la escuches |
-| **Personalidad** | `Profesional` · `Casual` · `Amigable` · `Desquiciado` · `Seven of Nine` · `Mercenario bocazas` · `Tu ex novio` · `Tu ex novia` · `Rebelde` |
+| **Personalidad** | `Profesional` · `Casual` · `Amigable` · `Desquiciado` · `Seven of Nine` · `F.R.I.D.A.Y.` · `Mercenario bocazas` · `Tu ex novio` · `Tu ex novia` · `Rebelde` |
 | **⚙** | Abre los ajustes de esa nave (ver abajo) |
 
 **Sobre la lista de voces.** Se ofrecen todas las voces del motor de voz elegido en
-[Ajustes → Servicios de IA](UI-Settings-Tab), masculinas y femeninas — la voz que elijas también
+[Servicios → Servicios de IA](UI-Settings-Tab), masculinas y femeninas — la voz que elijas también
 decide si Vega habla de sí misma en masculino o en femenino en esa nave.
 
-- **Kokoro** y **Supertonic 3** (locales) — etiquetadas como `Nombre - acento`.
+- **Supertonic 3** (local) — 45 voces, por nombre y género. Cada voz habla todos los idiomas. Una nave nueva
+  recibe a **Lily** hasta que elijas otra. Puedes ajustar cada voz con [Ajuste de voces](UI-Settings-Tab).
 - **Google** (nube) — etiquetadas como `Nombre - acento · HD` o `· Estándar`. En inglés, el
   acento distingue las voces. En cualquier otro idioma cada voz se sintetiza en ese idioma, así
   que la etiqueta muestra el género y el nivel de calidad en lugar de un acento inglés engañoso.
-- **Microsoft Edge** (nube) — etiquetadas como `Nombre - acento`.
 
 > Cambiar el motor de voz restablece la voz de cada nave a la predeterminada del nuevo motor. Las
 > **personalidades se conservan**. La app pregunta antes de hacerlo.
@@ -115,6 +139,7 @@ guarda al instante. Útiles para todos, y una verdadera ayuda para comandantes c
 | **Subir tren automáticamente al despegar** | Sube el tren tras despegar |
 | **Apagar luces automáticamente al desplegar SRV** | Apaga las luces al desplegar el SRV |
 | **Trazar la siguiente ruta de neutrones al impulsar en el cono** | En una [ruta de neutrones](AllCommands), traza el siguiente punto de neutrones en cuanto atraviesas el cono con el impulso |
+| **Usar el conmutador FSD del juego para supercrucero e hiperespacio** | Desactivado por defecto. Activado, tanto *supercrucero* como *salto* pulsan el control **Alternar FSD** del juego, y decide el juego: con un sistema fijado saltas; sin nada fijado entras en supercrucero. Asigna antes ese control. ¿Nuevo en Elite Dangerous? Déjalo desactivado |
 
 ---
 
@@ -134,6 +159,8 @@ cuando algo habla demasiado, o demasiado poco.
 | **Anunciar recogidas del cargo scoop** | Lo que acabas de recoger |
 | **Anunciar navegación** | Eventos de navegación y llegadas |
 | **Transmisiones de radio** | Charla de radio del juego, con voces de radio propias |
+| **La IA responde a escaneos piratas** | Vega contesta cuando un pirata escanea tu carga |
+| **La IA se regodea con las bajas por recompensa** | Vega se regodea con las bajas por recompensa |
 | **Anuncios de ruta** | Interruptor principal de todo lo que se dice alrededor de un salto. Los de debajo solo funcionan mientras está activado |
 | &nbsp;&nbsp;↳ **Anunciar el destino del salto** | Cuál es el siguiente sistema |
 | &nbsp;&nbsp;↳ **Anunciar el tráfico del destino** | Informes de tráfico de tu destino |
@@ -141,6 +168,10 @@ cuando algo habla demasiado, o demasiado poco.
 | &nbsp;&nbsp;↳ **Anunciar la llegada** | Una frase al llegar |
 | &nbsp;&nbsp;↳ **Anunciar los saltos restantes** | Saltos que quedan en la ruta |
 | &nbsp;&nbsp;&nbsp;&nbsp;↳ **Anunciar disponibilidad de estrella de combustible** | Si el destino tiene una estrella recolectable — se dice dentro de la frase de saltos restantes |
+
+Una estrella **Wolf-Rayet** por delante en tu ruta siempre recibe un aviso hablado (es muy caliente), y
+un objeto extremadamente raro (una estrella exótica, un planeta errante o una nebulosa) se menciona. Ambos
+siguen a la clase de estrella en el anuncio del waypoint y no dependen del interruptor de combustible.
 
 La mayoría también se puede cambiar por voz (*«desactiva los anuncios de radar»*, *«desactiva
 todos los anuncios»*), por eso la página los vuelve a leer cada vez que abres la pestaña.
@@ -166,6 +197,72 @@ se puede dar por hecho por voz — *«ya hemos muestreado este cuerpo»*, o para
 **Desactivar Exo-Maestría** elimina el catálogo de tu ordenador, tras preguntar. Los planetas que
 ya muestreaste quedan registrados, así que reactivarlo más adelante no te enviará de vuelta a
 ellos.
+
+---
+
+## Conjuntos de masacre
+
+![Conjuntos de masacre](images/ui-tab-commander-massacre-sets.png)
+
+Comparte con otros comandantes los conjuntos de masacre de piratas que Elite Intel ha aprendido, y usa los suyos. Cómo
+se aprenden, comprueban y ofrecen los conjuntos se explica en
+[Seguimiento de Misiones de Masacre de Piratas](Pirate-Massacre-Mission-Tracking.html).
+
+Pulsa **Compartir conjuntos de masacre** para empezar. El estado junto al botón indica si el uso compartido está
+activado, y **Dejar de compartir** retira tus conjuntos y deja de usar los de los demás.
+
+**Sus conjuntos**
+
+- **Conjuntos que comparte**: los pares de proveedor y objetivo que conoce Elite Intel, entre todos los comandantes de
+  este ordenador.
+- **Compartido por última vez**: cuándo se subieron tus conjuntos por última vez.
+
+**De otros comandantes**
+
+- **Conjuntos de otros comandantes**: cuántos conjuntos traía la última descarga.
+- **Utilizables aquí**: para cuántos de ellos tus propios datos muestran un sitio de recursos. Son los que Vega puede
+  ofrecerte. Los demás pasan a ser utilizables en cuanto se ve un sitio de recursos en su sistema objetivo.
+- **Última actualización**: cuándo se descargaron los conjuntos por última vez. Ocurre una vez al día.
+- **Comandantes que contribuyen**: de cuántos comandantes proceden los conjuntos publicados.
+
+Aparte de esta página, una vez al día Elite Intel informa de su versión y su sistema operativo, y nada más, para saber
+cuántas personas lo usan. Consulta la [Política de privacidad](Privacy.html).
+
+---
+
+## Marcadores
+
+![Marcadores](images/ui-tab-commander-bookmarks.png)
+
+Lugares a los que quieres volver: un sistema estelar, una estación, un puerto planetario, un planeta o un
+punto de su superficie. Cada comandante tiene su propia lista.
+
+Di *«guarda este lugar»* para guardar dónde estás. Todo lo demás también se puede hacer por voz, usando el
+número de la lista:
+
+| Di | Qué ocurre |
+|----|------------|
+| *«Muestra los marcadores»* | Pone la lista numerada en el [overlay HUD](UI-HUD-Overlay). Nunca se lee en voz alta |
+| *«Página siguiente»* / *«página anterior»* | Pasa las páginas de la lista en el overlay |
+| *«Navega al marcador 3»* | Traza una ruta hasta allí |
+| *«Borra el marcador 3»* | Lo elimina |
+| *«Cierra los marcadores»* | Quita la lista del overlay |
+
+La pestaña muestra la misma lista en el mismo orden, con su **Nombre visible** y **Sistema estelar**.
+
+- **Haz doble clic en una fila** para ver todo lo que se sabe del lugar y renombrarlo. El nombre que elijas es
+  el que muestra el overlay y el que usa Vega.
+- **Subir** / **Bajar** (o Alt+Arriba / Alt+Abajo) mueven la fila resaltada. Una línea entre filas marca dónde
+  termina una página del overlay y empieza la siguiente.
+- **Exportar** y **Eliminar** actúan sobre las filas marcadas.
+- **Importar** añade marcadores de un archivo exportado al final de tu lista. Nunca la sustituye, y cada entrada
+  se marca como *Nuevo*, *Duplicado* o *No válido* antes de confirmar.
+
+<a id="color-themes"></a>
+
+## Temas de color
+
+Los colores con los que se dibuja la ventana de la app: tres temas integrados, los tuyos y más para descargar. Consulta **[Temas de color](UI-Color-Themes)**.
 
 ---
 

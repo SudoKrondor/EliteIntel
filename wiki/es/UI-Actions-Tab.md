@@ -1,6 +1,6 @@
 # Pestaña Acciones
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Acciones"> Todo lo que Elite
+<img src="images/actions.png" class="inline" height="20" alt="Acciones"> Todo lo que Elite
 Intel puede hacer, y todo lo que le has enseñado a hacer. Dos subpestañas: **Comandos
 integrados** y **Comandos personalizados**.
 
@@ -58,8 +58,6 @@ mientras la pestaña está abierta — incluido un comando personalizado que cre
 
 Botones:
 
-- **Ejecutar** — lo ejecuta ya desde la app, sin hablar. Si el comando lleva parámetros, primero
-  aparece un pequeño formulario.
 - **Sugerir una mejor traducción** — abre una incidencia de GitHub ya rellenada con el id del
   comando, tu idioma, las frases actuales y las que propones, para que sugieras mejores frases
   para tu idioma. Así mejoran las frases que no están en inglés; úsalo, por favor.
@@ -81,7 +79,7 @@ por una frase exacta.
 
 La tabla muestra el **Nombre** y las **Frases de entrenamiento** de cada comando, con un buscador
 encima. **Haz clic en una fila** para abrir sus detalles, que muestran la **Secuencia** de pasos y
-ofrecen **Ejecutar**, **Editar**, **Duplicar** y **Eliminar**.
+ofrecen **Editar**, **Duplicar** y **Eliminar**.
 
 Arriba:
 
@@ -166,9 +164,9 @@ Consejos:
 - **Las frases se pueden separar con comas**, además de con saltos de línea.
 - **Los retrasos dependen de tu PC.** Si el mapa no está listo cuando llega el siguiente paso,
   aumenta los retrasos — o mueve **Ritmo de entrada de teclas** de la
-  [pestaña Bindings](UI-Bindings-Tab) hacia Lento.
+  [pestaña BindForge](UI-Bindings-Tab) hacia Lento.
 - **Cada paso de binding necesita una asignación de teclado** en el juego. Si un control no está
-  asignado, la [pestaña Bindings](UI-Bindings-Tab) lo muestra en *Bindings faltantes*.
+  asignado, la [pestaña BindForge](UI-Bindings-Tab) lo muestra como *Vega necesita una tecla*.
 - Vega abre y lee el mapa galáctico del mismo modo para sus propios comandos de ruta, así que un
   comando que parte de un mapa **recién abierto** es el patrón fiable — no empieces con un mapa
   que ya está abierto.

@@ -23,13 +23,13 @@ Specific queries return detailed answers. Broad queries return summaries.
 Vega can also simply talk — game lore, a ship build, anything else. How well it knows Elite Dangerous lore depends
 on the model you are using: some know it, others will invent an answer.
 
-## Three ways to give an order
+## Two ways to give an order
 
 - **Speak.** Hands-free, or with [push-to-talk](UI-Settings-Tab) on a controller or mouse button.
 - **Type it in the game chat.** Start the line with `@Vega` — *"@Vega find where to buy tritium"*. Best for
   names speech recognition gets wrong. See [All Commands](AllCommands).
-- **Click it.** Every command can be run from the [Actions tab](UI-Actions-Tab), which also shows what is
-  available where you are right now.
+
+The [Actions tab](UI-Actions-Tab) shows every command, and what is available where you are right now.
 
 See [All Commands](AllCommands) for what you can ask, and the other pages and YouTube videos on this website for
 specific topics.

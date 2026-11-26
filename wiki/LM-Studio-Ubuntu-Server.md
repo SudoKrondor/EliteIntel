@@ -2,7 +2,7 @@
 
 > Guide is provided by **Wim**
 
-> **Elite Intel:** this guide builds a dedicated LAN machine that runs LM Studio for Elite Intel. When it is done, set **Address** in the [Settings Tab](UI-Settings-Tab) to `http://SERVER_IP:1234/v1/chat/completions` and load the supported model, **`google/gemma-4-e4b`**. The server must listen beyond localhost (`--bind 0.0.0.0`, see Part 2 § 9) and the firewall must allow the gaming PC.
+> **Elite Intel:** this guide builds a dedicated LAN machine that runs LM Studio for Elite Intel. When it is done, set **Address** in the [Services Tab](UI-Settings-Tab) to `http://SERVER_IP:1234/v1/chat/completions` and load the supported model, **`google/gemma-4-e4b`**. The server must listen beyond localhost (`--bind 0.0.0.0`, see Part 2 § 9) and the firewall must allow the gaming PC.
 
 ---
 

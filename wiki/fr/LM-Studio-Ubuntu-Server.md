@@ -2,7 +2,7 @@
 
 > Guide fourni par **Wim**
 
-> **Elite Intel :** ce guide met en place une machine dédiée sur le réseau local qui fait tourner LM Studio pour Elite Intel. Une fois terminé, renseignez l'**Adresse** dans l'[onglet Paramètres](UI-Settings-Tab) avec `http://SERVER_IP:1234/v1/chat/completions` et chargez le modèle pris en charge, **`google/gemma-4-e4b`**. Le serveur doit écouter au-delà de localhost (`--bind 0.0.0.0`, voir Partie 2 § 9) et le pare-feu doit autoriser le PC de jeu.
+> **Elite Intel :** ce guide met en place une machine dédiée sur le réseau local qui fait tourner LM Studio pour Elite Intel. Une fois terminé, renseignez l'**Adresse** dans l'[onglet Services](UI-Settings-Tab) avec `http://SERVER_IP:1234/v1/chat/completions` et chargez le modèle pris en charge, **`google/gemma-4-e4b`**. Le serveur doit écouter au-delà de localhost (`--bind 0.0.0.0`, voir Partie 2 § 9) et le pare-feu doit autoriser le PC de jeu.
 
 ---
 

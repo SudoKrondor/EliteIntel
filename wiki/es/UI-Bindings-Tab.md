@@ -1,157 +1,540 @@
-# Pestaña Bindings
+# BindForge: la pestaña BindForge
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Bindings"> Elite Intel maneja
-tu nave pulsando las teclas que Elite Dangerous tiene asignadas. Si un control no tiene binding
-de teclado, Elite Intel no puede usarlo — aquí es donde lo descubres y lo arreglas.
+<img src="images/keyboard.png" class="inline" height="20" alt="BindForge"> **BindForge** edita y
+protege tus controles de Elite Dangerous desde fuera del juego: teclado, ratón, joystick, HOTAS y
+pedales. Se ocupa de todos los archivos que hay detrás: tus archivos `.binds`, el archivo de preset que
+indica cuál se carga, y los archivos `DeviceMappings.xml` y `.buttonMap`, que dan nombre a tus mandos y
+etiquetan sus botones.
 
-Dos subpestañas: **Perfil de bindings** y **Gestión de bindings**.
+Tiene su propia pestaña, **BindForge**, con cuatro subpestañas y una barra encima de ellas:
+
+| Parte | Para qué sirve |
+|-------|----------------|
+| **[Barra de Aplicar](#the-apply-bar)** | Tu carpeta de configuración del usuario, y el único **Aplicar** y **Descartar** para todo lo de esta pestaña |
+| **[Diseñador de alias](#alias-designer)** | Da nombres reales a tus mandos y etiqueta sus botones, ejes y hats |
+| **[Editor de bindings](#binding-profile)** | Todos los controles del juego, por sección, con las vistas **Anomalías**, **Zonas muertas y sensibilidad** e **Interruptores** |
+| **[Editor de presets](#preset-editor)** | Qué archivo de bindings carga el juego para los controles General, Nave, SRV y A pie |
+| **[Gestión de archivos binds](#binding-management)** | Tus instalaciones del juego, tus archivos de bindings y tus copias de seguridad |
+
+> **Vega sigue pulsando solo teclas del teclado.** Puedes asignar cualquier dispositivo a cualquier
+> ranura, pero un control necesita una tecla para que Vega pueda manejarlo. La columna **Acceso IA** te
+> muestra cuáles la tienen.
 
 ---
 
-## Perfil de bindings
+<a id="the-first-time-you-open-it"></a>
 
-![Perfil de bindings](images/ui-tab-bindings-profile.png)
+## La primera vez que la abres
 
-### Qué archivo se usa
+Antes de cambiar nada, BindForge se configura una vez. **Primero se hace una copia de seguridad de todo,
+y esa copia se conserva para siempre.**
 
-**Directorio de Bindings** — opcional. Si lo dejas vacío se usa la ubicación estándar de Elite
-Dangerous; usa el selector **⋮** si tu instalación está en otro sitio. Una carpeta inservible se
-rechaza y se mantiene el ajuste anterior.
+1. **Confirma tus instalaciones.** BindForge muestra cada copia de Elite Dangerous que encontró en este
+   PC. Corrige la lista con **Añadir que falta** o **Quitar** y pulsa **Confirmar**.
+2. **Iguala tus copias del juego, si hace falta.** Si tienes el juego en más de una tienda y las copias
+   no coinciden en tus mandos, BindForge te guía para [igualarlas](#make-your-game-copies-match).
+3. **Crea tu copia de trabajo.** BindForge hace su propia copia de tus archivos de controles. Esa es la
+   copia que editas, y los archivos del juego no se tocan hasta que pulses **Aplicar**.
+4. **Pon nombre a tus mandos.** A cada mando conectado sin nombre se le ofrece
+   [un nombre](#naming-a-controller). Puedes **Omitir** este paso.
 
-**Perfil** — detectado automáticamente. Elite Intel lee la entrada `StartPreset` activa y, si
-hace falta, recurre al archivo `.binds` más reciente.
+Hasta que termines, la configuración inicial se vuelve a ofrecer cada vez que abres la pestaña. Para
+repetirla más adelante, usa **Repetir la configuración inicial** en
+[Ubicaciones del juego](#game-install-locations).
 
-**Archivo** — el archivo `.binds` que se está usando para el diagnóstico y la asignación.
+<a id="make-your-game-copies-match"></a>
 
-Perfil y Archivo llevan cada uno un **ⓘ** que explica exactamente cómo se eligió el valor.
+### Igualar tus copias del juego
 
-> **¿«No encuentro los bindings» con la carpeta correcta?** Elite Dangerous no escribe un archivo
-> `.binds` hasta que personalizas algo. Abre *Opciones → Controles* en el juego, cambia cualquier
-> asignación, y Elite Intel encontrará el archivo.
+Todas las copias del juego comparten un solo conjunto de controles, pero cada una guarda su propia lista
+de tus mandos y nombres de botones. Cuando las listas no coinciden, tus controles pueden funcionar en una
+copia y volver a teclado y ratón en otra. **Igualar tus copias del juego** lo arregla en tres pasos:
 
-### Ritmo de entrada de teclas
+![Igualar tus copias del juego](images/install-reconcile-welcome.png)
 
-Un deslizador **Rápido ↔ Lento** para la pausa que Elite Intel hace tras cada pulsación que
-envía al juego. Rápido es el valor por defecto. Si en un equipo más lento el juego pierde
-pulsaciones de una secuencia — una macro que se ejecuta a medias, un panel que se abre en la
-pestaña equivocada —, muévelo hacia **Lento**.
+1. **Conectar** — conecta los mandos con los que vuelas. El juego solo carga tus controles si cada mando
+   que usan está conectado. Pulsa un botón y su fila se ilumina.
+2. **Elegir** — responde unas preguntas cortas: qué nombre conservar para un mando que cada copia llama
+   de forma distinta, a qué mando pertenece un nombre compartido y qué nombres de botones conservar. Tus
+   controles siguen los nombres que elijas. **Dejarlo todo como en una de mis copias...** se salta las
+   preguntas y lo configura todo como en una copia.
+3. **Revisar** — mira lo que tendrá cada copia, y por qué, y pulsa **Igualar las dos copias** (o
+   **Igualar todas las copias**).
 
-### Las tablas de bindings
+![Revisar el resultado](images/install-reconcile-check.png)
 
-Dos pestañas: **Bindings usados** y **Bindings faltantes**, cada una con su recuento. Las filas
-se agrupan bajo los encabezados del propio juego — **Controles generales**, **Controles de nave**,
-**Controles de SRV**, **Controles a pie**, **Otros controles** — en el mismo orden que la pantalla
-de Controles del juego, para que puedas leer ambas en paralelo.
+Nada cambia hasta el último paso, y antes se hace copia de seguridad de todo. Un mando que solo conoce una
+copia se añade a las demás, y un viejo segundo nombre que el juego nunca usó se retira, con sus controles
+pasados al nombre que usa el juego. **Ahora no** deja tus archivos como están.
 
-**Buscar** acota las dos tablas mientras escribes. Busca en la sección, el grupo, el nombre del
-control y la etiqueta `.binds` original. **Mostrar solo conflictos** filtra las tablas a los
-problemas.
+### ¿Nuevo en Elite Dangerous?
+
+Un comandante totalmente nuevo no tiene archivos de controles, y Vega te lo dice. Completa tu
+entrenamiento de comandante y luego, en *Opciones → Controles* del juego, pon el movimiento de la
+interfaz del mapa galáctico en las teclas de flecha y aplica. Eso crea los archivos y Vega ya puede
+leerlos.
+
+Si tienes los archivos del juego pero ningún archivo de bindings propio, aparece un botón **Crear** en
+la barra de Aplicar y las pestañas del editor quedan en gris. Elige en **A partir de** uno de los presets
+de Frontier, ponle un **Nombre** al tuyo y pulsa **Aplicar** para escribirlo en el juego. Si vuelves al
+juego, restaura en su lugar una copia desde [Copias del jugador](#player-backups).
+
+---
+
+<a id="the-apply-bar"></a>
+
+## La barra de Aplicar
+
+La barra sobre las subpestañas contiene la **Carpeta de configuración del usuario** y los botones
+**Descartar** y **Aplicar**.
+
+**Carpeta de configuración del usuario** es donde están tus archivos `.binds` y el archivo de preset, y
+todas las instalaciones la comparten. Se detecta automáticamente. Usa el selector **⋮** si la tuya está en
+un lugar poco habitual. En Linux, mira [más abajo](#several-installations-on-linux).
+
+> **¿«No encuentra los bindings» con la carpeta correcta?** Elite Dangerous no escribe un archivo `.binds`
+> hasta que personalizas algo. Abre *Opciones → Controles* en el juego, cambia cualquier asignación, y
+> Elite Intel detecta el archivo.
+
+Nada de lo que hagas en estas pestañas toca el juego hasta que pulses **Aplicar**. Tus cambios se van
+acumulando, y **Aplicar** y **Descartar** se iluminan en cuanto hay alguno.
+
+| Botón | Qué hace |
+|-------|----------|
+| **Aplicar** | Hace una copia de todo, escribe tus cambios en los archivos del juego e informa de lo escrito en cada instalación |
+| **Descartar** | Desecha todos los cambios sin aplicar. Los archivos del juego no se tocan |
+
+> **Cierra la pantalla de Controles del juego antes de aplicar.** Los cambios hechos a la vez en
+> BindForge y en el juego pueden perderse. Para que el juego cargue un archivo de bindings modificado,
+> abre y cierra su pantalla de Controles después de aplicar. Vega te lo recuerda.
+
+Si sales de la pestaña o cierras la app con cambios sin aplicar, se te pregunta si quieres **Aplicar**,
+**Descartar** o **Volver**.
+
+**No volver a mostrar.** La confirmación de Aplicar, su informe, el informe de la configuración inicial y
+el *Guardado.* del Editor de bindings tienen esta casilla. Un informe silenciado se muestra igualmente si
+trae un problema o una novedad. **Restablecer avisos**, en [Servicios → Push To Talk y otros
+ajustes](UI-Settings-Tab#warnings), los recupera todos.
+
+<a id="several-installations-on-linux"></a>
+
+### Varias instalaciones en Linux
+
+En Windows, todas las copias del juego leen sus controles de una sola carpeta. En Linux, cada copia corre
+en su propio prefijo de Wine o Proton y guarda los suyos. Con dos o más, aparece en la barra una lista
+**Jugando:**, a la izquierda de la carpeta de configuración del usuario. Indica la copia de la que Elite
+Intel lee tus controles y diarios, y sigue al juego: arranca el juego desde otra copia y Elite Intel
+cambia a ella. También puedes elegir una a mano.
+
+**Aplicar** escribe tus controles en cada copia. Una copia cuyos controles se cambiaron fuera de BindForge
+se deja como está, y el informe lo dice. Juega una vez en esa copia y BindForge te ofrece sus cambios la
+próxima vez que apliques.
+
+<a id="read-only"></a>
+
+### Solo lectura mientras falta una instalación
+
+Si no se encuentra una de tus instalaciones del juego (normalmente porque su unidad está desconectada),
+BindForge pasa a **solo lectura**. La barra dice qué instalación falta, Vega te lo dice al arrancar, y
+nada de la pestaña se puede cambiar, para que esa instalación no se desfase de las demás.
+
+Vuelve a conectar la unidad y reinicia Elite Intel, o **Quita** la instalación en
+[Ubicaciones del juego](#game-install-locations) si ya no va a volver. **Anular** en la barra vuelve a
+activar la edición hasta que cierres Elite Intel: Aplicar escribe entonces en las instalaciones presentes,
+y cuando vuelva la que falta se compara en el siguiente arranque y eliges qué conservar.
+
+### Cuando el juego cambió tus archivos
+
+El juego puede cambiar sus propios archivos, y una actualización puede restablecerlos. BindForge los
+compara con su copia de trabajo la primera vez que abres la pestaña en cada sesión, y otra vez en cada
+Aplicar. Si difieren, Vega te lo dice al arrancar, y la pestaña muestra qué cambió y te deja elegir:
+
+| Opción | Qué ocurre |
+|--------|------------|
+| **Volver a poner los míos** | Tu copia de trabajo vuelve al juego. Suele ser lo correcto si un archivo parece restablecido por una actualización |
+| **Combinar...** | Cada línea distinta es una fila. Haz clic en el valor que quieres conservar, el tuyo o el del juego |
+| **Usar los archivos del juego** | Los archivos del juego sustituyen a tu copia de trabajo |
+
+Antes de cualquiera de estas escrituras se hace una copia de todo, y puedes cerrar el aviso para decidir
+más tarde. Cerrarlo durante un Aplicar lo cancela y conserva tus cambios.
+
+**Cuando cambian los mandos de una copia.** Si una copia del juego tiene ahora una configuración de
+mandos distinta de la que guardó BindForge, la ventana solo pregunta **¿Qué configuración es la actual?**
+Elige una de tus copias, o **Lo que guardé en BindForge**, y todas las copias y tus controles se ajustan a
+ella. Ves el resultado antes de que cambie nada. **Elegir mando por mando...** hace las
+[preguntas](#make-your-game-copies-match) una a una.
+
+**Una versión nueva de tu archivo de bindings.** A veces las actualizaciones guardan tu archivo con otro
+nombre y con controles nuevos. BindForge nunca escribe tu archivo antiguo encima. Si todos tus bindings
+pasaron, solo tienes que **Aprobar**. Si algunos difieren, **Conciliar...** conserva los controles nuevos
+y te pregunta por cada línea distinta.
+
+**Archivos que no deberían estar ahí.** Si la carpeta de bindings del juego contiene archivos que el juego
+no usa (por ejemplo un archivo de bindings copiado a mano sin versión en el nombre, o un archivo ajeno),
+Vega lo menciona y la comprobación ofrece **Ordenar**. Eso los mueve a **Leftover User Files**, en la
+carpeta propia de Elite Intel. No se borra nada, y puedes abrir esa carpeta tú mismo. Un archivo de
+bindings sin versión se copia antes a tus archivos con una versión en el nombre, salvo que ya tengas uno
+con ese nombre.
+
+---
+
+<a id="alias-designer"></a>
+
+## Diseñador de alias
+
+![Diseñador de alias](images/ui-bindings-alias-designer.png)
+
+De fábrica, el juego conoce muchos mandos solo por un ID de hardware, y su pantalla de Controles muestra
+sus botones como números anónimos. El Diseñador de alias da a cada mando un nombre real, y a cada botón,
+eje y hat la etiqueta que elijas. Las etiquetas aparecen en la pantalla de Controles del juego y en el
+Editor de bindings.
+
+**Mis dispositivos** muestra tus mandos: **Dispositivo**, **VID / PID**, **Estado** (*Conectado* o
+*Ausente*) y **Alias**. **Dispositivos integrados** es una lista de solo lectura de los mandos que Frontier
+incluye en el juego. **Comprobar de nuevo** vuelve a leer lo que está conectado.
+
+**Dos mandos del mismo modelo**, como un VKB Gladiator izquierdo y uno derecho, pueden informar el mismo
+identificador de hardware. El juego no puede distinguirlos, así que solo se lista uno, y un aviso encima de
+la lista lo indica. Ningún nombre lo arregla: da a uno de ellos otro identificador de producto (PID) en la
+herramienta de su fabricante, como VKBDevCfg para VKB, y vuelve a conectarlo.
+
+<a id="naming-a-controller"></a>
+
+### Poner nombre a un mando
+
+Cuando un mando no tiene nombre, **Pon nombre a tus mandos** te guía. Se ejecuta tras la configuración
+inicial y con **Comprobar de nuevo**, y puedes iniciarlo para un solo mando desde su engranaje. **Omitir**
+usa el nombre predeterminado.
+
+Un nombre usa las letras de la A a la Z, dígitos, `-` y `_`, y empieza por una letra, sin espacios ni
+acentos. No puede parecerse demasiado a uno ya usado. Los bindings que conocen el mando solo por su ID de
+hardware pasan al nombre nuevo al aplicar.
+
+### El Editor de dispositivos
+
+Pulsa el **engranaje** en la fila de un dispositivo para abrirlo.
+
+![Editor de dispositivos](images/ui-bindings-device-editor.png)
+
+- **Dispositivo**: el nombre, VID, PID, nombre del hardware y estado. Cambia aquí el nombre, y **Aplicar**
+  lo renombra en cada instalación y mueve los bindings que lo usan. Pulsa antes **Guardar**.
+- **Ejes**, **Botones**, **Hats**: escribe una etiqueta para cada entrada. Las pestañas solo aparecen para
+  los tipos de entrada que tiene el mando. Usa una entrada y su casilla **se ilumina**, para que veas cuál
+  es cuál, y los ejes muestran un medidor en vivo.
+
+**Guardar** conserva tus cambios para **Aplicar**; hasta entonces nada llega al juego. Si **Guardar** está gris, pasa el ratón por encima para ver por qué, por ejemplo un nombre con un espacio.
+
+- **Borrar** quita la entrada y las etiquetas del dispositivo de tus archivos del juego al aplicar. Si tus
+  bindings usan el mando, no se pierden: pasan a su ID de hardware, así que siguen funcionando mientras
+  esté conectado, pero pierden el nombre que le diste. (En un mando integrado de Frontier que renombraste,
+  vuelven al nombre propio del juego.) La pregunta te dice cuántos bindings se mueven y adónde.
+  **Deshacer borrado** los devuelve.
+- **Restablecer etiquetas** devuelve las etiquetas predeterminadas.
+
+En un dispositivo integrado de Frontier puedes cambiar las etiquetas. Para usar un nombre propio, conéctalo
+y escribe el nombre en la casilla: tu entrada va delante de la de Frontier, y al escribir de nuevo el nombre
+de Frontier vuelves atrás.
+
+### Cuando cambia tu hardware
+
+Si falta un mando con nombre que usan tus bindings, Vega te lo dice: sus bindings no se cargarán hasta que
+esté conectado. Una actualización de firmware también puede cambiar el ID de producto de un mando, y uno de
+repuesto tiene otro nuevo. BindForge puede detectarlo, y **¿Es el mismo mando?** pregunta cuál de los
+conectados es. Responde, y sus bindings lo seguirán al aplicar.
+
+> Los bindings se refieren a los botones por número. Si el repuesto es de otro modelo, algunos pueden acabar
+> en botones inesperados. **Revisar en el Bind Editor** te lleva directamente a ellos.
+
+---
+
+<a id="binding-profile"></a>
+
+## Editor de bindings
+
+![Editor de bindings](images/ui-tab-bindings-profile.png)
+
+La línea **Editando** de arriba indica el archivo de bindings que estás viendo. Para abrir otro, usa
+[Archivo de bindings](#bindings-file) en *Gestión de archivos binds*.
+
+**Ritmo de entrada de teclas** es un deslizador **Rápido ↔ Lento** para la pausa que Elite Intel hace
+tras cada pulsación que envía al juego. Si el juego pierde pulsaciones en equipos más lentos (una macro
+que se ejecuta a medias, un panel que se abre en la pestaña equivocada), muévelo hacia **Lento**. El control deslizante está al pie del editor.
+
+Una sola fila de pestañas recorre el editor: **Todo**, **General**, **Nave**, **SRV** y **A pie**, cada
+una con su recuento, y luego **[Anomalías](#anomalies)** y **[Zonas muertas y
+sensibilidad](#dead-zones-and-sensitivity)**. Las pestañas de sección muestran todos los controles,
+agrupados bajo los encabezados del propio juego y en el mismo orden que su pantalla de Controles, para que
+puedas leer ambas a la vez. Después viene **[Interruptores](#toggles)**.
 
 | Columna | Significado |
-|--------|---------|
+|---------|-------------|
 | **Binding** | El control |
-| **Primario** / **Secundario** | Las dos ranuras que Elite Dangerous da a cada control |
-| **Estado** | `Faltante` · `Sin teclado` (asignado, pero solo a un mando) · `No definido` |
-| **Corrección rápida** | Pestaña *faltantes*: asigna una tecla de teclado libre y segura a este control |
-| **Borrar** | Pestaña *usados*: quita el binding de teclado (principal, secundario o ambos), sin tocar los de mando y HOTAS |
+| **Primario** / **Secundario** | Las dos ranuras que Elite Dangerous da a cada control. Cada una tiene una columna **Dispositivo** (*Teclado*, *Ratón* o tu nombre para un mando) y una columna **Entrada** (la tecla, o tu etiqueta para el botón). Una ranura vacía dice *No definido*. En una fila de eje, Primario es el eje y Secundario su dirección y zona muerta |
+| **Acceso IA** | Si Vega puede manejar este control (ver abajo) |
+| **Acción** | **Borrar** quita la tecla (o el eje) y deja intactas las asignaciones de mando y HOTAS. **Corregir** aparece en un control que Vega necesita y que no tiene tecla, y le da una libre y segura |
 
-> **HOTAS y mandos se muestran pero no se pueden editar.** Elite Intel ejecuta mediante bindings
-> de teclado, así que los demás dispositivos aparecen solo para diagnóstico.
+| Acceso IA | Significado |
+|-----------|-------------|
+| **Vega lo usa** | Vega pulsa este control con su tecla. Mantén una tecla en él |
+| **Vega no puede usarlo** | Vega necesita este control, pero no tiene tecla. Pon una en la ranura vacía: tu asignación de mando sigue funcionando |
+| **Vega necesita una tecla** | Vega necesita este control y no tiene nada asignado |
 
-### Conflictos
+En la parte inferior están la búsqueda, tres filtros y el botón de autoasignación:
 
-Elite Dangerous considera conflicto una combinación solo cuando es *exactamente* la misma — `G` y
-`Mayús+G` conviven sin problema. Elite Intel usa la misma regla, así que señala lo que el juego
-señala de verdad.
+- **Buscar bindings...** busca en la sección, el grupo, el nombre del control y la etiqueta `.binds` en
+  bruto, además de los nombres de mandos y botones de un binding. Funciona en todas las pestañas, y los
+  recuentos de las pestañas de sección muestran dónde están los resultados.
+- **Mostrar solo conflictos**: solo las filas en conflicto.
+- **Mostrar sin asignar**: solo los controles sin nada asignado, ni en el teclado ni en ningún mando.
+- **Mostrar solo lo que necesita Vega**: solo los controles que pulsa Vega, para sus comandos integrados
+  y tus comandos personalizados.
+- **[Autoasignar bindings requeridos por VEGA](#auto-assign-vega-required-binds)**: ver abajo.
 
-Las filas en conflicto salen en rojo, y al pasar el ratón muestran **Comparte *tecla* con:** y la
-lista — para cada ranura en conflicto, no solo la primera.
+### Asignar un botón o una tecla
 
-También puedes ver **Equivalente nave/SRV - muchos lo asignan igual que:** en una fila cian. No es
-un conflicto, es una sugerencia: algunos controles de nave y de SRV se suelen asignar a la misma
-tecla.
+Haz clic en cualquiera de las dos ranuras de una fila para abrir **Asignar control**. El diálogo muestra
+ambas ranuras como tarjetas, y la resaltada es la que recibirá tu siguiente entrada. Haz clic en la otra
+para llenar esa, o usa el botón entre ellas para intercambiar Primario y Secundario.
 
-Vega además **habla** de los bindings que de verdad rompen algo, y nombra las teclas en el
-registro de diagnósticos:
+![Asignar un control](images/ui-bindings-assign.png)
 
-- **El movimiento del mapa galáctico y la navegación de la interfaz en la misma tecla.** Trazar
-  rutas no funcionará hasta que el mapa y la interfaz tengan teclas separadas.
-- **Un control en tu tecla del menú del juego.** Elite abre el menú del juego con cualquier
-  combinación que termine en esa tecla, así que el control no se puede pulsar nunca. La solución
-  es borrar la asignación del menú del juego en el juego — Escape abre ese menú de todos modos.
-- **Un control en una combinación que el sistema operativo captura antes** (como Alt+F4).
-  Pulsarla cierra el juego o te saca de la sesión.
+Bajo las tarjetas hay una pestaña **Teclado**, una pestaña **Ratón** y otra por cada mando conectado.
 
-### Editar un binding
+- **Teclado**: haz clic en el campo y pulsa las teclas junto con los modificadores, hasta tres. Esc
+  cancela. Mantén Ctrl, Mayús o Alt para ver el mapa del teclado de esa combinación: **verde está libre,
+  rojo ya está en uso.** Las teclas reservadas, como la del menú del juego y Alt+F4, no se pueden asignar.
+- **Ratón**: apunta a la casilla y pulsa el botón del ratón que quieras. El botón izquierdo también
+  cuenta, y los clics en cualquier otra parte de la ventana funcionan como siempre. La rueda nunca se
+  captura por accidente: haz clic en **Rueda arriba** o **Rueda abajo**.
+- **Un mando**: pulsa un botón o un hat del mando, o haz clic en uno de la lista **Botones** o **Hats**.
+  Un botón o un hat se elige **al soltarlo**, así que una combinación con botón de shift siempre se capta
+  entera. Los botones que ya tienes pulsados se convierten en modificadores: mantén el botón de shift y
+  pulsa otros botones uno tras otro para probar cada combinación. La página **Direcciones de eje** tiene
+  un **−** y un **+** para cada eje, para los controles que actúan sobre una dirección de un eje; mueve el
+  eje o haz clic en el que quieras.
+- **Con Mayús**, **Con Ctrl** y **Con Alt**, en cada pestaña de mando, asignan un botón de la palanca o
+  del acelerador junto con esa tecla. Solo estas tres se pueden combinar con un mando, para que nunca
+  choquen con las teclas que pulsa Vega.
 
-Haz clic en una ranura para abrir el diálogo de asignación.
+Verde está libre, rojo lo usa otro control, y azul es lo que tiene ahora este control. Un mando necesita
+antes un nombre del [Diseñador de alias](#alias-designer). Un mando desconectado se puede asignar igualmente
+haciendo clic en sus entradas, y uno que conectes con el diálogo abierto cobra vida en él. Una ranura admite
+como máximo tres modificadores, entre botones mantenidos y teclas.
 
-![Asignar una tecla](images/ui-bindings-assign.png)
+Una entrada que ya tiene otro control no se puede asignar. La tarjeta nombra ese control, y **Guardar**
+sigue atenuado hasta que la liberes allí. Si un cambio fuera a quitar la última tecla de un control que
+Vega usa, el diálogo te avisa. **Guardar** conserva tus cambios, listos para **Aplicar**.
 
-Muestra el binding seleccionado, la ranura y el valor actual. Luego **haz clic en el campo y
-pulsa las teclas que quieras** — modificadores y tecla a la vez. Esc cancela. Se admiten
-combinaciones de hasta tres modificadores.
+Cada vez que guardas aparece *Guardado.*: marca **No volver a mostrar** para dejar de verlo.
 
-Un mapa del teclado en vivo muestra qué hay libre: **mantén Ctrl/Mayús/Alt para ver las teclas
-libres para esa combinación — verde es libre, rojo ya está en uso.** Las teclas reservadas (la
-del menú del juego, Alt+F4, Ctrl+Alt+F en Linux) aparecen marcadas y no se pueden asignar.
+> **Los gamepads solo tienen soporte parcial por ahora.** Las palancas del gamepad todavía no se pueden
+> asignar aquí.
 
-**Borrar binding** quita la asignación.
+### Asignar un eje
 
-### Autoasignar bindings faltantes
+Los controles de eje, como cabeceo, guiñada y acelerador, están entre las demás filas y abren su propio
+diálogo.
 
-Un botón que asigna teclas seguras y compatibles con tu distribución de teclado a **todos** los
-controles sin binding de teclado.
+![Asignar un eje](images/ui-bindings-axis.png)
 
-- Las asignaciones existentes nunca se cambian.
+Mueve un eje del mando o haz clic en uno de la lista. Después ajusta su **Dirección** (*Normal* o
+*Invertido*), su **Zona muerta** y, en los controles que lo tienen, su **Rango del acelerador** (*Rango
+completo* o *Solo avance*). Varios controles pueden compartir un eje, y es normal: el diálogo te dice qué
+más hay en él, y tú decides.
+
+<a id="anomalies"></a>
+
+### Anomalías
+
+![Anomalías](images/ui-bindings-anomalies.png)
+
+Las filas en conflicto reunidas en un solo lugar, con su recuento en la pestaña. Son las mismas filas que
+las pestañas de sección dibujan en rojo, y al hacer clic se abre el mismo diálogo. **Cuando Vega te avise
+de un conflicto de bindings, mira aquí.**
+
+Los conflictos se buscan en todos los dispositivos: teclado, ratón, joystick y HOTAS. El mismo número de
+botón en dos mandos son dos botones distintos: `Joy_1` de tu palanca izquierda nunca choca con `Joy_1` de
+la derecha.
+
+Elite Dangerous solo considera conflicto una combinación *exactamente* igual: `G` y `Mayús+G` conviven sin
+problema. Elite Intel sigue la misma regla. Los controles que nunca pueden estar activos a la vez no se
+marcan: uno de nave y uno de SRV, o un control de colocación de la Colonización de sistemas y uno de vuelo
+(el juego desactiva el vuelo mientras colocas una instalación). Pasa el ratón sobre una fila para ver
+**Comparte *tecla* con:** y la lista, para cada ranura en conflicto.
+
+**Botones de shift.** Si mantienes un botón de la palanca como modificador para otros bindings y además
+asignas ese botón solo, al pulsarlo también se dispara ese control. BindForge te avisa.
+
+También puedes ver **Equivalente nave/SRV - muchos lo asignan igual que:** en una fila. No es un conflicto
+sino una sugerencia: algunos controles de nave y de SRV suelen asignarse a la misma tecla.
+
+Vega además **habla** de los bindings que de verdad rompen algo, y nombra las teclas en el registro de
+diagnóstico:
+
+- **Movimiento del mapa galáctico y navegación de la interfaz en la misma tecla.** Trazar rutas no puede
+  funcionar hasta que el mapa y la interfaz tengan teclas separadas.
+- **Un control en tu tecla del menú del juego.** Elite abre el menú con cualquier combinación que termine
+  en esa tecla, así que el control nunca se podrá pulsar. La solución es borrar esa asignación en el
+  juego: Escape abre ese menú de todos modos.
+- **Un control en una combinación que el sistema operativo captura primero** (como Alt+F4). Pulsarlo
+  cierra el juego o abandona tu sesión.
+
+<a id="dead-zones-and-sensitivity"></a>
+
+### Zonas muertas y sensibilidad
+
+![Zonas muertas y sensibilidad](images/ui-bindings-settings.png)
+
+Las sensibilidades, zonas muertas y curvas de potencia de tu archivo de bindings, agrupadas como en el
+juego. Cada una tiene un deslizador y un número al lado. Arrastra el deslizador, o escribe un número y
+pulsa Enter.
+
+El deslizador cubre el mismo rango que el del juego. El número es el valor exacto, y la única forma de
+pasar de los límites del deslizador. Un valor que ya esté fuera se queda como está hasta que lo muevas.
+
+<a id="toggles"></a>
+
+### Interruptores
+
+Todos los ajustes de sí/no de tu archivo de bindings, como las opciones de vista libre, agrupados como los
+agrupa el juego. Cada uno es un botón que dice **Activado** o **Desactivado**: púlsalo para cambiarlo. Como
+todo cambio aquí, es una edición hasta que pulses **Aplicar**.
+
+<a id="auto-assign-vega-required-binds"></a>
+
+### Autoasignar bindings requeridos por VEGA
+
+Un botón que da una tecla segura y adaptada a tu distribución a cada control que **Vega pulsa** y que no
+tiene tecla, incluidos los que usan tus comandos personalizados. Los demás controles se quedan como están;
+para asignar uno de ellos, haz clic en su celda Primario o Secundario.
+
+- Los bindings existentes de cualquier dispositivo nunca cambian. Solo se llena una ranura vacía.
 - Ninguna tecla se reutiliza.
-- Los cambios van **solo al borrador** — revísalos y luego aplica.
+- Los cambios se quedan en tu edición, para que los revises antes de **Aplicar**.
 
-Informa de lo que hizo, y de lo que omitió y por qué: ambas ranuras ya en un mando, sin teclas
-seguras libres o sin ranura editable de forma segura. Dos controles se dejan **sin asignar a
-propósito**: el menú del juego (Escape ya lo abre) y *expulsar toda la carga* (vacía la bodega al
-espacio y ningún comando de Elite Intel lo pulsa — asígnalo a mano si lo quieres).
-
-### Borrador, Aplicar, Revertir
-
-Los cambios **no** van directos a Elite Dangerous. Se acumulan en un borrador, y la insignia
-muestra **Borrador** o **Sincronizado**. El mismo estado aparece en el indicador *Mapa de teclas*
-de la pestaña Vega.
-
-| Botón | Qué hace |
-|--------|--------------|
-| **Aplicar** | Escribe el borrador en tu archivo `.binds`, guardando antes una copia del anterior |
-| **Revertir** | Descarta el borrador y recarga desde el archivo del juego |
-
-> **Tras aplicar, abre y cierra la pantalla de Controles en Elite Dangerous.** El juego solo
-> vuelve a leer sus asignaciones al abrir esa pantalla. Vega también te lo dice en voz alta.
-
-Si el archivo de bindings del juego cambió después de crear tu borrador, Aplicar se niega y te
-pide que recargues o descartes antes, en vez de sobrescribir en silencio el cambio de otro.
-
-Si cierras la app con un borrador sin aplicar, se te pregunta si quieres **Aplicar al juego**,
-**Mantener borrador** o **Descartar**.
+Informa de lo que hizo, de lo que omitió y por qué: las dos ranuras ya en un mando, ninguna tecla segura
+libre, o ninguna ranura editable con seguridad. Dos controles se dejan **sin asignar a propósito**: el
+menú del juego (Escape ya lo abre) y *expulsar toda la carga* (vacía la bodega al espacio, y ningún comando
+de Elite Intel lo pulsa).
 
 ---
 
-## Gestión de bindings
+<a id="preset-editor"></a>
 
-![Gestión de bindings](images/ui-tab-bindings-management.png)
+## Editor de presets
 
-**Copias de seguridad del jugador** — instantáneas que haces tú con **Copiar ahora**, listadas por
-fecha (**Creada**) y los **Archivos** que contiene cada una. Haz una antes de experimentar.
+![Editor de presets](images/ui-bindings-preset-editor.png)
 
-(Aparte, cada **Aplicar** guarda antes en silencio una copia del archivo del juego en
-`elite-intel/bindings/backups/`. Son una red de seguridad y no se listan aquí.)
+El juego lee sus controles en cuatro secciones (**General**, **Nave**, **SRV** y **A pie**), y cada
+sección carga el archivo de bindings que nombra su línea en el archivo de preset. El Editor de presets
+muestra esas cuatro líneas como listas desplegables y te deja apuntar cada una a cualquiera de tus archivos
+de bindings. Los presets propios de Frontier también están en las listas, marcados *(de fábrica)*. Las
+listas muestran el nombre que muestra el juego, así que `Custom.4.2.binds` aparece como *Custom*.
+
+- **Poner todas igual** apunta las cuatro secciones al archivo elegido a su lado, de una vez.
+- Una sección que nombra un archivo que BindForge no encuentra, o ninguno, se muestra en **rojo**. El
+  juego cargaría otra cosa ahí, así que **Aplicar** se niega hasta que elijas un archivo real.
+- Aparece una nota cuando las cuatro secciones usan archivos distintos. El juego lo admite, así que nunca
+  te detiene.
+
+Como en toda la pestaña, no se escribe nada hasta que pulses **Aplicar**, y **Descartar** devuelve las
+listas a como estaban.
+
+<a id="which-binds-file"></a>
+
+### ¿Qué archivo de bindings lee Vega?
+
+Vega lee las teclas que pulsa de **un solo** archivo de bindings. Si tus cuatro secciones usan archivos
+distintos, la primera vez que abres la pestaña BindForge en una sesión pregunta **¿Qué archivo de
+bindings?** y los enumera. Elige uno, y te pregunta si debe ser **el único archivo de bindings** que use
+el juego:
+
+- **Sí**: BindForge copia tus archivos y pone las cuatro secciones en él de inmediato. Es la opción
+  segura: las teclas que pulsa Vega son entonces las que usa el juego.
+- **No**: Vega lee el archivo elegido durante esta sesión. Los controles de una sección que usa otro
+  archivo puede que no funcionen cuando Vega los pulse. La pregunta vuelve en el siguiente arranque,
+  mientras las secciones sigan en archivos distintos.
+
+Si tus controles General están en un archivo distinto del que lee Vega, Vega también te avisa al arrancar:
+lo que suele fallar es el trazado de rutas, porque las teclas del mapa galáctico pueden no ser las que usa
+el juego.
+
+---
+
+<a id="binding-management"></a>
+
+## Gestión de archivos binds
+
+Tus archivos, con dos pestañas propias: **Ubicaciones del juego** y **Copias del jugador**.
+
+<a id="game-install-locations"></a>
+
+### Ubicaciones del juego
+
+![Ubicaciones del juego](images/ui-bindings-install-locations.png)
+
+<a id="bindings-file"></a>
+
+**Archivo de bindings** muestra tus archivos de bindings, incluidos los cambios sin aplicar. Elige uno y
+pulsa **Cargar** para abrirlo en el Editor de bindings, o escribe un nombre nuevo y pulsa **Renombrar**.
+Un cambio de nombre es un cambio más, y llega al juego cuando pulsas **Aplicar**.
+
+**Instalaciones del juego** muestra cada copia del juego que BindForge conoce. Cada una tiene sus propios
+archivos `DeviceMappings.xml` y `.buttonMap`, y BindForge los mantiene idénticos.
+
+| Columna | Significado |
+|---------|-------------|
+| **Tienda** | De dónde viene esta copia: Steam, Epic, Frontier u Oculus |
+| **Ubicación** | Su carpeta |
+| **Origen** | *Detectada* o *Añadida a mano* |
+| **Archivos de dispositivo** | Cuántas entradas de dispositivo y button maps tiene, y cuántos están huérfanos |
+| **Estado** | *Coincide* con tu copia de trabajo, *Difiere* o *No encontrada* |
+
+**Añadir que falta** añade una instalación que BindForge no detectó. **Quitar** hace que BindForge deje de
+copiar o escribir en ella. Si mueves el juego, pulsa **Quitar** y luego **Añadir que falta**.
+
+En Linux, **Añadir que falta** pide después el prefijo de Wine de la instalación, la carpeta que contiene
+`drive_c`, para que BindForge encuentre los controles y diarios de esa copia.
+
+**Repetir la configuración inicial** vuelve a hacer la [configuración inicial](#the-first-time-you-open-it)
+en el acto, a partir de los archivos de tus carpetas del juego, con una copia de seguridad antes. No se
+escribe nada en el juego hasta que confirmes su resumen, y las ediciones sin aplicar se descartan.
+
+<a id="player-backups"></a>
+
+### Copias del jugador
+
+![Copias del jugador](images/ui-tab-bindings-management.png)
+
+Proteger tus controles es la razón principal de que exista BindForge. Una configuración compleja lleva
+horas, y una actualización del juego puede restablecerla. BindForge lo copia todo por su cuenta, y cada
+copia es un `.zip` con fecha que contiene tus archivos de bindings, el archivo de preset y los archivos de
+dispositivo de cada instalación.
+
+La columna **Motivo** indica por qué existe cada copia, y de eso depende cuánto se conserva:
+
+| Motivo | Cuándo | Se conserva |
+|--------|--------|-------------|
+| **Diaria** | La primera vez que Elite Intel arranca cada día | Por antigüedad: 30 días por defecto, o 60, 90 o 180 |
+| **Antes de APPLY**, **Antes de RESTORE**, **Antes de la comprobación**, **Antes de cambios** | Automáticamente, antes de que BindForge escriba algo | Las 100 más recientes por defecto, hasta 1000 |
+| **Usuario** | Cuando pulsas **Copiar ahora** | Hasta que la borres |
+| **Configuración inicial** | Antes de la configuración inicial | Para siempre |
 
 | Botón | Qué hace |
-|--------|--------------|
-| **Restaurar al borrador** | Carga la copia en tu borrador, para que la revises antes de que toque el juego |
-| **Restaurar en vivo** | La carga y la aplica directamente al juego. Las comprobaciones de seguridad habituales se siguen haciendo |
-| **Eliminar copia de seguridad** | Elimina la copia para siempre |
+|-------|----------|
+| **Copiar ahora** | Haz tú mismo una copia. Hazla antes de empezar a experimentar |
+| **Restaurar** | Devuelve la copia seleccionada: cada archivo de bindings, el de preset y los archivos de dispositivo de cada instalación. Antes se copian tus archivos actuales |
+| **Buscar archivo de copia de seguridad** | Restaura una copia que no está en la lista, como una que traes de otro ordenador |
+| **Eliminar** | Elimina definitivamente una de tus copias de *Usuario* |
 
-Todas preguntan antes. Las dos restauraciones sustituyen los cambios sin guardar del borrador
-actual.
+Si la copia de seguridad tiene una configuración de mandos distinta para cada copia del juego, **Restaurar**
+hace primero unas [preguntas](#make-your-game-copies-match), para que todas las copias tengan la misma.
+
+> **Restaura solo tus propias copias.** La copia de otro jugador contiene sus mandos, no los tuyos.
+
+**Ajustes de copia de seguridad** define adónde van las copias (**Guardar copias en**, con **Examinar...**
+y **Usar predeterminada**) y las dos reglas de conservación. Una carpeta dentro de una instalación del
+juego se rechaza, porque una actualización borraría tus copias con ella.
 
 ---
 

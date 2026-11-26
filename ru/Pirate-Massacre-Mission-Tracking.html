@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отслеживание Миссий по Массовому Уничтожению Пиратов  EliteIntel</title>
+    <meta name="description" content="EliteIntel отслеживает миссии по массовому уничтожению пиратов, включая счётчик уничтоженных, целевые фракции и расчёты выплат. Он отслеживает уничтожения и вып">
+    <link rel="canonical" href="https://www.elite-intel.org/ru/Pirate-Massacre-Mission-Tracking.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Pirate-Massacre-Mission-Tracking.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Pirate-Massacre-Mission-Tracking.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Pirate-Massacre-Mission-Tracking.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Pirate-Massacre-Mission-Tracking.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Pirate-Massacre-Mission-Tracking.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Pirate-Massacre-Mission-Tracking.html">
+    <meta property="og:title" content="Отслеживание Миссий по Массовому Уничтожению Пиратов  EliteIntel">
+    <meta property="og:description" content="EliteIntel отслеживает миссии по массовому уничтожению пиратов, включая счётчик уничтоженных, целевые фракции и расчёты выплат. Он отслеживает уничтожения и вып">
+    <meta property="og:url" content="https://www.elite-intel.org/ru/Pirate-Massacre-Mission-Tracking.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases/latest" target="_blank" rel="noopener">Download</a>
+        <a class="btn-secondary" href="https://app.element.io/#/room/#krondor:matrix.org" target="_blank" rel="noopener">Community</a>
+        <a class="btn-donate" href="https://www.paypal.com/donate/?business=44LZZ6RDNK4AJ&no_recurring=0&item_name=Support+Elite+Intel+development+today+with+your+generous+donation%21&currency_code=USD" target="_blank" rel="noopener">Donate</a>
+        <a class="btn-patreon" href="https://www.patreon.com/cw/SudoKrondor" target="_blank" rel="noopener">Patreon</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Pirate-Massacre-Mission-Tracking.html" class="locale-link">EN</a><a href="../fr/Pirate-Massacre-Mission-Tracking.html" class="locale-link">FR</a><a href="../es/Pirate-Massacre-Mission-Tracking.html" class="locale-link">ES</a><a href="../de/Pirate-Massacre-Mission-Tracking.html" class="locale-link">DE</a><a href="../uk/Pirate-Massacre-Mission-Tracking.html" class="locale-link">UK</a><span class="locale-current">RU</span></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Главная</a>
+            <a href="../test/index.html" class="nav-link">🎓 Academy Test</a>
+
+            <div class="nav-section">Приложение</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Установка</a>
+            <a href="UI.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Интерфейс</a>
+            <a href="UI-Vega-Tab.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Вкладка «Вега»</a>
+            <a href="UI-Commander-Tab.html" class="nav-link nav-sub"><img src="../images/commander.png" class="inline" height="20" alt=""> Вкладка «Командир»</a>
+            <a href="UI-Color-Themes.html" class="nav-link nav-sub"><img src="../images/themes.png" class="inline" height="20" alt=""> Цветовые темы</a>
+            <a href="UI-Actions-Tab.html" class="nav-link nav-sub"><img src="../images/actions.png" class="inline" height="20" alt=""> Вкладка «Действия»</a>
+            <a href="UI-Bindings-Tab.html" class="nav-link nav-sub"><img src="../images/keyboard.png" class="inline" height="20" alt=""> BindForge</a>
+            <a href="UI-Settings-Tab.html" class="nav-link nav-sub"><img src="../images/services.png" class="inline" height="20" alt=""> Вкладка «Сервисы»</a>
+            <a href="UI-Jukebox-Tab.html" class="nav-link nav-sub"><img src="../images/speaker.png" class="inline" height="20" alt=""> Вкладка «Музыка»</a>
+            <a href="UI-Stats-Tab.html" class="nav-link nav-sub"><img src="../images/stats.png" class="inline" height="20" alt=""> Вкладка «Статистика»</a>
+            <a href="UI-HUD-Overlay.html" class="nav-link nav-sub"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> HUD-оверлей</a>
+
+            <div class="nav-section">Вики</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Выбрать LLM</a>
+            <a href="cloud-llm-options.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Облачный LLM</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+            <a href="LM-Studio-Ubuntu-Server.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Сервер Ubuntu без GUI</a>
+
+            <div class="nav-section">Как это сделать?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Общее использование</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Все команды</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Системные команды</a>
+            <a href="Custom-Commands.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Свои команды</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Торговля и прибыль</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Поиск по галактике</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Исследование</a>
+            <a href="Colonisation.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Колонизация</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/journal.png" class="inline" height="20" alt=""> Навигация</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link active"><img src="../images/journal.png" class="inline" height="20" alt=""> Пиратские миссии</a>
+
+            <div class="nav-section">Сообщество</div>
+            <a href="https://app.element.io/#/room/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="Matrix-How-To.html" class="nav-link nav-sub">❓ Впервые в Matrix? Начните здесь</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Политика конфиденциальности</a>
+            <a href="Contact.html" class="nav-link">📧 Связаться с разработчиком</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Отслеживание Миссий по Массовому Уничтожению Пиратов</h1>
+<p>EliteIntel отслеживает миссии по массовому уничтожению пиратов, включая счётчик уничтоженных, целевые фракции и расчёты выплат. Он отслеживает уничтожения и выплаты на протяжении всей сессии.</p>
+<h2>Начало работы</h2>
+<p>Для эффективного выполнения миссий по массовому уничтожению пиратов:</p>
+<ol>
+<li><strong>Найдите набор</strong>: Спросите <code>найди пиратские миссии на уничтожение</code> (см. <em>Поиск наборов миссий</em> ниже) или найдите
+его на <a href="https://inara.cz">INARA</a>: систему, где несколько фракций предлагают миссии против одной и той же пиратской
+фракции, рядом с системой, где есть место добычи ресурсов (RES). Берите как можно больше миссий против этой фракции.
+EliteIntel отслеживает целевую фракцию, количество уничтоженных и детали выплат.</li>
+<li><strong>Запрос статуса миссий</strong>: После принятия миссий задавайте EliteIntel вопросы, например <code>Сколько уничтожений осталось по пиратским миссиям?</code> или <code>Какова выплата за массовое уничтожение пиратов?</code> EliteIntel возвращает общее количество необходимых уничтожений, потенциальные кредиты и разбивку по фракциям. Уточняйте, что запрос касается пиратов, чтобы избежать путаницы с другими типами миссий.</li>
+</ol>
+<h2>Бой с пиратами в Haz RES</h2>
+<ol>
+<li><strong>Прибытие к месту</strong>: Летите к целевой системе и войдите в Haz RES. Сканируйте ближайшие корабли.</li>
+<li><strong>Идентификация целей</strong>: EliteIntel объявляет следующее при сканировании кораблей:<ul>
+<li><strong>Пираты, не связанные с миссиями</strong>: <code>Законная цель, [тип корабля], [ранг пилота], [размер награды].</code> Эти корабли являются допустимыми целями, но не засчитываются в цели миссии.</li>
+<li><strong>Пираты-цели миссий</strong>: <code>Цель миссии! [тип корабля], [ранг пилота], [размер награды].</code> Это основные цели.</li>
+<li>EliteIntel не объявляет чистые или дружественные корабли, сохраняя актуальность звуковых оповещений.</li>
+</ul>
+</li>
+<li><strong>Подтверждение уничтожения</strong>: Когда пират уничтожен, EliteIntel объявляет <code>Уничтожение подтверждено</code> вместе с заработанной наградой. Уничтожения целей миссий объявляются как <code>Уничтожение цели миссии подтверждено</code> с соответствующей выплатой.</li>
+<li><strong>Запросы прогресса</strong>: Спрашивайте <code>Сколько уничтожений осталось?</code> в любой момент. EliteIntel возвращает общее количество оставшихся уничтожений и разбивку по фракциям.</li>
+</ol>
+<h2>Лучшие практики</h2>
+<p><em><strong>Погасите все награды перед тем, как брать частные миссии по массовому уничтожению</strong></em> — подтверждённое уничтожение является ваучером награды против фракции</p>
+<ul>
+<li><strong>Накопление миссий</strong>: Принятие нескольких миссий против одной фракции повышает эффективность получения кредитов.
+Спросите EliteIntel о самом глубоком стеке поблизости (см. <em>Поиск наборов миссий</em> ниже).</li>
+<li><strong>Запросы на естественном языке</strong>: Принимается естественная речь. <code>Сколько пиратов осталось убить?</code> и <code>Счёт пиратской миссии?</code> — оба варианта действительны. Уточняйте, что запрос касается пиратов, чтобы избежать путаницы с другими активными миссиями.</li>
+<li><strong>Переключение личности</strong>: Переключайтесь между режимами личности по мере необходимости, чтобы соответствовать вашему текущему стилю игры.</li>
+</ul>
+<hr>
+<h1>Поиск наборов миссий</h1>
+<p><strong>Набор миссий</strong> — это система-заказчик и охотничье угодье: фракции одной системы выдают миссии на уничтожение пиратов
+из пиратской фракции соседней системы, а в той системе есть место добычи ресурсов (RES), где их можно уничтожать. Чем
+больше фракций выдаёт миссии в системе-заказчике, тем глубже стек: их миссии идут параллельно, и одни и те же
+уничтоженные пираты оплачиваются несколько раз.</p>
+<h2>Как EliteIntel узнаёт наборы</h2>
+<p>EliteIntel узнаёт наборы из ваших собственных полётов. Никакой сайт или учётная запись не нужны.</p>
+<ul>
+<li><strong>Миссии, которые вы берёте.</strong> Когда вы принимаете миссию на уничтожение пиратов, EliteIntel запоминает
+систему-заказчика, станцию, фракцию и цель.</li>
+<li><strong>Места добычи ресурсов, которые вы видите.</strong> Когда вы прибываете в систему, игра перечисляет её источники сигналов,
+включая места добычи ресурсов. EliteIntel также узнаёт о местах добычи ресурсов, о которых игры других командиров
+сообщают в EDDN — общедоступную сеть данных Elite Dangerous, поэтому знает и системы, где вы никогда не были.</li>
+</ul>
+<p>Набору нужны обе половины. Миссия против системы, где неизвестно ни одного места добычи ресурсов, сохраняется, но не
+предлагается, пока там не будет замечено такое место.</p>
+<p><strong>Начните со своей истории.</strong> В ваших старых журналах — годы таких данных. Используйте <strong>Импорт старых журналов</strong> на
+<a href="UI-Commander-Tab.html">вкладке «Командир»</a> или скажите <code>просканируй журналы на охотничьи угодья</code>.</p>
+<h2>Как попросить набор</h2>
+<table>
+<thead>
+<tr>
+<th>Скажите</th>
+<th>Что произойдёт</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>найди пиратские миссии на уничтожение в радиусе 50 световых лет</code></td>
+<td>«Вега» называет лучший набор в радиусе: систему-заказчика и сколько фракций там выдают миссии, пиратскую фракцию и целевую систему, её места добычи ресурсов и какие станции посетить. Сначала более глубокие стеки, затем более близкие. Без радиуса поиск идёт на 100 световых лет.</td>
+</tr>
+<tr>
+<td><code>навигация к пиратскому провайдеру миссий</code></td>
+<td>Прокладывает маршрут к заказчику: сначала к заказчику миссий, которые у вас уже есть, затем к заказчику угодья, в котором вы находитесь, затем к лучшему набору поблизости. Напоминание называет целевую систему.</td>
+</tr>
+<tr>
+<td><code>навигация к цели пиратской миссии</code></td>
+<td>Прокладывает маршрут к охотничьему угодью ваших миссий.</td>
+</tr>
+<tr>
+<td><code>найди рес-зону</code></td>
+<td>Ближайшее место добычи ресурсов, где стоит охотиться ради одних наград, без миссий.</td>
+</tr>
+<tr>
+<td><code>забудь эту рес-зону</code></td>
+<td>Говорится в угодье, которое вам не нравится (слишком легко, слишком трудно, слишком далеко от звезды, не та держава). «Вега» сначала спрашивает, а затем больше никогда его не предлагает, как и любой набор, ведущий туда.</td>
+</tr>
+</tbody></table>
+<h2>Обмен наборами с другими командирами</h2>
+<p>Обмен выключен, пока вы не включите его на странице <strong>Наборы миссий</strong> <a href="UI-Commander-Tab.html">вкладки «Командир»</a>.</p>
+<p>Он работает в обе стороны: <strong>пока вы делитесь, вы получаете и наборы, которыми поделились другие командиры.</strong> Чем больше
+командиров делится, тем больше наборов у всех.</p>
+<p><strong>Что передаётся:</strong> для каждого набора — названия звёздных систем, фракций и станций, число мест добычи ресурсов каждого
+класса в целевой системе и день, когда набор видели в последний раз. Учитывается каждый командир на вашем компьютере,
+включая импортированных.</p>
+<p><strong>Что никогда не передаётся:</strong> ваше имя командира, ваши миссии, награды и всё остальное, что говорит, кто вы. См.
+<a href="Privacy.html">Политику конфиденциальности</a>.</p>
+<p>Что происходит с наборами:</p>
+<ol>
+<li>Ваши наборы отправляются, когда вы включаете обмен, а затем не чаще раза в день, когда вы узнали новые.</li>
+<li>Каждую ночь наборы всех командиров проверяются по данным о галактике. Системы должны существовать, цель должна быть
+не дальше 20 световых лет от заказчика, а пиратская фракция должна действительно находиться в целевой системе и
+быть анархией. Не прошедшие проверку наборы отбрасываются. Остальные публикуются без указания, кто их прислал.</li>
+<li>Раз в день EliteIntel загружает опубликованные наборы. Когда вы просите набор, они предлагаются наравне с вашими.</li>
+</ol>
+<p><strong>Чужой набор предлагается, только если ваши собственные данные показывают место добычи ресурсов в его цели</strong> — по
+вашим посещениям или из EDDN. Это единственное, чего не могут проверить данные о галактике. Если чужой набор не
+появляется, слетайте в его целевую систему или подождите, пока о ней сообщит EDDN.</p>
+<p><strong>«Вега» говорит, когда набор получен от других командиров.</strong> Считайте его наводкой для проверки, а не тем, что вы
+облетали сами. Если он вам не подходит, <code>забудь эту рес-зону</code> работает так же, как для ваших наборов.</p>
+<p><strong>Ваши собственные данные важнее.</strong> Если вы сами знаете набор, используется ваша версия, а из наборов одинаковой
+глубины ваши предлагаются раньше чужих.</p>
+<p>Если вы не делитесь и EliteIntel не знает набора поблизости, «Вега» сообщает, когда другие командиры прислали наборы в
+этом районе.</p>
+<p>Выключение обмена удаляет ваши наборы из общих данных, и EliteIntel перестаёт использовать чужие.</p>
+<hr>
+<p>Сообщество 👉<a href="https://app.element.io/#/room/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

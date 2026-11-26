@@ -1,7 +1,7 @@
 # Choisir votre LLM
 
 Elite Intel a besoin d'un modèle de langage (LLM) pour comprendre vos commandes et répondre à vos
-questions. Il y a deux façons d'en obtenir un, et les deux se configurent dans **Paramètres →
+questions. Il y a deux façons d'en obtenir un, et les deux se configurent dans **Services →
 Services IA → Modèle de langage (LLM)** :
 
 | Option | Ce qu'il vous faut | Coût |
@@ -23,29 +23,65 @@ La partie gauche du panneau, **LMStudio** :
 | **Modèle** | `google/gemma-4-e4b` |
 
 LM Studio est le seul serveur d'inférence local pris en charge par Elite Intel, et
-`google/gemma-4-e4b` le seul modèle local pris en charge.
+`google/gemma-4-e4b` le seul modèle local pris en charge. Il y a deux façons de le faire tourner.
 
-### Exigences GPU
-Le matériel nécessaire pour faire tourner le jeu et le LLM sur la même machine :
+### Sur votre PC de jeu : Elite Intel s'en charge
 
-- RTX 3090 24 Go VRAM
-- AMD RX 7800 XT
+Si votre PC peut faire tourner le jeu et le modèle ensemble, un bouton apparaît sous les champs de
+**LMStudio**. Appuyez sur **Installer LM Studio**, et Elite Intel :
 
-La VRAM compte plus que la vitesse du GPU. Une carte avec seulement 12 Go de VRAM ne suffit pas,
-aussi récente soit-elle. Si vous avez un second PC équipé d'un GPU puissant, faites-y tourner LM
-Studio et pointez Elite Intel dessus. Le PC de jeu n'a alors aucun travail d'inférence à faire.
+1. installe LM Studio, sur le disque de votre choix,
+2. télécharge `google/gemma-4-e4b` (environ 6 Go),
+3. le charge sur votre carte graphique et vérifie qu'il y est bien,
+4. le teste, et remplit **Adresse** et **Modèle** pour vous.
+
+Chaque étape s'affiche pendant qu'elle se déroule, avec une barre de progression pour le téléchargement. Si une
+étape échoue, la fenêtre dit laquelle et pourquoi, et appuyer à nouveau sur le bouton reprend à partir de là.
+Prévoyez environ 10 Go d'espace disque. LM Studio est un logiciel gratuit d'Element Labs, qui ne fait pas
+partie d'Elite Intel.
+
+Ensuite, Elite Intel démarre LM Studio quand vous démarrez ses services et l'arrête quand vous les arrêtez ou
+fermez l'application : le modèle n'occupe la mémoire de votre carte graphique que pendant qu'Elite Intel tourne.
+Pour le retirer, appuyez sur **Désinstaller LM Studio** : il liste ce qui sera supprimé avant de supprimer quoi
+que ce soit.
+
+**Le bouton n'apparaît que si vos cartes graphiques peuvent tenir le jeu et le modèle ensemble.** Le jeu prend
+8,5 Go de mémoire vidéo ou plus et le modèle environ 6 Go, et le navigateur, OBS et Windows en utilisent aussi,
+donc une carte plus petite ne tient pas les deux de façon fiable. Le bouton apparaît avec :
+
+- **Une carte NVIDIA de 24 Go**, série RTX 30 ou plus récente : une RTX 3090 ou mieux.
+- **Deux cartes NVIDIA ou plus totalisant environ 20 Go**, chacune de la série RTX 30 ou plus récente avec au
+  moins 8 Go — par exemple une RTX 5070 de 12 Go avec une RTX 3070 Ti de 8 Go.
+- **Des cartes AMD avec la même mémoire, en bêta.** La fenêtre d'installation vous prévient qu'AMD est en
+  bêta. Si cela ne fonctionne pas chez vous, le [guide AMD](AMD-RX-7800XT-LLM-Setup) le configure à la main.
+
+Les cartes NVIDIA et AMD ne sont jamais additionnées.
+
+Vous avez déjà LM Studio ? Le bouton affiche alors **Configurer LM Studio**. Il ajoute le modèle et remplit les
+champs, et laisse sinon votre LM Studio exactement tel quel : Elite Intel ne démarre, n'arrête ni ne retire
+jamais un LM Studio que vous avez installé vous-même.
+
+### Sur un second PC : à configurer vous-même
+
+Si votre PC de jeu ne peut pas tenir le jeu et le modèle ensemble, faites tourner LM Studio sur un autre PC de
+votre réseau qui ne fait rien d'autre, et mettez son adresse dans **Adresse**. Le PC de jeu n'a alors aucun
+travail d'inférence à faire.
+
+Le PC du LLM a besoin de :
+
+- **12 Go de mémoire vidéo**, ce qui laisse de la marge pour le modèle,
+- **une puissance de calcul de classe RTX 3080 ou mieux.** Une carte plus lente peut charger le modèle, mais
+  répond trop lentement pour être utile.
 
 Un tableau de référence des GPU réalisé par **Kevin Rank** est disponible ici :
 [Guide de référence GPU](https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing)
 
-### Guides d'installation
-
 | Guide | |
 |-------|---|
-| [LM Studio - Linux](Install-LM-Studio-Linux) | Installation de bureau, et comment le faire tourner en serveur |
-| [LM Studio - Windows](Install-LM-Studio-Windows) | Application de bureau avec interface graphique |
-| [LLM sur la série AMD RX](AMD-RX-7800XT-LLM-Setup) | Configuration propre à AMD |
+| [LM Studio - Linux](Install-LM-Studio-Linux) | Installation en ligne de commande, et exécution en service dès le démarrage |
+| [LM Studio - Windows](Install-LM-Studio-Windows) | Installation en ligne de commande, et démarrage à l'ouverture de session |
 | [LM Studio sur Ubuntu Server](LM-Studio-Ubuntu-Server) | Installation headless sur une machine d'inférence dédiée |
+| [LLM sur la série AMD RX](AMD-RX-7800XT-LLM-Setup) | Configuration propre à AMD |
 
 ### Pourquoi `google/gemma-4-e4b` précisément ?
 
@@ -99,11 +135,13 @@ Comment obtenir une clé chez chaque fournisseur : [Configurer un LLM cloud](clo
 ## Lequel choisir ?
 
 **Faites tourner LM Studio en local si :**
-- vous avez une RTX 3090 24 Go ou équivalent, ou un second PC sur votre réseau qui en a une
+- votre PC de jeu a 24 Go de mémoire vidéo sur une carte (une RTX 3090 ou mieux), ou environ 20 Go sur deux
+  ou plus : Elite Intel le configure pour vous
+- ou vous avez un second PC sur votre réseau avec 12 Go de mémoire vidéo et une puissance de classe RTX 3080
 - vous voulez que tout reste sur votre propre matériel
 
 **Utilisez un fournisseur cloud si :**
-- votre GPU n'a pas assez de VRAM pour faire tourner un modèle à côté du jeu
+- votre GPU ne peut pas faire tourner le modèle à côté du jeu, et vous n'avez pas de second PC pour cela
 - vous préférez ne pas gérer de serveur d'inférence du tout
 
 Vous hésitez ? Vous pouvez commencer par l'une ou l'autre option et en changer à tout moment sans réinstaller.

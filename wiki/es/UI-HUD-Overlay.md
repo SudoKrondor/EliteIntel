@@ -19,6 +19,11 @@ misma caída cruza más de ellas.
 Actívalo con **MOSTRAR OVERLAY** en la [pestaña Vega](UI-Vega-Tab) y configúralo con **AJUSTES DE
 OVERLAY** al lado. La app recuerda si lo dejaste activado y lo restaura en el siguiente arranque.
 
+**También puedes hacerlo por voz.** Di *«muestra el overlay»* o *«cierra el overlay»*, y mueve la tarjeta en tu
+monitor con *«mueve el overlay arriba a la derecha»*, o por brújula: *«mueve el overlay al noreste»*. La pantalla
+se divide en ocho secciones alrededor del centro, y la tarjeta crece alejándose del borde. Si ajustas su sitio
+dentro de una sección, se recuerda para la próxima vez.
+
 > Si falta el binario del overlay en la distribución, el interruptor lo indica en el registro de
 > diagnósticos. No finge un overlay que no existe.
 
@@ -42,6 +47,7 @@ El trabajo que aceptaste siempre gana al que la app propone, en este orden:
 | 2 | **SITIO DE OBRA** | Transportas para una construcción de colonización — progreso, lo pendiente y qué cargar en el próximo viaje |
 | 2 | **MERCANCIA HALLADA** / **LISTA DE COMPRA** / **VENDER CARGA** | Una búsqueda de mercancía encontró un mercado y hay una ruta trazada hasta él — qué comprar (o vender), existencias y precio |
 | 3 | **MINERÍA** | Tienes objetivos de minería, una refinería instalada y no estás en supercrucero — bodega, drones, objetivos |
+| 3 | **NUEVO DESCUBRIMIENTO** | Estás en un sistema con algo que nadie había descubierto antes que tú — progreso del FSS, y después el valor estimado de venta de sus datos y muestras |
 | 3 | **EXOBIOLOGÍA** | Quedan géneros por muestrear en este sistema — solo mientras *Anunciar descubrimientos* está activado |
 | 3 | **CAZA RECOMPENSAS** | Estás en un sitio de extracción de recursos — tipo de sitio, recompensas en la bodega, bajas |
 | 3 | **ZONA DE CONFLICTO** | Estás en una zona de conflicto — intensidad, tu bando, bonos de combate en mano |
@@ -49,12 +55,22 @@ El trabajo que aceptaste siempre gana al que la app propone, en este orden:
 
 La tarjeta de **ruta trazada** toma un título más concreto cuando Vega calculó el destino por ti y
 la ruta sigue yendo allí: **COMERCIANTE DE MATERIALES**, **CORREDOR TECNOLÓGICO**, **FACTORES
-INTERESTELARES**, **VISTA GENOMICS**, **REPOSTAJE** o **EQUIPAMIENTO**, con la estación y el tipo
+INTERESTELARES**, **VISTA GENOMICS**, **REPOSTAJE**, **EQUIPAMIENTO** o **ASTILLERO**, con la estación y el tipo
 añadidos. Trazar a otro sitio borra ese detalle, así que un encargo viejo nunca puede adueñarse de
 la tarjeta.
 
 La tarjeta de **misión** destaca la misión cuyo destino es el final de tu ruta trazada; si no, la
 que caduca antes.
+
+En la tarjeta de **ruta trazada**, la pista de próximas estrellas usa colores: verde donde puedes recoger
+combustible, rojo donde no, **azul para una estrella de neutrones** y **blanco para una enana blanca**, porque
+ambas son un impulso de chorro y no un callejón sin salida.
+
+### Tarjetas que pides
+
+Di *«muestra los marcadores»* y la tarjeta **MARCADORES** se coloca sobre la tarjeta clasificada hasta que
+termines, con tus [marcadores](UI-Commander-Tab) página a página. Se cierra al decir *«cierra los marcadores»*, o
+sola tras un rato sin usarla, y vuelve la tarjeta clasificada.
 
 ### La conversación
 

@@ -1,6 +1,6 @@
 # Reiter Aktionen
 
-<img src="images/keys-binding.png" class="inline" height="20" alt="Aktionen"> Alles, was Elite
+<img src="images/actions.png" class="inline" height="20" alt="Aktionen"> Alles, was Elite
 Intel tun kann, und alles, was du ihm beigebracht hast. Zwei Unterreiter: **Integrierte Befehle**
 und **Eigene Befehle**.
 
@@ -61,8 +61,6 @@ anlegst, erscheint.
 
 Knöpfe:
 
-- **Ausführen** — führt ihn sofort aus der App aus, ohne zu sprechen. Braucht der Befehl
-  Parameter, erscheint zuerst ein kleines Formular.
 - **Korrektur vorschlagen** — öffnet ein vorausgefülltes GitHub-Issue mit Befehls-ID, deiner
   Sprache, den aktuellen Phrasen und deinen Vorschlägen. So werden die nicht-englischen
   Phrasen besser — bitte nutze es.
@@ -84,7 +82,7 @@ statt nach exakter Phrase.
 
 Die Tabelle zeigt für jeden Befehl **Name** und **Trainingsphrasen**, darüber ein Suchfeld.
 **Klicke auf eine Zeile**, um die Details zu öffnen: Sie zeigen die Schritt-**Sequenz** und bieten
-**Ausführen**, **Bearbeiten**, **Duplizieren** und **Löschen**.
+**Bearbeiten**, **Duplizieren** und **Löschen**.
 
 Oben:
 
@@ -171,9 +169,9 @@ Tipps:
 - **Phrasen können auch durch Kommas** getrennt werden, nicht nur durch neue Zeilen.
 - **Verzögerungen hängen von deinem PC ab.** Ist die Karte noch nicht bereit, wenn der nächste
   Schritt kommt, erhöhe die Verzögerungen — oder schiebe **Tempo der Tastatureingabe** im
-  [Reiter Bindings](UI-Bindings-Tab) Richtung Langsam.
+  [Reiter BindForge](UI-Bindings-Tab) Richtung Langsam.
 - **Jeder Binding-Schritt braucht eine Tastaturbelegung** im Spiel. Ist eine Steuerung
-  unbelegt, zeigt der [Reiter Bindings](UI-Bindings-Tab) sie unter *Fehlende Belegungen*.
+  unbelegt, zeigt der [Reiter BindForge](UI-Bindings-Tab) sie als *Vega braucht eine Taste*.
 - Vega öffnet und liest die Galaxiekarte für ihre eigenen Routenbefehle genauso, daher ist ein
   Befehl, der von einer **frisch geöffneten** Karte ausgeht, das zuverlässige Muster — starte
   nicht von einer bereits offenen Karte.

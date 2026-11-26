@@ -207,10 +207,23 @@ un lieu fréquent — une [commande perso qui trace la route pour vous](UI-Actio
   faire le réglage *Tracer le prochain saut neutronique* de l'[onglet Commandant](UI-Commander-Tab)).
 - *« Efface la route des étoiles à neutrons »*
 
+### Signets
+
+- *« Enregistre cet endroit »* : enregistre l'endroit où vous êtes.
+- *« Affiche les signets »* : la liste numérotée sur l'[overlay HUD](UI-HUD-Overlay). *« Page suivante »* /
+  *« page précédente »* · *« ferme les signets »*
+- *« Navigue vers le signet 3 »* · *« supprime le signet 3 »*
+
+Voir [onglet Commandant → Signets](UI-Commander-Tab).
+
 ### Trouver des lieux
 
 Chaque commande *trouve* trace une route vers ce qu'elle trouve et l'affiche sur
 l'[overlay HUD](UI-HUD-Overlay).
+
+- *« Trouve un chantier naval »* / *« trouve un chantier naval qui vend un Python »*
+- *« Trouve une zone de conflit powerplay »* : des systèmes avec des zones de conflit pour la puissance à laquelle
+  vous avez prêté allégeance.
 
 - *« Trouve un marchand de matériaux bruts / de données codées / de matériaux manufacturés »*
 - *« Trouve un courtier de technologies humaines / gardiennes »*
@@ -218,7 +231,9 @@ l'[overlay HUD](UI-HUD-Overlay).
 - *« Trouve l'Interstellar Factor le plus proche »* / *« où payer mes amendes »*
 - *« Trouve une station de ravitaillement »*
 - *« Trouve le porte-vaisseau le plus proche »*
-- *« Trouve des brain trees dans un rayon de 500 années-lumière »*
+- *« Où trouver du tellure ? »* / *« où farmer du fer dans un rayon de 50 années-lumière ? »* — le
+  céphalobore le plus proche ou, à défaut, la meilleure planète ou lune pour une matière première
+- *« Trouve des céphalobores avec du sélénium »* — céphalobores uniquement
 - *« Où miner de la painite »* / *« trouve un site de minage »*
 - *« Exclure ce système des recherches »* (ou *« le système de destination »*) — quand une recherche
   vous renvoie sans cesse vers un endroit qui ne fonctionne pas. *« Débannis ce système »*, dit
@@ -237,7 +252,7 @@ l'[overlay HUD](UI-HUD-Overlay).
 - *« Navigue vers le prochain arrêt commercial »*
 - *« Annule la route commerciale »*
 - *« Quels sont les marchés locaux »* · *« Détails de la station »* / *« quels services propose
-  cette station »* · *« Modules en vente »* · *« Quels vaisseaux sont à vendre »*
+  cette station »* · *« Modules en vente »*
 - *« Que contient la soute ? »*
 
 ### Profil commercial
