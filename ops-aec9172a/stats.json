@@ -2,17 +2,17 @@
   "format": 1,
   "latest": {
     "date": "2026-11-26",
-    "installs": 74,
-    "active1": 47,
-    "active7": 63,
-    "active30": 74,
+    "installs": 115,
+    "active1": 87,
+    "active7": 104,
+    "active30": 115,
     "gone": 0,
     "os": {
-      "linux": 11,
-      "windows": 63
+      "linux": 13,
+      "windows": 102
     },
     "versions": {
-      "v-1.2.0000": 42,
+      "v-1.2.0000": 83,
       "v-1.2.0000-RC": 14,
       "v-1.2.0000-dev": 18
     }
@@ -203,17 +203,17 @@
     },
     {
       "date": "2026-11-26",
-      "installs": 74,
-      "active1": 47,
-      "active7": 63,
-      "active30": 74,
+      "installs": 115,
+      "active1": 87,
+      "active7": 104,
+      "active30": 115,
       "gone": 0,
       "os": {
-        "linux": 11,
-        "windows": 63
+        "linux": 13,
+        "windows": 102
       },
       "versions": {
-        "v-1.2.0000": 42,
+        "v-1.2.0000": 83,
         "v-1.2.0000-RC": 14,
         "v-1.2.0000-dev": 18
       }
