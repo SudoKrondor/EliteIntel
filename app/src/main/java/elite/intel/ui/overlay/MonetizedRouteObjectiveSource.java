@@ -1,5 +1,6 @@
 package elite.intel.ui.overlay;
 
+import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.managers.MonetizeRouteManager;
 
@@ -43,7 +44,8 @@ public class MonetizedRouteObjectiveSource implements HudObjectiveSource {
         if (commodity == null) return Optional.empty();
 
         List<HudRow> rows = new ArrayList<>();
-        rows.add(HudRow.of(HudText.get("overlay.card.row.commodity"), commodity.toUpperCase()));
+        rows.add(HudRow.of(HudText.get("overlay.card.row.commodity"),
+                FuzzySearch.localizedCommodityName(commodity).toUpperCase()));
 
         location(tx.getSourceStarSystem(), tx.getSourceStationName())
                 .ifPresent(where -> rows.add(HudRow.of(HudText.get("overlay.card.row.buy"), where)));

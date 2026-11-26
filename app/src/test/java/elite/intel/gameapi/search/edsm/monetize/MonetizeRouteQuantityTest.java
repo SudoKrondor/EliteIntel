@@ -1,5 +1,6 @@
 package elite.intel.gameapi.search.edsm.monetize;
 
+import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.search.edsm.dto.data.Commodity;
 import elite.intel.gameapi.search.edsm.dto.data.Station;
 import org.junit.jupiter.api.DisplayName;
@@ -94,5 +95,12 @@ class MonetizeRouteQuantityTest {
         assertEquals("Bauxite", trade.getSource().getCommodity());
         assertEquals(80, trade.getSource().getSupply());
         assertEquals(80, trade.getDestination().getDemand());
+    }
+
+    @Test
+    @DisplayName("no plotted route is no trade, not a crash")
+    void anEmptyRouteFindsNoTrade() {
+        assertNull(MonetizeRoute.findTrade(List.of()));
+        assertNull(MonetizeRoute.findTrade((List<NavRouteDto>) null));
     }
 }

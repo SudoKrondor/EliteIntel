@@ -4,9 +4,11 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
 import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
 import elite.intel.ai.brain.vega.VegaRuntime;
+import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
+import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.search.edsm.monetize.MonetizeRoute;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
@@ -45,6 +47,9 @@ public final class MonetizeRouteCommand implements IntelCommand {
         if (shipManager.getShip() == null || shipManager.getShip().getCargoCapacity() < 1) {
             return StringUtls.localizedResponse("handler.tradeRoute.shipNoCapacity");
         }
+        if (ShipRouteManager.getInstance().getOrderedRoute().isEmpty()) {
+            return StringUtls.localizedResponse("handler.tradeRoute.noRoutePlotted");
+        }
         VegaRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.searchingMarkets"), false);
 
         MonetizeRoute.TradeTransaction tradeTuple = monetizeRouteManager.monetizeRoute();
@@ -52,17 +57,19 @@ public final class MonetizeRouteCommand implements IntelCommand {
         if (tradeTuple == null) {
             return StringUtls.localizedResponse("handler.tradeRoute.noTradeFound");
         } else {
+            // WHY: EDSM names goods in English only. The commander needs the word their market board shows.
+            String commodity = FuzzySearch.localizedCommodityName(tradeTuple.getSource().getCommodity());
             String reminder = StringUtls.localizedResponse("handler.tradeRoute.tradeReminder",
                     tradeTuple.getSource().getStarSystem(),
                     tradeTuple.getSource().getStationName(),
-                    tradeTuple.getSource().getCommodity(),
+                    commodity,
                     tradeTuple.getDestination().getStarSystem(),
                     tradeTuple.getDestination().getStationName());
 
             // The reminder is for arrival at the source system, so it starts at the port, not the system.
             reminderManager.setReminder(StringUtls.localizedResponse("handler.tradeRoute.reminder",
                             tradeTuple.getSource().getStationName(),
-                            tradeTuple.getSource().getCommodity(),
+                            commodity,
                             tradeTuple.getDestination().getStarSystem(),
                             tradeTuple.getDestination().getStationName()),
                     tradeTuple.getSource().getStarSystem());

@@ -24,7 +24,11 @@ public class MonetizeRoute {
      */
     private static final double MIN_CARGO_FILL_RATIO = 0.80;
 
+    /**
+     * The best trade along {@code stops}, or null when there is none - including when no route is plotted.
+     */
     public static TradeTransaction findTrade(List<NavRouteDto> stops) {
+        if (stops == null || stops.isEmpty()) return null;
 
         TradeProfileManager tradeProfileManager = TradeProfileManager.getInstance();
         TradeRouteSearchCriteria criteria = tradeProfileManager.getCriteria(false);

@@ -92,6 +92,13 @@ class CommodityCatalogueTest {
     }
 
     @Test
+    void anEdsmEnglishNameIsSpokenInTheWordARussianMarketShows() {
+        // EDSM names goods in English only; monetize_route must not read that word to a Russian commander.
+        withLanguage(Language.RU, () ->
+                assertEquals("Средство очистки почвы", FuzzySearch.localizedCommodityName("Agronomic Treatment")));
+    }
+
+    @Test
     void aSightingNeverOverwritesACuratedNameOrDuplicatesASeededRow() {
         gameClient("French/FR");
         CommodityCatalogue.getInstance().learn("$gold_name;", "Or fin");

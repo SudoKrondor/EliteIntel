@@ -3,6 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.VegaRuntime;
 import elite.intel.ai.mouth.EventNarrator;
+import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
@@ -100,12 +101,12 @@ public class JumpCompletedSubscriber {
                 }
                 if (isSellerSystem && station != null) {
                     VegaRuntime.narrator().narrate(
-                            "Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(),
+                            "Head to " + station.getSourceStationName() + " buy " + FuzzySearch.localizedCommodityName(station.getSourceCommodity()),
                             "Remind the commander of their active trade route: state the station name and the commodity to buy.");
                 }
                 if (isBuyerSystem && station != null) {
                     VegaRuntime.narrator().narrate(
-                            "Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(),
+                            "Head to " + station.getDestinationStationName() + " sell " + FuzzySearch.localizedCommodityName(station.getDestinationCommodity()),
                             "Remind the commander of their active trade route: state the station name and the commodity to sell.");
                 }
             }
