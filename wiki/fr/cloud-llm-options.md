@@ -22,6 +22,25 @@ choisissez pas de modèle : Elite Intel le sélectionne pour votre fournisseur :
 
 Le coût dépend du service cloud choisi et de votre temps de jeu.
 
+### Notre choix : Claude
+
+Elite Intel fonctionne avec tous les fournisseurs ci-dessus, mais c'est avec Claude qu'il fonctionne
+le mieux. Si vous choisissez un fournisseur cloud, choisissez Claude. Et il ne vous ruinera pas :
+Elite Intel utilise `claude-haiku-5-5`, qui coûte 0,10 $ par million de tokens en entrée et 0,50 $
+par million de tokens en sortie.
+
+| Session d'une heure | Tokens utilisés | Coût approximatif |
+|---------------------|-----------------|-------------------|
+| Jeu léger | environ 50 000 | environ 0,006 $ |
+| Jeu intensif | environ 150 000 | environ 0,03 $ |
+
+100 heures de jeu reviennent donc à environ **0,60 $ à 2,70 $**. Même si chaque token était facturé
+au prix de sortie, plus élevé, ce qui n'arrive jamais, une heure coûterait moins de 0,08 $.
+
+Ces chiffres supposent que la plupart des tokens sont ce qu'Elite Intel envoie (l'état du jeu et
+vos demandes) plutôt que ce que Claude répond. Si vous parlez beaucoup à Vega et obtenez de longues
+réponses, comptez plutôt sur le haut de la fourchette.
+
 ### Option A : clé API xAI
 1. Allez sur la [xAI Console](https://console.x.ai/).
 2. Inscrivez-vous ou connectez-vous.
