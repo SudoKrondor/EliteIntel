@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ThemeLibraryTest {
 
     private static final List<String> BUILT_INS =
-            List.of("Default", "High contrast", "Clockwork Orange", "Coffee", "Hackers Green", "Purple Rain");
+            List.of("Default", "High contrast", "Clockwork Orange", "Coffee", "Hackers Green", "Purple Rain", "FrameShift");
 
     @TempDir
     Path folder;

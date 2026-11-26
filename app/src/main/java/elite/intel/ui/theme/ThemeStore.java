@@ -29,6 +29,8 @@ public final class ThemeStore {
     public static final String HACKERS_GREEN = BUILT_IN_PREFIX + "hackers-green";
     public static final String COFFEE = BUILT_IN_PREFIX + "coffee";
     public static final String PURPLE_RAIN = BUILT_IN_PREFIX + "purple-rain";
+    /** The built-in theme in FrameShift Command's colours: navy, with orange frames and cyan information. */
+    public static final String FRAMESHIFT = BUILT_IN_PREFIX + "frameshift";
     private static final String BUILT_IN_FOLDER = "/themes/";
     private static final String FILE_SUFFIX = ".json";
 

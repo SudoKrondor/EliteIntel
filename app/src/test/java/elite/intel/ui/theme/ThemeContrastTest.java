@@ -44,6 +44,11 @@ class ThemeContrastTest {
     }
 
     @Test
+    void frameShiftHasNothingHardToRead() throws IOException, ThemeFileException {
+        assertEquals(List.of(), ThemeContrast.check(new ThemeStore(folder).load(ThemeStore.FRAMESHIFT)));
+    }
+
+    @Test
     void greyOnGreyIsReportedWithItsRatio() {
         ColorTheme murky = new ColorTheme("Murky", "", Map.of(
                 ThemeRole.APPLICATION_BACKGROUND, new Color(0x505050),

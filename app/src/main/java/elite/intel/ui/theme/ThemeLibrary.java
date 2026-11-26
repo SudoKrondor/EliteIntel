@@ -53,6 +53,7 @@ public final class ThemeLibrary {
         builtIn(ThemeStore.COFFEE).ifPresent(entries::add);
         builtIn(ThemeStore.HACKERS_GREEN).ifPresent(entries::add);
         builtIn(ThemeStore.PURPLE_RAIN).ifPresent(entries::add);
+        builtIn(ThemeStore.FRAMESHIFT).ifPresent(entries::add);
         List<Entry> own = new ArrayList<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(folder, "*" + FILE_SUFFIX)) {
             for (Path file : files) readEntry(file).ifPresent(own::add);
