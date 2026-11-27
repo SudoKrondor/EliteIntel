@@ -118,7 +118,7 @@ public class IntegrationSocket implements Runnable, ManagedService {
                 @Override
                 public void onClose(WebSocket conn, int code, String reason, boolean remote) {
                     FrameShiftLink.Peer peer = peers.remove(conn);
-                    if (peer != null) frameShift.onClose(peer);
+                    if (peer != null) frameShift.onClose(peer, remote);
                     log.info("Integration client disconnected: {}", conn.getRemoteSocketAddress());
                 }
 

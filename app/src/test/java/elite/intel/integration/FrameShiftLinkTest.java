@@ -2,8 +2,10 @@ package elite.intel.integration;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.integration.FrameShiftLink.Destination;
 import elite.intel.integration.FrameShiftLink.OpenResult;
 import elite.intel.integration.FrameShiftLink.Page;
+import elite.intel.integration.FrameShiftLink.Tab;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -67,7 +69,7 @@ class FrameShiftLinkTest {
     void disconnectForgetsTheRegistration() {
         FakePeer peer = new FakePeer();
         link.onMessage(peer, REGISTER);
-        link.onClose(peer);
+        link.onClose(peer, true);
 
         assertFalse(link.isConnected());
         assertTrue(link.pages().isEmpty());
@@ -77,7 +79,7 @@ class FrameShiftLinkTest {
     void anotherConnectionClosingLeavesTheRegistration() {
         FakePeer frameShift = new FakePeer();
         link.onMessage(frameShift, REGISTER);
-        link.onClose(new FakePeer());
+        link.onClose(new FakePeer(), true);
 
         assertTrue(link.isConnected());
     }
@@ -141,6 +143,89 @@ class FrameShiftLinkTest {
         assertEquals(FrameShiftLink.MAX_PAGES, link.pages().size());
     }
 
+    private static final String REGISTER_TABS = """
+            {"version":1,"type":"integration.register","client":"frameshift-command","pages":[
+             {"id":"materials","label":"Materials","tabs":[
+               {"id":"raw","label":"Raw"},{"id":"manufactured","label":"Manufactured"}]},
+             {"id":"dashboard","label":"Dashboard"}]}""";
+
+    @Test
+    void tabsAreRegisteredAndEachIsADestination() {
+        link.onMessage(new FakePeer(), REGISTER_TABS);
+
+        assertEquals(List.of(new Tab("raw", "Raw"), new Tab("manufactured", "Manufactured")),
+                link.pages().getFirst().tabs());
+        assertEquals(List.of("materials", "materials/raw", "materials/manufactured", "dashboard"),
+                link.destinations().stream().map(Destination::id).toList());
+        assertEquals("Materials, Manufactured", link.destinations().get(2).label());
+    }
+
+    @Test
+    void tabsWithBadIdsAreDroppedAndTheTabListIsCapped() {
+        StringBuilder tabs = new StringBuilder("{\"id\":\"bad/id\"},{\"id\":\"t0\"}");
+        for (int i = 0; i < 20; i++) tabs.append(",{\"id\":\"t").append(i).append("\",\"label\":\"T\"}");
+        link.onMessage(new FakePeer(), """
+                {"version":1,"type":"integration.register","client":"frameshift-command",
+                 "pages":[{"id":"p","label":"P","tabs":[%s]}]}""".formatted(tabs));
+
+        List<Tab> registered = link.pages().getFirst().tabs();
+        assertEquals(FrameShiftLink.MAX_TABS_PER_PAGE, registered.size());
+        assertEquals(new Tab("t0", "t0"), registered.getFirst(), "a tab with no label is named by its id");
+        assertEquals(1, registered.stream().filter(t -> t.id().equals("t0")).count());
+    }
+
+    @Test
+    void pagesAndTabsTogetherAreCapped() {
+        StringBuilder pages = new StringBuilder();
+        for (int i = 0; i < 30; i++) {
+            if (i > 0) pages.append(',');
+            pages.append("{\"id\":\"p").append(i).append("\",\"tabs\":[{\"id\":\"a\"},{\"id\":\"b\"},{\"id\":\"c\"}]}");
+        }
+        link.onMessage(new FakePeer(), """
+                {"version":1,"type":"integration.register","client":"frameshift-command","pages":[%s]}""".formatted(pages));
+
+        assertEquals(FrameShiftLink.MAX_DESTINATIONS, link.destinations().size());
+    }
+
+    @Test
+    void aTabCallSendsThePageAndTheTabApart() throws Exception {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, REGISTER_TABS);
+
+        CompletableFuture<OpenResult> call = CompletableFuture.supplyAsync(() -> link.openPage("materials/manufactured"));
+        JsonObject toolCall = peer.awaitToolCall();
+        JsonObject arguments = toolCall.getAsJsonObject("arguments");
+        assertEquals("materials", arguments.get("page").getAsString());
+        assertEquals("manufactured", arguments.get("tab").getAsString());
+
+        link.onMessage(peer, """
+                {"version":1,"type":"tool_result","id":"%s","source":"frameshift-command","ok":true}"""
+                .formatted(toolCall.get("id").getAsString()));
+
+        OpenResult.Opened opened = assertInstanceOf(OpenResult.Opened.class, call.get(2, TimeUnit.SECONDS));
+        assertEquals("Materials, Manufactured", opened.destination().label());
+    }
+
+    @Test
+    void aPageCallSendsNoTab() throws Exception {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, REGISTER_TABS);
+
+        CompletableFuture.supplyAsync(() -> link.openPage("materials"));
+        assertFalse(peer.awaitToolCall().getAsJsonObject("arguments").has("tab"));
+    }
+
+    @Test
+    void aTabThePageDoesNotHaveIsUnknown() {
+        FakePeer peer = new FakePeer();
+        link.onMessage(peer, REGISTER_TABS);
+        int before = peer.sent.size();
+
+        assertInstanceOf(OpenResult.UnknownPage.class, link.openPage("dashboard/raw"));
+        assertInstanceOf(OpenResult.UnknownPage.class, link.openPage("materials/encoded"));
+        assertEquals(before, peer.sent.size());
+    }
+
     @Test
     void openPageWithNobodyRegisteredIsOfflineAtOnce() {
         assertInstanceOf(OpenResult.Offline.class, link.openPage("materials"));
@@ -174,7 +259,7 @@ class FrameShiftLinkTest {
                  "data":{"page":"materials","label":"Materials"}}""".formatted(id));
 
         OpenResult result = call.get(2, TimeUnit.SECONDS);
-        assertEquals(new OpenResult.Opened(new Page("materials", "Materials")), result);
+        assertEquals(new OpenResult.Opened(new Destination(new Page("materials", "Materials"), null)), result);
     }
 
     @Test
@@ -190,7 +275,7 @@ class FrameShiftLinkTest {
 
         OpenResult.Refused refused = assertInstanceOf(OpenResult.Refused.class, call.get(2, TimeUnit.SECONDS));
         assertEquals("page_unavailable", refused.code());
-        assertEquals("dashboard", refused.page().id());
+        assertEquals("dashboard", refused.destination().id());
     }
 
     @Test
@@ -222,7 +307,7 @@ class FrameShiftLinkTest {
 
         CompletableFuture<OpenResult> call = CompletableFuture.supplyAsync(() -> link.openPage("materials"));
         peer.awaitToolCall();
-        link.onClose(peer);
+        link.onClose(peer, true);
 
         assertInstanceOf(OpenResult.Offline.class, call.get(1, TimeUnit.SECONDS));
     }
@@ -247,8 +332,38 @@ class FrameShiftLinkTest {
         link.onMessage(second, REGISTER.replace(",{\"id\":\"dashboard\",\"label\":\"Dashboard\"}", ""));
 
         assertEquals(1, link.pages().size());
-        link.onClose(first);
+        link.onClose(first, true);
         assertTrue(link.isConnected(), "the replaced connection closing must not drop the new one");
+    }
+
+    @Test
+    void connectingAndDroppingAreSaidOnceEach() {
+        List<Boolean> notices = new CopyOnWriteArrayList<>();
+        FrameShiftLink noticed = new FrameShiftLink(Duration.ofSeconds(5), spoken::add, () -> now, notices::add);
+        FakePeer first = new FakePeer();
+        FakePeer second = new FakePeer();
+
+        noticed.onMessage(first, REGISTER);
+        noticed.onMessage(first, REGISTER);
+        noticed.onMessage(second, REGISTER);
+        assertEquals(List.of(true), notices, "re-registering or replacing is not a new connection");
+
+        noticed.onClose(first, true);
+        assertEquals(List.of(true), notices, "the replaced connection closing is not a disconnect");
+        noticed.onClose(second, true);
+        assertEquals(List.of(true, false), notices);
+    }
+
+    @Test
+    void closingTheSocketOurselvesIsNotAnnounced() {
+        List<Boolean> notices = new CopyOnWriteArrayList<>();
+        FrameShiftLink noticed = new FrameShiftLink(Duration.ofSeconds(5), spoken::add, () -> now, notices::add);
+        FakePeer peer = new FakePeer();
+        noticed.onMessage(peer, REGISTER);
+        noticed.onClose(peer, false);
+
+        assertFalse(noticed.isConnected());
+        assertEquals(List.of(true), notices);
     }
 
     private static String announce(String id, String text) {

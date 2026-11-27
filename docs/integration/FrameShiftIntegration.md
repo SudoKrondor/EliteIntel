@@ -6,9 +6,9 @@ opens the page. Elite Intel has no UI for this.
 
 It works in two directions:
 
-- **Page opening.** The user says "open materials in FrameShift". VEGA calls one tool, `frameshift_open_page`.
-  Elite Intel sends the call to FrameShift over a local WebSocket and waits for the answer. Then it says what
-  happened.
+- **Page opening.** The user says "open materials in FrameShift", or "show the manufactured materials tab in
+  FrameShift". VEGA calls one tool, `frameshift_open_page`. Elite Intel sends the call to FrameShift over a local
+  WebSocket and waits for the answer. Then it says what happened.
 - **Announcements.** FrameShift sends a line of text, and Elite Intel speaks it at once in the active ship's voice.
 
 ---
@@ -34,8 +34,12 @@ Every message is one JSON object with `"version": 1` and a `type`.
 
 ```json
 {"version": 1, "type": "integration.register", "client": "frameshift-command",
- "pages": [{"id": "materials", "label": "Materials"}, {"id": "dashboard", "label": "Dashboard"}]}
+ "pages": [{"id": "materials", "label": "Materials",
+            "tabs": [{"id": "raw", "label": "Raw"}, {"id": "manufactured", "label": "Manufactured"}]},
+           {"id": "dashboard", "label": "Dashboard"}]}
 ```
+
+`tabs` is optional. A page that has none opens as it is.
 
 The reply:
 
@@ -49,6 +53,9 @@ The page list goes into the LLM prompt, so Elite Intel keeps it short and plain:
 - A `label` keeps letters, digits, spaces and `& ' . / ( ) -`, and is cut to 40 characters. A missing or empty
   label becomes the id.
 - At most 32 pages are kept.
+- A tab follows the same `id` and `label` rules. A page keeps at most 8 tabs, and a repeated tab id is dropped.
+- Pages and tabs together are capped at 64, because each one is a value the model is offered. Once the cap is
+  reached, later tabs and pages are dropped.
 
 A refused registration replies `"ok": false` with `"error": {"code", "message"}`:
 
@@ -61,12 +68,23 @@ A refused registration replies `"ok": false` with `"error": {"code", "message"}`
 If FrameShift registers again, the new registration replaces the old one, even on another connection. When the
 registered connection closes, the registration is forgotten.
 
+The user hears when FrameShift connects and when it drops (`handler.frameshift.connected` /
+`.disconnected`), in the active ship's voice, because the page tool exists only while FrameShift is registered.
+Without that, "open materials in FrameShift" just goes to another tool and nothing says why. Only a real change is
+spoken: a registration while none is held is "connected", and FrameShift closing the registered connection is
+"disconnected". A re-registration, a replacement, an old replaced connection closing, or Elite Intel closing the
+socket on shutdown says nothing. Both are also logged at info (`elite.intel.integration`), so a support bundle shows
+whether FrameShift was connected.
+
 ### Elite Intel calls a tool
 
 ```json
 {"version": 1, "type": "tool_call", "id": "<uuid>", "target": "frameshift-command",
- "tool": "frameshift_open_page", "arguments": {"page": "materials"}}
+ "tool": "frameshift_open_page", "arguments": {"page": "materials", "tab": "manufactured"}}
 ```
+
+`tab` is sent only when the user named a tab. Without it, FrameShift opens the page and leaves whatever tab it
+was on.
 
 ### FrameShift answers
 
@@ -127,7 +145,9 @@ Elite Intel queues nothing. It speaks one line from `responses*.properties`, `ha
 | `refused` | `ok: false`. The error code and message are logged, not spoken, because they are English text from another program |
 | `offline` | no FrameShift registered, or the connection dropped while the call waited |
 | `timedOut` | no reply within 5 seconds |
-| `unknownPage` | the page is not in the registered list |
+| `unknownPage` | the page, or the tab of that page, is not in the registered list |
+
+The spoken name is the page's label, or the page's and the tab's joined: "Materials, Manufactured".
 
 `FrameShiftLink` publishes an announcement as an `AiVoxResponseEvent`, with no voice named, so the Mouth uses
 the active ship's voice. The link takes the announcer and the clock as constructor arguments, so its tests can
@@ -139,7 +159,11 @@ check what was spoken and step the rate window without a TTS engine or a wait.
 
 - `isVisibleForLLM` is true only while FrameShift is registered. A user without FrameShift is never offered
   the tool.
-- `parameters()` is read every turn. The `page` parameter's `enum` is the registered page ids, and its description
-  lists `id = label` pairs, so the model can map "materiales" to `materials`.
+- `parameters()` is read every turn. The model picks **one** value, a page or a page's tab, and never pairs two
+  arguments: the `page` parameter's `enum` is every page id, each followed by its tabs as `page/tab`
+  (`materials`, `materials/raw`, `materials/manufactured`, ...). One value means a small local model cannot pair a
+  tab with the wrong page. Elite Intel splits the value again before it sends the call. The description spells out
+  `id = label` only where the id does not already say the label (`navigation = Route Planner`), to keep the prompt
+  short.
 - Alias phrases (`frameshift_open_page` in `ai_action_aliases*.properties`) carry a variable `{page:X}`. The
   reflex never fires for this command, so the LLM always picks the page.

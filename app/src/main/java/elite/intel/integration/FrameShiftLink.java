@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +41,10 @@ import java.util.regex.Pattern;
  * voice, as system speech - no LLM, no rewording. It is answered {@code announce_result} when accepted (queued for
  * speech, not yet heard). Length and rate are capped, so a misbehaving client cannot hold the speaker.
  * <p>
+ * A page may list tabs. The model picks one {@link Destination} - a page, or a tab of a page, named
+ * {@code page/tab} - so a small local model chooses one value rather than pairing two; FrameShift is sent the page
+ * and the tab as separate arguments.
+ * <p>
  * The page list reaches the LLM prompt, so it is held to plain ids and short plain labels and capped in size:
  * whatever registers is local, but it is still another program's text.
  */
@@ -51,6 +56,11 @@ public final class FrameShiftLink {
     static final String TOOL = "frameshift_open_page";
     static final int PROTOCOL_VERSION = 1;
     static final int MAX_PAGES = 32;
+    static final int MAX_TABS_PER_PAGE = 8;
+    /** Pages and tabs together: every one is a value in the tool's enum, so this bounds the prompt. */
+    static final int MAX_DESTINATIONS = 64;
+    /** Joins a page id and a tab id into the one value the model picks; no id can contain it. */
+    public static final String TAB_SEPARATOR = "/";
     static final int MAX_LABEL_LENGTH = 40;
     static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
     static final int MAX_ANNOUNCEMENT_LENGTH = 300;
@@ -63,23 +73,48 @@ public final class FrameShiftLink {
     private static final Pattern CONTROL = Pattern.compile("\\p{Cntrl}");
 
     private static final FrameShiftLink INSTANCE = new FrameShiftLink(DEFAULT_TIMEOUT,
-            text -> GameEventBus.publish(new AiVoxResponseEvent(text)), System::nanoTime);
+            text -> GameEventBus.publish(new AiVoxResponseEvent(text)), System::nanoTime,
+            connected -> GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse(
+                    connected ? "handler.frameshift.connected" : "handler.frameshift.disconnected"))));
 
     /** One connected program, as the socket sees it: something to send text to. Identity is the connection. */
     public interface Peer {
         void send(String text);
     }
 
-    public record Page(String id, String label) {
+    public record Tab(String id, String label) {
+    }
+
+    public record Page(String id, String label, List<Tab> tabs) {
+        public Page {
+            tabs = List.copyOf(tabs);
+        }
+
+        public Page(String id, String label) {
+            this(id, label, List.of());
+        }
+    }
+
+    /** What the model picks: a page, or one tab of it ({@code tab} is null for the page alone). */
+    public record Destination(Page page, Tab tab) {
+        /** The value the model sees: {@code materials}, or {@code materials/manufactured}. */
+        public String id() {
+            return tab == null ? page.id() : page.id() + TAB_SEPARATOR + tab.id();
+        }
+
+        /** What the commander hears: {@code Materials}, or {@code Materials, Manufactured}. */
+        public String label() {
+            return tab == null ? page.label() : page.label() + ", " + tab.label();
+        }
     }
 
     /** How a page-opening call ended. */
     public sealed interface OpenResult {
-        record Opened(Page page) implements OpenResult {
+        record Opened(Destination destination) implements OpenResult {
         }
 
         /** FrameShift answered, and could not open it. */
-        record Refused(Page page, String code, String message) implements OpenResult {
+        record Refused(Destination destination, String code, String message) implements OpenResult {
         }
 
         record Offline() implements OpenResult {
@@ -88,23 +123,24 @@ public final class FrameShiftLink {
         record TimedOut() implements OpenResult {
         }
 
-        /** The page is not one FrameShift registered (the list changed, or the model invented one). */
-        record UnknownPage(String pageId) implements OpenResult {
+        /** Not a page or tab FrameShift registered (the list changed, or the model invented one). */
+        record UnknownPage(String destinationId) implements OpenResult {
         }
     }
 
     private record Registration(Peer peer, List<Page> pages) {
-        Optional<Page> find(String pageId) {
-            return pages.stream().filter(p -> p.id().equals(pageId)).findFirst();
+        Optional<Destination> find(String destinationId) {
+            return destinations(pages).stream().filter(d -> d.id().equals(destinationId)).findFirst();
         }
     }
 
-    private record Pending(Peer peer, Page page, CompletableFuture<OpenResult> result) {
+    private record Pending(Peer peer, Destination destination, CompletableFuture<OpenResult> result) {
     }
 
     private final Duration timeout;
     private final Consumer<String> announcer;
     private final LongSupplier nanoClock;
+    private final Consumer<Boolean> connectionNotice;
     private final Map<String, Pending> pending = new ConcurrentHashMap<>();
     /** When each recent accepted announcement arrived, oldest first; guarded by itself. */
     private final Deque<Long> recentAnnouncements = new ArrayDeque<>();
@@ -113,11 +149,20 @@ public final class FrameShiftLink {
     /**
      * @param announcer speaks an accepted announcement; the app's publishes it as system speech in the ship's voice
      * @param nanoClock monotonic time for the announcement rate cap
+     * @param connectionNotice told {@code true} when FrameShift registers with none registered before, and
+     *                         {@code false} when FrameShift itself drops the registered connection; the app's
+     *                         says so aloud, so the commander knows whether "open ... in FrameShift" can work
      */
-    FrameShiftLink(Duration timeout, Consumer<String> announcer, LongSupplier nanoClock) {
+    FrameShiftLink(Duration timeout, Consumer<String> announcer, LongSupplier nanoClock,
+                   Consumer<Boolean> connectionNotice) {
         this.timeout = timeout;
         this.announcer = announcer;
         this.nanoClock = nanoClock;
+        this.connectionNotice = connectionNotice;
+    }
+
+    FrameShiftLink(Duration timeout, Consumer<String> announcer, LongSupplier nanoClock) {
+        this(timeout, announcer, nanoClock, connected -> { });
     }
 
     public static FrameShiftLink getInstance() {
@@ -134,20 +179,35 @@ public final class FrameShiftLink {
         return reg == null ? List.of() : reg.pages();
     }
 
+    /** Every page, each followed by its tabs, in FrameShift's order; empty when none is registered. */
+    public List<Destination> destinations() {
+        return destinations(pages());
+    }
+
+    private static List<Destination> destinations(List<Page> pages) {
+        List<Destination> all = new ArrayList<>();
+        for (Page page : pages) {
+            all.add(new Destination(page, null));
+            page.tabs().forEach(tab -> all.add(new Destination(page, tab)));
+        }
+        return all;
+    }
+
     /**
-     * Asks FrameShift to open a page and waits for its answer. Blocks for at most the timeout.
+     * Asks FrameShift to open a page, or a tab of one ({@code page/tab}), and waits for its answer. Blocks for at
+     * most the timeout.
      */
-    public OpenResult openPage(String pageId) {
+    public OpenResult openPage(String destinationId) {
         Registration reg = registration;
         if (reg == null) return new OpenResult.Offline();
-        Optional<Page> page = reg.find(pageId);
-        if (page.isEmpty()) return new OpenResult.UnknownPage(pageId);
+        Optional<Destination> destination = reg.find(destinationId);
+        if (destination.isEmpty()) return new OpenResult.UnknownPage(destinationId);
 
         String id = UUID.randomUUID().toString();
         CompletableFuture<OpenResult> result = new CompletableFuture<>();
-        pending.put(id, new Pending(reg.peer(), page.get(), result));
+        pending.put(id, new Pending(reg.peer(), destination.get(), result));
         try {
-            reg.peer().send(toolCall(id, page.get().id()).toString());
+            reg.peer().send(toolCall(id, destination.get()).toString());
             return result.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             return new OpenResult.TimedOut();
@@ -183,12 +243,18 @@ public final class FrameShiftLink {
         }
     }
 
-    /** A connection closed: forget it if it was FrameShift, and fail its calls now rather than at the timeout. */
-    public void onClose(Peer peer) {
+    /**
+     * A connection closed: forget it if it was FrameShift, and fail its calls now rather than at the timeout.
+     *
+     * @param byPeer the other side closed it; false when Elite Intel closed it (shutting the socket down), which
+     *               is not news to the commander
+     */
+    public void onClose(Peer peer, boolean byPeer) {
         Registration reg = registration;
         if (reg != null && reg.peer() == peer) {
             registration = null;
             log.info("FrameShift Command disconnected");
+            if (byPeer) connectionNotice.accept(false);
         }
         pending.values().stream()
                 .filter(p -> p.peer() == peer)
@@ -209,9 +275,11 @@ public final class FrameShiftLink {
             peer.send(registered(false, "no_valid_pages", "No page had a valid id.").toString());
             return;
         }
+        boolean wasConnected = registration != null;
         registration = new Registration(peer, List.copyOf(pages));
-        log.info("FrameShift Command registered {} pages", pages.size());
+        log.info("FrameShift Command registered {} pages, {} destinations", pages.size(), destinations().size());
         peer.send(registered(true, null, null).toString());
+        if (!wasConnected) connectionNotice.accept(true);
     }
 
     private void announce(Peer peer, JsonObject message) {
@@ -261,30 +329,54 @@ public final class FrameShiftLink {
         // Only the connection the call went to may answer it.
         if (call == null || call.peer() != peer) return;
         if (message.has("ok") && message.get("ok").isJsonPrimitive() && message.get("ok").getAsBoolean()) {
-            call.result().complete(new OpenResult.Opened(call.page()));
+            call.result().complete(new OpenResult.Opened(call.destination()));
             return;
         }
         JsonObject error = message.has("error") && message.get("error").isJsonObject()
                 ? message.getAsJsonObject("error") : new JsonObject();
         String code = string(error, "code");
         String text = string(error, "message");
-        log.warn("FrameShift could not open {}: {} {}", call.page().id(), code, text);
-        call.result().complete(new OpenResult.Refused(call.page(), code, text));
+        log.warn("FrameShift could not open {}: {} {}", call.destination().id(), code, text);
+        call.result().complete(new OpenResult.Refused(call.destination(), code, text));
     }
 
+    /** The pages that pass the rules, with their tabs, until a cap is reached: pages, then destinations. */
     private static List<Page> pagesOf(JsonObject message) {
         List<Page> pages = new ArrayList<>();
-        if (!message.has("pages") || !message.get("pages").isJsonArray()) return pages;
-        JsonArray array = message.getAsJsonArray("pages");
+        JsonArray array = array(message, "pages");
+        int destinations = 0;
         for (JsonElement element : array) {
-            if (pages.size() == MAX_PAGES) break;
+            if (pages.size() == MAX_PAGES || destinations == MAX_DESTINATIONS) break;
+            if (!element.isJsonObject()) continue;
+            JsonObject page = element.getAsJsonObject();
+            String id = string(page, "id");
+            if (id == null || !PAGE_ID.matcher(id).matches()) continue;
+            if (pages.stream().anyMatch(p -> p.id().equals(id))) continue;
+            List<Tab> tabs = tabsOf(page, MAX_DESTINATIONS - destinations - 1);
+            pages.add(new Page(id, cleanLabel(string(page, "label"), id), tabs));
+            destinations += 1 + tabs.size();
+        }
+        return pages;
+    }
+
+    /** A page's tabs under the same id and label rules, at most {@link #MAX_TABS_PER_PAGE} and {@code room}. */
+    private static List<Tab> tabsOf(JsonObject page, int room) {
+        List<Tab> tabs = new ArrayList<>();
+        int limit = Math.min(MAX_TABS_PER_PAGE, room);
+        for (JsonElement element : array(page, "tabs")) {
+            if (tabs.size() >= limit) break;
             if (!element.isJsonObject()) continue;
             String id = string(element.getAsJsonObject(), "id");
             if (id == null || !PAGE_ID.matcher(id).matches()) continue;
-            if (pages.stream().anyMatch(p -> p.id().equals(id))) continue;
-            pages.add(new Page(id, cleanLabel(string(element.getAsJsonObject(), "label"), id)));
+            if (tabs.stream().anyMatch(t -> t.id().equals(id))) continue;
+            tabs.add(new Tab(id, cleanLabel(string(element.getAsJsonObject(), "label"), id)));
         }
-        return pages;
+        return tabs;
+    }
+
+    private static JsonArray array(JsonObject object, String field) {
+        JsonElement value = object.get(field);
+        return value != null && value.isJsonArray() ? value.getAsJsonArray() : new JsonArray();
     }
 
     /** A label as plain words: unsafe characters dropped, spaces collapsed, length capped; the id when nothing is left. */
@@ -295,7 +387,7 @@ public final class FrameShiftLink {
         return clean.isEmpty() ? fallback : clean;
     }
 
-    private static JsonObject toolCall(String id, String pageId) {
+    private static JsonObject toolCall(String id, Destination destination) {
         JsonObject call = new JsonObject();
         call.addProperty("version", PROTOCOL_VERSION);
         call.addProperty("type", "tool_call");
@@ -303,7 +395,8 @@ public final class FrameShiftLink {
         call.addProperty("target", CLIENT);
         call.addProperty("tool", TOOL);
         JsonObject arguments = new JsonObject();
-        arguments.addProperty("page", pageId);
+        arguments.addProperty("page", destination.page().id());
+        if (destination.tab() != null) arguments.addProperty("tab", destination.tab().id());
         call.add("arguments", arguments);
         return call;
     }

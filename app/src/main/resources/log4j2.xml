@@ -148,6 +148,10 @@
              stamping UTC an hour away from the PC clock (seen after a Windows Update) drops every live event as
              outdated, and nothing else in a bundle says so. -->
         <Logger name="elite.intel.gameapi.GameClock" level="info"/>
+        <!-- info, on purpose: one line when FrameShift Command registers and one when it drops. "Open materials
+             in FrameShift" is offered to VEGA only while it is registered, and a bundle that could not say
+             whether it was left the first such report unanswerable. -->
+        <Logger name="elite.intel.integration" level="info"/>
         <!-- warn, on purpose: a file caught mid-write is retried rather than dropped, and seeing how
              often that happens is the only way to tell a slow disk from a stuck market. -->
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="warn"/>

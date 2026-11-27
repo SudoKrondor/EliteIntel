@@ -38,7 +38,21 @@ class FrameShiftOpenPageCommandTest {
         assertEquals("page", page.getName());
         assertTrue(page.isRequired());
         assertEquals(List.of("materials", "dashboard"), page.getEnumValues());
-        assertTrue(page.getDescription().contains("materials = Materials"));
+        assertFalse(page.getDescription().contains("materials ="), "an id that says its label is not repeated");
+        page.validate();
+    }
+
+    @Test
+    void tabsAreValuesAndOnlyRenamedOnesAreSpelledOut() {
+        link.onMessage(text -> { }, """
+                {"version":1,"type":"integration.register","client":"frameshift-command","pages":[
+                 {"id":"commodities","label":"Commodities","tabs":[{"id":"my-cargo","label":"My Cargo"}]},
+                 {"id":"navigation","label":"Route Planner"}]}""");
+
+        ActionParameterSpec page = command.parameters().getFirst();
+        assertEquals(List.of("commodities", "commodities/my-cargo", "navigation"), page.getEnumValues());
+        assertTrue(page.getDescription().contains("navigation = Route Planner"));
+        assertFalse(page.getDescription().contains("my-cargo ="));
         page.validate();
     }
 
