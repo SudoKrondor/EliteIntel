@@ -98,7 +98,7 @@ public final class AiServiceCheck {
             return checkLocal(config.localModel(), config.localSetupUnfinished());
         }
         return config.cloudProvider()
-                .map(provider -> probe(spokenName(provider), false))
+                .map(provider -> probe(spokenName(provider), Optional.of(provider)))
                 .orElseGet(AiServiceVerdict.NoProvider::new);
     }
 
@@ -120,7 +120,7 @@ public final class AiServiceCheck {
         if (listing instanceof ModelListing.Listed listed && !listed.includes(model)) {
             return new AiServiceVerdict.LocalModelMissing();
         }
-        AiServiceVerdict verdict = probe(LOCAL_HOST_NAME, true);
+        AiServiceVerdict verdict = probe(LOCAL_HOST_NAME, Optional.empty());
         if (verdict instanceof AiServiceVerdict.Connected connected && !LocalLlmModelCheck.isSupported(model)) {
             return new AiServiceVerdict.Connected(connected.service(), connected.typicalReply(), true);
         }
@@ -135,7 +135,8 @@ public final class AiServiceCheck {
      * {@link AiServiceHealth} before the reply future completes. A commander turn landing in the same seconds
      * could stand in for the probe's own exchange; either one describes the service as it is right now.
      */
-    private AiServiceVerdict probe(String service, boolean local) {
+    private AiServiceVerdict probe(String service, Optional<ProviderEnum> cloudProvider) {
+        boolean local = cloudProvider.isEmpty();
         Instant started = clock.instant();
         sendTestRequest();
         AiServiceHealth.Snapshot wire = health.snapshot();
@@ -147,8 +148,10 @@ public final class AiServiceCheck {
             case UNREACHABLE -> local
                     ? new AiServiceVerdict.LocalHostNotRunning()
                     : new AiServiceVerdict.Unreachable(service);
-            case REFUSED -> new AiServiceVerdict.Refused(service, refusingFor(wire.failingSince(), started),
-                    isKeyRejection(wire.lastRefusalCode()));
+            case REFUSED -> MistralFundingRefusal.matches(cloudProvider, local, wire.lastRefusalCode())
+                    ? new AiServiceVerdict.MistralNeedsFunding()
+                    : new AiServiceVerdict.Refused(service, refusingFor(wire.failingSince(), started),
+                            isKeyRejection(wire.lastRefusalCode()));
         };
     }
 

@@ -2,6 +2,7 @@ package elite.intel.ai.brain.vega.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
+import elite.intel.ai.brain.health.MistralFundingRefusal;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.VegaDiagnostics;
@@ -606,6 +607,10 @@ public abstract class Thought {
      * request the commander just made, which sends them looking for a fault in a feature that is working.
      */
     protected static String serviceUnreachablePhrase() {
+        // WHY: "try again in a moment" told commanders on an unfunded Mistral account to wait for a bug fix.
+        if (MistralFundingRefusal.lastRefusal()) {
+            return MistralFundingRefusal.phrase();
+        }
         return servicePhrase(SERVICE_UNREACHABLE_KEY);
     }
 

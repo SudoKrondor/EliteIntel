@@ -81,6 +81,13 @@ public sealed interface AiServiceVerdict {
     }
 
     /**
+     * Mistral refused because the account has no funds: its free access has ended
+     * ({@link MistralFundingRefusal}).
+     */
+    record MistralNeedsFunding() implements AiServiceVerdict {
+    }
+
+    /**
      * No answer of any kind came back within {@code waited}.
      */
     record NoAnswer(String service, Duration waited) implements AiServiceVerdict {

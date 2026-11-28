@@ -143,6 +143,24 @@ class AiServiceCheckTest {
     }
 
     @Test
+    void mistralRefusingAnUnfundedAccountSaysItNeedsFunding() {
+        // Mistral ended its free access in November 2026: 402 billing_no_api_budget_configured on every request.
+        AiServiceVerdict verdict = check(cloud(ProviderEnum.MISTRAL), () -> fail("cloud has no model list"),
+                new ScriptedGateway(wire -> wire.recordRefused(402))).run();
+
+        assertEquals(new AiServiceVerdict.MistralNeedsFunding(), verdict);
+        assertFalse(verdict.isSetupGap(), "the commander does not know yet, so the check must speak");
+    }
+
+    @Test
+    void anotherProviderRefusingWith402IsOnlyARefusal() {
+        AiServiceVerdict verdict = check(cloud(ProviderEnum.ANTHROPIC), () -> fail("cloud has no model list"),
+                new ScriptedGateway(wire -> wire.recordRefused(402))).run();
+
+        assertEquals(new AiServiceVerdict.Refused("Anthropic Claude", Optional.empty(), false), verdict);
+    }
+
+    @Test
     void aStandingRefusalReportsHowLongItHasLasted() {
         health.recordRefused(429);
         clock.advance(Duration.ofHours(2));

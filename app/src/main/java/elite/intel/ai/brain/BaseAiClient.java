@@ -2,7 +2,9 @@ package elite.intel.ai.brain;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.brain.health.AiServiceHealth;
+import elite.intel.ai.brain.health.MistralFundingRefusal;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
@@ -114,7 +116,8 @@ public class BaseAiClient {
      * throughout the free-tier outage of 2026-09-04, a condition with nothing to do with request volume.
      * Repeating "too many requests" therefore blames the commander for an outage and sends them hunting for
      * a quota that does not exist. Only the failures the commander can actually act on - a rejected key or a
-     * request shape the provider will never accept - earn a phrase of their own; the status code and the
+     * request shape the provider will never accept, or Mistral refusing an unfunded account
+     * ({@link MistralFundingRefusal}) - earn a phrase of their own; the status code and the
      * provider's own body stay in the ERROR log, where a diagnosis belongs.
      * <p>
      * A cancelled request says nothing at all: the commander interrupted it themselves.
@@ -123,8 +126,14 @@ public class BaseAiClient {
         return switch (failure.kind()) {
             case CANCELLED -> "";
             case MALFORMED_RESPONSE -> servicePhrase(UNUSABLE_RESPONSE_KEY);
-            case TRANSIENT, PERMANENT -> servicePhrase(
-                    isCommanderActionable(failure.statusCode()) ? SERVICE_REJECTED_KEY : SERVICE_UNREACHABLE_KEY);
+            case TRANSIENT, PERMANENT -> {
+                if (MistralFundingRefusal.matches(LlmProviderResolver.cloudProvider(),
+                        systemSession.useLocalQueryLlm(), failure.statusCode())) {
+                    yield MistralFundingRefusal.phrase();
+                }
+                yield servicePhrase(
+                        isCommanderActionable(failure.statusCode()) ? SERVICE_REJECTED_KEY : SERVICE_UNREACHABLE_KEY);
+            }
         };
     }
 

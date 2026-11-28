@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AiServiceReportTest {
 
@@ -30,6 +31,14 @@ class AiServiceReportTest {
 
         assertEquals("Mistral is answering, but it has refused every request for 2 hours. "
                 + "If you changed your API key recently, check it on the AI Services tab.", spoken);
+    }
+
+    @Test
+    void mistralNeedingFundingSaysSoAndPointsToClaude() {
+        String spoken = AiServiceReport.spoken(new AiServiceVerdict.MistralNeedsFunding());
+
+        assertTrue(spoken.contains("funded account"), spoken);
+        assertTrue(spoken.contains("Claude"), spoken);
     }
 
     @Test

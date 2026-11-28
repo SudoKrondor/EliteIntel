@@ -26,6 +26,7 @@ public final class AiServiceReport {
             case AiServiceVerdict.LocalModelMissing ignored -> say("localModelMissing");
             case AiServiceVerdict.Unreachable unreachable -> say("unreachable", unreachable.service());
             case AiServiceVerdict.Refused refused -> refused(refused);
+            case AiServiceVerdict.MistralNeedsFunding ignored -> MistralFundingRefusal.phrase();
             case AiServiceVerdict.NoAnswer noAnswer -> say("noAnswer", noAnswer.service(), seconds(noAnswer.waited()));
             case AiServiceVerdict.Connected connected -> connected(connected);
         };
