@@ -1048,6 +1048,50 @@
           "LHS 1547 Commodities",
           "LHS 1547 Flag",
           "Liberals of LHS 1547",
+          "Official LHS 1547 Party"
+        ],
+        "stations": [
+          "Khan Dock"
+        ]
+      },
+      "target": {
+        "system": "Losin",
+        "systemAddress": 16064117155225,
+        "coords": [
+          1.188,
+          -29.812,
+          -35.812
+        ],
+        "factions": [
+          "Losin Crimson Hand Gang"
+        ]
+      },
+      "distanceLy": 7.96,
+      "stackDepth": 5,
+      "reporters": 1,
+      "lastSeen": "2026-01-25",
+      "resourceSites": {
+        "standard": 1,
+        "low": 0,
+        "high": 1,
+        "hazardous": 1
+      },
+      "indexed": true
+    },
+    {
+      "provider": {
+        "system": "LHS 1547",
+        "systemAddress": 3343371979107,
+        "coords": [
+          3.219,
+          -37.437,
+          -36.844
+        ],
+        "factions": [
+          "LHS 1547 & Co",
+          "LHS 1547 Commodities",
+          "LHS 1547 Flag",
+          "Liberals of LHS 1547",
           "Movement for LHS 20 Liberals",
           "Official LHS 1547 Party"
         ],
@@ -1070,7 +1114,7 @@
       "distanceLy": 5.69,
       "stackDepth": 6,
       "reporters": 1,
-      "lastSeen": "2026-11-26",
+      "lastSeen": "2026-11-27",
       "resourceSites": {
         "standard": 0,
         "low": 4,
@@ -1324,10 +1368,10 @@
       "reporters": 3,
       "lastSeen": "2022-03-13",
       "resourceSites": {
-        "standard": 7,
+        "standard": 14,
         "low": 0,
-        "high": 3,
-        "hazardous": 3
+        "high": 6,
+        "hazardous": 6
       },
       "indexed": true
     },
