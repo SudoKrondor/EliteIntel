@@ -107,6 +107,23 @@ public record LmStudioHome(Path dir) {
     }
 
     /**
+     * Whether LM Studio holds {@code modelKey} (such as {@code google/gemma-4-e4b}) as downloaded, read from its
+     * home without its server: the model's {@code hub/models/<key>/manifest.json}.
+     * <p>
+     * WHY the hub manifest and not the weights: the weights sit under a folder named for the file LM Studio picked
+     * ({@code models/lmstudio-community/gemma-4-E4B-it-GGUF}), not for the key. LM Studio writes the manifest once
+     * the weights are complete - four seconds after the last one, on a Linux install (2026-11-12). A layout LM Studio
+     * changes later reads as not downloaded, which only offers Continue setup, and that finds the model by asking.
+     */
+    public boolean hasDownloaded(String modelKey) {
+        try {
+            return Files.isRegularFile(dir.resolve("hub").resolve("models").resolve(modelKey).resolve("manifest.json"));
+        } catch (InvalidPathException notAPath) {
+            return false;
+        }
+    }
+
+    /**
      * The programs LM Studio's install records name that are still there; empty when LM Studio was removed.
      */
     public List<Path> installedPrograms() {

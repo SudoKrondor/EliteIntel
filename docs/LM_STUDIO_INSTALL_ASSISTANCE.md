@@ -211,8 +211,16 @@ there is no record, or the record names that same home with another id, the inst
 - **`install_id`:** the id the marker holds.
 - **`pointer_written`:** true only when the home is not `~/.lmstudio`, because the app writes the pointer only to
   install somewhere else.
-- **`setup_complete`:** whether LM Studio is installed there, so the button offers **Uninstall** or **Continue
-  setup**.
+- **`setup_complete`:** whether LM Studio is installed there and holds the model, so the button offers
+  **Uninstall** or **Continue setup**. The model counts as downloaded when its hub manifest
+  (`hub/models/google/gemma-4-e4b/manifest.json` in LM Studio's home) is there: LM Studio writes it once the
+  weights are complete, and it is read without starting LM Studio's server. A layout LM Studio changes later only
+  turns Uninstall into Continue setup, which skips what is done and finds the model by asking.
+- **Address and Model:** filled in when the install is finished and the Model is blank, because the database that
+  lost the record lost the fields with it (an erased database, 2026-11-27: Model blank beside a working install, so
+  VEGA took no input). Model becomes `google/gemma-4-e4b`, and a blank Address LM Studio's local default. A Model
+  the commander typed is never replaced, and an Address on another machine leaves both alone. The AI Services panel
+  shows what was filled in without a restart.
 
 A record naming another folder is left alone. Its drive may only be unplugged.
 

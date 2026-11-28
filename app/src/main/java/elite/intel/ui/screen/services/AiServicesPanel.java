@@ -413,7 +413,13 @@ public class AiServicesPanel extends JPanel {
             }
             LmStudioSetupOffer shown = offer;
             boolean shownOnAmd = onAmd;
-            SwingUtilities.invokeLater(() -> showLmStudioSetupOffer(shown, shownOnAmd));
+            // WHY read again here: working out the offer can fill in a blank Model, for the app's own install
+            // recorded again after the database lost it (InstallReclaim), and the fields must show what is saved.
+            String savedModelNow = nz(systemSession.getLmStudioCommandModel(), "");
+            SwingUtilities.invokeLater(() -> {
+                showLmStudioSetupOffer(shown, shownOnAmd);
+                if (!dirty && !savedModelNow.equals(savedLmCommand)) initData();
+            });
         });
     }
 

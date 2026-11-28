@@ -84,18 +84,20 @@ public enum LmStudioSetupOffer {
      * without a matching marker - restored from another PC, or left after the folder was deleted by hand - is
      * ignored here rather than forgotten: a drive that is only unplugged today must still be uninstallable tomorrow.
      * A marker in LM Studio's home with no record to match it is the app's install all the same, and is recorded
-     * again ({@link InstallReclaim}).
+     * again ({@link InstallReclaim}) - along with a blank Model, when the install is finished.
      */
     public static Optional<LmStudioInstallManager.Install> ownedInstall() {
-        return ownedInstall(LmStudioInstallManager.getInstance(), Path.of(System.getProperty("user.home")));
+        return ownedInstall(LmStudioInstallManager.getInstance(), Path.of(System.getProperty("user.home")),
+                InstallReclaim.LmStudioFields.saved());
     }
 
-    static Optional<LmStudioInstallManager.Install> ownedInstall(LmStudioInstallManager installs, Path userHome) {
+    static Optional<LmStudioInstallManager.Install> ownedInstall(LmStudioInstallManager installs, Path userHome,
+                                                                 InstallReclaim.LmStudioFields fields) {
         Optional<LmStudioInstallManager.Install> recorded = installs.find();
         if (recorded.filter(install -> InstallMarker.matches(install.homeDir(), install.installId())).isPresent()) {
             return recorded;
         }
-        return InstallReclaim.reclaim(installs, recorded, userHome);
+        return InstallReclaim.reclaim(installs, recorded, userHome, fields);
     }
 
     static LmStudioSetupOffer forOwnedInstall(LmStudioInstallManager.Install owned) {

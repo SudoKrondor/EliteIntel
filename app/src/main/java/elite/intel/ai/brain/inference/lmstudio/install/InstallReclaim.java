@@ -1,7 +1,9 @@
 package elite.intel.ai.brain.inference.lmstudio.install;
 
+import elite.intel.ai.brain.inference.lmstudio.LmStudioDefaults;
 import elite.intel.db.managers.LmStudioInstallManager;
 import elite.intel.db.managers.LmStudioInstallManager.Install;
+import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,8 +35,10 @@ final class InstallReclaim {
      *
      * @param recorded what is recorded now, which does not match a marker in its own folder
      * @param userHome the folder LM Studio's home pointer lives in
+     * @param fields   the LMStudio Setup fields, filled in when a finished install is recorded with a blank Model
      */
-    static Optional<Install> reclaim(LmStudioInstallManager installs, Optional<Install> recorded, Path userHome) {
+    static Optional<Install> reclaim(LmStudioInstallManager installs, Optional<Install> recorded, Path userHome,
+                                     LmStudioFields fields) {
         LmStudioHome home = LmStudioHome.locate(userHome);
         Optional<UUID> marked = InstallMarker.read(home.dir());
         if (marked.isEmpty()) return Optional.empty();
@@ -43,13 +47,65 @@ final class InstallReclaim {
         // WHY only for another home: the app writes the pointer only to install somewhere else, and one naming the
         // usual home was written by LM Studio's own installer, which Uninstall must leave alone.
         boolean pointerWritten = !home.dir().equals(userHome.resolve(LmStudioHome.DEFAULT_DIR));
-        // WHY by what is installed: the record of how far the setup got went with it. With LM Studio there the
-        // commander gets Uninstall; without it Continue Setup, which installs LM Studio again.
-        boolean setupComplete = home.installedLms().isPresent();
+        // WHY by what is installed: the record of how far the setup got went with it. With LM Studio and the model
+        // there the commander gets Uninstall; without either, Continue Setup, which installs and downloads what is
+        // missing, skips what is not, and saves Address and Model at the end.
+        boolean setupComplete = home.installedLms().isPresent() && home.hasDownloaded(LmStudioDefaults.MODEL);
         Install reclaimed = installs.recordReclaimed(marked.get(), home.dir(), pointerWritten, setupComplete,
                 Instant.now());
         log.info("Recorded again the app's install in {}, whose record was {}", home.dir(),
                 recorded.isPresent() ? "for an earlier install" : "missing");
+        if (setupComplete) fillInBlankModel(fields);
         return Optional.of(reclaimed);
+    }
+
+    /**
+     * The Address and Model the finished install saved, put back when the Model is blank.
+     * <p>
+     * WHY: the record and the fields live in the same database, so whatever lost one lost the other - an erased
+     * database came back with the install recorded again and the Model blank, and VEGA, which takes no input without
+     * a model, said none was set up beside an LM Studio ready to serve it. The install only ever sets up
+     * {@link LmStudioDefaults#MODEL}, and its manifest says it is downloaded. A Model the commander typed is never
+     * replaced, nor one for an Address on another machine, which is not this install's.
+     */
+    private static void fillInBlankModel(LmStudioFields fields) {
+        String model = fields.model();
+        String address = fields.address();
+        if (model != null && !model.isBlank()) return;
+        if (!LmStudioSetupOffer.isOnThisPc(address)) return;
+        String filledAddress = address == null || address.isBlank() ? LmStudioDefaults.ADDRESS : address;
+        fields.save(filledAddress, LmStudioDefaults.MODEL);
+        log.info("Filled in Model {} for the app's install, whose Model was blank", LmStudioDefaults.MODEL);
+    }
+
+    /**
+     * The LMStudio Setup fields as saved. WHY a seam: the tests check what is filled in without the session.
+     */
+    interface LmStudioFields {
+        String address();
+
+        String model();
+
+        void save(String address, String model);
+
+        static LmStudioFields saved() {
+            SystemSession session = SystemSession.getInstance();
+            return new LmStudioFields() {
+                @Override
+                public String address() {
+                    return session.getLmStudioAddress();
+                }
+
+                @Override
+                public String model() {
+                    return session.getLmStudioCommandModel();
+                }
+
+                @Override
+                public void save(String address, String model) {
+                    session.setLmStudioSettings(address, model);
+                }
+            };
+        }
     }
 }
