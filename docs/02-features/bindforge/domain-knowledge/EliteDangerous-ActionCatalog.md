@@ -279,14 +279,14 @@ Reused labels observed:
 | Roll Axis | `RollAxisRaw` | Yes |
 | Roll Left | `RollLeftButton` | Yes |
 | Roll Right | `RollRightButton` | Yes |
+| Pitch Axis | `PitchAxisRaw` | Yes |
+| Pitch Up | `PitchUpButton` | Yes |
+| Pitch Down | `PitchDownButton` | Yes |
 
 #### Flight Thrust
 
 | In-Game Name | XML Element | Bindable |
 |---|---|---|
-| Pitch Axis | `PitchAxisRaw` | Yes |
-| Pitch Up | `PitchUpButton` | Yes |
-| Pitch Down | `PitchDownButton` | Yes |
 | Lateral Thrust Axis | `LateralThrustRaw` | Yes |
 | Thrust Right | `RightThrustButton` | Yes |
 | Thrust Left | `LeftThrustButton` | Yes |
